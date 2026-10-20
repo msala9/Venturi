@@ -1310,3 +1310,11 @@ annotations and unchanged clip ranges/source SHA-256 values. Evidence:
 m6-review-annotations.json, m6-review-annotations-browser.png and
 m6-review-annotations-compare-browser.png. Twenty-shot montage acceptance and
 remaining original-GUI parity/release checks are still open.
+
+The 779fbba binary is deployed on halo2, SHA-256
+0b5b28b99b55db0d30660fe0d5b6008a29cbe80c3744ed864494091b6b400d06.
+The shared still fixture inherited model/prompt and exact seed 9007199254740993
+with a Favorite annotation and Library acceptance shot. CPU/lavapipe, two-worker
+caps and absence of DRI/KFD descriptors were verified; the hardware lock was not
+acquired or probed. The global ds4 catalog and NAS were not changed. Evidence:
+m6-halo2-review-annotations.json and m6-halo2-review-annotations-browser.png.

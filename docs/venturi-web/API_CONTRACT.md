@@ -279,3 +279,10 @@ arbitrary output formats and timelines longer than five minutes remain open.
   because wrapping them changes the native level policy. A native trial checks
   the complete result, including the renderer's maximum compound nesting depth,
   before allocating real entities and applying one composite history step.
+
+Program/Export now reserves the shared nonblocking GPU lock for the entire
+bounded native job. Stage permits clone the same locked file description and
+wait for submitted GPU work before dropping. The final descriptor releases
+the reservation after completion, cancellation or error. Uncached exact
+frames return GPU_BUSY while preparation owns the GPU; cached output and
+metadata editing remain available. No foreign workload is stopped.

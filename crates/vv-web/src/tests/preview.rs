@@ -70,3 +70,25 @@ fn occupied_laboratory_lock_refuses_immediately_and_is_never_removed() {
     drop(gpu_lock(&path).unwrap());
     std::fs::remove_file(path).unwrap();
 }
+
+#[test]
+fn program_stage_descriptors_keep_the_same_global_reservation_until_all_are_dropped() {
+    let path = std::env::temp_dir().join(format!(
+        "vv-program-lease-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let job = gpu_lock(&path).unwrap();
+    let stage = job.try_clone().unwrap();
+    drop(stage);
+    assert_eq!(gpu_lock(&path).unwrap_err().1, "GPU_BUSY");
+    let finishing_stage = job.try_clone().unwrap();
+    drop(job);
+    assert_eq!(gpu_lock(&path).unwrap_err().1, "GPU_BUSY");
+    drop(finishing_stage);
+    drop(gpu_lock(&path).unwrap());
+    std::fs::remove_file(path).unwrap();
+}

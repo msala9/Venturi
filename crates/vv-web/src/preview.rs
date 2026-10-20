@@ -257,16 +257,11 @@ impl Preview {
     ) -> Result<()> {
         use vv_session::export::ExportError;
         let (device, path) = self.config.as_ref().ok_or_else(unavailable)?;
+        let program_lock = gpu_lock(path)?;
         self.active_programs.fetch_add(1, Ordering::Relaxed);
         let _active = ProgramLease(&self.active_programs);
-        let foreign_busy = AtomicBool::new(false);
         let poll_failed = AtomicBool::new(false);
-        let failed = |error: ApiError| {
-            if error.1 == "GPU_BUSY" {
-                foreign_busy.store(true, Ordering::Relaxed);
-            }
-            ExportError::Failed(error.2.into())
-        };
+        let failed = |error: ApiError| ExportError::Failed(error.2.into());
         let complete = |compositor: &Compositor| {
             compositor
                 .device()
@@ -283,7 +278,9 @@ impl Preview {
             cancel,
             || {
                 let _local = self.gpu_gate.lock().unwrap_or_else(|p| p.into_inner());
-                let _global = gpu_lock(path).map_err(failed)?;
+                let _global = program_lock
+                    .try_clone()
+                    .map_err(|_| failed(unavailable()))?;
                 let (mut compositor, _) = create_compositor(*device).map_err(failed)?;
                 compositor.set_precision(snapshot.project.precision);
                 complete(&compositor)?;
@@ -291,7 +288,9 @@ impl Preview {
             },
             |compositor| {
                 let local = self.gpu_gate.lock().unwrap_or_else(|p| p.into_inner());
-                let global = gpu_lock(path).map_err(failed)?;
+                let global = program_lock
+                    .try_clone()
+                    .map_err(|_| failed(unavailable()))?;
                 Ok(GpuPermit {
                     _global: global,
                     _local: local,
@@ -307,17 +306,7 @@ impl Preview {
         if result.is_ok() {
             self.rendered.store(true, Ordering::Relaxed);
         }
-        result.map_err(|_| {
-            if foreign_busy.load(Ordering::Relaxed) {
-                ApiError(
-                    axum::http::StatusCode::SERVICE_UNAVAILABLE,
-                    "GPU_BUSY",
-                    "Another workload holds the GPU lock",
-                )
-            } else {
-                ApiError::invalid("Native composition failed or was canceled")
-            }
-        })
+        result.map_err(|_| ApiError::invalid("Native composition failed or was canceled"))
     }
     pub fn diagnostic(&self) -> Value {
         let mut value = self.diagnostic.clone();

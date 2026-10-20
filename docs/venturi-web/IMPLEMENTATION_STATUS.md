@@ -689,3 +689,20 @@ overlap refusal with no entity/counter/history mutation, normalization-policy
 refusal, compound entity undo, fresh duplicate IDs, rename undo and the exact
 native depth boundary. Unrestricted multitrack compounding and flattening are
 not implemented.
+
+## M3 shared-GPU correction — keep ownership for the native job
+
+Program and Export now acquire the laboratory lock once, nonblocking, for the
+complete bounded native preparation. Factory/stage permits duplicate the same
+locked file description, wait for GPU completion and drop it after the native
+scoped workers have joined. An idle gap between init/compose stages no longer
+lets a foreign workload take over midway. Exact frame requests can return
+GPU_BUSY while a preparation owns the reservation; cache reads and metadata
+edits remain available, and cancellation follows the native per-frame checks.
+No foreign job/port/driver is touched. Existing time/output budgets still apply.
+
+48 web Rust tests, 22 JS tests, formatting, clippy and build pass. A Linux
+descriptor-lifetime regression verifies ownership survives dropping stage
+clones and even the job descriptor until the last stage is gone, then becomes
+available nonblocking. Fresh R9700 whole-job/Export acceptance is pending an
+effective free GPU slot; earlier hardware render/file proofs are unchanged.

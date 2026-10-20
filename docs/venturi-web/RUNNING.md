@@ -167,6 +167,10 @@ not boot services; close them explicitly when no longer needed.
 DeepSeek 4.1 Flash inference is shared work on halo2. Never stop model jobs or
 delete/replace the shared lock. GPU initialization and each uncached frame
 take the lock nonblocking, then release it. Cached PNGs do not use the GPU.
+Program/Export holds one reservation for its complete bounded preparation;
+cancel it to release that reservation at the next native cancellation point.
+Uncached exact seeks return GPU_BUSY during that preparation. This prevents
+another agent from acquiring the GPU between that job's native stages.
 If startup finds the lock busy, editing stays available with preview disabled;
 restart only the Venturi process during an idle slot to enable it. A server
 that already initialized returns GPU_BUSY for frames until the lock is free.

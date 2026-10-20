@@ -470,3 +470,32 @@ fn compound_insert_conforms_native_rate_and_refuses_self_and_indirect_cycles() {
     apply(&mut s, parent, &Operation::Undo).unwrap();
     assert_eq!(s.timeline_revision(parent), original);
 }
+
+#[test]
+fn native_mixer_patch_checks_all_values_and_undo_restores_the_whole_strip() {
+    let (mut s, id, _) = fixture();
+    let before = s.timeline_revision(id);
+    let steps = s.history.position();
+    let patch = |channel: &str, gain, pan| Operation::SetMixer {
+        channel: channel.into(),
+        gain_db: Some(gain),
+        pan: Some(pan),
+    };
+    assert!(apply(&mut s, id, &patch("1", -6.0, 2.0)).is_err());
+    assert_eq!(s.timeline_revision(id), before);
+    apply(&mut s, id, &patch("1", -6.0, -0.25)).unwrap();
+    assert_eq!(s.history.position(), steps + 1);
+    assert_eq!(s.project.timelines[id].tracks[1].mix.gain_db, -6.0);
+    assert_eq!(s.project.timelines[id].tracks[1].mix.pan, -0.25);
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(id), before);
+    s.project.timelines[id].tracks[1].locked = true;
+    assert_eq!(
+        apply(&mut s, id, &patch("1", -6.0, 0.0)).unwrap_err().1,
+        "TRACK_LOCKED"
+    );
+    apply(&mut s, id, &patch("master", -3.0, 0.5)).unwrap();
+    assert_eq!(s.project.timelines[id].master.gain_db, -3.0);
+    assert_eq!(s.project.timelines[id].master.pan, 0.5);
+    assert!(apply(&mut s, id, &patch("0", 0.0, 0.0)).is_err());
+}

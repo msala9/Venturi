@@ -190,3 +190,6 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   accepts these entries, validates cycle safety and conforms native source FPS
   to the destination. Source double-click opens that timeline; compound media
   itself uses composed Program playback rather than an original-file proxy.
+- `set_mixer {channel,gain_db,pan}` edits native gain/balance on an audio track
+  ID or channel `master`. Gain is -100..30dB and balance -1..1; all supplied
+  fields validate before one history entry. Track locks apply to track strips.

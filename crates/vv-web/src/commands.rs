@@ -100,6 +100,11 @@ pub enum Operation {
         clip_ids: Vec<String>,
         disabled: bool,
     },
+    SetMixer {
+        channel: String,
+        gain_db: Option<f32>,
+        pan: Option<f32>,
+    },
     SetMarker {
         marker: MarkerEdit,
     },
@@ -264,6 +269,44 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     }
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::SetMixer {
+            channel,
+            gain_db,
+            pan,
+        } => {
+            let channel = if channel == "master" {
+                core::MixerChannel::Master
+            } else {
+                let track = track_index(tl, channel)?;
+                if tl.tracks[track].kind != TrackKind::Audio {
+                    return Err(ApiError::invalid("Select an audio mixer track"));
+                }
+                core::MixerChannel::Track(track)
+            };
+            let mut commands: Vec<Box<dyn Command>> = vec![];
+            for (param, value) in [
+                (core::MixerParam::GainDb, gain_db),
+                (core::MixerParam::Pan, pan),
+            ] {
+                if let Some(value) = value {
+                    if !value.is_finite() || !param.range().contains(value) {
+                        return Err(ApiError::invalid(
+                            "Mixer gain or balance is outside its native range",
+                        ));
+                    }
+                    commands.push(Box::new(core::SetMixerParam::new(
+                        id, channel, param, *value,
+                    )));
+                }
+            }
+            if commands.is_empty() {
+                return Err(ApiError::invalid("Choose mixer gain or balance"));
+            }
+            session.apply(Box::new(CompositeCommand::new(
+                CommandLabel::MixerGain,
+                commands,
+            )));
+        }
         Operation::SetTransition {
             clip_id,
             slot,

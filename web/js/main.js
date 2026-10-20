@@ -6,6 +6,7 @@ import { createViewer } from "./viewer.js";
 import { createSourcePlayer, sourceAssetURL, sourceSelection } from "./source.js";
 import { createProgramPlayer } from "./program.js";
 import { detailIdentity, renderProperties, renderMarkers } from "./inspector.js";
+import { renderMixer } from "./mixer.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -71,14 +72,18 @@ function showWorkspace(name) {
   area.hidden = name === "Edit";
   const note = document.createElement("p");
   note.className = "muted";
-  note.textContent = `${name} tools · Native features awaiting web integration`;
+  note.textContent = `${name} tools · Unavailable integrations are disabled`;
   area.append(note);
   const tools = document.createElement("div");
   tools.className = "tools";
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = true;
+    button.disabled = name !== "Audio" || label !== "Track / Master mixer";
+    if (!button.disabled) button.addEventListener("click",()=>{
+      if (!mixerDetail) return notice("Open a native timeline first");
+      editor.classList.remove("inspector-collapsed");mixerDetail.open=true;mixerDetail.scrollIntoView({block:"start"});
+    });
     button.title = "Not implemented in the web host";
     tools.append(button);
   }
@@ -258,11 +263,14 @@ $("play").addEventListener("click", () => {
   else sourcePlayer.toggle().catch((error) => notice(error.message));
 });
 let inspectorSequence = 0;
+let mixerDetail = null;
 function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
 }
 function selected() {
   const inspectorSeq = ++inspectorSequence;
+  const mixerOpen = mixerDetail?.open || false;
+  mixerDetail=null;
   const clip = timeline?.tracks
     .flatMap((track) => track.clips)
     .find((item) => view.selection.includes(item.id));
@@ -366,6 +374,7 @@ function selected() {
     const slip = document.createElement("button"); slip.textContent = "Apply linked slip"; slip.disabled = !view.selection.length;
     form.append(label,slip); form.addEventListener("submit",(event)=>{event.preventDefault();commit({kind:"slip",clip_ids:view.selection,delta_frames:Number(delta.value)}).catch((error)=>notice(error.message));}); fieldset.append(form); $("inspector-content").append(fieldset);
     renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,seek:(frame)=>{view.playhead=frame;updateTime();seek();selected();}});
+    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen});
   }
 }
 const canvasTimeline = createTimeline({

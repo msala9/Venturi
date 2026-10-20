@@ -398,3 +398,18 @@ JavaScript tests, formatting, clippy and build pass. New coverage checks
 rational timeline creation, invalid geometry, native compound FPS conforming,
 self/indirect cycle refusal, undo and malformed project graphs. Rendered
 compound acceptance on R9700 remains pending the shared hardware slot.
+
+## M5 independent increment — native mixer gain and balance
+
+Audio workspace opens a native mixer Inspector section for every audio track
+and master. Gain/balance edits validate native ranges and track locks before
+one composite command; no browser audio processing was added. Timeline mix
+settings do not alter the independent original Source proxy. Level meters,
+insert effects, EQ/compressor views and voiceover are still outstanding.
+
+Browser: A1 -6dB / balance -0.25 applied, undo returned gain to 0, redo restored
+it, and Save succeeded. Evidence: evidence/m5-native-mixer-browser.png.
+All 30 web Rust tests, 18 JavaScript tests, formatting, clippy and build pass.
+Native regression checks full-patch validation, one undo step, invalid balance,
+locked-track refusal, master parameters and video-track refusal. Hardware
+Program playback with changed mix remains pending; M5 is not accepted.

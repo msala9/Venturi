@@ -1,4 +1,5 @@
 import {renderFilters} from "./visual.js";
+import {renderMasks} from "./masks.js";
 
 export function detailIdentity(state) {
   return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame].join(":") : null;
@@ -70,6 +71,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   root.append(section);
   renderRetime(root,detail,disabled,getFrame,report,visualState);
   const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
+  if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState});
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report);
   return controls;

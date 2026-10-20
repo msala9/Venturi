@@ -1,0 +1,70 @@
+{
+  "retime": {
+    "native": {
+      "compose_fps": 12.753299119065863,
+      "compositor": "llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan)",
+      "decode_fps": 1338.792632177881,
+      "elapsed_seconds": 1.969006002,
+      "encode_fps": 141.01306133480614,
+      "encoder": "Some(X264)",
+      "frames": 12
+    },
+    "streams": [
+      {
+        "codec_type": "video",
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "nb_read_frames": "12",
+        "duration": "0.500000",
+        "sample_rate": null,
+        "channels": null
+      },
+      {
+        "codec_type": "audio",
+        "codec_name": "aac",
+        "width": null,
+        "height": null,
+        "nb_read_frames": "24",
+        "duration": "0.512000",
+        "sample_rate": "48000",
+        "channels": 2
+      }
+    ],
+    "scope": "Software llvmpipe/WSL native export, not R9700 or physical speaker validation"
+  },
+  "masks": {
+    "native": {
+      "compose_fps": 7.7080894817668115,
+      "compositor": "llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan)",
+      "decode_fps": 984.009840098401,
+      "elapsed_seconds": 2.637951009,
+      "encode_fps": 113.08059819636445,
+      "encoder": "Some(X264)",
+      "frames": 12
+    },
+    "streams": [
+      {
+        "codec_type": "video",
+        "codec_name": "h264",
+        "width": 1920,
+        "height": 1080,
+        "nb_read_frames": "12",
+        "duration": "0.500000",
+        "sample_rate": null,
+        "channels": null
+      },
+      {
+        "codec_type": "audio",
+        "codec_name": "aac",
+        "width": null,
+        "height": null,
+        "nb_read_frames": "24",
+        "duration": "0.512000",
+        "sample_rate": "48000",
+        "channels": 2
+      }
+    ],
+    "scope": "Software llvmpipe/WSL native export, not R9700 or physical speaker validation"
+  }
+}

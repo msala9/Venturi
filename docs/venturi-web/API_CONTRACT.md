@@ -244,3 +244,12 @@ arbitrary output formats and timelines longer than five minutes remain open.
   freeze with null, using SetClipFreeze and the same linked/lock validation.
 - `set_display_color {clip_ids,color}` changes native ClipColor labels (null
   restores the default). This label is distinct from rendered solid RGBA.
+- `edit_mask {clip_id,edit}` accepts add(shape), remove(index),
+  move(index,to_index) or set(index,patch). Patch fields enabled/invert/mode,
+  parameters `[{param,value}]` and native path `{points:[{point,in_handle,
+  out_handle}]}` validate before one native set_clip_masks command. Defaults
+  retain existing animation. New shapes fit the source's layer at zoom 1,
+  matching desktop mask coordinates. Eight masks maximum; 3–21 Bezier vertices
+  per path with a conservative shared 256-point tessellation budget, including
+  animated endpoints. Keyframe target `{kind:mask,index,param}` reuses native
+  source-frame mapping, interpolation, insertion and removal.

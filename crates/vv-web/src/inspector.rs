@@ -68,6 +68,10 @@ pub enum Target {
         filter: core::FilterKind,
         axis: usize,
     },
+    Mask {
+        index: usize,
+        param: core::MaskParam,
+    },
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -409,6 +413,22 @@ fn keyframe_command(
     let video = session.project.timelines[id].tracks[track].kind == core::TrackKind::Video;
     let value = edit.value.unwrap_or_default();
     let native = match edit.target {
+        Target::Mask { index, param } if video => {
+            let mask = clip
+                .effects
+                .masks
+                .get(index)
+                .ok_or_else(ApiError::missing)?;
+            if !param.applies_to(mask.shape) {
+                return Err(ApiError::invalid(
+                    "The scalar mask parameter does not apply to this shape",
+                ));
+            }
+            if edit.value.is_some() {
+                bounded(value, crate::masks::limits(param))?;
+            }
+            core::KeyframeValue::Mask(index, param, value)
+        }
         Target::Transform { param } if video => {
             if edit.value.is_some() {
                 bounded(value, limits(param, size(session, id, clip)))?;
@@ -559,6 +579,7 @@ pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64)
     let mut result = json!({"clip_id":raw,"source_frame":frame,"timeline_frame":timeline_frame,"locked":session.project.timelines[id].tracks[track].locked,"video":session.project.timelines[id].tracks[track].kind == core::TrackKind::Video,"transform":parameters,"flip":clip.effects.transform.flip,"blend":clip.effects.blend_mode,"blends":core::BlendMode::ALL,"matte":clip.effects.matte.map(|m|format!("{m:?}")).unwrap_or_else(||"None".into()),"mattes":["None","Alpha","AlphaInverted","Luma","LumaInverted"],"gain":{"default":clip.effects.gain_db.default,"value":clip.effects.gain_db.value_at(frame),"keyframes":clip.effects.gain_db.keyframes()},"color":clip.effects.color.as_ref().map(|c|c.default),"fade_in":clip.fade_in,"fade_out":clip.fade_out,"length_frames":clip.timeline_len});
     result["transitions"] = json!({"in":clip.effects.transition_in,"out":clip.effects.transition_out,"cut_after":lane.crossing_from(clip.id).map(|c|&c.transition),"cut_max_frames":right.map(|r|2*r.timeline_len.min(clip.timeline_len))});
     result["title"] = json!(clip.effects.title);
+    result["masks"] = crate::masks::detail(clip, frame);
     result["display_color"] = json!(clip.display_color);
     result["display_colors"] = json!(core::ClipColor::ALL);
     if matches!(clip.source, core::ClipSource::Media(_)) {

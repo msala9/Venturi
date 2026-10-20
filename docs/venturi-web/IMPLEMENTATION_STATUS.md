@@ -589,3 +589,36 @@ freeze/labels and exact restoration. Pointer speed handles and hardware
 render/audio acceptance remain open. The Export drawer is now scrollable and
 fits narrow viewports. D41 announced its next shared GPU slot with hard bound
 15:16 UTC; Venturi remains CPU-only until an effective release/free-lock check.
+
+## M4 independent increment — native mask stack and Bezier values
+
+Inspector now adds/removes/reorders native Rectangle/Ellipse/Path masks, with
+enabled/invert, Add/Subtract/Intersect and all applicable native scalar
+parameters. Existing animation survives default changes; scalar mask keys use
+the same source-frame bridge as other parameters. A numeric vertex/handle
+editor applies one complete closed path after local editing. Panel construction
+is lazy and open state survives confirmed edits. New mask extents match the
+desktop's fitted layer coordinates. Viewer pointer overlays and path-keyframe
+editing remain open; this is not full mask UX parity.
+
+The actual renderer has eight-mask and 256-polygon-point limits. The adapter
+refuses excess masks and reserves up to 12 subdivisions per Bezier vertex,
+including animated path endpoints, before mutation. Paths are bounded to 3–21
+vertices and finite pixel coordinates; parameter applicability, duplicate
+fields and track locks validate before one native undo step.
+
+Windows proof: Rectangle with Feather 12 key at source frame 7, then a Path
+combined with Subtract and vertex 1 outgoing handle X=80. Save As created
+Masks_UI_check. Evidence: m4-native-masks-state.json/browser.png. Both this
+project and the speed/freeze fixture exported natively on WSL llvmpipe with
+all 12 video frames at 1920x1080, duration 0.500s, plus stereo AAC. These are
+CPU/native proofs, not R9700 mask or physical audio acceptance. Evidence:
+m4-retime-masks-cpu-export.json.
+
+41 web Rust tests and 22 JS tests pass, formatting/clippy/build pass. Added
+checks cover full-patch atomicity, animation preservation, native source keys,
+undo, locked tracks, path/stack budgets and reordering. A short free-lock
+window after D41's 15:07:20 UTC release allowed GPU startup, but another agent
+acquired the lock before the Export job: it safely failed GPU_BUSY at 0/24
+frames (m3-export-gpu-busy-browser.png). Only Venturi was restarted CPU-only;
+the successful R9700 Export drawer/download check still remains open.

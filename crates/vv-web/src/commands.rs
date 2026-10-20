@@ -127,6 +127,10 @@ pub enum Operation {
         clip_id: String,
         edit: crate::visual::FilterEdit,
     },
+    EditMask {
+        clip_id: String,
+        edit: crate::masks::MaskEdit,
+    },
     SetAudioEffects {
         channel: String,
         effects: Vec<core::AudioEffect>,
@@ -356,6 +360,7 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             crate::inspector::keyframes(session, id, clip_id, edits)?
         }
         Operation::EditFilter { clip_id, edit } => crate::visual::edit(session, id, clip_id, edit)?,
+        Operation::EditMask { clip_id, edit } => crate::masks::edit(session, id, clip_id, edit)?,
         Operation::SetAudioEffects { channel, effects } => {
             crate::audio::set_effects(session, id, channel, effects)?
         }

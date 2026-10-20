@@ -5,6 +5,7 @@ mod error;
 mod files;
 mod host;
 mod inspector;
+mod masks;
 mod preview;
 mod program;
 mod snapshot;

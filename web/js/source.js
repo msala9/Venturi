@@ -10,7 +10,7 @@ function delay(signal) {
     signal.addEventListener("abort", abort, { once: true });
   });
 }
-export function createSourcePlayer({ video, status, cancel, onReady, api = request }) {
+export function createSourcePlayer({ video, image, status, cancel, onReady, api = request }) {
   let sequence = 0, controller = null, jobPath = null, ready = false;
   const reset = () => {
     sequence++;
@@ -18,6 +18,8 @@ export function createSourcePlayer({ video, status, cancel, onReady, api = reque
     video.pause();
     video.removeAttribute("src");
     video.load();
+    video.hidden = false;
+    if (image) { image.hidden = true; image.removeAttribute("src"); }
     ready = false;
     cancel.disabled = true;
     jobPath = null;
@@ -28,7 +30,7 @@ export function createSourcePlayer({ video, status, cancel, onReady, api = reque
     const seq = sequence;
     controller = new AbortController();
     const signal = controller.signal;
-    status.textContent = `${item.name} · Preparing ${quality} source proxy`;
+    status.textContent = `${item.name} · Preparing ${item.is_image ? "original image" : `${quality} source proxy`}`;
     try {
       let job = await api(`/media/${encodeURIComponent(item.id)}/prepare`, { project_epoch: epoch, quality });
       if (seq !== sequence) return;
@@ -43,10 +45,15 @@ export function createSourcePlayer({ video, status, cancel, onReady, api = reque
         if (seq !== sequence) return;
       }
       if (job.state !== "ready") throw new Error(job.error || `Source ${job.state}`);
-      video.src = sourceAssetURL(item.id, job.id, "source.mp4", epoch);
-      ready = true;
+      const still = ["source.png", "source.jpg"].includes(job.source_asset);
+      if (still) {
+        if (!image) throw new Error("Image viewer unavailable");
+        image.src = sourceAssetURL(item.id, job.id, job.source_asset, epoch);
+        image.alt = item.name; image.hidden = false; video.hidden = true;
+      } else video.src = sourceAssetURL(item.id, job.id, "source.mp4", epoch);
+      ready = !still;
       cancel.disabled = true;
-      status.textContent = `${item.name} · SOURCE PROXY · ${quality} · first audio stream`;
+      status.textContent = still ? `${item.name} · ORIGINAL STILL · embedded color profile and transparency preserved` : `${item.name} · SOURCE PROXY · ${quality} · first audio stream`;
       onReady?.({ item, epoch, job: job.id });
     } catch (error) {
       if (seq === sequence && error.name !== "AbortError") {

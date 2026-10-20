@@ -122,6 +122,10 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   is CPU-only, off the session actor. See RUNNING for explicit duration, cache
   and resource limits. Session capabilities expose source_playback separately
   from Program playback. Native FFmpeg library APIs are used throughout.
+- Imported PNG/JPEG jobs return source_asset `source.png` or `source.jpg` and
+  serve the original image bytes with the matching fixed MIME. Movie/audio
+  jobs return `source.mp4`. Still Source has no media clock. Unsupported still
+  signatures are rejected; source images share the bounded media job/cache.
 
 ## Implemented Program preparation (hardware acceptance pending)
 

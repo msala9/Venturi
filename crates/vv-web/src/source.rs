@@ -8,8 +8,9 @@ use serde_json::{Value, json};
 use std::{
     collections::VecDeque,
     fs::File,
+    io::Write,
     os::unix::{
-        fs::{DirBuilderExt, MetadataExt},
+        fs::{DirBuilderExt, FileExt, MetadataExt},
         io::AsRawFd,
     },
     path::{Path, PathBuf},
@@ -61,6 +62,7 @@ struct Job {
     export: Option<Arc<Mutex<vv_session::export::ExportProgress>>>,
     descriptor: Option<Value>,
     inputs: Inputs,
+    source_asset: Option<&'static str>,
 }
 impl Job {
     fn value(&self) -> Value {
@@ -68,7 +70,7 @@ impl Job {
             .export
             .as_ref()
             .map(|p| program::progress_value(&p.lock().unwrap()));
-        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"progress":progress})
+        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"progress":progress,"source_asset":self.source_asset})
     }
 }
 #[derive(Clone)]
@@ -159,9 +161,9 @@ impl MediaJobs {
         let quality = ProxyQuality::from_id(quality)
             .ok_or_else(|| ApiError::invalid("Choose low, medium or high proxy quality"))?;
         let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
-        if !seconds.is_finite()
-            || seconds <= 0.0
-            || seconds > 600.0
+        if (!spec.meta.is_image() && (!seconds.is_finite() || seconds <= 0.0 || seconds > 600.0))
+            || spec.meta.width == 0 && spec.meta.has_video
+            || spec.meta.height == 0 && spec.meta.has_video
             || spec.meta.width > 8192
             || spec.meta.height > 8192
         {
@@ -169,6 +171,11 @@ impl MediaJobs {
                 "Source preview currently supports regular media up to ten minutes and 8192 pixels per dimension",
             ));
         }
+        let source_asset = if spec.meta.is_image() {
+            image_asset(&spec.file)?
+        } else {
+            "source.mp4"
+        };
         let key = format!(
             "{}:{}:{}:v1:{}",
             spec.epoch,
@@ -209,6 +216,7 @@ impl MediaJobs {
             export: None,
             descriptor: None,
             inputs: vec![],
+            source_asset: Some(source_asset),
         });
         if self
             .send
@@ -259,6 +267,7 @@ impl MediaJobs {
             export: Some(Arc::new(Mutex::new(progress))),
             descriptor: Some(descriptor),
             inputs,
+            source_asset: None,
         });
         if self
             .send
@@ -330,7 +339,15 @@ impl MediaJobs {
         Ok(job.value())
     }
     pub fn asset(&self, id: &str, spec: &SourceSpec, name: &str) -> Result<File> {
-        if !["source.mp4", "thumb.png", "waveform.json"].contains(&name) {
+        if ![
+            "source.mp4",
+            "source.png",
+            "source.jpg",
+            "thumb.png",
+            "waveform.json",
+        ]
+        .contains(&name)
+        {
             return Err(ApiError::missing());
         }
         let mut jobs = self.jobs.lock().unwrap();
@@ -373,6 +390,9 @@ fn generate(
     cancel: &AtomicBool,
     mut progress: impl FnMut(u64),
 ) -> Result<()> {
+    if spec.meta.is_image() {
+        return generate_image(spec, directory, cancel);
+    }
     let identity = spec.identity()?;
     let path = PathBuf::from(format!("/proc/self/fd/{}", spec.file.as_raw_fd()));
     let started = Instant::now();
@@ -444,6 +464,76 @@ fn generate(
         return Err(ApiError::conflict(
             "SOURCE_CHANGED",
             "Source changed or job was canceled",
+        ));
+    }
+    Ok(())
+}
+
+fn image_asset(file: &File) -> Result<&'static str> {
+    let mut signature = [0; 8];
+    let read = file
+        .read_at(&mut signature, 0)
+        .map_err(|_| ApiError::io())?;
+    if read == 8 && signature == *b"\x89PNG\r\n\x1a\n" {
+        Ok("source.png")
+    } else if read >= 3 && signature[..3] == [0xff, 0xd8, 0xff] {
+        Ok("source.jpg")
+    } else {
+        Err(ApiError::invalid(
+            "Source still preview currently supports PNG and JPEG",
+        ))
+    }
+}
+fn generate_image(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> Result<()> {
+    let before = spec.identity()?;
+    if spec.file.metadata().map_err(|_| ApiError::io())?.len() > MAX_JOB_BYTES {
+        return Err(ApiError::invalid("Image exceeds the 512 MiB source budget"));
+    }
+    let path = directory.join(image_asset(&spec.file)?);
+    let mut output = File::create(&path).map_err(|_| ApiError::io())?;
+    let mut offset = 0;
+    let mut buffer = [0; 64 * 1024];
+    loop {
+        if cancel.load(Ordering::Relaxed) || offset > MAX_JOB_BYTES {
+            return Err(ApiError::invalid(
+                "Image preparation canceled or exceeded its budget",
+            ));
+        }
+        let read = spec
+            .file
+            .read_at(&mut buffer, offset)
+            .map_err(|_| ApiError::io())?;
+        if read == 0 {
+            break;
+        }
+        output
+            .write_all(&buffer[..read])
+            .map_err(|_| ApiError::io())?;
+        offset += read as u64;
+    }
+    drop(output);
+    let actual =
+        vv_media::probe_image(&path).map_err(|_| ApiError::invalid("Image is unreadable"))?;
+    if actual.width != spec.meta.width || actual.height != spec.meta.height {
+        return Err(ApiError::conflict(
+            "SOURCE_CHANGED",
+            "Reimport changed image dimensions",
+        ));
+    }
+    let thumb = vv_media::thumbnail::generate_thumbnail_bounded(&path, 0.0, 256)
+        .map_err(|_| ApiError::invalid("Image thumbnail generation failed"))?;
+    std::fs::write(
+        directory.join("thumb.png"),
+        encode_png(&thumb.rgba, (thumb.width, thumb.height))?,
+    )
+    .map_err(|_| ApiError::io())?;
+    if spec.identity()? != before
+        || cancel.load(Ordering::Relaxed)
+        || directory_bytes(directory) > MAX_JOB_BYTES
+    {
+        return Err(ApiError::conflict(
+            "SOURCE_CHANGED",
+            "Image changed or preparation canceled",
         ));
     }
     Ok(())

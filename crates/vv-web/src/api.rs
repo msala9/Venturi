@@ -200,7 +200,8 @@ async fn source_asset(
     let file = state.source.asset(&job, &spec, &name)?;
     let mime = match name.as_str() {
         "source.mp4" => "video/mp4",
-        "thumb.png" => "image/png",
+        "thumb.png" | "source.png" => "image/png",
+        "source.jpg" => "image/jpeg",
         _ => "application/json",
     };
     crate::source::stream_file(file, mime, &job, &headers).await

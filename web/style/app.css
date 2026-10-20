@@ -443,7 +443,8 @@ label {
   flex-direction: column;
 }
 #source-view[hidden], #program-view[hidden] { display: none; }
-#source-video, #program-video { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+#source-video, #source-image, #program-video { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+#source-video[hidden], #source-image[hidden] { display: none; }
 .source-toolbar { display: flex; gap: 12px; align-items: center; padding: 8px; font-size: 11px; flex-wrap: wrap; }
 .source-toolbar label { display: flex; gap: 6px; align-items: center; }
 #screen[data-viewer-mode="source"] > #preview,

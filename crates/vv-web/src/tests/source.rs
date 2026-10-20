@@ -1,6 +1,59 @@
 use super::*;
 
 #[test]
+fn still_source_preserves_original_png_bytes_and_alpha_without_creating_a_video() {
+    use std::io::Read;
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("transparent.png");
+    let original = encode_png(&[255, 64, 32, 127].repeat(64 * 36), (64, 36)).unwrap();
+    std::fs::write(&path, &original).unwrap();
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "still:1".into(),
+        media_id: "1".into(),
+        meta: vv_media::probe_image(&path).unwrap(),
+    };
+    let job = service
+        .prepare(
+            SourceSpec {
+                file: spec.file.try_clone().unwrap(),
+                epoch: spec.epoch.clone(),
+                media_id: spec.media_id.clone(),
+                meta: spec.meta.clone(),
+            },
+            "high",
+        )
+        .unwrap();
+    assert_eq!(job["source_asset"], "source.png");
+    let id = job["id"].as_str().unwrap();
+    let start = Instant::now();
+    loop {
+        let status = service.status(id, &spec, false).unwrap();
+        if status["state"] == "ready" {
+            break;
+        }
+        assert!(
+            matches!(status["state"].as_str(), Some("queued" | "running")),
+            "{status}"
+        );
+        assert!(start.elapsed() < Duration::from_secs(10));
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let mut delivered = Vec::new();
+    service
+        .asset(id, &spec, "source.png")
+        .unwrap()
+        .read_to_end(&mut delivered)
+        .unwrap();
+    assert_eq!(original, delivered);
+    assert!(service.asset(id, &spec, "thumb.png").is_ok());
+    assert!(service.asset(id, &spec, "source.mp4").is_err());
+    assert!(service.asset(id, &spec, "waveform.json").is_err());
+    std::fs::write(path, b"not an image").unwrap();
+    assert!(image_asset(&spec.file).is_err());
+}
+
+#[test]
 fn native_source_job_deduplicates_and_publishes_video_audio_thumbnail_and_waveform() {
     let source = MediaJobs::start().unwrap();
     let path = source.root.join("input.mp4");
@@ -172,6 +225,7 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         export: None,
         descriptor: None,
         inputs: vec![],
+        source_asset: Some("source.mp4"),
     });
     assert!(source.asset("test", &spec, "source.mp4").is_ok());
     assert!(source.asset("test", &spec, "../source.mp4").is_err());

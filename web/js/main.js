@@ -201,7 +201,11 @@ let seek = () => {};
 let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = null;
 const mediaAssets = new Map();
 function updatePlayAvailability() {
-  $("play").disabled = viewerMode === "program" && (!documentState?.capabilities.playback || !timeline?.tracks.some((t) => t.clips.length));
+  const still = viewerMode === "source" && documentState?.media.find((m) => m.id === selectedMedia)?.is_image;
+  $("play").disabled = still || (viewerMode === "program" && (!documentState?.capabilities.playback || !timeline?.tracks.some((t) => t.clips.length)));
+  $("step-back").disabled = !!still;
+  $("step-forward").disabled = !!still;
+  $("source-quality").disabled = !!still;
   $("play").title = viewerMode === "source" ? "Play source media" : "Play composed timeline · requires an available render GPU";
 }
 function viewerModeSet(mode) {
@@ -771,12 +775,12 @@ programPlayer = createProgramPlayer({
   onError: notice,
 });
 sourcePlayer = createSourcePlayer({
-  video: $("source-video"), status: $("source-status"), cancel: $("source-cancel"),
+  video: $("source-video"), image: $("source-image"), status: $("source-status"), cancel: $("source-cancel"),
   onReady: async ({ item, epoch, job }) => {
     const urls = (name) => sourceAssetURL(item.id, job, name, epoch);
     const [thumb, wave] = await Promise.allSettled([
       fetch(urls("thumb.png")).then((r) => { if (!r.ok) throw new Error("No thumbnail"); return r.blob(); }).then(createImageBitmap),
-      fetch(urls("waveform.json")).then((r) => { if (!r.ok) throw new Error("No waveform"); return r.json(); }),
+      item.has_audio === false ? Promise.resolve(null) : fetch(urls("waveform.json")).then((r) => { if (!r.ok) throw new Error("No waveform"); return r.json(); }),
     ]);
     if (documentState?.project_epoch !== epoch) { if (thumb.status === "fulfilled") thumb.value.close(); return; }
     const thumbnail = thumb.status === "fulfilled" ? thumb.value : null;

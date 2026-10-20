@@ -235,3 +235,16 @@ Re-enable only Venturi's GPU option during a verified free slot. Exact preview
 now drops its compositor after two idle seconds; Program owns its compositor
 only during preparation. Diagnostics report context residency separately from
 hardware capability. Actual device-handle release still needs hardware proof.
+
+## M3b additional Source coverage — PNG/JPEG stills
+
+Source now serves a private bounded copy of an imported PNG/JPEG original,
+without transcoding its color profile or alpha. Signature validation, native
+image probing and source identity checks precede publication; copying observes
+cancellation and the 512 MiB budget. Other still formats remain unavailable in
+Source. Native thumbnails remain preview conversions, not color references.
+Play/step/quality controls are disabled for stills. Browser proof: imported
+320x180 RGBA PNG displayed at natural size with an inactive transport, saved
+project, screenshot evidence/m3b-still-source-browser.png. Original PNG bytes
+including alpha compare exactly in the native job test. All 20 web Rust tests,
+14 JavaScript tests, formatting and clippy passed.

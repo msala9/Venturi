@@ -38,6 +38,6 @@ pub fn session(session: &Session, epoch: &str) -> Value {
       "project_name":session.path().and_then(|p|p.file_name()).map(|p|p.to_string_lossy()),"unsaved":session.has_unsaved_changes(),
       "history":{"position":session.history.position(),"labels":session.history.labels().map(|l|format!("{l:?}")).collect::<Vec<_>>()},
       "timelines":session.project.timelines.keys().map(|id|timeline(session,id)).collect::<Vec<_>>(),
-      "media":session.project.media_pool.iter().map(|(id,m)|json!({"id":id.raw().to_string(),"name":vv_session::file_label(&m.path),"duration_frames":m.meta.duration_frames,"fps":{"num":m.meta.fps.num,"den":m.meta.fps.den},"offline":m.compound.is_none()&&!m.path.exists()})).collect::<Vec<_>>(),
+      "media":session.project.media_pool.iter().map(|(id,m)|json!({"id":id.raw().to_string(),"name":vv_session::file_label(&m.path),"duration_frames":m.meta.duration_frames,"fps":{"num":m.meta.fps.num,"den":m.meta.fps.den},"is_image":m.meta.is_image(),"has_video":m.meta.has_video,"has_audio":m.meta.has_audio,"offline":m.compound.is_none()&&!m.path.exists()})).collect::<Vec<_>>(),
       "capabilities":{"preview":false,"playback":false,"export":false,"editing":true}})
 }

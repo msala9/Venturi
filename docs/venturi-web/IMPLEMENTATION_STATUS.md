@@ -74,3 +74,22 @@ The M2b browser integration commit also carries the bounded exact-frame service
 for the next milestone, with capability disabled unless an explicit AMD Vulkan
 device initializes. Target GPU acceptance is recorded separately after testing;
 code existence does not imply GPU validation.
+
+## M2c — safe command bridge
+
+Implemented native safe move, linked move/trim, split, lift/global ripple delete,
+undo/redo, safe media/generator insertion and track add/mute/solo/lock. Numeric
+trim uses explicit Apply controls; Alt+Left/Right moves the linked selection by
+one frame (Shift adds ten). Each gesture sends one revisioned command, with
+native history grouping. Local ghosts never write to the server. Overlap,
+locked tracks, incomplete linked moves and stale revisions are refused before
+mutation. Markers, clip disable, fades and general property editing remain
+unimplemented; their parity rows stay open.
+
+Verified native roundtrips for paired move, paired trim and global ripple,
+including exactly one undo and unchanged revision/history on refusal. Browser
+verified import/linked insertion, numeric trim 48 to 36 frames and undo, save,
+and occupied-generator refusal without changing the two existing clips.
+Evidence: m2-native-project-1920.jpg and m2-overlap-rejected.jpg. Pointer drag
+commit and 60fps under load still need real-browser performance validation;
+the gesture state machine is covered by Node tests, not a timing claim.

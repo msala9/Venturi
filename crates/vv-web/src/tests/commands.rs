@@ -118,6 +118,60 @@ fn linked_clips_and_locked_tracks_are_validated_before_mutation() {
         }],
     };
     assert!(apply(&mut s, id, &request).is_err());
+    let before = s.timeline_revision(id);
+    let steps = s.history.position();
+    let paired = Operation::SafeMove {
+        moves: vec![
+            Move {
+                clip_id: clips[0].0.to_string(),
+                to_track: "0".into(),
+                to_start_frame: 24,
+            },
+            Move {
+                clip_id: audio.0.to_string(),
+                to_track: "1".into(),
+                to_start_frame: 24,
+            },
+        ],
+    };
+    apply(&mut s, id, &paired).unwrap();
+    assert_eq!(s.history.position(), steps + 1);
+    assert_eq!(
+        s.project.timelines[id].tracks[1].clips[0].timeline_start,
+        24
+    );
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(id), before);
+    apply(
+        &mut s,
+        id,
+        &Operation::Trim {
+            clip_id: clips[0].0.to_string(),
+            edge: Edge::End,
+            frame: 12,
+        },
+    )
+    .unwrap();
+    assert_eq!(s.history.position(), steps + 1);
+    assert_eq!(s.project.timelines[id].tracks[1].clips[0].timeline_len, 12);
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(id), before);
+    apply(
+        &mut s,
+        id,
+        &Operation::Delete {
+            clip_ids: vec![clips[0].0.to_string()],
+            ripple: true,
+        },
+    )
+    .unwrap();
+    assert!(s.project.timelines[id].tracks[1].clips.is_empty());
+    assert_eq!(
+        s.project.timelines[id].tracks[0].clips[0].timeline_start,
+        24
+    );
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(id), before);
     s.project.timelines[id].tracks[1].locked = true;
     assert_eq!(
         apply(

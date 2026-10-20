@@ -226,6 +226,20 @@ is checked again before delivery. The UI rejects obsolete selections/kinds,
 updates only on stopped frames and marks retained scopes stale during scrubbing
 and composed playback. There is no browser-side signal measurement.
 
+## Native presets
+
+- `apply_grade_preset {clip_id,preset}` accepts Native GradePreset names Neutral
+  or BlackAndWhite from the clip filter catalog. It calls GradeTracks::apply_preset
+  in one native filter command. Neutral resets grade tracks/keys; BlackAndWhite
+  resets only global Saturation, preserving other grade animation and filters.
+- `apply_audio_preset {channel,index,preset}` selects a native EQ/compressor
+  preset ID from the session audio catalog. One native SetAudioEffect command
+  changes only that insert's parameters, retaining bypass and chain order.
+  There are seven EQ and seven compressor choices, shared with desktop through
+  vv-core::presets. Wrong-kind/unknown IDs, absent inserts and locked tracks
+  refuse the command without a partial edit. Saved/custom preset libraries are
+  outside this increment.
+
 ## Native Auto Balance
 
 GET `/preview/balance/{clip}` takes the same FrameQuery and returns a native
@@ -243,6 +257,23 @@ combined wheel bounds before one native set_clip_filters command. Constant
 wheel rows change defaults; if any parameter in the wheel is animated, changes
 use native source-frame keys (Linear), matching desktop grading semantics.
 Unchanged analysis creates no command. Undo restores the complete filter stack.
+
+## Saved backup recovery and root ownership
+
+The projects listing adds regular flat-root .vvproj.bak files under backups.
+Project `recover_backup {path_token,name}` requires a clean session, validates
+the backup through the same 8 MiB/NOFOLLOW/native project/media/depth checks as
+Open, and writes a new no-replace .vvproj before installing a fresh epoch.
+Existing source/project/backup files remain intact. Retries return the original
+acknowledgment. Dirty sessions should use Save As before recovery; normal Save
+updates the one previous-save backup. This is saved-version recovery, not
+unsaved edit autosave or a durable render queue.
+
+One vv-web process owns a canonical project root through a nonblocking kernel
+directory lock. Startup refuses a second cooperating host, even through a path
+alias, before media workers or Vulkan initialization. Process exit releases
+the descriptor lock automatically. No lock file is deleted. Other project roots
+remain independent; the hardware reservation remains a separate mechanism.
 
 ## Explicit software compositor
 

@@ -9,6 +9,23 @@ fn root() -> PathBuf {
     ))
 }
 #[test]
+fn a_project_root_has_one_nonblocking_process_owner_and_releases_on_drop() {
+    let root = root();
+    let owner = Files::new(&root).unwrap();
+    let started = std::time::Instant::now();
+    assert!(Files::new(&root).is_err());
+    assert!(Files::new(&root.join(".")).is_err());
+    assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    owner
+        .save(&Project::default(), "preserved.vvproj", true)
+        .unwrap();
+    drop(owner);
+    let reopened = Files::new(&root).unwrap();
+    assert!(reopened.load("preserved.vvproj").is_ok());
+    drop(reopened);
+    std::fs::remove_dir_all(root).unwrap();
+}
+#[test]
 fn atomic_persistence_and_path_boundary() {
     let root = root();
     let files = Files::new(&root).unwrap();
@@ -17,12 +34,25 @@ fn atomic_persistence_and_path_boundary() {
     assert!(files.save(&project, "test.vvproj", true).is_err());
     files.save(&project, "test.vvproj", false).unwrap();
     assert!(root.join("test.vvproj.bak").exists());
+    assert!(files.load_backup("test.vvproj.bak").is_ok());
+    assert_eq!(
+        files.list().unwrap()["backups"].as_array().unwrap().len(),
+        1
+    );
+    assert!(files.load_backup("../test.vvproj.bak").is_err());
+    assert!(files.load_backup("test.vvproj").is_err());
     assert!(files.load("test.vvproj").is_ok());
     assert!(files.load("../test.vvproj").is_err());
     let external = root.with_extension("outside");
     std::fs::write(&external, b"sentinel").unwrap();
     std::os::unix::fs::symlink(&external, root.join("link.vvproj")).unwrap();
     assert!(files.load("link.vvproj").is_err());
+    std::os::unix::fs::symlink(&external, root.join("link.vvproj.bak")).unwrap();
+    assert!(files.load_backup("link.vvproj.bak").is_err());
+    assert_eq!(
+        files.list().unwrap()["backups"].as_array().unwrap().len(),
+        1
+    );
     assert!(files.save(&project, "link.vvproj", false).is_err());
     assert_eq!(std::fs::read(&external).unwrap(), b"sentinel");
     std::fs::remove_file(external).unwrap();

@@ -57,6 +57,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         preview::software_environment()?;
     }
     let listener = tokio::net::TcpListener::bind(listen).await?;
+    let listen = listener.local_addr()?;
+    let host = host::Host::start(&root)?;
     let source = source::MediaJobs::start()?;
     let preview = if software {
         preview::Preview::start_software(&source.software_lock_path())
@@ -68,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     axum::serve(
         listener,
         api::router(api::AppState {
-            host: host::Host::start(&root)?,
+            host,
             source,
             port: listen.port(),
             preview,

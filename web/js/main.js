@@ -34,12 +34,7 @@ const panels = {
     "Filters · Exposure / Blur / Shadow",
   ],
   Library: ["Shared library", "Compound clips", "Import / Export OTIO"],
-  Presets: [
-    "Transform presets",
-    "Color presets",
-    "Equalizer presets",
-    "Compressor presets",
-  ],
+  Presets: ["Choose a color preset for the selected clip, or an audio preset for a mixer insert."],
   History: ["Undo history will appear after connecting to a project."],
 };
 const workspaceTools = {
@@ -129,6 +124,13 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
     $("panel-content").hidden = name === "Media";
     $("panel-content").replaceChildren();
     if (name === "History") { renderHistory(); return; }
+    if (name === "Presets") for (const [label,mode] of [["Open native color presets","Color"],["Open native audio presets","Audio"]]) {
+      const action=document.createElement("button");action.textContent=label;action.addEventListener("click",()=>{
+        showWorkspace(mode);revealInspector();
+        if(mode==="Color") {const section=document.querySelector('[data-visual-path="filters"]');if(!section)return notice("Select a native video clip first");section.open=true;section.scrollIntoView({block:"start"});}
+        else {if(!mixerDetail)return notice("Open a native timeline first");mixerDetail.open=true;mixerDetail.scrollIntoView({block:"start"});}
+      });$("panel-content").append(action);
+    }
     if (name === "Effects") for (const [label,generator] of [["Add title","title"],["Add adjustment clip","adjustment"]]) {
       const action=document.createElement("button");action.textContent=label;
       action.addEventListener("click",()=>addGenerator(generator));$("panel-content").append(action);
@@ -812,6 +814,10 @@ async function projects() {
   try {
     const data = await request("/projects");
     $("project-list").replaceChildren();
+    const backups=$("recover-project").elements.path_token,previousBackup=backups.value;backups.replaceChildren();
+    for(const item of data.backups || [])backups.append(new Option(item.name,item.path_token));
+    if([...backups.options].some((option)=>option.value===previousBackup))backups.value=previousBackup;
+    $("recover-project").querySelector("button").disabled=!data.backups?.length || !writable;
     const otio=$("import-otio").elements.path_token,previousOtio=otio.value;otio.replaceChildren();
     for(const item of data.importable_otio || [])otio.append(new Option(item.name,item.path_token));
     if([...otio.options].some((option)=>option.value===previousOtio))otio.value=previousOtio;
@@ -870,6 +876,12 @@ $("new-project").addEventListener("submit", async (event) => {
 $("save-as-project").addEventListener("submit",async(event)=>{
   event.preventDefault();
   try {await mutate({kind:"save_as",name:new FormData(event.target).get("name")},true);$("projects").close();}
+  catch(error){$("project-error").textContent=error.message;}
+});
+$("recover-project").addEventListener("submit",async(event)=>{
+  event.preventDefault();
+  const data=new FormData(event.target);
+  try {await mutate({kind:"recover_backup",path_token:data.get("path_token"),name:data.get("name")},true);$("projects").close();notice("Previous saved version recovered into a new project");}
   catch(error){$("project-error").textContent=error.message;}
 });
 async function connect() {

@@ -68,6 +68,13 @@ export function renderFilters(root,detail,{disabled,getFrame,commit,notice,openS
       parent.append(form);
     }
     if(filter.kind==="ColorCorrection") {
+      const preset=document.createElement("select");preset.setAttribute("aria-label","Native color preset");preset.disabled=disabled;
+      preset.append(new Option("Choose a preset…",""));
+      for(const name of detail.filters.grade_presets || [])preset.append(new Option(name === "BlackAndWhite" ? "Black and white" : name,name));
+      const applyPreset=document.createElement("button");applyPreset.textContent="Apply native color preset";applyPreset.disabled=true;preset.addEventListener("change",()=>{applyPreset.disabled=disabled || !preset.value;});
+      applyPreset.addEventListener("click",()=>commit({kind:"apply_grade_preset",clip_id:detail.clip_id,preset:preset.value}).catch((error)=>notice(error.message)));
+      const presetNote=document.createElement("p");presetNote.className="muted";presetNote.textContent="Neutral resets grade animation. Black and white resets only global saturation. One Undo restores the grade.";
+      card.append(preset,applyPreset,presetNote);
       const wheels=document.createElement("div");wheels.className="grade-wheels";card.append(wheels);
       for(const wheel of detail.filters.wheels) {
         const block=document.createElement("div"),label=document.createElement("strong");label.textContent=wheel.name;block.append(label);wheels.append(block);

@@ -183,6 +183,27 @@ pub fn wheel_palette() -> Value {
             .collect::<Vec<_>>()
     )
 }
+pub fn apply_preset(session: &mut Session, id: TimelineId, raw: &str, name: &str) -> Result<()> {
+    let (track, clip_id, clip) = inspector::find(session, id, raw)?;
+    inspector::writable(session, id, track)?;
+    if session.project.timelines[id].tracks[track].kind != core::TrackKind::Video {
+        return Err(ApiError::invalid("Color presets require a video clip"));
+    }
+    let preset = core::GradePreset::ALL
+        .into_iter()
+        .find(|p| format!("{p:?}") == name)
+        .ok_or_else(|| ApiError::invalid("Unknown native grade preset"))?;
+    let mut filters = clip.effects.filters.clone();
+    let filter = filters
+        .iter_mut()
+        .find(|f| f.kind == FilterKind::ColorCorrection)
+        .ok_or_else(|| ApiError::invalid("Add ColorCorrection before applying a color preset"))?;
+    filter.grade.apply_preset(preset);
+    session.apply(Box::new(core::set_clip_filters(
+        id, track, clip_id, filters,
+    )));
+    Ok(())
+}
 
 pub fn apply_grade_at_frame(
     session: &mut Session,
@@ -254,7 +275,7 @@ pub fn wheels() -> Value {
     json!(core::GradeWheel::ALL.map(|wheel|json!({"name":format!("{wheel:?}"),"x":wheel.x(),"y":wheel.y(),"luma":wheel.luma(),"saturation":wheel.saturation()})))
 }
 pub fn detail(clip: &core::Clip, frame: i64) -> Value {
-    json!({"kinds":[FilterKind::ColorCorrection,FilterKind::BoxBlur,FilterKind::GaussianBlur,FilterKind::Exposure,FilterKind::DropShadow],"blur_radius_max":core::BLUR_RADIUS_MAX,"shadow_grow_max":core::SHADOW_GROW_MAX,"blur_directions":core::BlurDirection::ALL,
+    json!({"grade_presets":core::GradePreset::ALL.map(|p|format!("{p:?}")),"kinds":[FilterKind::ColorCorrection,FilterKind::BoxBlur,FilterKind::GaussianBlur,FilterKind::Exposure,FilterKind::DropShadow],"blur_radius_max":core::BLUR_RADIUS_MAX,"shadow_grow_max":core::SHADOW_GROW_MAX,"blur_directions":core::BlurDirection::ALL,
     "stack":clip.effects.filters.iter().map(|filter|{
         let value=|track:&core::Keyframed<f32>|json!({"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes()});
         json!({"kind":filter.kind,"enabled":filter.enabled,"radius":value(&filter.radius),"direction":filter.direction.value_at(frame),"amount":value(&filter.amount),"amount_range":amount_range(filter.kind).ok(),"offset":[value(&filter.offset[0]),value(&filter.offset[1])],"grow":value(&filter.grow),"color":filter.color,"grade":core::GradeParam::ALL.map(|param|{let track=filter.grade.track(param);let range=param.range();json!({"param":param,"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes(),"range":[range.start(),range.end()]})})})

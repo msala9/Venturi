@@ -79,6 +79,7 @@ impl Files {
         std::fs::create_dir_all(root)?;
         let root = root.canonicalize()?;
         let dir = File::open(&root)?;
+        dir.try_lock().map_err(|_| std::io::Error::other("Another Venturi Web process owns this project root, or directory locking is unavailable"))?;
         Ok(Self { root, dir })
     }
     fn name(name: &str) -> Result<()> {
@@ -122,6 +123,7 @@ impl Files {
         let mut projects = Vec::new();
         let mut media = Vec::new();
         let mut otio = Vec::new();
+        let mut backups = Vec::new();
         for entry in std::fs::read_dir(&self.root)
             .map_err(|_| ApiError::io())?
             .take(4096)
@@ -136,6 +138,8 @@ impl Files {
             let item = json!({"path_token":name,"name":name});
             if name.ends_with(".vvproj") {
                 projects.push(item);
+            } else if name.ends_with(".vvproj.bak") {
+                backups.push(item);
             } else if name.ends_with(".otio") {
                 otio.push(item);
             } else if [
@@ -147,7 +151,9 @@ impl Files {
                 media.push(item);
             }
         }
-        Ok(json!({"projects":projects,"importable_media":media,"importable_otio":otio}))
+        Ok(
+            json!({"projects":projects,"backups":backups,"importable_media":media,"importable_otio":otio}),
+        )
     }
     pub fn import_otio(&self, name: &str) -> Result<(Project, Vec<String>)> {
         if !name.ends_with(".otio") {
@@ -216,6 +222,15 @@ impl Files {
         if !name.ends_with(".vvproj") {
             return Err(ApiError::invalid("Choose a .vvproj file"));
         }
+        self.load_project_file(name)
+    }
+    pub fn load_backup(&self, name: &str) -> Result<Project> {
+        if !name.ends_with(".vvproj.bak") {
+            return Err(ApiError::invalid("Choose a listed .vvproj.bak backup"));
+        }
+        self.load_project_file(name)
+    }
+    fn load_project_file(&self, name: &str) -> Result<Project> {
         let bytes = self.read(name)?;
         let mut project: Project = ron::de::from_bytes(&bytes)
             .map_err(|_| ApiError::invalid("The project is not valid Venturi RON"))?;

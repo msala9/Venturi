@@ -1,6 +1,80 @@
 use super::*;
 
 #[test]
+fn native_audio_presets_keep_bypass_chain_order_and_one_undo() {
+    let mut s = Session::default();
+    let id = s.create_timeline(Timeline {
+        name: "Preset".into(),
+        fps: core::Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![core::Track::new(core::TrackKind::Audio)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let mut effects = vec![
+        core::AudioEffect::new(core::AudioEffectKind::Equalizer(core::Equalizer::DEFAULT)),
+        core::AudioEffect::new(core::AudioEffectKind::Mono),
+        core::AudioEffect::new(core::AudioEffectKind::MultibandCompressor(
+            core::MultibandCompressor::DEFAULT,
+        )),
+    ];
+    effects[0].enabled = false;
+    s.project.timelines[id].tracks[0].mix.effects = effects.clone();
+    s.project.timelines[id].master.effects = effects.clone();
+    let position = s.history.position();
+    apply_preset(&mut s, id, "0", 0, "mixer.eq_preset_voice").unwrap();
+    let after = &s.project.timelines[id].tracks[0].mix.effects;
+    assert!(!after[0].enabled);
+    assert_eq!(&after[1..], &effects[1..]);
+    assert_eq!(
+        after[0].kind,
+        core::AudioEffectKind::Equalizer(core::presets::equalizer_presets()[1].1.clone())
+    );
+    assert_eq!(s.history.position(), position + 1);
+    s.history.undo(&mut s.project);
+    assert_eq!(s.project.timelines[id].tracks[0].mix.effects, effects);
+    apply_preset(&mut s, id, "master", 2, "mixer.preset_voice").unwrap();
+    assert_eq!(
+        s.project.timelines[id].master.effects[2].kind,
+        core::AudioEffectKind::MultibandCompressor(
+            core::presets::compressor_presets()[2].1.clone()
+        )
+    );
+    s.history.undo(&mut s.project);
+    assert_eq!(s.project.timelines[id].master.effects, effects);
+    for (index, key) in [
+        (0, "unknown"),
+        (0, "mixer.preset_voice"),
+        (1, "mixer.eq_preset_voice"),
+        (99, "mixer.eq_preset_voice"),
+    ] {
+        assert!(apply_preset(&mut s, id, "0", index, key).is_err());
+        assert_eq!(s.project.timelines[id].tracks[0].mix.effects, effects);
+        assert_eq!(s.history.position(), position);
+    }
+    s.project.timelines[id].tracks[0].locked = true;
+    assert_eq!(
+        apply_preset(&mut s, id, "0", 0, "mixer.eq_preset_voice")
+            .unwrap_err()
+            .1,
+        "TRACK_LOCKED"
+    );
+    for (_, eq) in core::presets::equalizer_presets() {
+        validate(&[core::AudioEffect::new(core::AudioEffectKind::Equalizer(eq))]).unwrap();
+    }
+    for (_, compressor) in core::presets::compressor_presets() {
+        validate(&[core::AudioEffect::new(
+            core::AudioEffectKind::MultibandCompressor(compressor),
+        )])
+        .unwrap();
+    }
+    assert_eq!(
+        catalog()["presets"]["Equalizer"].as_array().unwrap().len(),
+        7
+    );
+}
+
+#[test]
 fn every_native_audio_default_is_valid_and_nonfinite_or_unordered_values_are_refused() {
     let effects: Vec<_> = core::AudioEffectKind::ALL
         .into_iter()

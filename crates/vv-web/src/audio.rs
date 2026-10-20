@@ -141,7 +141,48 @@ pub fn catalog() -> Value {
         };
         defaults.insert(key.into(), json!(core::AudioEffect::new(kind)));
     }
-    json!({"defaults":defaults,"eq":{"freq_hz":core::EqBand::FREQ_RANGE_HZ,"gain_db":core::EqBand::GAIN_RANGE_DB,"q":core::EqBand::Q_RANGE,"shapes":core::EqShape::ALL},"compressor":{"crossovers_hz":core::MultibandCompressor::CROSSOVER_RANGE_HZ,"threshold_db":core::CompressorBand::THRESHOLD_RANGE_DB,"ratio":core::CompressorBand::RATIO_RANGE,"attack_ms":core::CompressorBand::ATTACK_RANGE_MS,"release_ms":core::CompressorBand::RELEASE_RANGE_MS,"makeup_db":core::CompressorBand::MAKEUP_RANGE_DB},"normalization":core::NormalizeMode::ALL.map(|mode|{let range=mode.target_range();json!({"mode":mode,"range":[range.start(),range.end()],"default":mode.default_target()})})})
+    json!({"presets":{"Equalizer":core::presets::equalizer_presets().map(|(key,_)|key),"MultibandCompressor":core::presets::compressor_presets().map(|(key,_)|key)},"defaults":defaults,"eq":{"freq_hz":core::EqBand::FREQ_RANGE_HZ,"gain_db":core::EqBand::GAIN_RANGE_DB,"q":core::EqBand::Q_RANGE,"shapes":core::EqShape::ALL},"compressor":{"crossovers_hz":core::MultibandCompressor::CROSSOVER_RANGE_HZ,"threshold_db":core::CompressorBand::THRESHOLD_RANGE_DB,"ratio":core::CompressorBand::RATIO_RANGE,"attack_ms":core::CompressorBand::ATTACK_RANGE_MS,"release_ms":core::CompressorBand::RELEASE_RANGE_MS,"makeup_db":core::CompressorBand::MAKEUP_RANGE_DB},"normalization":core::NormalizeMode::ALL.map(|mode|{let range=mode.target_range();json!({"mode":mode,"range":[range.start(),range.end()],"default":mode.default_target()})})})
+}
+
+pub fn apply_preset(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    index: usize,
+    name: &str,
+) -> Result<()> {
+    let timeline = &session.project.timelines[id];
+    let channel = channel(timeline, raw)?;
+    let strip = match channel {
+        core::MixerChannel::Master => &timeline.master,
+        core::MixerChannel::Track(track) => &timeline.tracks[track].mix,
+    };
+    let mut effect = strip
+        .effects
+        .get(index)
+        .ok_or_else(ApiError::missing)?
+        .clone();
+    effect.kind = match effect.kind {
+        core::AudioEffectKind::Equalizer(_) => core::presets::equalizer_presets()
+            .into_iter()
+            .find(|(key, _)| *key == name)
+            .map(|(_, p)| core::AudioEffectKind::Equalizer(p)),
+        core::AudioEffectKind::MultibandCompressor(_) => core::presets::compressor_presets()
+            .into_iter()
+            .find(|(key, _)| *key == name)
+            .map(|(_, p)| core::AudioEffectKind::MultibandCompressor(p)),
+        _ => None,
+    }
+    .ok_or_else(|| ApiError::invalid("Choose a native preset for this insert kind"))?;
+    validate(std::slice::from_ref(&effect))?;
+    session.apply(Box::new(core::SetAudioEffect::new(
+        id,
+        channel,
+        index,
+        effect,
+        core::CommandLabel::EditAudioEffect,
+    )));
+    Ok(())
 }
 
 #[cfg(test)]

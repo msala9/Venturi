@@ -1,0 +1,13 @@
+{
+  "original_sha256": "e2917befd6dfbfce5dd75adf186038930fc70a2a2fb6327f85c8f82047e38818",
+  "existing_name_refused": "A project with that name already exists",
+  "backup_sha256": "a99622322b4e659aff3c9fe83bf01772532c294d5ff47530ab161456293dc644",
+  "before_muted": true,
+  "before_epoch": "1792515539170245442:1",
+  "recovered_project": "Recovery_recovered_UI_check.vvproj",
+  "after_epoch": "1792515539170245442:2",
+  "after_muted": false,
+  "saved": true,
+  "original_unchanged": true,
+  "backup_unchanged": true
+}

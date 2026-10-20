@@ -21,6 +21,66 @@ fn fixture() -> (Session, TimelineId, String) {
     (s, id, clip.0.to_string())
 }
 #[test]
+fn native_grade_presets_preserve_unrelated_animation_and_undo_exactly() {
+    let (mut s, id, raw) = fixture();
+    edit(
+        &mut s,
+        id,
+        &raw,
+        &FilterEdit::Add {
+            filter: FilterKind::ColorCorrection,
+        },
+    )
+    .unwrap();
+    let filters = &mut s.project.timelines[id].tracks[0].clips[0].effects.filters;
+    filters[0]
+        .grade
+        .track_mut(core::GradeParam::ShadowsX)
+        .upsert(12, 0.2, core::Interpolation::Hold);
+    filters[0]
+        .grade
+        .track_mut(core::GradeParam::Saturation)
+        .upsert(12, 1.3, core::Interpolation::Linear);
+    filters.push(core::ClipFilter::new(FilterKind::Exposure));
+    let before = filters.clone();
+    let position = s.history.position();
+    apply_preset(&mut s, id, &raw, "BlackAndWhite").unwrap();
+    assert_eq!(s.history.position(), position + 1);
+    let current = &s.project.timelines[id].tracks[0].clips[0].effects.filters;
+    assert_eq!(
+        current[0].grade.track(core::GradeParam::ShadowsX),
+        before[0].grade.track(core::GradeParam::ShadowsX)
+    );
+    assert_eq!(
+        current[0].grade.track(core::GradeParam::Saturation),
+        &core::Keyframed::constant(0.0)
+    );
+    assert_eq!(current[1], before[1]);
+    let black_white = current.clone();
+    apply_preset(&mut s, id, &raw, "Neutral").unwrap();
+    assert_eq!(
+        s.project.timelines[id].tracks[0].clips[0].effects.filters[0].grade,
+        core::GradeTracks::default()
+    );
+    s.history.undo(&mut s.project);
+    assert_eq!(
+        s.project.timelines[id].tracks[0].clips[0].effects.filters,
+        black_white
+    );
+    s.history.undo(&mut s.project);
+    assert_eq!(
+        s.project.timelines[id].tracks[0].clips[0].effects.filters,
+        before
+    );
+    assert!(apply_preset(&mut s, id, &raw, "Unknown").is_err());
+    assert_eq!(s.history.position(), position);
+    s.project.timelines[id].tracks[0].locked = true;
+    assert_eq!(
+        apply_preset(&mut s, id, &raw, "Neutral").unwrap_err().1,
+        "TRACK_LOCKED"
+    );
+}
+#[test]
 fn automatic_grade_values_use_native_source_keys_and_one_atomic_undo() {
     let (mut session, id, raw) = fixture();
     edit(

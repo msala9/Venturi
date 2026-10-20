@@ -54,6 +54,14 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
         }
         check(`${track.label} insert ${index+1} enabled`,draft,"enabled");
         const kind=effectName(effect),data=typeof draft.kind === "string" ? null : draft.kind[kind];
+        if(catalog.presets?.[kind]) {
+          const presets=document.createElement("select");presets.setAttribute("aria-label",`${track.label} ${kind} preset`);presets.disabled=disabled;
+          presets.append(new Option("Choose a preset…",""));
+          for(const name of catalog.presets[kind])presets.append(new Option(name.split("preset_")[1].replaceAll("_"," "),name));
+          const apply=document.createElement("button");apply.type="button";apply.textContent=`Apply ${track.label} ${kind} preset`;apply.disabled=true;presets.addEventListener("change",()=>{apply.disabled=disabled || !presets.value;});
+          apply.addEventListener("click",()=>commit({kind:"apply_audio_preset",channel:track.channel,index,preset:presets.value}).catch((error)=>notice(error.message)));
+          form.append(presets,apply);
+        }
         if(kind === "Equalizer") {
           const graph=document.createElement("div");graph.textContent="Reading committed native EQ response…";form.append(graph);
           request(`/timelines/${encodeURIComponent(timeline)}/audio/${encodeURIComponent(track.channel)}/eq/${index}?${query}`).then((response)=>{if(card.isConnected)drawEq(graph,response);}).catch((error)=>{if(card.isConnected)graph.textContent=error.message;});

@@ -816,3 +816,58 @@ source-frame mapping, single undo, atomic invalid/locked refusal and obsolete
 analysis rejection. The native isolated render test now also checks opaque
 Auto Balance pixels. Formatting, web/session clippy, native desktop check and
 web build pass. Curves, presets, live scopes and remaining M5/M6/M7 work are open.
+
+## M5 independent increment — shared native built-in presets
+
+The desktop EQ/compressor preset factories now live in vv-core::presets;
+desktop panels delegate to them. Their function bodies are identical to the
+previous native definitions (recorded SHA-256 evidence), with no numeric change.
+The web catalog exposes seven EQ and seven compressor IDs. One SetAudioEffect
+command changes a selected insert while retaining bypass and chain order.
+Color presets call native GradeTracks::apply_preset: Neutral resets the grade,
+BlackAndWhite resets only global Saturation, retaining other grade animation.
+The UI explains those keyframe semantics and requires an explicit preset choice.
+Presets browser buttons reveal the actual clip/mixer controls.
+
+Windows: BlackAndWhite, EQ Voice and Compressor Broadcast applied as exactly
+three native history entries, saved to Presets_UI_check. Native software export
+produced twelve 1920x1080 H.264 frames (0.500s) plus stereo AAC (0.512s) in 2.194s.
+Every decoded frame had U/V exactly 128; decoded audio was finite and non-silent.
+Evidence: m5-native-presets*, m5-native-preset-extraction.json. This verifies
+native command/render behavior, not hardware performance or listening quality.
+Saved/custom/shared libraries and transform presets remain open.
+
+The two original desktop preset validation tests and the original compressor
+mix-signal behavior test pass. Native desktop check also passes. Web tests cover
+preset key preservation, exact undo, bypass/order, native parameter bounds,
+wrong-kind/unknown/index errors and locked-track refusal.
+
+## M7 independent increment — saved backup recovery and process ownership
+
+Projects lists regular .vvproj.bak files and recovers them into a new no-replace
+project. Native parsing/media/depth checks, NOFOLLOW reads and the 8 MiB budget
+apply before any session switch. Dirty sessions are refused; Save As preserves
+their current edits without updating the backup being recovered. Success installs
+a fresh epoch and retrying the same command returns its original acknowledgment.
+
+Windows: the recovery fixture's current version had V1 muted; its previous-save
+backup had V1 enabled. Recovering to an existing name was refused. Recovery to
+Recovery_recovered_UI_check restored V1 enabled and a saved fresh epoch. SHA-256
+of both the original file and backup stayed identical. Evidence:
+m7-recovered-backup.json/browser.png. A host regression additionally recovers
+after deliberate current-file corruption without replacing that damaged file.
+
+Each vv-web host now takes a nonblocking descriptor lock on the canonical
+project directory before media/Vulkan startup. An alias cannot start another
+cooperating writer. Kernel close/exit releases ownership without deleting lock
+files. A separate CLI process exited 1 before renderer initialization while the
+original server stayed healthy: m7-project-root-owner.json. The saved legacy
+8795 test process was stopped before final runtime verification. This lock does
+not coordinate arbitrary external filesystem writers or the desktop editor.
+
+59 web Rust tests and 25 JavaScript tests pass, with formatting, core/web clippy,
+build and the three focused original desktop preset tests. Root ownership/drop,
+backup symlinks/path bounds, dirty/existing-name refusal, retry-safe epochs and
+unchanged source files are covered. Long soak, unsaved-edit autosave, durable
+render queues, full external-edit conflict detection, voiceover/curves/libraries
+and AI Review remain open; M4–M7 are not declared complete.

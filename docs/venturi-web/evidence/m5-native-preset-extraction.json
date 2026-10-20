@@ -1,0 +1,14 @@
+[
+  {
+    "original": "eq_panel.rs",
+    "shared": "equalizer_presets",
+    "body_sha256": "83f97cb1b09466057264969d84c3e455bbb0556cc2afe71b6eea549abd8c9eda",
+    "identical_to_previous_native_body": true
+  },
+  {
+    "original": "compressor_panel.rs",
+    "shared": "compressor_presets",
+    "body_sha256": "59e8f628c4f1b61c3f3b44915e34068bd04a5ca97338417b26b874fdbc59abb1",
+    "identical_to_previous_native_body": true
+  }
+]

@@ -1,0 +1,373 @@
+{
+  "project": "Presets_UI_check.vvproj",
+  "history": {
+    "labels": [
+      "Filters",
+      "EditAudioEffect",
+      "EditAudioEffect"
+    ],
+    "position": 3
+  },
+  "mode": "native CPU/browser command proof",
+  "master": {
+    "effects": [],
+    "gain_db": 0.0,
+    "pan": 0.0
+  },
+  "grade": [
+    {
+      "default": 0.009999999776482582,
+      "keyframes": [
+        [
+          7,
+          0.019999999552965164,
+          "Linear"
+        ]
+      ],
+      "param": "ShadowsX",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.019999999552965164
+    },
+    {
+      "default": 0.0,
+      "keyframes": [
+        [
+          7,
+          0.0,
+          "Linear"
+        ]
+      ],
+      "param": "ShadowsY",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "ShadowsLuma",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 1.0,
+      "keyframes": [],
+      "param": "ShadowsSat",
+      "range": [
+        0.0,
+        2.0
+      ],
+      "value": 1.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "MidtonesX",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "MidtonesY",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [
+        [
+          7,
+          0.10000000149011612,
+          "Linear"
+        ]
+      ],
+      "param": "MidtonesLuma",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.10000000149011612
+    },
+    {
+      "default": 1.0,
+      "keyframes": [],
+      "param": "MidtonesSat",
+      "range": [
+        0.0,
+        2.0
+      ],
+      "value": 1.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "HighlightsX",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "HighlightsY",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "HighlightsLuma",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 1.0,
+      "keyframes": [],
+      "param": "HighlightsSat",
+      "range": [
+        0.0,
+        2.0
+      ],
+      "value": 1.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "OffsetX",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "OffsetY",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "OffsetLuma",
+      "range": [
+        -1.0,
+        1.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 0.0,
+      "keyframes": [],
+      "param": "Saturation",
+      "range": [
+        0.0,
+        2.0
+      ],
+      "value": 0.0
+    },
+    {
+      "default": 0.3333333432674408,
+      "keyframes": [],
+      "param": "LowRange",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "value": 0.3333333432674408
+    },
+    {
+      "default": 0.6666666865348816,
+      "keyframes": [],
+      "param": "HighRange",
+      "range": [
+        0.0,
+        1.0
+      ],
+      "value": 0.6666666865348816
+    }
+  ],
+  "native_presets": {
+    "Equalizer": [
+      "mixer.eq_preset_flat",
+      "mixer.eq_preset_voice",
+      "mixer.eq_preset_warm",
+      "mixer.eq_preset_bright",
+      "mixer.eq_preset_mud",
+      "mixer.eq_preset_rumble",
+      "mixer.eq_preset_telephone"
+    ],
+    "MultibandCompressor": [
+      "mixer.preset_default",
+      "mixer.preset_glue",
+      "mixer.preset_voice",
+      "mixer.preset_deesser",
+      "mixer.preset_low_end",
+      "mixer.preset_broadcast",
+      "mixer.preset_master"
+    ]
+  },
+  "audio": {
+    "clips": [
+      {
+        "disabled": false,
+        "display_color": null,
+        "display_rgb": null,
+        "fade_in": 0,
+        "fade_out": 0,
+        "freeze_source_frame": null,
+        "id": "0",
+        "kind": "media",
+        "length_frames": 12,
+        "linked_group": "0",
+        "media_id": "2",
+        "name": "venturi-smoke.mp4",
+        "source_in_frames": 7,
+        "source_out_frames": 19,
+        "speed_percent": 100.0,
+        "start_frame": 0,
+        "transition_in": null,
+        "transition_out": null
+      }
+    ],
+    "crossings": [],
+    "id": "1",
+    "kind": "audio",
+    "label": "A1",
+    "locked": false,
+    "mix": {
+      "effects": [
+        {
+          "enabled": true,
+          "kind": {
+            "Equalizer": {
+              "bands": [
+                {
+                  "enabled": true,
+                  "freq_hz": 80.0,
+                  "gain_db": 0.0,
+                  "q": 0.7071067690849304,
+                  "shape": "HighPass"
+                },
+                {
+                  "enabled": true,
+                  "freq_hz": 150.0,
+                  "gain_db": -2.0,
+                  "q": 0.7071067690849304,
+                  "shape": "LowShelf"
+                },
+                {
+                  "enabled": true,
+                  "freq_hz": 300.0,
+                  "gain_db": -3.0,
+                  "q": 1.0,
+                  "shape": "Peak"
+                },
+                {
+                  "enabled": true,
+                  "freq_hz": 3000.0,
+                  "gain_db": 3.0,
+                  "q": 1.0,
+                  "shape": "Peak"
+                },
+                {
+                  "enabled": true,
+                  "freq_hz": 10000.0,
+                  "gain_db": 2.0,
+                  "q": 0.7071067690849304,
+                  "shape": "HighShelf"
+                },
+                {
+                  "enabled": false,
+                  "freq_hz": 18000.0,
+                  "gain_db": 0.0,
+                  "q": 0.7071067690849304,
+                  "shape": "LowPass"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "enabled": true,
+          "kind": {
+            "MultibandCompressor": {
+              "bands": [
+                {
+                  "attack_ms": 5.0,
+                  "makeup_db": 10.5,
+                  "ratio": 4.0,
+                  "release_ms": 120.0,
+                  "threshold_db": -28.0
+                },
+                {
+                  "attack_ms": 5.0,
+                  "makeup_db": 8.5,
+                  "ratio": 4.0,
+                  "release_ms": 120.0,
+                  "threshold_db": -28.0
+                },
+                {
+                  "attack_ms": 5.0,
+                  "makeup_db": 7.5,
+                  "ratio": 4.0,
+                  "release_ms": 120.0,
+                  "threshold_db": -28.0
+                }
+              ],
+              "crossovers_hz": [
+                200.0,
+                3000.0
+              ]
+            }
+          }
+        },
+        {
+          "enabled": true,
+          "kind": "Mono"
+        },
+        {
+          "enabled": true,
+          "kind": {
+            "Normalize": {
+              "mode": "Loudness",
+              "set_level": "Relative",
+              "target_db": -23.0
+            }
+          }
+        }
+      ],
+      "gain_db": -6.0,
+      "pan": -0.25
+    },
+    "muted": false,
+    "solo": false
+  }
+}

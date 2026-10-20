@@ -31,6 +31,10 @@ pub enum Operation {
     SaveAs {
         name: String,
     },
+    RecoverBackup {
+        path_token: String,
+        name: String,
+    },
     NewTimeline {
         name: String,
         fps: core::Rational,
@@ -116,6 +120,15 @@ pub enum Operation {
         clip_id: String,
         frame: FrameIdx,
         values: Vec<crate::visual::GradeValue>,
+    },
+    ApplyGradePreset {
+        clip_id: String,
+        preset: String,
+    },
+    ApplyAudioPreset {
+        channel: String,
+        index: usize,
+        preset: String,
     },
     Slip {
         clip_ids: Vec<String>,
@@ -463,6 +476,14 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             crate::inspector::keyframes(session, id, clip_id, edits)?
         }
         Operation::EditFilter { clip_id, edit } => crate::visual::edit(session, id, clip_id, edit)?,
+        Operation::ApplyGradePreset { clip_id, preset } => {
+            crate::visual::apply_preset(session, id, clip_id, preset)?
+        }
+        Operation::ApplyAudioPreset {
+            channel,
+            index,
+            preset,
+        } => crate::audio::apply_preset(session, id, channel, *index, preset)?,
         Operation::ApplyGradeAtFrame {
             clip_id,
             frame,

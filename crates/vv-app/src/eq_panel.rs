@@ -32,71 +32,8 @@ const BAND_COLORS: [egui::Color32; BANDS] = [
 /// Q multiplier per notch of the mouse wheel.
 const Q_WHEEL_STEP: f32 = 1.15;
 
-/// Built-in presets: translation key and settings.
 pub(crate) fn builtin_presets() -> [(&'static str, Equalizer); 7] {
-    let band = |shape, freq_hz, gain_db, q| EqBand {
-        enabled: true,
-        shape,
-        freq_hz,
-        gain_db,
-        q,
-    };
-    let preset = |changes: &[(usize, EqBand)]| {
-        let mut eq = Equalizer::DEFAULT;
-        for &(index, band) in changes {
-            eq.bands[index] = band;
-        }
-        eq
-    };
-    let q = EqBand::Q_DEFAULT;
-    [
-        ("mixer.eq_preset_flat", Equalizer::DEFAULT),
-        (
-            "mixer.eq_preset_voice",
-            preset(&[
-                (0, band(EqShape::HighPass, 80.0, 0.0, q)),
-                (1, band(EqShape::LowShelf, 150.0, -2.0, q)),
-                (2, band(EqShape::Peak, 300.0, -3.0, 1.0)),
-                (3, band(EqShape::Peak, 3000.0, 3.0, 1.0)),
-                (4, band(EqShape::HighShelf, 10_000.0, 2.0, q)),
-            ]),
-        ),
-        (
-            "mixer.eq_preset_warm",
-            preset(&[
-                (1, band(EqShape::LowShelf, 200.0, 3.0, q)),
-                (3, band(EqShape::Peak, 3000.0, -1.5, 0.8)),
-                (4, band(EqShape::HighShelf, 8000.0, -2.0, q)),
-            ]),
-        ),
-        (
-            "mixer.eq_preset_bright",
-            preset(&[
-                (0, band(EqShape::HighPass, 40.0, 0.0, q)),
-                (3, band(EqShape::Peak, 4000.0, 1.5, 0.8)),
-                (4, band(EqShape::HighShelf, 10_000.0, 4.0, q)),
-            ]),
-        ),
-        (
-            "mixer.eq_preset_mud",
-            preset(&[
-                (0, band(EqShape::HighPass, 60.0, 0.0, q)),
-                (2, band(EqShape::Peak, 350.0, -5.0, 1.4)),
-            ]),
-        ),
-        (
-            "mixer.eq_preset_rumble",
-            preset(&[(0, band(EqShape::HighPass, 100.0, 0.0, q))]),
-        ),
-        (
-            "mixer.eq_preset_telephone",
-            preset(&[
-                (0, band(EqShape::HighPass, 400.0, 0.0, q)),
-                (3, band(EqShape::Peak, 1500.0, 4.0, 1.0)),
-                (5, band(EqShape::LowPass, 3400.0, 0.0, q)),
-            ]),
-        ),
-    ]
+    vv_core::presets::equalizer_presets()
 }
 
 pub(crate) fn shape_name(shape: EqShape) -> String {

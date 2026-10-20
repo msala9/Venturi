@@ -1,0 +1,6 @@
+{
+  "renderer_initialized": false,
+  "output": "Error: Custom { kind: Other, error: \"Another Venturi Web process owns this project root, or directory locking is unavailable\" }",
+  "existing_server_health": "ok",
+  "exit_code": 1
+}

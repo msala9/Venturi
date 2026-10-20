@@ -226,6 +226,15 @@
         <label class="field">Save copy as <input name="name" required maxlength="64" pattern="[A-Za-z0-9_-]+" placeholder="Project_copy"></label>
         <button>Save As</button>
       </form>
+      <details>
+        <summary>Recover previous save</summary>
+        <p class="muted">Save keeps one previous saved version. Recovery creates a new project; current files and backup stay intact. Use Save As to keep current unsaved edits before recovery.</p>
+        <form id="recover-project">
+          <label class="field">Saved backup <select name="path_token" aria-label="Saved backup" required></select></label>
+          <label class="field">Recovered project name <input name="name" required maxlength="64" pattern="[A-Za-z0-9_-]+" placeholder="Recovered_project"></label>
+          <button>Recover as new project</button>
+        </form>
+      </details>
       <a id="download-otio" hidden download="timeline.otio">Export current timeline as OTIO</a>
       <p id="otio-availability" role="status"></p>
       <p class="muted">OTIO retains Venturi clip effects, mixer settings and markers in native metadata. Text layout in other editors may differ. Export child timelines directly; compound contents are not exported. Place .otio files directly in the server project root to import into a new project.</p>

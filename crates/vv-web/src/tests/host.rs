@@ -16,6 +16,109 @@ fn request(
 }
 
 #[test]
+fn recovering_a_backup_creates_a_retry_safe_copy_and_never_overwrites_the_original() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-recover-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let new = request(
+        &editor,
+        Operation::NewProject {
+            name: "original".into(),
+        },
+        "recover-new",
+        None,
+    );
+    editor.mutation(None, new).unwrap();
+    let timeline = editor.session.project.timelines.keys().next().unwrap();
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "recover-edit",
+        Some(timeline),
+    );
+    editor
+        .mutation(Some(vv_core::Id::raw(timeline).to_string()), add)
+        .unwrap();
+    let dirty = request(
+        &editor,
+        Operation::RecoverBackup {
+            path_token: "original.vvproj.bak".into(),
+            name: "recovered".into(),
+        },
+        "recover-dirty",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, dirty).unwrap_err().1,
+        "UNSAVED_CHANGES"
+    );
+    assert!(!root.join("recovered.vvproj").exists());
+    let save = request(&editor, Operation::Save, "recover-save", None);
+    editor.mutation(None, save).unwrap();
+    let backup = std::fs::read(root.join("original.vvproj.bak")).unwrap();
+    std::fs::write(root.join("original.vvproj"), b"damaged current file").unwrap();
+    let before = serde_json::to_value(&editor.session.project).unwrap();
+    let epoch = editor.session.epoch();
+    let duplicate = request(
+        &editor,
+        Operation::RecoverBackup {
+            path_token: "original.vvproj.bak".into(),
+            name: "original".into(),
+        },
+        "recover-existing",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, duplicate).unwrap_err().1,
+        "FILE_EXISTS"
+    );
+    assert_eq!(editor.session.epoch(), epoch);
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        before
+    );
+    let recover = request(
+        &editor,
+        Operation::RecoverBackup {
+            path_token: "original.vvproj.bak".into(),
+            name: "recovered".into(),
+        },
+        "recover-copy",
+        None,
+    );
+    editor.mutation(None, recover.clone()).unwrap();
+    let recovered_epoch = editor.session.epoch();
+    editor.mutation(None, recover).unwrap();
+    assert_eq!(editor.session.epoch(), recovered_epoch);
+    assert_ne!(epoch, recovered_epoch);
+    assert_eq!(editor.session.project.timelines[timeline].total_frames(), 0);
+    assert!(!editor.session.has_unsaved_changes());
+    assert_eq!(
+        editor.session.path().unwrap().file_name().unwrap(),
+        "recovered.vvproj"
+    );
+    assert_eq!(
+        std::fs::read(root.join("original.vvproj")).unwrap(),
+        b"damaged current file"
+    );
+    assert_eq!(
+        std::fs::read(root.join("original.vvproj.bak")).unwrap(),
+        backup
+    );
+    assert!(editor.files.load("recovered.vvproj").is_ok());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn otio_import_is_a_new_no_replace_project_with_epoch_and_retry_guards() {
     let root = std::env::temp_dir().join(format!(
         "vv-web-otio-host-{}",

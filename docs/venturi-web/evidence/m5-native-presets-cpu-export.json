@@ -1,0 +1,76 @@
+{
+  "streams": [
+    {
+      "codec_name": "h264",
+      "codec_type": "video",
+      "width": 1920,
+      "height": 1080,
+      "duration": "0.500000",
+      "nb_read_frames": "12"
+    },
+    {
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "sample_rate": "48000",
+      "channels": 2,
+      "duration": "0.512000",
+      "nb_read_frames": "24"
+    }
+  ],
+  "video_frames": 12,
+  "chroma_range_each_frame": [
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ],
+    [
+      128,
+      128
+    ]
+  ],
+  "audio_rms": 0.023822169778020718,
+  "audio_peak": 0.07680844515562057,
+  "compositor": "CPU llvmpipe, native Venturi",
+  "elapsed_seconds": 2.194243347,
+  "scope": "Native export of saved browser preset fixture: BlackAndWhite, EQ Voice, Compressor Broadcast; software acceptance only"
+}

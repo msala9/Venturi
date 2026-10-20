@@ -39,7 +39,25 @@ ssh -N -L 8787:127.0.0.1:8787 user@linux-server
 # Browser: http://127.0.0.1:8787
 ```
 
-`--listen` is a **proposed CLI option**, not a current Venturi command. Codex should implement/document the actual option consistently.
+`--listen` is implemented by vv-web and refuses non-loopback addresses. The
+actual development commands and bounds are maintained in RUNNING.md.
+
+## Implemented local ownership and saved recovery
+
+vv-web acquires a nonblocking descriptor lock on the canonical project root
+before creating media workers or initializing Vulkan. A second cooperating
+host is refused immediately; exit/crash releases the kernel lock. This does
+not lock the native desktop editor or arbitrary external filesystem tools.
+
+Regular .vvproj.bak files are listed for explicit recovery. Recovery requires
+a clean session, native project/media/depth validation, an 8 MiB regular-file
+NOFOLLOW read, and a new no-replace destination before changing the session
+epoch. The original file and backup are preserved. Save As can preserve dirty
+current edits first. No unsaved-edit autosave or durable render queue is claimed.
+
+These complement the loopback Host/Origin/JSON/CSP boundaries and bounded
+queues. Long soak, external-edit conflict detection and a complete public-host
+threat review remain open. No background service or public listener is enabled.
 
 ## License and brand
 

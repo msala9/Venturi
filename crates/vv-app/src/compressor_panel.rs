@@ -184,74 +184,8 @@ pub(crate) struct EffectPanelState {
     pub(crate) preset_name: String,
 }
 
-/// Built-in presets: translation key and settings.
 pub(crate) fn builtin_presets() -> [(&'static str, MultibandCompressor); 7] {
-    let band = |threshold_db, ratio, attack_ms, release_ms, makeup_db| CompressorBand {
-        threshold_db,
-        ratio,
-        attack_ms,
-        release_ms,
-        makeup_db,
-    };
-    let bypass = band(0.0, 1.0, 10.0, 150.0, 0.0);
-    let preset = |crossovers_hz, bands| MultibandCompressor {
-        crossovers_hz,
-        bands,
-    };
-    [
-        ("mixer.preset_default", MultibandCompressor::DEFAULT),
-        (
-            "mixer.preset_glue",
-            preset([150.0, 3000.0], [band(-26.0, 2.0, 30.0, 250.0, 2.0); 3]),
-        ),
-        (
-            "mixer.preset_voice",
-            preset(
-                [200.0, 5000.0],
-                [
-                    band(-26.0, 3.0, 15.0, 150.0, -2.0),
-                    band(-28.0, 3.0, 8.0, 120.0, 4.0),
-                    band(-26.0, 2.0, 3.0, 80.0, 2.0),
-                ],
-            ),
-        ),
-        (
-            "mixer.preset_deesser",
-            preset(
-                [1000.0, 6000.0],
-                [bypass, bypass, band(-18.0, 6.0, 0.5, 40.0, 0.0)],
-            ),
-        ),
-        (
-            "mixer.preset_low_end",
-            preset(
-                [120.0, 2000.0],
-                [band(-26.0, 4.0, 20.0, 200.0, 0.0), bypass, bypass],
-            ),
-        ),
-        (
-            "mixer.preset_broadcast",
-            preset(
-                [200.0, 3000.0],
-                [
-                    band(-28.0, 4.0, 5.0, 120.0, 10.5),
-                    band(-28.0, 4.0, 5.0, 120.0, 8.5),
-                    band(-28.0, 4.0, 5.0, 120.0, 7.5),
-                ],
-            ),
-        ),
-        (
-            "mixer.preset_master",
-            preset(
-                [120.0, 5000.0],
-                [
-                    band(-26.0, 2.0, 30.0, 200.0, 3.0),
-                    band(-26.0, 2.0, 20.0, 180.0, 3.0),
-                    band(-26.0, 2.0, 10.0, 120.0, 3.0),
-                ],
-            ),
-        ),
-    ]
+    vv_core::presets::compressor_presets()
 }
 
 /// Adds `params` as `name`, or replaces the preset already called so.

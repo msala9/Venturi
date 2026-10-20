@@ -5,15 +5,19 @@ It is an incremental editor with exact composed GPU frames and Source playback
 with audio, stills, thumbnails and waveforms. Inspector properties, scalar
 keyframes, Source ranges, linked slip and timeline markers are also available.
 Program playback has R9700/Windows proof, including a five-minute synthetic
-A/V timeline. Export has a bounded native H.264/AAC drawer; remaining advanced
-effects/color/audio editing and AI review are open. WSL exposes
+A/V timeline. Export has a bounded native H.264/AAC drawer. Native filters,
+masks, retiming, selected compounds, two stopped-frame scopes, Auto Balance,
+audio inserts and built-in color/EQ/compressor presets are available within
+the documented bounds. Recovery copies a previous saved backup into a new
+project. Curves, live scopes/meters, voiceover, libraries and AI review remain
+open. WSL exposes
 only llvmpipe (CPU).
 The separate halo2 deployment has verified R9700 Vulkan rendering; see
 evidence/m3-r9700-validation.json for the measured path.
 
 ## Ubuntu / WSL
 
-Rust 1.88+ and the upstream native dependencies are required. This checkout
+Use current stable Rust and the upstream native dependencies. This checkout
 was checked with Rust 1.99.1 and Ubuntu 26.04 FFmpeg 8.0.1. The complete FFmpeg
 development set includes libavdevice-dev and libavfilter-dev, beyond the
 short upstream Ubuntu dependency example. No desktop environment is needed.
@@ -115,6 +119,18 @@ title layout may differ. Media referenced by imported files must remain in
 the configured root. Import warnings appear in Projects.
 
 ## Actual API deltas from the proposal
+
+Projects also lists the previous saved .vvproj.bak versions. Expand Recover
+previous save and supply a new project name. Recovery validates the native
+backup and creates a new file without replacing the project or backup. Use
+Save As to preserve current unsaved edits first; normal Save updates the one
+previous-save backup. Edits made after the last save are not autosaved.
+
+One server may own a configured project root. A second vv-web process using
+the same canonical directory fails immediately before renderer initialization.
+Use a different project directory for independent test servers. The kernel
+releases ownership when the process exits, including after a crash; do not
+delete directories to clear ownership.
 
 - Project operations share `POST /api/v1/projects/commands`: typed
   `new_project {name}`, `open_project {path_token}`, `save`, `import_media`.

@@ -267,6 +267,30 @@ impl Editor {
                     .install_project(project, Some(self.files.path(path_token)?));
                 self.import_warnings.clear();
             }
+            Operation::RecoverBackup { path_token, name } => {
+                if self.session.has_unsaved_changes() {
+                    return Err(ApiError::conflict(
+                        "UNSAVED_CHANGES",
+                        "Save a copy of current edits before recovering a backup",
+                    ));
+                }
+                if name.is_empty()
+                    || name.len() > 64
+                    || !name
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
+                {
+                    return Err(ApiError::invalid(
+                        "Use letters, digits, underscores or hyphens for the recovered project name",
+                    ));
+                }
+                let project = self.files.load_backup(path_token)?;
+                let token = format!("{name}.vvproj");
+                self.files.save(&project, &token, true)?;
+                self.session
+                    .install_project(project, Some(self.files.path(&token)?));
+                self.import_warnings.clear();
+            }
             Operation::Save => {
                 let name = self
                     .session

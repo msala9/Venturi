@@ -260,12 +260,23 @@
         <div class="spacer"></div>
         <button id="close-export" aria-label="Close export">×</button>
       </div>
-      <p>Export integration is not implemented.</p>
-      <p class="muted">
-        The native engine supports H.264/AAC and background export. Continue
-        using the desktop export until this path has passed its media and
-        hardware checks.
-      </p>
+      <p>Native H.264 / AAC · immutable timeline snapshot</p>
+      <form id="export-form">
+        <label class="field">In frame<input name="start" type="number" min="0" step="1" required value="0"></label>
+        <button type="button" id="export-in">Use playhead as In</button>
+        <label class="field">Out frame (exclusive)<input name="end" type="number" min="1" step="1" required value="1"></label>
+        <button type="button" id="export-out">Use playhead as Out</button>
+        <label class="field">Maximum output width<select name="width"><option value="1920">1920</option><option value="1280">1280</option><option value="960">960</option><option value="640">640</option></select></label>
+        <label class="field">x264 CRF<input name="quality" type="number" min="0" max="51" step="1" value="18" required></label>
+        <label class="field">Encoding speed<select name="preset"><option>veryfast</option><option>ultrafast</option><option>superfast</option><option>faster</option><option>fast</option><option>medium</option><option>slow</option><option>slower</option><option>veryslow</option></select></label>
+        <label class="field">Include audio<input name="audio" type="checkbox" checked></label>
+        <button id="export-start" class="primary">Start export</button>
+      </form>
+      <p class="muted">Up to five minutes, 1920 pixels wide and 512 MiB. CPU x264 encoding. Export continues while you edit or close this panel. Download completed files before stopping the server; the bounded cache can evict older jobs.</p>
+      <p id="export-status" role="status">No export started</p>
+      <button id="export-cancel" disabled>Cancel export</button>
+      <button id="export-refresh" disabled>Refresh export status</button>
+      <a id="export-download" hidden download="venturi-export.mp4">Download MP4</a>
     </aside>
   </body>
 </html>

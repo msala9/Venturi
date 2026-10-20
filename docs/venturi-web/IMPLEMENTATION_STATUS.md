@@ -537,3 +537,29 @@ intervals above 25ms. The tab stayed visible. Paint time excludes browser
 raster/compositing. Optional timing is inactive in normal production use;
 the fixture is not an embedded host route. Evidence:
 m1-canvas-500-clips-browser.json/png. OS 100%/150% scaling checks remain open.
+
+The corrected pointer scrub was then exercised during active Windows Program
+playback: frame zero stayed at zero after delayed media events. A native delete
+on the synthetic fixture made old Program status and MP4 return 409
+REVISION_CONFLICT, while DELETE cancellation still returned 200. Undo and Save
+restored the fixture. Evidence: m3c-r9700-stale-revision.json.
+
+## M3 export increment — immutable native H.264/AAC jobs
+
+The Export drawer now captures In/exclusive Out (including playhead buttons),
+maximum width, native x264 CRF/preset and optional AAC audio. It submits an
+immutable project snapshot through the same native export path used for
+Program, with native progress, cancellation and completed MP4 download.
+One shared media worker/one queued job and the existing five-minute,
+ten-minute execution, pixel, 512 MiB/job and 2 GiB/cache limits apply.
+There are no client-controlled output paths or overwrites. Edits do not
+invalidate completed exports; input replacement during preparation fails them.
+The browser can reconnect to its last job after reload. Shutdown/cache eviction
+ends availability; durable queue/history and hardware codecs are not claimed.
+
+38 web Rust tests, 22 JavaScript tests, formatting, clippy and build pass.
+Coverage checks native settings/range rejection, settings cache identity,
+snapshot retrieval after source changes, wrong epoch/job-kind refusal,
+cancellation, not-ready download, HTTP error normalization and exact rational
+range validation. End-to-end Export drawer/R9700 download acceptance is the
+next hardware check.

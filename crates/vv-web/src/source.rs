@@ -63,6 +63,7 @@ struct Job {
     descriptor: Option<Value>,
     inputs: Inputs,
     source_asset: Option<&'static str>,
+    export_epoch: Option<String>,
 }
 impl Job {
     fn value(&self) -> Value {
@@ -217,6 +218,7 @@ impl MediaJobs {
             descriptor: None,
             inputs: vec![],
             source_asset: Some(source_asset),
+            export_epoch: None,
         });
         if self
             .send
@@ -234,7 +236,7 @@ impl MediaJobs {
     }
     pub fn prepare_program(&self, task: ProgramTask) -> Result<Value> {
         task.validate()?;
-        let key = task.query.key();
+        let key = task.key();
         let inputs = program::inputs(&task.snapshot)?;
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs.iter().find(|j| {
@@ -268,6 +270,10 @@ impl MediaJobs {
             descriptor: Some(descriptor),
             inputs,
             source_asset: None,
+            export_epoch: task
+                .export
+                .as_ref()
+                .map(|_| task.query.project_epoch.clone()),
         });
         if self
             .send
@@ -299,6 +305,31 @@ impl MediaJobs {
             job.cancel.store(true, Ordering::Relaxed);
         }
         Ok(job.value())
+    }
+    pub fn export_status(&self, id: &str, epoch: &str, cancel: bool) -> Result<Value> {
+        let mut jobs = self.jobs.lock().unwrap();
+        let job = jobs
+            .iter_mut()
+            .find(|j| j.id == id && j.export_epoch.as_deref() == Some(epoch))
+            .ok_or_else(ApiError::missing)?;
+        if cancel && matches!(job.state, "queued" | "running") {
+            job.cancel.store(true, Ordering::Relaxed);
+        }
+        Ok(job.value())
+    }
+    pub fn export_asset(&self, id: &str, epoch: &str) -> Result<File> {
+        let jobs = self.jobs.lock().unwrap();
+        let job = jobs
+            .iter()
+            .find(|j| j.id == id && j.export_epoch.as_deref() == Some(epoch))
+            .ok_or_else(ApiError::missing)?;
+        if job.state != "ready" {
+            return Err(ApiError::conflict(
+                "EXPORT_NOT_READY",
+                "Wait for export completion",
+            ));
+        }
+        File::open(job.directory.join("program.mp4")).map_err(|_| ApiError::missing())
     }
     pub fn program_asset(&self, id: &str, query: &ProgramQuery) -> Result<File> {
         let mut jobs = self.jobs.lock().unwrap();

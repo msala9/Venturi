@@ -209,3 +209,28 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 - Scalar keyframe targets additionally include grade, filter_radius,
   filter_amount, filter_grow and filter_offset. `set_keyframes {clip_id,edits}`
   prevalidates 1–64 edits and applies one native composite history step.
+
+## Native export adapter (bounded first release)
+
+POST `/exports` accepts `{range: ProgramQuery, settings:{quality,preset,audio}}`.
+The native x264 preset list and CRF 0–51 are validated. The requested range is
+an integer exclusive-out range within the captured timeline, at most five
+minutes. Width is capped at 1920 and native aspect/pixel budgets still apply.
+Encoding/mixing/compositing use vv-session, vv-media and vv-audio. CPU x264/AAC
+are explicit; no unverified hardware encoder or decoder is offered.
+
+The shared bounded media worker runs one job and queues one more; output is
+limited to 512 MiB/ten minutes, inside the private 2 GiB process cache. Identical
+snapshot/settings/input identities return the existing job. GET/DELETE
+`/exports/{job}?project_epoch=...` reports/cancels it. GET
+`/exports/{job}/export.mp4?project_epoch=...` downloads the completed immutable
+snapshot with byte ranges and a fixed safe attachment filename. Later edits
+do not invalidate an export. Media replacement during generation fails it;
+completed encoded files remain independent of later media changes. Export
+job IDs cannot retrieve Program/Source jobs or vice versa. There is no
+user-selected server output path and no overwrite of source/project files.
+
+Jobs continue while the browser is closed, until server shutdown or cache
+eviction. The UI remembers the latest job in browser session storage and can
+resume status polling after reload. Durable queues/server restart recovery,
+arbitrary output formats and timelines longer than five minutes remain open.

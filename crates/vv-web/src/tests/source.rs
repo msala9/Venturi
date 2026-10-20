@@ -226,6 +226,7 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         descriptor: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
+        export_epoch: None,
     });
     assert!(source.asset("test", &spec, "source.mp4").is_ok());
     assert!(source.asset("test", &spec, "../source.mp4").is_err());
@@ -237,4 +238,44 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
     spec.media_id = "1".into();
     std::fs::write(&path, b"replacement source").unwrap();
     assert!(source.asset("test", &spec, "source.mp4").is_err());
+}
+
+#[test]
+fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change() {
+    let jobs = MediaJobs::start().unwrap();
+    let directory = jobs.root.join("export-test");
+    std::fs::create_dir(&directory).unwrap();
+    std::fs::write(directory.join("program.mp4"), b"frozen-output").unwrap();
+    let cancel = Arc::new(AtomicBool::new(false));
+    jobs.jobs.lock().unwrap().push_back(Job {
+        id: "export-test".into(),
+        key: "export:old-revision".into(),
+        state: "ready",
+        progress: 24,
+        error: None,
+        directory,
+        cancel: cancel.clone(),
+        bytes: 13,
+        export: None,
+        descriptor: None,
+        inputs: vec![(
+            jobs.root.join("source-no-longer-present"),
+            "old-identity".into(),
+        )],
+        source_asset: None,
+        export_epoch: Some("p:1".into()),
+    });
+    assert_eq!(
+        jobs.export_status("export-test", "p:1", false).unwrap()["state"],
+        "ready"
+    );
+    assert!(jobs.export_asset("export-test", "p:1").is_ok());
+    assert!(jobs.export_asset("export-test", "p:2").is_err());
+    assert!(jobs.export_status("another-job", "p:1", false).is_err());
+    jobs.jobs.lock().unwrap()[0].state = "running";
+    assert!(jobs.export_asset("export-test", "p:1").is_err());
+    jobs.export_status("export-test", "p:1", true).unwrap();
+    assert!(cancel.load(Ordering::Relaxed));
+    jobs.jobs.lock().unwrap()[0].export_epoch = None;
+    assert!(jobs.export_status("export-test", "p:1", false).is_err());
 }

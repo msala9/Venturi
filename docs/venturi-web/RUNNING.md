@@ -4,8 +4,9 @@ Venturi Web currently provides native project/timeline editing over loopback.
 It is an incremental editor with exact composed GPU frames and Source playback
 with audio, stills, thumbnails and waveforms. Inspector properties, scalar
 keyframes, Source ranges, linked slip and timeline markers are also available.
-Program playback is implemented but awaits GPU acceptance; user-facing export,
-remaining advanced effects/color/audio editing and AI review are open. WSL exposes
+Program playback has R9700/Windows proof, including a five-minute synthetic
+A/V timeline. Export has a bounded native H.264/AAC drawer; remaining advanced
+effects/color/audio editing and AI review are open. WSL exposes
 only llvmpipe (CPU).
 The separate halo2 deployment has verified R9700 Vulkan rendering; see
 evidence/m3-r9700-validation.json for the measured path.
@@ -77,24 +78,33 @@ composed stills; source playback does not display timeline effects.
 Source jobs currently accept regular media up to ten minutes and 8192 pixels
 per dimension, cap decoded audio samples at 256 MiB plus encoder overhead,
 and cap each generated job at 512 MiB. Cache is private, 2 GiB, process-local;
-evicted material can be regenerated. Still images and compound media do not
-have Source playback yet. Original source files are preserved.
+evicted material can be regenerated. PNG/JPEG stills display their original
+bytes; compound media opens its child timeline for Program preview. Original
+source files are preserved.
 
 Existing project saves use same-directory staging, file sync, atomic rename
 and a previous-file `.vvproj.bak`. To recover that previous save, stop the
 host, preserve the current file separately, and copy the backup to another
-`.vvproj` name inside the root. Automatic unsaved-edit recovery and Save As
-are not implemented. Neither browser close nor reload saves automatically.
+`.vvproj` name inside the root. Save As creates a new name atomically and
+refuses existing files. Unsaved edits require an explicit save; neither
+browser close nor reload saves automatically.
 
 One browser owns a renewable 90-second writer lease; other browsers read
-snapshots. Reconnect retries lease acquisition. A reload creates a new client
-ID; wait for the old lease to expire. Server restarts replace the project epoch
+snapshots. Reconnect retries lease acquisition. Reload preserves the tab's
+client ID in session storage. Server restarts replace the project epoch
 and require reopening a saved project. Completed command lookup is process
 local, bounded to 4096 entries / 8 MiB of request fingerprints; a final save is
 reserved before command capacity is exhausted. Restart after saving to reset
 the registry. Import probing is currently serialized on the session actor and
 can delay other session requests for large sources. This needs extraction
 before claiming interactive import at production scale.
+
+The Export drawer uses integer In/exclusive Out frames, up to five minutes,
+width up to 1920 and the native x264 quality/speed settings. The server mixes
+AAC unless disabled. Close the drawer or continue editing while the immutable
+snapshot renders; reopening/reloading can recover the latest job status.
+Download the MP4 before server shutdown or cache eviction. This first adapter
+does not offer persistent export queues or hardware encoding.
 
 ## Actual API deltas from the proposal
 

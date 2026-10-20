@@ -7,6 +7,7 @@ import { createSourcePlayer, sourceAssetURL, sourceSelection } from "./source.js
 import { createProgramPlayer } from "./program.js";
 import { detailIdentity, renderProperties, renderMarkers } from "./inspector.js";
 import { renderMixer } from "./mixer.js";
+import { createExportPanel } from "./export.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -131,6 +132,7 @@ $("projects-button").addEventListener("click", () => $("projects").showModal());
 $("palette-button").addEventListener("click", () => $("palette").showModal());
 $("export-button").addEventListener("click", () => {
   $("export-panel").hidden = false;
+  exportPanel.open();
 });
 $("close-export").addEventListener("click", () => {
   $("export-panel").hidden = true;
@@ -944,4 +946,11 @@ async function diagnostics() {
       : "GPU preview unavailable";
   } catch {}
 }
+const exportPanel = createExportPanel({ form: $("export-form"), status: $("export-status"), cancel: $("export-cancel"), refresh: $("export-refresh"), download: $("export-download"), getState: () => {
+  if (!timeline || !documentState) return null;
+  const end = Math.max(0, ...timeline.tracks.flatMap((track) => track.clips.map((clip) => clip.start_frame + clip.length_frames)));
+  return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: 0, end_frame: end, width: 1920, fps: timeline.fps } : null;
+} });
+$("export-in").addEventListener("click", () => { $("export-form").elements.start.value = view.playhead; });
+$("export-out").addEventListener("click", () => { $("export-form").elements.end.value = view.playhead + 1; });
 connect().then(diagnostics);

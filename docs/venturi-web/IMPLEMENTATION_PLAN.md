@@ -75,8 +75,11 @@ Next smallest step:
 2026-10-20 execution note: local WSL exposes only llvmpipe; hardware proof was
 therefore performed separately on halo2. M3a exact composed frames now have
 R9700 Vulkan evidence, including three native RGBA comparisons and 500 seeks.
-M3b–M7 and M1 timing/DPI acceptance remain open. Playback/export capabilities
-remain false. Respect the shared nonblocking GPU lock during all halo2 work;
+M3b source and M3c composed playback now have native/browser R9700 evidence,
+including a full five-minute synthetic A/V test. M1 Canvas timing is measured
+at actual DPR 1.25; OS 100%/150% scaling acceptance is open. Export has a
+bounded native job adapter; M4–M7 remain partial/open. Respect the shared
+nonblocking GPU lock during all halo2 work;
 other agents run DeepSeek 4.1 Flash inference there. See IMPLEMENTATION_STATUS,
 RUNNING and PREVIEW_SPIKE for verified boundaries and next steps.
 

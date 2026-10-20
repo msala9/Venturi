@@ -2,7 +2,7 @@ use crate::{
     error::{ApiError, Result},
     preview::{FrameQuery, FrameSnapshot, Preview},
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
     os::unix::fs::MetadataExt,
@@ -58,6 +58,34 @@ pub struct ProgramTask {
     pub snapshot: FrameSnapshot,
     pub query: ProgramQuery,
     pub preview: Preview,
+    pub export: Option<ExportOptions>,
+}
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExportOptions {
+    pub quality: u8,
+    pub preset: String,
+    pub audio: bool,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ExportRequest {
+    pub range: ProgramQuery,
+    pub settings: ExportOptions,
+}
+impl ExportOptions {
+    pub fn validate(&self) -> Result<()> {
+        if self.quality > 51
+            || !vv_media::VideoCodec::X264
+                .presets()
+                .contains(&self.preset.as_str())
+        {
+            return Err(ApiError::invalid(
+                "Choose x264 CRF 0–51 and a supported speed preset",
+            ));
+        }
+        Ok(())
+    }
 }
 pub type Inputs = Vec<(PathBuf, String)>;
 struct MonitorDone<'a>(&'a AtomicBool);
@@ -122,7 +150,20 @@ pub fn unchanged(inputs: &Inputs) -> bool {
         .all(|(path, before)| identity(path).is_ok_and(|now| now == *before))
 }
 impl ProgramTask {
+    pub fn key(&self) -> String {
+        match &self.export {
+            Some(options) => format!(
+                "export:{}:{}",
+                self.query.key(),
+                serde_json::to_string(options).unwrap()
+            ),
+            None => self.query.key(),
+        }
+    }
     pub fn validate(&self) -> Result<()> {
+        if let Some(options) = &self.export {
+            options.validate()?;
+        }
         let tl = &self.snapshot.project.timelines[self.snapshot.timeline];
         let count = self
             .query
@@ -130,6 +171,7 @@ impl ProgramTask {
             .checked_sub(self.query.start_frame)
             .ok_or_else(|| ApiError::invalid("Invalid Program range"))?;
         if count <= 0
+            || self.query.start_frame < 0
             || self.query.end_frame > tl.total_frames()
             || count as f64 / tl.fps.as_f64() > 300.0
         {
@@ -147,12 +189,19 @@ impl ProgramTask {
         .clamp(1, 100)) as u32;
         settings.video.preset = "veryfast".into();
         settings.video.quality = 18;
+        if let Some(options) = &self.export {
+            settings.video.quality = options.quality;
+            settings.video.preset = options.preset.clone();
+            if !options.audio {
+                settings.audio = None;
+            }
+        }
         settings
     }
     pub fn descriptor(&self, directory: &Path) -> Value {
         let tl = &self.snapshot.project.timelines[self.snapshot.timeline];
         let size = self.settings(directory).output_size(tl.resolution);
-        json!({"start_frame":self.query.start_frame,"end_frame":self.query.end_frame,"width":size.0,"height":size.1,"fps":tl.fps,"revision":self.query.revision,"project_epoch":self.query.project_epoch,"generation":self.query.if_generation})
+        json!({"start_frame":self.query.start_frame,"end_frame":self.query.end_frame,"width":size.0,"height":size.1,"fps":tl.fps,"revision":self.query.revision,"project_epoch":self.query.project_epoch,"generation":self.query.if_generation,"export_settings":self.export})
     }
     pub fn generate(
         &self,

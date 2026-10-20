@@ -3,7 +3,7 @@ use crate::{
     error::{ApiError, Result},
     host::{Action, Host},
     preview::{FrameQuery, Preview},
-    program::{ProgramQuery, ProgramTask},
+    program::{ExportRequest, ProgramQuery, ProgramTask},
     source::{MediaJobs, SourceQuery},
 };
 use axum::{
@@ -43,6 +43,12 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
         .route("/api/v1/preview/program/prepare", post(prepare_program))
+        .route("/api/v1/exports", post(prepare_export))
+        .route(
+            "/api/v1/exports/{job}",
+            get(export_status).delete(cancel_export),
+        )
+        .route("/api/v1/exports/{job}/export.mp4", get(export_asset))
         .route(
             "/api/v1/preview/program/{job}",
             get(program_status).delete(cancel_program),
@@ -84,8 +90,80 @@ async fn prepare_program(
             snapshot,
             query,
             preview: state.preview,
+            export: None,
         })
         .map(Json)
+}
+async fn prepare_export(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<ExportRequest>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid export request"))?
+        .0;
+    request.settings.validate()?;
+    if !state.preview.available() {
+        return Err(ApiError(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "GPU_UNAVAILABLE",
+            "An available Vulkan compositor is required for export",
+        ));
+    }
+    let snapshot = state.host.frame_snapshot(request.range.frame()).await?;
+    state
+        .source
+        .prepare_program(ProgramTask {
+            snapshot,
+            query: request.range,
+            preview: state.preview,
+            export: Some(request.settings),
+        })
+        .map(Json)
+}
+async fn export_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid export query"))?
+        .0;
+    state
+        .source
+        .export_status(&job, &query.project_epoch, false)
+        .map(Json)
+}
+async fn cancel_export(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid export query"))?
+        .0;
+    state
+        .source
+        .export_status(&job, &query.project_epoch, true)
+        .map(Json)
+}
+async fn export_asset(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+    headers: axum::http::HeaderMap,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid export query"))?
+        .0;
+    let file = state.source.export_asset(&job, &query.project_epoch)?;
+    let mut response = crate::source::stream_file(file, "video/mp4", &job, &headers).await?;
+    response.headers_mut().insert(
+        header::CONTENT_DISPOSITION,
+        "attachment; filename=\"venturi-export.mp4\""
+            .parse()
+            .unwrap(),
+    );
+    Ok(response)
 }
 async fn program_status(
     State(state): State<AppState>,
@@ -216,6 +294,7 @@ async fn session(State(state): State<AppState>) -> Result<Json<Value>> {
     snapshot["capabilities"]["preview"] = json!(state.preview.available());
     snapshot["capabilities"]["source_playback"] = json!(true);
     snapshot["capabilities"]["playback"] = json!(state.preview.available());
+    snapshot["capabilities"]["export"] = json!(state.preview.available());
     Ok(Json(snapshot))
 }
 async fn diagnostics(State(state): State<AppState>) -> Json<Value> {
@@ -389,6 +468,7 @@ async fn assets(request: Request) -> Response {
         "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),
         "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),
         "/js/program.js" => asset!("/web/js/program.js", "text/javascript"),
+        "/js/export.js" => asset!("/web/js/export.js", "text/javascript"),
         "/js/inspector.js" => asset!("/web/js/inspector.js", "text/javascript"),
         "/js/mixer.js" => asset!("/web/js/mixer.js", "text/javascript"),
         "/js/visual.js" => asset!("/web/js/visual.js", "text/javascript"),

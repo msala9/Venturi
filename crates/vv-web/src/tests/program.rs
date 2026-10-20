@@ -38,6 +38,7 @@ fn task() -> ProgramTask {
         },
         query,
         preview: Preview::disabled(),
+        export: None,
     }
 }
 #[test]
@@ -64,4 +65,33 @@ fn generated_preview_identity_detects_source_replacement_without_timeline_edits(
     std::fs::write(&path, b"second version").unwrap();
     assert!(!unchanged(&inputs));
     std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn export_settings_are_native_bounded_and_part_of_the_immutable_job_identity() {
+    let mut task = task();
+    let preview_key = task.key();
+    task.export = Some(ExportOptions {
+        quality: 23,
+        preset: "medium".into(),
+        audio: false,
+    });
+    assert!(task.validate().is_ok());
+    assert_ne!(preview_key, task.key());
+    let before = task.key();
+    let settings = task.settings(Path::new("/tmp"));
+    assert_eq!(settings.video.quality, 23);
+    assert_eq!(settings.video.preset, "medium");
+    assert!(settings.audio.is_none());
+    task.export.as_mut().unwrap().audio = true;
+    assert_ne!(before, task.key());
+    assert!(task.settings(Path::new("/tmp")).audio.is_some());
+    task.export.as_mut().unwrap().quality = 52;
+    assert!(task.validate().is_err());
+    task.export.as_mut().unwrap().quality = 18;
+    task.export.as_mut().unwrap().preset = "unverified-hardware".into();
+    assert!(task.validate().is_err());
+    task.export = None;
+    task.query.start_frame = -1;
+    assert!(task.validate().is_err());
 }

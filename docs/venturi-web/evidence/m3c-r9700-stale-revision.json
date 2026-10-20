@@ -1,0 +1,59 @@
+{
+  "status": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "REVISION_CONFLICT",
+        "details": {},
+        "message": "Project changed before the frame snapshot",
+        "recoverable": true
+      }
+    }
+  },
+  "asset": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "REVISION_CONFLICT",
+        "details": {},
+        "message": "Project changed before the frame snapshot",
+        "recoverable": true
+      }
+    }
+  },
+  "cancel": {
+    "status": 200,
+    "body": {
+      "error": null,
+      "frames": 0,
+      "id": "1792507695780417747",
+      "program": {
+        "end_frame": 7200,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "0",
+        "height": 360,
+        "project_epoch": "1792507663539651161:1",
+        "revision": "fe0e10e7ec7b8d18",
+        "start_frame": 0,
+        "width": 640
+      },
+      "progress": {
+        "compose_fps": 3882.4139436055593,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 7200,
+        "decode_fps": 3912.0123696005517,
+        "elapsed_ms": 1978.5091559999998,
+        "encode_fps": 5102.8293502687375,
+        "encoder": "X264",
+        "fps": 3639.103705012119,
+        "startup_ms": 68.672152,
+        "total_frames": 7200
+      },
+      "source_asset": null,
+      "state": "ready"
+    }
+  }
+}

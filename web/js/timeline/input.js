@@ -1,102 +1,292 @@
-import {HEADER,RULER,TRACK,xToFrame,snapFrame,hitTest,linkedSelection,validateDraft} from './geometry.js';
+import {
+  HEADER,
+  RULER,
+  TRACK,
+  xToFrame,
+  snapFrame,
+  hitTest,
+  linkedSelection,
+  validateDraft,
+} from "./geometry.js";
 
-export function createInput({canvas,getTimeline,view,invalidate,onSelect,onSeek,onCommand,onNotice}) {
-  let gesture = null, waiting = false;
-  const point = event => { const rect = canvas.getBoundingClientRect(); return [event.clientX-rect.left,event.clientY-rect.top]; };
-  const cancel = () => { gesture = null; view.draft = null; view.lasso = null; invalidate(); };
-  const down = event => {
+export function createInput({
+  canvas,
+  getTimeline,
+  view,
+  invalidate,
+  onSelect,
+  onSeek,
+  onCommand,
+  onNotice,
+}) {
+  let gesture = null,
+    waiting = false;
+  const point = (event) => {
+    const rect = canvas.getBoundingClientRect();
+    return [event.clientX - rect.left, event.clientY - rect.top];
+  };
+  const cancel = () => {
+    gesture = null;
+    view.draft = null;
+    view.lasso = null;
+    invalidate();
+  };
+  const down = (event) => {
     if (waiting) return;
-    const timeline = getTimeline(); if (!timeline) return;
-    canvas.focus(); const [x,y] = point(event);
-    const hit = hitTest(x,y,timeline,view);
+    const timeline = getTimeline();
+    if (!timeline) return;
+    canvas.focus();
+    const [x, y] = point(event);
+    const hit = hitTest(x, y, timeline, view);
     if (event.button === 1 || event.altKey) {
-      gesture = {kind:'pan',x,y,origin:view.origin,scrollY:view.scrollY};
+      gesture = {
+        kind: "pan",
+        x,
+        y,
+        origin: view.origin,
+        scrollY: view.scrollY,
+      };
     } else if (event.button !== 0) return;
     else if (hit.clip) {
-      let ids = view.selection.includes(hit.clip.id) ? view.selection : event.ctrlKey || event.shiftKey ? [...view.selection,hit.clip.id] : [hit.clip.id];
-      view.selection = linkedSelection(timeline,ids); onSelect();
-      gesture = {...hit,x,y,frame:xToFrame(x,view,timeline.fps),moved:false};
-    } else if (hit.kind === 'scrub') {
-      gesture = {kind:'scrub'}; view.playhead = xToFrame(x,view,timeline.fps); onSeek(false);
-    } else if (hit.kind === 'blank') {
-      if (!event.ctrlKey) view.selection = [];
-      gesture = {kind:'lasso',x,y}; onSelect();
-    } else return;
-    event.preventDefault(); canvas.setPointerCapture(event.pointerId); invalidate();
-  };
-  const move = event => {
-    if (!gesture) return;
-    const timeline = getTimeline(), [x,y] = point(event), g = gesture;
-    if (g.kind === 'pan') {
-      view.origin = Math.max(0, g.origin - (x-g.x) / (view.scale*timeline.fps.den/timeline.fps.num));
-      view.scrollY = Math.max(0,Math.min(timeline.tracks.length*TRACK, g.scrollY-(y-g.y)));
-    } else if (g.kind === 'scrub') { view.playhead = xToFrame(x,view,timeline.fps); onSeek(false); }
-    else if (g.kind === 'lasso') {
-      view.lasso = {x:Math.min(g.x,x),y:Math.min(g.y,y),width:Math.abs(x-g.x),height:Math.abs(y-g.y)};
-    } else {
-      if (Math.hypot(x-g.x,y-g.y) < 4 && !g.moved) return;
-      g.moved = true;
-      let frame = xToFrame(x,view,timeline.fps);
-      const candidates = [view.playhead,...(timeline.markers || []).map(marker=>marker.start)];
-      for (const track of timeline.tracks) for (const clip of track.clips) if (!view.selection.includes(clip.id)) candidates.push(clip.start_frame,clip.start_frame+clip.length_frames);
-      const original = g.kind === 'move' ? g.clip.start_frame : g.kind === 'trim_start' ? g.clip.start_frame : g.clip.start_frame+g.clip.length_frames;
-      let target = Math.max(0,original+frame-g.frame);
-      if (view.snap) target = snapFrame(target,candidates,view,timeline.fps);
-      const delta = target-original;
-      const changes = [];
-      for (const [index,track] of timeline.tracks.entries()) for (const clip of track.clips) if (view.selection.includes(clip.id)) {
-        const destination = g.kind === 'move' && view.selection.length === 1 ? Math.max(0,Math.floor((y-RULER+view.scrollY)/TRACK)) : index;
-        const start = g.kind === 'trim_end' ? clip.start_frame : clip.start_frame+delta;
-        const length = clip.length_frames + (g.kind === 'trim_start' ? -delta : g.kind === 'trim_end' ? delta : 0);
-        changes.push({clip_id:clip.id,to_track:timeline.tracks[destination]?.id,to_start_frame:start,length_frames:length});
+      if (event.ctrlKey && view.selection.includes(hit.clip.id)) {
+        const group = linkedSelection(timeline, [hit.clip.id]);
+        view.selection = view.selection.filter((id) => !group.includes(id));
+        onSelect();
+        invalidate();
+        return;
       }
-      view.draft = {changes,error:validateDraft(timeline,changes),kind:g.kind,target};
+      let ids = view.selection.includes(hit.clip.id)
+        ? view.selection
+        : event.ctrlKey || event.shiftKey
+          ? [...view.selection, hit.clip.id]
+          : [hit.clip.id];
+      view.selection = linkedSelection(timeline, ids);
+      onSelect();
+      gesture = {
+        ...hit,
+        x,
+        y,
+        frame: xToFrame(x, view, timeline.fps),
+        moved: false,
+      };
+    } else if (hit.kind === "scrub") {
+      gesture = { kind: "scrub" };
+      view.playhead = xToFrame(x, view, timeline.fps);
+      onSeek(false);
+    } else if (hit.kind === "blank") {
+      if (!event.ctrlKey) view.selection = [];
+      gesture = { kind: "lasso", x, y };
+      onSelect();
+    } else return;
+    event.preventDefault();
+    canvas.setPointerCapture(event.pointerId);
+    invalidate();
+  };
+  const move = (event) => {
+    if (!gesture) return;
+    const timeline = getTimeline(),
+      [x, y] = point(event),
+      g = gesture;
+    if (g.kind === "pan") {
+      view.origin = Math.max(
+        0,
+        g.origin -
+          (x - g.x) / ((view.scale * timeline.fps.den) / timeline.fps.num),
+      );
+      view.scrollY = Math.max(
+        0,
+        Math.min(timeline.tracks.length * TRACK, g.scrollY - (y - g.y)),
+      );
+    } else if (g.kind === "scrub") {
+      view.playhead = xToFrame(x, view, timeline.fps);
+      onSeek(false);
+    } else if (g.kind === "lasso") {
+      view.lasso = {
+        x: Math.min(g.x, x),
+        y: Math.min(g.y, y),
+        width: Math.abs(x - g.x),
+        height: Math.abs(y - g.y),
+      };
+    } else {
+      if (Math.hypot(x - g.x, y - g.y) < 4 && !g.moved) return;
+      g.moved = true;
+      let frame = xToFrame(x, view, timeline.fps);
+      const candidates = [
+        view.playhead,
+        ...(timeline.markers || []).map((marker) => marker.start_frame),
+      ];
+      for (const track of timeline.tracks)
+        for (const clip of track.clips)
+          if (!view.selection.includes(clip.id))
+            candidates.push(
+              clip.start_frame,
+              clip.start_frame + clip.length_frames,
+            );
+      const original =
+        g.kind === "move"
+          ? g.clip.start_frame
+          : g.kind === "trim_start"
+            ? g.clip.start_frame
+            : g.clip.start_frame + g.clip.length_frames;
+      let target = Math.max(0, original + frame - g.frame);
+      if (view.snap) target = snapFrame(target, candidates, view, timeline.fps);
+      const delta = target - original;
+      const changes = [];
+      const affected =
+        g.kind === "move"
+          ? view.selection
+          : linkedSelection(timeline, [g.clip.id]);
+      for (const [index, track] of timeline.tracks.entries())
+        for (const clip of track.clips)
+          if (affected.includes(clip.id)) {
+            const destination =
+              g.kind === "move" && view.selection.length === 1
+                ? Math.max(0, Math.floor((y - RULER + view.scrollY) / TRACK))
+                : index;
+            const start =
+              g.kind === "trim_end"
+                ? clip.start_frame
+                : clip.start_frame + delta;
+            const length =
+              clip.length_frames +
+              (g.kind === "trim_start"
+                ? -delta
+                : g.kind === "trim_end"
+                  ? delta
+                  : 0);
+            changes.push({
+              clip_id: clip.id,
+              to_track: timeline.tracks[destination]?.id,
+              to_start_frame: start,
+              length_frames: length,
+            });
+          }
+      view.draft = {
+        changes,
+        error: validateDraft(timeline, changes),
+        kind: g.kind,
+        target,
+      };
     }
     invalidate();
   };
-  const up = async event => {
+  const up = async (event) => {
     if (!gesture) return;
-    const g = gesture, timeline = getTimeline(), draft = view.draft;
-    if (g.kind === 'lasso' && view.lasso) {
+    const g = gesture,
+      timeline = getTimeline(),
+      draft = view.draft;
+    if (g.kind === "lasso" && view.lasso) {
       const box = view.lasso;
-      const start = xToFrame(box.x,view,timeline.fps), end = xToFrame(box.x+box.width,view,timeline.fps);
-      timeline.tracks.forEach((track,index) => {
-        const top = RULER+index*TRACK-view.scrollY;
-        if (track.locked || top > box.y+box.height || top+TRACK < box.y) return;
-        for (const clip of track.clips) if (clip.start_frame < end && clip.start_frame+clip.length_frames > start) view.selection.push(clip.id);
+      const start = xToFrame(box.x, view, timeline.fps),
+        end = xToFrame(box.x + box.width, view, timeline.fps);
+      timeline.tracks.forEach((track, index) => {
+        const top = RULER + index * TRACK - view.scrollY;
+        if (track.locked || top > box.y + box.height || top + TRACK < box.y)
+          return;
+        for (const clip of track.clips)
+          if (
+            clip.start_frame < end &&
+            clip.start_frame + clip.length_frames > start
+          )
+            view.selection.push(clip.id);
       });
-      view.selection = linkedSelection(timeline,[...new Set(view.selection)]); onSelect();
+      view.selection = linkedSelection(timeline, [...new Set(view.selection)]);
+      onSelect();
     }
-    gesture = null; view.lasso = null;
-    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
-    if (g.kind === 'scrub') onSeek(true);
+    gesture = null;
+    view.lasso = null;
+    if (canvas.hasPointerCapture(event.pointerId))
+      canvas.releasePointerCapture(event.pointerId);
+    if (g.kind === "scrub") onSeek(true);
     if (draft && g.moved) {
       if (draft.error) onNotice(draft.error);
       else {
         waiting = true;
         try {
-          const operation = g.kind === 'move' ? {kind:'safe_move',moves:draft.changes.map(({clip_id,to_track,to_start_frame})=>({clip_id,to_track,to_start_frame}))} : {kind:'trim',clip_id:g.clip.id,edge:g.kind === 'trim_start' ? 'start' : 'end',frame:draft.target};
+          const operation =
+            g.kind === "move"
+              ? {
+                  kind: "safe_move",
+                  moves: draft.changes.map(
+                    ({ clip_id, to_track, to_start_frame }) => ({
+                      clip_id,
+                      to_track,
+                      to_start_frame,
+                    }),
+                  ),
+                }
+              : {
+                  kind: "trim",
+                  clip_id: g.clip.id,
+                  edge: g.kind === "trim_start" ? "start" : "end",
+                  frame: draft.target,
+                };
           await onCommand(operation);
-        } catch (error) { onNotice(error.message); }
-        finally { waiting = false; }
+        } catch (error) {
+          onNotice(error.message);
+        } finally {
+          waiting = false;
+        }
       }
     }
-    view.draft = null; invalidate();
-  };
-  const wheel = event => {
-    const timeline = getTimeline(); if (!timeline) return;
-    event.preventDefault(); const [x] = point(event);
-    if (event.ctrlKey || event.metaKey) {
-      const anchor = xToFrame(x,view,timeline.fps);
-      view.scale = Math.max(3,Math.min(2000,view.scale*Math.exp(-event.deltaY*.004)));
-      view.origin = Math.max(0,anchor-(x-HEADER)/(view.scale*timeline.fps.den/timeline.fps.num));
-    } else if (event.shiftKey) view.scrollY = Math.max(0,Math.min(timeline.tracks.length*TRACK,view.scrollY+event.deltaY));
-    else view.origin = Math.max(0,view.origin+(event.deltaX+event.deltaY)/(view.scale*timeline.fps.den/timeline.fps.num));
+    view.draft = null;
     invalidate();
   };
-  const key = event => { if(event.key === 'Escape') cancel(); };
-  canvas.addEventListener('pointerdown',down); canvas.addEventListener('pointermove',move); canvas.addEventListener('pointerup',up);
-  canvas.addEventListener('pointercancel',cancel); canvas.addEventListener('lostpointercapture',cancel);
-  canvas.addEventListener('wheel',wheel,{passive:false}); canvas.addEventListener('keydown',key); window.addEventListener('blur',cancel);
-  return {cancel,destroy(){ for(const [event,fn] of [['pointerdown',down],['pointermove',move],['pointerup',up],['pointercancel',cancel],['lostpointercapture',cancel],['wheel',wheel],['keydown',key]]) canvas.removeEventListener(event,fn); window.removeEventListener('blur',cancel); }};
+  const wheel = (event) => {
+    const timeline = getTimeline();
+    if (!timeline) return;
+    event.preventDefault();
+    const [x] = point(event);
+    if (event.ctrlKey || event.metaKey) {
+      const anchor = xToFrame(x, view, timeline.fps);
+      view.scale = Math.max(
+        3,
+        Math.min(2000, view.scale * Math.exp(-event.deltaY * 0.004)),
+      );
+      view.origin = Math.max(
+        0,
+        anchor -
+          (x - HEADER) / ((view.scale * timeline.fps.den) / timeline.fps.num),
+      );
+    } else if (event.shiftKey)
+      view.scrollY = Math.max(
+        0,
+        Math.min(timeline.tracks.length * TRACK, view.scrollY + event.deltaY),
+      );
+    else
+      view.origin = Math.max(
+        0,
+        view.origin +
+          (event.deltaX + event.deltaY) /
+            ((view.scale * timeline.fps.den) / timeline.fps.num),
+      );
+    invalidate();
+  };
+  const key = (event) => {
+    if (event.key === "Escape") cancel();
+  };
+  canvas.addEventListener("pointerdown", down);
+  canvas.addEventListener("pointermove", move);
+  canvas.addEventListener("pointerup", up);
+  canvas.addEventListener("pointercancel", cancel);
+  canvas.addEventListener("lostpointercapture", cancel);
+  canvas.addEventListener("wheel", wheel, { passive: false });
+  canvas.addEventListener("keydown", key);
+  window.addEventListener("blur", cancel);
+  return {
+    cancel,
+    destroy() {
+      for (const [event, fn] of [
+        ["pointerdown", down],
+        ["pointermove", move],
+        ["pointerup", up],
+        ["pointercancel", cancel],
+        ["lostpointercapture", cancel],
+        ["wheel", wheel],
+        ["keydown", key],
+      ])
+        canvas.removeEventListener(event, fn);
+      window.removeEventListener("blur", cancel);
+    },
+  };
 }

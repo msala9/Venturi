@@ -1,44 +1,142 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/venturi-web/safe-command.schema.json",
-  "title": "Proposed Venturi Web Safe Command Request",
+  "title": "Venturi Web safe move / trim / split request subset",
   "type": "object",
   "additionalProperties": false,
-  "required": ["command_id", "project_epoch", "if_revision", "operation"],
+  "required": [
+    "command_id",
+    "client_id",
+    "project_epoch",
+    "if_generation",
+    "if_revision",
+    "operation"
+  ],
   "properties": {
-    "command_id": {"type": "string", "format": "uuid"},
-    "project_epoch": {"type": "integer", "minimum": 0},
-    "if_revision": {"type": "string", "minLength": 1},
-    "operation": {"oneOf": [
-      {"type": "object", "additionalProperties": false,
-       "required": ["kind", "moves"],
-       "properties": {
-         "kind": {"const": "safe_move"},
-         "moves": {"type": "array", "minItems": 1, "maxItems": 512, "items": {
-           "type": "object", "additionalProperties": false,
-           "required": ["clip_id", "to_start_frame", "to_track"],
-           "properties": {
-             "clip_id": {"type": "string", "minLength": 1},
-             "to_start_frame": {"type": "integer", "minimum": 0},
-             "to_track": {"type": "string", "pattern": "^[VA][1-9][0-9]*$"}
-           }
-         }}
-       }},
-      {"type": "object", "additionalProperties": false,
-       "required": ["kind", "clip_id", "edge", "frame"],
-       "properties": {
-         "kind": {"const": "trim"},
-         "clip_id": {"type": "string", "minLength": 1},
-         "edge": {"enum": ["start", "end"]},
-         "frame": {"type": "integer", "minimum": 0}
-       }},
-      {"type": "object", "additionalProperties": false,
-       "required": ["kind", "frame"],
-       "properties": {
-         "kind": {"const": "split_at"},
-         "frame": {"type": "integer", "minimum": 0},
-         "clip_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
-       }}
-    ]}
+    "command_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,80}$"
+    },
+    "project_epoch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "if_revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "operation": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "moves"
+          ],
+          "properties": {
+            "kind": {
+              "const": "safe_move"
+            },
+            "moves": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 4096,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "clip_id",
+                  "to_start_frame",
+                  "to_track"
+                ],
+                "properties": {
+                  "clip_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "to_start_frame": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000000
+                  },
+                  "to_track": {
+                    "type": "string",
+                    "pattern": "^[0-9]+$"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "clip_id",
+            "edge",
+            "frame"
+          ],
+          "properties": {
+            "kind": {
+              "const": "trim"
+            },
+            "clip_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "edge": {
+              "enum": [
+                "start",
+                "end"
+              ]
+            },
+            "frame": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "frame",
+            "clip_ids"
+          ],
+          "properties": {
+            "kind": {
+              "const": "split"
+            },
+            "frame": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000000
+            },
+            "clip_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "maxItems": 4096
+            }
+          }
+        }
+      ]
+    },
+    "client_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{1,80}$"
+    },
+    "if_generation": {
+      "type": "string",
+      "pattern": "^[0-9]+$"
+    }
   }
 }

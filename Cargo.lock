@@ -4974,6 +4974,8 @@ name = "vv-web"
 version = "0.8.1"
 dependencies = [
  "axum",
+ "png",
+ "pollster 1.0.1",
  "ron",
  "rustix 1.1.4",
  "serde",
@@ -4982,6 +4984,7 @@ dependencies = [
  "tower",
  "vv-core",
  "vv-media",
+ "vv-render",
  "vv-session",
 ]
 

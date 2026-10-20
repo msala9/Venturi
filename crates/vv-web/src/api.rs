@@ -2,10 +2,11 @@ use crate::{
     commands::Mutation,
     error::{ApiError, Result},
     host::{Action, Host},
+    preview::{FrameQuery, Preview},
 };
 use axum::{
     Json, Router,
-    extract::{DefaultBodyLimit, Path, Request, State},
+    extract::{DefaultBodyLimit, Path, Query, Request, State},
     http::{StatusCode, header},
     middleware::{self, Next},
     response::{IntoResponse, Response},
@@ -17,6 +18,7 @@ use serde_json::{Value, json};
 pub struct AppState {
     pub host: Host,
     pub port: u16,
+    pub preview: Preview,
 }
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -31,13 +33,38 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/timelines/{id}/commands", post(timeline_command))
         .route("/api/v1/commands/{id}", get(lookup))
         .route("/api/v1/lease", post(lease))
+        .route("/api/v1/preview/frame", get(frame))
+        .route("/api/v1/diagnostics", get(diagnostics))
         .fallback(assets)
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
 }
 async fn session(State(state): State<AppState>) -> Result<Json<Value>> {
-    state.host.call(Action::Session).await.map(Json)
+    let mut snapshot = state.host.call(Action::Session).await?;
+    snapshot["capabilities"]["preview"] = json!(state.preview.available());
+    Ok(Json(snapshot))
+}
+async fn diagnostics(State(state): State<AppState>) -> Json<Value> {
+    Json(json!({"preview":state.preview.diagnostic()}))
+}
+async fn frame(
+    State(state): State<AppState>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    if !state.preview.available() {
+        return Err(ApiError(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "GPU_UNAVAILABLE",
+            "Start with an available AMD Vulkan adapter",
+        ));
+    }
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid preview query"))?
+        .0;
+    let snapshot = state.host.frame_snapshot(query).await?;
+    let data = state.preview.frame(snapshot).await?;
+    Ok(([(header::CONTENT_TYPE, "image/png")], data).into_response())
 }
 async fn timeline(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<Value>> {
     state.host.call(Action::Timeline(id)).await.map(Json)
@@ -149,6 +176,7 @@ async fn assets(request: Request) -> Response {
         "/js/main.js" => asset!("/web/js/main.js", "text/javascript"),
         "/js/ui.js" => asset!("/web/js/ui.js", "text/javascript"),
         "/js/api.js" => asset!("/web/js/api.js", "text/javascript"),
+        "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),
         "/js/timeline/index.js" => asset!("/web/js/timeline/index.js", "text/javascript"),
         "/js/timeline/geometry.js" => asset!("/web/js/timeline/geometry.js", "text/javascript"),
         "/js/timeline/input.js" => asset!("/web/js/timeline/input.js", "text/javascript"),

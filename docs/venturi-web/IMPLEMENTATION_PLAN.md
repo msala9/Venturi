@@ -72,6 +72,13 @@ Next smallest step:
 
 ## Stop-the-line triggers
 
+2026-10-20 execution note: the available Ubuntu WSL Vulkan adapter is only
+llvmpipe (CPU, vendor 0x10005, device 0x0000). M3 GPU acceptance is blocked
+until the actual Ubuntu GPU host is identified and tested. Continue independent
+M1/M2 validation; do not treat the CPU adapter as R9700 evidence. The current
+host intentionally exposes no preview/playback/export capability. See RUNNING.md
+for implemented API deltas, persistence limits and the remaining milestone work.
+
 - Wrong GPU or llvmpipe selected during GPU-dependent validation.
 - Source files at risk of overwrite without user-initiated overwrite intent.
 - A user gesture creates multiple undo steps without explicit grouping.

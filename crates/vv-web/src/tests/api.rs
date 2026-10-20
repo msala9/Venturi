@@ -15,6 +15,7 @@ async fn http_command_roundtrip_and_malformed_requests() {
             .as_nanos()
     ));
     let app = router(AppState {
+        preview: Preview::disabled(),
         host: Host::start(&root).unwrap(),
         port: 8787,
     });
@@ -77,6 +78,7 @@ async fn health_assets_snapshot_and_host_boundary() {
             .as_nanos()
     ));
     let app = router(AppState {
+        preview: Preview::disabled(),
         host: Host::start(&root).unwrap(),
         port: 8787,
     });

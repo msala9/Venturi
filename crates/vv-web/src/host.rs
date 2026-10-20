@@ -2,6 +2,7 @@ use crate::{
     commands::{self, Mutation, Operation},
     error::{ApiError, Result},
     files::Files,
+    preview::{FrameQuery, FrameSnapshot, frame_size},
     snapshot,
 };
 use serde_json::{Value, json};
@@ -22,6 +23,7 @@ pub enum Action {
     Lease(String),
     Mutation(Option<String>, Mutation),
     Lookup(String),
+    FrameSnapshot(FrameQuery, oneshot::Sender<Result<FrameSnapshot>>),
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
 #[derive(Clone)]
@@ -197,6 +199,38 @@ impl Editor {
     }
     fn handle(&mut self, action: Action) -> Result<Value> {
         match action {
+            Action::FrameSnapshot(query, reply) => {
+                let result = (|| {
+                    if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch())
+                        || query.if_generation != self.session.history.generation().to_string()
+                    {
+                        return Err(ApiError::conflict(
+                            "REVISION_CONFLICT",
+                            "Project changed before the frame snapshot",
+                        ));
+                    }
+                    let id = snapshot::timeline_id(&self.session, &query.timeline_id)?;
+                    if self.session.timeline_revision(id) != query.revision {
+                        return Err(ApiError::conflict(
+                            "REVISION_CONFLICT",
+                            "Timeline changed before the frame snapshot",
+                        ));
+                    }
+                    let tl = &self.session.project.timelines[id];
+                    if !(0..tl.total_frames().max(1)).contains(&query.frame) {
+                        return Err(ApiError::invalid("Preview frame is outside the timeline"));
+                    }
+                    let size = frame_size(tl.resolution, query.width)?;
+                    Ok(FrameSnapshot {
+                        project: self.session.project.clone(),
+                        timeline: id,
+                        query,
+                        size,
+                    })
+                })();
+                let _ = reply.send(result);
+                Ok(Value::Null)
+            }
             Action::Session => Ok(self.snapshot()),
             Action::Timeline(id) => snapshot::timeline_id(&self.session, &id)
                 .map(|id| snapshot::timeline(&self.session, id)),
@@ -219,6 +253,11 @@ fn valid_key(key: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
 }
 impl Host {
+    pub async fn frame_snapshot(&self, query: FrameQuery) -> Result<FrameSnapshot> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::FrameSnapshot(query, tx)).await?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
     pub fn start(root: &Path) -> std::io::Result<Self> {
         let mut editor = Editor::new(root)?;
         let (tx, rx) = mpsc::sync_channel::<Message>(16);

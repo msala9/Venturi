@@ -1,121 +1,710 @@
-import {isTextTarget, installSplitter} from './ui.js';
-import {createTimeline,fixtureTimeline} from './timeline/index.js';
+import { isTextTarget, installSplitter } from "./ui.js";
+import { createTimeline, fixtureTimeline } from "./timeline/index.js";
+import { linkedSelection } from "./timeline/geometry.js";
+import { request, sendMutation, ApiFailure } from "./api.js";
+import { createViewer } from "./viewer.js";
 
-const $ = id => document.getElementById(id);
-const editor = $('editor');
-export const notice = message => { $('notice').textContent = message; };
+const $ = (id) => document.getElementById(id);
+const editor = $("editor");
+$("search").addEventListener("input", () => {
+  const query = $("search").value.toLowerCase();
+  document.querySelectorAll(".media-item").forEach((card) => {
+    card.hidden = !card.textContent.toLowerCase().includes(query);
+  });
+});
+export const notice = (message) => {
+  $("notice").textContent = message;
+};
 const panels = {
-  Effects: ['Solid color','Title','Adjustment clip','Transitions · Push / Cross dissolve / Smooth cut','Masks · Rectangle / Ellipse / Path','Filters · Exposure / Blur / Shadow'],
-  Library: ['Shared library','Compound clips','Import / Export OTIO'],
-  Presets: ['Transform presets','Color presets','Equalizer presets','Compressor presets'],
-  History: ['Undo history will appear after connecting to a project.'],
+  Effects: [
+    "Solid color",
+    "Title",
+    "Adjustment clip",
+    "Transitions · Push / Cross dissolve / Smooth cut",
+    "Masks · Rectangle / Ellipse / Path",
+    "Filters · Exposure / Blur / Shadow",
+  ],
+  Library: ["Shared library", "Compound clips", "Import / Export OTIO"],
+  Presets: [
+    "Transform presets",
+    "Color presets",
+    "Equalizer presets",
+    "Compressor presets",
+  ],
+  History: ["Undo history will appear after connecting to a project."],
 };
 const workspaceTools = {
-  Edit: [], Color: ['Shadows / Midtones / Highlights / Offset','Auto balance','Waveform / RGB parade / Vectorscope / Histogram','Curves'],
-  Audio: ['Track / Master mixer','Six-band equalizer','Three-band compressor','Normalization / Mono','Voiceover','Analyze silence · VAD'],
-  Review: ['Shot / Take grouping','Compare A/B','Replace Take','Prompt / Seed / Model metadata'],
+  Edit: [],
+  Color: [
+    "Shadows / Midtones / Highlights / Offset",
+    "Auto balance",
+    "Waveform / RGB parade / Vectorscope / Histogram",
+    "Curves",
+  ],
+  Audio: [
+    "Track / Master mixer",
+    "Six-band equalizer",
+    "Three-band compressor",
+    "Normalization / Mono",
+    "Voiceover",
+    "Analyze silence · VAD",
+  ],
+  Review: [
+    "Shot / Take grouping",
+    "Compare A/B",
+    "Replace Take",
+    "Prompt / Seed / Model metadata",
+  ],
 };
 
 function showWorkspace(name) {
   editor.dataset.workspace = name;
-  document.querySelectorAll('[data-workspace]').forEach(button => {
-    if (button.tagName === 'BUTTON') button.setAttribute('aria-pressed', button.dataset.workspace === name);
+  document.querySelectorAll("[data-workspace]").forEach((button) => {
+    if (button.tagName === "BUTTON")
+      button.setAttribute("aria-pressed", button.dataset.workspace === name);
   });
-  const area = $('workspace-tools');
-  area.replaceChildren(); area.hidden = name === 'Edit';
-  const note = document.createElement('p'); note.className = 'muted';
+  const area = $("workspace-tools");
+  area.replaceChildren();
+  area.hidden = name === "Edit";
+  const note = document.createElement("p");
+  note.className = "muted";
   note.textContent = `${name} tools · Native features awaiting web integration`;
   area.append(note);
-  const tools = document.createElement('div'); tools.className = 'tools';
+  const tools = document.createElement("div");
+  tools.className = "tools";
   for (const label of workspaceTools[name]) {
-    const button = document.createElement('button'); button.textContent = label;
-    button.disabled = true; button.title = 'Not implemented in the web host'; tools.append(button);
+    const button = document.createElement("button");
+    button.textContent = label;
+    button.disabled = true;
+    button.title = "Not implemented in the web host";
+    tools.append(button);
   }
   area.append(tools);
-  try { localStorage.setItem('workspace', name); } catch {}
+  try {
+    localStorage.setItem("workspace", name);
+  } catch {}
 }
 
-document.querySelectorAll('button[data-workspace]').forEach(button => button.addEventListener('click', () => showWorkspace(button.dataset.workspace)));
-document.querySelectorAll('[data-panel]').forEach(button => button.addEventListener('click', () => {
-  document.querySelectorAll('[data-panel]').forEach(tab => tab.setAttribute('aria-selected', tab === button));
-  const name = button.dataset.panel;
-  $('media-list').hidden = name !== 'Media'; $('search').parentElement.hidden = name !== 'Media';
-  $('panel-content').hidden = name === 'Media'; $('panel-content').replaceChildren();
-  for (const label of panels[name] || []) {
-    const item = document.createElement('p'); item.textContent = label; $('panel-content').append(item);
+document
+  .querySelectorAll("button[data-workspace]")
+  .forEach((button) =>
+    button.addEventListener("click", () =>
+      showWorkspace(button.dataset.workspace),
+    ),
+  );
+document.querySelectorAll("[data-panel]").forEach((button) =>
+  button.addEventListener("click", () => {
+    document
+      .querySelectorAll("[data-panel]")
+      .forEach((tab) => tab.setAttribute("aria-selected", tab === button));
+    const name = button.dataset.panel;
+    $("media-list").hidden = name !== "Media";
+    $("search").parentElement.hidden = name !== "Media";
+    $("panel-content").hidden = name === "Media";
+    $("panel-content").replaceChildren();
+    for (const label of panels[name] || []) {
+      const item = document.createElement("p");
+      item.textContent = label;
+      $("panel-content").append(item);
+    }
+  }),
+);
+$("projects-button").addEventListener("click", () => $("projects").showModal());
+$("palette-button").addEventListener("click", () => $("palette").showModal());
+$("export-button").addEventListener("click", () => {
+  $("export-panel").hidden = false;
+});
+$("close-export").addEventListener("click", () => {
+  $("export-panel").hidden = true;
+});
+$("collapse-inspector").addEventListener("click", () => {
+  editor.classList.toggle("inspector-collapsed");
+});
+$("fullscreen").addEventListener("click", async () => {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await $("viewer").requestFullscreen();
+  } catch (error) {
+    notice(error.message);
   }
-}));
-$('projects-button').addEventListener('click', () => $('projects').showModal());
-$('palette-button').addEventListener('click', () => $('palette').showModal());
-$('export-button').addEventListener('click', () => { $('export-panel').hidden = false; });
-$('close-export').addEventListener('click', () => { $('export-panel').hidden = true; });
-$('collapse-inspector').addEventListener('click', () => { editor.classList.toggle('inspector-collapsed'); });
-$('fullscreen').addEventListener('click', async () => {
-  try { if (document.fullscreenElement) await document.exitFullscreen(); else await $('viewer').requestFullscreen(); } catch (error) { notice(error.message); }
 });
-for (const name of ['Edit','Color','Audio','Review']) {
-  const button = document.createElement('button'); button.textContent = `${name} workspace`;
-  button.addEventListener('click', () => { showWorkspace(name); $('palette').close(); }); $('command-list').append(button);
-}
-const restoreInspector = document.createElement('button'); restoreInspector.textContent = 'Show inspector';
-restoreInspector.addEventListener('click', () => { editor.classList.remove('inspector-collapsed'); $('palette').close(); }); $('command-list').append(restoreInspector);
-installSplitter($('left-splitter'), editor, '--left', 260);
-installSplitter($('right-splitter'), editor, '--right', 280, -1);
-installSplitter($('timeline-splitter'), editor, '--bottom', 300, -1);
-document.addEventListener('keydown', event => {
-  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k' && !isTextTarget(event.target)) { event.preventDefault(); $('palette').showModal(); }
-});
-try { const name = localStorage.getItem('workspace'); if (workspaceTools[name]) showWorkspace(name); } catch {}
-
-for (const [shot,take] of [['01 · Coast','A'],['01 · Coast','B'],['02 · Arrival','A']]) {
-  const card = document.createElement('button'); card.className = 'media-item';
-  card.textContent = `Fixture · Shot ${shot} / Take ${take}`;
-  card.addEventListener('click', event => {
-    if (!event.ctrlKey) document.querySelectorAll('.media-item').forEach(item => item.classList.remove('selected'));
-    card.classList.toggle('selected');
+for (const name of ["Edit", "Color", "Audio", "Review"]) {
+  const button = document.createElement("button");
+  button.textContent = `${name} workspace`;
+  button.addEventListener("click", () => {
+    showWorkspace(name);
+    $("palette").close();
   });
-  $('media-list').append(card);
+  $("command-list").append(button);
 }
-$('media-note').textContent = 'Demo Shot / Take labels · no media or server attached';
+const restoreInspector = document.createElement("button");
+restoreInspector.textContent = "Show inspector";
+restoreInspector.addEventListener("click", () => {
+  editor.classList.remove("inspector-collapsed");
+  $("palette").close();
+});
+$("command-list").append(restoreInspector);
+installSplitter($("left-splitter"), editor, "--left", 260);
+installSplitter($("right-splitter"), editor, "--right", 280, -1);
+installSplitter($("timeline-splitter"), editor, "--bottom", 300, -1);
+document.addEventListener("keydown", (event) => {
+  if (
+    (event.ctrlKey || event.metaKey) &&
+    event.key.toLowerCase() === "k" &&
+    !isTextTarget(event.target)
+  ) {
+    event.preventDefault();
+    $("palette").showModal();
+  }
+});
+try {
+  const name = localStorage.getItem("workspace");
+  if (workspaceTools[name]) showWorkspace(name);
+} catch {}
+
+for (const [shot, take] of [
+  ["01 · Coast", "A"],
+  ["01 · Coast", "B"],
+  ["02 · Arrival", "A"],
+]) {
+  const card = document.createElement("button");
+  card.className = "media-item";
+  card.textContent = `Fixture · Shot ${shot} / Take ${take}`;
+  card.addEventListener("click", (event) => {
+    if (!event.ctrlKey)
+      document
+        .querySelectorAll(".media-item")
+        .forEach((item) => item.classList.remove("selected"));
+    card.classList.toggle("selected");
+  });
+  $("media-list").append(card);
+}
+$("media-note").textContent =
+  "Demo Shot / Take labels · no media or server attached";
 
 let timeline = null;
-const view = {origin:0,scale:100,scrollY:0,playhead:0,selection:[],snap:true,draft:null};
-let commit = async () => { throw new Error('Fixture only · no edit was saved'); };
+const view = {
+  origin: 0,
+  scale: 100,
+  scrollY: 0,
+  playhead: 0,
+  selection: [],
+  snap: true,
+  draft: null,
+};
+let commit = async () => {
+  throw new Error("Fixture only · no edit was saved");
+};
 let seek = () => {};
+let viewer = null;
 function selected() {
-  const clip = timeline?.tracks.flatMap(track=>track.clips).find(item=>view.selection.includes(item.id));
-  $('inspector-content').replaceChildren();
-  const title=document.createElement('strong');title.textContent=clip?.name || 'No clip selected';$('inspector-content').append(title);
-  if(clip) for(const [label,value] of [['Clip ID',clip.id],['Start',clip.start_frame],['Length',clip.length_frames],['Source in',clip.source_in_frames ?? '—'],['Source out',clip.source_out_frames ?? '—']]) {
-    const row=document.createElement('p');row.textContent=`${label}: ${value}`;$('inspector-content').append(row);
+  const clip = timeline?.tracks
+    .flatMap((track) => track.clips)
+    .find((item) => view.selection.includes(item.id));
+  $("inspector-content").replaceChildren();
+  const title = document.createElement("strong");
+  title.textContent = clip?.name || "No clip selected";
+  $("inspector-content").append(title);
+  if (clip)
+    for (const [label, value] of [
+      ["Clip ID", clip.id],
+      ["Start", clip.start_frame],
+      ["Length", clip.length_frames],
+      ["Source in", clip.source_in_frames ?? "—"],
+      ["Source out", clip.source_out_frames ?? "—"],
+    ]) {
+      const row = document.createElement("p");
+      row.textContent = `${label}: ${value}`;
+      $("inspector-content").append(row);
+    }
+  if (clip && timeline.id !== "fixture") {
+    for (const [label, initial, edge] of [
+      ["Trim start frame", clip.start_frame, "start"],
+      ["Trim end frame", clip.start_frame + clip.length_frames, "end"],
+    ]) {
+      const form = document.createElement("form");
+      const row = document.createElement("label");
+      row.className = "field";
+      row.textContent = label;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = 0;
+      input.max = 1_000_000_000;
+      input.step = 1;
+      input.value = initial;
+      input.disabled = !writable;
+      form.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const frame = Number(input.value);
+        if (!Number.isSafeInteger(frame)) {
+          notice("Enter an integer frame");
+          return;
+        }
+        commit({ kind: "trim", clip_id: clip.id, edge, frame }).catch((error) =>
+          notice(error.message),
+        );
+      });
+      row.append(input);
+      const apply = document.createElement("button");
+      apply.textContent = `Apply ${label.toLowerCase()}`;
+      apply.disabled = !writable;
+      form.append(row, apply);
+      $("inspector-content").append(form);
+    }
   }
+  if (timeline?.id !== "fixture" && timeline)
+    for (const track of timeline.tracks) {
+      const heading = document.createElement("p");
+      heading.className = "section-title";
+      heading.textContent = `${track.label || track.id} · ${track.kind}`;
+      $("inspector-content").append(heading);
+      for (const flag of ["muted", "solo", "locked"]) {
+        const button = document.createElement("button");
+        button.textContent = flag;
+        button.setAttribute("aria-pressed", track[flag]);
+        button.disabled = !writable;
+        button.addEventListener("click", () =>
+          commit({
+            kind: "set_track",
+            track: track.id,
+            [flag]: !track[flag],
+          }).catch((error) => notice(error.message)),
+        );
+        $("inspector-content").append(button);
+      }
+    }
 }
-const canvasTimeline=createTimeline({canvas:$('timeline'),getTimeline:()=>timeline,view,onSelect:selected,onSeek:final=>{updateTime();if(final)seek();},onCommand:operation=>commit(operation),onNotice:notice});
-function updateTime(){
-  const fps=Math.round(timeline?.fps.num / timeline?.fps.den || 24),frame=view.playhead;
-  $('timecode').textContent=[Math.floor(frame/fps/3600),Math.floor(frame/fps/60)%60,Math.floor(frame/fps)%60,frame%fps].map(n=>String(n).padStart(2,'0')).join(':');
+const canvasTimeline = createTimeline({
+  canvas: $("timeline"),
+  getTimeline: () => timeline,
+  view,
+  onSelect: selected,
+  onSeek: (final) => {
+    updateTime();
+    if (final) seek();
+  },
+  onCommand: (operation) => commit(operation),
+  onNotice: notice,
+});
+function updateTime() {
+  const fps = Math.round(timeline?.fps.num / timeline?.fps.den || 24),
+    frame = view.playhead;
+  $("timecode").textContent = [
+    Math.floor(frame / fps / 3600),
+    Math.floor(frame / fps / 60) % 60,
+    Math.floor(frame / fps) % 60,
+    frame % fps,
+  ]
+    .map((n) => String(n).padStart(2, "0"))
+    .join(":");
   canvasTimeline.invalidate();
 }
 function installTimeline(next) {
-  canvasTimeline.cancel();timeline=next;view.selection=[];selected();
-  $('format').textContent=`${next.fps.num}/${next.fps.den} fps`;
-  $('clip-list').replaceChildren();
-  for(const track of next.tracks) for(const clip of track.clips) {
-    const button=document.createElement('button');button.textContent=`${track.id} · ${clip.name || clip.id}`;
-    button.addEventListener('click',()=>{view.selection=[clip.id];selected();canvasTimeline.invalidate();});$('clip-list').append(button);
-  }
+  canvasTimeline.cancel();
+  timeline = next;
+  view.selection = [];
+  selected();
+  $("format").textContent = `${next.fps.num}/${next.fps.den} fps`;
+  $("clip-list").replaceChildren();
+  for (const track of next.tracks)
+    for (const clip of track.clips) {
+      const button = document.createElement("button");
+      button.textContent = `${track.id} · ${clip.name || clip.id}`;
+      button.addEventListener("click", () => {
+        view.selection = [clip.id];
+        selected();
+        canvasTimeline.invalidate();
+      });
+      $("clip-list").append(button);
+    }
   updateTime();
 }
-$('demo-button').addEventListener('click',()=>{
-  installTimeline(fixtureTimeline());$('connection').textContent='Demo / no server · fixture';
-  $('timeline-select').replaceChildren(new Option(timeline.name,timeline.id));notice('500 fixture clips · gestures are local drafts, no project writes');
+$("demo-button").addEventListener("click", () => {
+  installTimeline(fixtureTimeline());
+  $("connection").textContent = "Demo / no server · fixture";
+  $("timeline-select").replaceChildren(new Option(timeline.name, timeline.id));
+  notice("500 fixture clips · gestures are local drafts, no project writes");
 });
-$('snap').addEventListener('click',()=>{view.snap=!view.snap;$('snap').setAttribute('aria-pressed',view.snap);});
-for(const [id,factor] of [['zoom-in',1.4],['zoom-out',1/1.4]]) $(id).addEventListener('click',()=>{view.scale=Math.max(3,Math.min(2000,view.scale*factor));canvasTimeline.invalidate();});
-$('fit').addEventListener('click',()=>{if(!timeline)return;const end=Math.max(240,...timeline.tracks.flatMap(t=>t.clips.map(c=>c.start_frame+c.length_frames)));view.origin=0;view.scale=($('timeline').clientWidth-170)*timeline.fps.num/timeline.fps.den/end;canvasTimeline.invalidate();});
-function step(delta){view.playhead=Math.max(0,view.playhead+delta);updateTime();seek();}
-$('step-back').addEventListener('click',()=>step(-1));$('step-forward').addEventListener('click',()=>step(1));
-document.addEventListener('keydown',event=>{
-  if(isTextTarget(event.target))return;
-  if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();step(event.key==='ArrowLeft'?-1:1);}
+$("snap").addEventListener("click", () => {
+  view.snap = !view.snap;
+  $("snap").setAttribute("aria-pressed", view.snap);
 });
+for (const [id, factor] of [
+  ["zoom-in", 1.4],
+  ["zoom-out", 1 / 1.4],
+])
+  $(id).addEventListener("click", () => {
+    view.scale = Math.max(3, Math.min(2000, view.scale * factor));
+    canvasTimeline.invalidate();
+  });
+$("fit").addEventListener("click", () => {
+  if (!timeline) return;
+  const end = Math.max(
+    240,
+    ...timeline.tracks.flatMap((t) =>
+      t.clips.map((c) => c.start_frame + c.length_frames),
+    ),
+  );
+  view.origin = 0;
+  view.scale =
+    (($("timeline").clientWidth - 170) * timeline.fps.num) /
+    timeline.fps.den /
+    end;
+  canvasTimeline.invalidate();
+});
+function step(delta) {
+  view.playhead = Math.max(0, view.playhead + delta);
+  updateTime();
+  seek();
+}
+$("step-back").addEventListener("click", () => step(-1));
+$("step-forward").addEventListener("click", () => step(1));
+document.addEventListener("keydown", (event) => {
+  if (isTextTarget(event.target)) return;
+  if (event.altKey) return;
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    event.preventDefault();
+    step(event.key === "ArrowLeft" ? -1 : 1);
+  }
+});
+
+let documentState = null,
+  writable = false,
+  busy = false,
+  unresolved = null,
+  selectedMedia = null;
+const clientId = crypto.randomUUID();
+async function refresh() {
+  viewer?.invalidate();
+  const next = await request("/session");
+  const previousId = timeline?.id,
+    selection = view.selection;
+  documentState = next;
+  $("timeline-select").replaceChildren(
+    ...next.timelines.map((t) => new Option(t.name, t.id)),
+  );
+  const active =
+    next.timelines.find((t) => t.id === previousId) || next.timelines[0];
+  if (active) {
+    $("timeline-select").value = active.id;
+    installTimeline(active);
+    view.selection = selection.filter((id) =>
+      active.tracks.some((t) => t.clips.some((c) => c.id === id)),
+    );
+    selected();
+    canvasTimeline.invalidate();
+  } else {
+    timeline = null;
+    canvasTimeline.invalidate();
+  }
+  $("project-name").textContent = next.project_name || "Untitled project";
+  $("save-state").textContent = next.unsaved ? "Unsaved changes" : "Saved";
+  $("revision").textContent = active
+    ? `Revision ${active.revision.slice(0, 8)}`
+    : "No timeline";
+  $("connection").textContent = writable
+    ? "Connected · writer"
+    : "Connected · read only";
+  for (const id of [
+    "save",
+    "undo",
+    "redo",
+    "split",
+    "delete",
+    "add-solid",
+    "insert-media",
+    "import-button",
+  ])
+    $(id).disabled = !writable || busy || !active || !!unresolved;
+  $("undo").disabled ||= next.history.position === 0;
+  $("redo").disabled ||= next.history.position === next.history.labels.length;
+  $("demo-button").hidden = true;
+  $("media-list").replaceChildren();
+  $("media-note").textContent = "Project media · authoritative Rust session";
+  for (const item of next.media) {
+    const card = document.createElement("button");
+    card.className = "media-item";
+    card.textContent = `${item.name}${item.offline ? " · OFFLINE" : ""}`;
+    card.addEventListener("click", () => {
+      selectedMedia = item.id;
+      document
+        .querySelectorAll(".media-item")
+        .forEach((c) => c.classList.remove("selected"));
+      card.classList.add("selected");
+      notice("Media selected · use Insert media to place at the playhead");
+    });
+    $("media-list").append(card);
+  }
+  const history = document.createElement("div");
+  for (const [i, label] of next.history.labels.entries()) {
+    const p = document.createElement("p");
+    p.textContent = `${i < next.history.position ? "✓" : "↻"} ${label}`;
+    history.append(p);
+  }
+  panels.History = next.history.labels.map(
+    (label, i) => `${i < next.history.position ? "✓" : "↻"} ${label}`,
+  );
+  $("viewer-message").textContent = next.capabilities.preview
+    ? "Seek a timeline frame"
+    : "Exact preview is not available on this host";
+  if (next.capabilities.preview) seek();
+}
+async function mutate(operation, project = false) {
+  if (!writable || busy || unresolved)
+    throw new Error("Editing is read only or a command is pending");
+  if (!project && (!timeline || timeline.id === "fixture"))
+    throw new Error("Open a real project before editing");
+  const body = {
+    command_id: crypto.randomUUID(),
+    client_id: clientId,
+    project_epoch: documentState.project_epoch,
+    if_generation: documentState.generation,
+    if_revision: project ? null : timeline.revision,
+    operation,
+  };
+  busy = true;
+  notice("Applying command…");
+  try {
+    await sendMutation(
+      project
+        ? "/projects/commands"
+        : `/timelines/${encodeURIComponent(timeline.id)}/commands`,
+      body,
+    );
+    notice("Command applied");
+  } catch (error) {
+    if (error.code === "OUTCOME_UNKNOWN") {
+      unresolved = body.command_id;
+      writable = false;
+    }
+    $("connection").textContent =
+      error.code === "OUTCOME_UNKNOWN"
+        ? "Disconnected · command outcome unknown"
+        : "Connected · command rejected";
+    throw error;
+  } finally {
+    busy = false;
+    await refresh().catch(() => {
+      $("connection").textContent = "Disconnected";
+    });
+  }
+}
+commit = (operation) => mutate(operation);
+const run = (operation) =>
+  mutate(operation).catch((error) => notice(error.message));
+function moveSelection(delta) {
+  if (!timeline || !view.selection.length) return;
+  const ids = linkedSelection(timeline, view.selection),
+    moves = [];
+  for (const track of timeline.tracks)
+    for (const clip of track.clips)
+      if (ids.includes(clip.id))
+        moves.push({
+          clip_id: clip.id,
+          to_track: track.id,
+          to_start_frame: clip.start_frame + delta,
+        });
+  run({ kind: "safe_move", moves });
+}
+for (const [label, audio] of [
+  ["Add video track", false],
+  ["Add audio track", true],
+]) {
+  const button = document.createElement("button");
+  button.textContent = label;
+  button.addEventListener("click", () => {
+    run({ kind: "add_track", audio });
+    $("palette").close();
+  });
+  $("command-list").append(button);
+}
+const ripple = document.createElement("button");
+ripple.textContent = "Ripple delete selected clips";
+ripple.addEventListener("click", () => {
+  run({ kind: "delete", clip_ids: view.selection, ripple: true });
+  $("palette").close();
+});
+$("command-list").append(ripple);
+$("add-solid").addEventListener("click", () => {
+  const track = timeline?.tracks.find((t) => t.kind === "video" && !t.locked);
+  if (track)
+    run({
+      kind: "add_solid",
+      track: track.id,
+      start_frame: view.playhead,
+      length_frames: Math.round((5 * timeline.fps.num) / timeline.fps.den),
+    });
+});
+$("split").addEventListener("click", () =>
+  run({ kind: "split", clip_ids: view.selection, frame: view.playhead }),
+);
+$("insert-media").addEventListener("click", () => {
+  if (selectedMedia)
+    run({
+      kind: "insert_media",
+      media_id: selectedMedia,
+      start_frame: view.playhead,
+    });
+  else notice("Select an imported media first");
+});
+$("import-button").addEventListener("click", async () => {
+  $("imports").showModal();
+  $("import-list").replaceChildren();
+  $("import-error").textContent = "";
+  try {
+    const data = await request("/projects");
+    for (const item of data.importable_media) {
+      const button = document.createElement("button");
+      button.textContent = item.name;
+      button.addEventListener("click", async () => {
+        try {
+          await mutate(
+            { kind: "import_media", path_token: item.path_token },
+            true,
+          );
+          $("imports").close();
+        } catch (error) {
+          $("import-error").textContent = error.message;
+        }
+      });
+      $("import-list").append(button);
+    }
+    if (!data.importable_media.length)
+      $("import-error").textContent =
+        "No importable media in the configured root.";
+  } catch (error) {
+    $("import-error").textContent = error.message;
+  }
+});
+$("delete").addEventListener("click", () =>
+  run({ kind: "delete", clip_ids: view.selection, ripple: false }),
+);
+$("undo").addEventListener("click", () => run({ kind: "undo" }));
+$("redo").addEventListener("click", () => run({ kind: "redo" }));
+$("save").addEventListener("click", () =>
+  mutate({ kind: "save" }, true).catch((error) => notice(error.message)),
+);
+$("timeline-select").addEventListener("change", () => {
+  const next = documentState?.timelines.find(
+    (t) => t.id === $("timeline-select").value,
+  );
+  if (next) installTimeline(next);
+});
+async function projects() {
+  try {
+    const data = await request("/projects");
+    $("project-list").replaceChildren();
+    for (const item of data.projects) {
+      const button = document.createElement("button");
+      button.textContent = item.name;
+      button.addEventListener("click", async () => {
+        try {
+          await mutate(
+            { kind: "open_project", path_token: item.path_token },
+            true,
+          );
+          $("projects").close();
+        } catch (error) {
+          $("project-error").textContent = error.message;
+        }
+      });
+      $("project-list").append(button);
+    }
+    if (!data.projects.length) {
+      const p = document.createElement("p");
+      p.textContent = "No projects yet. Create your first timeline below.";
+      $("project-list").append(p);
+    }
+  } catch (error) {
+    $("project-error").textContent = error.message;
+  }
+}
+$("projects-button").addEventListener("click", projects);
+$("new-project").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  try {
+    await mutate(
+      { kind: "new_project", name: new FormData(event.target).get("name") },
+      true,
+    );
+    $("projects").close();
+  } catch (error) {
+    $("project-error").textContent = error.message;
+  }
+});
+async function connect() {
+  try {
+    if (unresolved) {
+      try {
+        await request(`/commands/${encodeURIComponent(unresolved)}`);
+      } catch (error) {
+        if (!(error instanceof ApiFailure) || error.status !== 404) throw error;
+      }
+      unresolved = null;
+    }
+    await request("/lease", { client_id: clientId });
+    writable = true;
+    await refresh();
+    notice("Connected to native Venturi session");
+  } catch (error) {
+    writable = false;
+    await refresh().catch(() => {
+      $("connection").textContent = "Demo / no server";
+    });
+    notice(error.message);
+  }
+}
+$("reconnect").addEventListener("click", connect);
+setInterval(() => {
+  if (writable)
+    request("/lease", { client_id: clientId }).catch(() => {
+      writable = false;
+      $("connection").textContent = "Disconnected · read only";
+    });
+}, 30_000);
+document.addEventListener("keydown", (event) => {
+  if (isTextTarget(event.target)) return;
+  const modifier = event.ctrlKey || event.metaKey;
+  if (
+    event.altKey &&
+    (event.key === "ArrowLeft" || event.key === "ArrowRight")
+  ) {
+    event.preventDefault();
+    moveSelection(
+      (event.key === "ArrowLeft" ? -1 : 1) * (event.shiftKey ? 10 : 1),
+    );
+  } else if (modifier && event.key.toLowerCase() === "s") {
+    event.preventDefault();
+    $("save").click();
+  } else if (modifier && event.key.toLowerCase() === "z") {
+    event.preventDefault();
+    $(event.shiftKey ? "redo" : "undo").click();
+  } else if (event.key.toLowerCase() === "t" && !modifier) $("split").click();
+  else if (event.key === "Delete") $("delete").click();
+});
+viewer = createViewer({
+  image: $("preview"),
+  empty: $("viewer-empty"),
+  status: $("preview-state"),
+  getState: () =>
+    documentState?.capabilities.preview && timeline
+      ? {
+          project_epoch: documentState.project_epoch,
+          if_generation: documentState.generation,
+          timeline_id: timeline.id,
+          revision: timeline.revision,
+          frame: view.playhead,
+          width: 960,
+        }
+      : null,
+});
+seek = () => viewer.seek();
+async function diagnostics() {
+  try {
+    const d = await request("/diagnostics");
+    $("gpu-status").textContent = d.preview.available
+      ? `${d.preview.name} · Vulkan`
+      : "GPU preview unavailable";
+  } catch {}
+}
+connect().then(diagnostics);

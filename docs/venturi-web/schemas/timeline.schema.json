@@ -1,49 +1,212 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/venturi-web/timeline.schema.json",
-  "title": "Proposed Venturi Web normalized Timeline DTO",
+  "title": "Venturi Web normalized timeline DTO",
   "type": "object",
   "additionalProperties": false,
-  "required": ["api_version", "project_epoch", "timeline_id", "revision", "fps", "resolution", "tracks", "markers"],
+  "required": [
+    "api_version",
+    "timeline_id",
+    "revision",
+    "fps",
+    "resolution",
+    "tracks",
+    "markers",
+    "id",
+    "name"
+  ],
   "properties": {
-    "api_version": {"const": 1},
-    "project_epoch": {"type": "integer", "minimum": 0},
-    "timeline_id": {"type": "string", "minLength": 1},
-    "revision": {"type": "string", "minLength": 1},
-    "fps": {"type": "object", "additionalProperties": false, "required": ["num", "den"],
-      "properties": {"num": {"type": "integer", "minimum": 1}, "den": {"type": "integer", "minimum": 1}}},
-    "resolution": {"type": "object", "additionalProperties": false, "required": ["width", "height"],
-      "properties": {"width": {"type": "integer", "minimum": 1}, "height": {"type": "integer", "minimum": 1}}},
-    "tracks": {"type": "array", "items": {"type": "object", "additionalProperties": false,
-      "required": ["id", "kind", "locked", "muted", "clips"],
+    "api_version": {
+      "const": 1
+    },
+    "timeline_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "num",
+        "den"
+      ],
       "properties": {
-        "id": {"type": "string", "minLength": 2},
-        "kind": {"enum": ["video", "audio"]},
-        "locked": {"type": "boolean"}, "muted": {"type": "boolean"},
-        "clips": {"type": "array", "items": {"type": "object", "additionalProperties": false,
-          "required": ["id", "start_frame", "length_frames", "source_in_frames", "source_out_frames", "media_id", "linked_group", "disabled"],
-          "properties": {
-            "id": {"type": "string", "minLength": 1},
-            "start_frame": {"type": "integer", "minimum": 0},
-            "length_frames": {"type": "integer", "minimum": 1},
-            "source_in_frames": {"type": "integer", "minimum": 0},
-            "source_out_frames": {"type": "integer", "minimum": 1},
-            "media_id": {"type": "string", "minLength": 1},
-            "linked_group": {"type": ["string", "null"]},
-            "disabled": {"type": "boolean"}
+        "num": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "den": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "resolution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "width",
+        "height"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "tracks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "locked",
+          "muted",
+          "clips"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "video",
+              "audio"
+            ]
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "muted": {
+            "type": "boolean"
+          },
+          "clips": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "start_frame",
+                "length_frames",
+                "source_in_frames",
+                "source_out_frames",
+                "media_id",
+                "linked_group",
+                "disabled"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "start_frame": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "length_frames": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "source_in_frames": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "source_out_frames": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "media_id": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "minLength": 1
+                },
+                "linked_group": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "disabled": {
+                  "type": "boolean"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "enum": [
+                    "media",
+                    "solid_color",
+                    "title",
+                    "adjustment"
+                  ]
+                }
+              }
+            }
+          },
+          "label": {
+            "type": "string"
+          },
+          "solo": {
+            "type": "boolean"
           }
-        }}
+        }
       }
-    }},
-    "markers": {"type": "array", "items": {"type": "object", "additionalProperties": false,
-      "required": ["id", "start_frame", "duration_frames", "note", "color"],
-      "properties": {
-        "id": {"type": "string", "minLength": 1},
-        "start_frame": {"type": "integer", "minimum": 0},
-        "duration_frames": {"type": "integer", "minimum": 0},
-        "note": {"type": "string"},
-        "color": {"type": "string"}
+    },
+    "markers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "start_frame",
+          "duration_frames",
+          "note",
+          "color"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "start_frame": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duration_frames": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "note": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          }
+        }
       }
-    }}
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name": {
+      "type": "string"
+    }
   }
 }

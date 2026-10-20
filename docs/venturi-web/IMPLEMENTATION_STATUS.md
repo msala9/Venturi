@@ -58,3 +58,19 @@ ALSA and clang. WSL was terminated once by its init lifecycle during the
 first check attempt; persistent cache logs and foreground PTY execution were
 used on the successful retry. Clippy found one manual-range style issue,
 which was corrected; the final rerun is recorded below.
+
+## M2b — project/session workflow
+
+The browser is connected to authoritative native session snapshots. Verified
+in the real host: create, save, process restart, reopen the saved RON, import
+synthetic H.264/AAC media, insert linked video/audio and retain native IDs.
+The project chooser uses server-issued root filenames; no arbitrary filesystem
+browser. Saved .vvproj.bak is available for previous-save recovery. Save As,
+nested roots, uploads, automatic crash recovery and asynchronous import probing
+remain unimplemented (see RUNNING.md). A browser reload may wait for the prior
+writer lease to expire; Reconnect reacquires it safely.
+
+The M2b browser integration commit also carries the bounded exact-frame service
+for the next milestone, with capability disabled unless an explicit AMD Vulkan
+device initializes. Target GPU acceptance is recorded separately after testing;
+code existence does not imply GPU validation.

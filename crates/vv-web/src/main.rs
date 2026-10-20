@@ -3,15 +3,25 @@ mod commands;
 mod error;
 mod files;
 mod host;
+mod preview;
 mod snapshot;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut listen = "127.0.0.1:8787".parse::<std::net::SocketAddr>()?;
     let mut root = std::path::PathBuf::from("venturi-web-data");
+    let mut gpu = None;
+    let mut gpu_lock = std::path::PathBuf::from("/tmp/HALO_BENCHMARK.lock");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--gpu-device" => {
+                let id = args
+                    .next()
+                    .ok_or("--gpu-device requires a hex PCI device ID")?;
+                gpu = Some(u32::from_str_radix(id.trim_start_matches("0x"), 16)?);
+            }
+            "--gpu-lock" => gpu_lock = args.next().ok_or("--gpu-lock requires a file path")?.into(),
             "--listen" => listen = args.next().ok_or("--listen requires an address")?.parse()?,
             "--projects-root" => {
                 root = args
@@ -21,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "--help" => {
                 println!(
-                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY]\nOnly loopback addresses are supported."
+                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551] [--gpu-lock FILE]\nOnly loopback addresses are supported."
                 );
                 return Ok(());
             }
@@ -38,6 +48,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         api::router(api::AppState {
             host: host::Host::start(&root)?,
             port: listen.port(),
+            preview: gpu
+                .map(|id| preview::Preview::start(id, &gpu_lock))
+                .unwrap_or_else(preview::Preview::disabled),
         }),
     )
     .with_graceful_shutdown(async {

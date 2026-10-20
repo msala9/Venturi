@@ -1,5 +1,12 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+The implemented M2 subset and its deliberate schema deltas are documented in
+[RUNNING.md](RUNNING.md#actual-api-deltas-from-the-proposal). In particular,
+project epoch is now a string and every mutation also requires client ownership
+and project history generation. The JSON schemas reflect implemented timeline
+DTOs and the safe move/trim/split request subset, rather than the earlier examples
+below. Unimplemented routes in this design table must not be assumed available.
+
 All endpoints below are **new** `vv-web` routes to implement. Do not say Venturi already exposes REST. `vv-app mcp` is a stdio tool server; use it only as a temporary proof-of-concept backend.
 
 ## Common conventions

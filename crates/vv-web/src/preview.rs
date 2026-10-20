@@ -60,7 +60,13 @@ impl Drop for GpuPermit<'_> {
 }
 struct Job {
     snapshot: FrameSnapshot,
+    mode: FrameMode,
     reply: oneshot::Sender<Result<Vec<u8>>>,
+}
+#[derive(Clone, Debug)]
+enum FrameMode {
+    Program,
+    Scopes(vv_core::ClipId, [vv_render::ScopeKind; 2]),
 }
 #[derive(Clone, Copy)]
 enum AdapterChoice {
@@ -74,7 +80,16 @@ struct Queue {
 }
 impl Queue {
     fn replace(&self, job: Job) {
-        *self.pending.lock().unwrap() = Some(job);
+        let mut pending = self.pending.lock().unwrap();
+        // Analysis must not displace a pending Program seek.
+        if matches!(job.mode, FrameMode::Scopes(..))
+            && pending
+                .as_ref()
+                .is_some_and(|p| matches!(p.mode, FrameMode::Program))
+        {
+            return;
+        }
+        *pending = Some(job);
         self.wake.notify_one();
     }
     fn next(&self, idle: std::time::Duration) -> Option<Job> {
@@ -163,14 +178,15 @@ impl Preview {
                 }
                 let snapshot = job.snapshot;
                 let key = format!(
-                    "{}:{}:{}:{}:{}:{}x{}",
+                    "{}:{}:{}:{}:{}:{}x{}:{:?}",
                     snapshot.query.project_epoch,
                     snapshot.query.if_generation,
                     snapshot.query.timeline_id,
                     snapshot.query.revision,
                     snapshot.query.frame,
                     snapshot.size.0,
-                    snapshot.size.1
+                    snapshot.size.1,
+                    job.mode,
                 );
                 if let Some((_, data)) = cache.iter().find(|(candidate, _)| candidate == &key) {
                     let _ = job.reply.send(Ok(data.clone()));
@@ -192,22 +208,30 @@ impl Preview {
                         poll_failed: &poll_failed,
                     };
                     compositor.set_precision(snapshot.project.precision);
-                    let rgba = vv_session::export::render_frame_rgba(
-                        &snapshot.project,
-                        snapshot.timeline,
-                        snapshot.query.frame,
-                        snapshot.size,
-                        compositor,
-                    )
-                    .map_err(|_| {
-                        ApiError(
-                            axum::http::StatusCode::UNPROCESSABLE_ENTITY,
-                            "FRAME_FAILED",
-                            "Native frame rendering failed; check offline media",
-                        )
-                    })?;
+                    let (rgba, size) = match job.mode {
+                        FrameMode::Program => (
+                            vv_session::export::render_frame_rgba(
+                                &snapshot.project,
+                                snapshot.timeline,
+                                snapshot.query.frame,
+                                snapshot.size,
+                                compositor,
+                            )
+                            .map_err(|_| {
+                                ApiError(
+                                    axum::http::StatusCode::UNPROCESSABLE_ENTITY,
+                                    "FRAME_FAILED",
+                                    "Native frame rendering failed; check offline media",
+                                )
+                            })?,
+                            snapshot.size,
+                        ),
+                        FrameMode::Scopes(clip, kinds) => {
+                            render_scopes(&snapshot, clip, kinds, compositor)?
+                        }
+                    };
                     drop(permit);
-                    encode_png(&rgba, snapshot.size)
+                    encode_png(&rgba, size)
                 }))
                 .unwrap_or_else(|_| Err(unavailable()));
                 if poll_failed.load(Ordering::Relaxed) {
@@ -331,16 +355,73 @@ impl Preview {
         value
     }
     pub async fn frame(&self, snapshot: FrameSnapshot) -> Result<Vec<u8>> {
+        self.render(snapshot, FrameMode::Program).await
+    }
+    pub async fn scopes(
+        &self,
+        snapshot: FrameSnapshot,
+        clip: &str,
+        kinds: [vv_render::ScopeKind; 2],
+    ) -> Result<Vec<u8>> {
+        let clip = vv_core::ClipId(
+            clip.parse()
+                .map_err(|_| ApiError::invalid("Invalid scope clip"))?,
+        );
+        let tl = &snapshot.project.timelines[snapshot.timeline];
+        if !tl
+            .tracks
+            .iter()
+            .filter(|t| t.kind == vv_core::TrackKind::Video)
+            .flat_map(|t| &t.clips)
+            .any(|c| c.id == clip && c.contains(snapshot.query.frame))
+        {
+            return Err(ApiError::invalid(
+                "Select a video clip containing the scope frame",
+            ));
+        }
+        self.render(snapshot, FrameMode::Scopes(clip, kinds)).await
+    }
+    async fn render(&self, snapshot: FrameSnapshot, mode: FrameMode) -> Result<Vec<u8>> {
         let queue = self.queue.as_ref().ok_or_else(unavailable)?;
         let (tx, rx) = oneshot::channel();
         queue.replace(Job {
             snapshot,
+            mode,
             reply: tx,
         });
         rx.await.map_err(|_| {
             ApiError::conflict("SEEK_SUPERSEDED", "A newer seek replaced this request")
         })?
     }
+}
+fn render_scopes(
+    snapshot: &FrameSnapshot,
+    clip: vv_core::ClipId,
+    kinds: [vv_render::ScopeKind; 2],
+    compositor: &Compositor,
+) -> Result<(Vec<u8>, (u32, u32))> {
+    let source = vv_session::export::render_scope_source(
+        &snapshot.project,
+        snapshot.timeline,
+        clip,
+        snapshot.query.frame,
+        snapshot.size,
+        compositor,
+    )
+    .map_err(|_| {
+        ApiError::invalid("Native isolated scope rendering failed; check offline media")
+    })?;
+    let scopes = vv_render::Scopes::new(compositor.device().clone(), compositor.queue().clone());
+    let mut rgba = vec![0; 1024 * 256 * 4];
+    for (slot, kind) in kinds.into_iter().enumerate() {
+        let texture = scopes.render(&source, kind, slot, (512, 256));
+        let pixels = compositor.read_rgba_texture(&texture, 512, 256);
+        for (row, data) in pixels.as_chunks::<{ 512 * 4 }>().0.iter().enumerate() {
+            let start = row * 1024 * 4 + slot * 512 * 4;
+            rgba[start..start + data.len()].copy_from_slice(data);
+        }
+    }
+    Ok((rgba, (1024, 256)))
 }
 fn unavailable() -> ApiError {
     ApiError(

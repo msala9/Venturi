@@ -11,7 +11,7 @@ export function matchesFrame(request, current) {
     ].every((key) => request[key] === current[key])
   );
 }
-export function createViewer({ image, empty, status, getState }) {
+export function createViewer({ image, empty, status, getState, matches = matchesFrame, endpoint = (current) => `/api/v1/preview/frame?${new URLSearchParams(current)}` }) {
   let sequence = 0,
     controller = null,
     url = null,
@@ -44,10 +44,7 @@ export function createViewer({ image, empty, status, getState }) {
     image.classList.add("stale");
     status.textContent = "SEEKING";
     try {
-      const query = new URLSearchParams(
-        Object.entries(current).map(([key, value]) => [key, String(value)]),
-      );
-      const response = await fetch(`/api/v1/preview/frame?${query}`, {
+      const response = await fetch(endpoint(current), {
         signal: AbortSignal.any([
           controller.signal,
           AbortSignal.timeout(30_000),
@@ -59,14 +56,14 @@ export function createViewer({ image, empty, status, getState }) {
         throw new Error(data.error?.code || "FRAME_FAILED");
       }
       const blob = await response.blob();
-      if (seq !== sequence || !matchesFrame(current, getState())) return;
+      if (seq !== sequence || !matches(current, getState())) return;
       if (blob.type !== "image/png" || blob.size > 16 * 1024 * 1024)
         throw new Error("INVALID_FRAME");
       const next = URL.createObjectURL(blob);
       pendingURL = next;
       image.src = next;
       await image.decode();
-      if (seq !== sequence || !matchesFrame(current, getState())) {
+      if (seq !== sequence || !matches(current, getState())) {
         URL.revokeObjectURL(next);
         return;
       }

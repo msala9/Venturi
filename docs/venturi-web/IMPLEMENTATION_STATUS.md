@@ -756,3 +756,37 @@ form edits cannot imply that an earlier download uses the new form values.
 software driver/privilege/thread guards and private lock behavior. Successful
 R9700 Export and fresh whole-job reservation acceptance still await shared
 hardware availability; M4/M5/M6/M7 remaining parity is unchanged.
+
+## M5 independent increment — two native isolated clip scopes
+
+Color now shows any pair of Waveform, RGB Parade, Vectorscope and Histogram
+using vv-render's existing shader measurements. An additive vv-session helper
+composes the selected clip's track alone, including crossings/mattes/grade;
+adjustment clips retain lower tracks, matching the desktop input stage. The
+desktop/export paths retain their existing behavior. A native test verifies
+that a red clip is measured without the blue covering track and an adjustment
+target retains that blue input. Unknown/out-of-range targets are refused.
+
+The bounded preview worker returns one 1024x256 PNG for both scopes, sharing
+the existing queue/cache/lock budgets. Scope analysis cannot displace a pending
+Program seek. Revision/generation is rechecked before HTTP delivery; browser
+identity also includes target and both kinds. No requests occur on pointermove.
+Scopes update on stopped frames; retained data is marked stale during scrubbing
+and paused during composed playback. Continuous playback scopes remain open.
+
+Windows/WSL proof: all four native kinds rendered the graded A/V fixture;
+exact stepping updated the scopes. A real mute command made the old query fail
+409 REVISION_CONFLICT; Undo/Save restored the project. Browser tests verify
+old selection responses cannot replace newer ones. Evidence: m5-native-scopes*
+PNGs/JSON. This is software/native acceptance; hardware scope acceptance is
+pending the shared slot, and Auto Balance/curves remain open.
+
+54 web Rust tests, 24 JavaScript tests and 100 session tests (one ignored)
+pass. Formatting, web/session clippy, native desktop check and web build pass.
+
+The same software runtime is deployed on halo2, bound to loopback 8790. Its
+48-frame 960x540 native H.264/AAC export completed in 913.09ms; the downloaded
+MP4 decoded all 48 video frames, video 2.000s/AAC 2.005s. Process inspection
+found no DRI/KFD handles or mapped RADV library while the shared lock was busy.
+Evidence: m3-halo2-software-export* and m3-halo2-software-isolation.json. This
+synthetic fixture is not a general performance benchmark or AMD qualification.

@@ -8,9 +8,11 @@ import { createProgramPlayer } from "./program.js";
 import { detailIdentity, renderProperties, renderMarkers } from "./inspector.js";
 import { renderMixer } from "./mixer.js";
 import { createExportPanel } from "./export.js";
+import { createScopes, scopeTarget } from "./scopes.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
+let scopes = null, scopePlayback = false;
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
@@ -65,6 +67,7 @@ const workspaceTools = {
 
 function showWorkspace(name) {
   editor.dataset.workspace = name;
+  scopes?.setVisible(name === "Color");
   document.querySelectorAll("[data-workspace]").forEach((button) => {
     if (button.tagName === "BUTTON")
       button.setAttribute("aria-pressed", button.dataset.workspace === name);
@@ -81,9 +84,10 @@ function showWorkspace(name) {
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label)) || (name === "Color" && label === "Shadows / Midtones / Highlights / Offset"));
+    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram"].includes(label)));
     if (!button.disabled) button.addEventListener("click",()=>{
       if(name === "Color") {
+        if (label === "Waveform / RGB parade / Vectorscope / Histogram") { scopes?.setVisible($("scopes").hidden); return; }
         const filters=document.querySelector('[data-visual-path="filters"]');if(!filters)return notice("Select a native video clip first");
         revealInspector();filters.open=true;filters.scrollIntoView({block:"start"});return;
       }
@@ -231,6 +235,7 @@ function updatePlayAvailability() {
 }
 function viewerModeSet(mode) {
   viewerMode = mode;
+  scopes?.refresh();
   if (mode === "source") programPlayer?.stop();
   $("screen").dataset.viewerMode = mode;
   $("source-view").hidden = mode !== "source";
@@ -279,6 +284,7 @@ function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
 }
 function selected() {
+  scopes?.refresh();
   const inspectorSeq = ++inspectorSequence;
   for(const node of document.querySelectorAll("#inspector-content details[data-visual-path]"))visualState.set(node.dataset.visualPath,node.open);
   for(const control of visualControls)control.cancel();visualControls=[];
@@ -410,6 +416,7 @@ const canvasTimeline = createTimeline({
   onSelect: selected,
   onSeek: (final) => {
     programPlayer?.pauseLocal();
+    scopes?.invalidate("STALE · scrubbing");
     updateTime();
     if (final) { seek(); if (view.selection.length) selected(); }
   },
@@ -927,7 +934,9 @@ viewer = createViewer({
         }
       : null,
 });
-seek = () => { if (viewerMode === "program") { programPlayer?.stop(); return viewer.seek(); } };
+scopes = createScopes({ panel: $("scopes"), getTarget: () => viewerMode === "program" && !scopePlayback ? scopeTarget(documentState, timeline, view.selection, view.playhead) : null });
+scopes.setVisible(editor.dataset.workspace === "Color");
+seek = async () => { if (viewerMode === "program") { programPlayer?.stop(); scopes.invalidate("SEEKING"); await viewer.seek(); scopes.refresh(); } };
 programPlayer = createProgramPlayer({
   video: $("program-video"), status: $("program-status"), cancel: $("program-cancel"),
   getState: () => {
@@ -937,7 +946,7 @@ programPlayer = createProgramPlayer({
     return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: start, end_frame: Math.min(end, start + Math.floor(300 * timeline.fps.num / timeline.fps.den)), width: 960 } : null;
   },
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; updateTime(); } },
-  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; $("program-view").hidden = !active; $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
+  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
   onError: notice,
 });
 sourcePlayer = createSourcePlayer({

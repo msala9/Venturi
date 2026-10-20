@@ -570,10 +570,80 @@ fn decode_video_frame(
     frame: FrameIdx,
     resolution: (u32, u32),
 ) -> Result<Vec<OwnedLayer>, ExportError> {
+    decode_video_frame_isolated(
+        project, timeline, provider, compositor, frame, resolution, None,
+    )
+}
+
+/// The selected clip's track at the playhead, matching desktop scope isolation.
+/// Adjustment clips retain lower tracks; covering tracks are excluded.
+pub fn render_scope_source(
+    project: &Project,
+    timeline_id: TimelineId,
+    clip_id: vv_core::ClipId,
+    frame: FrameIdx,
+    size: (u32, u32),
+    compositor: &vv_render::Compositor,
+) -> Result<vv_render::PooledTexture, ExportError> {
+    let timeline = project
+        .timelines
+        .get(timeline_id)
+        .ok_or(ExportError::TimelineNotFound)?;
+    let isolation = scope_isolation(timeline, clip_id, frame)?;
+    let layers = decode_video_frame_isolated(
+        project,
+        timeline,
+        &mut StreamingFrameProvider::default(),
+        compositor,
+        frame,
+        timeline.resolution,
+        Some(isolation),
+    )?;
+    let layers: Vec<vv_render::Layer> = layers.iter().map(OwnedLayer::as_render).collect();
+    Ok(compositor.render_layers_to_owned_texture_transparent(
+        &layers,
+        vv_render::OutputFrame::scaled(size.0, size.1, timeline.resolution),
+    ))
+}
+
+fn scope_isolation(
+    timeline: &Timeline,
+    clip_id: vv_core::ClipId,
+    frame: FrameIdx,
+) -> Result<(usize, bool), ExportError> {
+    timeline
+        .tracks
+        .iter()
+        .enumerate()
+        .filter(|(_, t)| t.kind == vv_core::TrackKind::Video)
+        .find_map(|(index, track)| {
+            track
+                .clips
+                .iter()
+                .find(|c| c.id == clip_id && c.contains(frame))
+                .map(|clip| (index, clip.is_adjustment()))
+        })
+        .ok_or_else(|| ExportError::failed("Select a video clip containing the scope frame"))
+}
+
+fn decode_video_frame_isolated(
+    project: &Project,
+    timeline: &Timeline,
+    provider: &mut StreamingFrameProvider,
+    compositor: &vv_render::Compositor,
+    frame: FrameIdx,
+    resolution: (u32, u32),
+    isolation: Option<(usize, bool)>,
+) -> Result<Vec<OwnedLayer>, ExportError> {
     let clips = timeline.active_video_clips_at(frame);
     let mut gpu = GpuCompounds::new(provider, compositor);
     let mut groups = Vec::with_capacity(clips.len());
     for (track_index, clip) in clips {
+        if isolation.is_some_and(|(selected, below)| {
+            track_index != selected && !(below && track_index < selected)
+        }) {
+            continue;
+        }
         let layers = track_layers_at(
             project,
             timeline,

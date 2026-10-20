@@ -3,6 +3,54 @@ use vv_core::ClipSource;
 use vv_core::{Clip, Keyframed, Rgba, Track, TrackKind};
 
 #[test]
+fn scope_isolation_ignores_covering_tracks_and_keeps_adjustment_inputs() {
+    let mut project = Project::default();
+    let mut lower = Track::new(TrackKind::Video);
+    lower.insert_sorted(solid_color_clip(1, 0, 4, red()));
+    let mut upper = Track::new(TrackKind::Video);
+    upper.insert_sorted(solid_color_clip(2, 0, 4, blue()));
+    let mut adjustment = solid_color_clip(3, 0, 4, red());
+    adjustment.source = ClipSource::Adjustment;
+    let mut top = Track::new(TrackKind::Video);
+    top.insert_sorted(adjustment);
+    let mut timeline = timeline_with(vec![lower, upper, top]);
+    timeline.resolution = (64, 36);
+    assert_eq!(
+        scope_isolation(&timeline, vv_core::ClipId(1), 0).unwrap(),
+        (0, false)
+    );
+    assert_eq!(
+        scope_isolation(&timeline, vv_core::ClipId(3), 0).unwrap(),
+        (2, true)
+    );
+    assert!(scope_isolation(&timeline, vv_core::ClipId(1), 4).is_err());
+    assert!(scope_isolation(&timeline, vv_core::ClipId(99), 0).is_err());
+    let id = project.timelines.insert(timeline);
+    let mut compositor = vv_render::Compositor::new_headless();
+    compositor.set_precision(vv_core::ProcessingPrecision::Standard);
+    for (clip, expected) in [(1, [255u8, 0, 0, 255]), (3, [0, 0, 255, 255])] {
+        let texture = render_scope_source(
+            &project,
+            id,
+            vv_core::ClipId(clip),
+            0,
+            (64, 36),
+            &compositor,
+        )
+        .unwrap();
+        let pixels = compositor.read_rgba_texture(&texture, 64, 36);
+        assert!(
+            pixels
+                .as_chunks::<4>()
+                .0
+                .iter()
+                .all(|p| p.iter().zip(expected).all(|(a, b)| a.abs_diff(b) <= 1)),
+            "scope target {clip}"
+        );
+    }
+}
+
+#[test]
 fn headless_host_gpu_hooks_guard_both_native_stages_without_changing_output() {
     use std::sync::atomic::AtomicUsize;
     let mut project = Project::default();

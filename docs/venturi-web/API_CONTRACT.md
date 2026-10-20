@@ -210,6 +210,22 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   filter_amount, filter_grow and filter_offset. `set_keyframes {clip_id,edits}`
   prevalidates 1–64 edits and applies one native composite history step.
 
+## Native stopped-frame scopes
+
+GET `/preview/scopes/{clip}/{first}/{second}` takes the guarded FrameQuery.
+Kinds are Waveform, Parade, Vectorscope or Histogram. It returns a 1024x256
+PNG containing two native 512x256 scope textures. The selected video clip must
+contain the playhead; its track is isolated, retaining lower tracks only for
+an adjustment clip, matching desktop scope input. Native decoding, crossings,
+matte stacking, effects and shader measurements are reused. Source composition
+uses the bounded frame resolution. Output uses the same one-running/one-pending
+queue and 8-image/16 MiB cache as exact preview, keyed additionally by clip and
+scope kinds. Analysis cannot replace a pending Program seek. Native jobs use
+the same shared hardware lock or explicit software lock. The document identity
+is checked again before delivery. The UI rejects obsolete selections/kinds,
+updates only on stopped frames and marks retained scopes stale during scrubbing
+and composed playback. There is no browser-side signal measurement.
+
 ## Explicit software compositor
 
 The launcher accepts --software-preview with only the installed lavapipe ICD,

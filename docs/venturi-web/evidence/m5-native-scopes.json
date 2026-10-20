@@ -1,0 +1,48 @@
+{
+  "frame": 1,
+  "native_source_stage": "selected clip track, lower tracks only for adjustment; desktop-equivalent transparent composition",
+  "project_epoch": "1792513579593529973:1",
+  "compositor": {
+    "active_programs": 0,
+    "available": true,
+    "backend": "Vulkan",
+    "device_id": "0x0000",
+    "driver": "llvmpipe",
+    "driver_info": "Mesa 26.0.3-1ubuntu1 (LLVM 21.1.8)",
+    "exact_context_resident": false,
+    "frame_rendered": true,
+    "name": "llvmpipe (LLVM 21.1.8, 256 bits)",
+    "resident": false,
+    "software": true,
+    "vendor_id": "0x10005"
+  },
+  "timeline": "1",
+  "clip_id": "1",
+  "outputs": [
+    {
+      "status": 200,
+      "kinds": "Waveform/Parade",
+      "bytes": 178403,
+      "sha256": "99a81d24bb91f0562b48fe4673c70f8e964fb4cca8326542294bef0590e8cbdc"
+    },
+    {
+      "status": 200,
+      "kinds": "Vectorscope/Histogram",
+      "bytes": 41428,
+      "sha256": "2db844880d075ae3364694fc4d2d3df30a3b2cffd9ef57c50498b904e9a68945"
+    }
+  ],
+  "generation": "0",
+  "revision": "40a1b21471badafb",
+  "stale_after_edit": {
+    "status": 409,
+    "body": {
+      "error": {
+        "code": "REVISION_CONFLICT",
+        "details": {},
+        "message": "Project changed before the frame snapshot",
+        "recoverable": true
+      }
+    }
+  }
+}

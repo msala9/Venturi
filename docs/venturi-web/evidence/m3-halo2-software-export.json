@@ -1,0 +1,56 @@
+{
+  "error": null,
+  "frames": 0,
+  "id": "1792513204056920882",
+  "program": {
+    "end_frame": 48,
+    "export_settings": {
+      "audio": true,
+      "preset": "veryfast",
+      "quality": 18
+    },
+    "fps": {
+      "den": 1,
+      "num": 24
+    },
+    "generation": "0",
+    "height": 540,
+    "project_epoch": "1792513190181339862:1",
+    "revision": "21552e171ba9a312",
+    "start_frame": 0,
+    "width": 960
+  },
+  "progress": {
+    "compose_fps": 61.12456041747086,
+    "compositor": "llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan)",
+    "current_frame": 48,
+    "decode_fps": 82.5832734760878,
+    "elapsed_ms": 913.0897580000001,
+    "encode_fps": 708.7437494892062,
+    "encoder": "X264",
+    "fps": 52.568764000964734,
+    "startup_ms": 195.76080000000002,
+    "total_frames": 48
+  },
+  "source_asset": null,
+  "state": "ready",
+  "download_sha256": "155cd724e59cf0ce614e31963c942d61f3ce7c1ba7b4afde9bed7dfded1d8987",
+  "streams": [
+    {
+      "codec_name": "h264",
+      "codec_type": "video",
+      "width": 960,
+      "height": 540,
+      "duration": "2.000000",
+      "nb_read_frames": "48"
+    },
+    {
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "sample_rate": "48000",
+      "channels": 2,
+      "duration": "2.005000",
+      "nb_read_frames": "94"
+    }
+  ]
+}

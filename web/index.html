@@ -122,6 +122,17 @@
           <span id="format" class="muted">—</span>
         </div>
         <div id="workspace-tools" class="workspace-tools" hidden></div>
+        <section id="scopes" aria-label="Native clip scopes" hidden>
+          <div class="scope-controls">
+            <label>Left scope <select><option>Waveform</option><option>Parade</option><option>Vectorscope</option><option>Histogram</option></select></label>
+            <label>Right scope <select><option>Parade</option><option>Waveform</option><option>Vectorscope</option><option>Histogram</option></select></label>
+            <button type="button">Refresh scopes</button>
+          </div>
+          <p>Select one video clip containing the playhead</p>
+          <img alt="Native isolated clip scopes, left and right" hidden>
+          <small data-scope-context></small>
+          <output aria-live="polite">Select a video clip</output>
+        </section>
       </section>
       <div
         id="right-splitter"

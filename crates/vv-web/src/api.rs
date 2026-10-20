@@ -43,6 +43,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/commands/{id}", get(lookup))
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
+        .route(
+            "/api/v1/preview/scopes/{clip}/{first}/{second}",
+            get(scopes),
+        )
         .route("/api/v1/preview/program/prepare", post(prepare_program))
         .route("/api/v1/exports", post(prepare_export))
         .route(
@@ -355,6 +359,7 @@ async fn session(State(state): State<AppState>) -> Result<Json<Value>> {
     snapshot["capabilities"]["source_playback"] = json!(true);
     snapshot["capabilities"]["playback"] = json!(state.preview.available());
     snapshot["capabilities"]["export"] = json!(state.preview.available());
+    snapshot["capabilities"]["scopes"] = json!(state.preview.available());
     snapshot["capabilities"]["software_preview"] = json!(
         state.preview.diagnostic()["software"]
             .as_bool()
@@ -381,6 +386,22 @@ async fn frame(
         .0;
     let snapshot = state.host.frame_snapshot(query).await?;
     let data = state.preview.frame(snapshot).await?;
+    Ok(([(header::CONTENT_TYPE, "image/png")], data).into_response())
+}
+async fn scopes(
+    State(state): State<AppState>,
+    Path((clip, first, second)): Path<(String, vv_render::ScopeKind, vv_render::ScopeKind)>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid scope query"))?
+        .0;
+    let snapshot = state.host.frame_snapshot(query.clone()).await?;
+    let data = state
+        .preview
+        .scopes(snapshot, &clip, [first, second])
+        .await?;
+    state.host.call(Action::CheckFrame(query)).await?;
     Ok(([(header::CONTENT_TYPE, "image/png")], data).into_response())
 }
 async fn timeline(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<Value>> {
@@ -531,6 +552,7 @@ async fn assets(request: Request) -> Response {
         "/js/ui.js" => asset!("/web/js/ui.js", "text/javascript"),
         "/js/api.js" => asset!("/web/js/api.js", "text/javascript"),
         "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),
+        "/js/scopes.js" => asset!("/web/js/scopes.js", "text/javascript"),
         "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),
         "/js/program.js" => asset!("/web/js/program.js", "text/javascript"),
         "/js/export.js" => asset!("/web/js/export.js", "text/javascript"),

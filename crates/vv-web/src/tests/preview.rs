@@ -10,6 +10,7 @@ fn frame_resolution_has_a_fixed_pixel_budget() {
 fn newest_pending_seek_replaces_the_old_one() {
     let queue = Queue::default();
     let job = |frame, reply| Job {
+        mode: FrameMode::Program,
         snapshot: FrameSnapshot {
             project: Project::default(),
             timeline: TimelineId::from_raw(0),
@@ -43,6 +44,29 @@ fn newest_pending_seek_replaces_the_old_one() {
         2
     );
     assert!(queue.next(std::time::Duration::from_millis(1)).is_none());
+    let (program, _program_reply) = oneshot::channel();
+    queue.replace(job(3, program));
+    let (analysis, mut analysis_reply) = oneshot::channel();
+    let mut analysis = job(3, analysis);
+    analysis.mode = FrameMode::Scopes(
+        vv_core::ClipId(1),
+        [
+            vv_render::ScopeKind::Waveform,
+            vv_render::ScopeKind::Histogram,
+        ],
+    );
+    queue.replace(analysis);
+    assert!(matches!(
+        analysis_reply.try_recv(),
+        Err(oneshot::error::TryRecvError::Closed)
+    ));
+    assert!(matches!(
+        queue
+            .next(std::time::Duration::from_millis(1))
+            .unwrap()
+            .mode,
+        FrameMode::Program
+    ));
 }
 #[tokio::test]
 async fn a_disabled_renderer_reports_actual_capability() {

@@ -559,6 +559,11 @@ pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64)
     let mut result = json!({"clip_id":raw,"source_frame":frame,"timeline_frame":timeline_frame,"locked":session.project.timelines[id].tracks[track].locked,"video":session.project.timelines[id].tracks[track].kind == core::TrackKind::Video,"transform":parameters,"flip":clip.effects.transform.flip,"blend":clip.effects.blend_mode,"blends":core::BlendMode::ALL,"matte":clip.effects.matte.map(|m|format!("{m:?}")).unwrap_or_else(||"None".into()),"mattes":["None","Alpha","AlphaInverted","Luma","LumaInverted"],"gain":{"default":clip.effects.gain_db.default,"value":clip.effects.gain_db.value_at(frame),"keyframes":clip.effects.gain_db.keyframes()},"color":clip.effects.color.as_ref().map(|c|c.default),"fade_in":clip.fade_in,"fade_out":clip.fade_out,"length_frames":clip.timeline_len});
     result["transitions"] = json!({"in":clip.effects.transition_in,"out":clip.effects.transition_out,"cut_after":lane.crossing_from(clip.id).map(|c|&c.transition),"cut_max_frames":right.map(|r|2*r.timeline_len.min(clip.timeline_len))});
     result["title"] = json!(clip.effects.title);
+    result["display_color"] = json!(clip.display_color);
+    result["display_colors"] = json!(core::ClipColor::ALL);
+    if matches!(clip.source, core::ClipSource::Media(_)) {
+        result["retime"] = json!({"speed_percent":clip.speed().as_percent(),"pitch_correction":clip.pitch_correction,"freeze_source_frame":clip.freeze});
+    }
     result["filters"] = crate::visual::detail(clip, frame);
     result["filters"]["wheel_hues"] = crate::visual::wheel_palette();
     result["filters"]["wheels"] = crate::visual::wheels();

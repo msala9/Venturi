@@ -68,10 +68,32 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   number("Fade in frames", detail.fade_in, 0, detail.length_frames, (fade_in) => ({ fade_in }));
   number("Fade out frames", detail.fade_out, 0, detail.length_frames, (fade_out) => ({ fade_out }));
   root.append(section);
+  renderRetime(root,detail,disabled,getFrame,report,visualState);
   const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report);
   return controls;
+}
+
+function renderRetime(root,detail,disabled,getFrame,report,openState) {
+  const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.visualPath="retime";section.open=openState?.get("retime") || false;summary.textContent="Speed, freeze and clip label";section.append(summary);
+  const color=document.createElement("select");color.setAttribute("aria-label","Clip display color");color.disabled=disabled;color.append(new Option("Default",""));
+  for (const name of detail.display_colors) color.append(new Option(name,name));color.value=detail.display_color || "";
+  const applyColor=document.createElement("button");applyColor.textContent="Apply clip label";applyColor.disabled=disabled;applyColor.addEventListener("click",()=>report({kind:"set_display_color",clip_ids:[detail.clip_id],color:color.value || null}));section.append(color,applyColor);
+  if (detail.retime) {
+    const form=document.createElement("form"),label=document.createElement("label");label.className="field";label.textContent="Speed percent";
+    const percent=document.createElement("input");percent.type="number";percent.min=1;percent.max=10000;percent.step="any";percent.value=detail.retime.speed_percent;percent.required=true;percent.disabled=disabled;label.append(percent);form.append(label);
+    const fit=document.createElement("select");fit.setAttribute("aria-label","Speed duration policy");fit.disabled=disabled;
+    for (const [value,text] of [["keep_length","Keep length (capped by source)"],["resize","Resize safely, leave neighbours"],["ripple","Ripple unlocked tracks"]]) fit.append(new Option(text,value));form.append(fit);
+    const pitchLabel=document.createElement("label");pitchLabel.textContent="Preserve pitch";const pitch=document.createElement("input");pitch.type="checkbox";pitch.checked=detail.retime.pitch_correction;pitch.disabled=disabled;pitchLabel.append(pitch);form.append(pitchLabel);
+    const apply=document.createElement("button");apply.textContent="Apply speed";apply.disabled=disabled;form.append(apply);
+    form.addEventListener("submit",(event)=>{event.preventDefault();if(form.reportValidity())report({kind:"set_speed",clip_ids:[detail.clip_id],percent:Number(percent.value),pitch_correction:pitch.checked,fit:fit.value});});section.append(form);
+    const status=document.createElement("p");status.className="muted";status.textContent=detail.retime.freeze_source_frame === null ? "Normal motion · edits include linked clips" : `Frozen at source frame ${detail.retime.freeze_source_frame} · linked clips follow native freeze semantics`;section.append(status);
+    for (const [text,frame] of [["Freeze at playhead",()=>getFrame()],["Unfreeze",()=>null]]) {
+      const button=document.createElement("button");button.textContent=text;button.disabled=disabled;button.addEventListener("click",()=>report({kind:"set_freeze",clip_ids:[detail.clip_id],frame:frame()}));section.append(button);
+    }
+  }
+  root.append(section);
 }
 
 function renderTitle(root, detail, disabled, report) {

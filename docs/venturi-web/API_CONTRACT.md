@@ -234,3 +234,13 @@ Jobs continue while the browser is closed, until server shutdown or cache
 eviction. The UI remembers the latest job in browser session storage and can
 resume status polling after reload. Durable queues/server restart recovery,
 arbitrary output formats and timelines longer than five minutes remain open.
+
+- Timeline `set_speed {clip_ids,percent,pitch_correction,fit}` uses native
+  SetClipSpeed with percent 1–10000, whole linked groups and fit keep_length,
+  resize or ripple. A native trial application validates all resulting clip
+  ranges and rejects overlaps before one real history entry. Ripple follows
+  the desktop's unlocked-track policy. Native source-offset rounding applies.
+- `set_freeze {clip_ids,frame}` freezes at an integer timeline frame or clears
+  freeze with null, using SetClipFreeze and the same linked/lock validation.
+- `set_display_color {clip_ids,color}` changes native ClipColor labels (null
+  restores the default). This label is distinct from rendered solid RGBA.

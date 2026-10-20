@@ -1,0 +1,231 @@
+{
+  "project_name": "Retime_UI_check.vvproj",
+  "generation": "3",
+  "history": {
+    "labels": [
+      "ClipSpeed",
+      "FreezeFrame",
+      "ClipDisplayColor"
+    ],
+    "position": 3
+  },
+  "timelines": [
+    {
+      "api_version": 1,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "id": "1",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Timeline 1",
+      "resolution": {
+        "height": 1080,
+        "width": 1920
+      },
+      "revision": "26f63bbd3c5d2494",
+      "timeline_id": "1",
+      "tracks": [
+        {
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": "Orange",
+              "display_rgb": [
+                218,
+                136,
+                68
+              ],
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": 8,
+              "id": "1",
+              "kind": "media",
+              "length_frames": 12,
+              "linked_group": "0",
+              "media_id": "2",
+              "name": "venturi-smoke.mp4",
+              "source_in_frames": 8,
+              "source_out_frames": 31,
+              "speed_percent": 200.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": "Orange",
+              "display_rgb": [
+                218,
+                136,
+                68
+              ],
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": 8,
+              "id": "0",
+              "kind": "media",
+              "length_frames": 12,
+              "linked_group": "0",
+              "media_id": "2",
+              "name": "venturi-smoke.mp4",
+              "source_in_frames": 8,
+              "source_out_frames": 31,
+              "speed_percent": 200.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [
+              {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 6.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -18.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "Loudness",
+                    "set_level": "Relative",
+                    "target_db": -23.0
+                  }
+                }
+              }
+            ],
+            "gain_db": -6.0,
+            "pan": -0.25
+          },
+          "muted": false,
+          "solo": false
+        }
+      ]
+    }
+  ]
+}

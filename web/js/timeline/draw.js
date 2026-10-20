@@ -50,7 +50,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
             view,
             timeline.fps,
           );
-        ctx.fillStyle = track.kind === "audio" ? "#285247" : "#383554";
+        ctx.fillStyle = clip.display_rgb ? `rgb(${clip.display_rgb.join(",")})` : track.kind === "audio" ? "#285247" : "#383554";
         ctx.fillRect(x + 1, top + 7, right - x - 2, TRACK - 14);
         ctx.strokeStyle = view.selection.includes(clip.id)
           ? color("--primary")

@@ -32,6 +32,131 @@ fn fixture() -> (Session, TimelineId, Vec<ClipId>) {
     );
     (s, id, vec![a, b])
 }
+
+#[test]
+fn native_linked_retime_rejects_overlap_then_ripples_atomically_and_undoes() {
+    let (mut session, id, _) = fixture();
+    let media = session.add_media(
+        std::path::PathBuf::from("retime.mp4"),
+        core::MediaMeta {
+            duration_frames: 96,
+            fps: core::Rational::new(24, 1),
+            width: 640,
+            height: 360,
+            has_video: true,
+            has_audio: true,
+            sample_rate: 48000,
+            channels: 2,
+            audio_streams: 1,
+            file: Default::default(),
+        },
+    );
+    session.project.timelines[id].tracks[0].clips.clear();
+    let mut selected = vec![];
+    for track in 0..2 {
+        let clip_id = session.project.alloc_clip_id();
+        let mut clip = core::Clip::from_source_range(
+            clip_id,
+            core::ClipSource::Media(media),
+            0,
+            24,
+            0,
+            core::Rational::one(),
+        );
+        clip.linked_group = Some(core::LinkGroupId(31));
+        session.project.timelines[id].tracks[track].insert_sorted(clip);
+        selected.push(clip_id);
+    }
+    let neighbour = session.project.alloc_clip_id();
+    session.project.timelines[id].tracks[0].insert_sorted(core::Clip::from_source_range(
+        neighbour,
+        core::ClipSource::SolidColor,
+        0,
+        24,
+        24,
+        core::Rational::one(),
+    ));
+    let baseline = session.timeline_revision(id);
+    let steps = session.history.position();
+    let speed = |percent, fit| Operation::SetSpeed {
+        clip_ids: vec![selected[0].0.to_string()],
+        percent,
+        pitch_correction: true,
+        fit,
+    };
+    assert_eq!(
+        apply(&mut session, id, &speed(50.0, SpeedFit::Resize))
+            .unwrap_err()
+            .1,
+        "OVERLAP"
+    );
+    assert_eq!(session.timeline_revision(id), baseline);
+    assert_eq!(session.history.position(), steps);
+    for invalid in [0.0, f64::NAN, 10001.0] {
+        assert!(apply(&mut session, id, &speed(invalid, SpeedFit::KeepLength)).is_err());
+    }
+    session.project.timelines[id].tracks[1].locked = true;
+    assert_eq!(
+        apply(&mut session, id, &speed(50.0, SpeedFit::Ripple))
+            .unwrap_err()
+            .1,
+        "TRACK_LOCKED"
+    );
+    session.project.timelines[id].tracks[1].locked = false;
+    apply(&mut session, id, &speed(50.0, SpeedFit::Ripple)).unwrap();
+    assert_eq!(session.history.position(), steps + 1);
+    for (track, clip_id) in selected.iter().enumerate() {
+        let clip = session.project.timelines[id].clip(track, *clip_id).unwrap();
+        assert_eq!(clip.timeline_len, 48);
+        assert_eq!(clip.speed(), core::Rational::new(1, 2));
+        assert!(clip.pitch_correction);
+    }
+    assert_eq!(
+        session.project.timelines[id]
+            .clip(0, neighbour)
+            .unwrap()
+            .timeline_start,
+        48
+    );
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(session.timeline_revision(id), baseline);
+    let freeze = Operation::SetFreeze {
+        clip_ids: vec![selected[0].0.to_string()],
+        frame: Some(12),
+    };
+    apply(&mut session, id, &freeze).unwrap();
+    for (track, clip_id) in selected.iter().enumerate() {
+        assert_eq!(
+            session.project.timelines[id]
+                .clip(track, *clip_id)
+                .unwrap()
+                .freeze,
+            Some(12)
+        );
+    }
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(session.timeline_revision(id), baseline);
+    apply(
+        &mut session,
+        id,
+        &Operation::SetDisplayColor {
+            clip_ids: vec![selected[0].0.to_string()],
+            color: Some(core::ClipColor::Orange),
+        },
+    )
+    .unwrap();
+    for (track, clip_id) in selected.iter().enumerate() {
+        assert_eq!(
+            session.project.timelines[id]
+                .clip(track, *clip_id)
+                .unwrap()
+                .display_color,
+            Some(core::ClipColor::Orange)
+        );
+    }
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(session.timeline_revision(id), baseline);
+}
 #[test]
 fn safe_move_rejects_overlap_and_restores_in_one_undo() {
     let (mut s, id, clips) = fixture();

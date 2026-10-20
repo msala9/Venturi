@@ -563,3 +563,29 @@ snapshot retrieval after source changes, wrong epoch/job-kind refusal,
 cancellation, not-ready download, HTTP error normalization and exact rational
 range validation. End-to-end Export drawer/R9700 download acceptance is the
 next hardware check.
+
+## M4 independent increment — native linked speed, freeze and clip labels
+
+Inspector now exposes native constant speed 1–10000%, pitch preservation and
+KeepLength/Resize/Ripple duration policies. Whole linked groups are resolved
+and lock-checked first. Applying the actual native command on a trial project
+validates every resulting bounded clip range and nonoverlap before one real
+undo step. Resize refuses occupied space; explicit Ripple follows the native
+unlocked-track policy. No browser retiming or destructive room-making is used.
+Freeze/unfreeze uses the native picture mapping. Label colors use the native
+ClipColor palette and appear on the Canvas, independently of solid RGBA.
+
+Windows browser: a trimmed linked 12-frame A/V pair changed to 200% with pitch
+preservation/KeepLength, then froze at native source frame 8 and received the
+Orange label on both tracks. Native rounding moved the odd original source-in
+7 to 8 at 200%; this is the upstream rate representation, not a JS conversion.
+Save As created Retime_UI_check without replacing the original saved fixture.
+Evidence: m4-native-retime-state.json and m4-native-retime-browser.png.
+
+39 web Rust tests and 22 JS tests pass, with formatting/clippy/build. Native
+tests cover overlap refusal without a history entry, invalid speed/locked
+linked-track refusal, linked Ripple and neighbour movement in one undo step,
+freeze/labels and exact restoration. Pointer speed handles and hardware
+render/audio acceptance remain open. The Export drawer is now scrollable and
+fits narrow viewports. D41 announced its next shared GPU slot with hard bound
+15:16 UTC; Venturi remains CPU-only until an effective release/free-lock check.

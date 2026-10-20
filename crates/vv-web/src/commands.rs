@@ -104,6 +104,20 @@ pub enum Operation {
         clip_ids: Vec<String>,
         disabled: bool,
     },
+    SetSpeed {
+        clip_ids: Vec<String>,
+        percent: f64,
+        pitch_correction: bool,
+        fit: SpeedFit,
+    },
+    SetFreeze {
+        clip_ids: Vec<String>,
+        frame: Option<FrameIdx>,
+    },
+    SetDisplayColor {
+        clip_ids: Vec<String>,
+        color: Option<core::ClipColor>,
+    },
     SetMixer {
         channel: String,
         gain_db: Option<f32>,
@@ -137,6 +151,22 @@ pub enum Operation {
 pub enum Generator {
     Title,
     Adjustment,
+}
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SpeedFit {
+    KeepLength,
+    Resize,
+    Ripple,
+}
+impl SpeedFit {
+    fn native(self) -> core::SpeedFit {
+        match self {
+            Self::KeepLength => core::SpeedFit::KeepLength,
+            Self::Resize => core::SpeedFit::Resize,
+            Self::Ripple => core::SpeedFit::Ripple,
+        }
+    }
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -281,6 +311,47 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     }
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::SetSpeed {
+            clip_ids,
+            percent,
+            pitch_correction,
+            fit,
+        } => {
+            if !percent.is_finite() || !(1.0..=10_000.0).contains(percent) {
+                return Err(ApiError::invalid(
+                    "Choose native clip speed from 1% to 10000%",
+                ));
+            }
+            let selected = media_refs(tl, clip_ids)?;
+            checked_retime(
+                session,
+                id,
+                Box::new(core::SetClipSpeed::new(
+                    id,
+                    selected,
+                    core::Rational::from_percent(*percent),
+                    *pitch_correction,
+                    fit.native(),
+                )),
+            )?;
+        }
+        Operation::SetFreeze { clip_ids, frame } => {
+            let selected = media_refs(tl, clip_ids)?;
+            if frame.is_some_and(|at| !(0..=MAX_FRAME).contains(&at)) {
+                return Err(ApiError::invalid("Choose a bounded timeline frame"));
+            }
+            checked_retime(
+                session,
+                id,
+                Box::new(core::SetClipFreeze::new(id, selected, *frame)),
+            )?;
+        }
+        Operation::SetDisplayColor { clip_ids, color } => {
+            let selected = refs(tl, clip_ids)?;
+            session.apply(Box::new(core::SetClipsDisplayColor::new(
+                id, selected, *color,
+            )));
+        }
         Operation::SetKeyframes { clip_id, edits } => {
             crate::inspector::keyframes(session, id, clip_id, edits)?
         }
@@ -761,6 +832,44 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         }
     }
     session.sync_timeline_media(id);
+    Ok(())
+}
+
+fn media_refs(tl: &Timeline, ids: &[String]) -> Result<Vec<edit::ClipRef>> {
+    let selected = refs(tl, ids)?;
+    if selected.iter().any(|&(track, id)| {
+        !matches!(
+            tl.clip(track, id).unwrap().source,
+            core::ClipSource::Media(_)
+        )
+    }) {
+        return Err(ApiError::invalid(
+            "Speed and freeze require media clips, including their whole linked group",
+        ));
+    }
+    Ok(selected)
+}
+fn checked_retime(
+    session: &mut Session,
+    id: TimelineId,
+    mut command: Box<dyn Command>,
+) -> Result<()> {
+    let mut trial = session.project.clone();
+    command.apply(&mut trial);
+    for track in &trial.timelines[id].tracks {
+        let mut end = 0;
+        for clip in &track.clips {
+            range(clip.timeline_start, clip.timeline_len)?;
+            if clip.timeline_start < end {
+                return Err(ApiError::conflict(
+                    "OVERLAP",
+                    "Speed change would overlap another clip; choose Keep length or explicit Ripple",
+                ));
+            }
+            end = clip.timeline_end();
+        }
+    }
+    session.apply(command);
     Ok(())
 }
 

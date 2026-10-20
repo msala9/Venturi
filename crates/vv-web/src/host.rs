@@ -18,6 +18,7 @@ use vv_core::{Rational, Timeline, Track, TrackKind};
 use vv_session::Session;
 
 pub enum Action {
+    MediaRoot(oneshot::Sender<Result<std::fs::File>>),
     Session,
     Timeline(String),
     Projects,
@@ -65,6 +66,22 @@ impl Editor {
     }
     fn snapshot(&self) -> Value {
         let mut snapshot = snapshot::session(&self.session, &self.epoch);
+        let origins: HashMap<_, _> = self
+            .session
+            .project
+            .media_pool
+            .iter()
+            .filter_map(|(id, media)| {
+                self.files
+                    .shared_origin(&media.path)
+                    .map(|value| (vv_core::Id::raw(id).to_string(), value))
+            })
+            .collect();
+        for media in snapshot["media"].as_array_mut().unwrap() {
+            if let Some(origin) = media["id"].as_str().and_then(|id| origins.get(id)) {
+                media["shared_origin"] = origin.clone();
+            }
+        }
         snapshot["import_warnings"] = json!(self.import_warnings);
         snapshot["clipboard_count"] = json!(
             self.clipboard
@@ -464,6 +481,10 @@ impl Editor {
             Action::Session => Ok(self.snapshot()),
             Action::Timeline(id) => snapshot::timeline_id(&self.session, &id)
                 .map(|id| snapshot::timeline(&self.session, id)),
+            Action::MediaRoot(reply) => {
+                let _ = reply.send(self.files.root_file());
+                Ok(Value::Null)
+            }
             Action::Projects => self.files.list(),
             Action::Lease(client) => self.lease(&client),
             Action::Mutation(timeline, request) => self.mutation(timeline, request),
@@ -483,6 +504,11 @@ fn valid_key(key: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
 }
 impl Host {
+    pub async fn media_root(&self) -> Result<std::fs::File> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::MediaRoot(tx)).await?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
     pub async fn speech_snapshot(
         &self,
         request: crate::silence::Request,

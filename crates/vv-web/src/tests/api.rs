@@ -18,6 +18,7 @@ async fn http_command_roundtrip_and_malformed_requests() {
         preview: Preview::disabled(),
         source: MediaJobs::start().unwrap(),
         silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
         host: Host::start(&root).unwrap(),
         port: 8787,
     });
@@ -158,6 +159,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         preview: Preview::disabled(),
         source: MediaJobs::start().unwrap(),
         silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
         host: Host::start(&root).unwrap(),
         port: 8787,
     });
@@ -169,6 +171,8 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/scopes.js", 200),
         ("/js/balance.js", 200),
         ("/js/silence.js", 200),
+        ("/js/library.js", 200),
+        ("/api/v1/library", 200),
         ("/js/slip.js", 200),
         ("/js/catalog.js", 200),
         ("/api/v1/timelines/1/clips/1/slip/0", 422),

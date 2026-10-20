@@ -65,15 +65,23 @@ catalog and stable item IDs are authoritative across Studio and Venturi. The
 appliance transparently serves SSD and the 14 TB network archive through
 `GET /api/v1/library` and `GET /api/v1/library/items/{id}/file`. The reference
 archive is `//192.168.1.200/shared`, mounted on halo1 at `/mnt/madrock-share`,
-with assets under `madrock-library/<yyyy-mm>/`. These are verified deployment
-script defaults, not evidence that a mount is currently reachable from halo2.
+with assets under `madrock-library/<yyyy-mm>/`. On 2026-10-20 the running service
+was verified at `http://192.168.1.153:8787`, reachable from halo2. Its archive is
+an actual CIFS mount with 13,888,976,269,312 usable filesystem bytes. A synthetic
+PNG was archived, read back through the API, imported and recovered in Venturi
+with identical SHA-256. No direct SMB mount on halo2 or archive scan is needed.
 Venturi must consume that contract, preserve prompt/model/seed provenance and
 keep shared item IDs distinct from project MediaIds. Project folder/removal
 commands do not rename or delete shared storage. Avoid independent recursive
 archive indexing or a second authoritative media catalog. Configure the
-actual service endpoint and use bounded rebuildable media/proxy caches where
-the native decoder needs local descriptors. Never copy archive credentials
-into the browser, project files or Git.
+actual service endpoint with `--library-url`. Explicit imports materialize a
+persistent project copy with a content-derived safe name; source previews use
+the existing bounded rebuildable proxy cache. Transfers run off the actor with
+bounded buffers and native probing, then the existing import/relink commands
+register the selected source. Original shared files are never modified.
+Versioned per-file origin sidecars retain stable library IDs, exact string
+seeds and captured provenance without changing native .vvproj representation.
+Never copy archive credentials into the browser, project files or Git.
 
 - Server: single `Session` actor handles mutations sequentially. Reads may use snapshots; slow frame/export work runs on immutable project snapshots with bounded concurrency. No Session mutex held across GPU blocking work.
 - One project may have many timelines. Each command records expected project epoch AND timeline revision, if applicable.

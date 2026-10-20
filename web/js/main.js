@@ -13,6 +13,7 @@ import { balanceSelected } from "./balance.js";
 import { renderCatalog } from "./catalog.js";
 import { createSlipView } from "./slip.js";
 import { createSilencePanel } from "./silence.js";
+import { createLibraryPanel } from "./library.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -20,6 +21,7 @@ let scopes = null, scopePlayback = false;
 let slipScopesState = null;
 let catalog = null;
 let silencePanel = null;
+let sharedLibrary = null;
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
@@ -135,6 +137,7 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
     $("search").parentElement.hidden = name !== "Media";
     $("panel-content").hidden = name === "Media";
     $("panel-content").replaceChildren();
+    if (name === "Library") {sharedLibrary?.open();return;}
     if (name === "History") { renderHistory(); return; }
     if (name === "Presets") for (const [label,mode] of [["Open native color presets","Color"],["Open native audio presets","Audio"]]) {
       const action=document.createElement("button");action.textContent=label;action.addEventListener("click",()=>{
@@ -324,6 +327,14 @@ function selected() {
   const title = document.createElement("strong");
   title.textContent = clip?.name || "No clip selected";
   $("inspector-content").append(title);
+  const origin=documentState?.media.find((item)=>item.id===clip?.media_id)?.shared_origin;
+  if(origin){
+    const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Shared asset provenance";section.append(summary);
+    for(const [label,value] of [["Library item",origin.item.id],["Model",origin.item.model],["Seed",origin.item.seed || "Unknown"],["Prompt",origin.item.prompt || "Unknown"],["SHA-256",origin.sha256]]){
+      const row=document.createElement("p");row.textContent=`${label}: ${value}`;row.style.overflowWrap="anywhere";section.append(row);
+    }
+    $("inspector-content").append(section);
+  }
   if (clip && documentState && timeline.id !== "fixture") {
     const target = document.createElement("div"); target.textContent = "Reading native properties…";
     $("inspector-content").append(target);
@@ -1040,6 +1051,7 @@ slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(o
   const end=Math.max(1,...timeline.tracks.flatMap((track)=>track.clips.map((item)=>item.start_frame+item.length_frames)));
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1),clip_id:clip};
 }});
+sharedLibrary=createLibraryPanel({root:$("panel-content"),getState:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>mutate(operation,true),notice});
 silencePanel=createSilencePanel({root:$("silence-dialog"),notice,preview:(ranges)=>{view.silencePreview=ranges;canvasTimeline.invalidate();},canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>commit(operation),getTarget:()=>{
   if(!documentState || !timeline || timeline.id==="fixture" || !view.selection.length)return null;
   const end=Math.max(1,...timeline.tracks.flatMap((track)=>track.clips.map((item)=>item.start_frame+item.length_frames)));

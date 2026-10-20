@@ -50,7 +50,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, api 
         if (seq !== sequence) return;
       }
       if (job.state !== "ready") throw new Error(job.error || `Source ${job.state}`);
-      const still = ["source.png", "source.jpg"].includes(job.source_asset);
+      const still = ["source.png", "source.jpg", "source.webp"].includes(job.source_asset);
       if (still) {
         if (!image) throw new Error("Image viewer unavailable");
         image.src = sourceAssetURL(item.id, job.id, job.source_asset, epoch);

@@ -8,15 +8,17 @@ test("source selection preserves exclusive integer bounds and refuses invalid va
 });
 
 test("still Source uses the original image without playing or stepping a media clock", async () => {
+  for (const asset of ["source.png","source.jpg","source.webp"]) {
   let plays = 0;
   const image = { src: "", hidden: true, removeAttribute() { this.src = ""; } };
   const video = { hidden: false, pause() {}, load() {}, removeAttribute() {}, addEventListener() {}, play() { plays++; } };
-  const player = createSourcePlayer({ video, image, status: {}, cancel: { addEventListener() {} }, api: async () => ({ id: "still", state: "ready", source_asset: "source.png" }) });
+  const player = createSourcePlayer({ video, image, status: {}, cancel: { addEventListener() {} }, api: async () => ({ id: "still", state: "ready", source_asset: asset }) });
   await player.open({ id: "1", name: "Transparent", is_image: true }, "image:1");
-  assert.equal(image.src, sourceAssetURL("1", "still", "source.png", "image:1"));
+  assert.equal(image.src, sourceAssetURL("1", "still", asset, "image:1"));
   assert.equal(image.hidden, false); assert.equal(video.hidden, true);
   await player.toggle(); player.step(1, 24, 48); assert.equal(plays, 0);
   player.reset(); assert.equal(image.src, ""); assert.equal(image.hidden, true);
+  }
 });
 
 test("obsolete source preparations cannot select another project's media or autoplay", async () => {

@@ -1,6 +1,68 @@
 use super::*;
 
 #[test]
+fn webp_shared_images_keep_original_bytes_and_use_the_native_thumbnail_path() {
+    use std::io::Read;
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("shared.webp");
+    vv_media::test_support::ffmpeg(
+        &[
+            "-f",
+            "lavfi",
+            "-i",
+            "color=c=orange:size=64x36",
+            "-frames:v",
+            "1",
+            "-c:v",
+            "libwebp",
+            "-lossless",
+            "1",
+        ],
+        &path,
+    );
+    let original = std::fs::read(&path).unwrap();
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "webp:1".into(),
+        media_id: "1".into(),
+        meta: vv_media::probe_image(&path).unwrap(),
+    };
+    assert_eq!(image_asset(&spec.file).unwrap(), "source.webp");
+    let job = service
+        .prepare(
+            SourceSpec {
+                file: spec.file.try_clone().unwrap(),
+                epoch: spec.epoch.clone(),
+                media_id: spec.media_id.clone(),
+                meta: spec.meta.clone(),
+            },
+            "low",
+        )
+        .unwrap();
+    assert_eq!(job["source_asset"], "source.webp");
+    let id = job["id"].as_str().unwrap();
+    let started = Instant::now();
+    loop {
+        let status = service.status(id, &spec, false).unwrap();
+        if status["state"] == "ready" {
+            break;
+        }
+        assert_ne!(status["state"], "failed", "{status}");
+        assert!(started.elapsed() < Duration::from_secs(10));
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let mut delivered = Vec::new();
+    service
+        .asset(id, &spec, "source.webp")
+        .unwrap()
+        .read_to_end(&mut delivered)
+        .unwrap();
+    assert_eq!(delivered, original);
+    assert!(service.asset(id, &spec, "thumb.png").is_ok());
+    assert!(service.asset(id, &spec, "source.mp4").is_err());
+}
+
+#[test]
 fn still_source_preserves_original_png_bytes_and_alpha_without_creating_a_video() {
     use std::io::Read;
     let service = MediaJobs::start().unwrap();

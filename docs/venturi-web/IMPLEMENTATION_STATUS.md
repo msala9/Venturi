@@ -1077,3 +1077,43 @@ http://192.168.1.153:8787. Its catalog responds from halo2, reporting the 14 TB
 archive configured and reachable at /mnt/madrock-share/madrock-library, seven-day
 SSD retention, sequence 5 and zero items. The older 8788 reference was not the
 active listener. No appliance configuration, mount or inference was changed.
+
+## M4 increment — ds4 shared-media catalog and archive recovery
+
+The Library tab now consumes ds4-appliance's authoritative catalog through a
+startup-configured server origin. Search covers ID, type, tool, prompt, model and
+exact seed strings. It reports archive reachability and SSD retention, prepares
+only explicitly selected project copies and uses the original native import
+command. Native MediaIds remain separate from appliance IDs. Missing shared uses
+can be restored through the same appliance file API and relinked atomically,
+with native lock/stream/source-range checks and one Undo.
+
+Transfers run off the actor through a bounded HTTP client/worker, validate size,
+media signature, native streams and current catalog identity, compute SHA-256,
+and publish without overwriting through the actor's exact directory descriptor.
+Per-file versioned provenance sidecars keep captured prompt/model/seed and full
+SHA-256 without modifying the native project format. Prepared copies survive
+Save and host restart, while changed local copies are refused. Seeds serialize
+as strings, including values above JavaScript's exact integer range. WebP joins
+PNG/JPEG original-byte Source playback and native thumbnails; no still transcoder
+or browser editing engine is introduced. Existing dependency versions and the
+eight native default workspace members remain unchanged.
+
+83 Rust web tests and 39 JavaScript tests pass, with formatting, clippy (warnings
+denied) and build. Tests cover declared type/playlist rejection, native WAV
+roundtrip, truncated transfers, changed local files, exact u64 seeds, path/URL
+validation and WebP original-byte delivery. Windows acceptance used a 2003-byte
+synthetic PNG created only for this test. The appliance actually moved it into
+its CIFS archive; the mounted filesystem reports 13,888,976,269,312 bytes. API and
+local source SHA-256 match. After reversible removal of the local copy, one
+RelinkMedia step recovered it with the same MediaId/ClipId, 120-frame edit and
+opacity key `[0,65,EaseInOut]`. Undo/Redo, save/restart and repeated import retain
+the same media, animation and exact seed 9007199254740993. Source decoded the
+original 320x180 PNG. Evidence: m4-ds4-shared-library.json/browser.png,
+m4-ds4-shared-source-browser.png and m4-ds4-library-network.json.
+
+This slice does not complete the original native library's compound-asset
+organization or saved/shared attribute-preset workflows. Those remain explicit
+parity work. The active completion goal remains open for the remaining GUI,
+Voiceover, AI Review and release acceptance. No GPU reservation or inference
+configuration was changed by this CPU-only integration.

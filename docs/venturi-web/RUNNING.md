@@ -237,6 +237,32 @@ the renderer thread cap uses Mesa's [LP_NUM_THREADS](https://docs.mesa3d.org/env
 
 ## Checks
 
+The shared ds4-appliance library can be configured explicitly:
+
+```bash
+bash scripts/venturi-web.sh --software-preview --listen 127.0.0.1:8790 \
+  --library-url http://192.168.1.153:8787
+```
+
+Open Library to search prompt/model/seed/type, then Import project copy. The
+appliance transparently serves its SSD and 14 TB network archive; Venturi never
+scans or mounts that archive. Only selected assets transfer into the configured
+project root. Original media and the appliance's pin/retention rules stay intact.
+Missing shared sources expose Relink missing project uses, which restores the
+local copy and applies native SetMediaPath without replacing clip IDs or keys.
+Imported provenance appears in the Inspector and survives Save/restart.
+
+The server requires a fixed HTTP(S) service origin without credentials, path or
+query; browser input cannot choose arbitrary remote URLs. Redirects are disabled.
+There are two bounded catalog readers and one transfer plus one queued. A source
+is at most 512 MiB and a catalog 4 MiB/5000 items. Transfers have a three-minute
+HTTP deadline, native media validation and SHA-256/no-replace publication.
+Selected project copies are persistent; the ordinary preview cache remains
+bounded independently. Canceling a transfer never removes shared originals or
+edits a project. An already completed copy can remain available in the picker.
+Native compound-library organization and saved/shared attribute presets remain
+separate parity work; this is the appliance media-catalog integration.
+
 ```bash
 node --test web/test/*.test.js
 cargo check -p vv-web

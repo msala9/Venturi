@@ -509,3 +509,5 @@ label {
 #silence-dialog .field { margin: 5px 0; }
 #silence-dialog ol { max-height: 180px; overflow: auto; }
 #silence-dialog output { display: block; margin: 12px 0; }
+.shared-library-list article { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; overflow-wrap: anywhere; }
+#panel-content > input, #panel-content > select { width: 100%; margin-top: 8px; }

@@ -1,0 +1,11 @@
+{
+  "archive_mount": {
+    "source": "//192.168.1.200/shared",
+    "target": "/mnt/madrock-share",
+    "fstype": "cifs"
+  },
+  "total_bytes": 13888976269312,
+  "available_bytes": 11023987556352,
+  "checked_path": "/mnt/madrock-share/madrock-library",
+  "recursive_scan": false
+}

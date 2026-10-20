@@ -14,6 +14,15 @@ pub struct Files {
     dir: File,
 }
 impl Files {
+    pub fn root_file(&self) -> Result<File> {
+        self.dir.try_clone().map_err(|_| ApiError::io())
+    }
+    pub fn shared_origin(&self, path: &Path) -> Option<Value> {
+        if path.parent() != Some(self.root.as_path()) {
+            return None;
+        }
+        crate::library::provenance(&self.dir, path.file_name()?.to_str()?)
+    }
     pub fn media_file(&self, path: &Path) -> Result<File> {
         if path.parent() != Some(self.root.as_path()) {
             return Err(ApiError::invalid("Media must be in the configured root"));
@@ -149,7 +158,7 @@ impl Files {
             } else if name.ends_with(".otio") {
                 otio.push(item);
             } else if [
-                "mp4", "mov", "mkv", "webm", "wav", "mp3", "flac", "png", "jpg", "jpeg",
+                "mp4", "mov", "mkv", "webm", "wav", "mp3", "flac", "png", "jpg", "jpeg", "webp",
             ]
             .iter()
             .any(|ext| name.to_lowercase().ends_with(&format!(".{ext}")))

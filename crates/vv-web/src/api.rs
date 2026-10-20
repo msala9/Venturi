@@ -23,6 +23,7 @@ pub struct AppState {
     pub preview: Preview,
     pub source: MediaJobs,
     pub silence: crate::silence::Jobs,
+    pub library: crate::library::Library,
 }
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -31,6 +32,12 @@ pub fn router(state: AppState) -> Router {
             get(|| async { Json(json!({"status":"ok","api_version":1})) }),
         )
         .route("/api/v1/session", get(session))
+        .route("/api/v1/library", get(library_catalog))
+        .route("/api/v1/library/items/{id}/prepare", post(library_prepare))
+        .route(
+            "/api/v1/library/jobs/{job}",
+            get(library_status).delete(library_cancel),
+        )
         .route("/api/v1/timelines/{id}", get(timeline))
         .route("/api/v1/timelines/{id}/timeline.otio", get(export_otio))
         .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
@@ -87,6 +94,64 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn library_catalog(State(state): State<AppState>) -> Result<Json<Value>> {
+    state.library.catalog().await.map(Json)
+}
+async fn library_prepare(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<Json<SourceQuery>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>> {
+    let query = payload
+        .map_err(|_| ApiError::invalid("Invalid library transfer request"))?
+        .0;
+    let snapshot = state.host.call(Action::Session).await?;
+    if snapshot["project_epoch"] != query.project_epoch || snapshot["project_name"].is_null() {
+        return Err(ApiError::conflict(
+            "REVISION_CONFLICT",
+            "Open the intended project before importing shared assets",
+        ));
+    }
+    state
+        .library
+        .prepare(&id, &query.project_epoch)
+        .await
+        .map(Json)
+}
+async fn library_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    state
+        .library
+        .status(
+            &job,
+            &query
+                .map_err(|_| ApiError::invalid("Invalid library transfer query"))?
+                .0
+                .project_epoch,
+            false,
+        )
+        .map(Json)
+}
+async fn library_cancel(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    state
+        .library
+        .status(
+            &job,
+            &query
+                .map_err(|_| ApiError::invalid("Invalid library transfer query"))?
+                .0
+                .project_epoch,
+            true,
+        )
+        .map(Json)
 }
 async fn prepare_silence(
     State(state): State<AppState>,
@@ -427,6 +492,7 @@ async fn source_asset(
         "source.mp4" => "video/mp4",
         "thumb.png" | "source.png" => "image/png",
         "source.jpg" => "image/jpeg",
+        "source.webp" => "image/webp",
         _ => "application/json",
     };
     crate::source::stream_file(file, mime, &job, &headers).await
@@ -653,6 +719,7 @@ async fn assets(request: Request) -> Response {
         "/js/catalog.js" => asset!("/web/js/catalog.js", "text/javascript"),
         "/js/slip.js" => asset!("/web/js/slip.js", "text/javascript"),
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),
+        "/js/library.js" => asset!("/web/js/library.js", "text/javascript"),
         "/js/mixer.js" => asset!("/web/js/mixer.js", "text/javascript"),
         "/js/visual.js" => asset!("/web/js/visual.js", "text/javascript"),
         "/js/masks.js" => asset!("/web/js/masks.js", "text/javascript"),

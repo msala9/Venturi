@@ -8,6 +8,7 @@ mod error;
 mod files;
 mod host;
 mod inspector;
+mod library;
 mod masks;
 mod preview;
 mod program;
@@ -23,11 +24,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut root = std::path::PathBuf::from("venturi-web-data");
     let mut gpu = None;
     let mut software = false;
+    let mut library_url = None;
     let mut gpu_lock = std::path::PathBuf::from("/tmp/HALO_BENCHMARK.lock");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--software-preview" => software = true,
+            "--library-url" => {
+                library_url = Some(
+                    args.next()
+                        .ok_or("--library-url requires a service origin")?,
+                )
+            }
             "--gpu-device" => {
                 let id = args
                     .next()
@@ -44,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "--help" => {
                 println!(
-                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE]\nOnly loopback addresses are supported. Use the launcher for isolated software preview."
+                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE] [--library-url HTTP_ORIGIN]\nOnly loopback addresses are supported. Use the launcher for isolated software preview."
                 );
                 return Ok(());
             }
@@ -63,6 +71,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = tokio::net::TcpListener::bind(listen).await?;
     let listen = listener.local_addr()?;
     let host = host::Host::start(&root)?;
+    let library = library::Library::start(
+        library_url.as_deref(),
+        host.media_root().await.map_err(|error| error.2)?,
+    )
+    .map_err(|error| error.2)?;
     let source = source::MediaJobs::start()?;
     let preview = if software {
         preview::Preview::start_software(&source.software_lock_path())
@@ -75,6 +88,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         listener,
         api::router(api::AppState {
             host,
+            library,
             source,
             silence: silence::Jobs::start(),
             port: listen.port(),

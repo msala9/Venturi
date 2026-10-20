@@ -145,6 +145,31 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 
 ## Implemented Inspector commands
 
+- GET `/library` reads the configured ds4-appliance catalog off the actor.
+  It returns configured/archive reachability, retention, sequence and bounded
+  items; archive filesystem paths are omitted. Seeds are strings or null to
+  preserve every u64 bit in JavaScript. An unconfigured server returns
+  `{configured:false,items:[]}` without contacting any service.
+- POST `/library/items/{id}/prepare` with `{project_epoch}` prepares an explicit
+  project copy from the authoritative SSD/archive file API. GET/DELETE
+  `/library/jobs/{job}?project_epoch=...` reports progress or requests cancel.
+  One transfer runs with one queued; eight process-local results are retained.
+  Each item is at most 512 MiB with a three-minute HTTP deadline. Catalog reads
+  are at most 4 MiB/5000 items and two concurrent requests. Service origin is
+  configured only at startup, with no credentials/query/path or HTTP redirects.
+- Transfers validate IDs, names, media signatures, native streams/timing and
+  byte count before a no-replace publish under the actor's exact root directory
+  descriptor. SHA-256 names and .origin.json sidecars retain provenance; an
+  existing different file, symlink or changed prepared source is refused.
+  Project copies are persistent editing inputs, not evictable proxy cache.
+  Existing import_media reuses the native MediaId for the same copy. Missing
+  shared uses can be prepared again and relinked in one native catalog command,
+  retaining clip IDs, keys and edit geometry. Changes to project epoch/generation
+  suppress automatic registration of a late transfer. Source copies remain
+  available through the root picker if registration cannot complete.
+- PNG/JPEG/WebP Source jobs deliver original image bytes, fixed image MIME and
+  native thumbnails. Stills do not use a movie clock or silently transcode.
+
 - `remove_track {track}` reuses native RemoveTrack, including its clips and
   crossings, as one Undo. Locked tracks and the last track of either kind are
   refused. `set_track` additionally accepts `armed`; only saved projects with

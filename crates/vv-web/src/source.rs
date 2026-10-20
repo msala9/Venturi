@@ -380,6 +380,7 @@ impl MediaJobs {
             "source.mp4",
             "source.png",
             "source.jpg",
+            "source.webp",
             "thumb.png",
             "waveform.json",
         ]
@@ -507,17 +508,19 @@ fn generate(
 }
 
 fn image_asset(file: &File) -> Result<&'static str> {
-    let mut signature = [0; 8];
+    let mut signature = [0; 12];
     let read = file
         .read_at(&mut signature, 0)
         .map_err(|_| ApiError::io())?;
-    if read == 8 && signature == *b"\x89PNG\r\n\x1a\n" {
+    if read >= 8 && signature[..8] == *b"\x89PNG\r\n\x1a\n" {
         Ok("source.png")
     } else if read >= 3 && signature[..3] == [0xff, 0xd8, 0xff] {
         Ok("source.jpg")
+    } else if read == 12 && &signature[..4] == b"RIFF" && &signature[8..12] == b"WEBP" {
+        Ok("source.webp")
     } else {
         Err(ApiError::invalid(
-            "Source still preview currently supports PNG and JPEG",
+            "Source still preview currently supports PNG, JPEG and WebP",
         ))
     }
 }

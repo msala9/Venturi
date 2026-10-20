@@ -100,6 +100,71 @@ fn otio_import_is_a_new_no_replace_project_with_epoch_and_retry_guards() {
     assert!(!root.join("discard.vvproj").exists());
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn clipboard_bridge_is_retry_safe_and_copy_does_not_create_an_undo_step() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-clipboard-host-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "copy".into(),
+        },
+        "clipboard-new",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let path = Some(vv_core::Id::raw(id).to_string());
+    let insert = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "clipboard-solid",
+        Some(id),
+    );
+    editor.mutation(path.clone(), insert).unwrap();
+    let clip = editor.session.project.timelines[id].tracks[0].clips[0]
+        .id
+        .0
+        .to_string();
+    let steps = editor.session.history.position();
+    let copy = request(
+        &editor,
+        Operation::CopyClips {
+            clip_ids: vec![clip],
+        },
+        "clipboard-copy",
+        Some(id),
+    );
+    editor.mutation(path.clone(), copy.clone()).unwrap();
+    editor.mutation(path.clone(), copy).unwrap();
+    assert_eq!(editor.snapshot()["clipboard_count"], 1);
+    assert_eq!(editor.session.history.position(), steps);
+    let paste = request(
+        &editor,
+        Operation::PasteClips { frame: 48 },
+        "clipboard-paste",
+        Some(id),
+    );
+    editor.mutation(path.clone(), paste.clone()).unwrap();
+    editor.mutation(path, paste).unwrap();
+    assert_eq!(editor.session.history.position(), steps + 1);
+    assert_eq!(
+        editor.session.project.timelines[id].tracks[0].clips.len(),
+        2
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
 #[test]
 fn retries_epochs_revisions_and_writer_lease() {
     let root = std::env::temp_dir().join(format!(

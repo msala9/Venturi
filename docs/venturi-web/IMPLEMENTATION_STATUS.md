@@ -706,3 +706,28 @@ descriptor-lifetime regression verifies ownership survives dropping stage
 clones and even the job descriptor until the last stage is gone, then becomes
 available nonblocking. Fresh R9700 whole-job/Export acceptance is pending an
 effective free GPU slot; earlier hardware render/file proofs are unchanged.
+
+## M4 independent increment — native project clip clipboard
+
+Copy captures native ClipboardEntry data with complete effects, source ranges,
+animation, labels, linked groups and internal crossings. Locked source tracks
+may be copied. A 4 MiB process-local clipboard belongs to the current project
+epoch; copying is idempotent and adds no history entry. Paste checks matching
+FPS, destination locks/space, media/cycle/depth limits, then allocates native
+tracks/clip/link IDs in one composite step. It never invokes destructive
+overwrite insertion. Any failed trial leaves real entities, counters and
+history unchanged. Cross-project/FPS transfers are explicitly unavailable.
+
+Windows: copied the trimmed 12-frame A/V group; paste at frame zero was
+refused with OVERLAP. A ruler seek then pasted both clips at frame 48 using
+the live playhead, retaining source range 7..19 and one fresh shared link group.
+One Undo removed both copies, one Redo restored them, and Save As created
+Clipboard_UI_check. History has exactly one PasteClips entry. Evidence:
+m4-native-clipboard-state.json/browser.png. Ctrl+C/V is scoped away from text
+inputs; browser text clipboard contents are not read or replaced.
+
+52 web Rust tests, 22 JS tests, formatting/clippy/build pass. Added checks
+cover locked-source copy, locked/overlap refusal with complete state equality,
+effect/key/mask preservation, fresh groups/IDs, internal crossings, missing
+tracks in one undo, FPS/epoch/cycle rejection and host retry-safe copy/paste.
+This remains bounded Edit parity, not clipboard interchange with other apps.

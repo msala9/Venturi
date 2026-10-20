@@ -286,3 +286,16 @@ wait for submitted GPU work before dropping. The final descriptor releases
 the reservation after completion, cancellation or error. Uncached exact
 frames return GPU_BUSY while preparation owns the GPU; cached output and
 metadata editing remain available. No foreign workload is stopped.
+
+- `copy_clips {clip_ids}` captures native ClipboardEntry values, whole linked
+  groups and internal crossing transitions in the session's bounded 4 MiB
+  clipboard. It is writer/epoch/generation/revision/idempotency guarded but
+  creates no undo step; copying locked tracks is allowed. Session snapshots
+  expose only clipboard_count, not clip payloads.
+- `paste_clips {frame}` requires the same project epoch and exact timeline FPS.
+  A native trial plans missing tracks, fresh clip/group IDs, effect/animation
+  copies, internal crossings and cycle/depth checks. Any occupied/locked
+  destination refuses the whole paste before real IDs/tracks/history change.
+  One composite undo removes all pasted clips and any new tracks. The actual
+  browser text clipboard, cross-project transfers and cross-FPS paste are not
+  part of this first adapter. Copy again after opening another project.

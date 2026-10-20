@@ -1,5 +1,6 @@
 mod api;
 mod audio;
+mod clipboard;
 mod commands;
 mod error;
 mod files;

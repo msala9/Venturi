@@ -40,6 +40,7 @@ pub struct Editor {
     lease: Option<(String, Instant)>,
     completed: HashMap<String, (String, Result<Value>)>,
     import_warnings: Vec<String>,
+    clipboard: Option<crate::clipboard::Clipboard>,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
@@ -54,11 +55,17 @@ impl Editor {
             lease: None,
             completed: HashMap::new(),
             import_warnings: vec![],
+            clipboard: None,
         })
     }
     fn snapshot(&self) -> Value {
         let mut snapshot = snapshot::session(&self.session, &self.epoch);
         snapshot["import_warnings"] = json!(self.import_warnings);
+        snapshot["clipboard_count"] = json!(
+            self.clipboard
+                .as_ref()
+                .map_or(0, |clipboard| clipboard.count(&self.session))
+        );
         snapshot
     }
     fn lease(&mut self, client: &str) -> Result<Value> {
@@ -131,7 +138,21 @@ impl Editor {
                     "Timeline changed; refresh before retrying",
                 ));
             }
-            return commands::apply(&mut self.session, id, &request.operation);
+            return match &request.operation {
+                Operation::CopyClips { clip_ids } => {
+                    self.clipboard = Some(crate::clipboard::copy(&self.session, id, clip_ids)?);
+                    Ok(())
+                }
+                Operation::PasteClips { frame } => crate::clipboard::paste(
+                    &mut self.session,
+                    id,
+                    self.clipboard
+                        .as_ref()
+                        .ok_or_else(|| ApiError::invalid("Copy clips first"))?,
+                    *frame,
+                ),
+                _ => commands::apply(&mut self.session, id, &request.operation),
+            };
         }
         match &request.operation {
             Operation::Undo | Operation::Redo | Operation::HistoryJump { .. } => {

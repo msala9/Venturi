@@ -393,6 +393,10 @@ function selected() {
     const name=document.createElement("input");name.value="Compound";name.required=true;name.maxLength=128;compoundLabel.append(name);
     const make=document.createElement("button");make.textContent="Make compound from selection";make.disabled=!view.selection.length;compound.append(compoundLabel,make);
     compound.addEventListener("submit",async(event)=>{event.preventDefault();try{await commit({kind:"make_compound",clip_ids:view.selection,name:name.value});view.selection=[];selected();canvasTimeline.invalidate();}catch(error){notice(error.message);}});fieldset.append(compound);
+    const clipboardNote=document.createElement("p");clipboardNote.className="muted";clipboardNote.textContent=`Clip clipboard: ${documentState.clipboard_count || 0} · current project, matching FPS`;fieldset.append(clipboardNote);
+    for(const [label,operation,disabled] of [["Copy clips",()=>({kind:"copy_clips",clip_ids:view.selection}),!view.selection.length],["Paste clips safely",()=>({kind:"paste_clips",frame:view.playhead}),!documentState.clipboard_count]]) {
+      const button=document.createElement("button");button.textContent=label;button.disabled=disabled;button.addEventListener("click",()=>commit(operation()).catch((error)=>notice(error.message)));fieldset.append(button);
+    }
     renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,seek:(frame)=>{view.playhead=frame;updateTime();seek();selected();}});
     const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
     mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery});
@@ -894,6 +898,10 @@ document.addEventListener("keydown", (event) => {
     moveSelection(
       (event.key === "ArrowLeft" ? -1 : 1) * (event.shiftKey ? 10 : 1),
     );
+  } else if (modifier && event.key.toLowerCase() === "c" && view.selection.length) {
+    event.preventDefault();run({kind:"copy_clips",clip_ids:view.selection});
+  } else if (modifier && event.key.toLowerCase() === "v") {
+    event.preventDefault();run({kind:"paste_clips",frame:view.playhead});
   } else if (modifier && event.key.toLowerCase() === "s") {
     event.preventDefault();
     $("save").click();

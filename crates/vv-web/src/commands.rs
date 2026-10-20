@@ -46,6 +46,12 @@ pub enum Operation {
         clip_ids: Vec<String>,
         name: String,
     },
+    CopyClips {
+        clip_ids: Vec<String>,
+    },
+    PasteClips {
+        frame: FrameIdx,
+    },
     ImportMedia {
         path_token: String,
     },
@@ -243,6 +249,13 @@ fn unlocked(tl: &Timeline, index: usize) -> Result<()> {
     Ok(())
 }
 fn refs(tl: &Timeline, ids: &[String]) -> Result<Vec<edit::ClipRef>> {
+    let selected = copied_refs(tl, ids)?;
+    for &(track, _) in &selected {
+        unlocked(tl, track)?;
+    }
+    Ok(selected)
+}
+pub(crate) fn copied_refs(tl: &Timeline, ids: &[String]) -> Result<Vec<edit::ClipRef>> {
     if ids.is_empty() || ids.len() > 4096 {
         return Err(ApiError::invalid("Select between 1 and 4096 clips"));
     }
@@ -261,9 +274,6 @@ fn refs(tl: &Timeline, ids: &[String]) -> Result<Vec<edit::ClipRef>> {
             }
         }
     }
-    for &(t, _) in &selected {
-        unlocked(tl, t)?;
-    }
     Ok(selected.into_iter().collect())
 }
 fn range(start: FrameIdx, len: FrameIdx) -> Result<()> {
@@ -274,7 +284,7 @@ fn range(start: FrameIdx, len: FrameIdx) -> Result<()> {
     }
     Ok(())
 }
-fn free(
+pub(crate) fn free(
     tl: &Timeline,
     track: usize,
     start: FrameIdx,

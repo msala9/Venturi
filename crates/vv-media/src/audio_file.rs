@@ -184,12 +184,14 @@ pub fn write_audio_file(
     for chunk in samples.chunks(frame_size * ch as usize) {
         let mut chunk = chunk.to_vec();
         // The fixed-size encoders take no short last frame.
-        chunk.resize(frame_size * ch as usize, 0.0);
+        if encoder.frame_size() != 0 {
+            chunk.resize(frame_size * ch as usize, 0.0);
+        }
         let input = packed_frame(&chunk, ch, rate, layout);
         let mut converted = frame::Audio::empty();
         convert.run(&input, &mut converted)?;
         converted.set_pts(Some(pts));
-        pts += frame_size as i64;
+        pts += (chunk.len() / ch as usize) as i64;
         encoder.send_frame(&converted)?;
         crate::encode::drain_packets(
             &mut octx,

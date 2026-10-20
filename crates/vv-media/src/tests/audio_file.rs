@@ -48,3 +48,28 @@ fn an_unavailable_choice_falls_back_to_mp3_then_wav() {
         assert_eq!(AudioFileFormat::from_id(format.id()), Some(format));
     }
 }
+
+#[test]
+fn variable_size_pcm_preserves_every_recorded_sample_without_a_padded_tail() {
+    let dir = std::env::temp_dir().join(format!(
+        "vv-pcm-exact-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&dir).unwrap();
+    for channels in [1, 2] {
+        let samples: Vec<f32> = (0..(4096 + 17) * channels as usize)
+            .map(|i| (i as f32 * 0.01).sin() * 0.25)
+            .collect();
+        let path = dir.join(format!("exact-{channels}.wav"));
+        write_audio_file(&path, AudioFileFormat::Wav, &samples, 48000, channels).unwrap();
+        let decoded = crate::decode_audio_track(&path, 0).unwrap().unwrap();
+        assert_eq!(decoded.sample_rate, 48000);
+        assert_eq!(decoded.channels, channels);
+        assert_eq!(decoded.samples, samples);
+    }
+    std::fs::remove_dir_all(dir).unwrap();
+}

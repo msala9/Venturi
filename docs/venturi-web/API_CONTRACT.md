@@ -158,3 +158,12 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   integer timeline frame into a source frame. Null value removes that keyframe;
   a number inserts/replaces. Track kind, locks, clip bounds, numeric ranges and
   interpolation control points are checked before mutation.
+- `insert_media` additionally accepts source_in/source_out, in integer source
+  frames with exclusive out. Omission preserves full-source/default still
+  insertion. Native rate conversion and safe overlap checks remain authoritative.
+- `slip {clip_ids,delta_frames}`, `link_clips {clip_ids,unlink}` and
+  `set_disabled {clip_ids,disabled}` expand whole linked groups and validate all
+  involved tracks before native atomic commands.
+- `set_marker {marker:{id,delete,start_frame,duration_frames,note,color}}`
+  creates with null id, edits with an existing ID, or removes with delete=true.
+  Palette names use native capitalization; snapshot includes palette RGB.

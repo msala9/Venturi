@@ -1,11 +1,11 @@
 import { isTextTarget, installSplitter } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
 import { linkedSelection } from "./timeline/geometry.js";
-import { request, sendMutation, ApiFailure } from "./api.js";
+import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import { createViewer } from "./viewer.js";
-import { createSourcePlayer, sourceAssetURL } from "./source.js";
+import { createSourcePlayer, sourceAssetURL, sourceSelection } from "./source.js";
 import { createProgramPlayer } from "./program.js";
-import { detailIdentity, renderProperties } from "./inspector.js";
+import { detailIdentity, renderProperties, renderMarkers } from "./inspector.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -200,9 +200,11 @@ let commit = async () => {
 };
 let seek = () => {};
 let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = null;
+let sourceOpenId = null;
+const sourceRanges = new Map();
 const mediaAssets = new Map();
 function updatePlayAvailability() {
-  const still = viewerMode === "source" && documentState?.media.find((m) => m.id === selectedMedia)?.is_image;
+  const still = viewerMode === "source" && documentState?.media.find((m) => m.id === sourceOpenId)?.is_image;
   $("play").disabled = still || (viewerMode === "program" && (!documentState?.capabilities.playback || !timeline?.tracks.some((t) => t.clips.length)));
   $("step-back").disabled = !!still;
   $("step-forward").disabled = !!still;
@@ -223,12 +225,24 @@ function viewerModeSet(mode) {
 function openSource() {
   const item = documentState?.media.find((m) => m.id === selectedMedia);
   if (!item) return notice("Select a media file first");
+  sourceOpenId = item.id;
+  const range = sourceRanges.get(item.id) || { source_in:0, source_out:item.is_image ? Math.round(5*item.fps.num/item.fps.den) : item.duration_frames };
+  $("source-in").value = range.source_in; $("source-out").value = range.source_out;
+  $("source-mark-in").disabled = !!item.is_image; $("source-mark-out").disabled = !!item.is_image;
   viewerModeSet("source");
   sourcePlayer.open(item, documentState.project_epoch, $("source-quality").value);
 }
 $("source-mode").addEventListener("click", openSource);
 $("program-mode").addEventListener("click", () => viewerModeSet("program"));
 $("source-quality").addEventListener("change", openSource);
+function rememberSourceRange() { if (sourceOpenId) sourceRanges.set(sourceOpenId,{source_in:Number($("source-in").value),source_out:Number($("source-out").value)}); }
+for (const id of ["source-in","source-out"]) $(id).addEventListener("input",rememberSourceRange);
+for (const [id,out] of [["source-mark-in",false],["source-mark-out",true]]) $(id).addEventListener("click",()=>{
+  const item = documentState?.media.find((m)=>m.id===sourceOpenId);
+  if (!item || item.is_image) return;
+  const frame = Math.floor($("source-video").currentTime*item.fps.num/item.fps.den + 1e-6);
+  $(out ? "source-out" : "source-in").value = Math.min(item.duration_frames - (out ? 0 : 1),frame+(out ? 1 : 0)); rememberSourceRange();
+});
 $("play").addEventListener("click", () => {
   if (viewerMode === "program") { viewer?.invalidate(); programPlayer.toggle().catch((error) => notice(error.message)); }
   else sourcePlayer.toggle().catch((error) => notice(error.message));
@@ -326,6 +340,23 @@ function selected() {
         $("inspector-content").append(button);
       }
     }
+  if (timeline?.id !== "fixture" && timeline && documentState) {
+    const fieldset = document.createElement("fieldset"); fieldset.disabled = !writable || busy || !!unresolved; const legend = document.createElement("legend"); legend.textContent = "Selected clips"; fieldset.append(legend);
+    for (const [label, operation] of [
+      ["Link", {kind:"link_clips",clip_ids:view.selection,unlink:false}],
+      ["Unlink", {kind:"link_clips",clip_ids:view.selection,unlink:true}],
+      ["Disable", {kind:"set_disabled",clip_ids:view.selection,disabled:true}],
+      ["Enable", {kind:"set_disabled",clip_ids:view.selection,disabled:false}],
+    ]) {
+      const button = document.createElement("button"); button.textContent = label; button.disabled = !view.selection.length;
+      button.addEventListener("click",()=>commit(operation).catch((error)=>notice(error.message))); fieldset.append(button);
+    }
+    const form = document.createElement("form"), label = document.createElement("label"); label.className = "field"; label.textContent = "Slip delta frames";
+    const delta = document.createElement("input"); delta.type = "number"; delta.step = 1; delta.value = 1; delta.min = -1_000_000_000; delta.max = 1_000_000_000; label.append(delta);
+    const slip = document.createElement("button"); slip.textContent = "Apply linked slip"; slip.disabled = !view.selection.length;
+    form.append(label,slip); form.addEventListener("submit",(event)=>{event.preventDefault();commit({kind:"slip",clip_ids:view.selection,delta_frames:Number(delta.value)}).catch((error)=>notice(error.message));}); fieldset.append(form); $("inspector-content").append(fieldset);
+    renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,seek:(frame)=>{view.playhead=frame;updateTime();seek();selected();}});
+  }
 }
 const canvasTimeline = createTimeline({
   canvas: $("timeline"),
@@ -411,7 +442,7 @@ $("fit").addEventListener("click", () => {
 });
 function step(delta) {
   if (viewerMode === "source") {
-    const media = documentState?.media.find((m) => m.id === selectedMedia);
+    const media = documentState?.media.find((m) => m.id === sourceOpenId);
     const fps = media?.fps;
     sourcePlayer.step(delta, fps ? fps.num / fps.den : 24, media?.duration_frames || 1);
     return;
@@ -426,6 +457,7 @@ $("step-forward").addEventListener("click", () => step(1));
 document.addEventListener("keydown", (event) => {
   if (isTextTarget(event.target)) return;
   if (event.altKey) return;
+  if (viewerMode === "source" && ["i","o"].includes(event.key.toLowerCase())) { event.preventDefault(); $(event.key.toLowerCase() === "i" ? "source-mark-in" : "source-mark-out").click(); }
   if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
     event.preventDefault();
     step(event.key === "ArrowLeft" ? -1 : 1);
@@ -437,13 +469,14 @@ let documentState = null,
   busy = false,
   unresolved = null,
   selectedMedia = null;
-const clientId = crypto.randomUUID();
+const clientId = persistentClientId();
 async function refresh() {
   programPlayer?.stop();
   viewer?.invalidate();
   const next = await request("/session");
   if (documentState?.project_epoch !== next.project_epoch) {
     sourcePlayer?.reset();
+    sourceOpenId = null; sourceRanges.clear();
     selectedMedia = null;
     for (const asset of mediaAssets.values()) asset.thumbnail?.close();
     mediaAssets.clear();
@@ -621,12 +654,19 @@ $("split").addEventListener("click", () =>
   run({ kind: "split", clip_ids: view.selection, frame: view.playhead }),
 );
 $("insert-media").addEventListener("click", () => {
-  if (selectedMedia)
+  if (selectedMedia) {
+    if (sourceOpenId === selectedMedia) rememberSourceRange();
+    const range = sourceRanges.get(selectedMedia);
+    let selection = {};
+    try { if (range) selection = sourceSelection(range.source_in,range.source_out,documentState.media.find((m)=>m.id===selectedMedia).duration_frames); }
+    catch (error) { notice(error.message); return; }
     run({
       kind: "insert_media",
       media_id: selectedMedia,
       start_frame: view.playhead,
+      ...selection,
     });
+  }
   else notice("Select an imported media first");
 });
 $("import-button").addEventListener("click", async () => {
@@ -823,7 +863,7 @@ sourcePlayer = createSourcePlayer({
 });
 $("source-video").addEventListener("timeupdate", () => {
   if (viewerMode !== "source") return;
-  const rate = documentState?.media.find((m) => m.id === selectedMedia)?.fps;
+  const rate = documentState?.media.find((m) => m.id === sourceOpenId)?.fps;
   const fps = rate ? rate.num / rate.den : 24;
   const frames = Math.floor($("source-video").currentTime * fps);
   const seconds = Math.floor(frames / fps);

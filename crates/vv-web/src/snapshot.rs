@@ -18,7 +18,8 @@ pub fn timeline(session: &Session, id: TimelineId) -> Value {
     let tl = &session.project.timelines[id];
     json!({"api_version":1,"timeline_id":id.raw().to_string(),"id":id.raw().to_string(),"revision":session.timeline_revision(id),"name":tl.name,
       "fps":{"num":tl.fps.num,"den":tl.fps.den},"resolution":{"width":tl.resolution.0,"height":tl.resolution.1},
-      "markers":tl.markers.iter().map(|m|json!({"id":m.id.0.to_string(),"start_frame":m.start,"duration_frames":m.duration,"note":m.note,"color":format!("{:?}",m.color).to_lowercase()})).collect::<Vec<_>>(),
+      "marker_colors":vv_core::ClipColor::ALL,
+      "markers":tl.markers.iter().map(|m|{let (r,g,b)=m.color.rgb();json!({"id":m.id.0.to_string(),"start_frame":m.start,"duration_frames":m.duration,"note":m.note,"color":m.color,"rgb":[r,g,b]})}).collect::<Vec<_>>(),
       "tracks":tl.tracks.iter().enumerate().map(|(index,track)|json!({
         "id":index.to_string(),"label":tl.track_label(index),"kind":match track.kind {vv_core::TrackKind::Video=>"video",vv_core::TrackKind::Audio=>"audio"},
         "locked":track.locked,"muted":track.muted,"solo":track.solo,

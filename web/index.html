@@ -105,6 +105,10 @@
               <span id="source-status" role="status">Select media and open Source</span>
               <label>Proxy quality <select id="source-quality" aria-label="Source proxy quality"><option value="low">Low · 640</option><option value="medium" selected>Medium · 960</option><option value="high">High · 1920</option></select></label>
               <button id="source-cancel" disabled>Cancel preparation</button>
+              <label>Source in frame <input id="source-in" type="number" min="0" step="1" value="0"></label>
+              <label>Source out frame (exclusive) <input id="source-out" type="number" min="1" step="1" value="1"></label>
+              <button id="source-mark-in" title="I · current source frame">Set In</button>
+              <button id="source-mark-out" title="O · after current source frame">Set Out</button>
             </div>
           </div>
         </div>

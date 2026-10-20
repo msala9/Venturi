@@ -130,6 +130,15 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       ctx.fillText(`${frame}f`, x + 4, 14);
       ctx.fillRect(x, 24, 1, 6);
     }
+    for (const marker of timeline.markers || []) {
+      const x = frameToX(marker.start_frame, view, timeline.fps);
+      const right = frameToX(marker.start_frame + marker.duration_frames, view, timeline.fps);
+      if (right < HEADER || x > width) continue;
+      ctx.save(); ctx.beginPath(); ctx.rect(HEADER,0,width-HEADER,RULER); ctx.clip();
+      ctx.fillStyle = marker.rgb ? `rgb(${marker.rgb.join(",")})` : color("--amber");
+      ctx.globalAlpha = 0.35; ctx.fillRect(x, 0, Math.max(3,right-x),RULER); ctx.globalAlpha = 1;
+      ctx.fillRect(x,0,2,RULER); ctx.fillText(marker.note.slice(0,32),x+4,6); ctx.restore();
+    }
     const x = frameToX(view.playhead, view, timeline.fps);
     if (x >= HEADER) {
       ctx.fillStyle = color("--primary");

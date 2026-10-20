@@ -67,3 +67,32 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   number("Fade out frames", detail.fade_out, 0, detail.length_frames, (fade_out) => ({ fade_out }));
   root.append(section);
 }
+
+export function renderMarkers(root, timeline, { writable, getFrame, commit, seek, notice }) {
+  const section = document.createElement("details"), summary = document.createElement("summary"); summary.textContent = `Timeline markers (${timeline.markers.length})`; section.append(summary);
+  const form = document.createElement("form");
+  const select = document.createElement("select"); select.setAttribute("aria-label","Marker to edit"); select.append(new Option("New marker at playhead", ""));
+  for (const marker of timeline.markers) select.append(new Option(`${marker.start_frame} · ${marker.note.slice(0,60) || marker.id}`,marker.id));
+  form.append(select);
+  function field(name, type, value) {
+    const label = document.createElement("label"); label.className = "field"; label.textContent = name;
+    const input = document.createElement("input"); input.type = type; input.value = value; input.disabled = !writable;
+    if (type === "number") { input.min = 0; input.max = 1_000_000_000; input.step = 1; } else input.maxLength = 4096;
+    label.append(input); form.append(label); return input;
+  }
+  const start = field("Marker start frame","number",getFrame()), duration = field("Marker duration frames","number",0), note = field("Marker note","text","");
+  const color = document.createElement("select"); color.setAttribute("aria-label","Marker color"); color.disabled = !writable;
+  for (const name of timeline.marker_colors) color.append(new Option(name,name)); color.value = "Orange"; form.append(color);
+  const submit = document.createElement("button"); submit.textContent = "Apply marker"; submit.disabled = !writable; form.append(submit);
+  const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Remove marker"; remove.disabled = !writable || !select.value; form.append(remove);
+  const jump = document.createElement("button"); jump.type = "button"; jump.textContent = "Go to marker"; jump.disabled = !select.value; form.append(jump);
+  select.addEventListener("change", () => {
+    const marker = timeline.markers.find((m) => m.id === select.value);
+    start.value = marker?.start_frame ?? getFrame(); duration.value = marker?.duration_frames ?? 0; note.value = marker?.note ?? ""; color.value = marker?.color ?? "Orange";
+    remove.disabled = !writable || !marker; jump.disabled = !marker;
+  });
+  const apply = (deleting) => commit({kind:"set_marker",marker:{id:select.value || null,delete:deleting,start_frame:Number(start.value),duration_frames:Number(duration.value),note:note.value,color:color.value}}).catch((error)=>notice(error.message));
+  form.addEventListener("submit",(event)=>{event.preventDefault(); if (form.reportValidity()) apply(false);}); remove.addEventListener("click",()=>apply(true));
+  jump.addEventListener("click",()=>seek(Number(start.value)));
+  section.append(form); root.append(section);
+}

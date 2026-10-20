@@ -8,7 +8,29 @@ use vv_session::Session;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str){
-        Some("fixture") if args.len()==4=>{
+        Some("fixture_sync") if args.len()==4=>{
+            let source=PathBuf::from(&args[2]).canonicalize()?;
+            let meta=vv_media::probe_media(&source)?;
+            let mut session=Session::default();
+            let id=session.create_timeline(Timeline{name:"Five-minute AV sync verification".into(),fps:Rational::new(24,1),resolution:(640,360),tracks:vec![Track::new(TrackKind::Video),Track::new(TrackKind::Video),Track::new(TrackKind::Audio)],markers:vec![],master:Default::default()});
+            let media=session.add_media(source,meta.clone());
+            vv_core::edit::insert_media(&mut session.project,&mut session.history,id,
+                vv_core::edit::MediaInsert{media_id:media,source_in:0,source_out:meta.duration_frames,video:false,audio:true},0,
+                vv_core::edit::TargetTracks{video:None,extra_audio:Some(2)});
+            let mut background=Clip::from_source_range(session.project.alloc_clip_id(),ClipSource::SolidColor,0,7200,0,Rational::one());
+            background.effects.color=Some(Keyframed::constant(Rgba{r:0.0,g:0.0,b:0.0,a:1.0}));
+            session.project.timelines[id].tracks[0].insert_sorted(background);
+            for start in [0,1440,2880,4320,5760]{
+                let mut flash=Clip::from_source_range(session.project.alloc_clip_id(),ClipSource::SolidColor,0,3,start,Rational::one());
+                flash.effects.color=Some(Keyframed::constant(Rgba{r:1.0,g:1.0,b:1.0,a:1.0}));
+                session.project.timelines[id].tracks[1].insert_sorted(flash);
+            }
+            session.sync_timeline_media(id);
+            let text=ron::ser::to_string_pretty(&session.project,ron::ser::PrettyConfig::default())?;
+            OpenOptions::new().create_new(true).write(true).open(&args[3])?.write_all(text.as_bytes())?;
+            println!("fixture_timeline={} frames=7200",id.raw());
+        }
+        Some("fixture" | "fixture_av") if args.len()==4=>{
             let source=PathBuf::from(&args[2]).canonicalize()?;
             let meta=vv_media::probe_media(&source)?;let frames=meta.duration_frames.min(48);
             let mut session=Session::default();
@@ -22,7 +44,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             overlay.effects.transform.track_mut(TransformParam::ZoomY).default=0.4;
             let position=overlay.effects.transform.track_mut(TransformParam::PositionX);
             position.upsert(0,-60.0,Interpolation::Linear);position.upsert(36,60.0,Interpolation::Linear);
-            session.project.timelines[id].tracks[0].insert_sorted(source);
+            if args[1] == "fixture_av" {
+                vv_core::edit::insert_media(&mut session.project, &mut session.history, id,
+                    vv_core::edit::MediaInsert { media_id: media, source_in: 0, source_out: frames, video: true, audio: true },
+                    0, vv_core::edit::TargetTracks { video: Some(0), extra_audio: Some(2) });
+            } else { session.project.timelines[id].tracks[0].insert_sorted(source); }
             session.project.timelines[id].tracks[1].insert_sorted(overlay);
             session.sync_timeline_media(id);
             let text=ron::ser::to_string_pretty(&session.project,ron::ser::PrettyConfig::default())?;
@@ -42,7 +68,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             OpenOptions::new().create_new(true).write(true).open(&args[5])?.write_all(&rgba)?;
             println!("native_adapter={} frame={frame} size={width}x{height} bytes={}",compositor.adapter_name(),rgba.len());
         }
-        _=>return Err("Usage: verify_preview fixture SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba".into()),
+        _=>return Err("Usage: verify_preview fixture|fixture_av|fixture_sync SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba".into()),
     }
     Ok(())
 }

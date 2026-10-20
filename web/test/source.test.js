@@ -1,6 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createSourcePlayer, sourceAssetURL } from "../js/source.js";
+import { createSourcePlayer, sourceAssetURL, sourceSelection } from "../js/source.js";
+
+test("source selection preserves exclusive integer bounds and refuses invalid values before JSON encoding", () => {
+  assert.deepEqual(sourceSelection(6,18,48),{source_in:6,source_out:18});
+  for (const values of [[-1,18,48],[6,6,48],[6,49,48],[6.5,18,48],[NaN,18,48],[6,Infinity,48]]) assert.throws(()=>sourceSelection(...values));
+});
 
 test("still Source uses the original image without playing or stepping a media clock", async () => {
   let plays = 0;

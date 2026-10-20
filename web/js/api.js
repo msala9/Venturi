@@ -5,6 +5,13 @@ export class ApiFailure extends Error {
     this.status = status;
   }
 }
+export function persistentClientId(storage = sessionStorage, uuid = () => crypto.randomUUID()) {
+  try {
+    let id = storage.getItem("venturi-writer-client");
+    if (!id) { id = uuid(); storage.setItem("venturi-writer-client",id); }
+    return id;
+  } catch { return uuid(); }
+}
 export async function request(path, body, fetcher = fetch) {
   const response = await fetcher(`/api/v1${path}`, {
     method: body === undefined ? "GET" : "POST",

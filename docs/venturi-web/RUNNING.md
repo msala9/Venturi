@@ -2,8 +2,10 @@
 
 Venturi Web currently provides native project/timeline editing over loopback.
 It is an incremental editor with exact composed GPU frames and Source playback
-with audio, thumbnails and waveforms. Program playback, export, advanced
-effects/color/audio editing and AI review remain unimplemented. WSL exposes
+with audio, stills, thumbnails and waveforms. Inspector properties, scalar
+keyframes, Source ranges, linked slip and timeline markers are also available.
+Program playback is implemented but awaits GPU acceptance; user-facing export,
+remaining advanced effects/color/audio editing and AI review are open. WSL exposes
 only llvmpipe (CPU).
 The separate halo2 deployment has verified R9700 Vulkan rendering; see
 evidence/m3-r9700-validation.json for the measured path.
@@ -110,8 +112,10 @@ before claiming interactive import at production scale.
   Reusing the ID with a different request fails. IDs are never silently evicted.
 - Acknowledgments are compact. Fetch `/session` after applying or recovering
   a command. Transport failure triggers same-ID lookup, never a fresh replay.
-- Explicit capabilities report preview true only when the requested AMD Vulkan
-  compositor initializes. Playback/export remain false.
+- Explicit capabilities report preview and Program playback true only when the
+  requested AMD Vulkan compositor initializes. Program playback implementation
+  still awaits M3c hardware acceptance. Source playback also works CPU-only;
+  user-facing export remains unavailable.
 - GET `/preview/frame` requires project_epoch, if_generation, timeline_id,
   revision, frame and optional width (default 960). Returns a composed PNG;
   stale revisions are refused, a replaced pending job returns SEEK_SUPERSEDED,

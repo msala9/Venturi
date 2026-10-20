@@ -271,3 +271,32 @@ invalid ranges and keyframe removal/interpolation undo. GPU rendering of these
 new edits is pending the shared hardware slot. M4 as a whole remains open:
 transitions, masks, curves, slip, markers, speed, presets and compounds are not
 claimed complete by this increment.
+
+## M4 independent increment — Source range, linked slip and markers
+
+Source In/Out uses exclusive integer source-frame bounds, local I/O buttons
+and numeric fields; insertion still uses native FPS conforming and safe
+overlap validation. Selected clips expose native link/unlink, enable/disable
+and numeric linked slip. Slip validates the source handles and lock of every
+linked member before one atomic history entry. The dedicated dual-frame Slip
+viewer and pointer slip tool remain unimplemented.
+
+Marker add/edit/remove uses native timeline IDs and commands, bounded note/range
+validation and undo. Markers have native palette colors, ruler ranges and
+existing timeline snapping. Inspector provides marker editing and jump; drag
+of a marker is not implemented. Literal note text uses safe DOM/Canvas APIs.
+
+Browser proof: Source 6–18 inserted a linked 12-frame video/audio pair. Slip +1
+changed both source ranges to 7–19 with unchanged start 0 and length 12. Saved
+and reloaded the project successfully; the writer ID now persists in tab
+session storage, fixing the reload lease wait found during validation. Marker
+12–18 with note Cut cue applied and saved. Screenshots:
+evidence/m4-source-range-linked-slip-browser.png and
+evidence/m4-native-markers-browser.png. Native tests cover source bounds,
+linked slip/refusal/lock/undo, group disable/unlink/undo and marker CRUD/undo.
+All 23 Rust web tests, 18 JavaScript tests, clippy and build passed.
+
+M3c fixtures are ready on halo2: GPU_composed_AV.vvproj (native linked A/V plus
+animated composited solid) and GPU_sync_5m.vvproj (7200 frames at 24fps, five
+white flashes and 100ms beeps at 0/60/120/180/240 seconds). They are test inputs,
+not successful hardware results. Shared lock remained busy; no GPU job ran.

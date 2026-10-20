@@ -1,6 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { sendMutation } from "../js/api.js";
+import { sendMutation, persistentClientId } from "../js/api.js";
+test("writer identity survives reload in one tab and remains isolated from another tab",()=>{
+  const values = new Map(), storage = {getItem:(key)=>values.get(key),setItem:(key,value)=>values.set(key,value)};
+  assert.equal(persistentClientId(storage,()=>"first-client"),"first-client");
+  assert.equal(persistentClientId(storage,()=>"different-client"),"first-client");
+  assert.equal(persistentClientId({getItem:()=>null,setItem(){}},()=>"other-tab"),"other-tab");
+  assert.equal(persistentClientId({getItem(){throw new Error("Blocked");}},()=>"fallback"),"fallback");
+});
 test("a lost mutation response looks up the same ID without replaying", async () => {
   const calls = [];
   const fetcher = async (path, options) => {

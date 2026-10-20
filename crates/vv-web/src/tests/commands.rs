@@ -215,7 +215,9 @@ fn safe_media_insert_preserves_existing_clips_and_links_audio() {
             id,
             &Operation::InsertMedia {
                 media_id: media.raw().to_string(),
-                start_frame: 0
+                start_frame: 0,
+                source_in: None,
+                source_out: None,
             }
         )
         .unwrap_err()
@@ -230,6 +232,8 @@ fn safe_media_insert_preserves_existing_clips_and_links_audio() {
         &Operation::InsertMedia {
             media_id: media.raw().to_string(),
             start_frame: 72,
+            source_in: Some(6),
+            source_out: Some(18),
         },
     )
     .unwrap();
@@ -238,6 +242,131 @@ fn safe_media_insert_preserves_existing_clips_and_links_audio() {
     let audio = &s.project.timelines[id].tracks[1].clips[0];
     assert!(video.linked_group.is_some());
     assert_eq!(video.linked_group, audio.linked_group);
+    assert_eq!(video.source_in(), 6);
+    assert_eq!(video.source_out(), 18);
+    let video_id = video.id;
+    let audio_id = audio.id;
+    let selection = vec![video_id.0.to_string()];
+    let inserted = s.timeline_revision(id);
+    apply(
+        &mut s,
+        id,
+        &Operation::Slip {
+            clip_ids: selection.clone(),
+            delta_frames: 2,
+        },
+    )
+    .unwrap();
+    assert_eq!(s.history.position(), steps + 2);
+    for (track, clip) in [(0, video_id), (1, audio_id)] {
+        let clip = s.project.timelines[id].clip(track, clip).unwrap();
+        assert_eq!(
+            (clip.timeline_start, clip.timeline_len, clip.source_in()),
+            (72, 12, 8)
+        );
+    }
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(id), inserted);
+    assert!(
+        apply(
+            &mut s,
+            id,
+            &Operation::Slip {
+                clip_ids: selection.clone(),
+                delta_frames: 7
+            }
+        )
+        .is_err()
+    );
+    assert_eq!(s.timeline_revision(id), inserted);
+    s.project.timelines[id].tracks[1].locked = true;
+    assert_eq!(
+        apply(
+            &mut s,
+            id,
+            &Operation::Slip {
+                clip_ids: selection.clone(),
+                delta_frames: 1
+            }
+        )
+        .unwrap_err()
+        .1,
+        "TRACK_LOCKED"
+    );
+    s.project.timelines[id].tracks[1].locked = false;
+    apply(
+        &mut s,
+        id,
+        &Operation::SetDisabled {
+            clip_ids: selection.clone(),
+            disabled: true,
+        },
+    )
+    .unwrap();
+    assert!(s.project.timelines[id].clip(0, video_id).unwrap().disabled);
+    assert!(s.project.timelines[id].clip(1, audio_id).unwrap().disabled);
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    apply(
+        &mut s,
+        id,
+        &Operation::LinkClips {
+            clip_ids: selection,
+            unlink: true,
+        },
+    )
+    .unwrap();
+    assert!(
+        s.project.timelines[id]
+            .clip(0, video_id)
+            .unwrap()
+            .linked_group
+            .is_none()
+    );
+    assert!(
+        s.project.timelines[id]
+            .clip(1, audio_id)
+            .unwrap()
+            .linked_group
+            .is_none()
+    );
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(id), inserted);
     apply(&mut s, id, &Operation::Undo).unwrap();
     assert_eq!(s.timeline_revision(id), before);
+}
+
+#[test]
+fn markers_add_edit_remove_and_undo_without_changing_clip_positions() {
+    let (mut s, id, _) = fixture();
+    let original = s.timeline_revision(id);
+    let steps = s.history.position();
+    let operation = |key: Option<&str>, delete, start, duration, note: &str| Operation::SetMarker {
+        marker: MarkerEdit {
+            id: key.map(String::from),
+            delete,
+            start_frame: start,
+            duration_frames: duration,
+            note: note.into(),
+            color: core::ClipColor::Orange,
+        },
+    };
+    assert!(apply(&mut s, id, &operation(None, false, 5, -1, "invalid")).is_err());
+    assert_eq!(s.history.position(), steps);
+    apply(&mut s, id, &operation(None, false, 12, 0, "Cut cue")).unwrap();
+    let marker = s.project.timelines[id].markers[0].id.0.to_string();
+    apply(
+        &mut s,
+        id,
+        &operation(Some(&marker), false, 18, 6, "<script>literal note</script>"),
+    )
+    .unwrap();
+    assert_eq!(s.project.timelines[id].markers[0].start, 18);
+    apply(&mut s, id, &operation(Some(&marker), true, 0, 0, "")).unwrap();
+    assert!(s.project.timelines[id].markers.is_empty());
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.project.timelines[id].markers[0].duration, 6);
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.project.timelines[id].markers[0].note, "Cut cue");
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(id), original);
 }

@@ -447,6 +447,7 @@ label {
 #source-video[hidden], #source-image[hidden] { display: none; }
 .source-toolbar { display: flex; gap: 12px; align-items: center; padding: 8px; font-size: 11px; flex-wrap: wrap; }
 .source-toolbar label { display: flex; gap: 6px; align-items: center; }
+.source-toolbar input { width: 82px; }
 #screen[data-viewer-mode="source"] > #preview,
 #screen[data-viewer-mode="source"] > #viewer-empty,
 #screen[data-viewer-mode="source"] > #preview-state { display: none; }

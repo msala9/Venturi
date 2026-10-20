@@ -1,5 +1,10 @@
 import { request } from "./api.js";
 
+export function sourceSelection(start, end, duration) {
+  if (![start,end,duration].every(Number.isSafeInteger) || start < 0 || end <= start || end > duration) throw new Error("Source in/out must be integer frames inside the media; out is exclusive");
+  return { source_in:start, source_out:end };
+}
+
 export function sourceAssetURL(media, job, name, epoch) {
   return `/api/v1/media/${encodeURIComponent(media)}/jobs/${encodeURIComponent(job)}/${name}?${new URLSearchParams({ project_epoch: epoch })}`;
 }

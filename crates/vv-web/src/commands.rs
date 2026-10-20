@@ -34,6 +34,8 @@ pub enum Operation {
     InsertMedia {
         media_id: String,
         start_frame: FrameIdx,
+        source_in: Option<FrameIdx>,
+        source_out: Option<FrameIdx>,
     },
     SafeMove {
         moves: Vec<Move>,
@@ -75,6 +77,31 @@ pub enum Operation {
         clip_id: String,
         edit: crate::inspector::Keyframe,
     },
+    Slip {
+        clip_ids: Vec<String>,
+        delta_frames: FrameIdx,
+    },
+    LinkClips {
+        clip_ids: Vec<String>,
+        unlink: bool,
+    },
+    SetDisabled {
+        clip_ids: Vec<String>,
+        disabled: bool,
+    },
+    SetMarker {
+        marker: MarkerEdit,
+    },
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct MarkerEdit {
+    pub id: Option<String>,
+    pub delete: bool,
+    pub start_frame: FrameIdx,
+    pub duration_frames: FrameIdx,
+    pub note: String,
+    pub color: core::ClipColor,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -175,6 +202,107 @@ fn free(
 pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Result<()> {
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::SetMarker { marker } => {
+            let existing = marker
+                .id
+                .as_ref()
+                .map(|raw| {
+                    let key = core::MarkerId(raw.parse().map_err(|_| ApiError::missing())?);
+                    tl.marker(key).ok_or_else(ApiError::missing).map(|_| key)
+                })
+                .transpose()?;
+            if marker.delete {
+                session.apply(Box::new(core::SetMarker::remove(
+                    id,
+                    existing.ok_or_else(|| ApiError::invalid("Select a marker to remove"))?,
+                )));
+            } else {
+                if marker.start_frame < 0
+                    || marker.duration_frames < 0
+                    || marker.start_frame > MAX_FRAME - marker.duration_frames
+                    || marker.note.len() > 4096
+                    || (existing.is_none() && tl.markers.len() >= 4096)
+                    || tl.markers.iter().any(|m| m.id.0 == u64::MAX)
+                {
+                    return Err(ApiError::invalid(
+                        "Marker range, note or count exceeds the supported limit",
+                    ));
+                }
+                let value = core::Marker {
+                    id: existing.unwrap_or_else(|| tl.alloc_marker_id()),
+                    start: marker.start_frame,
+                    duration: marker.duration_frames,
+                    note: marker.note.clone(),
+                    color: marker.color,
+                };
+                session.apply(Box::new(if existing.is_some() {
+                    core::SetMarker::edit(id, value)
+                } else {
+                    core::SetMarker::add(id, value)
+                }));
+            }
+        }
+        Operation::SetDisabled { clip_ids, disabled } => {
+            let selected = refs(tl, clip_ids)?;
+            session.apply(Box::new(core::SetClipsDisabled::new(
+                id, selected, *disabled,
+            )));
+        }
+        Operation::LinkClips { clip_ids, unlink } => {
+            let selected = refs(tl, clip_ids)?;
+            if *unlink {
+                let mut groups = HashSet::new();
+                let commands: Vec<Box<dyn Command>> = selected
+                    .into_iter()
+                    .filter_map(|(track, clip)| {
+                        tl.clip(track, clip)
+                            .and_then(|c| c.linked_group)
+                            .filter(|group| groups.insert(*group))
+                            .map(|_| {
+                                Box::new(core::UnlinkClip::new(id, track, clip)) as Box<dyn Command>
+                            })
+                    })
+                    .collect();
+                if commands.is_empty() {
+                    return Err(ApiError::invalid("Selected clips have no links"));
+                }
+                session.apply(Box::new(CompositeCommand::new(
+                    CommandLabel::UnlinkClips,
+                    commands,
+                )));
+            } else {
+                if selected.len() < 2 {
+                    return Err(ApiError::invalid("Select at least two clips to link"));
+                }
+                session.apply(Box::new(core::LinkClips::new(id, selected)));
+            }
+        }
+        Operation::Slip {
+            clip_ids,
+            delta_frames,
+        } => {
+            if *delta_frames == 0 || !(-MAX_FRAME..=MAX_FRAME).contains(delta_frames) {
+                return Err(ApiError::invalid("Choose a nonzero bounded slip delta"));
+            }
+            let selected = refs(tl, clip_ids)?;
+            for &(track, clip) in &selected {
+                let clip = tl.clip(track, clip).unwrap();
+                let (min, max) = edit::slip_range(&session.project, clip)
+                    .ok_or_else(|| ApiError::invalid("Selected clip has no source handles"))?;
+                if !(min..=max).contains(delta_frames) {
+                    return Err(ApiError::invalid(
+                        "Slip exceeds a selected or linked clip source handle",
+                    ));
+                }
+            }
+            edit::slip_clips(
+                &mut session.project,
+                &mut session.history,
+                id,
+                &selected,
+                *delta_frames,
+            );
+        }
         Operation::SetProperties { clip_id, patch } => {
             crate::inspector::properties(session, id, clip_id, patch)?
         }
@@ -184,6 +312,8 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         Operation::InsertMedia {
             media_id,
             start_frame,
+            source_in,
+            source_out,
         } => {
             let raw = media_id.parse::<u64>().map_err(|_| ApiError::missing())?;
             let media = core::MediaId::from_raw(raw);
@@ -198,15 +328,22 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                     "Compound insertion is not implemented yet",
                 ));
             }
-            let out = if meta.is_image() {
+            let default_out = if meta.is_image() {
                 (meta.fps.as_f64() * 5.0).round() as FrameIdx
             } else {
                 meta.duration_frames
             };
-            range(*start_frame, out)?;
+            let source_in = source_in.unwrap_or(0);
+            let out = source_out.unwrap_or(default_out);
+            if source_in < 0 || out <= source_in || out > meta.duration_frames {
+                return Err(ApiError::invalid(
+                    "Source in/out must be a nonempty range inside the media",
+                ));
+            }
+            range(*start_frame, 1)?;
             let insert = edit::MediaInsert {
                 media_id: media,
-                source_in: 0,
+                source_in,
                 source_out: out,
                 video: meta.has_video,
                 audio: meta.has_audio,

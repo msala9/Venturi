@@ -509,5 +509,17 @@ label {
 #silence-dialog .field { margin: 5px 0; }
 #silence-dialog ol { max-height: 180px; overflow: auto; }
 #silence-dialog output { display: block; margin: 12px 0; }
+#voiceover-dialog { max-width: min(580px, calc(100vw - 24px)); }
+#voiceover-dialog[open] { display: grid; grid-template-rows: auto minmax(0,1fr) auto auto auto; height: min(740px,90vh); overflow: hidden; }
+#voiceover-dialog h2 { margin-top: 0; }
+.voiceover-fields { min-height: 0; overflow: auto; padding-right: 8px; }
+#voiceover-dialog form:not([method="dialog"]) { display: grid; gap: 6px; margin: 10px 0; }
+#voiceover-dialog .field { grid-template-columns: 1fr 190px; margin: 4px 0; }
+#voiceover-dialog label:has(input[type="checkbox"]) { display: flex; align-items: center; }
+#voiceover-dialog select { min-width: 0; }
+#voiceover-dialog output { display: block; margin: 10px 0; }
+#voiceover-dialog meter, #voiceover-dialog audio { width: 100%; }
+.voiceover-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; margin-top: 4px; }
+.voiceover-actions button { white-space: normal; }
 .shared-library-list article { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; overflow-wrap: anywhere; }
 #panel-content > input, #panel-content > select { width: 100%; margin-top: 8px; }

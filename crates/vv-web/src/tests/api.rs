@@ -20,6 +20,7 @@ async fn http_command_roundtrip_and_malformed_requests() {
         silence: crate::silence::Jobs::start(),
         library: crate::library::Library::default(),
         host: Host::start(&root).unwrap(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
         port: 8787,
     });
     let get = || {
@@ -123,6 +124,51 @@ async fn http_command_roundtrip_and_malformed_requests() {
     let error: Value =
         serde_json::from_slice(&to_bytes(response.into_body(), 1024).await.unwrap()).unwrap();
     assert_eq!(error["error"]["code"], "INVALID_OPERATION");
+    let capture = vec![0_u8; 65540];
+    let recording_query = format!(
+        "project_epoch={}&client_id=http-client&sample_rate=48000&channels=1&format=wav",
+        latest["project_epoch"].as_str().unwrap()
+    );
+    let recording_id = "01234567-89ab-4def-8123-456789abcdef";
+    for _ in 0..2 {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!(
+                        "/api/v1/recordings/{recording_id}?{recording_query}"
+                    ))
+                    .header("host", "127.0.0.1:8787")
+                    .header("content-type", "application/octet-stream")
+                    .body(Body::from(capture.clone()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let receipt: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+        assert_eq!(receipt["frames"], 16385);
+    }
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(format!("/api/v1/recordings/{recording_id}/audio"))
+                .header("host", "127.0.0.1:8787")
+                .header("range", "bytes=0-3")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::PARTIAL_CONTENT);
+    assert_eq!(response.headers()[header::CONTENT_TYPE], "audio/wav");
+    assert_eq!(
+        &to_bytes(response.into_body(), 4).await.unwrap()[..],
+        b"RIFF"
+    );
     for (state, expected) in [
         (&latest, StatusCode::UNPROCESSABLE_ENTITY),
         (&snapshot, StatusCode::CONFLICT),
@@ -161,6 +207,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         silence: crate::silence::Jobs::start(),
         library: crate::library::Library::default(),
         host: Host::start(&root).unwrap(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
         port: 8787,
     });
     for (path, status) in [

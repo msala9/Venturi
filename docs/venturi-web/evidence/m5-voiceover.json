@@ -1,0 +1,407 @@
+{
+  "acceptance": "real browser AudioWorklet, synthetic 440 Hz input, no physical microphone",
+  "recording": {
+    "version": 1,
+    "id": "8470f315-cc79-4541-86f6-4d15e1ad7bb0",
+    "path_token": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+    "format": "wav",
+    "raw_sha256": "5226a1862b158caef6de5f1c1cb620d3e691370ddbb9fbc4b20bbaa36c3092d1",
+    "encoded_sha256": "70d5856e6af501ca47618e4770a04480ab98c279436bc599ca2498c29fa9b044",
+    "sample_rate": 48000,
+    "channels": 1,
+    "frames": 138240,
+    "source_version": "2096:414296:553052:1792533584:288331742"
+  },
+  "decoded_raw_sha256": "5226a1862b158caef6de5f1c1cb620d3e691370ddbb9fbc4b20bbaa36c3092d1",
+  "decoded_frames": 138240,
+  "positive_zero_crossing_hz": 440.0,
+  "peak": 0.125,
+  "project": {
+    "api_version": 1,
+    "audio_effects": {
+      "compressor": {
+        "attack_ms": [
+          0.10000000149011612,
+          200.0
+        ],
+        "crossovers_hz": [
+          20.0,
+          20000.0
+        ],
+        "makeup_db": [
+          -12.0,
+          24.0
+        ],
+        "ratio": [
+          1.0,
+          20.0
+        ],
+        "release_ms": [
+          5.0,
+          2000.0
+        ],
+        "threshold_db": [
+          -60.0,
+          0.0
+        ]
+      },
+      "defaults": {
+        "Equalizer": {
+          "enabled": true,
+          "kind": {
+            "Equalizer": {
+              "bands": [
+                {
+                  "enabled": false,
+                  "freq_hz": 80.0,
+                  "gain_db": 0.0,
+                  "q": 0.7071067690849304,
+                  "shape": "HighPass"
+                },
+                {
+                  "enabled": true,
+                  "freq_hz": 120.0,
+                  "gain_db": 0.0,
+                  "q": 0.7071067690849304,
+                  "shape": "LowShelf"
+                },
+                {
+                  "enabled": true,
+                  "freq_hz": 500.0,
+                  "gain_db": 0.0,
+                  "q": 0.7071067690849304,
+                  "shape": "Peak"
+                },
+                {
+                  "enabled": true,
+                  "freq_hz": 2500.0,
+                  "gain_db": 0.0,
+                  "q": 0.7071067690849304,
+                  "shape": "Peak"
+                },
+                {
+                  "enabled": true,
+                  "freq_hz": 8000.0,
+                  "gain_db": 0.0,
+                  "q": 0.7071067690849304,
+                  "shape": "HighShelf"
+                },
+                {
+                  "enabled": false,
+                  "freq_hz": 18000.0,
+                  "gain_db": 0.0,
+                  "q": 0.7071067690849304,
+                  "shape": "LowPass"
+                }
+              ]
+            }
+          }
+        },
+        "Mono": {
+          "enabled": true,
+          "kind": "Mono"
+        },
+        "MultibandCompressor": {
+          "enabled": true,
+          "kind": {
+            "MultibandCompressor": {
+              "bands": [
+                {
+                  "attack_ms": 10.0,
+                  "makeup_db": 0.0,
+                  "ratio": 3.0,
+                  "release_ms": 150.0,
+                  "threshold_db": -24.0
+                },
+                {
+                  "attack_ms": 10.0,
+                  "makeup_db": 0.0,
+                  "ratio": 3.0,
+                  "release_ms": 150.0,
+                  "threshold_db": -24.0
+                },
+                {
+                  "attack_ms": 10.0,
+                  "makeup_db": 0.0,
+                  "ratio": 3.0,
+                  "release_ms": 150.0,
+                  "threshold_db": -24.0
+                }
+              ],
+              "crossovers_hz": [
+                200.0,
+                2000.0
+              ]
+            }
+          }
+        },
+        "Normalize": {
+          "enabled": true,
+          "kind": {
+            "Normalize": {
+              "mode": "SamplePeak",
+              "set_level": "Relative",
+              "target_db": -1.0
+            }
+          }
+        }
+      },
+      "eq": {
+        "freq_hz": [
+          20.0,
+          20000.0
+        ],
+        "gain_db": [
+          -24.0,
+          24.0
+        ],
+        "q": [
+          0.10000000149011612,
+          18.0
+        ],
+        "shapes": [
+          "HighPass",
+          "LowShelf",
+          "Peak",
+          "HighShelf",
+          "LowPass"
+        ]
+      },
+      "normalization": [
+        {
+          "default": -1.0,
+          "mode": "SamplePeak",
+          "range": [
+            -30.0,
+            0.0
+          ]
+        },
+        {
+          "default": -1.0,
+          "mode": "TruePeak",
+          "range": [
+            -30.0,
+            0.0
+          ]
+        },
+        {
+          "default": -23.0,
+          "mode": "Loudness",
+          "range": [
+            -40.0,
+            -5.0
+          ]
+        }
+      ],
+      "presets": {
+        "Equalizer": [
+          "mixer.eq_preset_flat",
+          "mixer.eq_preset_voice",
+          "mixer.eq_preset_warm",
+          "mixer.eq_preset_bright",
+          "mixer.eq_preset_mud",
+          "mixer.eq_preset_rumble",
+          "mixer.eq_preset_telephone"
+        ],
+        "MultibandCompressor": [
+          "mixer.preset_default",
+          "mixer.preset_glue",
+          "mixer.preset_voice",
+          "mixer.preset_deesser",
+          "mixer.preset_low_end",
+          "mixer.preset_broadcast",
+          "mixer.preset_master"
+        ]
+      }
+    },
+    "capabilities": {
+      "editing": true,
+      "export": true,
+      "playback": true,
+      "preview": true,
+      "scopes": true,
+      "software_preview": true,
+      "source_playback": true
+    },
+    "clipboard_count": 0,
+    "folders": [],
+    "generation": "6",
+    "history": {
+      "labels": [
+        "ArmTrack",
+        "RecordVoiceover"
+      ],
+      "position": 2
+    },
+    "import_warnings": [],
+    "media": [
+      {
+        "compound_timeline_id": "1",
+        "content_hash": "5",
+        "duration_frames": 81,
+        "folder": null,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "has_audio": true,
+        "has_video": false,
+        "id": "1",
+        "is_image": false,
+        "name": "Timeline 1",
+        "offline": false
+      },
+      {
+        "compound_timeline_id": null,
+        "content_hash": "10807144155011071465",
+        "duration_frames": 86,
+        "folder": null,
+        "fps": {
+          "den": 1,
+          "num": 30
+        },
+        "has_audio": true,
+        "has_video": false,
+        "id": "2",
+        "is_image": false,
+        "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+        "offline": false
+      }
+    ],
+    "project_epoch": "1792533503331922457:1",
+    "project_name": "Voiceover_UI_check.vvproj",
+    "recording_formats": [
+      {
+        "id": "mp3",
+        "label": "MP3"
+      },
+      {
+        "id": "wav",
+        "label": "WAV"
+      },
+      {
+        "id": "flac",
+        "label": "FLAC"
+      },
+      {
+        "id": "aac",
+        "label": "AAC (.m4a)"
+      },
+      {
+        "id": "opus",
+        "label": "Opus"
+      },
+      {
+        "id": "vorbis",
+        "label": "Ogg Vorbis"
+      }
+    ],
+    "timelines": [
+      {
+        "api_version": 1,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "id": "1",
+        "marker_colors": [
+          "Red",
+          "Orange",
+          "Yellow",
+          "Green",
+          "Cyan",
+          "Blue",
+          "Indigo",
+          "Purple",
+          "Magenta",
+          "Rose",
+          "Slate",
+          "Gray"
+        ],
+        "markers": [],
+        "master": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "name": "Timeline 1",
+        "resolution": {
+          "height": 1080,
+          "width": 1920
+        },
+        "revision": "df2e246df225a44b",
+        "timeline_id": "1",
+        "tracks": [
+          {
+            "armed": false,
+            "clips": [],
+            "crossings": [],
+            "id": "0",
+            "kind": "video",
+            "label": "V1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          },
+          {
+            "armed": false,
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "0",
+                "kind": "media",
+                "length_frames": 69,
+                "linked_group": null,
+                "media_id": "2",
+                "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+                "slip_range": [
+                  0,
+                  0
+                ],
+                "source_in_frames": 0,
+                "source_out_frames": 86,
+                "speed_percent": 100.0,
+                "start_frame": 12,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "1",
+            "kind": "audio",
+            "label": "A1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          }
+        ]
+      }
+    ],
+    "unsaved": false
+  },
+  "browser_checks": [
+    "interrupted upload retained a local WAV backup",
+    "retry saved same recording UUID",
+    "placement was one RecordVoiceover history step",
+    "Undo removed clip and restored armed A1",
+    "Redo restored clip and disarmed A1",
+    "saved project",
+    "reopening revealed stale preview controls, fixed and regression tested"
+  ],
+  "limits": "Physical microphone permission/device latency and IAB download completion not claimed"
+}

@@ -1,0 +1,20 @@
+{
+  "receipt": {
+    "version": 1,
+    "id": "68e7f732-0eb5-4f2f-b438-65712d83b7f8",
+    "path_token": "Voiceover-68e7f732-0eb5-4f2f-b438-65712d83b7f8.wav",
+    "format": "wav",
+    "raw_sha256": "ba610d1ac4b80886d5461ba1a4cfa725d8470eeb0d5bf8f6bed04dc7e41affc8",
+    "encoded_sha256": "3014c7cff136d179a7e0e596b1495d4158253b1c6b145064c2ed04c12f87880e",
+    "sample_rate": 48000,
+    "channels": 2,
+    "frames": 184832,
+    "source_version": "2096:413600:1478748:1792534307:681710704"
+  },
+  "exact_decoded_pcm": true,
+  "synthetic_mono_source_upmixed_equally_to_stereo": true,
+  "browser_csp": "same as production: default-src self; script/style/media/connect self, media blob allowed",
+  "browser_console_errors": 0,
+  "saved_local_discard_preserves_server_file": true,
+  "physical_input_used": false
+}

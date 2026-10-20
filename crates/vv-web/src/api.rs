@@ -24,6 +24,7 @@ pub struct AppState {
     pub source: MediaJobs,
     pub silence: crate::silence::Jobs,
     pub library: crate::library::Library,
+    pub recordings: crate::recording::Store,
 }
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -32,6 +33,11 @@ pub fn router(state: AppState) -> Router {
             get(|| async { Json(json!({"status":"ok","api_version":1})) }),
         )
         .route("/api/v1/session", get(session))
+        .route(
+            "/api/v1/recordings/{id}",
+            post(recording_upload).get(recording_status),
+        )
+        .route("/api/v1/recordings/{id}/audio", get(recording_audio))
         .route("/api/v1/library", get(library_catalog))
         .route("/api/v1/library/items/{id}/prepare", post(library_prepare))
         .route(
@@ -94,6 +100,59 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn recording_upload(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    query: std::result::Result<
+        Query<crate::recording::Query>,
+        axum::extract::rejection::QueryRejection,
+    >,
+    request: Request,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid recording capture metadata"))?
+        .0;
+    if request
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        != Some("application/octet-stream")
+    {
+        return Err(ApiError::invalid(
+            "Recording upload must be raw captured audio",
+        ));
+    }
+    let snapshot = state.host.call(Action::Session).await?;
+    if snapshot["project_epoch"] != query.project_epoch || snapshot["project_name"].is_null() {
+        return Err(ApiError::conflict(
+            "REVISION_CONFLICT",
+            "Open the intended project before saving the take",
+        ));
+    }
+    state
+        .host
+        .call(Action::Lease(query.client_id.clone()))
+        .await?;
+    state
+        .recordings
+        .upload(id, query, request.into_body())
+        .await
+        .map(Json)
+}
+async fn recording_status(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<Value>> {
+    state.recordings.get(&id).map(Json)
+}
+async fn recording_audio(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    headers: axum::http::HeaderMap,
+) -> Result<Response> {
+    let (file, mime, tag) = state.recordings.asset(&id)?;
+    crate::source::stream_file(file, mime, &tag, &headers).await
 }
 async fn library_catalog(State(state): State<AppState>) -> Result<Json<Value>> {
     state.library.catalog().await.map(Json)
@@ -720,6 +779,10 @@ async fn assets(request: Request) -> Response {
         "/js/slip.js" => asset!("/web/js/slip.js", "text/javascript"),
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),
         "/js/library.js" => asset!("/web/js/library.js", "text/javascript"),
+        "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
+        "/js/capture.js" => asset!("/web/js/capture.js", "text/javascript"),
+        "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
+        "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),
         "/js/mixer.js" => asset!("/web/js/mixer.js", "text/javascript"),
         "/js/visual.js" => asset!("/web/js/visual.js", "text/javascript"),
         "/js/masks.js" => asset!("/web/js/masks.js", "text/javascript"),

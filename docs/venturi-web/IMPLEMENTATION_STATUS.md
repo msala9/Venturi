@@ -1144,3 +1144,51 @@ Four focused native audio_file tests pass, including every available format,
 exact mono/stereo sample preservation and extensionless-descriptor output;
 media clippy with warnings denied also passes. This is a recording prerequisite,
 not a completed microphone/placement workflow.
+
+## M5 — browser voiceover and native take placement
+
+Audio Voiceover and armed Program transport now open a real capture dialog.
+User Start requests browser input permission and creates a bounded AudioWorklet
+capture, optionally preparing the existing native composed programme first.
+Mono/stereo input, native formats, optional headphone monitoring, start and
+latency correction are exposed. Stop/input loss/programme end/document changes
+flush final samples and release input. Stop and placement controls stay visible
+while settings scroll. No browser DSP or editing engine is introduced.
+
+One bounded upload encodes outside the Session actor through a pre-created
+descriptor and publishes without replacement. Versioned UUID receipts retain
+frame count and raw/encoded SHA-256. Identical retries resolve to the same take;
+changed input/receipt/files are preserved and refused. Failed uploads retain the
+browser Blob and a float WAV backup. Explicit discard releases an unsaved take
+after confirmation; saved audio remains in the media picker.
+
+Placement uses native import, FPS conforming, insert and disarm in one
+RecordVoiceover group. A trial project validates the entire operation. Locked
+targets/linked tracks, duplicate placement and default overlaps are refused.
+Overwrite and rebinding after document changes require explicit actions. Undo
+restores clips, media and arming; recorded files persist independently of it.
+
+89 Rust web tests and 49 JavaScript tests pass, plus formatting, clippy with
+warnings denied and build. Tests cover exact samples, retry, malformed input,
+changed files, multitrack atomicity, locked linked video, latency at zero, final
+chunks, cancellation during permission/preparation, retained capture after
+programme/network failure, stale rebinding and preview reset after placement.
+
+Windows acceptance used the real AudioWorklet/controller with an explicit
+synthetic 440 Hz provider, never a physical microphone. A 138240-sample take
+survived interrupted upload, retry, placement, Undo/Redo, Save and server restart.
+Native WAV decoded SHA-256 matches captured PCM exactly. A second capture waited
+for the native 69-frame composed programme and saved at its end, refused default
+overlap and applied two-frame latency correction with explicit overwrite. Native
+insertion retained the untouched one-frame tail; one Undo restored the old clip.
+Canceling before delayed input opened released it without capture. Evidence:
+m5-voiceover.json/browser.png, m5-voiceover-composed.json and
+m5-voiceover-overlap-browser.png. Physical microphone permission/device latency
+and embedded-browser download completion remain unverified. No hardware GPU
+lock or inference setting changed. Full parity and the completion goal stay open.
+
+A third browser capture used stereo under the production Content Security
+Policy. All 184832 frames decoded to the exact interleaved PCM SHA-256, with
+identical left/right samples from the mono synthetic provider. No CSP/console
+errors occurred. Releasing the saved local take kept the native audio file
+available. Evidence: m5-voiceover-stereo.json.

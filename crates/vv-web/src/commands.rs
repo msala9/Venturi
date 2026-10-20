@@ -91,6 +91,9 @@ pub enum Operation {
     RemoveSilences {
         ranges: Vec<[i64; 2]>,
     },
+    PlaceRecording {
+        placement: crate::recording::Placement,
+    },
     Undo,
     Redo,
     HistoryJump {

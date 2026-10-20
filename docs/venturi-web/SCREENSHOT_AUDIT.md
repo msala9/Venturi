@@ -13,3 +13,9 @@ on 2026-10-20. They are focused crops, not a complete desktop tour.
 
 Other panels were audited through source; no screenshot evidence is claimed
 for the absent complete desktop, color, masks, curves, library or export views.
+
+Web voiceover proof (2026-10-21): `evidence/m5-voiceover-browser.png` shows
+the Audio workspace entry and armed track with always-visible capture actions.
+`m5-voiceover-overlap-browser.png` shows a retained synthetic take after overlap
+refusal. Source audit: `vv-app/src/voiceover.rs`, start_take/drive_take/place_take.
+Physical microphone device/permission and latency acceptance remain open.

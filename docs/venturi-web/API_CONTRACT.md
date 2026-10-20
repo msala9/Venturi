@@ -176,6 +176,31 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   an unlocked audio track can arm recording. Native flag labels now distinguish
   MuteTrack, SoloTrack, LockTrack and ArmTrack. Snapshots include armed state.
 
+- POST `/recordings/{uuid}` accepts little-endian interleaved float32 audio with
+  `application/octet-stream`. Query fields: `project_epoch`, `client_id`,
+  `sample_rate`, `channels`, native `format` ID. A saved project and writer lease
+  are required. One upload runs at a time: 64 MiB, five minutes, one/two channels,
+  8–192 kHz and a 120-second body deadline. Native encoding runs off the actor
+  into an exclusive descriptor and publishes without replacing existing files.
+  Versioned receipts preserve frame count and raw/encoded SHA-256. Identical
+  UUID retries return the same receipt; changed captures/saved files are refused.
+  GET `/recordings/{uuid}` resolves an uncertain upload; GET
+  `/recordings/{uuid}/audio` streams Range audio. Upload never edits the project.
+- `place_recording {placement:{recording_id,tracks,start_frame,latency_frames,
+  overwrite}}` validates file identity and distinct armed, unlocked audio tracks
+  before native import/insert/disarm as one RecordVoiceover Undo. Default overlap
+  is refused; explicit overwrite preserves locked linked tracks. Positive latency
+  correction moves the start earlier; correction past zero trims the native
+  source offset. Native FPS conforming remains authoritative. Fresh commands
+  cannot place a take twice; intentional reuse uses the media pool. Document or
+  arming changes require explicit rebinding of a retained browser take.
+- Browser Start requests microphone permission. Bounded AudioWorklet packets
+  preserve short final chunks and perform no editing/DSP. Composed playback is
+  prepared before capture. Stop/input loss/programme end/document changes flush
+  audio and release input tracks. Upload failure retains a local WAV backup and
+  retry action. Unsaved take discard requires confirmation; releasing a saved
+  take never deletes server audio. Session `recording_formats` lists encoders.
+
 - POST `/analysis/silence` accepts `{query: FrameQuery, clip_ids, params}`.
   The actor captures selected audio and audio linked to selected video; native
   Silero VAD runs on a CPU worker without holding the Session. Params are native

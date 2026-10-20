@@ -9,8 +9,9 @@ A/V timeline. Export has a bounded native H.264/AAC drawer. Native filters,
 masks, retiming, selected compounds, two stopped-frame scopes, Auto Balance,
 audio inserts and built-in color/EQ/compressor presets are available within
 the documented bounds. Recovery copies a previous saved backup into a new
-project. Curves, live scopes/meters, voiceover, libraries and AI review remain
-open. WSL exposes
+project. Browser voiceover and the ds4 shared media catalog are available.
+Advanced curves, live scopes/meters, native saved/shared libraries and AI review
+remain open. WSL exposes
 only llvmpipe (CPU).
 The separate halo2 deployment has verified R9700 Vulkan rendering; see
 evidence/m3-r9700-validation.json for the measured path.
@@ -235,8 +236,6 @@ not R9700 export acceptance. See m3-export-software-* evidence.
 Driver isolation follows the official [Vulkan loader driver selection](https://github.com/KhronosGroup/Vulkan-Loader/blob/main/docs/LoaderDriverInterface.md);
 the renderer thread cap uses Mesa's [LP_NUM_THREADS](https://docs.mesa3d.org/envvars.html#lp-num-threads).
 
-## Checks
-
 The shared ds4-appliance library can be configured explicitly:
 
 ```bash
@@ -262,6 +261,24 @@ bounded independently. Canceling a transfer never removes shared originals or
 edits a project. An already completed copy can remain available in the picker.
 Native compound-library organization and saved/shared attribute presets remain
 separate parity work; this is the appliance media-catalog integration.
+
+## Browser voiceover
+
+Save the project, unlock and arm audio tracks in the Inspector, then open
+Audio → Voiceover or Record armed audio in Program transport. Start requests
+input permission in that browser. Choose mono/stereo and a native output format.
+Composed playback is prepared before capture; disable it to record on a blank
+timeline or beyond existing programme material. Stop and save take releases
+input, retains a local WAV backup and uses the server's native encoder. Review
+the take and start/latency fields before Place. Overlap requires explicit
+overwrite. One Undo restores clips and arming. Positive latency correction moves
+the take earlier; calibrate it for the physical devices. Optional input monitoring
+needs headphones. Capture stops at five minutes or 64 MiB. Failed uploads keep
+the take in the current tab for retry/download; avoid reloading until it is saved
+or backed up. Saved audio remains importable from the server picker if placement
+is canceled. Physical-device latency acceptance is still open.
+
+## Checks
 
 ```bash
 node --test web/test/*.test.js

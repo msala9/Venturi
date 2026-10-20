@@ -121,6 +121,10 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         ctx.fillStyle=color("--danger");ctx.globalAlpha=0.28;ctx.fillRect(x,top,right-x,TRACK-1);ctx.globalAlpha=1;
         ctx.strokeStyle=color("--danger");ctx.strokeRect(x,top+1,right-x,TRACK-3);
       }
+      if(view.recording?.tracks.includes(track.id)) {
+        const x=frameToX(view.recording.start_frame,view,timeline.fps),end=frameToX(view.recording.start_frame+view.recording.length_frames,view,timeline.fps);
+        ctx.fillStyle=color("--danger");ctx.globalAlpha=0.4;ctx.fillRect(x,top+5,Math.max(2,end-x),TRACK-10);ctx.globalAlpha=1;ctx.fillStyle=color("--text");ctx.fillText("REC",x+6,top+22);
+      }
       ctx.restore();
       ctx.fillStyle = color("--surface");
       ctx.fillRect(0, top, HEADER, TRACK - 1);

@@ -159,6 +159,7 @@ impl Files {
                 otio.push(item);
             } else if [
                 "mp4", "mov", "mkv", "webm", "wav", "mp3", "flac", "png", "jpg", "jpeg", "webp",
+                "m4a", "opus", "ogg",
             ]
             .iter()
             .any(|ext| name.to_lowercase().ends_with(&format!(".{ext}")))

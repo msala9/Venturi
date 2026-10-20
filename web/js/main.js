@@ -14,6 +14,7 @@ import { renderCatalog } from "./catalog.js";
 import { createSlipView } from "./slip.js";
 import { createSilencePanel } from "./silence.js";
 import { createLibraryPanel } from "./library.js";
+import { createVoiceover } from "./voiceover.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -22,6 +23,7 @@ let slipScopesState = null;
 let catalog = null;
 let silencePanel = null;
 let sharedLibrary = null;
+let voiceover = null;
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
@@ -89,9 +91,10 @@ function showWorkspace(name) {
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono","Analyze silence · VAD"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)));
+    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono","Analyze silence · VAD","Voiceover"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)));
     if (!button.disabled) button.addEventListener("click",()=>{
       if(label === "Analyze silence · VAD"){programPlayer?.stop();silencePanel?.open();return;}
+      if(label === "Voiceover"){viewerModeSet("program");voiceover?.open();return;}
       if(name === "Color") {
         if (label === "Auto balance") {
           if (!writable || busy || unresolved) return notice("A connected writer is required");
@@ -252,8 +255,10 @@ const sourceRanges = new Map();
 const mediaAssets = new Map();
 const mediaState = {selected: [], anchor: null, folder: "*", kind: "all", open: false};
 function updatePlayAvailability() {
+  const armed=timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked);
   const still = viewerMode === "source" && documentState?.media.find((m) => m.id === sourceOpenId)?.is_image;
   $("play").disabled = still || (viewerMode === "program" && (!documentState?.capabilities.playback || !timeline?.tracks.some((t) => t.clips.length)));
+  if(viewerMode==="program" && armed){$("play").disabled=!writable;$("play").textContent="Record armed audio";}
   $("step-back").disabled = !!still;
   $("step-forward").disabled = !!still;
   $("source-quality").disabled = !!still;
@@ -298,6 +303,7 @@ for (const [id,out] of [["source-mark-in",false],["source-mark-out",true]]) $(id
   $(out ? "source-out" : "source-in").value = Math.min(item.duration_frames - (out ? 0 : 1),frame+(out ? 1 : 0)); rememberSourceRange();
 });
 $("play").addEventListener("click", () => {
+  if(viewerMode==="program" && timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked)){voiceover?.open();return;}
   if (viewerMode === "program") { viewer?.invalidate(); programPlayer.toggle().catch((error) => notice(error.message)); }
   else sourcePlayer.toggle().catch((error) => notice(error.message));
 });
@@ -310,6 +316,7 @@ function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
 }
 function selected() {
+  voiceover?.invalidate();
   silencePanel?.invalidate();
   scopes?.refresh();
   const inspectorSeq = ++inspectorSequence;
@@ -1052,6 +1059,9 @@ slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(o
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1),clip_id:clip};
 }});
 sharedLibrary=createLibraryPanel({root:$("panel-content"),getState:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>mutate(operation,true),notice});
+voiceover=createVoiceover({root:$("voiceover-dialog"),getClientId:()=>clientId,canCommit:()=>writable && !busy && !unresolved,commit,notice,playback:{video:$("program-video"),start:async()=>{await programPlayer.toggle();if(programPlayer.state()!=="ready")throw new Error("Composed playback is unavailable; try recording without playback");},pause:()=>programPlayer.stop()},onProgress:(progress)=>{
+  view.recording=progress;if(progress && timeline){view.recording.length_frames=Math.floor(progress.seconds*timeline.fps.num/timeline.fps.den);if(progress.withoutPlayback){view.playhead=Math.min(1_000_000_000,progress.start_frame+view.recording.length_frames);updateTime();}}canvasTimeline.invalidate();
+},getTarget:()=>documentState?.project_name && timeline && timeline.id!=="fixture"?{project_epoch:documentState.project_epoch,generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,start_frame:view.playhead,tracks:timeline.tracks.filter((track)=>track.kind==="audio" && track.armed && !track.locked).map((track)=>track.id),formats:documentState.recording_formats,canPlayback:!!documentState.capabilities.playback && timeline.tracks.some((track)=>track.clips.length)}:null});
 silencePanel=createSilencePanel({root:$("silence-dialog"),notice,preview:(ranges)=>{view.silencePreview=ranges;canvasTimeline.invalidate();},canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>commit(operation),getTarget:()=>{
   if(!documentState || !timeline || timeline.id==="fixture" || !view.selection.length)return null;
   const end=Math.max(1,...timeline.tracks.flatMap((track)=>track.clips.map((item)=>item.start_frame+item.length_frames)));

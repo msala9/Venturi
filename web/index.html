@@ -30,6 +30,37 @@
       <div class="spacer"></div>
       <span class="theme-note">MADROCK THEME</span>
     </nav>
+    <dialog id="voiceover-dialog" aria-labelledby="voiceover-heading">
+      <h2 id="voiceover-heading">Record voiceover</h2>
+      <div class="voiceover-fields">
+      <p>Records audio in this browser and saves a take to this server project. Arm unlocked audio tracks first. Review before placing; each take is one Undo step.</p>
+      <form>
+        <label class="field">Audio input <select name="device"><option value="">Default microphone</option></select></label>
+        <label class="field">Channels <select name="channels"><option value="1">Mono</option><option value="2">Stereo</option></select></label>
+        <label class="field">Recording format <select name="format"><option value="wav">WAV</option></select></label>
+        <label><input type="checkbox" name="playback">Record with composed playback</label>
+        <label><input type="checkbox" name="monitor">Listen to input with headphones</label>
+        <label class="field">Take start frame <input type="number" name="start" min="0" max="1000000000" step="1" value="0" required></label>
+        <label class="field">Latency correction frames <input type="number" name="latency" min="-240" max="240" step="1" value="0" required></label>
+        <p class="muted">Positive latency correction moves the take earlier; at frame zero it trims the leading source. Capture stops at five minutes or 64 MiB.</p>
+        <label><input type="checkbox" name="overwrite">Overwrite material on the armed tracks</label>
+      </form>
+      <audio controls hidden aria-label="Recorded voiceover preview"></audio>
+      <a data-voice-download hidden>Download saved take</a>
+      <a data-voice-backup hidden>Download local WAV backup</a>
+      </div>
+      <meter min="0" max="1" value="0" aria-label="Voiceover input peak"></meter>
+      <output role="status">Save the project and arm audio tracks first</output>
+      <div class="voiceover-actions">
+        <button type="button" data-voice-start>Start recording</button>
+        <button type="button" data-voice-stop disabled>Stop and save take</button>
+        <button type="button" data-voice-save disabled>Retry saving retained take</button>
+        <button type="button" data-voice-rebind disabled>Use current timeline and armed tracks</button>
+        <button type="button" data-voice-apply disabled>Place take on armed tracks</button>
+        <button type="button" data-voice-discard disabled>Discard retained take</button>
+        <button type="button" data-voice-close>Close voiceover</button>
+      </div>
+    </dialog>
     <dialog id="silence-dialog" aria-labelledby="silence-heading">
       <h2 id="silence-heading">Remove silence · native speech detection</h2>
       <p>Selected audio and linked video define the speech analysis. Applying the proposed pauses ripples every timeline track. Source files stay unchanged; Undo restores the entire edit.</p>

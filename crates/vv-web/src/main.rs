@@ -12,6 +12,7 @@ mod library;
 mod masks;
 mod preview;
 mod program;
+mod recording;
 mod silence;
 mod slip;
 mod snapshot;
@@ -77,6 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .map_err(|error| error.2)?;
     let source = source::MediaJobs::start()?;
+    let recordings = recording::Store::new(host.media_root().await.map_err(|error| error.2)?);
     let preview = if software {
         preview::Preview::start_software(&source.software_lock_path())
     } else {
@@ -89,6 +91,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         api::router(api::AppState {
             host,
             library,
+            recordings,
             source,
             silence: silence::Jobs::start(),
             port: listen.port(),

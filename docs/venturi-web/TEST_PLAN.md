@@ -53,3 +53,12 @@ Performance numbers are goals, not achieved results: 60fps timeline, <=1 animati
 ## Required evidence for closing a parity row
 
 Location in native UI + exact source function, web entrypoint and API, test ID + test output, screenshot or short video of intended interaction, known limitations. Mark `done` only with all of these.
+
+TS-020 automated acceptance uses the production AudioWorklet/controller with an
+explicit synthetic input provider, not a physical microphone toggle in the app.
+It verifies final PCM hashes, interrupted-upload retention/retry, native placement,
+Undo/Redo/save/restart, delayed-input cancellation, composed programme end,
+safe overlap refusal and explicit overwrite/latency correction. Rust adapter and
+JS state-machine tests cover locked targets/linked tracks and stale documents.
+Physical permission, input disconnect and device latency still need device QA;
+successful WAV construction does not prove embedded-browser download completion.

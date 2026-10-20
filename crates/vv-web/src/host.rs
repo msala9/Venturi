@@ -161,6 +161,9 @@ impl Editor {
                 ));
             }
             return match &request.operation {
+                Operation::PlaceRecording { placement } => {
+                    crate::recording::place(&mut self.session, &self.files, id, placement)
+                }
                 Operation::CopyClips { clip_ids } => {
                     self.clipboard = Some(crate::clipboard::copy(&self.session, id, clip_ids)?);
                     Ok(())

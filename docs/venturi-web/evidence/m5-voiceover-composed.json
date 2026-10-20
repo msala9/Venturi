@@ -1,0 +1,682 @@
+{
+  "states": {
+    "before_overwrite": {
+      "project_name": "Voiceover_UI_check.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "fb0d017c13bdfd09",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": true,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 69,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 86,
+                  "speed_percent": 100.0,
+                  "start_frame": 12,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "compound_timeline_id": "1",
+          "content_hash": "6",
+          "duration_frames": 81,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "1",
+          "is_image": false,
+          "name": "Timeline 1",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "10807144155011071465",
+          "duration_frames": 86,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "2",
+          "is_image": false,
+          "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+          "offline": false
+        }
+      ]
+    },
+    "overwritten": {
+      "project_name": "Voiceover_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "3",
+      "history": {
+        "labels": [
+          "RecordVoiceover"
+        ],
+        "position": 1
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "350f968d84dc6573",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "media",
+                  "length_frames": 70,
+                  "linked_group": null,
+                  "media_id": "3",
+                  "name": "Voiceover-bc6cf5ae-1821-47dc-871d-0de53a1e0f3d.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 87,
+                  "speed_percent": 100.0,
+                  "start_frame": 10,
+                  "transition_in": null,
+                  "transition_out": null
+                },
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 1,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+                  "slip_range": [
+                    -68,
+                    0
+                  ],
+                  "source_in_frames": 85,
+                  "source_out_frames": 86,
+                  "speed_percent": 100.0,
+                  "start_frame": 80,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "compound_timeline_id": "1",
+          "content_hash": "7",
+          "duration_frames": 81,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "1",
+          "is_image": false,
+          "name": "Timeline 1",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "10807144155011071465",
+          "duration_frames": 86,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "2",
+          "is_image": false,
+          "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "11484736679663071860",
+          "duration_frames": 88,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "3",
+          "is_image": false,
+          "name": "Voiceover-bc6cf5ae-1821-47dc-871d-0de53a1e0f3d.wav",
+          "offline": false
+        }
+      ]
+    },
+    "undo_overwrite": {
+      "project_name": "Voiceover_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "4",
+      "history": {
+        "labels": [
+          "RecordVoiceover"
+        ],
+        "position": 0
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "fb0d017c13bdfd09",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": true,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 69,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 86,
+                  "speed_percent": 100.0,
+                  "start_frame": 12,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "compound_timeline_id": "1",
+          "content_hash": "8",
+          "duration_frames": 81,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "1",
+          "is_image": false,
+          "name": "Timeline 1",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "10807144155011071465",
+          "duration_frames": 86,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "2",
+          "is_image": false,
+          "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+          "offline": false
+        }
+      ]
+    },
+    "redo_saved": {
+      "project_name": "Voiceover_UI_check.vvproj",
+      "unsaved": false,
+      "generation": "5",
+      "history": {
+        "labels": [
+          "RecordVoiceover"
+        ],
+        "position": 1
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "350f968d84dc6573",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "media",
+                  "length_frames": 70,
+                  "linked_group": null,
+                  "media_id": "3",
+                  "name": "Voiceover-bc6cf5ae-1821-47dc-871d-0de53a1e0f3d.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 87,
+                  "speed_percent": 100.0,
+                  "start_frame": 10,
+                  "transition_in": null,
+                  "transition_out": null
+                },
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 1,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+                  "slip_range": [
+                    -68,
+                    0
+                  ],
+                  "source_in_frames": 85,
+                  "source_out_frames": 86,
+                  "speed_percent": 100.0,
+                  "start_frame": 80,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "compound_timeline_id": "1",
+          "content_hash": "9",
+          "duration_frames": 81,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "1",
+          "is_image": false,
+          "name": "Timeline 1",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "10807144155011071465",
+          "duration_frames": 86,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "2",
+          "is_image": false,
+          "name": "Voiceover-8470f315-cc79-4541-86f6-4d15e1ad7bb0.wav",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "11484736679663071860",
+          "duration_frames": 88,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "3",
+          "is_image": false,
+          "name": "Voiceover-bc6cf5ae-1821-47dc-871d-0de53a1e0f3d.wav",
+          "offline": false
+        }
+      ]
+    }
+  },
+  "recording": {
+    "version": 1,
+    "id": "bc6cf5ae-1821-47dc-871d-0de53a1e0f3d",
+    "path_token": "Voiceover-bc6cf5ae-1821-47dc-871d-0de53a1e0f3d.wav",
+    "format": "wav",
+    "raw_sha256": "9820b886797efc19b4b31670cacd824679fcd25e1542b66a60503cd67154a52b",
+    "encoded_sha256": "db132718d1c25fe4d231203030f99d954ff029989e7b6038bf55ef1cdcdba8c4",
+    "sample_rate": 48000,
+    "channels": 1,
+    "frames": 141568,
+    "source_version": "2096:413598:566364:1792533972:758024206"
+  },
+  "verification": {
+    "synthetic_input_hz": 440,
+    "native_pcm_exact": true,
+    "native_composed_programme_frames": 69,
+    "programme_fps": [
+      24,
+      1
+    ],
+    "captured_seconds": 2.949333333333333,
+    "input_canceled_before_open_released": true,
+    "safe_overlap_refused_without_mutation": true,
+    "explicit_overwrite": true,
+    "latency_correction_frames": 2,
+    "native_tail_preserved": [
+      80,
+      1
+    ],
+    "one_undo_restores_old_clip_media_and_arming": true,
+    "redo_and_saved": true,
+    "rust_web_tests": 89,
+    "javascript_tests": 49,
+    "gpu": "CPU lavapipe only",
+    "physical_device_latency_calibrated": false
+  }
+}

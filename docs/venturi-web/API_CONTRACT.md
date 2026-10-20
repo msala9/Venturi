@@ -206,7 +206,8 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   integer media `source_in`, `duration` (`preserve`/`shorten`), `links`
   (`replace_linked`/`selected_only`), `attributes` (`preserve`/`reset`), nullable
   `source_version`. The native plan returns canonical IDs, before/after lengths,
-  native source ranges, removed crossing count and the current source version.
+  native source ranges, removed crossing count, merged animation-key count and
+  the current source version.
   Changed imported timing/streams/fingerprint require explicit relink/reimport.
 - Timeline `replace_take {replacement}` additionally requires that previewed
   source version. It revalidates epoch/generation/revision, source descriptor,
@@ -218,7 +219,13 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   crop follows the native relink resolution convention. Reset affects clip
   effects/fades, keeping labels/disabled/link/speed state. Media entries and
   source files remain unchanged. Frozen clips and compounds must be handled
-  explicitly before take replacement. This API precedes the Review UI/sidecar.
+  explicitly before take replacement. Review offers two independent bounded
+  source players with equal-elapsed-time comparison and exclusive audio
+  audition. Replacement always requires a visible native preview followed by
+  Confirm. Changing a take, policies or native document invalidates that plan.
+  Keys map through native timeline frames; rounding collisions retain the first
+  key and their count is shown before confirmation. Shot/Take sidecars are a
+  separate pending slice.
 
 - POST `/analysis/silence` accepts `{query: FrameQuery, clip_ids, params}`.
   The actor captures selected audio and audio linked to selected video; native

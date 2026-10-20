@@ -10,7 +10,8 @@ masks, retiming, selected compounds, two stopped-frame scopes, Auto Balance,
 audio inserts and built-in color/EQ/compressor presets are available within
 the documented bounds. Recovery copies a previous saved backup into a new
 project. Browser voiceover and the ds4 shared media catalog are available.
-Advanced curves, live scopes/meters, native saved/shared libraries and AI review
+Review offers A/B comparison and explicit native take replacement. Advanced
+curves, live scopes/meters, native saved/shared libraries and Shot/Take metadata
 remain open. WSL exposes
 only llvmpipe (CPU).
 The separate halo2 deployment has verified R9700 Vulkan rendering; see
@@ -277,6 +278,23 @@ needs headphones. Capture stops at five minutes or 64 MiB. Failed uploads keep
 the take in the current tab for retry/download; avoid reloading until it is saved
 or backed up. Saved audio remains importable from the server picker if placement
 is canceled. Physical-device latency acceptance is still open.
+
+## Comparing and replacing takes
+
+Open Review → Compare A/B to choose imported sources. Playback follows elapsed
+seconds; a shorter source holds its final frame. Choose the side to hear or
+Neither. Native source FPS/frame counts are separate from proxy dimensions.
+Known shared-asset metadata is shown without inventing missing model/prompt/seed.
+
+Select a source clip before opening Review to replace it with B. Choose B source
+In, preserve duration or explicit shorten, linked video/audio policy and clip
+effect/fade policy. Preview native replacement changes is read-only. Inspect
+all affected clip ranges, removed crossings and key merges, then Confirm for one
+Undo. Shorten leaves a gap; it never ripples or changes speed. Native frame
+quantization may merge keys, with first-key retention shown in the preview.
+Frozen/compound replacements require an explicit edit first. Recheck source-
+dependent audio normalization. Shot grouping, flags and editable sidecar metadata
+are still pending.
 
 ## Checks
 

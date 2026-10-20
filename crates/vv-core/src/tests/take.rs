@@ -281,6 +281,79 @@ fn replacing_trimmed_linked_audio_preserves_sync_and_refuses_an_unavailable_lead
 }
 
 #[test]
+fn replacing_a_25_fps_take_on_a_24_fps_edit_with_50_fps_keeps_each_key_on_its_edit_frame() {
+    let (mut project, mut request, _) = setup();
+    request.source_in = 0;
+    project.timelines[request.timeline].fps = Rational::new(24, 1);
+    for track in &mut project.timelines[request.timeline].tracks {
+        for clip in &mut track.clips {
+            clip.timeline_start = 12;
+            clip.timeline_len = 72;
+            clip.conform(Rational::new(24, 25));
+            clip.effects
+                .transform
+                .track_mut(TransformParam::Opacity)
+                .upsert(84, 0.2, Interpolation::EaseInOut);
+        }
+    }
+    let original = project.timelines[request.timeline].tracks[0].clips[0].clone();
+    let before = value(&project);
+    let command = plan(&project, &request).unwrap().into_command();
+    let mut history = History::default();
+    history.do_command(&mut project, Box::new(command));
+    let replacement = &project.timelines[request.timeline].tracks[0].clips[0];
+    for ((old_frame, old_value, old_interpolation), (new_frame, new_value, new_interpolation)) in
+        original
+            .effects
+            .transform
+            .track(TransformParam::Opacity)
+            .keyframes()
+            .iter()
+            .zip(
+                replacement
+                    .effects
+                    .transform
+                    .track(TransformParam::Opacity)
+                    .keyframes(),
+            )
+    {
+        let edit_frame = original.timeline_frame_at(*old_frame);
+        assert_eq!(replacement.timeline_frame_at(*new_frame), edit_frame);
+        assert_eq!(old_value, new_value);
+        assert_eq!(old_interpolation, new_interpolation);
+        assert_eq!(
+            replacement
+                .effects
+                .transform
+                .value_at(replacement.source_frame_at(edit_frame))
+                .opacity,
+            *old_value
+        );
+    }
+    history.undo(&mut project);
+    assert_eq!(value(&project), before);
+}
+
+#[test]
+fn lower_fps_key_collisions_are_reported_for_the_confirmation_preview() {
+    let (mut project, mut request, _) = setup();
+    request.source_in = 0;
+    project.media_pool[request.media].meta.fps = Rational::new(12, 1);
+    let track = project.timelines[request.timeline].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(TransformParam::Opacity);
+    track.upsert(31, 0.5, Interpolation::Linear);
+    track.upsert(32, 0.4, Interpolation::Linear);
+    let before = value(&project);
+    let planned = plan(&project, &request).unwrap();
+    assert_eq!(planned.merged_keys, 1);
+    assert_eq!(value(&project), before);
+    request.attributes = AttributePolicy::Reset;
+    assert_eq!(plan(&project, &request).unwrap().merged_keys, 0);
+}
+
+#[test]
 fn source_start_remapping_and_attribute_reset_keep_existing_speed_and_clip_flags_explicit() {
     let (mut project, mut request, _) = setup();
     request.links = LinkPolicy::SelectedOnly;

@@ -433,10 +433,17 @@ impl<T: Clone> Keyframed<T> {
     /// Re-expresses the keyframe times from `from` fps to `to` fps, keeping
     /// their seconds. Keyframes rounding onto the same frame keep the first.
     pub fn rescale_times(&mut self, from: Rational, to: Rational) {
+        self.remap_times(|frame| convert_frames(frame, from, to));
+    }
+
+    /// Monotone mapping; the first key survives a rounding collision.
+    pub fn remap_times(&mut self, map: impl Fn(FrameIdx) -> FrameIdx) -> usize {
+        let count = self.keyframes.len();
         for keyframe in &mut self.keyframes {
-            keyframe.0 = convert_frames(keyframe.0, from, to);
+            keyframe.0 = map(keyframe.0);
         }
         self.keyframes.dedup_by_key(|k| k.0);
+        count - self.keyframes.len()
     }
 
     /// Applies `f` to the default and to every keyframe value.
@@ -1739,6 +1746,24 @@ impl EffectStack {
         if let Some(title) = &mut self.title {
             title.content.rescale_times(from, to);
         }
+    }
+
+    pub fn remap_keyframe_times(&mut self, map: impl Fn(FrameIdx) -> FrameIdx) -> usize {
+        let mut merged = 0;
+        self.for_each_f32_track(|track| merged += track.remap_times(&map));
+        if let Some(color) = &mut self.color {
+            merged += color.remap_times(&map);
+        }
+        for filter in &mut self.filters {
+            merged += filter.direction.remap_times(&map);
+        }
+        for mask in &mut self.masks {
+            merged += mask.path.remap_times(&map);
+        }
+        if let Some(title) = &mut self.title {
+            merged += title.content.remap_times(&map);
+        }
+        merged
     }
 
     fn for_each_f32_track(&mut self, mut f: impl FnMut(&mut Keyframed<f32>)) {

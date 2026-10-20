@@ -62,3 +62,11 @@ safe overlap refusal and explicit overwrite/latency correction. Rust adapter and
 JS state-machine tests cover locked targets/linked tracks and stale documents.
 Physical permission, input disconnect and device latency still need device QA;
 successful WAV construction does not prove embedded-browser download completion.
+
+TS-021 now includes real browser source comparison at 25/30 fps, 1x elapsed
+clock alignment/shorter-source hold, explicit short-take refusal/shortening,
+linked video/audio replacement with IDs/start/speed retained, no ripple of the
+following clip, mixed 24/50 fps animation/crop preservation, one Undo, Save/
+restart and unchanged original file hashes. Pure state tests cover late plans,
+source/policy/document changes, ownership, explicit confirmation and key-merge
+warnings. Shot/Take metadata/flags and R9700 acceptance remain open.

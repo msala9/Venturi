@@ -19,3 +19,10 @@ the Audio workspace entry and armed track with always-visible capture actions.
 `m5-voiceover-overlap-browser.png` shows a retained synthetic take after overlap
 refusal. Source audit: `vv-app/src/voiceover.rs`, start_take/drive_take/place_take.
 Physical microphone device/permission and latency acceptance remain open.
+
+Review is a new extension, rather than a panel shown in the original crops.
+`m6-review-ab-browser.png` shows paired native source proxies and supplied/absent
+generation metadata; `m6-review-duration-browser.png` shows explicit policies
+and short-take refusal. `m6-review-preserved-key-browser.png` shows the saved
+linked replacement after restart, CURRENT timeline frame 31 and opacity 65.
+All are CPU/browser proofs, not hardware or completed Shot/Take-sidecar proof.

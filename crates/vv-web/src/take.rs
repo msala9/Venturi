@@ -143,7 +143,7 @@ pub fn preview(
     let (request, version) = request(session, files, id, &request_body.replacement, false)?;
     let plan = core::take::plan(&session.project, &request).map_err(error)?;
     Ok(
-        json!({"version":1,"query":request_body.query,"source_version":version,"removed_crossings":plan.removed_crossings,"changes":plan.changes.iter().map(|change|json!({"track":change.track.to_string(),"clip_id":change.clip.0.to_string(),"previous_media_id":change.previous_media.raw().to_string(),"media_id":change.media.raw().to_string(),"start_frame":change.start_frame,"previous_length":change.previous_length,"length":change.length,"source_in":change.source_in,"source_out":change.source_out})).collect::<Vec<_>>()}),
+        json!({"version":1,"query":request_body.query,"source_version":version,"removed_crossings":plan.removed_crossings,"merged_keys":plan.merged_keys,"changes":plan.changes.iter().map(|change|json!({"track":change.track.to_string(),"clip_id":change.clip.0.to_string(),"previous_media_id":change.previous_media.raw().to_string(),"media_id":change.media.raw().to_string(),"start_frame":change.start_frame,"previous_length":change.previous_length,"length":change.length,"source_in":change.source_in,"source_out":change.source_out})).collect::<Vec<_>>()}),
     )
 }
 pub fn apply(

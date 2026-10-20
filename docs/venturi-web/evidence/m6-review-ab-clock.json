@@ -1,0 +1,36 @@
+{
+  "started": [
+    {
+      "time": 0.144214,
+      "paused": false,
+      "rate": 1,
+      "muted": false
+    },
+    {
+      "time": 0.184006,
+      "paused": false,
+      "rate": 1,
+      "muted": true
+    }
+  ],
+  "ended": [
+    {
+      "duration": 4.01,
+      "ended": true,
+      "label": "Take A source preview",
+      "muted": false,
+      "paused": true,
+      "rate": 1,
+      "time": 4.01
+    },
+    {
+      "duration": 2.517,
+      "ended": false,
+      "label": "Take B source preview",
+      "muted": true,
+      "paused": true,
+      "rate": 1,
+      "time": 2.516
+    }
+  ]
+}

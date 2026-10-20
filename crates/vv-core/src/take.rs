@@ -4,7 +4,6 @@
 use crate::{
     Clip, ClipId, ClipSource, Command, CommandLabel, CompositeCommand, EffectStack, FrameIdx,
     MediaId, Project, Rational, SetClipValue, SetCrossTransition, TimelineId, TrackKind,
-    convert_frames,
 };
 use serde::{Deserialize, Serialize};
 
@@ -75,6 +74,7 @@ pub struct Change {
 pub struct Plan {
     pub changes: Vec<Change>,
     pub removed_crossings: usize,
+    pub merged_keys: usize,
     command: CompositeCommand,
 }
 impl Plan {
@@ -125,6 +125,7 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
     }
     let conform = Rational::conform_rate(timeline.fps, media.meta.fps);
     let mut replacements = Vec::new();
+    let mut merged_keys = 0;
     for (index, track) in timeline.tracks.iter().enumerate() {
         for clip in &track.clips {
             let linked = request.links == LinkPolicy::ReplaceLinked
@@ -170,14 +171,14 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
             }
             replacement.timeline_len = available.min(clip.timeline_len);
             if request.attributes == AttributePolicy::Preserve {
-                // Animation stays on the same edit time when source FPS/In changes.
-                replacement
-                    .effects
-                    .rescale_keyframe_times(previous.meta.fps, media.meta.fps);
-                let old_in = convert_frames(clip.source_in(), previous.meta.fps, media.meta.fps);
-                replacement
-                    .effects
-                    .shift_keyframes(replacement.source_in() - old_in);
+                // FPS-only scaling can move keys by one edit frame after conforming.
+                let old_rate = clip.rate();
+                let old_offset = clip.source_offset;
+                let new_rate = replacement.rate();
+                let new_offset = replacement.source_offset;
+                merged_keys += replacement.effects.remap_keyframe_times(|frame| {
+                    new_rate.unscale_round(old_rate.scale_round(frame) - old_offset + new_offset)
+                });
                 if previous.meta.width > 0
                     && previous.meta.height > 0
                     && media.meta.width > 0
@@ -253,6 +254,7 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
     Ok(Plan {
         changes,
         removed_crossings,
+        merged_keys,
         command: CompositeCommand::new(CommandLabel::ReplaceTake, commands),
     })
 }

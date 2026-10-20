@@ -793,6 +793,7 @@ async fn assets(request: Request) -> Response {
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),
         "/js/library.js" => asset!("/web/js/library.js", "text/javascript"),
         "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
+        "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),
         "/js/capture.js" => asset!("/web/js/capture.js", "text/javascript"),
         "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
         "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),

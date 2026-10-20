@@ -1228,3 +1228,45 @@ In animation, crop scaling, unrelated uses, linked sync, locks, stream mismatch,
 shortening/crossings, source changes, explicit effect reset, unchanged source
 bytes and exact Undo/Redo. This is an executable backend prerequisite, not
 completed Review UI, Shot/Take sidecar or A/B acceptance; the goal remains open.
+
+## M6 — A/B source comparison and explicit Replace Take UI
+
+Review now opens two source players using the existing bounded native proxy/
+original-still service. Playback compares elapsed seconds at 1x, holds the
+shorter take at its last frame and lets the user audition one side at a time.
+Native media controls and the audition selector stay consistent. Sources can
+be swapped or compared without a clip selection. Native FPS/frame counts and
+known ds4 prompt/model/exact seed are displayed; absent generation metadata is
+reported as absent. No editing or retiming algorithm runs in the browser.
+
+Selecting a native media clip enables a replacement preview with B source In,
+duration, linked-source and effect/fade policies. The preview lists every
+affected clip/range and any crossing or animation-key merging. Only Confirm
+commits; source choices, parameter edits, stale documents and read-only sessions
+cannot confirm an obsolete plan. Settings lock during the native mutation.
+
+Real mixed-FPS acceptance exposed a one-frame animation error in the initial
+FPS-only key scaling. Native per-key mapping through timeline frames fixes it;
+all effect parameter types use the same native map. Existing rescale behavior
+is retained, including first-key retention when quantization merges keys. The
+merge count is now explicit in the confirmation preview.
+
+260 core tests, 91 web tests and 58 JS tests pass, with formatting, core/web
+clippy (warnings denied), native vv-app check and build. JS tests include late
+preview refusal, explicit shortening/confirmation, stale/read-only state,
+native refresh during commit, merge warnings and exclusive audition controls.
+Core regression tests cover the actual 24/50 fps key position and merge counts.
+
+Windows acceptance used three synthetic H.264/AAC files at 25, 30 and 50 fps
+with linked video/audio on a 24 fps timeline. A 72-frame edit refused the short
+take until explicit Shorten produced 60 frames on both tracks. The following
+solid stayed at frame 110. A longer take preserved IDs/start/72-frame length/
+speed and rescaled crop from 10 to 20 pixels. One Undo restored original media,
+timing and effects. Redo, Save and server restart retained opacity values
+100/65/20 at timeline frames 12/31/83. The browser showed frame 31 CURRENT and
+opacity 65; source file SHA-256 values never changed. A/B ran at 1x with less
+than 80 ms initial clock difference and held shorter B at 2.516 s while A
+finished at 4.010 s. Evidence: m6-review.json, m6-review-ab-clock.json,
+m6-review-ab-browser.png, m6-review-duration-browser.png and
+m6-review-preserved-key-browser.png. This is CPU acceptance. Shot/Take sidecar,
+favorite/reject/editable metadata and hardware acceptance remain open.

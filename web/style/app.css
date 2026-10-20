@@ -521,5 +521,22 @@ label {
 #voiceover-dialog meter, #voiceover-dialog audio { width: 100%; }
 .voiceover-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; margin-top: 4px; }
 .voiceover-actions button { white-space: normal; }
+#review-dialog { width: min(1000px,calc(100vw - 24px)); }
+#review-dialog[open] { display: grid; grid-template-rows: auto minmax(0,1fr) auto auto; height: 80vh; overflow: hidden; }
+#review-dialog h2 { margin-top: 0; }
+.review-fields { min-height: 0; overflow: auto; padding-right: 8px; }
+.review-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.review-pair section { min-width: 0; }
+.review-pair select, .review-pair video, .review-pair img { width: 100%; }
+.review-pair video, .review-pair img { height: 180px; object-fit: contain; background: var(--bg); }
+.review-pair output { display: block; overflow-wrap: anywhere; }
+.review-pair pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; color: var(--muted); }
+#review-dialog form:not([method="dialog"]) { display: grid; gap: 8px; margin: 12px 0; }
+#review-dialog .field { grid-template-columns: minmax(140px,32%) minmax(0,1fr); align-items: center; }
+#review-dialog .field select, #review-dialog .field input { width: 100%; min-width: 0; }
+#review-dialog .tools { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+#review-dialog .tools label { display: flex; align-items: center; }
+.review-actions { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 10px; }
+#review-dialog > output { margin-top: 10px; }
 .shared-library-list article { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; overflow-wrap: anywhere; }
 #panel-content > input, #panel-content > select { width: 100%; margin-top: 8px; }

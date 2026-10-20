@@ -1,4 +1,5 @@
 import {isTextTarget, installSplitter} from './ui.js';
+import {createTimeline,fixtureTimeline} from './timeline/index.js';
 
 const $ = id => document.getElementById(id);
 const editor = $('editor');
@@ -76,3 +77,45 @@ for (const [shot,take] of [['01 · Coast','A'],['01 · Coast','B'],['02 · Arriv
   $('media-list').append(card);
 }
 $('media-note').textContent = 'Demo Shot / Take labels · no media or server attached';
+
+let timeline = null;
+const view = {origin:0,scale:100,scrollY:0,playhead:0,selection:[],snap:true,draft:null};
+let commit = async () => { throw new Error('Fixture only · no edit was saved'); };
+let seek = () => {};
+function selected() {
+  const clip = timeline?.tracks.flatMap(track=>track.clips).find(item=>view.selection.includes(item.id));
+  $('inspector-content').replaceChildren();
+  const title=document.createElement('strong');title.textContent=clip?.name || 'No clip selected';$('inspector-content').append(title);
+  if(clip) for(const [label,value] of [['Clip ID',clip.id],['Start',clip.start_frame],['Length',clip.length_frames],['Source in',clip.source_in_frames ?? '—'],['Source out',clip.source_out_frames ?? '—']]) {
+    const row=document.createElement('p');row.textContent=`${label}: ${value}`;$('inspector-content').append(row);
+  }
+}
+const canvasTimeline=createTimeline({canvas:$('timeline'),getTimeline:()=>timeline,view,onSelect:selected,onSeek:final=>{updateTime();if(final)seek();},onCommand:operation=>commit(operation),onNotice:notice});
+function updateTime(){
+  const fps=Math.round(timeline?.fps.num / timeline?.fps.den || 24),frame=view.playhead;
+  $('timecode').textContent=[Math.floor(frame/fps/3600),Math.floor(frame/fps/60)%60,Math.floor(frame/fps)%60,frame%fps].map(n=>String(n).padStart(2,'0')).join(':');
+  canvasTimeline.invalidate();
+}
+function installTimeline(next) {
+  canvasTimeline.cancel();timeline=next;view.selection=[];selected();
+  $('format').textContent=`${next.fps.num}/${next.fps.den} fps`;
+  $('clip-list').replaceChildren();
+  for(const track of next.tracks) for(const clip of track.clips) {
+    const button=document.createElement('button');button.textContent=`${track.id} · ${clip.name || clip.id}`;
+    button.addEventListener('click',()=>{view.selection=[clip.id];selected();canvasTimeline.invalidate();});$('clip-list').append(button);
+  }
+  updateTime();
+}
+$('demo-button').addEventListener('click',()=>{
+  installTimeline(fixtureTimeline());$('connection').textContent='Demo / no server · fixture';
+  $('timeline-select').replaceChildren(new Option(timeline.name,timeline.id));notice('500 fixture clips · gestures are local drafts, no project writes');
+});
+$('snap').addEventListener('click',()=>{view.snap=!view.snap;$('snap').setAttribute('aria-pressed',view.snap);});
+for(const [id,factor] of [['zoom-in',1.4],['zoom-out',1/1.4]]) $(id).addEventListener('click',()=>{view.scale=Math.max(3,Math.min(2000,view.scale*factor));canvasTimeline.invalidate();});
+$('fit').addEventListener('click',()=>{if(!timeline)return;const end=Math.max(240,...timeline.tracks.flatMap(t=>t.clips.map(c=>c.start_frame+c.length_frames)));view.origin=0;view.scale=($('timeline').clientWidth-170)*timeline.fps.num/timeline.fps.den/end;canvasTimeline.invalidate();});
+function step(delta){view.playhead=Math.max(0,view.playhead+delta);updateTime();seek();}
+$('step-back').addEventListener('click',()=>step(-1));$('step-forward').addEventListener('click',()=>step(1));
+document.addEventListener('keydown',event=>{
+  if(isTextTarget(event.target))return;
+  if(event.key==='ArrowLeft'||event.key==='ArrowRight'){event.preventDefault();step(event.key==='ArrowLeft'?-1:1);}
+});

@@ -37,6 +37,10 @@ impl Files {
         Ok(file)
     }
     pub fn probe(&self, name: &str) -> Result<(PathBuf, vv_core::MediaMeta)> {
+        let (path, meta, _) = self.prepare_media(name)?;
+        Ok((path, meta))
+    }
+    pub fn prepare_media(&self, name: &str) -> Result<(PathBuf, vv_core::MediaMeta, u64)> {
         Self::name(name)?;
         let listed = self.list()?;
         if !listed["importable_media"]
@@ -73,7 +77,9 @@ impl Files {
         {
             return Err(ApiError::invalid("Unsupported source timing"));
         }
-        Ok((self.root.join(name), meta))
+        let hash = vv_media::content_fingerprint(&fd_path)
+            .map_err(|_| ApiError::invalid("The native engine could not fingerprint this media"))?;
+        Ok((self.root.join(name), meta, hash))
     }
     pub fn new(root: &Path) -> std::io::Result<Self> {
         std::fs::create_dir_all(root)?;
@@ -377,8 +383,27 @@ fn otio_warning(warning: &vv_core::otio::OtioWarning) -> String {
 }
 
 pub(crate) fn validate_project(project: &Project) -> Result<()> {
-    if project.timelines.len() > 64 || project.media_pool.len() > 10_000 {
+    if project.timelines.len() > 64
+        || project.media_pool.len() > 10_000
+        || project.folders.len() > 512
+    {
         return Err(ApiError::invalid("Project exceeds web host limits"));
+    }
+    for (id, folder) in &project.folders {
+        if folder.name.trim().is_empty()
+            || folder.name.len() > 128
+            || folder.name.chars().any(char::is_control)
+        {
+            return Err(ApiError::invalid("Invalid media folder name"));
+        }
+        let mut visited = std::collections::HashSet::from([id]);
+        let mut ancestor = folder.parent;
+        while let Some(parent) = ancestor {
+            if !visited.insert(parent) {
+                return Err(ApiError::invalid("Media folders contain a cycle"));
+            }
+            ancestor = project.folders.get(parent).and_then(|f| f.parent);
+        }
     }
     let mut depths = std::collections::HashMap::new();
     for id in project.timelines.keys() {

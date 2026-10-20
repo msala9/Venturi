@@ -145,6 +145,18 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 
 ## Implemented Inspector commands
 
+- Project commands accept `edit_catalog` with a typed `edit`: `new_folder`,
+  `rename_folder`, `move_folder`, `delete_folder`, `move_media`, `remove_media`
+  or batch `relink`. Folder IDs and media IDs are canonical strings. Folder
+  creation is bounded to 512; media batches contain 1–64 distinct existing IDs.
+  All changes use native commands and one Undo. Folder deletion lifts contents
+  to its parent; media removal leaves clips offline and never deletes files.
+  Relink uses listed file tokens, NOFOLLOW descriptor probing/fingerprinting,
+  native FPS/crop/key adaptation and trial project validation. Used streams and
+  source ranges must remain available; locked references, compound-file relink,
+  folder cycles and partially valid batches are refused. File `content_hash`
+  in session snapshots invalidates browser Source and asset caches after relink.
+
 - Clip detail also returns `curves`: visible native source-frame bounds and
   scalar transform, gain, grade, filter and mask tracks. Native `value_at`
   produces at most 769 samples per animated track (two for constants).

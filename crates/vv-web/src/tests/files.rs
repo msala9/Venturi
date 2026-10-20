@@ -25,6 +25,25 @@ fn a_project_root_has_one_nonblocking_process_owner_and_releases_on_drop() {
     drop(reopened);
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn project_folder_validation_refuses_cycles_before_a_tree_can_be_opened() {
+    let mut project = Project::default();
+    let a = project.folders.insert(vv_core::MediaFolder {
+        name: "A".into(),
+        parent: None,
+    });
+    let b = project.folders.insert(vv_core::MediaFolder {
+        name: "B".into(),
+        parent: Some(a),
+    });
+    assert!(validate_project(&project).is_ok());
+    project.folders[a].parent = Some(b);
+    assert!(validate_project(&project).is_err());
+    project.folders[a].parent = None;
+    project.folders[b].parent = Some(b);
+    assert!(validate_project(&project).is_err());
+}
 #[test]
 fn atomic_persistence_and_path_boundary() {
     let root = root();

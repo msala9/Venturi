@@ -155,6 +155,9 @@ impl Editor {
             };
         }
         match &request.operation {
+            Operation::EditCatalog { edit } => {
+                crate::catalog::edit(&mut self.session, &self.files, edit)?;
+            }
             Operation::Undo | Operation::Redo | Operation::HistoryJump { .. } => {
                 commands::history(&mut self.session, &request.operation)?
             }

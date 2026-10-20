@@ -944,3 +944,38 @@ c2cacb3ca1f10ee2da0484c141a62d4331dd6c264e6d2c8bd0598134df11d61a.
 Inspection confirms software_preview, two renderer threads, root directory
 ownership, no DRI/KFD handles and no loaded RADV library. Staging and this
 acceptance did not acquire or probe the shared hardware GPU reservation.
+
+## Active completion objective — continue through M4–M7
+
+The owner explicitly requested autonomous continuation to completion. The active
+goal covers the full planned native GUI parity surface, AI Review, deployment
+and acceptance; finishing an individual slice is not completion of that goal.
+The shared library must integrate ds4-appliance's authoritative catalog and its
+14 TB network archive. The endpoint is being resolved; independent editing work
+continues. See ARCHITECTURE for the verified sibling API and storage contract.
+
+## M4 increment — native media catalog and safe relink
+
+Media now supports Ctrl/Shift and keyboard range selection, search/type/folder
+filtering, nested project folders, atomic batch moves, folder rename/reparent/
+removal and native media removal/relink. Removing a folder keeps its contents;
+removing media leaves its timeline clips offline without deleting source files.
+Relink probes/fingerprints an allowlisted regular file through one descriptor,
+validates the entire batch, then reuses native SetMediaPath. FPS/crop/key
+adaptation, IDs and Undo remain owned by the original core. Locked references,
+missing streams, short replacements, symlinks, path escapes and folder cycles
+are refused. Source playback and thumbnails/waveforms invalidate on changed
+native content hashes, including Undo; late assets cannot re-enter the cache.
+
+70 Rust web tests and 31 JavaScript tests pass, with formatting, web clippy
+(warnings denied) and build. Windows browser proof:
+m4-native-catalog.json/browser.png. A real linked A/V fixture retained clip IDs,
+timing, links and an EaseInOut opacity key through removal, Undo, relink to a
+different MP4, Undo/Redo and save. Both source SHA-256 values stayed unchanged.
+Removing a parent folder lifted its media and child to the root, and Undo
+restored the hierarchy. Compound cache generations advance during Undo, while
+removed media's Inspector bounds use timeline dimensions until it returns.
+
+Project folders are editing organization only. Shared assets remain owned by
+ds4-appliance; this increment does not create another shared catalog or modify
+its files, mount, credentials, retention policy or inference services.

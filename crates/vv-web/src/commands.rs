@@ -59,6 +59,9 @@ pub enum Operation {
     ImportMedia {
         path_token: String,
     },
+    EditCatalog {
+        edit: crate::catalog::Edit,
+    },
     ImportOtio {
         path_token: String,
         name: String,

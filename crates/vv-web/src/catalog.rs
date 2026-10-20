@@ -1,0 +1,260 @@
+use crate::{
+    error::{ApiError, Result},
+    files::Files,
+};
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use vv_core::{self as core, Command, FolderId, Id, MediaId};
+use vv_session::Session;
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum Edit {
+    NewFolder {
+        name: String,
+        parent: Option<String>,
+    },
+    RenameFolder {
+        folder: String,
+        name: String,
+    },
+    MoveFolder {
+        folder: String,
+        parent: Option<String>,
+    },
+    DeleteFolder {
+        folder: String,
+    },
+    MoveMedia {
+        media_ids: Vec<String>,
+        folder: Option<String>,
+    },
+    RemoveMedia {
+        media_ids: Vec<String>,
+    },
+    Relink {
+        items: Vec<Relink>,
+    },
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Relink {
+    pub media_id: String,
+    pub path_token: String,
+}
+
+fn folder(session: &Session, raw: &str) -> Result<FolderId> {
+    let id = FolderId::from_raw(raw.parse().map_err(|_| ApiError::missing())?);
+    session
+        .project
+        .folders
+        .contains_key(id)
+        .then_some(id)
+        .ok_or_else(ApiError::missing)
+}
+fn parent(session: &Session, raw: &Option<String>) -> Result<Option<FolderId>> {
+    raw.as_deref().map(|id| folder(session, id)).transpose()
+}
+fn media(session: &Session, values: &[String]) -> Result<Vec<MediaId>> {
+    if values.is_empty() || values.len() > 64 {
+        return Err(ApiError::invalid("Choose between 1 and 64 media items"));
+    }
+    let mut ids = HashSet::new();
+    values
+        .iter()
+        .map(|raw| {
+            let id = MediaId::from_raw(raw.parse().map_err(|_| ApiError::missing())?);
+            if !ids.insert(id) || !session.project.media_pool.contains_key(id) {
+                return Err(ApiError::invalid("Media items must exist and be distinct"));
+            }
+            Ok(id)
+        })
+        .collect()
+}
+fn name(value: &str) -> Result<()> {
+    if value.trim().is_empty() || value.len() > 128 || value.chars().any(char::is_control) {
+        return Err(ApiError::invalid(
+            "Use a folder name of 1–128 bytes without control characters",
+        ));
+    }
+    Ok(())
+}
+fn unlocked(session: &Session, selected: &[MediaId]) -> Result<()> {
+    for timeline in session.project.timelines.values() {
+        for track in &timeline.tracks {
+            if track.locked
+                && track.clips.iter().any(
+                    |c| matches!(c.source,core::ClipSource::Media(id) if selected.contains(&id)),
+                )
+            {
+                return Err(ApiError::conflict(
+                    "TRACK_LOCKED",
+                    "A locked track uses selected media",
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn edit(session: &mut Session, files: &Files, edit: &Edit) -> Result<()> {
+    if session.path().is_none() {
+        return Err(ApiError::invalid("Create or open a project first"));
+    }
+    let command: Box<dyn Command> = match edit {
+        Edit::NewFolder {
+            name: value,
+            parent: raw,
+        } => {
+            name(value)?;
+            let parent = parent(session, raw)?;
+            if session.project.folders.len() >= 512 {
+                return Err(ApiError::invalid("The project already has 512 folders"));
+            }
+            let mut add = core::AddEntities::new(core::CommandLabel::NewFolder);
+            add.folder(
+                &mut session.project,
+                core::MediaFolder {
+                    name: value.clone(),
+                    parent,
+                },
+            );
+            Box::new(add)
+        }
+        Edit::RenameFolder {
+            folder: raw,
+            name: value,
+        } => {
+            name(value)?;
+            Box::new(core::RenameFolder::new(
+                folder(session, raw)?,
+                value.clone(),
+            ))
+        }
+        Edit::MoveFolder {
+            folder: raw,
+            parent: destination,
+        } => {
+            let id = folder(session, raw)?;
+            let parent = parent(session, destination)?;
+            if !session.project.can_move_folder(id, parent) {
+                return Err(ApiError::invalid(
+                    "A folder cannot contain itself or an ancestor",
+                ));
+            }
+            Box::new(core::MoveFolder::new(id, parent))
+        }
+        Edit::DeleteFolder { folder: raw } => {
+            Box::new(core::DeleteFolder::new(folder(session, raw)?))
+        }
+        Edit::MoveMedia {
+            media_ids,
+            folder: raw,
+        } => Box::new(core::SetMediaFolder::new(
+            media(session, media_ids)?,
+            parent(session, raw)?,
+        )),
+        Edit::RemoveMedia { media_ids } => {
+            let ids = media(session, media_ids)?;
+            unlocked(session, &ids)?;
+            for id in &ids {
+                if let Some(child) = session.project.media_pool[*id].compound
+                    && session.project.timelines[child]
+                        .tracks
+                        .iter()
+                        .any(|t| t.locked && !t.clips.is_empty())
+                {
+                    return Err(ApiError::conflict(
+                        "TRACK_LOCKED",
+                        "A selected compound contains a locked track",
+                    ));
+                }
+            }
+            Box::new(core::CompositeCommand::new(
+                core::CommandLabel::RemoveMedia,
+                ids.into_iter()
+                    .map(|id| Box::new(core::RemoveMedia::new(id)) as Box<dyn Command>)
+                    .collect(),
+            ))
+        }
+        Edit::Relink { items } => {
+            let ids = media(
+                session,
+                &items
+                    .iter()
+                    .map(|item| item.media_id.clone())
+                    .collect::<Vec<_>>(),
+            )?;
+            unlocked(session, &ids)?;
+            let mut commands: Vec<Box<dyn Command>> = Vec::new();
+            for (item, id) in items.iter().zip(&ids) {
+                if session.project.media_pool[*id].compound.is_some() {
+                    return Err(ApiError::invalid(
+                        "Compound timelines cannot be relinked to files",
+                    ));
+                }
+                let (path, meta, hash) = files.prepare_media(&item.path_token)?;
+                for timeline in session.project.timelines.values() {
+                    for track in &timeline.tracks {
+                        if track.clips.iter().any(
+                            |c| matches!(c.source, core::ClipSource::Media(media) if media == *id),
+                        ) && match track.kind {
+                            core::TrackKind::Video => !meta.has_video,
+                            core::TrackKind::Audio => !meta.has_audio,
+                        } {
+                            return Err(ApiError::invalid(
+                                "Replacement media lacks a stream used by the timeline",
+                            ));
+                        }
+                    }
+                }
+                commands.push(Box::new(core::SetMediaPath::new(
+                    *id,
+                    path,
+                    hash,
+                    Some(meta),
+                )));
+            }
+            Box::new(core::CompositeCommand::new(
+                core::CommandLabel::RelinkMedia,
+                commands,
+            ))
+        }
+    };
+    let mut trial = session.project.clone();
+    let mut command = command;
+    command.apply(&mut trial);
+    crate::files::validate_project(&trial)?;
+    if let Edit::Relink { items } = edit {
+        let selected = media(
+            session,
+            &items
+                .iter()
+                .map(|item| item.media_id.clone())
+                .collect::<Vec<_>>(),
+        )?;
+        for timeline in trial.timelines.values() {
+            for clip in timeline.tracks.iter().flat_map(|t| &t.clips) {
+                if let core::ClipSource::Media(id) = clip.source
+                    && selected.contains(&id)
+                    && let Some(item) = trial.media_pool.get(id)
+                    && item.compound.is_none()
+                    && !item.meta.is_image()
+                    && (clip.source_out() > item.meta.duration_frames
+                        || clip.freeze.is_some_and(|f| f >= item.meta.duration_frames))
+                {
+                    return Err(ApiError::invalid(
+                        "Replacement media does not cover an existing clip source range",
+                    ));
+                }
+            }
+        }
+    }
+    command.undo(&mut trial);
+    session.apply(command);
+    Ok(())
+}
+
+#[cfg(test)]
+#[path = "tests/catalog.rs"]
+mod tests;

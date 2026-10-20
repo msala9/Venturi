@@ -10,13 +10,16 @@ import { renderMixer } from "./mixer.js";
 import { createExportPanel } from "./export.js";
 import { createScopes, scopeTarget } from "./scopes.js";
 import { balanceSelected } from "./balance.js";
+import { renderCatalog } from "./catalog.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
 let scopes = null, scopePlayback = false;
+let catalog = null;
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
+  if(catalog){catalog.search(query);return;}
   document.querySelectorAll(".media-item").forEach((card) => {
     card.hidden = !card.textContent.toLowerCase().includes(query);
   });
@@ -239,6 +242,7 @@ let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = 
 let sourceOpenId = null;
 const sourceRanges = new Map();
 const mediaAssets = new Map();
+const mediaState = {selected: [], anchor: null, folder: "*", kind: "all", open: false};
 function updatePlayAvailability() {
   const still = viewerMode === "source" && documentState?.media.find((m) => m.id === sourceOpenId)?.is_image;
   $("play").disabled = still || (viewerMode === "program" && (!documentState?.capabilities.playback || !timeline?.tracks.some((t) => t.clips.length)));
@@ -540,11 +544,15 @@ async function refresh() {
   programPlayer?.stop();
   viewer?.invalidate();
   const next = await request("/session");
+  const sourceChanged=(id)=>documentState?.media.find((item)=>item.id===id)?.content_hash !== next.media.find((item)=>item.id===id)?.content_hash;
+  for(const [id,asset] of mediaAssets)if(sourceChanged(id)){asset.thumbnail?.close();mediaAssets.delete(id);}
+  if(sourceOpenId && (!next.media.some((item)=>item.id===sourceOpenId) || sourceChanged(sourceOpenId))){sourcePlayer?.reset();sourceRanges.delete(sourceOpenId);sourceOpenId=null;}
   if (documentState?.project_epoch !== next.project_epoch) {
     sourcePlayer?.reset();
     sourceOpenId = null; sourceRanges.clear();
     view.playhead=0;view.origin=0;view.scrollY=0;view.selection=[];
     selectedMedia = null;
+    mediaState.selected=[];mediaState.anchor=null;mediaState.folder="*";
     for (const asset of mediaAssets.values()) asset.thumbnail?.close();
     mediaAssets.clear();
     viewerModeSet("program");
@@ -593,30 +601,8 @@ async function refresh() {
   $("undo").disabled ||= next.history.position === 0;
   $("redo").disabled ||= next.history.position === next.history.labels.length;
   $("demo-button").hidden = true;
-  $("media-list").replaceChildren();
   $("media-note").textContent = "Project media · authoritative Rust session";
-  for (const item of next.media) {
-    const card = document.createElement("button");
-    card.className = "media-item";
-    card.dataset.mediaId = item.id;
-    card.textContent = `${item.name}${item.offline ? " · OFFLINE" : ""}`;
-    card.addEventListener("click", () => {
-      selectedMedia = item.id;
-      document
-        .querySelectorAll(".media-item")
-        .forEach((c) => c.classList.remove("selected"));
-      card.classList.add("selected");
-      notice("Media selected · use Insert media to place at the playhead");
-    });
-    card.addEventListener("dblclick", openSource);
-    if (mediaAssets.has(item.id)) {
-      const image = document.createElement("img");
-      image.alt = "";
-      image.src = mediaAssets.get(item.id).thumbnailURL;
-      card.prepend(image);
-    }
-    $("media-list").append(card);
-  }
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;},onOpen:(id)=>{selectedMedia=id;openSource();},notice});
   if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
   $("viewer-message").textContent = next.capabilities.preview
     ? "Seek a timeline frame"
@@ -981,7 +967,7 @@ sourcePlayer = createSourcePlayer({
       fetch(urls("thumb.png")).then((r) => { if (!r.ok) throw new Error("No thumbnail"); return r.blob(); }).then(createImageBitmap),
       item.has_audio === false ? Promise.resolve(null) : fetch(urls("waveform.json")).then((r) => { if (!r.ok) throw new Error("No waveform"); return r.json(); }),
     ]);
-    if (documentState?.project_epoch !== epoch) { if (thumb.status === "fulfilled") thumb.value.close(); return; }
+    if (documentState?.project_epoch !== epoch || documentState.media.find((m)=>m.id===item.id)?.content_hash !== item.content_hash) { if (thumb.status === "fulfilled") thumb.value.close(); return; }
     const thumbnail = thumb.status === "fulfilled" ? thumb.value : null;
     const waveform = wave.status === "fulfilled" ? wave.value : null;
     const bytes = (thumbnail ? thumbnail.width * thumbnail.height * 4 : 0) + (waveform?.peaks.length || 0) * 8;

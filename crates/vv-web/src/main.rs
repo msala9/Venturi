@@ -1,5 +1,6 @@
 mod api;
 mod audio;
+mod catalog;
 mod clipboard;
 mod commands;
 mod curves;

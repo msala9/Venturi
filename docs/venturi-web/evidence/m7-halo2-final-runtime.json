@@ -1,0 +1,38 @@
+{
+  "pid": "1148294",
+  "project": "CPU_color_UI_check.vvproj",
+  "saved": true,
+  "capabilities": {
+    "editing": true,
+    "export": true,
+    "playback": true,
+    "preview": true,
+    "scopes": true,
+    "software_preview": true,
+    "source_playback": true
+  },
+  "diagnostics": {
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x0000",
+      "driver": "llvmpipe",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3 (LLVM 21.1.8)",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "llvmpipe (LLVM 21.1.8, 256 bits)",
+      "resident": false,
+      "software": true,
+      "vendor_id": "0x10005"
+    }
+  },
+  "hardware_device_handles": [],
+  "radv_driver_loaded": false,
+  "project_root_owned": true,
+  "environment": {
+    "VK_DRIVER_FILES": "/usr/share/vulkan/icd.d/lvp_icd.json",
+    "LP_NUM_THREADS": "2",
+    "TOKIO_WORKER_THREADS": "2"
+  }
+}

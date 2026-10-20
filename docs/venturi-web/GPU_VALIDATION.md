@@ -48,6 +48,21 @@ Missing tools are **missing**, not automatically installed by this pack. The `ff
 
 ## Environment selection notes
 
+2026-10-20 execution: exact frames and five-minute composed A/V playback have
+R9700/Windows evidence. A fresh current-binary Export drawer check also decoded
+all 48 frames of the 960x540 synthetic A/V fixture; compositor R9700, encoder
+CPU x264 and audio AAC. Native preparation was 222.89ms. After idle, the process
+had zero DRI/KFD handles and released the shared lock. See
+evidence/m3-export-r9700.json. No general workload performance is inferred.
+
+Shared-host policy takes precedence over the proposed concurrent workload
+benchmark above: hardware paths acquire /tmp/HALO_BENCHMARK.lock nonblocking.
+Busy hardware work is refused. Metadata and explicit CPU/lavapipe rendering
+were verified while other agents held the lock. The final service uses CPU
+mode; no simultaneous inference/render GPU benchmark was run. Only previously
+authorized userspace Vulkan/multimedia dependencies were added, with no kernel
+AMD/ROCm/inference configuration changes.
+
 Mesa Vulkan device selection may use `DRI_PRIME=pci-0000_XX_YY_Z!` or environment-specific Vulkan ICD options, but must be verified on the host. A backend using wgpu may select an adapter directly rather than relying solely on global env vars. Do not hardcode assumed PCI id or `/dev/dri/renderD128`.
 
 ## Sample report

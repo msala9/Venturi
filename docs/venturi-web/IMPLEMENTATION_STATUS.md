@@ -871,3 +871,30 @@ backup symlinks/path bounds, dirty/existing-name refusal, retry-safe epochs and
 unchanged source files are covered. Long soak, unsaved-edit autosave, durable
 render queues, full external-edit conflict detection, voiceover/curves/libraries
 and AI Review remain open; M4–M7 are not declared complete.
+
+## Fresh R9700 Export acceptance and final shared-host runtime
+
+A live nonblocking shared-lock check found a free slot. The current binary
+initialized the explicit R9700 device 0x7551 (RADV GFX1201, Mesa 26.0.8), then
+the Windows Export drawer completed the unchanged composed A/V fixture using
+the whole-job reservation path. Forty-eight 960x540 frames prepared in 222.89ms
+with CPU x264/veryfast CRF 18 and AAC. The downloaded MP4 decoded exactly 48
+video frames, video 2.000s and stereo AAC 2.005s. The idle process had no DRI/KFD
+handles and no ownership of the shared GPU lock. Evidence:
+m3-export-r9700.json/browser.png. This closes the short R9700 Export check;
+the synthetic fixture is not a general performance or complex-effects claim.
+
+After download the service was restarted in explicit CPU mode, preserving GPU
+availability for the other agents. Final halo2 binary SHA-256:
+fd91b89fe9ddec298912ba1e98529908ceb0f3a4c020d557c0908aed07a624aa.
+The loopback 8790 endpoint and existing Windows SSH tunnel remain available.
+A separate CPU_color_UI_check copy demonstrates native BlackAndWhite with
+the orange overlay still colored and clip-isolated native scopes. It is saved;
+the original GPU fixture is unchanged. Final process inspection confirms
+software_preview true, the installed lavapipe-only environment, two renderer
+threads, root directory ownership, no DRI/KFD handles and no loaded RADV library.
+Evidence: m5-halo2-final-color-browser.png and m7-halo2-final-runtime.json.
+
+No foreign process/port, kernel AMD driver, ROCm or inference configuration
+was modified. Long-form Export limits, hardware encode/decode selection and
+the remaining M4–M7 feature ledger are still open.

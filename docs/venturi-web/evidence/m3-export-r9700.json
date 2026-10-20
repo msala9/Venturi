@@ -1,0 +1,81 @@
+{
+  "job": {
+    "error": null,
+    "frames": 0,
+    "id": "1792515827164834640",
+    "program": {
+      "end_frame": 48,
+      "export_settings": {
+        "audio": true,
+        "preset": "veryfast",
+        "quality": 18
+      },
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "0",
+      "height": 540,
+      "project_epoch": "1792515821189711051:1",
+      "revision": "21552e171ba9a312",
+      "start_frame": 0,
+      "width": 960
+    },
+    "progress": {
+      "compose_fps": 1180.8973904972302,
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "current_frame": 48,
+      "decode_fps": 1695.2807692223473,
+      "elapsed_ms": 222.89145699999997,
+      "encode_fps": 369.1110636735041,
+      "encoder": "X264",
+      "fps": 215.35145692012773,
+      "startup_ms": 56.654962000000005,
+      "total_frames": 48
+    },
+    "source_asset": null,
+    "state": "ready"
+  },
+  "scope": "Actual Windows browser Export through native R9700 compositor and CPU x264/AAC, with whole-job shared GPU reservation; short synthetic fixture",
+  "streams": [
+    {
+      "codec_name": "h264",
+      "codec_type": "video",
+      "width": 960,
+      "height": 540,
+      "duration": "2.000000",
+      "nb_read_frames": "48"
+    },
+    {
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "sample_rate": "48000",
+      "channels": 2,
+      "duration": "2.005000",
+      "nb_read_frames": "94"
+    }
+  ],
+  "download_bytes": 358770,
+  "diagnostics": {
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    }
+  },
+  "download_sha256": "54e6e7cea422b91246c1e91a8354546e915cbe6114141ad0057205627e0a9e7d",
+  "idle_release": {
+    "pid": "1147912",
+    "hardware_device_handles": [],
+    "owns_shared_gpu_lock": false
+  }
+}

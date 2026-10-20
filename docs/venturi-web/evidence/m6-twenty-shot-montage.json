@@ -1,0 +1,2188 @@
+{
+  "fixture": "Twenty shots with three own synthetic H.264/AAC takes each; CPU only; no shared ds4/NAS mutations",
+  "project": "Montage_review_check.vvproj",
+  "timeline_fps": {
+    "num": 24,
+    "den": 1
+  },
+  "duration_frames": 1440,
+  "shot_count": 20,
+  "take_count": 60,
+  "source_sha256": {
+    "Montage_01_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_01_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_01_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_02_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_02_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_02_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_03_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_03_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_03_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_04_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_04_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_04_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_05_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_05_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_05_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_06_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_06_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_06_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_07_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_07_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_07_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_08_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_08_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_08_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_09_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_09_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_09_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_10_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_10_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_10_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_11_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_11_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_11_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_12_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_12_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_12_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_13_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_13_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_13_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_14_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_14_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_14_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_15_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_15_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_15_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_16_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_16_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_16_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_17_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_17_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_17_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_18_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_18_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_18_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_19_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_19_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_19_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_20_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_20_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_20_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3"
+  },
+  "replacement_results": [
+    {
+      "shot": 1,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "1",
+          "length": 60,
+          "media_id": "3",
+          "previous_length": 72,
+          "previous_media_id": "2",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 0,
+          "track": "0"
+        },
+        {
+          "clip_id": "0",
+          "length": 60,
+          "media_id": "3",
+          "previous_length": 72,
+          "previous_media_id": "2",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 0,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 2,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "3",
+          "length": 72,
+          "media_id": "7",
+          "previous_length": 72,
+          "previous_media_id": "5",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 72,
+          "track": "0"
+        },
+        {
+          "clip_id": "2",
+          "length": 72,
+          "media_id": "7",
+          "previous_length": 72,
+          "previous_media_id": "5",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 72,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 3,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "5",
+          "length": 60,
+          "media_id": "9",
+          "previous_length": 72,
+          "previous_media_id": "8",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 144,
+          "track": "0"
+        },
+        {
+          "clip_id": "4",
+          "length": 60,
+          "media_id": "9",
+          "previous_length": 72,
+          "previous_media_id": "8",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 144,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 4,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "7",
+          "length": 72,
+          "media_id": "13",
+          "previous_length": 72,
+          "previous_media_id": "11",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 216,
+          "track": "0"
+        },
+        {
+          "clip_id": "6",
+          "length": 72,
+          "media_id": "13",
+          "previous_length": 72,
+          "previous_media_id": "11",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 216,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 5,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "9",
+          "length": 60,
+          "media_id": "15",
+          "previous_length": 72,
+          "previous_media_id": "14",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 288,
+          "track": "0"
+        },
+        {
+          "clip_id": "8",
+          "length": 60,
+          "media_id": "15",
+          "previous_length": 72,
+          "previous_media_id": "14",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 288,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 6,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "11",
+          "length": 72,
+          "media_id": "19",
+          "previous_length": 72,
+          "previous_media_id": "17",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 360,
+          "track": "0"
+        },
+        {
+          "clip_id": "10",
+          "length": 72,
+          "media_id": "19",
+          "previous_length": 72,
+          "previous_media_id": "17",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 360,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 7,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "13",
+          "length": 60,
+          "media_id": "21",
+          "previous_length": 72,
+          "previous_media_id": "20",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 432,
+          "track": "0"
+        },
+        {
+          "clip_id": "12",
+          "length": 60,
+          "media_id": "21",
+          "previous_length": 72,
+          "previous_media_id": "20",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 432,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 8,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "15",
+          "length": 72,
+          "media_id": "25",
+          "previous_length": 72,
+          "previous_media_id": "23",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 504,
+          "track": "0"
+        },
+        {
+          "clip_id": "14",
+          "length": 72,
+          "media_id": "25",
+          "previous_length": 72,
+          "previous_media_id": "23",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 504,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 9,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "17",
+          "length": 60,
+          "media_id": "27",
+          "previous_length": 72,
+          "previous_media_id": "26",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 576,
+          "track": "0"
+        },
+        {
+          "clip_id": "16",
+          "length": 60,
+          "media_id": "27",
+          "previous_length": 72,
+          "previous_media_id": "26",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 576,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 10,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "19",
+          "length": 72,
+          "media_id": "31",
+          "previous_length": 72,
+          "previous_media_id": "29",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 648,
+          "track": "0"
+        },
+        {
+          "clip_id": "18",
+          "length": 72,
+          "media_id": "31",
+          "previous_length": 72,
+          "previous_media_id": "29",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 648,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 11,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "21",
+          "length": 60,
+          "media_id": "33",
+          "previous_length": 72,
+          "previous_media_id": "32",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 720,
+          "track": "0"
+        },
+        {
+          "clip_id": "20",
+          "length": 60,
+          "media_id": "33",
+          "previous_length": 72,
+          "previous_media_id": "32",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 720,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 12,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "23",
+          "length": 72,
+          "media_id": "37",
+          "previous_length": 72,
+          "previous_media_id": "35",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 792,
+          "track": "0"
+        },
+        {
+          "clip_id": "22",
+          "length": 72,
+          "media_id": "37",
+          "previous_length": 72,
+          "previous_media_id": "35",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 792,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 13,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "25",
+          "length": 60,
+          "media_id": "39",
+          "previous_length": 72,
+          "previous_media_id": "38",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 864,
+          "track": "0"
+        },
+        {
+          "clip_id": "24",
+          "length": 60,
+          "media_id": "39",
+          "previous_length": 72,
+          "previous_media_id": "38",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 864,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 14,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "27",
+          "length": 72,
+          "media_id": "43",
+          "previous_length": 72,
+          "previous_media_id": "41",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 936,
+          "track": "0"
+        },
+        {
+          "clip_id": "26",
+          "length": 72,
+          "media_id": "43",
+          "previous_length": 72,
+          "previous_media_id": "41",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 936,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 15,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "29",
+          "length": 60,
+          "media_id": "45",
+          "previous_length": 72,
+          "previous_media_id": "44",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 1008,
+          "track": "0"
+        },
+        {
+          "clip_id": "28",
+          "length": 60,
+          "media_id": "45",
+          "previous_length": 72,
+          "previous_media_id": "44",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 1008,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 16,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "31",
+          "length": 72,
+          "media_id": "49",
+          "previous_length": 72,
+          "previous_media_id": "47",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 1080,
+          "track": "0"
+        },
+        {
+          "clip_id": "30",
+          "length": 72,
+          "media_id": "49",
+          "previous_length": 72,
+          "previous_media_id": "47",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 1080,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 17,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "33",
+          "length": 60,
+          "media_id": "51",
+          "previous_length": 72,
+          "previous_media_id": "50",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 1152,
+          "track": "0"
+        },
+        {
+          "clip_id": "32",
+          "length": 60,
+          "media_id": "51",
+          "previous_length": 72,
+          "previous_media_id": "50",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 1152,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 18,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "35",
+          "length": 72,
+          "media_id": "55",
+          "previous_length": 72,
+          "previous_media_id": "53",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 1224,
+          "track": "0"
+        },
+        {
+          "clip_id": "34",
+          "length": 72,
+          "media_id": "55",
+          "previous_length": 72,
+          "previous_media_id": "53",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 1224,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 19,
+      "chosen_take": "B",
+      "plan_changes": [
+        {
+          "clip_id": "37",
+          "length": 60,
+          "media_id": "57",
+          "previous_length": 72,
+          "previous_media_id": "56",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 1296,
+          "track": "0"
+        },
+        {
+          "clip_id": "36",
+          "length": 60,
+          "media_id": "57",
+          "previous_length": 72,
+          "previous_media_id": "56",
+          "source_in": 0,
+          "source_out": 75,
+          "start_frame": 1296,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    },
+    {
+      "shot": 20,
+      "chosen_take": "C",
+      "plan_changes": [
+        {
+          "clip_id": "39",
+          "length": 72,
+          "media_id": "61",
+          "previous_length": 72,
+          "previous_media_id": "59",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 1368,
+          "track": "0"
+        },
+        {
+          "clip_id": "38",
+          "length": 72,
+          "media_id": "61",
+          "previous_length": 72,
+          "previous_media_id": "59",
+          "source_in": 1,
+          "source_out": 149,
+          "start_frame": 1368,
+          "track": "1"
+        }
+      ],
+      "native_opacity_at_shot_frame19": 65
+    }
+  ],
+  "annotations": {
+    "can_restore_previous": true,
+    "generation": "162",
+    "items": [
+      {
+        "label": "Shot 01 \u00b7 Take A",
+        "media_id": "2",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 01, take A; no generated content claim.",
+          "seed": "9007199254740996"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-01",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_01_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 01 \u00b7 Take B",
+        "media_id": "3",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 01, take B; no generated content claim.",
+          "seed": "9007199254740997"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-01",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_01_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 01 \u00b7 Take C",
+        "media_id": "4",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 01, take C; no generated content claim.",
+          "seed": "9007199254740998"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-01",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_01_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 02 \u00b7 Take A",
+        "media_id": "5",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 02, take A; no generated content claim.",
+          "seed": "9007199254740999"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-02",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_02_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 02 \u00b7 Take B",
+        "media_id": "6",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 02, take B; no generated content claim.",
+          "seed": "9007199254741000"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-02",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_02_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 02 \u00b7 Take C",
+        "media_id": "7",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 02, take C; no generated content claim.",
+          "seed": "9007199254741001"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-02",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_02_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 03 \u00b7 Take A",
+        "media_id": "8",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 03, take A; no generated content claim.",
+          "seed": "9007199254741002"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-03",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_03_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 03 \u00b7 Take B",
+        "media_id": "9",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 03, take B; no generated content claim.",
+          "seed": "9007199254741003"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-03",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_03_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 03 \u00b7 Take C",
+        "media_id": "10",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 03, take C; no generated content claim.",
+          "seed": "9007199254741004"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-03",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_03_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 04 \u00b7 Take A",
+        "media_id": "11",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 04, take A; no generated content claim.",
+          "seed": "9007199254741005"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-04",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_04_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 04 \u00b7 Take B",
+        "media_id": "12",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 04, take B; no generated content claim.",
+          "seed": "9007199254741006"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-04",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_04_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 04 \u00b7 Take C",
+        "media_id": "13",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 04, take C; no generated content claim.",
+          "seed": "9007199254741007"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-04",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_04_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 05 \u00b7 Take A",
+        "media_id": "14",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 05, take A; no generated content claim.",
+          "seed": "9007199254741008"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-05",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_05_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 05 \u00b7 Take B",
+        "media_id": "15",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 05, take B; no generated content claim.",
+          "seed": "9007199254741009"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-05",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_05_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 05 \u00b7 Take C",
+        "media_id": "16",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 05, take C; no generated content claim.",
+          "seed": "9007199254741010"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-05",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_05_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 06 \u00b7 Take A",
+        "media_id": "17",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 06, take A; no generated content claim.",
+          "seed": "9007199254741011"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-06",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_06_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 06 \u00b7 Take B",
+        "media_id": "18",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 06, take B; no generated content claim.",
+          "seed": "9007199254741012"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-06",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_06_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 06 \u00b7 Take C",
+        "media_id": "19",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 06, take C; no generated content claim.",
+          "seed": "9007199254741013"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-06",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_06_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 07 \u00b7 Take A",
+        "media_id": "20",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 07, take A; no generated content claim.",
+          "seed": "9007199254741014"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-07",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_07_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 07 \u00b7 Take B",
+        "media_id": "21",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 07, take B; no generated content claim.",
+          "seed": "9007199254741015"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-07",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_07_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 07 \u00b7 Take C",
+        "media_id": "22",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 07, take C; no generated content claim.",
+          "seed": "9007199254741016"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-07",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_07_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 08 \u00b7 Take A",
+        "media_id": "23",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 08, take A; no generated content claim.",
+          "seed": "9007199254741017"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-08",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_08_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 08 \u00b7 Take B",
+        "media_id": "24",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 08, take B; no generated content claim.",
+          "seed": "9007199254741018"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-08",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_08_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 08 \u00b7 Take C",
+        "media_id": "25",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 08, take C; no generated content claim.",
+          "seed": "9007199254741019"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-08",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_08_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 09 \u00b7 Take A",
+        "media_id": "26",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 09, take A; no generated content claim.",
+          "seed": "9007199254741020"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-09",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_09_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 09 \u00b7 Take B",
+        "media_id": "27",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 09, take B; no generated content claim.",
+          "seed": "9007199254741021"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-09",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_09_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 09 \u00b7 Take C",
+        "media_id": "28",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 09, take C; no generated content claim.",
+          "seed": "9007199254741022"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-09",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_09_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 10 \u00b7 Take A",
+        "media_id": "29",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 10, take A; no generated content claim.",
+          "seed": "9007199254741023"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-10",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_10_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 10 \u00b7 Take B",
+        "media_id": "30",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 10, take B; no generated content claim.",
+          "seed": "9007199254741024"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-10",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_10_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 10 \u00b7 Take C",
+        "media_id": "31",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 10, take C; no generated content claim.",
+          "seed": "9007199254741025"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-10",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_10_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 11 \u00b7 Take A",
+        "media_id": "32",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 11, take A; no generated content claim.",
+          "seed": "9007199254741026"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-11",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_11_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 11 \u00b7 Take B",
+        "media_id": "33",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 11, take B; no generated content claim.",
+          "seed": "9007199254741027"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-11",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_11_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 11 \u00b7 Take C",
+        "media_id": "34",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 11, take C; no generated content claim.",
+          "seed": "9007199254741028"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-11",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_11_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 12 \u00b7 Take A",
+        "media_id": "35",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 12, take A; no generated content claim.",
+          "seed": "9007199254741029"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-12",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_12_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 12 \u00b7 Take B",
+        "media_id": "36",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 12, take B; no generated content claim.",
+          "seed": "9007199254741030"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-12",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_12_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 12 \u00b7 Take C",
+        "media_id": "37",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 12, take C; no generated content claim.",
+          "seed": "9007199254741031"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-12",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_12_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 13 \u00b7 Take A",
+        "media_id": "38",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 13, take A; no generated content claim.",
+          "seed": "9007199254741032"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-13",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_13_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 13 \u00b7 Take B",
+        "media_id": "39",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 13, take B; no generated content claim.",
+          "seed": "9007199254741033"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-13",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_13_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 13 \u00b7 Take C",
+        "media_id": "40",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 13, take C; no generated content claim.",
+          "seed": "9007199254741034"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-13",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_13_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 14 \u00b7 Take A",
+        "media_id": "41",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 14, take A; no generated content claim.",
+          "seed": "9007199254741035"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-14",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_14_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 14 \u00b7 Take B",
+        "media_id": "42",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 14, take B; no generated content claim.",
+          "seed": "9007199254741036"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-14",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_14_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 14 \u00b7 Take C",
+        "media_id": "43",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 14, take C; no generated content claim.",
+          "seed": "9007199254741037"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-14",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_14_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 15 \u00b7 Take A",
+        "media_id": "44",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 15, take A; no generated content claim.",
+          "seed": "9007199254741038"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-15",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_15_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 15 \u00b7 Take B",
+        "media_id": "45",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 15, take B; no generated content claim.",
+          "seed": "9007199254741039"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-15",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_15_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 15 \u00b7 Take C",
+        "media_id": "46",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 15, take C; no generated content claim.",
+          "seed": "9007199254741040"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-15",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_15_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 16 \u00b7 Take A",
+        "media_id": "47",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 16, take A; no generated content claim.",
+          "seed": "9007199254741041"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-16",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_16_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 16 \u00b7 Take B",
+        "media_id": "48",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 16, take B; no generated content claim.",
+          "seed": "9007199254741042"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-16",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_16_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 16 \u00b7 Take C",
+        "media_id": "49",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 16, take C; no generated content claim.",
+          "seed": "9007199254741043"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-16",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_16_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 17 \u00b7 Take A",
+        "media_id": "50",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 17, take A; no generated content claim.",
+          "seed": "9007199254741044"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-17",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_17_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 17 \u00b7 Take B",
+        "media_id": "51",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 17, take B; no generated content claim.",
+          "seed": "9007199254741045"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-17",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_17_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 17 \u00b7 Take C",
+        "media_id": "52",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 17, take C; no generated content claim.",
+          "seed": "9007199254741046"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-17",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_17_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 18 \u00b7 Take A",
+        "media_id": "53",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 18, take A; no generated content claim.",
+          "seed": "9007199254741047"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-18",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_18_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 18 \u00b7 Take B",
+        "media_id": "54",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 18, take B; no generated content claim.",
+          "seed": "9007199254741048"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-18",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_18_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 18 \u00b7 Take C",
+        "media_id": "55",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 18, take C; no generated content claim.",
+          "seed": "9007199254741049"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-18",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_18_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 19 \u00b7 Take A",
+        "media_id": "56",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 19, take A; no generated content claim.",
+          "seed": "9007199254741050"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-19",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_19_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 19 \u00b7 Take B",
+        "media_id": "57",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 19, take B; no generated content claim.",
+          "seed": "9007199254741051"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-19",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_19_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 19 \u00b7 Take C",
+        "media_id": "58",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 19, take C; no generated content claim.",
+          "seed": "9007199254741052"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-19",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_19_C.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 20 \u00b7 Take A",
+        "media_id": "59",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 20, take A; no generated content claim.",
+          "seed": "9007199254741053"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": "shot-20",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_20_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 20 \u00b7 Take B",
+        "media_id": "60",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 20, take B; no generated content claim.",
+          "seed": "9007199254741054"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "rejected",
+        "shot_id": "shot-20",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_20_B.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Shot 20 \u00b7 Take C",
+        "media_id": "61",
+        "metadata": {
+          "model": "Synthetic montage acceptance fixture",
+          "prompt": "Synthetic shot 20, take C; no generated content claim.",
+          "seed": "18446744073709551615"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "shot-20",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Montage_20_C.mp4",
+        "stale_source": false
+      }
+    ],
+    "orphans": [],
+    "project_epoch": "1792540438959961422:1",
+    "project_token": "Montage_review_check.vvproj",
+    "revision": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+    "shots": {
+      "shot-01": "Shot 01",
+      "shot-02": "Shot 02",
+      "shot-03": "Shot 03",
+      "shot-04": "Shot 04",
+      "shot-05": "Shot 05",
+      "shot-06": "Shot 06",
+      "shot-07": "Shot 07",
+      "shot-08": "Shot 08",
+      "shot-09": "Shot 09",
+      "shot-10": "Shot 10",
+      "shot-11": "Shot 11",
+      "shot-12": "Shot 12",
+      "shot-13": "Shot 13",
+      "shot-14": "Shot 14",
+      "shot-15": "Shot 15",
+      "shot-16": "Shot 16",
+      "shot-17": "Shot 17",
+      "shot-18": "Shot 18",
+      "shot-19": "Shot 19",
+      "shot-20": "Shot 20"
+    },
+    "version": 1
+  },
+  "undo_redo_first_replacement_exact": true,
+  "source_hashes_unchanged": true,
+  "saved_clip_ranges": [
+    [
+      {
+        "id": "1",
+        "media": "3",
+        "start": 0,
+        "length": 60
+      },
+      {
+        "id": "3",
+        "media": "7",
+        "start": 72,
+        "length": 72
+      },
+      {
+        "id": "5",
+        "media": "9",
+        "start": 144,
+        "length": 60
+      },
+      {
+        "id": "7",
+        "media": "13",
+        "start": 216,
+        "length": 72
+      },
+      {
+        "id": "9",
+        "media": "15",
+        "start": 288,
+        "length": 60
+      },
+      {
+        "id": "11",
+        "media": "19",
+        "start": 360,
+        "length": 72
+      },
+      {
+        "id": "13",
+        "media": "21",
+        "start": 432,
+        "length": 60
+      },
+      {
+        "id": "15",
+        "media": "25",
+        "start": 504,
+        "length": 72
+      },
+      {
+        "id": "17",
+        "media": "27",
+        "start": 576,
+        "length": 60
+      },
+      {
+        "id": "19",
+        "media": "31",
+        "start": 648,
+        "length": 72
+      },
+      {
+        "id": "21",
+        "media": "33",
+        "start": 720,
+        "length": 60
+      },
+      {
+        "id": "23",
+        "media": "37",
+        "start": 792,
+        "length": 72
+      },
+      {
+        "id": "25",
+        "media": "39",
+        "start": 864,
+        "length": 60
+      },
+      {
+        "id": "27",
+        "media": "43",
+        "start": 936,
+        "length": 72
+      },
+      {
+        "id": "29",
+        "media": "45",
+        "start": 1008,
+        "length": 60
+      },
+      {
+        "id": "31",
+        "media": "49",
+        "start": 1080,
+        "length": 72
+      },
+      {
+        "id": "33",
+        "media": "51",
+        "start": 1152,
+        "length": 60
+      },
+      {
+        "id": "35",
+        "media": "55",
+        "start": 1224,
+        "length": 72
+      },
+      {
+        "id": "37",
+        "media": "57",
+        "start": 1296,
+        "length": 60
+      },
+      {
+        "id": "39",
+        "media": "61",
+        "start": 1368,
+        "length": 72
+      }
+    ],
+    [
+      {
+        "id": "0",
+        "media": "3",
+        "start": 0,
+        "length": 60
+      },
+      {
+        "id": "2",
+        "media": "7",
+        "start": 72,
+        "length": 72
+      },
+      {
+        "id": "4",
+        "media": "9",
+        "start": 144,
+        "length": 60
+      },
+      {
+        "id": "6",
+        "media": "13",
+        "start": 216,
+        "length": 72
+      },
+      {
+        "id": "8",
+        "media": "15",
+        "start": 288,
+        "length": 60
+      },
+      {
+        "id": "10",
+        "media": "19",
+        "start": 360,
+        "length": 72
+      },
+      {
+        "id": "12",
+        "media": "21",
+        "start": 432,
+        "length": 60
+      },
+      {
+        "id": "14",
+        "media": "25",
+        "start": 504,
+        "length": 72
+      },
+      {
+        "id": "16",
+        "media": "27",
+        "start": 576,
+        "length": 60
+      },
+      {
+        "id": "18",
+        "media": "31",
+        "start": 648,
+        "length": 72
+      },
+      {
+        "id": "20",
+        "media": "33",
+        "start": 720,
+        "length": 60
+      },
+      {
+        "id": "22",
+        "media": "37",
+        "start": 792,
+        "length": 72
+      },
+      {
+        "id": "24",
+        "media": "39",
+        "start": 864,
+        "length": 60
+      },
+      {
+        "id": "26",
+        "media": "43",
+        "start": 936,
+        "length": 72
+      },
+      {
+        "id": "28",
+        "media": "45",
+        "start": 1008,
+        "length": 60
+      },
+      {
+        "id": "30",
+        "media": "49",
+        "start": 1080,
+        "length": 72
+      },
+      {
+        "id": "32",
+        "media": "51",
+        "start": 1152,
+        "length": 60
+      },
+      {
+        "id": "34",
+        "media": "55",
+        "start": 1224,
+        "length": 72
+      },
+      {
+        "id": "36",
+        "media": "57",
+        "start": 1296,
+        "length": 60
+      },
+      {
+        "id": "38",
+        "media": "61",
+        "start": 1368,
+        "length": 72
+      }
+    ]
+  ],
+  "restart_annotations_exact": true,
+  "browser_checks": [
+    "20 shots / 60 takes reported",
+    "Shot 20 filter shows A unrated, B Rejected, C Favorite",
+    "C seed u64::MAX shown exactly",
+    "Fit timeline displays 20 linked video/audio edits",
+    "Native Export UI completed all 1440 frames"
+  ],
+  "export": {
+    "hardware_gpu_used": false,
+    "compositor": "llvmpipe Vulkan CPU",
+    "encoder": "h264",
+    "audio_codec": "aac",
+    "sha256": "e14eaad1b371d0b5f09c4153af6cb5d1935016b2aba1acfafe9597e363a0fe5b",
+    "bytes": 8748611,
+    "width": 632,
+    "height": 356,
+    "video_duration_seconds": 60.0,
+    "audio_duration_seconds": 60.01,
+    "frames": 1440,
+    "fps": "24/1",
+    "audio_windows": [
+      {
+        "start_seconds": 1,
+        "end_seconds": 1.2,
+        "rms": 0.12505816661927133,
+        "positive_zero_crossing_hz": 660.0000000000001
+      },
+      {
+        "start_seconds": 2.7,
+        "end_seconds": 2.8,
+        "rms": 0.0,
+        "positive_zero_crossing_hz": 0.0
+      },
+      {
+        "start_seconds": 3.5,
+        "end_seconds": 3.7,
+        "rms": 0.12537054703115152,
+        "positive_zero_crossing_hz": 874.9999999999992
+      }
+    ],
+    "average_rgb_frame65_gap": [
+      0,
+      0,
+      0
+    ],
+    "average_rgb_frame84_takeC": [
+      92,
+      98,
+      96
+    ]
+  }
+}

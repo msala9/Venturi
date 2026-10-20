@@ -74,4 +74,8 @@ explicit metadata, safe literal prompt display, Favorite/Rejected, search,
 reversible annotation restore, independent Save As and restart persistence.
 Tests refuse stale sidecar revisions, source rebinding without confirmation,
 foreign schemas/symlinks, orphan namespace collisions and late/read-only forms.
-Twenty-shot montage and R9700 acceptance remain open.
+Twenty-shot montage acceptance additionally covers 60 takes, per-shot flags,
+20 native linked replacements with exact middle keys and unchanged placement,
+restart metadata equality and a full 60-second x264/AAC export. Decoded output
+verifies frame count, source tones and black/silent explicit gaps. This was CPU
+acceptance; current Review-specific R9700 acceptance remains open.

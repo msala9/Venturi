@@ -1348,3 +1348,36 @@ unchanged source hashes and clip ranges. Evidence:
 m4-native-paste-properties.json, m4-native-paste-properties-dialog-browser.png
 and m4-native-paste-properties-browser.png. Saved custom preset library and
 remaining parity/release work remain open.
+
+The 5311b48 binary is deployed on halo2, SHA-256
+bf70ad296bdf3fdb0b4f73053636e5275282abcfc977df0c9e833b2aced36149.
+Its embedded property-paste module matches the tested source. Saved shared
+fixture annotations and exact seed remained intact. CPU/lavapipe, two workers,
+no DRI/KFD handles and no hardware-lock probe/acquisition were verified. Evidence:
+m4-halo2-properties.json. Native vv-app test targets also compile successfully.
+
+## M6 — twenty-shot montage acceptance
+
+A separate saved fixture contains 20 shots, each with three synthetic 25/30/50
+fps H.264/AAC sources, for 60 imported takes and 40 linked timeline clips.
+All sources have explicit synthetic metadata, exact seed strings and per-take
+ratings. The 24 fps timeline places edits every 72 frames. Twenty native
+replacements alternate short B (explicit 60-frame shortening, leaving a gap)
+and long C (72-frame preservation). Every preview affected both linked clips;
+each retained opacity 65 at shot-relative timeline frame 19. The first replacement
+had exact native Undo/Redo. Saved annotation items and shot names matched exactly
+after service restart and project reopen. All 60 source hashes stayed unchanged.
+
+The browser reported 20 shots / 60 takes and filtered Shot 20 to unrated A,
+Rejected B and Favorite C, retaining C's exact u64::MAX seed. Fit displayed the
+whole montage. Native Export completed all 1440 frames, 60 seconds, with CPU
+lavapipe and x264/AAC at the requested maximum 640 width (native percentage
+rounding yielded 632x356). The downloaded MP4 has 1440 frames at 24 fps, video
+duration 60.000 s and AAC duration 60.010 s. Decoded analysis measured the first
+take at 660 Hz and the next at approximately 875 Hz, with zero RMS in the gap.
+Frame 65 in that gap is black; frame 84 in the next take has image content.
+No hardware GPU, global ds4 catalog or NAS mutation was involved. Evidence:
+m6-twenty-shot-montage.json, m6-twenty-shot-browser.png,
+m6-twenty-shot-timeline-browser.png and m6-twenty-shot-export-browser.png.
+This closes Shot/Take grouping acceptance; remaining native GUI and release
+work is still tracked in the parity ledger.

@@ -26,6 +26,7 @@ export function createViewer({ image, empty, status, getState }) {
     sequence++;
     controller?.abort();
     clearPending();
+    image.classList.add("stale");
     status.textContent = image.hidden
       ? "PREVIEW UNAVAILABLE"
       : "STALE_REVISION";
@@ -40,6 +41,7 @@ export function createViewer({ image, empty, status, getState }) {
     controller?.abort();
     clearPending();
     controller = new AbortController();
+    image.classList.add("stale");
     status.textContent = "SEEKING";
     try {
       const query = new URLSearchParams(
@@ -62,27 +64,24 @@ export function createViewer({ image, empty, status, getState }) {
         throw new Error("INVALID_FRAME");
       const next = URL.createObjectURL(blob);
       pendingURL = next;
-      image.onload = () => {
-        if (seq !== sequence || !matchesFrame(current, getState())) {
-          URL.revokeObjectURL(next);
-          return;
-        }
-        if (url) URL.revokeObjectURL(url);
-        url = next;
-        pendingURL = null;
-        image.hidden = false;
-        empty.hidden = true;
-        status.textContent = "CURRENT";
-      };
-      image.onerror = () => {
-        URL.revokeObjectURL(next);
-        if (pendingURL === next) pendingURL = null;
-        if (seq === sequence) status.textContent = "FRAME_FAILED";
-      };
       image.src = next;
+      await image.decode();
+      if (seq !== sequence || !matchesFrame(current, getState())) {
+        URL.revokeObjectURL(next);
+        return;
+      }
+      if (url) URL.revokeObjectURL(url);
+      url = next;
+      pendingURL = null;
+      image.hidden = false;
+      image.classList.remove("stale");
+      empty.hidden = true;
+      status.textContent = "CURRENT";
     } catch (error) {
-      if (seq === sequence && error.name !== "AbortError")
-        status.textContent = error.message;
+      if (seq === sequence && error.name !== "AbortError") {
+        clearPending();
+        status.textContent = `${image.hidden ? "" : "STALE · "}${error.message}`;
+      }
     }
   }
   return {
@@ -91,8 +90,6 @@ export function createViewer({ image, empty, status, getState }) {
     destroy() {
       invalidate();
       if (url) URL.revokeObjectURL(url);
-      image.onload = null;
-      image.onerror = null;
     },
   };
 }

@@ -29,7 +29,10 @@ fn newest_pending_seek_replaces_the_old_one() {
     queue.replace(job(1, first));
     let (second, _current) = oneshot::channel();
     queue.replace(job(2, second));
-    assert!(old.try_recv().is_err());
+    assert!(matches!(
+        old.try_recv(),
+        Err(oneshot::error::TryRecvError::Closed)
+    ));
     assert_eq!(queue.next().snapshot.query.frame, 2);
 }
 #[tokio::test]
@@ -37,4 +40,24 @@ async fn a_disabled_renderer_reports_actual_capability() {
     let preview = Preview::disabled();
     assert!(!preview.available());
     assert_eq!(preview.diagnostic()["frame_rendered"], false);
+}
+
+#[test]
+fn occupied_laboratory_lock_refuses_immediately_and_is_never_removed() {
+    let path = std::env::temp_dir().join(format!(
+        "vv-web-lock-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let owner = gpu_lock(&path).unwrap();
+    let started = std::time::Instant::now();
+    assert_eq!(gpu_lock(&path).unwrap_err().1, "GPU_BUSY");
+    assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    assert!(path.exists());
+    drop(owner);
+    drop(gpu_lock(&path).unwrap());
+    std::fs::remove_file(path).unwrap();
 }

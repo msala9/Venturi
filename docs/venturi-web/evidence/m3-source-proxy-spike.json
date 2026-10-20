@@ -1,0 +1,11 @@
+{
+  "bytes": 149543,
+  "decoder": "CPU, explicit empty hardware preference",
+  "frames": 48,
+  "generation_ms": 33.0588,
+  "input_audio": true,
+  "proxy_audio": false,
+  "proxy_height": 180,
+  "proxy_width": 320,
+  "environment": "Ubuntu WSL, software decode/encode; synthetic 2 s source"
+}

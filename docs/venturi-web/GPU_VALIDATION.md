@@ -1,5 +1,22 @@
 # Headless Vulkan + dual AMD GPU validation
 
+## 2026-10-20 measured result
+
+M3a passed on halo2 R9700 (1002:7551, PCI 67:00.0), Ubuntu 26.04.1,
+Vulkan RADV GFX1201 / Mesa 26.0.8-1ubuntu0.3. The integrated Strix Halo
+(1002:1586, PCI 68:00.0) was enumerated and not used. Three HTTP composed
+frames exactly match independent native RGBA; 500/500 seeks succeeded,
+p50 96.43 ms / p95 113.64 ms on server loopback at 960x540. See
+IMPLEMENTATION_STATUS.md and evidence/m3-r9700-validation.json for scope.
+
+The user explicitly authorized Vulkan userspace and multimedia dependencies.
+Setup installed new packages only, without upgrading existing packages or
+changing AMD kernel drivers, ROCm or inference configuration. RADV reports
+nonconformance/testing status for this adapter, so no production qualification.
+All actual GPU work respects /tmp/HALO_BENCHMARK.lock nonblocking. Foreign
+DeepSeek 4.1 Flash jobs remain untouched. Hardware encoding, concurrent
+inference performance, browser presentation latency and long soak are unproven.
+
 Host: Ubuntu Server with Strix Halo integrated GPU **plus Radeon AI PRO R9700 over OCuLink**. The user uses this machine for AI inference; avoid changing ROCm/Mesa packages without a deliberate rollback plan. Testing below is informational only until a new GPU-specific change is approved.
 
 ## Inventory: run on Ubuntu over SSH

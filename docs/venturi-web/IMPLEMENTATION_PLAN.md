@@ -72,12 +72,13 @@ Next smallest step:
 
 ## Stop-the-line triggers
 
-2026-10-20 execution note: the available Ubuntu WSL Vulkan adapter is only
-llvmpipe (CPU, vendor 0x10005, device 0x0000). M3 GPU acceptance is blocked
-until the actual Ubuntu GPU host is identified and tested. Continue independent
-M1/M2 validation; do not treat the CPU adapter as R9700 evidence. The current
-host intentionally exposes no preview/playback/export capability. See RUNNING.md
-for implemented API deltas, persistence limits and the remaining milestone work.
+2026-10-20 execution note: local WSL exposes only llvmpipe; hardware proof was
+therefore performed separately on halo2. M3a exact composed frames now have
+R9700 Vulkan evidence, including three native RGBA comparisons and 500 seeks.
+M3b–M7 and M1 timing/DPI acceptance remain open. Playback/export capabilities
+remain false. Respect the shared nonblocking GPU lock during all halo2 work;
+other agents run DeepSeek 4.1 Flash inference there. See IMPLEMENTATION_STATUS,
+RUNNING and PREVIEW_SPIKE for verified boundaries and next steps.
 
 - Wrong GPU or llvmpipe selected during GPU-dependent validation.
 - Source files at risk of overwrite without user-initiated overwrite intent.

@@ -1,0 +1,56 @@
+{
+  "transport": "halo2 loopback HTTP; excludes Windows network/display",
+  "width": 960,
+  "height": 540,
+  "native_matches": [
+    {
+      "frame": 0,
+      "rgba_bytes": 2073600,
+      "sha256": "89522bf7b428834cc2f866359984ee446c2c60d41350e41021c61ad3fff30de5",
+      "native_renderer": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=0 size=960x540 bytes=2073600"
+    },
+    {
+      "frame": 12,
+      "rgba_bytes": 2073600,
+      "sha256": "65345040ad62a229978d71e0f31895230a984a4776e7c5132a45bf9ff314b08c",
+      "native_renderer": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=12 size=960x540 bytes=2073600"
+    },
+    {
+      "frame": 36,
+      "rgba_bytes": 2073600,
+      "sha256": "a40506567f10772cf16bcfe2a5180d47cf426afee81050af5487d16197ff0cb0",
+      "native_renderer": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=36 size=960x540 bytes=2073600"
+    }
+  ],
+  "errors": [],
+  "adapter": {
+    "available": true,
+    "backend": "Vulkan",
+    "device_id": "0x7551",
+    "driver": "radv",
+    "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+    "frame_rendered": true,
+    "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+    "software": false,
+    "vendor_id": "0x1002"
+  },
+  "measured_seconds": 59.974657739978284,
+  "requests": 500,
+  "successful_frames": 500,
+  "p50_ms": 96.42729553161189,
+  "p95_ms": 113.64245600998402,
+  "complete": true,
+  "final_diagnostics": {
+    "preview": {
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "software": false,
+      "vendor_id": "0x1002"
+    }
+  }
+}

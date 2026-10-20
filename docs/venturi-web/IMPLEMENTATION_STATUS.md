@@ -8,7 +8,8 @@ Complete source and screenshot audit against b3b03bf. Installer copied 37
 files without conflicts; original root agent rules preserved. See G0_REPORT
 and SCREENSHOT_AUDIT for evidence and limitations. Functional parity ledger
 updated with source paths. Runtime baseline pending dependency installation;
-GPU-specific acceptance remains blocked on verified target hardware.
+The initial WSL GPU limitation is resolved for exact-frame acceptance by the
+halo2 measurements recorded under M3a below.
 
 Subsequent milestones and exact verification results are recorded below.
 
@@ -93,3 +94,55 @@ and occupied-generator refusal without changing the two existing clips.
 Evidence: m2-native-project-1920.jpg and m2-overlap-rejected.jpg. Pointer drag
 commit and 60fps under load still need real-browser performance validation;
 the gesture state machine is covered by Node tests, not a timing claim.
+
+## M3a — actual headless composed frames
+
+Validated on halo2 Ubuntu 26.04.1, AMD Radeon AI PRO R9700 (RADV GFX1201),
+vendor/device 1002:7551, PCI 67:00.0, Vulkan, Mesa 26.0.8-1ubuntu0.3. Strix Halo
+1002:1586 at 68:00.0 is enumerated separately and was not selected. No desktop
+environment is required. Only the user-authorized Vulkan userspace and
+multimedia dependencies were installed: zero existing packages upgraded,
+no kernel AMD driver, ROCm or inference configuration changes.
+
+The native composed fixture includes H.264 video plus a 60%-opacity scaled
+solid on a second track with keyframed position. HTTP PNG frames 0, 12 and 36,
+decoded to RGBA, exactly match independent native render_frame_rgba output:
+2,073,600 bytes each. Screenshot m3-r9700-composed-preview.jpg shows CURRENT
+in the Windows browser through the SSH tunnel. Native render identity and
+hashes are recorded in evidence/m3-r9700-validation.json.
+
+500 sequential seeks over 59.97 seconds: 500 successful, zero errors,
+loopback HTTP p50 96.43 ms / p95 113.64 ms at 960x540, 24fps timeline. These
+are server fetch latencies, not browser presentation latency or playback fps.
+The input source is 320x180, composed in a 1920x1080 timeline; this is not a
+1080p-source throughput benchmark. A post-run snapshot measured server RSS
+50,728 KiB and total R9700 VRAM use 272,642,048 bytes, GPU busy 0%; neither is
+a peak or a Venturi-only VRAM measurement. No two-hour soak or A/V sync proof.
+
+Every uncached render and GPU initialization takes the laboratory's shared
+/tmp/HALO_BENCHMARK.lock nonblocking. A foreign inference owner was observed:
+Venturi returned GPU_BUSY, then validation proceeded after release. Foreign
+processes, ports and model services were preserved. No concurrent inference
+performance claim is made. RADV warns that this device is not a conformant
+Vulkan implementation and is for testing; this is development validation.
+
+Frame service bounds: one running and one replaceable pending job, eight
+cached images / 16 MiB, maximum 4,194,304 output pixels. Browser aborts old
+requests, rejects obsolete epoch/generation/revision/frame/width and labels
+retained images stale. Out-of-order fetches and GPU_BUSY are covered by Node
+tests; pending-job replacement and resolution caps by Rust tests.
+
+Final local checks: 13 vv-web tests, 10 JavaScript tests, cargo fmt --all
+-- --check, clippy -p vv-web --all-targets -- -D warnings, and build passed.
+The unchanged desktop vv-app check passed; baseline native suites remain
+250 vv-core and 98 vv-session passed, one upstream session test ignored.
+M1 timing/DPI acceptance and M3b–M7 remain open. See PREVIEW_SPIKE.md for
+the smallest next media increment and measured constraints.
+
+Deployment/browser follow-up: the final embedded UI binary was deployed during
+an idle lock slot, replacing only the verified Venturi PID on 127.0.0.1:8790.
+Windows browser confirmed Alt+Right start 0 to 1, undo back to 0, split at 12,
+redo, lift delete and two undos restoring original revision e3c0f15b. The restored
+fixture was saved. Screenshot records CURRENT at frame 12. An external Rust
+test also verifies immediate GPU_BUSY under occupied lock and that the shared
+lock file is preserved.

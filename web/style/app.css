@@ -433,6 +433,9 @@ label {
     padding: 4px 15px;
   }
 }
+#preview.stale {
+  opacity: 0.4;
+}
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto !important;

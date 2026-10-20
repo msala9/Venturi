@@ -480,3 +480,31 @@ full-editor minimum width. Evidence m5-color-narrow-inspector-browser.png;
 formatting, clippy and build pass. New tests cover full-patch rejection,
 animation preservation, filter order/undo/locks, joint-key atomicity, unit-disc
 geometry, zero pointer-move writes, one release write and cancellation.
+
+## M3c first R9700 composed playback and seek-race correction
+
+During the verified free slot after D41's 14:27:17 UTC release, the actual
+R9700 prepared the 48-frame animated A/V composition at 960x540 in 225.80ms
+(212.58 output fps on this small fixture; CPU x264). Browser Windows playback
+completed with sound enabled, readyState 4 and 2.005s media duration. All 48
+video frames decoded. Three native RGBA references versus the completed MP4
+measured 36.54/36.17/35.73dB PSNR (predeclared minimum 30dB for lossy H.264).
+Program byte prefix/suffix ranges returned 206; invalid range returned 416.
+After idle, diagnostics reported no resident context/active preparation and
+/proc confirmed zero GPU/KFD handles in the web process. Evidence:
+m3c-r9700-program-av.json and m3c-r9700-composed-playback-browser.png.
+
+The long browser test exposed a real scrub race: a queued video timeupdate
+after local pause could overwrite a pointer's new playhead before release.
+The player now suspends its clock during manual navigation until resumed;
+regression coverage exercises delayed timeupdate and resume. New project
+epochs reset playhead/origin, avoiding an inherited partial preview range.
+Late obsolete preparation responses request cancellation. Browser media
+presentation/quality counters are exposed as diagnostic DOM data for the
+next full test. Empty timelines keep Play disabled.
+
+The first long run therefore started at frame 47, and is not counted as the
+complete 7200-frame protocol. The corrected full GPU/browser run remains
+pending. D41 reacquired the shared slot at 14:38:25 UTC for a short A/B,
+with stated hard bound 14:55 UTC. Venturi returns to CPU-only during that slot;
+the cached file playback itself does not use the server GPU.

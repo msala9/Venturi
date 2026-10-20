@@ -1,0 +1,112 @@
+{
+  "job": "1792506626916850115",
+  "status": {
+    "error": null,
+    "frames": 0,
+    "id": "1792506626916850115",
+    "program": {
+      "end_frame": 48,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "0",
+      "height": 540,
+      "project_epoch": "1792506549289330373:1",
+      "revision": "21552e171ba9a312",
+      "start_frame": 0,
+      "width": 960
+    },
+    "progress": {
+      "compose_fps": 1147.7775010358691,
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "current_frame": 48,
+      "decode_fps": 1612.2881617103528,
+      "elapsed_ms": 225.79607800000002,
+      "encode_fps": 356.935518505467,
+      "encoder": "X264",
+      "fps": 212.58119461224652,
+      "startup_ms": 53.693267000000006,
+      "total_frames": 48
+    },
+    "source_asset": null,
+    "state": "ready"
+  },
+  "diagnostics": {
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    }
+  },
+  "streams": [
+    {
+      "codec_name": "h264",
+      "codec_type": "video",
+      "width": 960,
+      "height": 540,
+      "r_frame_rate": "24/1",
+      "sample_rate": null,
+      "channels": null,
+      "duration": "2.000000",
+      "nb_frames": "48",
+      "nb_read_frames": "48"
+    },
+    {
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "width": null,
+      "height": null,
+      "r_frame_rate": "0/0",
+      "sample_rate": "48000",
+      "channels": 2,
+      "duration": "2.005000",
+      "nb_frames": "95",
+      "nb_read_frames": "94"
+    }
+  ],
+  "ranges": [
+    {
+      "range": "bytes=0-31",
+      "status": 206
+    },
+    {
+      "range": "bytes=-16",
+      "status": 206
+    }
+  ],
+  "invalid_range": 416,
+  "native_reference_scores": [
+    {
+      "frame": 0,
+      "psnr_db": 36.540124164113536
+    },
+    {
+      "frame": 12,
+      "psnr_db": 36.1667981807495
+    },
+    {
+      "frame": 36,
+      "psnr_db": 35.72787202216646
+    }
+  ],
+  "server_gpu_fds_after_idle": [],
+  "browser": {
+    "ready_state": 4,
+    "width": 960,
+    "height": 540,
+    "duration_seconds": 2.005,
+    "muted": false,
+    "completed": true,
+    "video_quality_counters": "not exposed by browser control surface"
+  }
+}

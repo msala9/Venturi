@@ -22,6 +22,8 @@ test("an old composed range cannot replace a later seek; native media time drive
   assert.equal(video.src, url);
   assert.match(url, /latest\/program.mp4/);
   video.currentTime = 0.5; events.timeupdate(); assert.equal(frames.at(-1), 24);
-  state = { ...state, revision: "next" }; video.currentTime = 1; events.timeupdate(); assert.equal(frames.at(-1), 24);
+  player.pauseLocal();video.currentTime=1;events.timeupdate();assert.equal(frames.at(-1),24,"a delayed pause clock cannot override a manual seek");
+  await player.toggle();video.currentTime=0.75;events.timeupdate();assert.equal(frames.at(-1),30,"resuming reattaches the media clock");
+  state = { ...state, revision: "next" }; video.currentTime = 1; events.timeupdate(); assert.equal(frames.at(-1), 30);
   player.stop(); assert.equal(video.src, ""); assert.equal(video.paused, true);
 });

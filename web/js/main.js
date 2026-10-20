@@ -512,6 +512,7 @@ async function refresh() {
   if (documentState?.project_epoch !== next.project_epoch) {
     sourcePlayer?.reset();
     sourceOpenId = null; sourceRanges.clear();
+    view.playhead=0;view.origin=0;view.scrollY=0;view.selection=[];
     selectedMedia = null;
     for (const asset of mediaAssets.values()) asset.thumbnail?.close();
     mediaAssets.clear();
@@ -589,6 +590,7 @@ async function refresh() {
   $("viewer-message").textContent = next.capabilities.preview
     ? "Seek a timeline frame"
     : "Exact preview is not available on this host";
+  updatePlayAvailability();
   if (next.capabilities.preview) seek();
 }
 async function mutate(operation, project = false) {

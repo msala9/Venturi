@@ -8,7 +8,8 @@ use vv_core::Clip;
 
 use crate::library::{AttributePreset, Library};
 use crate::paste_attributes::{
-    Attribute, Conversion, KeyframeAnchor, Section, TimelineFormat, attribute_checkboxes,
+    Attribute, AttributeUi, Conversion, KeyframeAnchor, Section, TimelineFormat,
+    attribute_checkboxes,
 };
 use crate::settings::{Action, Keymap, Shortcut};
 

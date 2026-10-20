@@ -90,6 +90,11 @@ impl Editor {
                 .as_ref()
                 .map_or(0, |clipboard| clipboard.count(&self.session))
         );
+        snapshot["clipboard_revision"] = json!(
+            self.clipboard
+                .as_ref()
+                .and_then(|clipboard| clipboard.revision(&self.session))
+        );
         snapshot
     }
     fn lease(&mut self, client: &str) -> Result<Value> {
@@ -180,6 +185,22 @@ impl Editor {
                         .as_ref()
                         .ok_or_else(|| ApiError::invalid("Copy clips first"))?,
                     *frame,
+                ),
+                Operation::PasteAttributes {
+                    clip_ids,
+                    clipboard_revision,
+                    attributes,
+                    keyframes,
+                } => crate::clipboard::paste_attributes(
+                    &mut self.session,
+                    id,
+                    self.clipboard
+                        .as_ref()
+                        .ok_or_else(|| ApiError::invalid("Copy clips first"))?,
+                    clipboard_revision,
+                    clip_ids,
+                    attributes,
+                    *keyframes,
                 ),
                 _ => commands::apply(&mut self.session, id, &request.operation),
             };

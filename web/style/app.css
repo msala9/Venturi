@@ -555,3 +555,7 @@ label {
 #review-metadata-dialog > output { margin-top: 10px; }
 .shared-library-list article { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; overflow-wrap: anywhere; }
 #panel-content > input, #panel-content > select { width: 100%; margin-top: 8px; }
+#paste-attributes-dialog{width:min(640px,calc(100vw - 40px));max-height:calc(100vh - 40px);overflow:auto}
+#paste-attributes-dialog [data-attribute-groups]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:calc(2 * var(--spacing-unit))}
+#paste-attributes-dialog [data-attribute-groups] label{display:flex;align-items:center;gap:calc(2 * var(--spacing-unit))}
+#paste-attributes-dialog .actions{position:sticky;bottom:0;background:var(--surface);padding:10px 0}

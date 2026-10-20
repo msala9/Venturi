@@ -56,6 +56,12 @@ pub enum Operation {
     PasteClips {
         frame: FrameIdx,
     },
+    PasteAttributes {
+        clip_ids: Vec<String>,
+        clipboard_revision: String,
+        attributes: Vec<core::attributes::Attribute>,
+        keyframes: core::attributes::KeyframeMode,
+    },
     ImportMedia {
         path_token: String,
     },

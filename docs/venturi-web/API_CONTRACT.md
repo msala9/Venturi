@@ -22,6 +22,18 @@ failed native save. Existing sidecars, unknown schemas and links are preserved
 and refused when unsafe to edit. Backup recovery copies associated annotations;
 removed media remain visible as retained orphan annotations.
 
+Timeline `paste_attributes {clip_ids,clipboard_revision,attributes,keyframes}`
+uses the native clip clipboard and shared `vv-core::attributes` conversion.
+`clipboard_revision` comes from the session snapshot. Attribute names are the
+native serialized enum names (`opacity`, `crop`, `filters`, `masks`, `speed`,
+etc.); keyframes are `maintain_timing` or `stretch_to_fit`. The native composite
+uses first copied video/audio sources by kind, preserves unchecked properties
+and skips copied source clip IDs. Matching timeline FPS is required. Speed uses
+native Ripple/pitch behavior. Locked linked targets, stale copies and a ripple
+that would separate linked clips refuse before any mutation. The complete
+result is validated on a native project clone and applies as one PasteAttributes
+Undo step; no editing algorithm runs in JavaScript.
+
 The implemented M2 subset and its deliberate schema deltas are documented in
 [RUNNING.md](RUNNING.md#actual-api-deltas-from-the-proposal). In particular,
 project epoch is now a string and every mutation also requires client ownership

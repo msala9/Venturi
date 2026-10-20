@@ -1,0 +1,248 @@
+{
+  "fixture": "Own Review fixture copy; CPU/lavapipe only",
+  "phases": {
+    "applied": {
+      "history": {
+        "labels": [
+          "PasteAttributes"
+        ],
+        "position": 1
+      },
+      "unsaved": true,
+      "clip_ranges": [
+        [
+          {
+            "id": "1",
+            "start": 12,
+            "length": 72
+          },
+          {
+            "id": "2",
+            "start": 110,
+            "length": 24
+          }
+        ],
+        [
+          {
+            "id": "0",
+            "start": 12,
+            "length": 72
+          }
+        ]
+      ],
+      "target_transform_at_frame116": [
+        {
+          "default": 20.0,
+          "keyframes": [],
+          "max": 1920.0,
+          "min": 0.0,
+          "param": "CropLeft",
+          "value": 20.0
+        },
+        {
+          "default": 100.0,
+          "keyframes": [
+            [
+              0,
+              100.0,
+              "EaseInOut"
+            ],
+            [
+              6,
+              65.0,
+              "EaseInOut"
+            ],
+            [
+              23,
+              20.401233673095703,
+              "Linear"
+            ]
+          ],
+          "max": 100.0,
+          "min": 0.0,
+          "param": "Opacity",
+          "value": 65.0
+        }
+      ]
+    },
+    "undo": {
+      "history": {
+        "labels": [
+          "PasteAttributes"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "clip_ranges": [
+        [
+          {
+            "id": "1",
+            "start": 12,
+            "length": 72
+          },
+          {
+            "id": "2",
+            "start": 110,
+            "length": 24
+          }
+        ],
+        [
+          {
+            "id": "0",
+            "start": 12,
+            "length": 72
+          }
+        ]
+      ],
+      "target_transform_at_frame116": [
+        {
+          "default": 0.0,
+          "keyframes": [],
+          "max": 1920.0,
+          "min": 0.0,
+          "param": "CropLeft",
+          "value": 0.0
+        },
+        {
+          "default": 100.0,
+          "keyframes": [],
+          "max": 100.0,
+          "min": 0.0,
+          "param": "Opacity",
+          "value": 100.0
+        }
+      ]
+    },
+    "redo_saved": {
+      "history": {
+        "labels": [
+          "PasteAttributes"
+        ],
+        "position": 1
+      },
+      "unsaved": false,
+      "clip_ranges": [
+        [
+          {
+            "id": "1",
+            "start": 12,
+            "length": 72
+          },
+          {
+            "id": "2",
+            "start": 110,
+            "length": 24
+          }
+        ],
+        [
+          {
+            "id": "0",
+            "start": 12,
+            "length": 72
+          }
+        ]
+      ],
+      "target_transform_at_frame116": [
+        {
+          "default": 20.0,
+          "keyframes": [],
+          "max": 1920.0,
+          "min": 0.0,
+          "param": "CropLeft",
+          "value": 20.0
+        },
+        {
+          "default": 100.0,
+          "keyframes": [
+            [
+              0,
+              100.0,
+              "EaseInOut"
+            ],
+            [
+              6,
+              65.0,
+              "EaseInOut"
+            ],
+            [
+              23,
+              20.401233673095703,
+              "Linear"
+            ]
+          ],
+          "max": 100.0,
+          "min": 0.0,
+          "param": "Opacity",
+          "value": 65.0
+        }
+      ]
+    },
+    "restarted": {
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "clip_ranges": [
+        [
+          {
+            "id": "1",
+            "start": 12,
+            "length": 72
+          },
+          {
+            "id": "2",
+            "start": 110,
+            "length": 24
+          }
+        ],
+        [
+          {
+            "id": "0",
+            "start": 12,
+            "length": 72
+          }
+        ]
+      ],
+      "target_transform_at_frame116": [
+        {
+          "default": 20.0,
+          "keyframes": [],
+          "max": 1920.0,
+          "min": 0.0,
+          "param": "CropLeft",
+          "value": 20.0
+        },
+        {
+          "default": 100.0,
+          "keyframes": [
+            [
+              0,
+              100.0,
+              "EaseInOut"
+            ],
+            [
+              6,
+              65.0,
+              "EaseInOut"
+            ],
+            [
+              23,
+              20.401233673095703,
+              "Linear"
+            ]
+          ],
+          "max": 100.0,
+          "min": 0.0,
+          "param": "Opacity",
+          "value": 65.0
+        }
+      ]
+    }
+  },
+  "source_hashes": {
+    "Take_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Take_B_short.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Take_C_long.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3"
+  }
+}

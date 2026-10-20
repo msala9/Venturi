@@ -1318,3 +1318,33 @@ with a Favorite annotation and Library acceptance shot. CPU/lavapipe, two-worker
 caps and absence of DRI/KFD descriptors were verified; the hardware lock was not
 acquired or probed. The global ds4 catalog and NAS were not changed. Evidence:
 m6-halo2-review-annotations.json and m6-halo2-review-annotations-browser.png.
+
+## M4 — shared native property paste
+
+The original desktop attribute conversion now lives in `vv-core::attributes`.
+Desktop uses the same enum, mapping and preset conversion through UI extension
+methods; serialized preset names and native behavior are unchanged. The web
+adapter uses native SetClipAttributes/SetClipSpeed in one composite history step.
+Users copy clips, select destinations and open Paste selected properties or
+Alt+V to choose the original 16 groups and source-frame timing/stretch policy.
+Only the selected properties are replaced, with native type-specific targets,
+key mapping and duration clamping. Speed explicitly uses Ripple/pitch behavior.
+
+The clipboard snapshot has a content revision; late/stale or read-only forms
+cannot apply. Locked linked destinations refuse the whole operation. A native
+trial validates all changes and refuses ripple that would separate a linked
+group, including a locked downstream counterpart. Failed requests retain choices.
+
+267 core tests, 100 web tests and 67 JS tests pass, along with core/web clippy
+with warnings denied and the native vv-app compile check. Seven extracted native
+tests cover selective paste, timing/stretch, edge values, fades/transitions,
+filters and color keys. Adapter tests cover per-kind linked targets, exact
+one-step Undo, unchanged unchecked values, stale copies, locks, native speed
+ripple and protected downstream links. Real browser acceptance copied Opacity
+and Crop from the animated 50 fps source clip to a 24-frame solid. At timeline
+frame 116/source frame 6 the native value was exactly 65 and CropLeft 20. One
+Undo restored 100/0; Redo/Save/service restart retained the pasted keys and
+unchanged source hashes and clip ranges. Evidence:
+m4-native-paste-properties.json, m4-native-paste-properties-dialog-browser.png
+and m4-native-paste-properties-browser.png. Saved custom preset library and
+remaining parity/release work remain open.

@@ -293,8 +293,28 @@ all affected clip ranges, removed crossings and key merges, then Confirm for one
 Undo. Shorten leaves a gap; it never ripples or changes speed. Native frame
 quantization may merge keys, with first-key retention shown in the preview.
 Frozen/compound replacements require an explicit edit first. Recheck source-
-dependent audio normalization. Shot grouping, flags and editable sidecar metadata
-are still pending.
+dependent audio normalization.
+
+Review → Shot / Take grouping (or Prompt / Seed / Model metadata) organizes
+imported sources in shots, with Favorite/Rejected flags and searchable labels,
+model, prompt and exact seed strings. Captured shared-library provenance is the
+default; uncheck Use captured source provenance for explicit known/unknown
+overrides. A changed source needs an explicit rebind. Annotations save alongside
+the native project in `.vvproj.review.json`. Restore previous annotations swaps
+the last two saved annotation states; timeline Undo remains separate. Save As
+copies annotations independently. Missing media retain visible orphan entries.
+
+## Copying selected clip properties
+
+Copy source clips with Copy clips or Ctrl+C, select destination clips and choose
+Paste selected properties (Alt+V). Choose groups and maintain source-frame timing
+or stretch keys to the target source range. The first copied source of each
+track kind is used. Linked targets are included; original copied clips are
+skipped. Filters/masks replace their stacks. Speed/pitch uses native Ripple and
+may move following clips or unfreeze media. Locked/stale targets or a ripple
+that would separate a linked group refuse the whole operation. One Undo restores
+all properties and timing. Cross-timeline paste requires matching timeline FPS;
+saved custom attribute presets remain separate work.
 
 ## Checks
 

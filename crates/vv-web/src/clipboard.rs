@@ -2,16 +2,23 @@ use crate::{
     commands,
     error::{ApiError, Result},
 };
+use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use vv_core::{self as core, Command, TimelineId, clipboard::ClipboardEntry};
 use vv_session::Session;
 
+type SpeedTargets = Vec<((core::Rational, bool), Vec<core::edit::ClipRef>)>;
+
 pub struct Clipboard {
     epoch: u64,
+    revision: String,
     entries: Vec<ClipboardEntry>,
     crossings: Vec<core::CrossTransition>,
 }
 impl Clipboard {
+    pub fn revision(&self, session: &Session) -> Option<&str> {
+        (self.count(session) > 0).then_some(self.revision.as_str())
+    }
     pub fn count(&self, session: &Session) -> usize {
         if self.epoch == session.epoch() {
             self.entries.len()
@@ -50,20 +57,182 @@ pub fn copy(session: &Session, id: TimelineId, ids: &[String]) -> Result<Clipboa
         .filter(|c| ids.contains(&c.left_clip) && ids.contains(&c.right_clip))
         .cloned()
         .collect::<Vec<_>>();
-    if serde_json::to_vec(&(&entries, &crossings))
-        .map_err(|_| ApiError::io())?
-        .len()
-        > 4 * 1024 * 1024
-    {
+    let bytes = serde_json::to_vec(&(&entries, &crossings)).map_err(|_| ApiError::io())?;
+    if bytes.len() > 4 * 1024 * 1024 {
         return Err(ApiError::invalid(
             "Copied clips exceed the 4 MiB clipboard budget",
         ));
     }
     Ok(Clipboard {
         epoch: session.epoch(),
+        revision: format!("{:x}", Sha256::digest(bytes)),
         entries,
         crossings,
     })
+}
+pub fn paste_attributes(
+    session: &mut Session,
+    id: TimelineId,
+    clipboard: &Clipboard,
+    revision: &str,
+    clip_ids: &[String],
+    attributes: &[core::attributes::Attribute],
+    mode: core::attributes::KeyframeMode,
+) -> Result<()> {
+    use core::attributes::{Attribute, Conversion, merge};
+    if clipboard.revision(session) != Some(revision) {
+        return Err(ApiError::conflict(
+            "CLIPBOARD_STALE",
+            "The copied properties changed; reopen Paste properties",
+        ));
+    }
+    if attributes.is_empty() || attributes.len() > Attribute::ALL.len() {
+        return Err(ApiError::invalid("Choose at least one property group"));
+    }
+    let selected: HashSet<_> = attributes.iter().copied().collect();
+    let timeline = &session.project.timelines[id];
+    if clipboard
+        .entries
+        .iter()
+        .any(|entry| entry.timeline_fps != timeline.fps)
+    {
+        return Err(ApiError::invalid(
+            "Property paste requires matching timeline FPS; use a native attribute preset for cross-format conversion",
+        ));
+    }
+    let targets = commands::copied_refs(timeline, clip_ids)?;
+    if targets
+        .iter()
+        .any(|(track, _)| timeline.tracks[*track].locked)
+    {
+        return Err(ApiError::conflict(
+            "TRACK_LOCKED",
+            "A selected or linked target track is locked",
+        ));
+    }
+    let source_for = |kind| {
+        clipboard
+            .entries
+            .iter()
+            .find(|entry| entry.track_kind == kind)
+            .map(|entry| &entry.clip)
+    };
+    let video = source_for(core::TrackKind::Video);
+    let audio = source_for(core::TrackKind::Audio);
+    if selected.contains(&Attribute::Speed)
+        && targets
+            .iter()
+            .any(|(track, _)| source_for(timeline.tracks[*track].kind).is_none())
+    {
+        return Err(ApiError::invalid(
+            "Copy both video and audio before pasting speed to linked targets",
+        ));
+    }
+    if selected.contains(&Attribute::Speed)
+        && let (Some(video), Some(audio)) = (video, audio)
+        && (video.speed(), video.pitch_correction) != (audio.speed(), audio.pitch_correction)
+    {
+        return Err(ApiError::invalid(
+            "Copied video/audio speeds differ; copy a matching linked source group",
+        ));
+    }
+    let mut commands: Vec<Box<dyn Command>> = vec![];
+    let mut speeds: SpeedTargets = vec![];
+    for (track, clip_id) in targets {
+        let target = timeline.clip(track, clip_id).unwrap();
+        if clipboard
+            .entries
+            .iter()
+            .any(|entry| entry.clip.id == clip_id)
+        {
+            continue;
+        }
+        let kind = timeline.tracks[track].kind;
+        let Some(source) = source_for(kind) else {
+            continue;
+        };
+        let applicable = selected
+            .iter()
+            .copied()
+            .filter(|attribute| match kind {
+                core::TrackKind::Video => *attribute != Attribute::Volume,
+                core::TrackKind::Audio => matches!(
+                    attribute,
+                    Attribute::Volume | Attribute::Fades | Attribute::Speed
+                ),
+            })
+            .collect::<HashSet<_>>();
+        if applicable.is_empty() {
+            continue;
+        }
+        commands.push(Box::new(core::SetClipAttributes::new(
+            id,
+            track,
+            clip_id,
+            merge(
+                source,
+                target,
+                &applicable,
+                &Conversion::paste(source, target, mode),
+            ),
+        )));
+        if applicable.contains(&Attribute::Speed)
+            && matches!(target.source, core::ClipSource::Media(_))
+            && (target.speed(), target.pitch_correction)
+                != (source.speed(), source.pitch_correction)
+        {
+            let key = (source.speed(), source.pitch_correction);
+            match speeds.iter_mut().find(|(k, _)| *k == key) {
+                Some((_, clips)) => clips.push((track, clip_id)),
+                None => speeds.push((key, vec![(track, clip_id)])),
+            }
+        }
+    }
+    if commands.is_empty() {
+        return Err(ApiError::invalid(
+            "No selected targets can receive these copied properties",
+        ));
+    }
+    for ((speed, pitch), clips) in speeds {
+        commands.push(Box::new(core::SetClipSpeed::new(
+            id,
+            clips,
+            speed,
+            pitch,
+            core::SpeedFit::Ripple,
+        )));
+    }
+    let mut command = Box::new(core::CompositeCommand::new(
+        core::CommandLabel::PasteAttributes,
+        commands,
+    ));
+    let mut trial = session.project.clone();
+    command.apply(&mut trial);
+    crate::files::validate_project(&trial)?;
+    let mut group_deltas = HashMap::new();
+    for (track, original) in session.project.timelines[id].tracks.iter().enumerate() {
+        for clip in &original.clips {
+            if let Some(group) = clip.linked_group {
+                let delta = trial.timelines[id]
+                    .clip(track, clip.id)
+                    .unwrap()
+                    .timeline_start
+                    - clip.timeline_start;
+                if group_deltas
+                    .insert(group, delta)
+                    .is_some_and(|previous| previous != delta)
+                {
+                    return Err(ApiError::conflict(
+                        "LINKED_SYNC",
+                        "Ripple would move only part of a linked group; resolve its locks or placement first",
+                    ));
+                }
+            }
+        }
+    }
+    session.apply(command);
+    session.sync_timeline_media(id);
+    Ok(())
 }
 pub fn paste(
     session: &mut Session,

@@ -395,6 +395,16 @@
       <div id="import-list"></div>
       <p id="import-error" role="alert"></p>
     </dialog>
+    <dialog id="paste-attributes-dialog" aria-labelledby="paste-attributes-title">
+      <h2 id="paste-attributes-title">Paste selected properties</h2>
+      <form>
+        <fieldset data-attribute-groups><legend>Property groups</legend></fieldset>
+        <label class="field">Animation timing<select name="keyframes"><option value="maintain_timing">Maintain source-frame timing</option><option value="stretch_to_fit">Stretch to target source range</option></select></label>
+        <p>Only checked groups are replaced. Filters and masks replace their stacks. Fades and edge transitions fit the target. Speed uses native Ripple and can move following clips; it also unfreezes media. One timeline Undo restores the entire change.</p>
+        <p data-attribute-status role="status"></p>
+        <div class="actions"><button data-attribute-apply>Apply selected properties · one Undo</button><button type="button" data-attribute-close>Cancel property paste</button></div>
+      </form>
+    </dialog>
     <aside id="export-panel" class="drawer panel" hidden>
       <div class="panel-heading">
         <h2>Export</h2>

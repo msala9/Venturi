@@ -11,4 +11,5 @@ Read root `AGENTS.md`, `CLAUDE.md`, `ARCHITECTURE.md`, and `docs/venturi-web/ARC
 - Distinguish preview staleness from current output; bound GPU concurrency and memory.
 - No WebRTC, frameworks, default background services or new video codecs without measured need/ADR.
 - Do not add GPU driver installation into app code; report capability and fallback truthfully.
+- halo2 is shared with agents testing DeepSeek 4.1 Flash inference. Every new GPU path must respect `/tmp/HALO_BENCHMARK.lock` with nonblocking ownership and return busy when another workload owns it. Never delete the shared lock, stop foreign jobs, take their ports or change inference configuration.
 - Deliver small tests for each new command and state machine failure path.

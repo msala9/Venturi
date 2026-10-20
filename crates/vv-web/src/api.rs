@@ -34,6 +34,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/timelines/{id}/timeline.otio", get(export_otio))
         .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
         .route(
+            "/api/v1/timelines/{id}/clips/{clip}/slip/{center}",
+            get(slip_detail),
+        )
+        .route(
             "/api/v1/timelines/{id}/audio/{channel}/eq/{index}",
             get(eq_response),
         )
@@ -74,6 +78,26 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn slip_detail(
+    State(state): State<AppState>,
+    Path((id, clip, center)): Path<(String, String, String)>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid slip preview query"))?
+        .0;
+    let center = center
+        .parse()
+        .map_err(|_| ApiError::invalid("Slip preview center must be an integer frame"))?;
+    if query.timeline_id != id {
+        return Err(ApiError::missing());
+    }
+    state
+        .host
+        .call(Action::SlipDetail(clip, center, query))
+        .await
+        .map(Json)
 }
 async fn export_otio(
     State(state): State<AppState>,
@@ -548,7 +572,7 @@ async fn security(State(state): State<AppState>, request: Request, next: Next) -
     let headers = response.headers_mut();
     headers.insert(header::CACHE_CONTROL, "no-store".parse().unwrap());
     headers.insert(header::X_CONTENT_TYPE_OPTIONS, "nosniff".parse().unwrap());
-    headers.insert(header::CONTENT_SECURITY_POLICY,"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'".parse().unwrap());
+    headers.insert(header::CONTENT_SECURITY_POLICY,"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'".parse().unwrap());
     headers.insert(header::REFERRER_POLICY, "no-referrer".parse().unwrap());
     response
 }
@@ -574,6 +598,7 @@ async fn assets(request: Request) -> Response {
         "/js/inspector.js" => asset!("/web/js/inspector.js", "text/javascript"),
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
         "/js/catalog.js" => asset!("/web/js/catalog.js", "text/javascript"),
+        "/js/slip.js" => asset!("/web/js/slip.js", "text/javascript"),
         "/js/mixer.js" => asset!("/web/js/mixer.js", "text/javascript"),
         "/js/visual.js" => asset!("/web/js/visual.js", "text/javascript"),
         "/js/masks.js" => asset!("/web/js/masks.js", "text/javascript"),

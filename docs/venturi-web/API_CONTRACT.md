@@ -145,6 +145,17 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 
 ## Implemented Inspector commands
 
+- GET `/timelines/{id}/clips/{clip}/slip/{center}` takes the usual FrameQuery.
+  It returns linked handle intersection, source FPS, all linked IDs, lock state
+  and an exact native `[delta,first,last]` source-frame map. At most 65537
+  positions around center are returned; a different center can refresh the
+  window explicitly. Descriptor file identity invalidates the local proxy cache
+  after source replacement. No project or history mutation occurs on this read.
+  The dual viewer uses a bounded 32 MiB local MP4 Blob and never sends HTTP from
+  pointer movement. One completed timeline gesture sends the existing `slip`
+  command; Escape/capture loss cancels local drafts. Numeric Apply and the
+  two-image source display use the same native frame map and command.
+
 - Project commands accept `edit_catalog` with a typed `edit`: `new_folder`,
   `rename_folder`, `move_folder`, `delete_folder`, `move_media`, `remove_media`
   or batch `relink`. Folder IDs and media IDs are canonical strings. Folder

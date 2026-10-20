@@ -27,6 +27,7 @@ pub enum Action {
     FrameSnapshot(FrameQuery, oneshot::Sender<Result<FrameSnapshot>>),
     CheckFrame(FrameQuery),
     ClipDetail(String, FrameQuery),
+    SlipDetail(String, i64, FrameQuery),
     EqResponse(String, usize, FrameQuery),
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
 }
@@ -368,6 +369,36 @@ impl Editor {
             Action::ClipDetail(clip, query) => {
                 let (id, _) = self.validate_frame(&query)?;
                 let mut detail = crate::inspector::detail(&self.session, id, &clip, query.frame)?;
+                detail["project_epoch"] = json!(query.project_epoch);
+                detail["generation"] = json!(query.if_generation);
+                detail["revision"] = json!(query.revision);
+                Ok(detail)
+            }
+            Action::SlipDetail(clip, center, query) => {
+                let (id, _) = self.validate_frame(&query)?;
+                let mut detail = crate::slip::detail(&self.session, id, &clip, center)?;
+                if detail["preview_available"] == true {
+                    use vv_core::Id;
+                    let media = vv_core::MediaId::from_raw(
+                        detail["media_id"]
+                            .as_str()
+                            .ok_or_else(ApiError::missing)?
+                            .parse()
+                            .map_err(|_| ApiError::missing())?,
+                    );
+                    match self
+                        .files
+                        .media_file(&self.session.project.media_pool[media].path)
+                    {
+                        Ok(file) => {
+                            detail["source_version"] = json!(crate::source::file_identity(&file)?)
+                        }
+                        Err(_) => {
+                            detail["preview_available"] = json!(false);
+                            detail["source_offline"] = json!(true);
+                        }
+                    }
+                }
                 detail["project_epoch"] = json!(query.project_epoch);
                 detail["generation"] = json!(query.if_generation);
                 detail["revision"] = json!(query.revision);

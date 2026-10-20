@@ -31,8 +31,9 @@ pub fn timeline(session: &Session, id: TimelineId) -> Value {
             ClipSource::Media(id)=>("media",Some(id.raw().to_string()),session.project.media_pool.get(*id).map(|m|vv_session::file_label(&m.path)).unwrap_or_else(||"Offline media".into())),
             ClipSource::SolidColor=>("solid_color",None,"Solid color".into()),ClipSource::Text=>("title",None,"Title".into()),ClipSource::Adjustment=>("adjustment",None,"Adjustment".into())
           };
+          let slip_range=vv_core::edit::slip_range(&session.project,clip);
           json!({"id":clip.id.0.to_string(),"name":name,"kind":kind,"media_id":media_id,"start_frame":clip.timeline_start,"length_frames":clip.timeline_len,
-            "source_in_frames":clip.source_in(),"source_out_frames":clip.source_out(),"linked_group":clip.linked_group.map(|g|g.0.to_string()),"disabled":clip.disabled,"fade_in":clip.fade_in,"fade_out":clip.fade_out,"transition_in":clip.effects.transition_in,"transition_out":clip.effects.transition_out,"speed_percent":clip.speed().as_percent(),"freeze_source_frame":clip.freeze,"display_color":clip.display_color,"display_rgb":clip.display_color.map(|color|{let (r,g,b)=color.rgb();[r,g,b]})})
+            "source_in_frames":clip.source_in(),"source_out_frames":clip.source_out(),"slip_range":slip_range,"linked_group":clip.linked_group.map(|g|g.0.to_string()),"disabled":clip.disabled,"fade_in":clip.fade_in,"fade_out":clip.fade_out,"transition_in":clip.effects.transition_in,"transition_out":clip.effects.transition_out,"speed_percent":clip.speed().as_percent(),"freeze_source_frame":clip.freeze,"display_color":clip.display_color,"display_rgb":clip.display_color.map(|color|{let (r,g,b)=color.rgb();[r,g,b]})})
         }).collect::<Vec<_>>()
       })).collect::<Vec<_>>()})
 }

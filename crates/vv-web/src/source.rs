@@ -39,16 +39,19 @@ pub struct SourceSpec {
 }
 impl SourceSpec {
     fn identity(&self) -> Result<String> {
-        let m = self.file.metadata().map_err(|_| ApiError::io())?;
-        Ok(format!(
-            "{}:{}:{}:{}:{}",
-            m.dev(),
-            m.ino(),
-            m.len(),
-            m.mtime(),
-            m.mtime_nsec()
-        ))
+        file_identity(&self.file)
     }
+}
+pub(crate) fn file_identity(file: &File) -> Result<String> {
+    let m = file.metadata().map_err(|_| ApiError::io())?;
+    Ok(format!(
+        "{}:{}:{}:{}:{}",
+        m.dev(),
+        m.ino(),
+        m.len(),
+        m.mtime(),
+        m.mtime_nsec()
+    ))
 }
 struct Job {
     id: String,

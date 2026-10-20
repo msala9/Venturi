@@ -18,6 +18,7 @@ export function createInput({
   onSeek,
   onCommand,
   onNotice,
+  onSlip = () => {},
 }) {
   let gesture = null,
     waiting = false;
@@ -26,9 +27,11 @@ export function createInput({
     return [event.clientX - rect.left, event.clientY - rect.top];
   };
   const cancel = () => {
+    const slipping = gesture?.kind === "slip";
     gesture = null;
     view.draft = null;
     view.lasso = null;
+    if(slipping)onSlip({phase:"cancel"});
     invalidate();
   };
   const down = (event) => {
@@ -69,6 +72,14 @@ export function createInput({
         frame: xToFrame(x, view, timeline.fps),
         moved: false,
       };
+      if(view.tool === "slip") {
+        const linked=linkedSelection(timeline,[hit.clip.id]);
+        const affected=timeline.tracks.flatMap((track)=>track.clips.filter((clip)=>linked.includes(clip.id)).map((clip)=>({track,clip})));
+        if(affected.some(({track,clip})=>track.locked || !clip.slip_range)) {gesture=null;onNotice("Slip requires unlocked source clips and their linked handles");return;}
+        gesture.kind="slip";
+        gesture.min=Math.max(...affected.map(({clip})=>clip.slip_range[0]));gesture.max=Math.min(...affected.map(({clip})=>clip.slip_range[1]));
+        onSlip({phase:"begin",clip_id:hit.clip.id,delta:0});
+      }
     } else if (hit.kind === "scrub") {
       gesture = { kind: "scrub" };
       view.playhead = xToFrame(x, view, timeline.fps);
@@ -107,6 +118,12 @@ export function createInput({
         width: Math.abs(x - g.x),
         height: Math.abs(y - g.y),
       };
+    } else if(g.kind === "slip") {
+      if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
+      const delta=Math.max(g.min,Math.min(g.max,Math.round((x-g.x)*timeline.fps.num/(view.scale*timeline.fps.den))));
+      const ids=linkedSelection(timeline,[g.clip.id]);
+      view.draft={kind:"slip",target:delta,error:null,changes:timeline.tracks.flatMap((track)=>track.clips.filter((clip)=>ids.includes(clip.id)).map((clip)=>({clip_id:clip.id,to_track:track.id,to_start_frame:clip.start_frame,length_frames:clip.length_frames})))};
+      onSlip({phase:"draft",clip_id:g.clip.id,delta});
     } else {
       if (Math.hypot(x - g.x, y - g.y) < 4 && !g.moved) return;
       g.moved = true;
@@ -198,7 +215,7 @@ export function createInput({
     if (canvas.hasPointerCapture(event.pointerId))
       canvas.releasePointerCapture(event.pointerId);
     if (g.kind === "scrub") onSeek(true);
-    if (draft && g.moved) {
+    if (draft && g.moved && !(g.kind === "slip" && draft.target === 0)) {
       if (draft.error) onNotice(draft.error);
       else {
         waiting = true;
@@ -215,7 +232,7 @@ export function createInput({
                     }),
                   ),
                 }
-              : {
+              : g.kind === "slip" ? {kind:"slip",clip_ids:linkedSelection(timeline,[g.clip.id]),delta_frames:draft.target} : {
                   kind: "trim",
                   clip_id: g.clip.id,
                   edge: g.kind === "trim_start" ? "start" : "end",
@@ -230,6 +247,7 @@ export function createInput({
       }
     }
     view.draft = null;
+    if(g.kind === "slip")onSlip({phase:"end"});
     invalidate();
   };
   const wheel = (event) => {

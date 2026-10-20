@@ -113,6 +113,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
             ? color("--danger")
             : color("--primary");
           ctx.strokeRect(x, top + 5, end - x, TRACK - 10);
+          if(view.draft.kind === "slip"){ctx.fillStyle=color("--text");ctx.fillText(`Slip ${view.draft.target>=0?"+":""}${view.draft.target}f`,x+6,top+TRACK-15);}
         }
       ctx.restore();
       ctx.fillStyle = color("--surface");

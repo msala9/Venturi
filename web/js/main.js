@@ -11,10 +11,12 @@ import { createExportPanel } from "./export.js";
 import { createScopes, scopeTarget } from "./scopes.js";
 import { balanceSelected } from "./balance.js";
 import { renderCatalog } from "./catalog.js";
+import { createSlipView } from "./slip.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
 let scopes = null, scopePlayback = false;
+let slipScopesState = null;
 let catalog = null;
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
 $("search").addEventListener("input", () => {
@@ -66,7 +68,7 @@ const workspaceTools = {
 
 function showWorkspace(name) {
   editor.dataset.workspace = name;
-  scopes?.setVisible(name === "Color");
+  scopes?.setVisible(name === "Color" && $("slip-view").hidden);
   document.querySelectorAll("[data-workspace]").forEach((button) => {
     if (button.tagName === "BUTTON")
       button.setAttribute("aria-pressed", button.dataset.workspace === name);
@@ -238,7 +240,7 @@ let commit = async () => {
   throw new Error("Fixture only · no edit was saved");
 };
 let seek = () => {};
-let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = null;
+let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = null, slipView = null;
 let sourceOpenId = null;
 const sourceRanges = new Map();
 const mediaAssets = new Map();
@@ -413,6 +415,7 @@ function selected() {
     const delta = document.createElement("input"); delta.type = "number"; delta.step = 1; delta.value = 1; delta.min = -1_000_000_000; delta.max = 1_000_000_000; label.append(delta);
     const slip = document.createElement("button"); slip.textContent = "Apply linked slip"; slip.disabled = !view.selection.length;
     form.append(label,slip); form.addEventListener("submit",(event)=>{event.preventDefault();commit({kind:"slip",clip_ids:view.selection,delta_frames:Number(delta.value)}).catch((error)=>notice(error.message));}); fieldset.append(form); $("inspector-content").append(fieldset);
+    const previewSlip=document.createElement("button");previewSlip.type="button";previewSlip.textContent="Preview slip edges";previewSlip.disabled=!view.selection.length;previewSlip.addEventListener("click",()=>{const selected=timeline.tracks.flatMap((track)=>track.clips.map((clip)=>({track,clip}))).find(({track,clip})=>view.selection.includes(clip.id) && track.kind==="video")?.clip || clip;if(selected)slipView?.open(selected.id,Number(delta.value));});fieldset.append(previewSlip);
     const compound=document.createElement("form"),compoundLabel=document.createElement("label");compoundLabel.className="field";compoundLabel.textContent="Compound name";
     const name=document.createElement("input");name.value="Compound";name.required=true;name.maxLength=128;compoundLabel.append(name);
     const make=document.createElement("button");make.textContent="Make compound from selection";make.disabled=!view.selection.length;compound.append(compoundLabel,make);
@@ -440,6 +443,7 @@ const canvasTimeline = createTimeline({
   },
   onCommand: (operation) => commit(operation),
   onNotice: notice,
+  onSlip: (event)=>{if(event.phase==="begin"){programPlayer?.stop();sourcePlayer?.pause();}slipView?.draft(event);},
 });
 window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});
 function updateTime() {
@@ -487,6 +491,7 @@ $("snap").addEventListener("click", () => {
   view.snap = !view.snap;
   $("snap").setAttribute("aria-pressed", view.snap);
 });
+$("edit-tool").addEventListener("change",()=>{canvasTimeline.cancel();view.tool=$("edit-tool").value;slipView?.reset();notice(view.tool === "slip" ? "Slip tool · drag right to advance source; linked clips follow" : "Move / trim tool");});
 for (const [id, factor] of [
   ["zoom-in", 1.4],
   ["zoom-out", 1 / 1.4],
@@ -541,6 +546,7 @@ let documentState = null,
   selectedMedia = null;
 const clientId = persistentClientId();
 async function refresh() {
+  slipView?.reset();
   programPlayer?.stop();
   viewer?.invalidate();
   const next = await request("/session");
@@ -614,6 +620,7 @@ async function mutate(operation, project = false) {
   if (!writable || busy || unresolved)
     throw new Error("Editing is read only or a command is pending");
   programPlayer?.stop();
+  slipView?.reset();
   if (!project && (!timeline || timeline.id === "fixture"))
     throw new Error("Open a real project before editing");
   const body = {
@@ -1016,4 +1023,12 @@ const exportPanel = createExportPanel({ form: $("export-form"), status: $("expor
 } });
 $("export-in").addEventListener("click", () => { $("export-form").elements.start.value = view.playhead; });
 $("export-out").addEventListener("click", () => { $("export-form").elements.end.value = view.playhead + 1; });
+slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(operation),onVisible:(visible)=>{
+  if(visible){slipScopesState={workspace:editor.dataset.workspace,visible:!$("scopes").hidden};scopes?.setVisible(false);}
+  else if(slipScopesState){scopes?.setVisible(editor.dataset.workspace==="Color" && (slipScopesState.workspace!==editor.dataset.workspace || slipScopesState.visible));slipScopesState=null;}
+},getTarget:(clip)=>{
+  if(!documentState || !timeline || timeline.id==="fixture" || !writable || busy || unresolved || !view.selection.includes(clip))return null;
+  const end=Math.max(1,...timeline.tracks.flatMap((track)=>track.clips.map((item)=>item.start_frame+item.length_frames)));
+  return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1),clip_id:clip};
+}});
 connect().then(diagnostics);

@@ -1,0 +1,3189 @@
+{
+  "states": {
+    "before_slip": {
+      "project": "Slip_dual_UI_check.vvproj",
+      "saved": true,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "generation": "0",
+      "timeline": {
+        "api_version": 1,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "id": "1",
+        "marker_colors": [
+          "Red",
+          "Orange",
+          "Yellow",
+          "Green",
+          "Cyan",
+          "Blue",
+          "Indigo",
+          "Purple",
+          "Magenta",
+          "Rose",
+          "Slate",
+          "Gray"
+        ],
+        "markers": [],
+        "master": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "name": "Timeline 1",
+        "resolution": {
+          "height": 1080,
+          "width": 1920
+        },
+        "revision": "ced997b78beb46bd",
+        "timeline_id": "1",
+        "tracks": [
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "1",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -7,
+                  29
+                ],
+                "source_in_frames": 7,
+                "source_out_frames": 19,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "0",
+            "kind": "video",
+            "label": "V1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          },
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "0",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -7,
+                  29
+                ],
+                "source_in_frames": 7,
+                "source_out_frames": 19,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "1",
+            "kind": "audio",
+            "label": "A1",
+            "locked": false,
+            "mix": {
+              "effects": [
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Equalizer": {
+                      "bands": [
+                        {
+                          "enabled": false,
+                          "freq_hz": 80.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighPass"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 120.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowShelf"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 500.0,
+                          "gain_db": 6.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 2500.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 8000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighShelf"
+                        },
+                        {
+                          "enabled": false,
+                          "freq_hz": 18000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowPass"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "MultibandCompressor": {
+                      "bands": [
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -18.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        }
+                      ],
+                      "crossovers_hz": [
+                        200.0,
+                        2000.0
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": "Mono"
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Normalize": {
+                      "mode": "Loudness",
+                      "set_level": "Relative",
+                      "target_db": -23.0
+                    }
+                  }
+                }
+              ],
+              "gain_db": -6.0,
+              "pan": -0.25
+            },
+            "muted": false,
+            "solo": false
+          }
+        ]
+      },
+      "manifest": {
+        "clip_id": "1",
+        "clip_ids": [
+          "1",
+          "0"
+        ],
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "frames": [
+          [
+            -7,
+            0,
+            11
+          ],
+          [
+            -6,
+            1,
+            12
+          ],
+          [
+            -5,
+            2,
+            13
+          ],
+          [
+            -4,
+            3,
+            14
+          ],
+          [
+            -3,
+            4,
+            15
+          ],
+          [
+            -2,
+            5,
+            16
+          ],
+          [
+            -1,
+            6,
+            17
+          ],
+          [
+            0,
+            7,
+            18
+          ],
+          [
+            1,
+            8,
+            19
+          ],
+          [
+            2,
+            9,
+            20
+          ],
+          [
+            3,
+            10,
+            21
+          ],
+          [
+            4,
+            11,
+            22
+          ],
+          [
+            5,
+            12,
+            23
+          ],
+          [
+            6,
+            13,
+            24
+          ],
+          [
+            7,
+            14,
+            25
+          ],
+          [
+            8,
+            15,
+            26
+          ],
+          [
+            9,
+            16,
+            27
+          ],
+          [
+            10,
+            17,
+            28
+          ],
+          [
+            11,
+            18,
+            29
+          ],
+          [
+            12,
+            19,
+            30
+          ],
+          [
+            13,
+            20,
+            31
+          ],
+          [
+            14,
+            21,
+            32
+          ],
+          [
+            15,
+            22,
+            33
+          ],
+          [
+            16,
+            23,
+            34
+          ],
+          [
+            17,
+            24,
+            35
+          ],
+          [
+            18,
+            25,
+            36
+          ],
+          [
+            19,
+            26,
+            37
+          ],
+          [
+            20,
+            27,
+            38
+          ],
+          [
+            21,
+            28,
+            39
+          ],
+          [
+            22,
+            29,
+            40
+          ],
+          [
+            23,
+            30,
+            41
+          ],
+          [
+            24,
+            31,
+            42
+          ],
+          [
+            25,
+            32,
+            43
+          ],
+          [
+            26,
+            33,
+            44
+          ],
+          [
+            27,
+            34,
+            45
+          ],
+          [
+            28,
+            35,
+            46
+          ],
+          [
+            29,
+            36,
+            47
+          ]
+        ],
+        "generation": "0",
+        "locked": false,
+        "max_delta": 29,
+        "media_id": "2",
+        "min_delta": -7,
+        "name": "venturi-smoke.mp4",
+        "preview_available": true,
+        "project_epoch": "1792526308562405815:1",
+        "revision": "ced997b78beb46bd",
+        "source_version": "14620649402460140468",
+        "window_end": 29,
+        "window_start": -7
+      },
+      "transform": [
+        {
+          "param": "ZoomX",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "ZoomY",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Rotation",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropLeft",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropTop",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropRight",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropBottom",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropSoftness",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Opacity",
+          "default": 100.0,
+          "keyframes": [
+            [
+              9,
+              42.898860931396484,
+              {
+                "Bezier": {
+                  "c1": [
+                    0.30045604705810547,
+                    -0.18479980528354645
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    1.5
+                  ]
+                }
+              }
+            ],
+            [
+              18,
+              90.0,
+              "Hold"
+            ]
+          ]
+        }
+      ]
+    },
+    "after_numeric_apply": {
+      "project": "Slip_dual_UI_check.vvproj",
+      "saved": false,
+      "history": {
+        "labels": [
+          "SlipClips"
+        ],
+        "position": 1
+      },
+      "generation": "1",
+      "timeline": {
+        "api_version": 1,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "id": "1",
+        "marker_colors": [
+          "Red",
+          "Orange",
+          "Yellow",
+          "Green",
+          "Cyan",
+          "Blue",
+          "Indigo",
+          "Purple",
+          "Magenta",
+          "Rose",
+          "Slate",
+          "Gray"
+        ],
+        "markers": [],
+        "master": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "name": "Timeline 1",
+        "resolution": {
+          "height": 1080,
+          "width": 1920
+        },
+        "revision": "aaa622b590eb3eb3",
+        "timeline_id": "1",
+        "tracks": [
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "1",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -10,
+                  26
+                ],
+                "source_in_frames": 10,
+                "source_out_frames": 22,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "0",
+            "kind": "video",
+            "label": "V1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          },
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "0",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -10,
+                  26
+                ],
+                "source_in_frames": 10,
+                "source_out_frames": 22,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "1",
+            "kind": "audio",
+            "label": "A1",
+            "locked": false,
+            "mix": {
+              "effects": [
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Equalizer": {
+                      "bands": [
+                        {
+                          "enabled": false,
+                          "freq_hz": 80.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighPass"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 120.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowShelf"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 500.0,
+                          "gain_db": 6.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 2500.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 8000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighShelf"
+                        },
+                        {
+                          "enabled": false,
+                          "freq_hz": 18000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowPass"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "MultibandCompressor": {
+                      "bands": [
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -18.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        }
+                      ],
+                      "crossovers_hz": [
+                        200.0,
+                        2000.0
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": "Mono"
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Normalize": {
+                      "mode": "Loudness",
+                      "set_level": "Relative",
+                      "target_db": -23.0
+                    }
+                  }
+                }
+              ],
+              "gain_db": -6.0,
+              "pan": -0.25
+            },
+            "muted": false,
+            "solo": false
+          }
+        ]
+      },
+      "manifest": {
+        "clip_id": "1",
+        "clip_ids": [
+          "1",
+          "0"
+        ],
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "frames": [
+          [
+            -10,
+            0,
+            11
+          ],
+          [
+            -9,
+            1,
+            12
+          ],
+          [
+            -8,
+            2,
+            13
+          ],
+          [
+            -7,
+            3,
+            14
+          ],
+          [
+            -6,
+            4,
+            15
+          ],
+          [
+            -5,
+            5,
+            16
+          ],
+          [
+            -4,
+            6,
+            17
+          ],
+          [
+            -3,
+            7,
+            18
+          ],
+          [
+            -2,
+            8,
+            19
+          ],
+          [
+            -1,
+            9,
+            20
+          ],
+          [
+            0,
+            10,
+            21
+          ],
+          [
+            1,
+            11,
+            22
+          ],
+          [
+            2,
+            12,
+            23
+          ],
+          [
+            3,
+            13,
+            24
+          ],
+          [
+            4,
+            14,
+            25
+          ],
+          [
+            5,
+            15,
+            26
+          ],
+          [
+            6,
+            16,
+            27
+          ],
+          [
+            7,
+            17,
+            28
+          ],
+          [
+            8,
+            18,
+            29
+          ],
+          [
+            9,
+            19,
+            30
+          ],
+          [
+            10,
+            20,
+            31
+          ],
+          [
+            11,
+            21,
+            32
+          ],
+          [
+            12,
+            22,
+            33
+          ],
+          [
+            13,
+            23,
+            34
+          ],
+          [
+            14,
+            24,
+            35
+          ],
+          [
+            15,
+            25,
+            36
+          ],
+          [
+            16,
+            26,
+            37
+          ],
+          [
+            17,
+            27,
+            38
+          ],
+          [
+            18,
+            28,
+            39
+          ],
+          [
+            19,
+            29,
+            40
+          ],
+          [
+            20,
+            30,
+            41
+          ],
+          [
+            21,
+            31,
+            42
+          ],
+          [
+            22,
+            32,
+            43
+          ],
+          [
+            23,
+            33,
+            44
+          ],
+          [
+            24,
+            34,
+            45
+          ],
+          [
+            25,
+            35,
+            46
+          ],
+          [
+            26,
+            36,
+            47
+          ]
+        ],
+        "generation": "1",
+        "locked": false,
+        "max_delta": 26,
+        "media_id": "2",
+        "min_delta": -10,
+        "name": "venturi-smoke.mp4",
+        "preview_available": true,
+        "project_epoch": "1792526308562405815:1",
+        "revision": "aaa622b590eb3eb3",
+        "source_version": "14620649402460140468",
+        "window_end": 26,
+        "window_start": -10
+      },
+      "transform": [
+        {
+          "param": "ZoomX",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "ZoomY",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Rotation",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropLeft",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropTop",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropRight",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropBottom",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropSoftness",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Opacity",
+          "default": 100.0,
+          "keyframes": [
+            [
+              9,
+              42.898860931396484,
+              {
+                "Bezier": {
+                  "c1": [
+                    0.30045604705810547,
+                    -0.18479980528354645
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    1.5
+                  ]
+                }
+              }
+            ],
+            [
+              18,
+              90.0,
+              "Hold"
+            ]
+          ]
+        }
+      ]
+    },
+    "after_pointer_drag": {
+      "project": "Slip_dual_UI_check.vvproj",
+      "saved": false,
+      "history": {
+        "labels": [
+          "SlipClips",
+          "SlipClips"
+        ],
+        "position": 2
+      },
+      "generation": "2",
+      "timeline": {
+        "api_version": 1,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "id": "1",
+        "marker_colors": [
+          "Red",
+          "Orange",
+          "Yellow",
+          "Green",
+          "Cyan",
+          "Blue",
+          "Indigo",
+          "Purple",
+          "Magenta",
+          "Rose",
+          "Slate",
+          "Gray"
+        ],
+        "markers": [],
+        "master": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "name": "Timeline 1",
+        "resolution": {
+          "height": 1080,
+          "width": 1920
+        },
+        "revision": "3104d31eaf70c371",
+        "timeline_id": "1",
+        "tracks": [
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "1",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -15,
+                  21
+                ],
+                "source_in_frames": 15,
+                "source_out_frames": 27,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "0",
+            "kind": "video",
+            "label": "V1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          },
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "0",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -15,
+                  21
+                ],
+                "source_in_frames": 15,
+                "source_out_frames": 27,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "1",
+            "kind": "audio",
+            "label": "A1",
+            "locked": false,
+            "mix": {
+              "effects": [
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Equalizer": {
+                      "bands": [
+                        {
+                          "enabled": false,
+                          "freq_hz": 80.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighPass"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 120.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowShelf"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 500.0,
+                          "gain_db": 6.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 2500.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 8000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighShelf"
+                        },
+                        {
+                          "enabled": false,
+                          "freq_hz": 18000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowPass"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "MultibandCompressor": {
+                      "bands": [
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -18.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        }
+                      ],
+                      "crossovers_hz": [
+                        200.0,
+                        2000.0
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": "Mono"
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Normalize": {
+                      "mode": "Loudness",
+                      "set_level": "Relative",
+                      "target_db": -23.0
+                    }
+                  }
+                }
+              ],
+              "gain_db": -6.0,
+              "pan": -0.25
+            },
+            "muted": false,
+            "solo": false
+          }
+        ]
+      },
+      "manifest": {
+        "clip_id": "1",
+        "clip_ids": [
+          "1",
+          "0"
+        ],
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "frames": [
+          [
+            -15,
+            0,
+            11
+          ],
+          [
+            -14,
+            1,
+            12
+          ],
+          [
+            -13,
+            2,
+            13
+          ],
+          [
+            -12,
+            3,
+            14
+          ],
+          [
+            -11,
+            4,
+            15
+          ],
+          [
+            -10,
+            5,
+            16
+          ],
+          [
+            -9,
+            6,
+            17
+          ],
+          [
+            -8,
+            7,
+            18
+          ],
+          [
+            -7,
+            8,
+            19
+          ],
+          [
+            -6,
+            9,
+            20
+          ],
+          [
+            -5,
+            10,
+            21
+          ],
+          [
+            -4,
+            11,
+            22
+          ],
+          [
+            -3,
+            12,
+            23
+          ],
+          [
+            -2,
+            13,
+            24
+          ],
+          [
+            -1,
+            14,
+            25
+          ],
+          [
+            0,
+            15,
+            26
+          ],
+          [
+            1,
+            16,
+            27
+          ],
+          [
+            2,
+            17,
+            28
+          ],
+          [
+            3,
+            18,
+            29
+          ],
+          [
+            4,
+            19,
+            30
+          ],
+          [
+            5,
+            20,
+            31
+          ],
+          [
+            6,
+            21,
+            32
+          ],
+          [
+            7,
+            22,
+            33
+          ],
+          [
+            8,
+            23,
+            34
+          ],
+          [
+            9,
+            24,
+            35
+          ],
+          [
+            10,
+            25,
+            36
+          ],
+          [
+            11,
+            26,
+            37
+          ],
+          [
+            12,
+            27,
+            38
+          ],
+          [
+            13,
+            28,
+            39
+          ],
+          [
+            14,
+            29,
+            40
+          ],
+          [
+            15,
+            30,
+            41
+          ],
+          [
+            16,
+            31,
+            42
+          ],
+          [
+            17,
+            32,
+            43
+          ],
+          [
+            18,
+            33,
+            44
+          ],
+          [
+            19,
+            34,
+            45
+          ],
+          [
+            20,
+            35,
+            46
+          ],
+          [
+            21,
+            36,
+            47
+          ]
+        ],
+        "generation": "2",
+        "locked": false,
+        "max_delta": 21,
+        "media_id": "2",
+        "min_delta": -15,
+        "name": "venturi-smoke.mp4",
+        "preview_available": true,
+        "project_epoch": "1792526308562405815:1",
+        "revision": "3104d31eaf70c371",
+        "source_version": "14620649402460140468",
+        "window_end": 21,
+        "window_start": -15
+      },
+      "transform": [
+        {
+          "param": "ZoomX",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "ZoomY",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Rotation",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropLeft",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropTop",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropRight",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropBottom",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropSoftness",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Opacity",
+          "default": 100.0,
+          "keyframes": [
+            [
+              9,
+              42.898860931396484,
+              {
+                "Bezier": {
+                  "c1": [
+                    0.30045604705810547,
+                    -0.18479980528354645
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    1.5
+                  ]
+                }
+              }
+            ],
+            [
+              18,
+              90.0,
+              "Hold"
+            ]
+          ]
+        }
+      ]
+    },
+    "undo_pointer_drag": {
+      "project": "Slip_dual_UI_check.vvproj",
+      "saved": false,
+      "history": {
+        "labels": [
+          "SlipClips",
+          "SlipClips"
+        ],
+        "position": 1
+      },
+      "generation": "3",
+      "timeline": {
+        "api_version": 1,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "id": "1",
+        "marker_colors": [
+          "Red",
+          "Orange",
+          "Yellow",
+          "Green",
+          "Cyan",
+          "Blue",
+          "Indigo",
+          "Purple",
+          "Magenta",
+          "Rose",
+          "Slate",
+          "Gray"
+        ],
+        "markers": [],
+        "master": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "name": "Timeline 1",
+        "resolution": {
+          "height": 1080,
+          "width": 1920
+        },
+        "revision": "aaa622b590eb3eb3",
+        "timeline_id": "1",
+        "tracks": [
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "1",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -10,
+                  26
+                ],
+                "source_in_frames": 10,
+                "source_out_frames": 22,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "0",
+            "kind": "video",
+            "label": "V1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          },
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "0",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -10,
+                  26
+                ],
+                "source_in_frames": 10,
+                "source_out_frames": 22,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "1",
+            "kind": "audio",
+            "label": "A1",
+            "locked": false,
+            "mix": {
+              "effects": [
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Equalizer": {
+                      "bands": [
+                        {
+                          "enabled": false,
+                          "freq_hz": 80.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighPass"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 120.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowShelf"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 500.0,
+                          "gain_db": 6.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 2500.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 8000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighShelf"
+                        },
+                        {
+                          "enabled": false,
+                          "freq_hz": 18000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowPass"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "MultibandCompressor": {
+                      "bands": [
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -18.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        }
+                      ],
+                      "crossovers_hz": [
+                        200.0,
+                        2000.0
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": "Mono"
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Normalize": {
+                      "mode": "Loudness",
+                      "set_level": "Relative",
+                      "target_db": -23.0
+                    }
+                  }
+                }
+              ],
+              "gain_db": -6.0,
+              "pan": -0.25
+            },
+            "muted": false,
+            "solo": false
+          }
+        ]
+      },
+      "manifest": {
+        "clip_id": "1",
+        "clip_ids": [
+          "1",
+          "0"
+        ],
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "frames": [
+          [
+            -10,
+            0,
+            11
+          ],
+          [
+            -9,
+            1,
+            12
+          ],
+          [
+            -8,
+            2,
+            13
+          ],
+          [
+            -7,
+            3,
+            14
+          ],
+          [
+            -6,
+            4,
+            15
+          ],
+          [
+            -5,
+            5,
+            16
+          ],
+          [
+            -4,
+            6,
+            17
+          ],
+          [
+            -3,
+            7,
+            18
+          ],
+          [
+            -2,
+            8,
+            19
+          ],
+          [
+            -1,
+            9,
+            20
+          ],
+          [
+            0,
+            10,
+            21
+          ],
+          [
+            1,
+            11,
+            22
+          ],
+          [
+            2,
+            12,
+            23
+          ],
+          [
+            3,
+            13,
+            24
+          ],
+          [
+            4,
+            14,
+            25
+          ],
+          [
+            5,
+            15,
+            26
+          ],
+          [
+            6,
+            16,
+            27
+          ],
+          [
+            7,
+            17,
+            28
+          ],
+          [
+            8,
+            18,
+            29
+          ],
+          [
+            9,
+            19,
+            30
+          ],
+          [
+            10,
+            20,
+            31
+          ],
+          [
+            11,
+            21,
+            32
+          ],
+          [
+            12,
+            22,
+            33
+          ],
+          [
+            13,
+            23,
+            34
+          ],
+          [
+            14,
+            24,
+            35
+          ],
+          [
+            15,
+            25,
+            36
+          ],
+          [
+            16,
+            26,
+            37
+          ],
+          [
+            17,
+            27,
+            38
+          ],
+          [
+            18,
+            28,
+            39
+          ],
+          [
+            19,
+            29,
+            40
+          ],
+          [
+            20,
+            30,
+            41
+          ],
+          [
+            21,
+            31,
+            42
+          ],
+          [
+            22,
+            32,
+            43
+          ],
+          [
+            23,
+            33,
+            44
+          ],
+          [
+            24,
+            34,
+            45
+          ],
+          [
+            25,
+            35,
+            46
+          ],
+          [
+            26,
+            36,
+            47
+          ]
+        ],
+        "generation": "3",
+        "locked": false,
+        "max_delta": 26,
+        "media_id": "2",
+        "min_delta": -10,
+        "name": "venturi-smoke.mp4",
+        "preview_available": true,
+        "project_epoch": "1792526308562405815:1",
+        "revision": "aaa622b590eb3eb3",
+        "source_version": "14620649402460140468",
+        "window_end": 26,
+        "window_start": -10
+      },
+      "transform": [
+        {
+          "param": "ZoomX",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "ZoomY",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Rotation",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropLeft",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropTop",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropRight",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropBottom",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropSoftness",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Opacity",
+          "default": 100.0,
+          "keyframes": [
+            [
+              9,
+              42.898860931396484,
+              {
+                "Bezier": {
+                  "c1": [
+                    0.30045604705810547,
+                    -0.18479980528354645
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    1.5
+                  ]
+                }
+              }
+            ],
+            [
+              18,
+              90.0,
+              "Hold"
+            ]
+          ]
+        }
+      ]
+    },
+    "undo_all": {
+      "project": "Slip_dual_UI_check.vvproj",
+      "saved": false,
+      "history": {
+        "labels": [
+          "SlipClips",
+          "SlipClips"
+        ],
+        "position": 0
+      },
+      "generation": "4",
+      "timeline": {
+        "api_version": 1,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "id": "1",
+        "marker_colors": [
+          "Red",
+          "Orange",
+          "Yellow",
+          "Green",
+          "Cyan",
+          "Blue",
+          "Indigo",
+          "Purple",
+          "Magenta",
+          "Rose",
+          "Slate",
+          "Gray"
+        ],
+        "markers": [],
+        "master": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "name": "Timeline 1",
+        "resolution": {
+          "height": 1080,
+          "width": 1920
+        },
+        "revision": "ced997b78beb46bd",
+        "timeline_id": "1",
+        "tracks": [
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "1",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -7,
+                  29
+                ],
+                "source_in_frames": 7,
+                "source_out_frames": 19,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "0",
+            "kind": "video",
+            "label": "V1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          },
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "0",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -7,
+                  29
+                ],
+                "source_in_frames": 7,
+                "source_out_frames": 19,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "1",
+            "kind": "audio",
+            "label": "A1",
+            "locked": false,
+            "mix": {
+              "effects": [
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Equalizer": {
+                      "bands": [
+                        {
+                          "enabled": false,
+                          "freq_hz": 80.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighPass"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 120.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowShelf"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 500.0,
+                          "gain_db": 6.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 2500.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 8000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighShelf"
+                        },
+                        {
+                          "enabled": false,
+                          "freq_hz": 18000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowPass"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "MultibandCompressor": {
+                      "bands": [
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -18.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        }
+                      ],
+                      "crossovers_hz": [
+                        200.0,
+                        2000.0
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": "Mono"
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Normalize": {
+                      "mode": "Loudness",
+                      "set_level": "Relative",
+                      "target_db": -23.0
+                    }
+                  }
+                }
+              ],
+              "gain_db": -6.0,
+              "pan": -0.25
+            },
+            "muted": false,
+            "solo": false
+          }
+        ]
+      },
+      "manifest": {
+        "clip_id": "1",
+        "clip_ids": [
+          "1",
+          "0"
+        ],
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "frames": [
+          [
+            -7,
+            0,
+            11
+          ],
+          [
+            -6,
+            1,
+            12
+          ],
+          [
+            -5,
+            2,
+            13
+          ],
+          [
+            -4,
+            3,
+            14
+          ],
+          [
+            -3,
+            4,
+            15
+          ],
+          [
+            -2,
+            5,
+            16
+          ],
+          [
+            -1,
+            6,
+            17
+          ],
+          [
+            0,
+            7,
+            18
+          ],
+          [
+            1,
+            8,
+            19
+          ],
+          [
+            2,
+            9,
+            20
+          ],
+          [
+            3,
+            10,
+            21
+          ],
+          [
+            4,
+            11,
+            22
+          ],
+          [
+            5,
+            12,
+            23
+          ],
+          [
+            6,
+            13,
+            24
+          ],
+          [
+            7,
+            14,
+            25
+          ],
+          [
+            8,
+            15,
+            26
+          ],
+          [
+            9,
+            16,
+            27
+          ],
+          [
+            10,
+            17,
+            28
+          ],
+          [
+            11,
+            18,
+            29
+          ],
+          [
+            12,
+            19,
+            30
+          ],
+          [
+            13,
+            20,
+            31
+          ],
+          [
+            14,
+            21,
+            32
+          ],
+          [
+            15,
+            22,
+            33
+          ],
+          [
+            16,
+            23,
+            34
+          ],
+          [
+            17,
+            24,
+            35
+          ],
+          [
+            18,
+            25,
+            36
+          ],
+          [
+            19,
+            26,
+            37
+          ],
+          [
+            20,
+            27,
+            38
+          ],
+          [
+            21,
+            28,
+            39
+          ],
+          [
+            22,
+            29,
+            40
+          ],
+          [
+            23,
+            30,
+            41
+          ],
+          [
+            24,
+            31,
+            42
+          ],
+          [
+            25,
+            32,
+            43
+          ],
+          [
+            26,
+            33,
+            44
+          ],
+          [
+            27,
+            34,
+            45
+          ],
+          [
+            28,
+            35,
+            46
+          ],
+          [
+            29,
+            36,
+            47
+          ]
+        ],
+        "generation": "4",
+        "locked": false,
+        "max_delta": 29,
+        "media_id": "2",
+        "min_delta": -7,
+        "name": "venturi-smoke.mp4",
+        "preview_available": true,
+        "project_epoch": "1792526308562405815:1",
+        "revision": "ced997b78beb46bd",
+        "source_version": "14620649402460140468",
+        "window_end": 29,
+        "window_start": -7
+      },
+      "transform": [
+        {
+          "param": "ZoomX",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "ZoomY",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Rotation",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropLeft",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropTop",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropRight",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropBottom",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropSoftness",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Opacity",
+          "default": 100.0,
+          "keyframes": [
+            [
+              9,
+              42.898860931396484,
+              {
+                "Bezier": {
+                  "c1": [
+                    0.30045604705810547,
+                    -0.18479980528354645
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    1.5
+                  ]
+                }
+              }
+            ],
+            [
+              18,
+              90.0,
+              "Hold"
+            ]
+          ]
+        }
+      ]
+    },
+    "redo_and_saved": {
+      "project": "Slip_dual_UI_check.vvproj",
+      "saved": true,
+      "history": {
+        "labels": [
+          "SlipClips",
+          "SlipClips"
+        ],
+        "position": 1
+      },
+      "generation": "5",
+      "timeline": {
+        "api_version": 1,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "id": "1",
+        "marker_colors": [
+          "Red",
+          "Orange",
+          "Yellow",
+          "Green",
+          "Cyan",
+          "Blue",
+          "Indigo",
+          "Purple",
+          "Magenta",
+          "Rose",
+          "Slate",
+          "Gray"
+        ],
+        "markers": [],
+        "master": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "name": "Timeline 1",
+        "resolution": {
+          "height": 1080,
+          "width": 1920
+        },
+        "revision": "aaa622b590eb3eb3",
+        "timeline_id": "1",
+        "tracks": [
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "1",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -10,
+                  26
+                ],
+                "source_in_frames": 10,
+                "source_out_frames": 22,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "0",
+            "kind": "video",
+            "label": "V1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          },
+          {
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "0",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "slip_range": [
+                  -10,
+                  26
+                ],
+                "source_in_frames": 10,
+                "source_out_frames": 22,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "1",
+            "kind": "audio",
+            "label": "A1",
+            "locked": false,
+            "mix": {
+              "effects": [
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Equalizer": {
+                      "bands": [
+                        {
+                          "enabled": false,
+                          "freq_hz": 80.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighPass"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 120.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowShelf"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 500.0,
+                          "gain_db": 6.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 2500.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "Peak"
+                        },
+                        {
+                          "enabled": true,
+                          "freq_hz": 8000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "HighShelf"
+                        },
+                        {
+                          "enabled": false,
+                          "freq_hz": 18000.0,
+                          "gain_db": 0.0,
+                          "q": 0.7071067690849304,
+                          "shape": "LowPass"
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "MultibandCompressor": {
+                      "bands": [
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -18.0
+                        },
+                        {
+                          "attack_ms": 10.0,
+                          "makeup_db": 0.0,
+                          "ratio": 3.0,
+                          "release_ms": 150.0,
+                          "threshold_db": -24.0
+                        }
+                      ],
+                      "crossovers_hz": [
+                        200.0,
+                        2000.0
+                      ]
+                    }
+                  }
+                },
+                {
+                  "enabled": true,
+                  "kind": "Mono"
+                },
+                {
+                  "enabled": true,
+                  "kind": {
+                    "Normalize": {
+                      "mode": "Loudness",
+                      "set_level": "Relative",
+                      "target_db": -23.0
+                    }
+                  }
+                }
+              ],
+              "gain_db": -6.0,
+              "pan": -0.25
+            },
+            "muted": false,
+            "solo": false
+          }
+        ]
+      },
+      "manifest": {
+        "clip_id": "1",
+        "clip_ids": [
+          "1",
+          "0"
+        ],
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "frames": [
+          [
+            -10,
+            0,
+            11
+          ],
+          [
+            -9,
+            1,
+            12
+          ],
+          [
+            -8,
+            2,
+            13
+          ],
+          [
+            -7,
+            3,
+            14
+          ],
+          [
+            -6,
+            4,
+            15
+          ],
+          [
+            -5,
+            5,
+            16
+          ],
+          [
+            -4,
+            6,
+            17
+          ],
+          [
+            -3,
+            7,
+            18
+          ],
+          [
+            -2,
+            8,
+            19
+          ],
+          [
+            -1,
+            9,
+            20
+          ],
+          [
+            0,
+            10,
+            21
+          ],
+          [
+            1,
+            11,
+            22
+          ],
+          [
+            2,
+            12,
+            23
+          ],
+          [
+            3,
+            13,
+            24
+          ],
+          [
+            4,
+            14,
+            25
+          ],
+          [
+            5,
+            15,
+            26
+          ],
+          [
+            6,
+            16,
+            27
+          ],
+          [
+            7,
+            17,
+            28
+          ],
+          [
+            8,
+            18,
+            29
+          ],
+          [
+            9,
+            19,
+            30
+          ],
+          [
+            10,
+            20,
+            31
+          ],
+          [
+            11,
+            21,
+            32
+          ],
+          [
+            12,
+            22,
+            33
+          ],
+          [
+            13,
+            23,
+            34
+          ],
+          [
+            14,
+            24,
+            35
+          ],
+          [
+            15,
+            25,
+            36
+          ],
+          [
+            16,
+            26,
+            37
+          ],
+          [
+            17,
+            27,
+            38
+          ],
+          [
+            18,
+            28,
+            39
+          ],
+          [
+            19,
+            29,
+            40
+          ],
+          [
+            20,
+            30,
+            41
+          ],
+          [
+            21,
+            31,
+            42
+          ],
+          [
+            22,
+            32,
+            43
+          ],
+          [
+            23,
+            33,
+            44
+          ],
+          [
+            24,
+            34,
+            45
+          ],
+          [
+            25,
+            35,
+            46
+          ],
+          [
+            26,
+            36,
+            47
+          ]
+        ],
+        "generation": "5",
+        "locked": false,
+        "max_delta": 26,
+        "media_id": "2",
+        "min_delta": -10,
+        "name": "venturi-smoke.mp4",
+        "preview_available": true,
+        "project_epoch": "1792526308562405815:1",
+        "revision": "aaa622b590eb3eb3",
+        "source_version": "14620649402460140468",
+        "window_end": 26,
+        "window_start": -10
+      },
+      "transform": [
+        {
+          "param": "ZoomX",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "ZoomY",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Rotation",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropLeft",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropTop",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropRight",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropBottom",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropSoftness",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Opacity",
+          "default": 100.0,
+          "keyframes": [
+            [
+              9,
+              42.898860931396484,
+              {
+                "Bezier": {
+                  "c1": [
+                    0.30045604705810547,
+                    -0.18479980528354645
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    1.5
+                  ]
+                }
+              }
+            ],
+            [
+              18,
+              90.0,
+              "Hold"
+            ]
+          ]
+        }
+      ]
+    }
+  },
+  "source_sha256": "2a89d0065a00ffed3db76e6aae2d05a298932813e52209b5897d4218b9385938",
+  "verification": {
+    "rust_tests_passed": 72,
+    "javascript_tests_passed": 35,
+    "native_source_edges": [
+      10,
+      21
+    ],
+    "browser_source_times": [
+      0.416666,
+      0.875
+    ],
+    "browser_proxy_urls": "blob:",
+    "decoded_dimensions": [
+      320,
+      180
+    ],
+    "keyframes_and_source_files_unchanged": true,
+    "linked_numeric_and_pointer_one_undo_each": true,
+    "gpu": "explicit CPU only"
+  }
+}

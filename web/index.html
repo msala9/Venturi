@@ -87,6 +87,14 @@
           <button id="fullscreen" aria-label="Fullscreen viewer">⛶</button>
         </div>
         <div id="screen">
+          <section id="slip-view" hidden aria-label="Slip source edges">
+            <div class="slip-frames">
+              <figure><video muted playsinline preload="metadata" aria-label="Slip first source frame"></video><figcaption data-slip-label>First source frame</figcaption></figure>
+              <figure><video muted playsinline preload="metadata" aria-label="Slip last source frame"></video><figcaption data-slip-label>Last source frame</figcaption></figure>
+            </div>
+            <div class="slip-controls"><label>Slip preview delta frames <input type="number" step="1" value="0"></label><button type="button" data-slip-refresh>Refresh edges</button><button type="button" data-slip-apply disabled>Apply slip</button><button type="button" data-slip-close>Close slip preview</button></div>
+            <output aria-live="polite">Prepare slip preview</output>
+          </section>
           <img id="preview" alt="Composed Venturi timeline frame" hidden />
           <div id="viewer-empty">
             <span class="viewer-mark">V</span
@@ -176,7 +184,7 @@
           ><button id="add-solid" disabled>Add solid</button
           ><button id="split" disabled title="T">Split</button
           ><button id="delete" disabled>Delete</button
-          ><button id="snap" aria-pressed="true">Snap</button
+          ><label>Edit tool <select id="edit-tool"><option value="move">Move / trim</option><option value="slip">Slip</option></select></label><button id="snap" aria-pressed="true">Snap</button
           ><button id="zoom-out" aria-label="Zoom out">−</button
           ><button id="zoom-in" aria-label="Zoom in">+</button
           ><button id="fit">Fit</button>

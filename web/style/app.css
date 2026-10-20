@@ -496,3 +496,11 @@ label {
 #media-list select { min-width: 0; max-width: 100%; }
 #media-list details { margin-top: 12px; }
 #media-list details button { margin: 3px 0; }
+#screen[data-slip-preview="true"] > :not(#slip-view) { visibility: hidden; }
+#slip-view { position: absolute; inset: 0; overflow: auto; z-index: 3; background: var(--bg); padding: 8px; }
+.slip-frames { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.slip-frames figure { margin: 0; min-width: 0; }
+.slip-frames video { width: 100%; max-height: 200px; object-fit: contain; }
+.slip-frames figcaption { color: var(--muted); }
+.slip-controls { display: flex; gap: 5px; flex-wrap: wrap; margin: 8px 0; }
+.slip-controls input { width: 80px; }

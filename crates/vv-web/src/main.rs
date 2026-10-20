@@ -11,6 +11,7 @@ mod inspector;
 mod masks;
 mod preview;
 mod program;
+mod slip;
 mod snapshot;
 mod source;
 mod visual;

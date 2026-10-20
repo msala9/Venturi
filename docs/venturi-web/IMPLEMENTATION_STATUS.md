@@ -979,3 +979,31 @@ removed media's Inspector bounds use timeline dimensions until it returns.
 Project folders are editing organization only. Shared assets remain owned by
 ds4-appliance; this increment does not create another shared catalog or modify
 its files, mount, credentials, retention policy or inference services.
+
+## M4 increment — Slip tool and dual source viewer
+
+Timeline now offers Move/trim and Slip tools. Slip drags retain clip geometry,
+intersect all linked source handles and commit one native SlipClips operation.
+The Inspector also opens a dual viewer with numeric delta/Apply/Close controls.
+Its first/last source coordinates are computed by the native clip methods for
+every cached integer delta, including conformed FPS. The browser only indexes
+that map and seeks two muted local MP4 Blob views; pointer movement performs no
+HTTP. Cached maps have at most 65537 entries and proxies at most 32 MiB.
+
+Browser verification initially caught CSP blocking blob videos and Color scopes
+constraining the view. The media CSP now permits local blobs; scopes hide while
+Slip is visible and restore their previous visibility on close. The tested
+320x180 source displays frames 10 and 21 at media times 0.416666/0.875 seconds,
+matching the embedded source frame numbers. Numeric +3 and pointer +5 moved
+linked video/audio source bounds together, each in one Undo. Both Undos restored
+7..19; Redo/save retained 10..22 (exclusive out). Clip IDs, timeline geometry,
+links, native keyframes and the source SHA-256 stayed unchanged. Evidence:
+m4-native-slip.json/browser.png. 72 web Rust and 35 JavaScript tests, formatting,
+web clippy with warnings denied and build pass; all acceptance here is CPU.
+
+Slip remains partial at the source-service limits: long or complex sources
+whose full low-quality proxy exceeds the existing source-job duration/32 MiB
+local budget need bounded source-window proxies. Numeric native slip still
+works without a dual movie preview. Stills/audio/compound sources retain their
+native editing semantics but do not claim a dual movie decoder. Closing these
+source-preview limits is required before complete M4 parity is claimed.

@@ -105,6 +105,10 @@ pub enum Operation {
         gain_db: Option<f32>,
         pan: Option<f32>,
     },
+    SetAudioEffects {
+        channel: String,
+        effects: Vec<core::AudioEffect>,
+    },
     SetMarker {
         marker: MarkerEdit,
     },
@@ -269,20 +273,15 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     }
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::SetAudioEffects { channel, effects } => {
+            crate::audio::set_effects(session, id, channel, effects)?
+        }
         Operation::SetMixer {
             channel,
             gain_db,
             pan,
         } => {
-            let channel = if channel == "master" {
-                core::MixerChannel::Master
-            } else {
-                let track = track_index(tl, channel)?;
-                if tl.tracks[track].kind != TrackKind::Audio {
-                    return Err(ApiError::invalid("Select an audio mixer track"));
-                }
-                core::MixerChannel::Track(track)
-            };
+            let channel = crate::audio::channel(tl, channel)?;
             let mut commands: Vec<Box<dyn Command>> = vec![];
             for (param, value) in [
                 (core::MixerParam::GainDb, gain_db),

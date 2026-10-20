@@ -17,6 +17,7 @@ vv-core = { path = "../vv-core" }
 vv-session = { path = "../vv-session" }
 vv-media = { path = "../vv-media" }
 vv-render = { path = "../vv-render" }
+vv-audio = { path = "../vv-audio" }
 pollster = "1.0.1"
 png = "0.18"
 ron = "0.12.2"

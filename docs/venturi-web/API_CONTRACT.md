@@ -193,3 +193,12 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 - `set_mixer {channel,gain_db,pan}` edits native gain/balance on an audio track
   ID or channel `master`. Gain is -100..30dB and balance -1..1; all supplied
   fields validate before one history entry. Track locks apply to track strips.
+- `set_audio_effects {channel,effects}` replaces an ordered native insert chain
+  (maximum 32), after validating all EQ/compressor/normalization ranges and
+  crossovers. Enabled state is preserved in native AudioEffect JSON. One
+  composite history entry reverses the entire change.
+- Session audio_effects contains native defaults/ranges; timeline master and
+  track mix include native effect chains. GET
+  `/timelines/{id}/audio/{channel}/eq/{index}` uses the exact-frame identity
+  query and returns 128 committed native frequency-response points at 48kHz.
+  This read does not require a GPU or create an audio output device.

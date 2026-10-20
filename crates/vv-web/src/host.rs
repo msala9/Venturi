@@ -27,6 +27,7 @@ pub enum Action {
     FrameSnapshot(FrameQuery, oneshot::Sender<Result<FrameSnapshot>>),
     CheckFrame(FrameQuery),
     ClipDetail(String, FrameQuery),
+    EqResponse(String, usize, FrameQuery),
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
@@ -274,6 +275,18 @@ impl Editor {
     }
     fn handle(&mut self, action: Action) -> Result<Value> {
         match action {
+            Action::EqResponse(channel, index, query) => {
+                let (id, _) = self.validate_frame(&query)?;
+                let mut value = crate::audio::eq_response(
+                    &self.session.project.timelines[id],
+                    &channel,
+                    index,
+                )?;
+                value["revision"] = json!(query.revision);
+                value["project_epoch"] = json!(query.project_epoch);
+                value["generation"] = json!(query.if_generation);
+                Ok(value)
+            }
             Action::ClipDetail(clip, query) => {
                 let (id, _) = self.validate_frame(&query)?;
                 let mut detail = crate::inspector::detail(&self.session, id, &clip, query.frame)?;

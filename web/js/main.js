@@ -79,12 +79,12 @@ function showWorkspace(name) {
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = name !== "Audio" || label !== "Track / Master mixer";
+    button.disabled = name !== "Audio" || !["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label);
     if (!button.disabled) button.addEventListener("click",()=>{
       if (!mixerDetail) return notice("Open a native timeline first");
       editor.classList.remove("inspector-collapsed");mixerDetail.open=true;mixerDetail.scrollIntoView({block:"start"});
     });
-    button.title = "Not implemented in the web host";
+    button.title = button.disabled ? "Not implemented in the web host" : "Open the native track/master mixer and its insert chain";
     tools.append(button);
   }
   area.append(tools);
@@ -264,12 +264,16 @@ $("play").addEventListener("click", () => {
 });
 let inspectorSequence = 0;
 let mixerDetail = null;
+const mixerPaths = new Set();
 function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
 }
 function selected() {
   const inspectorSeq = ++inspectorSequence;
   const mixerOpen = mixerDetail?.open || false;
+  for (const node of mixerDetail?.querySelectorAll("details[data-mixer-path]") || []) {
+    if (node.open) mixerPaths.add(node.dataset.mixerPath); else mixerPaths.delete(node.dataset.mixerPath);
+  }
   mixerDetail=null;
   const clip = timeline?.tracks
     .flatMap((track) => track.clips)
@@ -374,7 +378,8 @@ function selected() {
     const slip = document.createElement("button"); slip.textContent = "Apply linked slip"; slip.disabled = !view.selection.length;
     form.append(label,slip); form.addEventListener("submit",(event)=>{event.preventDefault();commit({kind:"slip",clip_ids:view.selection,delta_frames:Number(delta.value)}).catch((error)=>notice(error.message));}); fieldset.append(form); $("inspector-content").append(fieldset);
     renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,seek:(frame)=>{view.playhead=frame;updateTime();seek();selected();}});
-    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen});
+    const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
+    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery});
   }
 }
 const canvasTimeline = createTimeline({

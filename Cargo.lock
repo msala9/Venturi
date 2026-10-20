@@ -4983,6 +4983,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tower",
+ "vv-audio",
  "vv-core",
  "vv-media",
  "vv-render",

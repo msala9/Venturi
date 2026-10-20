@@ -1,4 +1,5 @@
 mod api;
+mod audio;
 mod commands;
 mod error;
 mod files;

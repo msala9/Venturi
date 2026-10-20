@@ -32,6 +32,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/session", get(session))
         .route("/api/v1/timelines/{id}", get(timeline))
         .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
+        .route(
+            "/api/v1/timelines/{id}/audio/{channel}/eq/{index}",
+            get(eq_response),
+        )
         .route("/api/v1/projects", get(projects))
         .route("/api/v1/projects/commands", post(project_command))
         .route("/api/v1/timelines/{id}/commands", post(timeline_command))
@@ -257,6 +261,26 @@ async fn clip_detail(
 }
 async fn projects(State(state): State<AppState>) -> Result<Json<Value>> {
     state.host.call(Action::Projects).await.map(Json)
+}
+async fn eq_response(
+    State(state): State<AppState>,
+    Path((id, channel, index)): Path<(String, String, String)>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid equalizer query"))?
+        .0;
+    if query.timeline_id != id {
+        return Err(ApiError::invalid("Timeline ID does not match the query"));
+    }
+    let index = index
+        .parse()
+        .map_err(|_| ApiError::invalid("Invalid equalizer index"))?;
+    state
+        .host
+        .call(Action::EqResponse(channel, index, query))
+        .await
+        .map(Json)
 }
 async fn project_command(
     State(state): State<AppState>,

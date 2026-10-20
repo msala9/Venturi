@@ -1,0 +1,114 @@
+{
+  "timeline_fps": {
+    "den": 1,
+    "num": 24
+  },
+  "effect_order": [
+    "Equalizer",
+    "MultibandCompressor",
+    "Mono",
+    "Normalize"
+  ],
+  "effects": [
+    {
+      "enabled": true,
+      "kind": {
+        "Equalizer": {
+          "bands": [
+            {
+              "enabled": false,
+              "freq_hz": 80.0,
+              "gain_db": 0.0,
+              "q": 0.7071067690849304,
+              "shape": "HighPass"
+            },
+            {
+              "enabled": true,
+              "freq_hz": 120.0,
+              "gain_db": 0.0,
+              "q": 0.7071067690849304,
+              "shape": "LowShelf"
+            },
+            {
+              "enabled": true,
+              "freq_hz": 500.0,
+              "gain_db": 6.0,
+              "q": 0.7071067690849304,
+              "shape": "Peak"
+            },
+            {
+              "enabled": true,
+              "freq_hz": 2500.0,
+              "gain_db": 0.0,
+              "q": 0.7071067690849304,
+              "shape": "Peak"
+            },
+            {
+              "enabled": true,
+              "freq_hz": 8000.0,
+              "gain_db": 0.0,
+              "q": 0.7071067690849304,
+              "shape": "HighShelf"
+            },
+            {
+              "enabled": false,
+              "freq_hz": 18000.0,
+              "gain_db": 0.0,
+              "q": 0.7071067690849304,
+              "shape": "LowPass"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "kind": {
+        "MultibandCompressor": {
+          "bands": [
+            {
+              "attack_ms": 10.0,
+              "makeup_db": 0.0,
+              "ratio": 3.0,
+              "release_ms": 150.0,
+              "threshold_db": -24.0
+            },
+            {
+              "attack_ms": 10.0,
+              "makeup_db": 0.0,
+              "ratio": 3.0,
+              "release_ms": 150.0,
+              "threshold_db": -18.0
+            },
+            {
+              "attack_ms": 10.0,
+              "makeup_db": 0.0,
+              "ratio": 3.0,
+              "release_ms": 150.0,
+              "threshold_db": -24.0
+            }
+          ],
+          "crossovers_hz": [
+            200.0,
+            2000.0
+          ]
+        }
+      }
+    },
+    {
+      "enabled": true,
+      "kind": "Mono"
+    },
+    {
+      "enabled": true,
+      "kind": {
+        "Normalize": {
+          "mode": "Loudness",
+          "set_level": "Relative",
+          "target_db": -23.0
+        }
+      }
+    }
+  ],
+  "hardware_note": "CPU editor and native DSP response; no R9700 or speaker acceptance"
+}

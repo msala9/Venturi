@@ -413,3 +413,40 @@ All 30 web Rust tests, 18 JavaScript tests, formatting, clippy and build pass.
 Native regression checks full-patch validation, one undo step, invalid balance,
 locked-track refusal, master parameters and video-track refusal. Hardware
 Program playback with changed mix remains pending; M5 is not accepted.
+
+## M5 independent increment — native audio inserts and EQ response
+
+Each audio/master strip now edits a bounded ordered native insert chain:
+six-band EQ (enabled/shape/frequency/gain/Q), three-band compressor (crossovers,
+threshold/ratio/attack/release/makeup), sample/true-peak or R128 loudness
+normalization with relative/independent clip level policy, and Mono. Add,
+edit, bypass, reorder and remove validate every native range before replacing
+the chain in one native undo step. The browser only edits native values;
+processing, defaults and bounds come from vv-core/vv-audio. Insert editors
+render lazily and retain their open state across confirmed edits.
+
+EQ graphs request the committed native EqResponse at the native 48kHz mixer
+rate, under epoch/generation/revision guards. 128 logarithmic points are drawn
+without browser DSP. A +6dB band measured a 5.99877dB response peak. The graph
+is a transfer response, not a live spectrum or output-level meter. Bypass
+returns a flat response. Presets, live meters and compressor response display
+remain open.
+
+Browser proof: A1 EQ band 3 +6dB; compressor middle threshold -18dB; Loudness
+default -23 LUFS; Mono reordered before Normalize. Bypass, remove and undo
+restored the chain correctly, followed by Save. Evidence:
+evidence/m5-native-equalizer-browser.png, m5-native-compressor-browser.png and
+m5-native-audio-chain.json. All 33 web Rust tests, 19 JavaScript tests,
+formatting, clippy and build pass. Added coverage validates default ranges,
+nonfinite/out-of-order rejection, full-chain atomicity/order/undo/locks and
+native EQ/bypass response.
+
+The full vv-audio suite returned 97 pass, 1 failure, 2 ignored: the existing
+mixer_seek_and_snapshot_swaps_do_not_reopen_or_leak test requires an audio
+output device unavailable in WSL (CPAL reports the requested device missing).
+The headless run explicitly excluded that one test: 97 pass, 2 upstream
+ignored, 1 filtered. No ALSA device was fabricated or Linux playback enabled.
+These are native DSP/editor checks, not R9700 Program playback or physical
+Windows speaker validation. D41 acquired the shared GPU slot at 13:48:56 UTC
+for the priority quality panel, with a stated 15:35 UTC hard bound; Venturi
+remains CPU-only until effective release is verified.

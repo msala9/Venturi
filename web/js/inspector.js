@@ -1,3 +1,5 @@
+import {renderFilters} from "./visual.js";
+
 export function detailIdentity(state) {
   return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame].join(":") : null;
 }
@@ -6,7 +8,7 @@ export function keyframeOperation(clip, target, frame, value, interpolation = "L
   if (!Number.isSafeInteger(frame) || frame < 0) throw new Error("Choose an integer timeline frame");
   return { kind: "set_keyframe", clip_id: clip, edit: { target, timeline_frame: frame, value, interpolation } };
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState }) {
   const disabled = !writable || detail.locked;
   const report = (operation) => commit(operation).catch((error) => notice(error.message));
   const section = document.createElement("details"); section.open = true;
@@ -66,8 +68,10 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   number("Fade in frames", detail.fade_in, 0, detail.length_frames, (fade_in) => ({ fade_in }));
   number("Fade out frames", detail.fade_out, 0, detail.length_frames, (fade_out) => ({ fade_out }));
   root.append(section);
+  const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report);
+  return controls;
 }
 
 function renderTitle(root, detail, disabled, report) {

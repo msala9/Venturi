@@ -10,6 +10,7 @@ import { renderMixer } from "./mixer.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
+function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
   document.querySelectorAll(".media-item").forEach((card) => {
@@ -79,12 +80,16 @@ function showWorkspace(name) {
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = name !== "Audio" || !["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label);
+    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label)) || (name === "Color" && label === "Shadows / Midtones / Highlights / Offset"));
     if (!button.disabled) button.addEventListener("click",()=>{
+      if(name === "Color") {
+        const filters=document.querySelector('[data-visual-path="filters"]');if(!filters)return notice("Select a native video clip first");
+        revealInspector();filters.open=true;filters.scrollIntoView({block:"start"});return;
+      }
       if (!mixerDetail) return notice("Open a native timeline first");
-      editor.classList.remove("inspector-collapsed");mixerDetail.open=true;mixerDetail.scrollIntoView({block:"start"});
+      revealInspector();mixerDetail.open=true;mixerDetail.scrollIntoView({block:"start"});
     });
-    button.title = button.disabled ? "Not implemented in the web host" : "Open the native track/master mixer and its insert chain";
+    button.title = button.disabled ? "Not implemented in the web host" : name === "Color" ? "Open clip filters and color controls" : "Open the track/master mixer and its insert chain";
     tools.append(button);
   }
   area.append(tools);
@@ -131,6 +136,7 @@ $("close-export").addEventListener("click", () => {
   $("export-panel").hidden = true;
 });
 $("collapse-inspector").addEventListener("click", () => {
+  if(editor.classList.contains("inspector-drawer-open")){editor.classList.remove("inspector-drawer-open");return;}
   editor.classList.toggle("inspector-collapsed");
 });
 $("fullscreen").addEventListener("click", async () => {
@@ -265,11 +271,15 @@ $("play").addEventListener("click", () => {
 let inspectorSequence = 0;
 let mixerDetail = null;
 const mixerPaths = new Set();
+const visualState = new Map();
+let visualControls=[];
 function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
 }
 function selected() {
   const inspectorSeq = ++inspectorSequence;
+  for(const node of document.querySelectorAll("#inspector-content details[data-visual-path]"))visualState.set(node.dataset.visualPath,node.open);
+  for(const control of visualControls)control.cancel();visualControls=[];
   const mixerOpen = mixerDetail?.open || false;
   for (const node of mixerDetail?.querySelectorAll("details[data-mixer-path]") || []) {
     if (node.open) mixerPaths.add(node.dataset.mixerPath); else mixerPaths.delete(node.dataset.mixerPath);
@@ -291,7 +301,7 @@ function selected() {
     request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(clip.id)}?${query}`).then((detail) => {
       if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
       target.replaceChildren();
-      renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice });
+      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState });
     }).catch((error) => { if (inspectorSeq === inspectorSequence) target.textContent = error.message; });
   }
   if (clip)
@@ -396,6 +406,7 @@ const canvasTimeline = createTimeline({
   onCommand: (operation) => commit(operation),
   onNotice: notice,
 });
+window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});
 function updateTime() {
   if (viewerMode === "source") { canvasTimeline.invalidate(); return; }
   const fps = Math.round(timeline?.fps.num / timeline?.fps.den || 24),

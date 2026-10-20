@@ -424,6 +424,16 @@ label {
   #right-splitter {
     visibility: hidden;
   }
+  #editor.inspector-drawer-open #inspector {
+    visibility: visible;
+    position: fixed;
+    top: 88px;
+    right: 8px;
+    bottom: 38px;
+    width: min(360px, calc(100vw - 16px));
+    z-index: 20;
+    box-shadow: 0 8px 30px #000a;
+  }
   header #palette-button,
   header #project-name,
   .theme-note {
@@ -459,6 +469,8 @@ label {
 .property-row .field { flex: 1; min-width: 90px; }
 .property-row input { width: 100%; }
 .eq-response { width: 100%; height: auto; }
+.grade-wheels { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 8px; }
+.color-wheel { display: block; width: 150px; height: 150px; touch-action: none; }
 .keyframe-list { overflow-wrap: anywhere; }
 #inspector-content summary { cursor: pointer; margin: 12px 0; }
 @media (prefers-reduced-motion: reduce) {

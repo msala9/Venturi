@@ -88,6 +88,10 @@ pub enum Operation {
         clip_id: String,
         edit: crate::inspector::Keyframe,
     },
+    SetKeyframes {
+        clip_id: String,
+        edits: Vec<crate::inspector::Keyframe>,
+    },
     Slip {
         clip_ids: Vec<String>,
         delta_frames: FrameIdx,
@@ -104,6 +108,10 @@ pub enum Operation {
         channel: String,
         gain_db: Option<f32>,
         pan: Option<f32>,
+    },
+    EditFilter {
+        clip_id: String,
+        edit: crate::visual::FilterEdit,
     },
     SetAudioEffects {
         channel: String,
@@ -273,6 +281,10 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     }
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::SetKeyframes { clip_id, edits } => {
+            crate::inspector::keyframes(session, id, clip_id, edits)?
+        }
+        Operation::EditFilter { clip_id, edit } => crate::visual::edit(session, id, clip_id, edit)?,
         Operation::SetAudioEffects { channel, effects } => {
             crate::audio::set_effects(session, id, channel, effects)?
         }

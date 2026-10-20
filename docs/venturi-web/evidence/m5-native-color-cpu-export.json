@@ -1,0 +1,12 @@
+{
+  "compose_fps": 5.59967737085516,
+  "compositor": "llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan)",
+  "decode_fps": 227.37736823239922,
+  "elapsed_seconds": 6.827021813,
+  "encode_fps": 8.571789792773146,
+  "encoder": "Some(X264)",
+  "frames": 12,
+  "video_frames_decoded": 12,
+  "video_duration_seconds": 0.5,
+  "note": "Native color correction, exposure, Gaussian blur and audio inserts; llvmpipe CPU only, no R9700 proof"
+}

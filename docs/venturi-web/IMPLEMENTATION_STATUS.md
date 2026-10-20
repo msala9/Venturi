@@ -450,3 +450,33 @@ These are native DSP/editor checks, not R9700 Program playback or physical
 Windows speaker validation. D41 acquired the shared GPU slot at 13:48:56 UTC
 for the priority quality panel, with a stated 15:35 UTC hard bound; Venturi
 remains CPU-only until effective release is verified.
+
+## M4/M5 independent increment — visual filters, grading and joint keyframes
+
+Inspector now edits the native ordered ColorCorrection/Exposure/BoxBlur/
+GaussianBlur/DropShadow stack, with add, remove, reorder and bypass. Typed
+patches validate applicable fields, numeric bounds and track locks before one
+native set_clip_filters command. Existing animation is preserved. Color has
+all 18 native grade parameters, plus four pointer/keyboard wheels using the
+same native hue ring and Cb/Cr orientation as the desktop. Wheel movement is
+local; release creates one command. Escape, capture loss and window blur
+cancel. Animated X/Y use one prevalidated batch of native source-frame keys.
+Scalar grade/filter keyframes support native interpolation/removal.
+
+Windows browser: on a trimmed clip, timeline frame 0 maps to source 7.
+Shadows X/Y joint keys at source 7 became 0.02/0; MidtonesLuma 0.1 key,
+Exposure +1 stop and GaussianBlur radius 4 saved correctly. A native software
+export of this project (including its audio insert chain) decoded all 12
+frames, duration 0.500s; 6.83s elapsed with llvmpipe at 1920x1080. This verifies
+native rendering, not realtime CPU playback or AMD acceptance. Evidence:
+evidence/m5-native-color-state.json, m5-native-color-cpu-export.json,
+m5-native-color-wheels-browser.png. R9700 acceptance, scopes and Auto Balance
+remain outstanding.
+
+Responsive check: at the 746x964 browser panel, Color/Mixer buttons now reveal
+Inspector as a closable drawer instead of leaving it inaccessible below the
+full-editor minimum width. Evidence m5-color-narrow-inspector-browser.png;
+1280x800 full layout also checked. All 36 web Rust tests, 21 JavaScript tests,
+formatting, clippy and build pass. New tests cover full-patch rejection,
+animation preservation, filter order/undo/locks, joint-key atomicity, unit-disc
+geometry, zero pointer-move writes, one release write and cancellation.

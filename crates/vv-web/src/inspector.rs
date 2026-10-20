@@ -48,8 +48,26 @@ pub struct Parameter {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Target {
-    Transform { param: TransformParam },
+    Transform {
+        param: TransformParam,
+    },
     Gain,
+    Grade {
+        param: core::GradeParam,
+    },
+    FilterRadius {
+        filter: core::FilterKind,
+    },
+    FilterAmount {
+        filter: core::FilterKind,
+    },
+    FilterGrow {
+        filter: core::FilterKind,
+    },
+    FilterOffset {
+        filter: core::FilterKind,
+        axis: usize,
+    },
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -127,7 +145,11 @@ pub fn transition(
     session.apply(command);
     Ok(())
 }
-fn find<'a>(session: &'a Session, id: TimelineId, raw: &str) -> Result<(usize, ClipId, &'a Clip)> {
+pub(crate) fn find<'a>(
+    session: &'a Session,
+    id: TimelineId,
+    raw: &str,
+) -> Result<(usize, ClipId, &'a Clip)> {
     let clip = ClipId(raw.parse().map_err(|_| ApiError::missing())?);
     session.project.timelines[id]
         .tracks
@@ -172,7 +194,7 @@ fn rgba(color: core::Rgba) -> Result<()> {
     }
     Ok(())
 }
-fn writable(session: &Session, id: TimelineId, track: usize) -> Result<()> {
+pub(crate) fn writable(session: &Session, id: TimelineId, track: usize) -> Result<()> {
     if session.project.timelines[id].tracks[track].locked {
         return Err(ApiError::conflict(
             "TRACK_LOCKED",
@@ -365,7 +387,12 @@ pub fn properties(
     )));
     Ok(())
 }
-pub fn keyframe(session: &mut Session, id: TimelineId, raw: &str, edit: &Keyframe) -> Result<()> {
+fn keyframe_command(
+    session: &Session,
+    id: TimelineId,
+    raw: &str,
+    edit: &Keyframe,
+) -> Result<Box<dyn Command>> {
     let (track, clip_id, clip) = find(session, id, raw)?;
     writable(session, id, track)?;
     if !(clip.timeline_start..clip.timeline_end()).contains(&edit.timeline_frame) {
@@ -394,6 +421,76 @@ pub fn keyframe(session: &mut Session, id: TimelineId, raw: &str, edit: &Keyfram
             }
             core::KeyframeValue::Gain(value)
         }
+        Target::Grade { param } if video => {
+            if !clip
+                .effects
+                .filters
+                .iter()
+                .any(|f| f.kind == core::FilterKind::ColorCorrection)
+            {
+                return Err(ApiError::invalid(
+                    "Add ColorCorrection before keyframing a grade",
+                ));
+            }
+            if edit.value.is_some() {
+                let range = param.range();
+                bounded(value, (*range.start(), *range.end()))?;
+            }
+            core::KeyframeValue::Grade(param, value)
+        }
+        Target::FilterRadius { filter }
+        | Target::FilterAmount { filter }
+        | Target::FilterGrow { filter }
+        | Target::FilterOffset { filter, .. }
+            if video =>
+        {
+            if !clip.effects.filters.iter().any(|f| f.kind == filter) {
+                return Err(ApiError::invalid("Add the filter before keyframing it"));
+            }
+            let (native, range) = match edit.target {
+                Target::FilterRadius { .. }
+                    if filter.is_blur() || filter == core::FilterKind::DropShadow =>
+                {
+                    (
+                        core::KeyframeValue::FilterRadius(filter, value),
+                        (0.0, core::BLUR_RADIUS_MAX),
+                    )
+                }
+                Target::FilterAmount { .. } => (
+                    core::KeyframeValue::FilterAmount(filter, value),
+                    crate::visual::amount_range(filter)?,
+                ),
+                Target::FilterGrow { .. } if filter == core::FilterKind::DropShadow => (
+                    core::KeyframeValue::FilterGrow(filter, value),
+                    (0.0, core::SHADOW_GROW_MAX),
+                ),
+                Target::FilterOffset { axis, .. }
+                    if filter == core::FilterKind::DropShadow && axis < 2 =>
+                {
+                    (
+                        core::KeyframeValue::FilterOffset(
+                            filter,
+                            if axis == 0 {
+                                core::Axis::X
+                            } else {
+                                core::Axis::Y
+                            },
+                            value,
+                        ),
+                        (-8192.0, 8192.0),
+                    )
+                }
+                _ => {
+                    return Err(ApiError::invalid(
+                        "That keyframe target does not apply to this filter",
+                    ));
+                }
+            };
+            if edit.value.is_some() {
+                bounded(value, range)?;
+            }
+            native
+        }
         _ => {
             return Err(ApiError::invalid(
                 "Keyframe target does not match the clip track kind",
@@ -419,7 +516,30 @@ pub fn keyframe(session: &mut Session, id: TimelineId, raw: &str, edit: &Keyfram
             frame,
         ))
     };
+    Ok(command)
+}
+pub fn keyframe(session: &mut Session, id: TimelineId, raw: &str, edit: &Keyframe) -> Result<()> {
+    let command = keyframe_command(session, id, raw, edit)?;
     session.apply(command);
+    Ok(())
+}
+pub fn keyframes(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    edits: &[Keyframe],
+) -> Result<()> {
+    if edits.is_empty() || edits.len() > 64 {
+        return Err(ApiError::invalid("Choose between 1 and 64 keyframes"));
+    }
+    let commands = edits
+        .iter()
+        .map(|edit| keyframe_command(session, id, raw, edit))
+        .collect::<Result<Vec<_>>>()?;
+    session.apply(Box::new(core::CompositeCommand::new(
+        CommandLabel::SetKeyframe,
+        commands,
+    )));
     Ok(())
 }
 pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64) -> Result<Value> {
@@ -439,6 +559,9 @@ pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64)
     let mut result = json!({"clip_id":raw,"source_frame":frame,"timeline_frame":timeline_frame,"locked":session.project.timelines[id].tracks[track].locked,"video":session.project.timelines[id].tracks[track].kind == core::TrackKind::Video,"transform":parameters,"flip":clip.effects.transform.flip,"blend":clip.effects.blend_mode,"blends":core::BlendMode::ALL,"matte":clip.effects.matte.map(|m|format!("{m:?}")).unwrap_or_else(||"None".into()),"mattes":["None","Alpha","AlphaInverted","Luma","LumaInverted"],"gain":{"default":clip.effects.gain_db.default,"value":clip.effects.gain_db.value_at(frame),"keyframes":clip.effects.gain_db.keyframes()},"color":clip.effects.color.as_ref().map(|c|c.default),"fade_in":clip.fade_in,"fade_out":clip.fade_out,"length_frames":clip.timeline_len});
     result["transitions"] = json!({"in":clip.effects.transition_in,"out":clip.effects.transition_out,"cut_after":lane.crossing_from(clip.id).map(|c|&c.transition),"cut_max_frames":right.map(|r|2*r.timeline_len.min(clip.timeline_len))});
     result["title"] = json!(clip.effects.title);
+    result["filters"] = crate::visual::detail(clip, frame);
+    result["filters"]["wheel_hues"] = crate::visual::wheel_palette();
+    result["filters"]["wheels"] = crate::visual::wheels();
     Ok(result)
 }
 

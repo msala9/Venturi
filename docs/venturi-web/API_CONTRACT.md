@@ -202,3 +202,10 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   `/timelines/{id}/audio/{channel}/eq/{index}` uses the exact-frame identity
   query and returns 128 committed native frequency-response points at 48kHz.
   This read does not require a GPU or create an audio output device.
+- `edit_filter {clip_id,edit}` supports actions add/remove/move/set. Each takes
+  a native filter kind; move adds to_index, set adds a typed patch. Patches can
+  set enabled/radius/direction/amount/shadow fields and grade entries
+  `{param,value}`. Native defaults, bounds and existing keys remain server-owned.
+- Scalar keyframe targets additionally include grade, filter_radius,
+  filter_amount, filter_grow and filter_offset. `set_keyframes {clip_id,edits}`
+  prevalidates 1–64 edits and applies one native composite history step.

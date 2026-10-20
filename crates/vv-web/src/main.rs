@@ -9,6 +9,7 @@ mod preview;
 mod program;
 mod snapshot;
 mod source;
+mod visual;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

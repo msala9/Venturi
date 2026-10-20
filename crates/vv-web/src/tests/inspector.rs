@@ -181,3 +181,43 @@ fn title_edits_preserve_animation_and_validate_before_atomic_apply() {
     assert!(properties(&mut s, id, &raw, &patch).is_err());
     assert_eq!(s.timeline_revision(id), before);
 }
+
+#[test]
+fn joint_keyframes_validate_the_entire_gesture_before_creating_one_history_step() {
+    let (mut s, id, clip) = fixture();
+    let before = s.timeline_revision(id);
+    let position = s.history.position();
+    let edit = |param, value| Keyframe {
+        target: Target::Transform { param },
+        timeline_frame: 108,
+        value: Some(value),
+        interpolation: core::Interpolation::Linear,
+    };
+    assert!(
+        keyframes(
+            &mut s,
+            id,
+            &clip,
+            &[
+                edit(TransformParam::PositionX, 20.0),
+                edit(TransformParam::Opacity, 101.0)
+            ]
+        )
+        .is_err()
+    );
+    assert_eq!(s.timeline_revision(id), before);
+    assert_eq!(s.history.position(), position);
+    keyframes(
+        &mut s,
+        id,
+        &clip,
+        &[
+            edit(TransformParam::PositionX, 20.0),
+            edit(TransformParam::Opacity, 50.0),
+        ],
+    )
+    .unwrap();
+    assert_eq!(s.history.position(), position + 1);
+    s.history.undo(&mut s.project);
+    assert_eq!(s.timeline_revision(id), before);
+}

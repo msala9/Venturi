@@ -17,6 +17,7 @@ mod silence;
 mod slip;
 mod snapshot;
 mod source;
+mod take;
 mod visual;
 
 #[tokio::main]

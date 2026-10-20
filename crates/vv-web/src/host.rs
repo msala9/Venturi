@@ -29,6 +29,7 @@ pub enum Action {
     CheckFrame(FrameQuery),
     ClipDetail(String, FrameQuery),
     SlipDetail(String, i64, FrameQuery),
+    TakePlan(crate::take::Preview),
     SpeechSnapshot(
         crate::silence::Request,
         oneshot::Sender<Result<crate::silence::Task>>,
@@ -163,6 +164,9 @@ impl Editor {
             return match &request.operation {
                 Operation::PlaceRecording { placement } => {
                     crate::recording::place(&mut self.session, &self.files, id, placement)
+                }
+                Operation::ReplaceTake { replacement } => {
+                    crate::take::apply(&mut self.session, &self.files, id, replacement)
                 }
                 Operation::CopyClips { clip_ids } => {
                     self.clipboard = Some(crate::clipboard::copy(&self.session, id, clip_ids)?);
@@ -427,6 +431,10 @@ impl Editor {
                 detail["generation"] = json!(query.if_generation);
                 detail["revision"] = json!(query.revision);
                 Ok(detail)
+            }
+            Action::TakePlan(request) => {
+                let (id, _) = self.validate_frame(&request.query)?;
+                crate::take::preview(&self.session, &self.files, id, &request)
             }
             Action::CheckFrame(query) => self.validate_frame(&query).map(|_| Value::Null),
             Action::SourceSnapshot(media_id, query, reply) => {

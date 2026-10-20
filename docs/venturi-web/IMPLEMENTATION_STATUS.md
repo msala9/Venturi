@@ -1201,3 +1201,30 @@ is available. The process remains isolated CPU/lavapipe with two workers, no
 DRI/KFD descriptors and no RADV mapping; the shared hardware lock was untouched.
 Evidence: m5-halo2-voiceover.json/browser.png. Physical microphone capture is
 not claimed by this deployment check.
+
+## M6 prerequisite — native Replace Take planner and guarded API
+
+The new vv-core take planner creates one native composite command for explicit
+source replacement. It preserves clip IDs, placement, existing speed and all
+unrelated uses of the original media. Linked replacement or keeping other
+linked clips is an explicit policy; mixed linked sources/speeds require the
+latter. Missing streams and locked linked tracks refuse the whole operation.
+The default preserves edit duration or refuses a short take. Explicit shorten
+leaves a gap, clamps fades and removes affected crossings in the same Undo;
+it never ripples or silently changes speed. Preserved effects remap keyframe
+times through native FPS/In helpers and rescale crop through the native relink
+convention. Reset replaces clip effects/fades only. Source files remain intact.
+Frozen/compound clips are explicitly refused at this stage.
+
+A read-only plan API exposes exact changes, with canonical string IDs and a
+descriptor source version. Applying requires that version and the normal
+epoch/generation/revision/idempotency checks, source metadata revalidation and
+a complete trial project. The native GUI's existing behavior is unchanged;
+only the new history label has English/Italian translations.
+
+258 core tests and 91 web tests pass. Core/web clippy with warnings denied,
+formatting and the native vv-app check pass. Tests cover mixed FPS and source
+In animation, crop scaling, unrelated uses, linked sync, locks, stream mismatch,
+shortening/crossings, source changes, explicit effect reset, unchanged source
+bytes and exact Undo/Redo. This is an executable backend prerequisite, not
+completed Review UI, Shot/Take sidecar or A/B acceptance; the goal remains open.

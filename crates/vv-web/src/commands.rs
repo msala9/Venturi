@@ -94,6 +94,9 @@ pub enum Operation {
     PlaceRecording {
         placement: crate::recording::Placement,
     },
+    ReplaceTake {
+        replacement: crate::take::Replacement,
+    },
     Undo,
     Redo,
     HistoryJump {

@@ -31,6 +31,7 @@ pub enum CommandLabel {
     LockTrack,
     ArmTrack,
     RecordVoiceover,
+    ReplaceTake,
     MixerGain,
     MixerPan,
     AddAudioEffect,

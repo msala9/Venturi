@@ -1,5 +1,9 @@
 _version: 2
 
+history.replace_take:
+  en: "Replace take"
+  it: "Sostituisci take"
+
 history.original:
   en: "Original"
   it: "Originale"

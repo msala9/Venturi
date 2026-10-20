@@ -201,6 +201,25 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   retry action. Unsaved take discard requires confirmation; releasing a saved
   take never deletes server audio. Session `recording_formats` lists encoders.
 
+- POST `/review/replace/plan` takes `{query:FrameQuery,replacement}` and never
+  edits the project. Replacement fields: canonical string `clip_id`/`media_id`,
+  integer media `source_in`, `duration` (`preserve`/`shorten`), `links`
+  (`replace_linked`/`selected_only`), `attributes` (`preserve`/`reset`), nullable
+  `source_version`. The native plan returns canonical IDs, before/after lengths,
+  native source ranges, removed crossing count and the current source version.
+  Changed imported timing/streams/fingerprint require explicit relink/reimport.
+- Timeline `replace_take {replacement}` additionally requires that previewed
+  source version. It revalidates epoch/generation/revision, source descriptor,
+  locks, streams, linked media/speeds and the complete trial project. Native
+  `vv_core::take::plan` supplies one ReplaceTake command: clip IDs, placement and
+  existing speed stay; a short take is refused unless shorten was chosen.
+  Shortening never ripples following clips and removes affected cross-cut
+  transitions within the same Undo. Preserved keyframes follow source FPS/In;
+  crop follows the native relink resolution convention. Reset affects clip
+  effects/fades, keeping labels/disabled/link/speed state. Media entries and
+  source files remain unchanged. Frozen clips and compounds must be handled
+  explicitly before take replacement. This API precedes the Review UI/sidecar.
+
 - POST `/analysis/silence` accepts `{query: FrameQuery, clip_ids, params}`.
   The actor captures selected audio and audio linked to selected video; native
   Silero VAD runs on a CPU worker without holding the Session. Params are native

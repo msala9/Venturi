@@ -33,6 +33,7 @@ pub fn router(state: AppState) -> Router {
             get(|| async { Json(json!({"status":"ok","api_version":1})) }),
         )
         .route("/api/v1/session", get(session))
+        .route("/api/v1/review/replace/plan", post(take_plan))
         .route(
             "/api/v1/recordings/{id}",
             post(recording_upload).get(recording_status),
@@ -100,6 +101,18 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn take_plan(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::take::Preview>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid take replacement preview"))?
+        .0;
+    state.host.call(Action::TakePlan(payload)).await.map(Json)
 }
 async fn recording_upload(
     State(state): State<AppState>,

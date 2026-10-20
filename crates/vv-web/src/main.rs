@@ -11,6 +11,7 @@ mod inspector;
 mod masks;
 mod preview;
 mod program;
+mod silence;
 mod slip;
 mod snapshot;
 mod source;
@@ -75,6 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         api::router(api::AppState {
             host,
             source,
+            silence: silence::Jobs::start(),
             port: listen.port(),
             preview,
         }),

@@ -504,3 +504,8 @@ label {
 .slip-frames figcaption { color: var(--muted); }
 .slip-controls { display: flex; gap: 5px; flex-wrap: wrap; margin: 8px 0; }
 .slip-controls input { width: 80px; }
+#silence-dialog { max-width: min(550px, calc(100vw - 24px)); }
+#silence-dialog form:not([method="dialog"]) { display: grid; gap: 2px; margin: 12px 0; }
+#silence-dialog .field { margin: 5px 0; }
+#silence-dialog ol { max-height: 180px; overflow: auto; }
+#silence-dialog output { display: block; margin: 12px 0; }

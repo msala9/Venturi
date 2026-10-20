@@ -115,6 +115,12 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           ctx.strokeRect(x, top + 5, end - x, TRACK - 10);
           if(view.draft.kind === "slip"){ctx.fillStyle=color("--text");ctx.fillText(`Slip ${view.draft.target>=0?"+":""}${view.draft.target}f`,x+6,top+TRACK-15);}
         }
+      for (const [start,end] of view.silencePreview || []) {
+        const x=Math.max(HEADER,frameToX(start,view,timeline.fps)),right=Math.min(width,frameToX(end,view,timeline.fps));
+        if(right<=x)continue;
+        ctx.fillStyle=color("--danger");ctx.globalAlpha=0.28;ctx.fillRect(x,top,right-x,TRACK-1);ctx.globalAlpha=1;
+        ctx.strokeStyle=color("--danger");ctx.strokeRect(x,top+1,right-x,TRACK-3);
+      }
       ctx.restore();
       ctx.fillStyle = color("--surface");
       ctx.fillRect(0, top, HEADER, TRACK - 1);

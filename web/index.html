@@ -30,6 +30,22 @@
       <div class="spacer"></div>
       <span class="theme-note">MADROCK THEME</span>
     </nav>
+    <dialog id="silence-dialog" aria-labelledby="silence-heading">
+      <h2 id="silence-heading">Remove silence · native speech detection</h2>
+      <p>Selected audio and linked video define the speech analysis. Applying the proposed pauses ripples every timeline track. Source files stay unchanged; Undo restores the entire edit.</p>
+      <form>
+        <label class="field">Speech threshold percent <input name="threshold" type="number" min="1" max="99" step="1" value="50" required></label>
+        <label class="field">Minimum silence ms <input name="pause" type="number" min="0" max="3000" step="10" value="300" required></label>
+        <label class="field">Keep before speech ms <input name="head" type="number" min="0" max="1000" step="10" value="100" required></label>
+        <label class="field">Keep after speech ms <input name="tail" type="number" min="0" max="1000" step="10" value="100" required></label>
+        <button data-speech-analyze>Analyze selected speech</button>
+      </form>
+      <output role="status">Select audio clips or their linked video</output>
+      <ol></ol>
+      <button type="button" data-speech-cancel disabled>Cancel speech analysis</button>
+      <button type="button" data-speech-apply disabled>Remove detected pauses from all tracks</button>
+      <button type="button" data-speech-close>Close speech analysis</button>
+    </dialog>
     <main id="editor" data-workspace="Edit">
       <aside id="browser" class="panel">
         <div class="tabs" role="tablist" aria-label="Browser">

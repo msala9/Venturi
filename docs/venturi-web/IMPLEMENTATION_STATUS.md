@@ -1016,3 +1016,35 @@ Windows dual preview decoded source frames 5 and 16 from local blob URLs.
 Process inspection again found no DRI/KFD descriptors or loaded RADV library,
 with two renderer threads and project directory ownership. Evidence:
 m4-halo2-software-slip.json/browser.png. No hardware reservation was acquired.
+
+## M5 increment — native speech detection and global silence removal
+
+Audio now opens a speech-analysis dialog for selected source audio or the audio
+linked to selected video. It uses vv-session's embedded Silero model, native
+non-speech spans, clip mapping and timeline cut planner. Detection is CPU-only,
+off the Session actor, with cancellation, bounded work/results and a 32 MiB
+native probability cache. Parameters and document/source identities invalidate
+obsolete proposals. Proposed cuts are listed and highlighted across the Canvas;
+the browser does not perform speech detection or calculate edit ranges.
+
+Apply explicitly ripples every track through native delete_ranges, validates
+the complete result first and creates one RemoveSilences Undo entry. Locked
+affected tracks refuse atomically. The model's actual zero-audio result was
+verified in the Windows browser: two seconds at 24 fps proposed 0..48, analysis
+left history unchanged, Apply removed the 48-frame audio and shortened a
+120-frame video to 72, and one Undo restored both original clips and IDs.
+Changing threshold disabled the old proposal; a locked video track refused
+Apply with unchanged history and clips. Source SHA-256 remained unchanged.
+The saved Speech_UI_check project retains its original audio/video content.
+Evidence: m5-native-silence.json, m5-native-silence-browser.png and
+m5-native-silence-locked-browser.png. 76 Rust web tests and 37 JavaScript tests
+pass, with formatting, clippy (web and media, warnings denied) and build.
+
+The fixture exposed an existing native WAV writer tail-padding defect: a
+variable-frame PCM encoder received a full padded final block, adding 48 ms to
+a two-second recording. Commit 825ad28 preserves the actual final sample count.
+Focused native tests round-trip every sample exactly for mono and stereo,
+including a short final block; all three audio_file tests pass. Fixed-frame
+encoders retain their required padding. Original desktop recording shares this
+correction without changing its UI or editing semantics. Voiceover remains the
+next independent Audio slice; this increment does not close M5 as a whole.

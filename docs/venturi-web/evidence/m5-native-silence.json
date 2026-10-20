@@ -1,0 +1,903 @@
+{
+  "states": {
+    "before_analysis": {
+      "project_name": "Speech_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "3",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips"
+        ],
+        "position": 3
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "a947129205d1c9a6",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "solid_color",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": null,
+                  "name": "Solid color",
+                  "slip_range": null,
+                  "source_in_frames": 0,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 48,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "silence-acceptance.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 60,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ]
+    },
+    "proposal_only": {
+      "project_name": "Speech_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "3",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips"
+        ],
+        "position": 3
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "a947129205d1c9a6",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "solid_color",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": null,
+                  "name": "Solid color",
+                  "slip_range": null,
+                  "source_in_frames": 0,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 48,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "silence-acceptance.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 60,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ]
+    },
+    "applied": {
+      "project_name": "Speech_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "6",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips",
+          "RemoveSilences"
+        ],
+        "position": 4
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "a9681046cc16129d",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "2",
+                  "kind": "solid_color",
+                  "length_frames": 72,
+                  "linked_group": null,
+                  "media_id": null,
+                  "name": "Solid color",
+                  "slip_range": null,
+                  "source_in_frames": 48,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "clips": [],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ]
+    },
+    "undo": {
+      "project_name": "Speech_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "7",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips",
+          "RemoveSilences"
+        ],
+        "position": 3
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "a947129205d1c9a6",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "solid_color",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": null,
+                  "name": "Solid color",
+                  "slip_range": null,
+                  "source_in_frames": 0,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 48,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "silence-acceptance.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 60,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ]
+    },
+    "locked_before_apply": {
+      "project_name": "Speech_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "8",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips",
+          "LockTrack"
+        ],
+        "position": 4
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "bce8986f9f4524a4",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "solid_color",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": null,
+                  "name": "Solid color",
+                  "slip_range": null,
+                  "source_in_frames": 0,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": true,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 48,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "silence-acceptance.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 60,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ]
+    },
+    "locked_refused": {
+      "project_name": "Speech_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "8",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips",
+          "LockTrack"
+        ],
+        "position": 4
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "bce8986f9f4524a4",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "solid_color",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": null,
+                  "name": "Solid color",
+                  "slip_range": null,
+                  "source_in_frames": 0,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": true,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 48,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "silence-acceptance.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 60,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ]
+    },
+    "reopened_saved": {
+      "project_name": "Speech_UI_check.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "a947129205d1c9a6",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "solid_color",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": null,
+                  "name": "Solid color",
+                  "slip_range": null,
+                  "source_in_frames": 0,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 48,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "silence-acceptance.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 60,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "source_sha256": "40758156bd56cb65a5c212504c621a2ea2936d409443fe55a41dd3667f1ec48b",
+  "verification": {
+    "rust_web_tests": 76,
+    "javascript_tests": 37,
+    "native_pcm_tests": 3,
+    "native_model": "embedded Silero VAD via vv-session",
+    "proposed_cuts": [
+      [
+        0,
+        48
+      ]
+    ],
+    "proposal_leaves_history_unchanged": true,
+    "one_undo_restores_original_clip_ids_and_timing": true,
+    "locked_track_refuses_atomically": true,
+    "parameter_change_disables_obsolete_proposal": true,
+    "canvas_pause_overlay": true,
+    "dialog_scroll_width_equals_client_width": 538,
+    "source_sha256_unchanged": true,
+    "gpu": "explicit CPU only"
+  }
+}

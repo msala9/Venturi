@@ -88,6 +88,9 @@ pub enum Operation {
         clip_ids: Vec<String>,
         ripple: bool,
     },
+    RemoveSilences {
+        ranges: Vec<[i64; 2]>,
+    },
     Undo,
     Redo,
     HistoryJump {
@@ -941,6 +944,7 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 },
             );
         }
+        Operation::RemoveSilences { ranges } => crate::silence::remove_ranges(session, id, ranges)?,
         Operation::SetTrack {
             track,
             locked,

@@ -145,6 +145,23 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 
 ## Implemented Inspector commands
 
+- POST `/analysis/silence` accepts `{query: FrameQuery, clip_ids, params}`.
+  The actor captures selected audio and audio linked to selected video; native
+  Silero VAD runs on a CPU worker without holding the Session. Params are native
+  threshold, min_silence_secs, head_secs and tail_secs. GET
+  `/analysis/silence/{job}?<FrameQuery>` revalidates the document and source file
+  descriptors before returning progress and native integer cuts. DELETE uses
+  the original query even after a project edit to cancel remaining work.
+  Analysis never edits the project. One worker/one queued job, eight retained
+  results, 64 selected clips, 24 hours of distinct source audio, ten minutes of
+  execution and a 32 MiB/64-stream LRU bound the work. Parameter changes reuse
+  cached native probabilities; no speech detection or cut planning runs in JS.
+- Timeline `remove_silences {ranges:[[start,end],...]}` uses native
+  `delete_ranges(Ripple)` and one RemoveSilences history entry. Up to 4096 cuts
+  are validated on a trial project. Any affected locked track refuses the
+  entire operation. Source files stay unchanged; all timeline tracks ripple.
+  The command route accepts up to 256 KiB; other JSON routes retain 64 KiB.
+
 - GET `/timelines/{id}/clips/{clip}/slip/{center}` takes the usual FrameQuery.
   It returns linked handle intersection, source FPS, all linked IDs, lock state
   and an exact native `[delta,first,last]` source-frame map. At most 65537

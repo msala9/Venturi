@@ -22,6 +22,7 @@ pub struct AppState {
     pub port: u16,
     pub preview: Preview,
     pub source: MediaJobs,
+    pub silence: crate::silence::Jobs,
 }
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -43,7 +44,15 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/projects", get(projects))
         .route("/api/v1/projects/commands", post(project_command))
-        .route("/api/v1/timelines/{id}/commands", post(timeline_command))
+        .route(
+            "/api/v1/timelines/{id}/commands",
+            post(timeline_command).layer(DefaultBodyLimit::max(256 * 1024)),
+        )
+        .route("/api/v1/analysis/silence", post(prepare_silence))
+        .route(
+            "/api/v1/analysis/silence/{job}",
+            get(silence_status).delete(cancel_silence),
+        )
         .route("/api/v1/commands/{id}", get(lookup))
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
@@ -78,6 +87,50 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn prepare_silence(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::silence::Request>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let task = state
+        .host
+        .speech_snapshot(
+            payload
+                .map_err(|_| ApiError::invalid("Invalid speech analysis request"))?
+                .0,
+        )
+        .await?;
+    state.silence.prepare(task).map(Json)
+}
+async fn silence_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid speech analysis query"))?
+        .0;
+    let request = state.silence.request(&job, &query)?;
+    let task = state.host.speech_snapshot(request).await?;
+    state.silence.status(&job, &task).map(Json)
+}
+async fn cancel_silence(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    state
+        .silence
+        .cancel(
+            &job,
+            &query
+                .map_err(|_| ApiError::invalid("Invalid speech cancellation query"))?
+                .0,
+        )
+        .map(Json)
 }
 async fn slip_detail(
     State(state): State<AppState>,
@@ -599,6 +652,7 @@ async fn assets(request: Request) -> Response {
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
         "/js/catalog.js" => asset!("/web/js/catalog.js", "text/javascript"),
         "/js/slip.js" => asset!("/web/js/slip.js", "text/javascript"),
+        "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),
         "/js/mixer.js" => asset!("/web/js/mixer.js", "text/javascript"),
         "/js/visual.js" => asset!("/web/js/visual.js", "text/javascript"),
         "/js/masks.js" => asset!("/web/js/masks.js", "text/javascript"),

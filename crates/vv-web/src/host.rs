@@ -28,6 +28,10 @@ pub enum Action {
     CheckFrame(FrameQuery),
     ClipDetail(String, FrameQuery),
     SlipDetail(String, i64, FrameQuery),
+    SpeechSnapshot(
+        crate::silence::Request,
+        oneshot::Sender<Result<crate::silence::Task>>,
+    ),
     EqResponse(String, usize, FrameQuery),
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
 }
@@ -436,6 +440,14 @@ impl Editor {
                 let _ = reply.send(result);
                 Ok(Value::Null)
             }
+            Action::SpeechSnapshot(request, reply) => {
+                let result = (|| {
+                    let (id, _) = self.validate_frame(&request.query)?;
+                    crate::silence::snapshot(&self.session, &self.files, id, request)
+                })();
+                let _ = reply.send(result);
+                Ok(Value::Null)
+            }
             Action::FrameSnapshot(query, reply) => {
                 let result = (|| {
                     let (id, size) = self.validate_frame(&query)?;
@@ -471,6 +483,14 @@ fn valid_key(key: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
 }
 impl Host {
+    pub async fn speech_snapshot(
+        &self,
+        request: crate::silence::Request,
+    ) -> Result<crate::silence::Task> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::SpeechSnapshot(request, tx)).await?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
     pub async fn source_snapshot(&self, id: String, query: SourceQuery) -> Result<SourceSpec> {
         let (tx, rx) = oneshot::channel();
         self.call(Action::SourceSnapshot(id, query, tx)).await?;

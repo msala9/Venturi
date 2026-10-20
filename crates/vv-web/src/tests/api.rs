@@ -17,6 +17,7 @@ async fn http_command_roundtrip_and_malformed_requests() {
     let app = router(AppState {
         preview: Preview::disabled(),
         source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
         host: Host::start(&root).unwrap(),
         port: 8787,
     });
@@ -121,6 +122,26 @@ async fn http_command_roundtrip_and_malformed_requests() {
     let error: Value =
         serde_json::from_slice(&to_bytes(response.into_body(), 1024).await.unwrap()).unwrap();
     assert_eq!(error["error"]["code"], "INVALID_OPERATION");
+    for (state, expected) in [
+        (&latest, StatusCode::UNPROCESSABLE_ENTITY),
+        (&snapshot, StatusCode::CONFLICT),
+    ] {
+        let speech = json!({"query":{"project_epoch":state["project_epoch"],"if_generation":state["generation"],"timeline_id":id,"revision":state["timelines"][0]["revision"],"frame":0,"width":640},"clip_ids":[latest["timelines"][0]["tracks"][0]["clips"][0]["id"]],"params":{"threshold":0.5,"min_silence_secs":0.3,"head_secs":0.1,"tail_secs":0.1}});
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/analysis/silence")
+                    .header("host", "127.0.0.1:8787")
+                    .header("content-type", "application/json")
+                    .body(Body::from(speech.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), expected);
+    }
     std::fs::remove_dir_all(root).unwrap();
 }
 
@@ -136,6 +157,7 @@ async fn health_assets_snapshot_and_host_boundary() {
     let app = router(AppState {
         preview: Preview::disabled(),
         source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
         host: Host::start(&root).unwrap(),
         port: 8787,
     });
@@ -146,6 +168,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/export.js", 200),
         ("/js/scopes.js", 200),
         ("/js/balance.js", 200),
+        ("/js/silence.js", 200),
         ("/js/slip.js", 200),
         ("/js/catalog.js", 200),
         ("/api/v1/timelines/1/clips/1/slip/0", 422),

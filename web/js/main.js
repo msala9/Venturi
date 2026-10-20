@@ -12,12 +12,14 @@ import { createScopes, scopeTarget } from "./scopes.js";
 import { balanceSelected } from "./balance.js";
 import { renderCatalog } from "./catalog.js";
 import { createSlipView } from "./slip.js";
+import { createSilencePanel } from "./silence.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
 let scopes = null, scopePlayback = false;
 let slipScopesState = null;
 let catalog = null;
+let silencePanel = null;
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
@@ -85,8 +87,9 @@ function showWorkspace(name) {
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)));
+    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono","Analyze silence · VAD"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)));
     if (!button.disabled) button.addEventListener("click",()=>{
+      if(label === "Analyze silence · VAD"){programPlayer?.stop();silencePanel?.open();return;}
       if(name === "Color") {
         if (label === "Auto balance") {
           if (!writable || busy || unresolved) return notice("A connected writer is required");
@@ -304,6 +307,7 @@ function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
 }
 function selected() {
+  silencePanel?.invalidate();
   scopes?.refresh();
   const inspectorSeq = ++inspectorSequence;
   for(const node of document.querySelectorAll("#inspector-content details[data-visual-path]"))visualState.set(node.dataset.visualPath,node.open);
@@ -1030,5 +1034,10 @@ slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(o
   if(!documentState || !timeline || timeline.id==="fixture" || !writable || busy || unresolved || !view.selection.includes(clip))return null;
   const end=Math.max(1,...timeline.tracks.flatMap((track)=>track.clips.map((item)=>item.start_frame+item.length_frames)));
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1),clip_id:clip};
+}});
+silencePanel=createSilencePanel({root:$("silence-dialog"),notice,preview:(ranges)=>{view.silencePreview=ranges;canvasTimeline.invalidate();},canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>commit(operation),getTarget:()=>{
+  if(!documentState || !timeline || timeline.id==="fixture" || !view.selection.length)return null;
+  const end=Math.max(1,...timeline.tracks.flatMap((track)=>track.clips.map((item)=>item.start_frame+item.length_frames)));
+  return {query:{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1)},clip_ids:[...view.selection]};
 }});
 connect().then(diagnostics);

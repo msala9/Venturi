@@ -1133,3 +1133,14 @@ had no items and is empty again. Both WSL and halo2 still deliver the original
 PNG bytes through their native Source APIs from their persistent project
 copies. No pre-existing library asset was changed or deleted. The redundant
 local offline-test backup was removed only after both copies matched SHA-256.
+
+## Voiceover prerequisite — explicit native audio container
+
+The shared audio-file writer now selects the container from AudioFileFormat
+instead of guessing it from the path suffix. Normal desktop take filenames keep
+the same muxers/codecs. A pre-created safe file descriptor can therefore receive
+native WAV output through /proc/self/fd without using an unrestricted path.
+Four focused native audio_file tests pass, including every available format,
+exact mono/stereo sample preservation and extensionless-descriptor output;
+media clippy with warnings denied also passes. This is a recording prerequisite,
+not a completed microphone/placement workflow.

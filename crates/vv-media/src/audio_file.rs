@@ -68,6 +68,14 @@ impl AudioFileFormat {
         }
     }
 
+    fn container(self) -> &'static str {
+        match self {
+            Self::Aac => "ipod",
+            Self::Vorbis => "ogg",
+            _ => self.extension(),
+        }
+    }
+
     fn encoder_name(self) -> &'static str {
         match self {
             Self::Mp3 => "libmp3lame",
@@ -138,7 +146,7 @@ pub fn write_audio_file(
     let layout = ChannelLayout::default(ch as i32);
     let samples = to_rate(samples, ch, sample_rate, rate, layout)?;
 
-    let mut octx = format::output(path)?;
+    let mut octx = format::output_as(path, format.container())?;
     let global_header = octx.format().flags().contains(format::Flags::GLOBAL_HEADER);
     let stream_index = octx.add_stream(codec)?.index();
     let mut ctx = codec::context::Context::new_with_codec(codec)

@@ -73,3 +73,37 @@ fn variable_size_pcm_preserves_every_recorded_sample_without_a_padded_tail() {
     }
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+#[cfg(target_os = "linux")]
+#[test]
+fn explicit_audio_format_writes_to_an_existing_descriptor_without_a_filename_extension() {
+    use std::os::fd::AsRawFd;
+    let path = std::env::temp_dir().join(format!(
+        "vv-audio-descriptor-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let file = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create_new(true)
+        .open(&path)
+        .unwrap();
+    let samples: Vec<_> = (0..4817).map(|n| (n as f32 * 0.02).sin() * 0.2).collect();
+    write_audio_file(
+        &std::path::PathBuf::from(format!("/proc/self/fd/{}", file.as_raw_fd())),
+        AudioFileFormat::Wav,
+        &samples,
+        48000,
+        1,
+    )
+    .unwrap();
+    let audio = crate::decode_audio_track(&path, 0).unwrap().unwrap();
+    assert_eq!(audio.samples, samples);
+    assert_eq!(audio.sample_rate, 48000);
+    drop(file);
+    std::fs::remove_file(path).unwrap();
+}

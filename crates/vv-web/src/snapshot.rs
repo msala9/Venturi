@@ -23,13 +23,14 @@ pub fn timeline(session: &Session, id: TimelineId) -> Value {
       "tracks":tl.tracks.iter().enumerate().map(|(index,track)|json!({
         "id":index.to_string(),"label":tl.track_label(index),"kind":match track.kind {vv_core::TrackKind::Video=>"video",vv_core::TrackKind::Audio=>"audio"},
         "locked":track.locked,"muted":track.muted,"solo":track.solo,
+        "crossings":track.crossings.iter().filter_map(|c|{let left=track.clip(c.left_clip)?;let right=track.clip(c.right_clip)?;let window=c.window(left,right);Some(json!({"left_clip":left.id.0.to_string(),"right_clip":right.id.0.to_string(),"start_frame":window.start,"end_frame":window.end,"kind":c.transition.kind}))}).collect::<Vec<_>>(),
         "clips":track.clips.iter().map(|clip|{
           let (kind,media_id,name)=match &clip.source {
             ClipSource::Media(id)=>("media",Some(id.raw().to_string()),session.project.media_pool.get(*id).map(|m|vv_session::file_label(&m.path)).unwrap_or_else(||"Offline media".into())),
             ClipSource::SolidColor=>("solid_color",None,"Solid color".into()),ClipSource::Text=>("title",None,"Title".into()),ClipSource::Adjustment=>("adjustment",None,"Adjustment".into())
           };
           json!({"id":clip.id.0.to_string(),"name":name,"kind":kind,"media_id":media_id,"start_frame":clip.timeline_start,"length_frames":clip.timeline_len,
-            "source_in_frames":clip.source_in(),"source_out_frames":clip.source_out(),"linked_group":clip.linked_group.map(|g|g.0.to_string()),"disabled":clip.disabled})
+            "source_in_frames":clip.source_in(),"source_out_frames":clip.source_out(),"linked_group":clip.linked_group.map(|g|g.0.to_string()),"disabled":clip.disabled,"fade_in":clip.fade_in,"fade_out":clip.fade_out,"transition_in":clip.effects.transition_in,"transition_out":clip.effects.transition_out})
         }).collect::<Vec<_>>()
       })).collect::<Vec<_>>()})
 }

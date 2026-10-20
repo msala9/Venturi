@@ -105,6 +105,10 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
     $("search").parentElement.hidden = name !== "Media";
     $("panel-content").hidden = name === "Media";
     $("panel-content").replaceChildren();
+    if (name === "Effects") for (const [label,generator] of [["Add title","title"],["Add adjustment clip","adjustment"]]) {
+      const action=document.createElement("button");action.textContent=label;
+      action.addEventListener("click",()=>addGenerator(generator));$("panel-content").append(action);
+    }
     for (const label of panels[name] || []) {
       const item = document.createElement("p");
       item.textContent = label;
@@ -607,6 +611,11 @@ async function mutate(operation, project = false) {
 commit = (operation) => mutate(operation);
 const run = (operation) =>
   mutate(operation).catch((error) => notice(error.message));
+function addGenerator(generator) {
+  const track=timeline?.tracks.find((t)=>t.kind === "video" && !t.locked);
+  if (!track) return notice("Add or unlock a video track first");
+  run({kind:"add_generator",generator,track:track.id,start_frame:view.playhead,length_frames:Math.round(5*timeline.fps.num/timeline.fps.den)});
+}
 function moveSelection(delta) {
   if (!timeline || !view.selection.length) return;
   const ids = linkedSelection(timeline, view.selection),

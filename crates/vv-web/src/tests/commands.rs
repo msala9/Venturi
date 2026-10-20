@@ -370,3 +370,35 @@ fn markers_add_edit_remove_and_undo_without_changing_clip_positions() {
     apply(&mut s, id, &Operation::Undo).unwrap();
     assert_eq!(s.timeline_revision(id), original);
 }
+
+#[test]
+fn title_and_adjustment_generators_keep_safe_insert_and_native_defaults() {
+    let (mut s, id, _) = fixture();
+    let before = s.timeline_revision(id);
+    let command = |start, generator| Operation::AddGenerator {
+        track: "0".into(),
+        start_frame: start,
+        length_frames: 12,
+        generator,
+    };
+    assert_eq!(
+        apply(&mut s, id, &command(0, Generator::Title))
+            .unwrap_err()
+            .1,
+        "OVERLAP"
+    );
+    assert_eq!(s.timeline_revision(id), before);
+    apply(&mut s, id, &command(24, Generator::Title)).unwrap();
+    let title = &s.project.timelines[id].tracks[0].clips[1];
+    assert!(matches!(title.source, core::ClipSource::Text));
+    assert_eq!(
+        title.effects.title.as_ref().unwrap().content.default,
+        "Title"
+    );
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(id), before);
+    apply(&mut s, id, &command(24, Generator::Adjustment)).unwrap();
+    assert!(s.project.timelines[id].tracks[0].clips[1].is_adjustment());
+    apply(&mut s, id, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(id), before);
+}

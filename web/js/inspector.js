@@ -66,6 +66,61 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   number("Fade in frames", detail.fade_in, 0, detail.length_frames, (fade_in) => ({ fade_in }));
   number("Fade out frames", detail.fade_out, 0, detail.length_frames, (fade_out) => ({ fade_out }));
   root.append(section);
+  if (detail.title) renderTitle(root,detail,disabled,report);
+  if (detail.video) renderTransitions(root,detail,disabled,report);
+}
+
+function renderTitle(root, detail, disabled, report) {
+  const section = document.createElement("details"), summary = document.createElement("summary"); summary.textContent = "Title typography"; section.append(summary);
+  const form = document.createElement("form"), fields = {};
+  function field(name,key,type,value,min,max) {
+    const label = document.createElement("label"); label.className = "field"; label.textContent = name;
+    const input = document.createElement(key === "text" ? "textarea" : "input");
+    if (key !== "text") input.type = type;
+    if (type === "checkbox") input.checked = value; else input.value = value;
+    if (type === "number") {input.min=min;input.max=max;input.step="any";}
+    input.disabled = disabled; if (type === "text") input.maxLength = key === "text" ? 4096 : 128;
+    fields[key]=input;label.append(input);form.append(label);
+  }
+  field("Title text","text","text",detail.title.content.default);
+  field("Font family (server)","font_family","text",detail.title.font_family);
+  field("Font size","size","number",detail.title.size,1,1000);
+  field("Font weight","font_weight","number",detail.title.font_weight,100,900); fields.font_weight.step=1;
+  for (const key of ["italic","underline","strikethrough"]) field(key,key,"checkbox",detail.title[key]);
+  field("Letter tracking","tracking","number",detail.title.tracking,-300,1000);
+  field("Line spacing","line_spacing","number",detail.title.line_spacing,-200,500);
+  const align = document.createElement("select");align.setAttribute("aria-label","Title alignment");align.disabled=disabled;
+  for (const name of ["Left","Center","Right","Justify"]) align.append(new Option(name,name));align.value=detail.title.align;form.append(align);
+  for (const key of ["r","g","b","a"]) field(`Title color ${key.toUpperCase()}`,`color_${key}`,"number",detail.title.color[key],0,1);
+  field("Title background","background_enabled","checkbox",detail.title.background.enabled);
+  const button=document.createElement("button");button.textContent="Apply typography";button.disabled=disabled;form.append(button);
+  form.addEventListener("submit",(event)=>{
+    event.preventDefault();if (!form.reportValidity()) return;
+    const title={align:align.value,color:{},background:{...detail.title.background,enabled:fields.background_enabled.checked}};
+    for (const [key,input] of Object.entries(fields)) {
+      if (key.startsWith("color_")) title.color[key.slice(6)]=Number(input.value);
+      else if (key !== "background_enabled") title[key]=input.type === "checkbox" ? input.checked : input.type === "number" ? Number(input.value) : input.value;
+    }
+    report(propertyOperation(detail.clip_id,{title}));
+  });
+  section.append(form);root.append(section);
+}
+function renderTransitions(root, detail, disabled, report) {
+  const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Transitions";section.append(summary);
+  for (const [slot,label] of [["in","Transition in"],["out","Transition out"],["cut_after","Crossing to next clip"]]) {
+    if (slot === "cut_after" && !detail.transitions.cut_max_frames) continue;
+    const form=document.createElement("form"),legend=document.createElement("strong");legend.textContent=label;form.append(legend);
+    const value=detail.transitions[slot],kind=document.createElement("select");kind.setAttribute("aria-label",`${label} kind`);kind.disabled=disabled;
+    for (const name of ["None","Push","CrossDissolve","SmoothCut"])kind.append(new Option(name,name));kind.value=value?.kind || "None";form.append(kind);
+    const duration=document.createElement("input");duration.type="number";duration.min=1;duration.max=slot === "cut_after" ? detail.transitions.cut_max_frames : detail.length_frames;duration.step=1;duration.value=value?.duration || Math.min(12,Number(duration.max));duration.setAttribute("aria-label",`${label} duration frames`);duration.disabled=disabled;form.append(duration);
+    const direction=document.createElement("select");direction.setAttribute("aria-label",`${label} direction`);direction.disabled=disabled;for(const name of ["Left","Right","Up","Down"])direction.append(new Option(name,name));direction.value=value?.direction || "Left";form.append(direction);
+    const ease=document.createElement("select");ease.setAttribute("aria-label",`${label} ease`);ease.disabled=disabled;for(const name of ["None","In","Out","InOut"])ease.append(new Option(name,name));ease.value=value?.ease || "None";form.append(ease);
+    const curve=document.createElement("input");curve.type="number";curve.min=0;curve.max=1;curve.step="any";curve.value=value?.curve ?? 0.5;curve.setAttribute("aria-label",`${label} curve`);curve.disabled=disabled;form.append(curve);
+    const apply=document.createElement("button");apply.textContent=`Apply ${label.toLowerCase()}`;apply.disabled=disabled;form.append(apply);
+    form.addEventListener("submit",(event)=>{event.preventDefault();if(form.reportValidity())report({kind:"set_transition",clip_id:detail.clip_id,slot,transition:kind.value === "None" ? null : {kind:kind.value,duration:Number(duration.value),direction:direction.value,ease:ease.value,curve:Number(curve.value)}});});
+    section.append(form);
+  }
+  root.append(section);
 }
 
 export function renderMarkers(root, timeline, { writable, getFrame, commit, seek, notice }) {

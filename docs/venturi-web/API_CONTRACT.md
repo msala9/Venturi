@@ -167,3 +167,12 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 - `set_marker {marker:{id,delete,start_frame,duration_frames,note,color}}`
   creates with null id, edits with an existing ID, or removes with delete=true.
   Palette names use native capitalization; snapshot includes palette RGB.
+- `add_generator {track,start_frame,length_frames,generator}` adds title or
+  adjustment using native generator defaults and safe overlap checks.
+- Properties patch `title` changes validated text/typography/background fields
+  while preserving unspecified native attributes and existing text keyframes.
+- `set_transition {clip_id,slot,transition}` uses slot in/out/cut_after and a
+  native Transition `{kind,duration,direction,ease,curve}` or null for removal.
+  Cut-after requires adjacent clips; duration is at most twice their minimum
+  length. Edge duration is at most the selected clip length. Single-edge
+  SmoothCut follows the native dissolve fallback.

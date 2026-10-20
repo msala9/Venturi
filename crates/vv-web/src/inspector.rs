@@ -18,6 +18,26 @@ pub struct Properties {
     pub color: Option<core::Rgba>,
     pub fade_in: Option<i64>,
     pub fade_out: Option<i64>,
+    pub title: Option<TitleEdit>,
+}
+#[derive(Clone, Debug, Deserialize, Serialize, Default)]
+#[serde(deny_unknown_fields)]
+pub struct TitleEdit {
+    pub text: Option<String>,
+    pub font_family: Option<String>,
+    pub font_weight: Option<u16>,
+    pub italic: Option<bool>,
+    pub size: Option<f32>,
+    pub tracking: Option<f32>,
+    pub line_spacing: Option<f32>,
+    pub underline: Option<bool>,
+    pub strikethrough: Option<bool>,
+    pub case: Option<core::FontCase>,
+    pub align: Option<core::TextAlign>,
+    pub anchor: Option<(core::HAnchor, core::VAnchor)>,
+    pub position: Option<[f32; 2]>,
+    pub color: Option<core::Rgba>,
+    pub background: Option<core::TitleBackground>,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -38,6 +58,74 @@ pub struct Keyframe {
     pub timeline_frame: i64,
     pub value: Option<f32>,
     pub interpolation: core::Interpolation,
+}
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TransitionSlot {
+    In,
+    Out,
+    CutAfter,
+}
+pub fn transition(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    slot: TransitionSlot,
+    value: &Option<core::Transition>,
+) -> Result<()> {
+    let (track, clip_id, clip) = find(session, id, raw)?;
+    writable(session, id, track)?;
+    let lane = &session.project.timelines[id].tracks[track];
+    if lane.kind != core::TrackKind::Video || clip.is_adjustment() {
+        return Err(ApiError::invalid("Transitions require a video clip"));
+    }
+    let right = lane
+        .clips
+        .iter()
+        .find(|c| c.timeline_start == clip.timeline_end() && c.id != clip_id && !c.is_adjustment());
+    let maximum = match slot {
+        TransitionSlot::CutAfter => {
+            2 * clip.timeline_len.min(
+                right
+                    .ok_or_else(|| ApiError::invalid("A crossing requires an adjacent video clip"))?
+                    .timeline_len,
+            )
+        }
+        _ => clip.timeline_len,
+    };
+    if let Some(value) = value {
+        if !(1..=maximum).contains(&value.duration) {
+            return Err(ApiError::invalid(
+                "Transition exceeds the native clip or crossing duration",
+            ));
+        }
+        bounded(value.curve, (0.0, 1.0))?;
+    }
+    let command: Box<dyn Command> = match slot {
+        TransitionSlot::In | TransitionSlot::Out => Box::new(core::set_clip_transition(
+            id,
+            track,
+            clip_id,
+            if matches!(slot, TransitionSlot::In) {
+                core::FadeEdge::In
+            } else {
+                core::FadeEdge::Out
+            },
+            value.clone(),
+        )),
+        TransitionSlot::CutAfter => Box::new(core::SetCrossTransition::new(
+            id,
+            track,
+            clip_id,
+            value.as_ref().map(|transition| core::CrossTransition {
+                left_clip: clip_id,
+                right_clip: right.unwrap().id,
+                transition: transition.clone(),
+            }),
+        )),
+    };
+    session.apply(command);
+    Ok(())
 }
 fn find<'a>(session: &'a Session, id: TimelineId, raw: &str) -> Result<(usize, ClipId, &'a Clip)> {
     let clip = ClipId(raw.parse().map_err(|_| ApiError::missing())?);
@@ -78,6 +166,12 @@ fn bounded(value: f32, bounds: (f32, f32)) -> Result<()> {
     }
     Ok(())
 }
+fn rgba(color: core::Rgba) -> Result<()> {
+    for value in [color.r, color.g, color.b, color.a] {
+        bounded(value, (0.0, 1.0))?;
+    }
+    Ok(())
+}
 fn writable(session: &Session, id: TimelineId, track: usize) -> Result<()> {
     if session.project.timelines[id].tracks[track].locked {
         return Err(ApiError::conflict(
@@ -101,7 +195,8 @@ pub fn properties(
             || patch.flip.is_some()
             || patch.blend.is_some()
             || patch.matte.is_some()
-            || patch.color.is_some())
+            || patch.color.is_some()
+            || patch.title.is_some())
     {
         return Err(ApiError::invalid("Visual properties require a video clip"));
     }
@@ -113,6 +208,82 @@ pub fn properties(
     }
     let mut seen = std::collections::HashSet::new();
     let mut commands: Vec<Box<dyn Command>> = Vec::new();
+    if let Some(edit) = &patch.title {
+        if !matches!(clip.source, ClipSource::Text) {
+            return Err(ApiError::invalid("Typography requires a title clip"));
+        }
+        let mut title = clip.effects.title.clone().unwrap_or_default();
+        if let Some(text) = &edit.text {
+            if text.len() > 4096 {
+                return Err(ApiError::invalid("Title text exceeds 4096 bytes"));
+            }
+            title.content.default = text.clone();
+        }
+        if let Some(family) = &edit.font_family {
+            if family.len() > 128 || family.chars().any(char::is_control) {
+                return Err(ApiError::invalid("Invalid font family"));
+            }
+            title.font_family = family.clone();
+        }
+        if let Some(weight) = edit.font_weight {
+            if !(100..=900).contains(&weight) {
+                return Err(ApiError::invalid("Font weight must be 100–900"));
+            }
+            title.font_weight = weight;
+        }
+        for (field, value, range) in [
+            (&mut title.size, edit.size, (1.0, 1000.0)),
+            (&mut title.tracking, edit.tracking, (-300.0, 1000.0)),
+            (&mut title.line_spacing, edit.line_spacing, (-200.0, 500.0)),
+        ] {
+            if let Some(value) = value {
+                bounded(value, range)?;
+                *field = value;
+            }
+        }
+        for (field, value) in [
+            (&mut title.italic, edit.italic),
+            (&mut title.underline, edit.underline),
+            (&mut title.strikethrough, edit.strikethrough),
+        ] {
+            if let Some(value) = value {
+                *field = value;
+            }
+        }
+        if let Some(value) = edit.case {
+            title.case = value;
+        }
+        if let Some(value) = edit.align {
+            title.align = value;
+        }
+        if let Some(value) = edit.anchor {
+            title.anchor = value;
+        }
+        if let Some(value) = edit.position {
+            for axis in value {
+                bounded(axis, (-1_000_000.0, 1_000_000.0))?;
+            }
+            title.position = value;
+        }
+        if let Some(color) = edit.color {
+            rgba(color)?;
+            title.color = color;
+        }
+        if let Some(background) = &edit.background {
+            rgba(background.color)?;
+            rgba(background.outline_color)?;
+            bounded(background.width, (0.0, 1.0))?;
+            bounded(background.height, (0.0, 1.0))?;
+            bounded(background.outline_width, (0.0, 1000.0))?;
+            bounded(background.corner_radius, (0.0, 0.5))?;
+            bounded(background.opacity, (0.0, 100.0))?;
+            for axis in background.center {
+                bounded(axis, (-1_000_000.0, 1_000_000.0))?;
+            }
+            title.background = background.clone();
+        }
+        commands.push(Box::new(core::set_clip_title(id, track, clip_id, title)));
+    }
     for parameter in &patch.transform {
         if !seen.insert(parameter.param) {
             return Err(ApiError::invalid("Duplicate transform parameter"));
@@ -154,8 +325,10 @@ pub fn properties(
         commands.push(Box::new(core::set_clip_matte(id, track, clip_id, value)));
     }
     if let Some(color) = patch.color {
-        if !matches!(clip.source, ClipSource::SolidColor | ClipSource::Text) {
-            return Err(ApiError::invalid("Color requires a solid or title clip"));
+        if !matches!(clip.source, ClipSource::SolidColor) {
+            return Err(ApiError::invalid(
+                "Color requires a solid clip; use title color for typography",
+            ));
         }
         for value in [color.r, color.g, color.b, color.a] {
             bounded(value, (0.0, 1.0))?;
@@ -258,9 +431,15 @@ pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64)
         let bounds = limits(param, size(session, id, clip));
         json!({"param":param,"default":values.default,"value":values.value_at(frame),"keyframes":values.keyframes(),"min":bounds.0,"max":bounds.1})
     }).collect();
-    Ok(
-        json!({"clip_id":raw,"source_frame":frame,"timeline_frame":timeline_frame,"locked":session.project.timelines[id].tracks[track].locked,"video":session.project.timelines[id].tracks[track].kind == core::TrackKind::Video,"transform":parameters,"flip":clip.effects.transform.flip,"blend":clip.effects.blend_mode,"blends":core::BlendMode::ALL,"matte":clip.effects.matte.map(|m|format!("{m:?}")).unwrap_or_else(||"None".into()),"mattes":["None","Alpha","AlphaInverted","Luma","LumaInverted"],"gain":{"default":clip.effects.gain_db.default,"value":clip.effects.gain_db.value_at(frame),"keyframes":clip.effects.gain_db.keyframes()},"color":clip.effects.color.as_ref().map(|c|c.default),"fade_in":clip.fade_in,"fade_out":clip.fade_out,"length_frames":clip.timeline_len}),
-    )
+    let lane = &session.project.timelines[id].tracks[track];
+    let right = lane
+        .clips
+        .iter()
+        .find(|c| c.timeline_start == clip.timeline_end() && c.id != clip.id && !c.is_adjustment());
+    let mut result = json!({"clip_id":raw,"source_frame":frame,"timeline_frame":timeline_frame,"locked":session.project.timelines[id].tracks[track].locked,"video":session.project.timelines[id].tracks[track].kind == core::TrackKind::Video,"transform":parameters,"flip":clip.effects.transform.flip,"blend":clip.effects.blend_mode,"blends":core::BlendMode::ALL,"matte":clip.effects.matte.map(|m|format!("{m:?}")).unwrap_or_else(||"None".into()),"mattes":["None","Alpha","AlphaInverted","Luma","LumaInverted"],"gain":{"default":clip.effects.gain_db.default,"value":clip.effects.gain_db.value_at(frame),"keyframes":clip.effects.gain_db.keyframes()},"color":clip.effects.color.as_ref().map(|c|c.default),"fade_in":clip.fade_in,"fade_out":clip.fade_out,"length_frames":clip.timeline_len});
+    result["transitions"] = json!({"in":clip.effects.transition_in,"out":clip.effects.transition_out,"cut_after":lane.crossing_from(clip.id).map(|c|&c.transition),"cut_max_frames":right.map(|r|2*r.timeline_len.min(clip.timeline_len))});
+    result["title"] = json!(clip.effects.title);
+    Ok(result)
 }
 
 #[cfg(test)]

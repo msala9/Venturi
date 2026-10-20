@@ -71,7 +71,7 @@ pub enum Operation {
     },
     SetProperties {
         clip_id: String,
-        patch: crate::inspector::Properties,
+        patch: Box<crate::inspector::Properties>,
     },
     SetKeyframe {
         clip_id: String,
@@ -92,6 +92,23 @@ pub enum Operation {
     SetMarker {
         marker: MarkerEdit,
     },
+    SetTransition {
+        clip_id: String,
+        slot: crate::inspector::TransitionSlot,
+        transition: Option<core::Transition>,
+    },
+    AddGenerator {
+        track: String,
+        start_frame: FrameIdx,
+        length_frames: FrameIdx,
+        generator: Generator,
+    },
+}
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Generator {
+    Title,
+    Adjustment,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -202,6 +219,35 @@ fn free(
 pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Result<()> {
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::SetTransition {
+            clip_id,
+            slot,
+            transition,
+        } => crate::inspector::transition(session, id, clip_id, *slot, transition)?,
+        Operation::AddGenerator {
+            track,
+            start_frame,
+            length_frames,
+            generator,
+        } => {
+            let track = track_index(tl, track)?;
+            if tl.tracks[track].kind != TrackKind::Video {
+                return Err(ApiError::invalid("Generators require a video track"));
+            }
+            free(tl, track, *start_frame, *length_frames, &HashSet::new())?;
+            edit::insert_generator(
+                &mut session.project,
+                &mut session.history,
+                id,
+                match generator {
+                    Generator::Title => edit::Generator::Text,
+                    Generator::Adjustment => edit::Generator::Adjustment,
+                },
+                track,
+                *start_frame,
+                Some(*length_frames),
+            );
+        }
         Operation::SetMarker { marker } => {
             let existing = marker
                 .id

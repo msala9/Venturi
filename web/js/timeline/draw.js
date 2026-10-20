@@ -55,6 +55,10 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           ? color("--primary")
           : color("--border");
         ctx.strokeRect(x + 1.5, top + 7.5, right - x - 3, TRACK - 15);
+        ctx.fillStyle = color("--violet");
+        if (clip.transition_in) ctx.fillRect(x+2,top+8,Math.min(right-x-4,clip.transition_in.duration*view.scale*timeline.fps.den/timeline.fps.num),3);
+        if (clip.transition_out) {const span=Math.min(right-x-4,clip.transition_out.duration*view.scale*timeline.fps.den/timeline.fps.num);ctx.fillRect(right-span-2,top+8,span,3);}
+        if (clip.disabled) {ctx.fillStyle="#00000088";ctx.fillRect(x+2,top+8,right-x-4,TRACK-16);}
         ctx.save();
         ctx.beginPath();
         ctx.rect(x + 5, top + 7, Math.max(0, right - x - 10), TRACK - 14);
@@ -88,6 +92,11 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           top + 41,
         );
         ctx.restore();
+      }
+      for (const crossing of track.crossings || []) {
+        const left=frameToX(crossing.start_frame,view,timeline.fps),right=frameToX(crossing.end_frame,view,timeline.fps);
+        if (right<HEADER || left>width) continue;
+        ctx.fillStyle=color("--violet");ctx.globalAlpha=0.6;ctx.fillRect(left,top+TRACK-12,right-left,5);ctx.globalAlpha=1;
       }
       for (const draft of view.draft?.changes || [])
         if (draft.to_track === track.id) {

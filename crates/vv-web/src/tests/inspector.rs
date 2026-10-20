@@ -90,3 +90,94 @@ fn keyframes_map_timeline_to_native_source_frames_and_restore_interpolation() {
         "EaseInOut"
     );
 }
+
+#[test]
+fn transitions_validate_adjacency_duration_and_restore_native_crossings() {
+    let (mut s, id, clip) = fixture();
+    let value = core::Transition {
+        kind: core::TransitionKind::CrossDissolve,
+        duration: 12,
+        direction: core::PushDirection::Left,
+        ease: core::Ease::None,
+        curve: 0.5,
+    };
+    assert!(
+        transition(
+            &mut s,
+            id,
+            &clip,
+            TransitionSlot::CutAfter,
+            &Some(value.clone())
+        )
+        .is_err()
+    );
+    let right = s.project.alloc_clip_id();
+    s.project.timelines[id].tracks[0].insert_sorted(Clip::from_source_range(
+        right,
+        ClipSource::SolidColor,
+        0,
+        24,
+        148,
+        Rational::one(),
+    ));
+    let before = s.timeline_revision(id);
+    transition(
+        &mut s,
+        id,
+        &clip,
+        TransitionSlot::CutAfter,
+        &Some(value.clone()),
+    )
+    .unwrap();
+    let crossing = &s.project.timelines[id].tracks[0].crossings[0];
+    assert_eq!(crossing.right_clip, right);
+    assert_eq!(crossing.transition.duration, 12);
+    s.history.undo(&mut s.project);
+    assert_eq!(s.timeline_revision(id), before);
+    let mut invalid = value.clone();
+    invalid.duration = 49;
+    assert!(transition(&mut s, id, &clip, TransitionSlot::CutAfter, &Some(invalid)).is_err());
+    transition(&mut s, id, &clip, TransitionSlot::In, &Some(value)).unwrap();
+    assert_eq!(
+        detail(&s, id, &clip, 108).unwrap()["transitions"]["in"]["kind"],
+        "CrossDissolve"
+    );
+    transition(&mut s, id, &clip, TransitionSlot::In, &None).unwrap();
+    assert!(detail(&s, id, &clip, 108).unwrap()["transitions"]["in"].is_null());
+}
+
+#[test]
+fn title_edits_preserve_animation_and_validate_before_atomic_apply() {
+    let (mut s, id, raw) = fixture();
+    let clip = &mut s.project.timelines[id].tracks[0].clips[0];
+    clip.source = ClipSource::Text;
+    clip.effects.title = Some(core::TitleParams::default());
+    clip.effects.title.as_mut().unwrap().content.upsert(
+        20,
+        "Animated title".into(),
+        core::Interpolation::Hold,
+    );
+    let before = s.timeline_revision(id);
+    let mut patch = Properties {
+        title: Some(TitleEdit {
+            text: Some("New default".into()),
+            size: Some(80.0),
+            font_weight: Some(700),
+            ..Default::default()
+        }),
+        ..Default::default()
+    };
+    properties(&mut s, id, &raw, &patch).unwrap();
+    let current = detail(&s, id, &raw, 108).unwrap();
+    assert_eq!(current["title"]["content"]["default"], "New default");
+    assert_eq!(
+        current["title"]["content"]["keyframes"][0][1],
+        "Animated title"
+    );
+    assert_eq!(current["title"]["size"], 80.0);
+    s.history.undo(&mut s.project);
+    assert_eq!(s.timeline_revision(id), before);
+    patch.title.as_mut().unwrap().size = Some(f32::INFINITY);
+    assert!(properties(&mut s, id, &raw, &patch).is_err());
+    assert_eq!(s.timeline_revision(id), before);
+}

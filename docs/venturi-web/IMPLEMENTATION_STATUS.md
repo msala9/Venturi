@@ -320,3 +320,32 @@ evidence/m3c-cpu-five-minute-sync.json. Reproduction uses the verify_preview
 fixture_sync/export modes and scripts/venturi-web-validate-sync.py. Full M3c
 GPU/browser acceptance still awaits a shared hardware slot; D41 announced a
 further priority 60–90 minute quality test after the current H3 video.
+
+## M4 independent increment — title generators and native transitions
+
+Effects now inserts native title and adjustment clips with safe destination
+checks. Inspector title editing covers default text, server font family,
+weight/italic/underline/strike, size, tracking, line spacing, alignment, RGBA
+and background enable. The typed API also validates native anchor/position,
+case and full background settings. Existing animated text is preserved when
+changing its default. Server font fallback remains native; no browser font
+renderer was added. Remaining title/background controls are still partial.
+
+Native clip in/out and adjacent-cut transitions support Push, Cross Dissolve
+and Smooth Cut, duration, direction, easing and curve, including removal and
+undo. Native edge/crossing duration limits, adjacency and track locks are
+validated. Canvas displays transition/crossing ranges from native snapshot
+coordinates. Smooth Cut retains upstream fallback to dissolve on single edges
+or when the native renderer cannot morph. No optical-flow hardware acceptance
+is claimed. Transition drag handles remain open.
+
+Windows browser: created a title, saved text Venturi native title, size 84,
+weight 700 and a 12-frame incoming Cross Dissolve. Re-read controls match saved
+state. Evidence m4-title-typography-browser.png and
+m4-transition-controls-browser.png. All 26 web Rust tests, 18 JavaScript tests,
+clippy and build pass. New tests cover safe generator overlap/undo, title
+animation preservation, invalid numeric rejection and transition adjacency,
+duration, native crossing identity, remove and undo. Full native checks after
+the video-duration correction: media 107 pass / 2 ignored, session 99 pass /
+1 ignored, desktop check pass. GPU/UI rendered title/transition proof awaits
+the shared GPU slot; these rows remain partial.

@@ -1192,3 +1192,12 @@ Policy. All 184832 frames decoded to the exact interleaved PCM SHA-256, with
 identical left/right samples from the mono synthetic provider. No CSP/console
 errors occurred. Releasing the saved local take kept the native audio file
 available. Evidence: m5-voiceover-stereo.json.
+
+The voiceover binary is deployed on halo2 from 7896a06, SHA-256
+3d1460c37f5231384cf659cb5dbb96bac0601ce85e0e6f09990ebca8c10fa3f6.
+CPU_shared_library_UI_check reopened with its original clip and exact shared
+seed. The embedded recording modules match the tested sources and native WAV
+is available. The process remains isolated CPU/lavapipe with two workers, no
+DRI/KFD descriptors and no RADV mapping; the shared hardware lock was untouched.
+Evidence: m5-halo2-voiceover.json/browser.png. Physical microphone capture is
+not claimed by this deployment check.

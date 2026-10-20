@@ -1,0 +1,42 @@
+{
+  "pid": 1170391,
+  "binary": "/home/marco/AI-lab/venturi-web/.runtime/vv-web-3d1460c37f52",
+  "sha256": "3d1460c37f5231384cf659cb5dbb96bac0601ce85e0e6f09990ebca8c10fa3f6",
+  "source_commit": "7896a06eee83f8068f14a402fab964be634aed4a",
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "recording_formats": [
+    {
+      "id": "mp3",
+      "label": "MP3"
+    },
+    {
+      "id": "wav",
+      "label": "WAV"
+    },
+    {
+      "id": "flac",
+      "label": "FLAC"
+    },
+    {
+      "id": "aac",
+      "label": "AAC (.m4a)"
+    },
+    {
+      "id": "opus",
+      "label": "Opus"
+    },
+    {
+      "id": "vorbis",
+      "label": "Ogg Vorbis"
+    }
+  ],
+  "original_project_preserved": "CPU_shared_library_UI_check.vvproj",
+  "assets": {
+    "voiceover.js": "12c47a65a6245df277d24242dca632cf142d10945fc45ce0b680afdf3c8ca606",
+    "capture.js": "92f7914c548eff762449c6a1916fd6fc8a203d68b4477450f2d00e98fecc479f",
+    "capture-worklet.js": "d223c5f8dd6ed4f7b690b82f543968dc4af98bc2e1080240f48909b68712ed73",
+    "capture-buffer.js": "574f092a53a5f918be7217e5c34b12929b9b5f627c66cb914f240486c2a50e6d"
+  }
+}

@@ -248,6 +248,14 @@
         <button>Create timeline</button><p id="timeline-error" role="alert"></p>
       </form>
     </dialog>
+    <dialog id="timeline-action-dialog">
+      <form method="dialog"><button aria-label="Close timeline action">×</button></form>
+      <form id="timeline-action">
+        <h2 id="timeline-action-title">Timeline</h2>
+        <label class="field">Timeline name<input name="name" required maxlength="128"></label>
+        <button>Apply timeline action</button><p id="timeline-action-error" role="alert"></p>
+      </form>
+    </dialog>
     <dialog id="imports">
       <form method="dialog">
         <div class="panel-heading">

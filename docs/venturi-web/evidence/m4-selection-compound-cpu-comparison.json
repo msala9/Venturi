@@ -1,0 +1,21 @@
+{
+  "native": {
+    "compose_fps": 7.41601610201013,
+    "compositor": "llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan)",
+    "decode_fps": 7.682022822874978,
+    "elapsed_seconds": 2.748997941,
+    "encode_fps": 94.52674472364905,
+    "encoder": "Some(X264)",
+    "frames": 12
+  },
+  "video_psnr_db": "52.325541",
+  "comparison": "Before versus native selection compound, 12 frames, 1920x1080, synthetic graded A/V with four audio inserts",
+  "decoded_audio_bytes": 196608,
+  "audio_pcm_identical": true,
+  "audio_rms_error": 0.0,
+  "acceptance": {
+    "minimum_video_psnr_db": 40,
+    "maximum_audio_rms_error": 0.001
+  },
+  "scope": "WSL llvmpipe CPU proof only; no R9700 compound qualification"
+}

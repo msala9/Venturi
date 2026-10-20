@@ -3214,7 +3214,17 @@ pub fn plan_compound_clip(
     let mut index_map = HashMap::new();
     for &old_index in &distinct {
         index_map.insert(old_index, nested_tracks.len());
-        nested_tracks.push(Track::new(timeline.tracks[old_index].kind));
+        let mut track = Track::new(timeline.tracks[old_index].kind);
+        track.crossings = timeline.tracks[old_index]
+            .crossings
+            .iter()
+            .filter(|crossing| {
+                clips.contains(&(old_index, crossing.left_clip))
+                    && clips.contains(&(old_index, crossing.right_clip))
+            })
+            .cloned()
+            .collect();
+        nested_tracks.push(track);
     }
 
     let mut has_video = false;

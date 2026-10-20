@@ -656,3 +656,36 @@ check pass. New tests cover rational-FPS native effects/masks, mixer/master/
 markers/flags, hostile file URLs/symlinks, nonoverwrite, unsaved refusal,
 epoch/idempotent retries, CPU-only OTIO download headers and stale revision
 rejection. GUI was compile-checked, not launched on the headless server.
+
+## M4 independent increment — selected compounds and timeline management
+
+Selected clips can now become a named native compound in one undo step.
+Linked groups/locks expand first; unselected material inside the replacement
+span is refused. The first web adapter permits one video and one audio track;
+broader track regrouping needs separate mix/order acceptance. Crossings must
+include both clips, and the native planner now retains internal crossings.
+Multiple audio clips with enabled per-clip normalization are refused because
+grouping changes their native measurement policy. A complete native trial
+checks all clip ranges/cycles and the native 16-level nesting limit before
+allocating real IDs. Load/import now validates that same depth limit.
+
+Rename and Duplicate timeline use native pool commands, preserving the pool
+name and using fresh clip/link IDs for the copy. Browser proof: the trimmed
+linked A/V pair became Linked shot, saved to Compound_selection_UI_check;
+double-click opened the child, renamed Linked shot graded, then duplicated as
+Graded alternate. Parent/child/copy clip IDs are distinct as appropriate.
+Evidence: m4-selection-compound-state.json/browser.png.
+
+Native CPU before/after exports of the 12-frame 1920x1080 graded A/V fixture
+with all four audio inserts measured video PSNR 52.33dB (minimum 40dB chosen
+for this comparison), and bit-identical decoded stereo PCM (RMS error 0).
+The compound exported in 2.749s on llvmpipe. This is a software/native proof;
+R9700 compound playback is still open. Evidence:
+m4-selection-compound-cpu-comparison.json.
+
+252 vv-core tests and 47 vv-web tests pass, with 22 JS tests, formatting,
+core/web clippy and desktop cargo check. Tests cover native internal crossings,
+overlap refusal with no entity/counter/history mutation, normalization-policy
+refusal, compound entity undo, fresh duplicate IDs, rename undo and the exact
+native depth boundary. Unrestricted multitrack compounding and flattening are
+not implemented.

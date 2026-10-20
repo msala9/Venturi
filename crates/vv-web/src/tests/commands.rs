@@ -34,6 +34,155 @@ fn fixture() -> (Session, TimelineId, Vec<ClipId>) {
 }
 
 #[test]
+fn selected_compound_refuses_unselected_material_and_undo_restores_all_entities() {
+    let (mut session, id, clips) = fixture();
+    let revision = session.timeline_revision(id);
+    apply(
+        &mut session,
+        id,
+        &Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 24,
+            length_frames: 24,
+        },
+    )
+    .unwrap();
+    let request = Operation::MakeCompound {
+        clip_ids: clips.iter().map(|c| c.0.to_string()).collect(),
+        name: "Selected shots".into(),
+    };
+    let before = serde_json::to_value(&session.project).unwrap();
+    let steps = session.history.position();
+    assert_eq!(apply(&mut session, id, &request).unwrap_err().1, "OVERLAP");
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.position(), steps);
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    let steps = session.history.position();
+    apply(&mut session, id, &request).unwrap();
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(session.project.timelines.len(), 2);
+    let parent = &session.project.timelines[id];
+    assert_eq!(parent.tracks[0].clips.len(), 1);
+    assert_eq!(parent.tracks[0].clips[0].timeline_len, 72);
+    let nested = session
+        .project
+        .timelines
+        .iter()
+        .find(|(key, _)| *key != id)
+        .unwrap()
+        .1;
+    assert_eq!(nested.name, "Selected shots");
+    assert_eq!(nested.tracks[0].clips.len(), 2);
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(session.project.timelines.len(), 1);
+    assert_eq!(session.timeline_revision(id), revision);
+}
+
+#[test]
+fn native_timeline_duplicate_uses_fresh_clip_ids_and_rename_is_one_undo_step() {
+    let (mut session, id, clips) = fixture();
+    let revision = session.timeline_revision(id);
+    let steps = session.history.position();
+    apply(
+        &mut session,
+        id,
+        &Operation::RenameTimeline {
+            name: "Renamed".into(),
+        },
+    )
+    .unwrap();
+    assert_eq!(session.project.timelines[id].name, "Renamed");
+    assert_eq!(session.history.position(), steps + 1);
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(session.timeline_revision(id), revision);
+    apply(
+        &mut session,
+        id,
+        &Operation::DuplicateTimeline {
+            name: "Copied".into(),
+        },
+    )
+    .unwrap();
+    assert_eq!(session.project.timelines.len(), 2);
+    let copy = session
+        .project
+        .timelines
+        .iter()
+        .find(|(key, _)| *key != id)
+        .unwrap()
+        .1;
+    assert_eq!(copy.name, "Copied");
+    assert_eq!(copy.tracks[0].clips.len(), 2);
+    assert!(
+        copy.tracks[0]
+            .clips
+            .iter()
+            .all(|clip| !clips.contains(&clip.id))
+    );
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(session.project.timelines.len(), 1);
+    assert_eq!(session.timeline_revision(id), revision);
+}
+
+#[test]
+fn a_compound_cannot_change_the_normalization_policy_of_multiple_audio_clips() {
+    let (mut session, id, _) = fixture();
+    let media = session.add_media(
+        std::path::PathBuf::from("offline-normalization.wav"),
+        core::MediaMeta {
+            duration_frames: 48,
+            fps: core::Rational::new(24, 1),
+            width: 0,
+            height: 0,
+            has_video: false,
+            has_audio: true,
+            sample_rate: 48000,
+            channels: 2,
+            audio_streams: 1,
+            file: Default::default(),
+        },
+    );
+    let mut selected = vec![];
+    for start in [0, 24] {
+        let clip_id = session.project.alloc_clip_id();
+        session.project.timelines[id].tracks[1].insert_sorted(core::Clip::from_source_range(
+            clip_id,
+            core::ClipSource::Media(media),
+            0,
+            24,
+            start,
+            core::Rational::one(),
+        ));
+        selected.push(clip_id.0.to_string());
+    }
+    session.project.timelines[id].tracks[1]
+        .mix
+        .effects
+        .push(core::AudioEffect::new(core::AudioEffectKind::Normalize {
+            target_db: -1.0,
+            mode: core::NormalizeMode::SamplePeak,
+            set_level: core::SetLevel::Relative,
+        }));
+    let operation = Operation::MakeCompound {
+        clip_ids: selected,
+        name: "Normalized pair".into(),
+    };
+    let before = serde_json::to_value(&session.project).unwrap();
+    let steps = session.history.position();
+    assert!(
+        apply(&mut session, id, &operation)
+            .unwrap_err()
+            .2
+            .contains("normalization")
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.position(), steps);
+    session.project.timelines[id].tracks[1].mix.effects[0].enabled = false;
+    apply(&mut session, id, &operation).unwrap();
+    assert_eq!(session.project.timelines.len(), 2);
+}
+
+#[test]
 fn native_linked_retime_rejects_overlap_then_ripples_atomically_and_undoes() {
     let (mut session, id, _) = fixture();
     let media = session.add_media(

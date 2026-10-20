@@ -268,3 +268,14 @@ arbitrary output formats and timelines longer than five minutes remain open.
   timeline instead. Native Venturi metadata now additionally retains track
   mixer/lock/solo, timeline master and markers. Foreign text layout may differ
   because headless OTIO uses the native optional-metrics fallback.
+- Timeline `rename_timeline {name}` and `duplicate_timeline {name}` use native
+  pool commands. Duplicate allocates fresh clip/link IDs and is one undo step;
+  names are nonempty, at most 128 bytes, without control characters.
+- `make_compound {clip_ids,name}` resolves linked groups, locks and a native
+  plan. This first adapter permits at most one video and one audio track.
+  Replacement space must be free of unselected clips, and crossing transitions
+  must be selected on both sides. Internal crossings are retained by the native
+  planner. Multiple audio clips with enabled per-clip normalization are refused
+  because wrapping them changes the native level policy. A native trial checks
+  the complete result, including the renderer's maximum compound nesting depth,
+  before allocating real entities and applying one composite history step.

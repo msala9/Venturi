@@ -36,6 +36,16 @@ pub enum Operation {
         fps: core::Rational,
         resolution: [u32; 2],
     },
+    RenameTimeline {
+        name: String,
+    },
+    DuplicateTimeline {
+        name: String,
+    },
+    MakeCompound {
+        clip_ids: Vec<String>,
+        name: String,
+    },
     ImportMedia {
         path_token: String,
     },
@@ -319,6 +329,80 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     }
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::RenameTimeline { name } | Operation::DuplicateTimeline { name } => {
+            timeline_name(name)?;
+            let media = session
+                .project
+                .media_pool
+                .iter()
+                .find(|(_, m)| m.compound == Some(id))
+                .map(|(id, _)| id)
+                .ok_or_else(ApiError::missing)?;
+            if matches!(operation, Operation::DuplicateTimeline { .. }) {
+                if session.project.timelines.len() >= 64 {
+                    return Err(ApiError::invalid("Timeline limit reached"));
+                }
+                let (_, command) =
+                    core::pool::duplicate_timeline(&mut session.project, media, name.clone())
+                        .ok_or_else(ApiError::missing)?;
+                session.apply(Box::new(command));
+            } else {
+                session.apply(Box::new(core::RenameTimeline::new(media, name.clone())));
+            }
+        }
+        Operation::MakeCompound { clip_ids, name } => {
+            timeline_name(name)?;
+            if session.project.timelines.len() >= 64 {
+                return Err(ApiError::invalid("Timeline limit reached"));
+            }
+            let selected = refs(tl, clip_ids)?;
+            let video = selected
+                .iter()
+                .filter(|(t, _)| tl.tracks[*t].kind == TrackKind::Video)
+                .map(|(t, _)| *t)
+                .collect::<HashSet<_>>();
+            let audio = selected
+                .iter()
+                .filter(|(t, _)| tl.tracks[*t].kind == TrackKind::Audio)
+                .map(|(t, _)| *t)
+                .collect::<HashSet<_>>();
+            if video.len() > 1 || audio.len() > 1 {
+                return Err(ApiError::invalid(
+                    "This compound adapter supports one video and one audio track at a time",
+                ));
+            }
+            if let Some(&track) = audio.iter().next()
+                && selected.iter().filter(|(t, _)| *t == track).count() > 1
+                && tl.tracks[track].mix.effects.iter().any(|effect| {
+                    effect.enabled && matches!(effect.kind, core::AudioEffectKind::Normalize { .. })
+                })
+            {
+                return Err(ApiError::invalid(
+                    "Multiple audio clips with per-clip normalization cannot be compounded without changing their level policy",
+                ));
+            }
+            let ids = selected.iter().map(|r| r.1).collect::<HashSet<_>>();
+            let mut plan = core::plan_compound_clip(&session.project, id, &selected)
+                .ok_or_else(ApiError::missing)?;
+            plan.nested_timeline.name = name.clone();
+            for track in [plan.video_track, plan.audio_track].into_iter().flatten() {
+                free(tl, track, plan.range_start, plan.len, &ids)?;
+                if tl.tracks[track]
+                    .crossings
+                    .iter()
+                    .any(|c| ids.contains(&c.left_clip) != ids.contains(&c.right_clip))
+                {
+                    return Err(ApiError::invalid(
+                        "Include both clips of a crossing transition in the compound selection",
+                    ));
+                }
+            }
+            let mut trial = session.project.clone();
+            compound_command(&mut trial, id, &selected, &plan, name).apply(&mut trial);
+            crate::files::validate_project(&trial)?;
+            let command = compound_command(&mut session.project, id, &selected, &plan, name);
+            session.apply(command);
+        }
         Operation::SetSpeed {
             clip_ids,
             percent,
@@ -842,6 +926,28 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     }
     session.sync_timeline_media(id);
     Ok(())
+}
+fn timeline_name(name: &str) -> Result<()> {
+    if name.trim().is_empty() || name.len() > 128 || name.chars().any(char::is_control) {
+        return Err(ApiError::invalid(
+            "Choose a nonempty timeline name up to 128 bytes",
+        ));
+    }
+    Ok(())
+}
+fn compound_command(
+    project: &mut core::Project,
+    id: TimelineId,
+    selected: &[edit::ClipRef],
+    plan: &core::CompoundPlan,
+    name: &str,
+) -> Box<dyn Command> {
+    let (media, mut commands) = core::compound_clip_commands(project, id, selected, plan);
+    commands.push(Box::new(core::RenameTimeline::new(media, name.to_owned())));
+    Box::new(CompositeCommand::new(
+        CommandLabel::MakeCompoundClip,
+        commands,
+    ))
 }
 
 fn media_refs(tl: &Timeline, ids: &[String]) -> Result<Vec<edit::ClipRef>> {

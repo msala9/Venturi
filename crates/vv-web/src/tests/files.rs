@@ -101,6 +101,45 @@ fn project_validation_refuses_compound_cycles_and_missing_nested_timelines() {
 }
 
 #[test]
+fn compound_nesting_stops_at_the_native_render_limit() {
+    let mut session = vv_session::Session::default();
+    let mut previous = None;
+    for depth in 1..=vv_core::MAX_COMPOUND_DEPTH + 1 {
+        let id = session.create_timeline(vv_core::Timeline {
+            name: format!("Depth {depth}"),
+            fps: vv_core::Rational::new(24, 1),
+            resolution: (640, 360),
+            tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+            markers: vec![],
+            master: Default::default(),
+        });
+        if let Some(parent) = previous {
+            let media = session
+                .project
+                .media_pool
+                .iter()
+                .find(|(_, m)| m.compound == Some(id))
+                .unwrap()
+                .0;
+            let clip = vv_core::Clip::from_source_range(
+                session.project.alloc_clip_id(),
+                vv_core::ClipSource::Media(media),
+                0,
+                24,
+                0,
+                vv_core::Rational::one(),
+            );
+            session.project.timelines[parent].tracks[0].insert_sorted(clip);
+        }
+        assert_eq!(
+            validate_project(&session.project).is_ok(),
+            depth <= vv_core::MAX_COMPOUND_DEPTH
+        );
+        previous = Some(id);
+    }
+}
+
+#[test]
 fn otio_roundtrip_keeps_native_effects_rates_and_refuses_file_escapes() {
     let root = root();
     let files = Files::new(&root).unwrap();

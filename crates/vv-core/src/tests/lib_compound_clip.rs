@@ -33,6 +33,31 @@ fn insert_clip(
     id
 }
 
+#[test]
+fn a_compound_plan_preserves_crossing_transitions_between_selected_clips() {
+    let (mut project, id) = project_with_tracks(&[TrackKind::Video]);
+    let left = insert_clip(&mut project, id, 0, 0, 24);
+    let right = insert_clip(&mut project, id, 0, 24, 24);
+    project.timelines[id].tracks[0]
+        .crossings
+        .push(CrossTransition {
+            left_clip: left,
+            right_clip: right,
+            transition: Transition {
+                kind: TransitionKind::CrossDissolve,
+                duration: 12,
+                direction: PushDirection::Left,
+                ease: Ease::InOut,
+                curve: 0.5,
+            },
+        });
+    let plan = plan_compound_clip(&project, id, &[(0, left), (0, right)]).unwrap();
+    assert_eq!(plan.nested_timeline.tracks[0].crossings.len(), 1);
+    let crossing = &plan.nested_timeline.tracks[0].crossings[0];
+    assert_eq!((crossing.left_clip, crossing.right_clip), (left, right));
+    assert_eq!(crossing.transition.duration, 12);
+}
+
 /// Inserts into the pool a compound clip referencing `plan`, as the real
 /// caller (main.rs) would before running `compound_clip_commands`.
 fn insert_compound_media(project: &mut Project, plan: &CompoundPlan) -> MediaId {

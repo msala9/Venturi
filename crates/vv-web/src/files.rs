@@ -361,11 +361,20 @@ fn otio_warning(warning: &vv_core::otio::OtioWarning) -> String {
     }
 }
 
-fn validate_project(project: &Project) -> Result<()> {
+pub(crate) fn validate_project(project: &Project) -> Result<()> {
     if project.timelines.len() > 64 || project.media_pool.len() > 10_000 {
         return Err(ApiError::invalid("Project exceeds web host limits"));
     }
-    for (timeline_id, tl) in project.timelines.iter() {
+    let mut depths = std::collections::HashMap::new();
+    for id in project.timelines.keys() {
+        compound_depth(
+            project,
+            id,
+            &mut std::collections::HashSet::new(),
+            &mut depths,
+        )?;
+    }
+    for (_, tl) in project.timelines.iter() {
         for channel in std::iter::once(&tl.master).chain(tl.tracks.iter().map(|t| &t.mix)) {
             if !channel.gain_db.is_finite()
                 || !(vv_core::GAIN_DB_MIN..=vv_core::GAIN_DB_MAX).contains(&channel.gain_db)
@@ -406,13 +415,6 @@ fn validate_project(project: &Project) -> Result<()> {
         for track in &tl.tracks {
             let mut end = 0;
             for clip in &track.clips {
-                if let vv_core::ClipSource::Media(media) = clip.source
-                    && project.would_create_a_cycle(media, timeline_id)
-                {
-                    return Err(ApiError::invalid(
-                        "Project contains a compound timeline cycle",
-                    ));
-                }
                 if !ids.insert(clip.id)
                     || clip.timeline_start < end
                     || clip.timeline_len < 1
@@ -448,6 +450,42 @@ fn validate_project(project: &Project) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn compound_depth(
+    project: &Project,
+    id: vv_core::TimelineId,
+    visiting: &mut std::collections::HashSet<vv_core::TimelineId>,
+    known: &mut std::collections::HashMap<vv_core::TimelineId, u32>,
+) -> Result<u32> {
+    if let Some(depth) = known.get(&id) {
+        return Ok(*depth);
+    }
+    if !visiting.insert(id) {
+        return Err(ApiError::invalid(
+            "Project contains a compound timeline cycle",
+        ));
+    }
+    let timeline = project
+        .timelines
+        .get(id)
+        .ok_or_else(|| ApiError::invalid("Compound timeline is missing"))?;
+    let mut depth = 1;
+    for clip in timeline.tracks.iter().flat_map(|t| &t.clips) {
+        if let vv_core::ClipSource::Media(media) = clip.source
+            && let Some(child) = project.media_pool.get(media).and_then(|m| m.compound)
+        {
+            depth = depth.max(1 + compound_depth(project, child, visiting, known)?);
+        }
+    }
+    if depth > vv_core::MAX_COMPOUND_DEPTH {
+        return Err(ApiError::invalid(
+            "Project exceeds native compound nesting depth",
+        ));
+    }
+    visiting.remove(&id);
+    known.insert(id, depth);
+    Ok(depth)
 }
 
 #[cfg(test)]

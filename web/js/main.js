@@ -389,6 +389,10 @@ function selected() {
     const delta = document.createElement("input"); delta.type = "number"; delta.step = 1; delta.value = 1; delta.min = -1_000_000_000; delta.max = 1_000_000_000; label.append(delta);
     const slip = document.createElement("button"); slip.textContent = "Apply linked slip"; slip.disabled = !view.selection.length;
     form.append(label,slip); form.addEventListener("submit",(event)=>{event.preventDefault();commit({kind:"slip",clip_ids:view.selection,delta_frames:Number(delta.value)}).catch((error)=>notice(error.message));}); fieldset.append(form); $("inspector-content").append(fieldset);
+    const compound=document.createElement("form"),compoundLabel=document.createElement("label");compoundLabel.className="field";compoundLabel.textContent="Compound name";
+    const name=document.createElement("input");name.value="Compound";name.required=true;name.maxLength=128;compoundLabel.append(name);
+    const make=document.createElement("button");make.textContent="Make compound from selection";make.disabled=!view.selection.length;compound.append(compoundLabel,make);
+    compound.addEventListener("submit",async(event)=>{event.preventDefault();try{await commit({kind:"make_compound",clip_ids:view.selection,name:name.value});view.selection=[];selected();canvasTimeline.invalidate();}catch(error){notice(error.message);}});fieldset.append(compound);
     renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,seek:(frame)=>{view.playhead=frame;updateTime();seek();selected();}});
     const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
     mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery});
@@ -682,6 +686,21 @@ for (const [label, audio] of [
 }
 const timelineButton=document.createElement("button");timelineButton.textContent="New timeline";
 timelineButton.addEventListener("click",()=>{$("palette").close();$("timeline-error").textContent="";$("new-timeline-dialog").showModal();});$("command-list").append(timelineButton);
+let timelineAction="rename_timeline";
+for(const [label,kind] of [["Rename timeline","rename_timeline"],["Duplicate timeline","duplicate_timeline"]]) {
+    const button=document.createElement("button");button.textContent=label;button.addEventListener("click",()=>{
+      if(!timeline || timeline.id==="fixture")return notice("Open a native timeline first");
+      timelineAction=kind;$("palette").close();$("timeline-action-error").textContent="";$("timeline-action-title").textContent=label;$("timeline-action").elements.name.value=`${timeline.name}${kind==="duplicate_timeline" ? " copy" : ""}`.slice(0,128);$("timeline-action-dialog").showModal();
+    });$("command-list").append(button);
+}
+$("timeline-action").addEventListener("submit",async(event)=>{
+    event.preventDefault();const before=new Set(documentState?.timelines.map((t)=>t.id));
+    try {
+      await mutate({kind:timelineAction,name:event.target.elements.name.value});
+      if(timelineAction==="duplicate_timeline") {const next=documentState.timelines.find((t)=>!before.has(t.id));if(next){$("timeline-select").value=next.id;view.playhead=0;installTimeline(next);seek();}}
+      $("timeline-action-dialog").close();
+    }catch(error){$("timeline-action-error").textContent=error.message;}
+});
 $("new-timeline").addEventListener("submit",async(event)=>{
   event.preventDefault();const data=new FormData(event.target),before=new Set(documentState?.timelines.map((t)=>t.id));
   try {

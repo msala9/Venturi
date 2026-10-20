@@ -14,6 +14,28 @@ pub struct Files {
     dir: File,
 }
 impl Files {
+    pub fn media_file(&self, path: &Path) -> Result<File> {
+        if path.parent() != Some(self.root.as_path()) {
+            return Err(ApiError::invalid("Media must be in the configured root"));
+        }
+        let name = path
+            .file_name()
+            .and_then(|n| n.to_str())
+            .ok_or_else(ApiError::missing)?;
+        Self::name(name)?;
+        let fd = openat(
+            &self.dir,
+            name,
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK,
+            Mode::empty(),
+        )
+        .map_err(|_| ApiError::missing())?;
+        let file = File::from(fd);
+        if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
+            return Err(ApiError::invalid("Media must be a regular file"));
+        }
+        Ok(file)
+    }
     pub fn probe(&self, name: &str) -> Result<(PathBuf, vv_core::MediaMeta)> {
         Self::name(name)?;
         let listed = self.list()?;

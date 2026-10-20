@@ -1,6 +1,6 @@
 export function isTextTarget(target) {
   return !!target?.closest?.(
-    'input,textarea,select,[contenteditable="true"],dialog',
+    'input,textarea,select,video,audio,[contenteditable="true"],dialog',
   );
 }
 

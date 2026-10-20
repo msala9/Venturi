@@ -4,6 +4,7 @@ use crate::{
     files::Files,
     preview::{FrameQuery, FrameSnapshot, frame_size},
     snapshot,
+    source::{SourceQuery, SourceSpec},
 };
 use serde_json::{Value, json};
 use std::{
@@ -24,6 +25,7 @@ pub enum Action {
     Mutation(Option<String>, Mutation),
     Lookup(String),
     FrameSnapshot(FrameQuery, oneshot::Sender<Result<FrameSnapshot>>),
+    SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
 #[derive(Clone)]
@@ -199,6 +201,37 @@ impl Editor {
     }
     fn handle(&mut self, action: Action) -> Result<Value> {
         match action {
+            Action::SourceSnapshot(media_id, query, reply) => {
+                let result = (|| {
+                    if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
+                        return Err(ApiError::conflict(
+                            "REVISION_CONFLICT",
+                            "Project changed before the media request",
+                        ));
+                    }
+                    use vv_core::Id;
+                    let id = vv_core::MediaId::from_raw(
+                        media_id.parse().map_err(|_| ApiError::missing())?,
+                    );
+                    let media = self
+                        .session
+                        .project
+                        .media_pool
+                        .get(id)
+                        .ok_or_else(ApiError::missing)?;
+                    if media.compound.is_some() {
+                        return Err(ApiError::invalid("Compound sources use the Program viewer"));
+                    }
+                    Ok(SourceSpec {
+                        file: self.files.media_file(&media.path)?,
+                        epoch: query.project_epoch,
+                        media_id,
+                        meta: media.meta.clone(),
+                    })
+                })();
+                let _ = reply.send(result);
+                Ok(Value::Null)
+            }
             Action::FrameSnapshot(query, reply) => {
                 let result = (|| {
                     if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch())
@@ -253,6 +286,11 @@ fn valid_key(key: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
 }
 impl Host {
+    pub async fn source_snapshot(&self, id: String, query: SourceQuery) -> Result<SourceSpec> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::SourceSnapshot(id, query, tx)).await?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
     pub async fn frame_snapshot(&self, query: FrameQuery) -> Result<FrameSnapshot> {
         let (tx, rx) = oneshot::channel();
         self.call(Action::FrameSnapshot(query, tx)).await?;

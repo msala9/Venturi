@@ -1,7 +1,7 @@
 import { createDraw } from "./draw.js";
 import { createInput } from "./input.js";
 export function createTimeline(options) {
-  const draw = createDraw(options.canvas, options.getTimeline, options.view);
+  const draw = createDraw(options.canvas, options.getTimeline, options.view, options.getAssets);
   const input = createInput({ ...options, invalidate: draw.invalidate });
   return {
     ...draw,

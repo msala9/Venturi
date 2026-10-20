@@ -1,5 +1,5 @@
 import { HEADER, RULER, TRACK, frameToX, visibleRange } from "./geometry.js";
-export function createDraw(canvas, getTimeline, view) {
+export function createDraw(canvas, getTimeline, view, getAssets = () => new Map()) {
   const ctx = canvas.getContext("2d");
   let queued = false;
   const colors = getComputedStyle(document.documentElement);
@@ -59,6 +59,26 @@ export function createDraw(canvas, getTimeline, view) {
         ctx.beginPath();
         ctx.rect(x + 5, top + 7, Math.max(0, right - x - 10), TRACK - 14);
         ctx.clip();
+        const asset = getAssets().get(clip.media_id);
+        if (asset?.thumbnail && track.kind === "video") {
+          ctx.globalAlpha = 0.35;
+          ctx.drawImage(asset.thumbnail, x + 2, top + 8, Math.min(right - x - 4, 80), TRACK - 16);
+          ctx.globalAlpha = 1;
+        }
+        if (asset?.waveform && track.kind === "audio") {
+          const { peaks, duration_seconds: duration } = asset.waveform;
+          const fps = asset.fps.num / asset.fps.den;
+          ctx.strokeStyle = "#70c8a8";
+          ctx.beginPath();
+          for (let px = Math.max(x, HEADER); px < Math.min(right, width); px += 2) {
+            const fraction = (px - x) / (right - x);
+            const seconds = (clip.source_in_frames + fraction * (clip.source_out_frames - clip.source_in_frames)) / fps;
+            const peak = peaks[Math.floor(seconds / duration * peaks.length)] || 0;
+            ctx.moveTo(px, top + 42 - peak * 12);
+            ctx.lineTo(px, top + 42 + peak * 12);
+          }
+          ctx.stroke();
+        }
         ctx.fillStyle = color("--text");
         ctx.fillText(clip.name || `Clip ${clip.id}`, x + 9, top + 24);
         ctx.fillStyle = color("--muted");

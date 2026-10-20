@@ -3,6 +3,7 @@ import { createTimeline, fixtureTimeline } from "./timeline/index.js";
 import { linkedSelection } from "./timeline/geometry.js";
 import { request, sendMutation, ApiFailure } from "./api.js";
 import { createViewer } from "./viewer.js";
+import { createSourcePlayer, sourceAssetURL } from "./source.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -196,7 +197,28 @@ let commit = async () => {
   throw new Error("Fixture only · no edit was saved");
 };
 let seek = () => {};
-let viewer = null;
+let viewer = null, viewerMode = "program", sourcePlayer = null;
+const mediaAssets = new Map();
+function viewerModeSet(mode) {
+  viewerMode = mode;
+  $("screen").dataset.viewerMode = mode;
+  $("source-view").hidden = mode !== "source";
+  $("program-mode").setAttribute("aria-pressed", mode === "program");
+  $("source-mode").setAttribute("aria-pressed", mode === "source");
+  $("play").disabled = mode !== "source";
+  $("viewer-caption").textContent = mode === "source" ? "Source proxy · independent of timeline edits" : "Exact timeline frame";
+  if (mode === "program") { sourcePlayer?.pause(); updateTime(); seek(); }
+}
+function openSource() {
+  const item = documentState?.media.find((m) => m.id === selectedMedia);
+  if (!item) return notice("Select a media file first");
+  viewerModeSet("source");
+  sourcePlayer.open(item, documentState.project_epoch, $("source-quality").value);
+}
+$("source-mode").addEventListener("click", openSource);
+$("program-mode").addEventListener("click", () => viewerModeSet("program"));
+$("source-quality").addEventListener("change", openSource);
+$("play").addEventListener("click", () => sourcePlayer.toggle().catch((error) => notice(error.message)));
 function selected() {
   const clip = timeline?.tracks
     .flatMap((track) => track.clips)
@@ -278,6 +300,7 @@ const canvasTimeline = createTimeline({
   canvas: $("timeline"),
   getTimeline: () => timeline,
   view,
+  getAssets: () => mediaAssets,
   onSelect: selected,
   onSeek: (final) => {
     updateTime();
@@ -287,6 +310,7 @@ const canvasTimeline = createTimeline({
   onNotice: notice,
 });
 function updateTime() {
+  if (viewerMode === "source") { canvasTimeline.invalidate(); return; }
   const fps = Math.round(timeline?.fps.num / timeline?.fps.den || 24),
     frame = view.playhead;
   $("timecode").textContent = [
@@ -353,6 +377,12 @@ $("fit").addEventListener("click", () => {
   canvasTimeline.invalidate();
 });
 function step(delta) {
+  if (viewerMode === "source") {
+    const media = documentState?.media.find((m) => m.id === selectedMedia);
+    const fps = media?.fps;
+    sourcePlayer.step(delta, fps ? fps.num / fps.den : 24, media?.duration_frames || 1);
+    return;
+  }
   view.playhead = Math.max(0, view.playhead + delta);
   updateTime();
   seek();
@@ -377,6 +407,13 @@ const clientId = crypto.randomUUID();
 async function refresh() {
   viewer?.invalidate();
   const next = await request("/session");
+  if (documentState?.project_epoch !== next.project_epoch) {
+    sourcePlayer?.reset();
+    selectedMedia = null;
+    for (const asset of mediaAssets.values()) asset.thumbnail?.close();
+    mediaAssets.clear();
+    viewerModeSet("program");
+  }
   const previousId = timeline?.id,
     selection = view.selection;
   documentState = next;
@@ -424,6 +461,7 @@ async function refresh() {
   for (const item of next.media) {
     const card = document.createElement("button");
     card.className = "media-item";
+    card.dataset.mediaId = item.id;
     card.textContent = `${item.name}${item.offline ? " · OFFLINE" : ""}`;
     card.addEventListener("click", () => {
       selectedMedia = item.id;
@@ -433,6 +471,13 @@ async function refresh() {
       card.classList.add("selected");
       notice("Media selected · use Insert media to place at the playhead");
     });
+    card.addEventListener("dblclick", openSource);
+    if (mediaAssets.has(item.id)) {
+      const image = document.createElement("img");
+      image.alt = "";
+      image.src = mediaAssets.get(item.id).thumbnailURL;
+      card.prepend(image);
+    }
     $("media-list").append(card);
   }
   const history = document.createElement("div");
@@ -698,7 +743,46 @@ viewer = createViewer({
         }
       : null,
 });
-seek = () => viewer.seek();
+seek = () => { if (viewerMode === "program") return viewer.seek(); };
+sourcePlayer = createSourcePlayer({
+  video: $("source-video"), status: $("source-status"), cancel: $("source-cancel"),
+  onReady: async ({ item, epoch, job }) => {
+    const urls = (name) => sourceAssetURL(item.id, job, name, epoch);
+    const [thumb, wave] = await Promise.allSettled([
+      fetch(urls("thumb.png")).then((r) => { if (!r.ok) throw new Error("No thumbnail"); return r.blob(); }).then(createImageBitmap),
+      fetch(urls("waveform.json")).then((r) => { if (!r.ok) throw new Error("No waveform"); return r.json(); }),
+    ]);
+    if (documentState?.project_epoch !== epoch) { if (thumb.status === "fulfilled") thumb.value.close(); return; }
+    const thumbnail = thumb.status === "fulfilled" ? thumb.value : null;
+    const waveform = wave.status === "fulfilled" ? wave.value : null;
+    const bytes = (thumbnail ? thumbnail.width * thumbnail.height * 4 : 0) + (waveform?.peaks.length || 0) * 8;
+    if (bytes > 16 * 1024 * 1024) { thumbnail?.close(); return; }
+    mediaAssets.get(item.id)?.thumbnail?.close();
+    mediaAssets.delete(item.id);
+    mediaAssets.set(item.id, { thumbnail, waveform, bytes, fps: item.fps, thumbnailURL: urls("thumb.png") });
+    if (thumbnail) for (const card of document.querySelectorAll(".media-item")) {
+      if (card.dataset.mediaId !== item.id) continue;
+      card.querySelector("img")?.remove();
+      const image = document.createElement("img"); image.alt = ""; image.src = urls("thumb.png"); card.prepend(image);
+    }
+    while (mediaAssets.size > 16 || [...mediaAssets.values()].reduce((n, a) => n + a.bytes, 0) > 32 * 1024 * 1024) {
+      const oldest = mediaAssets.keys().next().value;
+      mediaAssets.get(oldest).thumbnail?.close(); mediaAssets.delete(oldest);
+    }
+    canvasTimeline.invalidate();
+  },
+});
+$("source-video").addEventListener("timeupdate", () => {
+  if (viewerMode !== "source") return;
+  const rate = documentState?.media.find((m) => m.id === selectedMedia)?.fps;
+  const fps = rate ? rate.num / rate.den : 24;
+  const frames = Math.floor($("source-video").currentTime * fps);
+  const seconds = Math.floor(frames / fps);
+  $("timecode").textContent = `Source ${[Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60, frames % Math.round(fps)].map((n) => String(n).padStart(2, "0")).join(":")}`;
+});
+for (const event of ["play", "pause", "ended"]) $("source-video").addEventListener(event, () => {
+  $("play").textContent = $("source-video").paused ? "▶ Play" : "❚❚ Pause";
+});
 async function diagnostics() {
   try {
     const d = await request("/diagnostics");

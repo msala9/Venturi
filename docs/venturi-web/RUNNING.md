@@ -1,9 +1,10 @@
 # Running the implemented host
 
 Venturi Web currently provides native project/timeline editing over loopback.
-It is an incremental editor with exact composed GPU frame preview. Playback,
-source proxies, export, advanced effects/color/audio editing and AI review are
-not implemented; their controls are disabled. WSL exposes only llvmpipe (CPU).
+It is an incremental editor with exact composed GPU frames and Source playback
+with audio, thumbnails and waveforms. Program playback, export, advanced
+effects/color/audio editing and AI review remain unimplemented. WSL exposes
+only llvmpipe (CPU).
 The separate halo2 deployment has verified R9700 Vulkan rendering; see
 evidence/m3-r9700-validation.json for the measured path.
 
@@ -63,6 +64,19 @@ members are preserved so the added binary does not change default selection.
 5. Alt+Left/Right moves the linked selection one frame; Shift adds ten.
 6. Ctrl+S saves. Ctrl+Z / Ctrl+Shift+Z uses native history. Unsaved changes are
    visible; save before changing projects or terminating the process.
+
+Double-click a media file, or select it and click Source, to prepare a browser
+proxy. Choose quality and use the video controls or Play; Source has its own
+clock and does not move the timeline. Its first audio stream plays in the
+Windows browser. Native-generated thumbnails and waveforms are loaded on
+demand. Cancel preparation stops its background job. Program returns to exact
+composed stills; source playback does not display timeline effects.
+
+Source jobs currently accept regular media up to ten minutes and 8192 pixels
+per dimension, cap decoded audio samples at 256 MiB plus encoder overhead,
+and cap each generated job at 512 MiB. Cache is private, 2 GiB, process-local;
+evicted material can be regenerated. Still images and compound media do not
+have Source playback yet. Original source files are preserved.
 
 Existing project saves use same-directory staging, file sync, atomic rename
 and a previous-file `.vvproj.bak`. To recover that previous save, stop the

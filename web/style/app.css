@@ -436,6 +436,20 @@ label {
 #preview.stale {
   opacity: 0.4;
 }
+#source-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+#source-view[hidden] { display: none; }
+#source-video { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+.source-toolbar { display: flex; gap: 12px; align-items: center; padding: 8px; font-size: 11px; flex-wrap: wrap; }
+.source-toolbar label { display: flex; gap: 6px; align-items: center; }
+#screen[data-viewer-mode="source"] > #preview,
+#screen[data-viewer-mode="source"] > #viewer-empty,
+#screen[data-viewer-mode="source"] > #preview-state { display: none; }
+.media-item img { width: 96px; height: 54px; object-fit: contain; }
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto !important;

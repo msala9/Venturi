@@ -256,7 +256,7 @@ pub fn frame_size(full: (u32, u32), width: u32) -> Result<(u32, u32)> {
     }
     Ok((width, height as u32))
 }
-fn encode_png(rgba: &[u8], size: (u32, u32)) -> Result<Vec<u8>> {
+pub(crate) fn encode_png(rgba: &[u8], size: (u32, u32)) -> Result<Vec<u8>> {
     let mut data = Vec::new();
     let mut encoder = png::Encoder::new(&mut data, size.0, size.1);
     encoder.set_color(png::ColorType::Rgba);

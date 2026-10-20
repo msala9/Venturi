@@ -156,6 +156,20 @@ impl Decoder {
         hw: &[crate::hw::HwDevice],
         priority: crate::hw::HwPriority,
     ) -> Result<Self, crate::MediaError> {
+        Self::open_configured(path, hw, priority, 0)
+    }
+
+    /// Keeps background web preparation from using every CPU core.
+    pub fn open_software_bounded(path: &Path, threads: usize) -> Result<Self, crate::MediaError> {
+        Self::open_configured(path, &[], crate::hw::HwPriority::Low, threads.clamp(1, 4))
+    }
+
+    fn open_configured(
+        path: &Path,
+        hw: &[crate::hw::HwDevice],
+        priority: crate::hw::HwPriority,
+        software_threads: usize,
+    ) -> Result<Self, crate::MediaError> {
         crate::probe::ensure_init();
 
         let ictx = ffmpeg::format::input(&path)?;
@@ -186,7 +200,7 @@ impl Decoder {
         // the target, in parallel it is much faster.
         decoder_ctx.set_threading(ffmpeg::threading::Config {
             kind: ffmpeg::threading::Type::Frame,
-            count: if hw.is_some() { 1 } else { 0 },
+            count: if hw.is_some() { 1 } else { software_threads },
         });
         let decoder = decoder_ctx.video()?;
 

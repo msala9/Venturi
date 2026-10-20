@@ -96,12 +96,37 @@ pub fn generate_proxy(
     content_hash: u64,
     quality: ProxyQuality,
     hw: &[crate::hw::HwDevice],
+    on_frame: impl FnMut(u64) -> bool,
+) -> Result<PathBuf, crate::MediaError> {
+    let dir = proxies_dir();
+    std::fs::create_dir_all(&dir)?;
+    generate_proxy_at(
+        source_path,
+        &proxy_path_for(content_hash, quality),
+        quality,
+        hw,
+        0,
+        on_frame,
+    )
+}
+
+/// The caller owns the destination directory and cache budget.
+pub fn generate_proxy_at(
+    source_path: &Path,
+    final_path: &Path,
+    quality: ProxyQuality,
+    hw: &[crate::hw::HwDevice],
+    software_threads: usize,
     mut on_frame: impl FnMut(u64) -> bool,
 ) -> Result<PathBuf, crate::MediaError> {
     crate::probe::ensure_init();
 
     // Low: runs alongside the playback, whose decoders come first.
-    let mut decoder = Decoder::open_with(source_path, hw, crate::hw::HwPriority::Low)?;
+    let mut decoder = if software_threads > 0 {
+        Decoder::open_software_bounded(source_path, software_threads)?
+    } else {
+        Decoder::open_with(source_path, hw, crate::hw::HwPriority::Low)?
+    };
     // Real dimensions and color metadata from the first decoded frame, as
     // in the preview path.
     let Some((_, first_frame)) = decoder.next_frame()? else {
@@ -113,14 +138,7 @@ pub fn generate_proxy(
     let (src_w, src_h) = (first_frame.width, first_frame.height);
     let (dst_w, dst_h) = scaled_dimensions(src_w, src_h, quality.max_width());
 
-    let dir = proxies_dir();
-    std::fs::create_dir_all(&dir)?;
-    let final_path = proxy_path_for(content_hash, quality);
-    let tmp_path = dir.join(format!(
-        "{content_hash:016x}{}.tmp-{}.mp4",
-        quality.file_suffix(),
-        std::process::id()
-    ));
+    let tmp_path = final_path.with_extension(format!("tmp-{}.mp4", std::process::id()));
 
     let written = (|| {
         let mut enc = ProxyEncoder::new(
@@ -131,6 +149,7 @@ pub fn generate_proxy(
             decoder.fps(),
             first_frame.matrix,
             first_frame.full_range,
+            software_threads,
         )?;
         enc.write_frame(&first_frame)?;
         let mut frames = 1u64;
@@ -151,8 +170,8 @@ pub fn generate_proxy(
         return Err(e);
     }
 
-    std::fs::rename(&tmp_path, &final_path)?;
-    Ok(final_path)
+    std::fs::rename(&tmp_path, final_path)?;
+    Ok(final_path.to_owned())
 }
 
 /// Dimensions scaled preserving the aspect ratio, width at most `max_w`,
@@ -213,6 +232,7 @@ impl ProxyEncoder {
         fps: vv_core::Rational,
         matrix: ColorMatrix,
         full_range: bool,
+        threads: usize,
     ) -> Result<Self, crate::MediaError> {
         let mut octx = format::output(path)?;
         let global_header = octx.format().flags().contains(format::Flags::GLOBAL_HEADER);
@@ -245,6 +265,9 @@ impl ProxyEncoder {
         opts.set("g", "1");
         opts.set("keyint_min", "1");
         opts.set("sc_threshold", "0");
+        if threads > 0 {
+            opts.set("threads", &threads.to_string());
+        }
 
         let encoder = ctx.open_with(opts)?;
         let mut ost = ost;

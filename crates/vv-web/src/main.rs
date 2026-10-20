@@ -5,6 +5,7 @@ mod files;
 mod host;
 mod preview;
 mod snapshot;
+mod source;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -47,6 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         listener,
         api::router(api::AppState {
             host: host::Host::start(&root)?,
+            source: source::Source::start()?,
             port: listen.port(),
             preview: gpu
                 .map(|id| preview::Preview::start(id, &gpu_lock))

@@ -4,6 +4,7 @@
 
 pub mod audio;
 pub mod audio_file;
+pub mod browser_proxy;
 pub mod cache;
 pub mod decode;
 pub mod encode;

@@ -104,3 +104,21 @@ Possible HTTP results:
 ## Security and cache headers
 
 Private authenticated/tunneled access only; `Cache-Control: no-store` for project state and mutations, short-lived versioned immutable caches for thumbnails/proxies; CSP disallow untrusted scripts; `X-Content-Type-Options: nosniff`; no dangerous MIME guessing; range requests must be validated and bounded; origin/host checks for unsafe methods. See `SECURITY_DEPLOY.md`.
+
+## Implemented M3b source delivery
+
+- POST `/api/v1/media/{id}/prepare` with `{project_epoch, quality}` creates or
+  reuses an ephemeral source job. Quality is low/medium/high. This does not edit
+  the project or history. Duplicate identity/quality requests share one job.
+- GET `/api/v1/media/{id}/jobs/{job}?project_epoch=...` returns id, state, frames
+  and optional error. States: queued, running, ready, failed, canceled.
+- DELETE the same job URL requests cancellation; it never deletes source media.
+- GET `.../{job}/{source.mp4|thumb.png|waveform.json}?project_epoch=...` serves
+  completed assets only. Every request revalidates epoch, media ID and file
+  identity. Files are streamed with MIME, Content-Length, Accept-Ranges, ETag,
+  single byte ranges and If-Range. Unsatisfiable/multiple ranges return 416.
+- The Source proxy contains the first audio stream when present. Source video
+  is a preview of originals and does not contain timeline effects. Preparation
+  is CPU-only, off the session actor. See RUNNING for explicit duration, cache
+  and resource limits. Session capabilities expose source_playback separately
+  from Program playback. Native FFmpeg library APIs are used throughout.

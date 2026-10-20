@@ -3,6 +3,7 @@ use crate::{
     error::{ApiError, Result},
     host::{Action, Host},
     preview::{FrameQuery, Preview},
+    source::{Source, SourceQuery},
 };
 use axum::{
     Json, Router,
@@ -19,6 +20,7 @@ pub struct AppState {
     pub host: Host,
     pub port: u16,
     pub preview: Preview,
+    pub source: Source,
 }
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -35,14 +37,105 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
         .route("/api/v1/diagnostics", get(diagnostics))
+        .route("/api/v1/media/{id}/prepare", post(prepare_source))
+        .route(
+            "/api/v1/media/{id}/jobs/{job}",
+            get(source_status).delete(cancel_source),
+        )
+        .route("/api/v1/media/{id}/jobs/{job}/{name}", get(source_asset))
         .fallback(assets)
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PrepareSource {
+    project_epoch: String,
+    #[serde(default = "medium")]
+    quality: String,
+}
+fn medium() -> String {
+    "medium".into()
+}
+async fn prepare_source(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<Json<PrepareSource>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid source request"))?
+        .0;
+    let spec = state
+        .host
+        .source_snapshot(
+            id,
+            SourceQuery {
+                project_epoch: payload.project_epoch,
+            },
+        )
+        .await?;
+    state.source.prepare(spec, &payload.quality).map(Json)
+}
+async fn source_status(
+    State(state): State<AppState>,
+    Path((id, job)): Path<(String, String)>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let spec = state
+        .host
+        .source_snapshot(
+            id,
+            query
+                .map_err(|_| ApiError::invalid("Invalid source query"))?
+                .0,
+        )
+        .await?;
+    state.source.status(&job, &spec, false).map(Json)
+}
+async fn cancel_source(
+    State(state): State<AppState>,
+    Path((id, job)): Path<(String, String)>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let spec = state
+        .host
+        .source_snapshot(
+            id,
+            query
+                .map_err(|_| ApiError::invalid("Invalid source query"))?
+                .0,
+        )
+        .await?;
+    state.source.status(&job, &spec, true).map(Json)
+}
+async fn source_asset(
+    State(state): State<AppState>,
+    Path((id, job, name)): Path<(String, String, String)>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+    headers: axum::http::HeaderMap,
+) -> Result<Response> {
+    let spec = state
+        .host
+        .source_snapshot(
+            id,
+            query
+                .map_err(|_| ApiError::invalid("Invalid source query"))?
+                .0,
+        )
+        .await?;
+    let file = state.source.asset(&job, &spec, &name)?;
+    let mime = match name.as_str() {
+        "source.mp4" => "video/mp4",
+        "thumb.png" => "image/png",
+        _ => "application/json",
+    };
+    crate::source::stream_file(file, mime, &job, &headers).await
+}
 async fn session(State(state): State<AppState>) -> Result<Json<Value>> {
     let mut snapshot = state.host.call(Action::Session).await?;
     snapshot["capabilities"]["preview"] = json!(state.preview.available());
+    snapshot["capabilities"]["source_playback"] = json!(true);
     Ok(Json(snapshot))
 }
 async fn diagnostics(State(state): State<AppState>) -> Json<Value> {
@@ -177,6 +270,7 @@ async fn assets(request: Request) -> Response {
         "/js/ui.js" => asset!("/web/js/ui.js", "text/javascript"),
         "/js/api.js" => asset!("/web/js/api.js", "text/javascript"),
         "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),
+        "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),
         "/js/timeline/index.js" => asset!("/web/js/timeline/index.js", "text/javascript"),
         "/js/timeline/geometry.js" => asset!("/web/js/timeline/geometry.js", "text/javascript"),
         "/js/timeline/input.js" => asset!("/web/js/timeline/input.js", "text/javascript"),

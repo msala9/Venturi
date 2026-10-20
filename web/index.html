@@ -78,11 +78,7 @@
         <div class="panel-heading">
           <div class="tabs">
             <button id="program-mode" aria-pressed="true">Program</button
-            ><button
-              id="source-mode"
-              disabled
-              title="Source playback is not implemented"
-            >
+            ><button id="source-mode" aria-pressed="false">
               Source
             </button>
           </div>
@@ -98,10 +94,18 @@
             ><span>Original Rust engine · Browser workspace</span>
           </div>
           <span id="preview-state">PREVIEW UNAVAILABLE</span>
+          <div id="source-view" hidden>
+            <video id="source-video" controls playsinline preload="metadata" aria-label="Source media playback"></video>
+            <div class="source-toolbar">
+              <span id="source-status" role="status">Select media and open Source</span>
+              <label>Proxy quality <select id="source-quality" aria-label="Source proxy quality"><option value="low">Low · 640</option><option value="medium" selected>Medium · 960</option><option value="high">High · 1920</option></select></label>
+              <button id="source-cancel" disabled>Cancel preparation</button>
+            </div>
+          </div>
         </div>
         <div class="transport">
           <button id="step-back" aria-label="Previous frame">◀│</button
-          ><button disabled title="Composed A/V playback is not implemented">
+          ><button id="play" disabled title="Select Source for media playback">
             ▶ Play</button
           ><button id="step-forward" aria-label="Next frame">│▶</button
           ><output id="timecode">00:00:00:00</output>

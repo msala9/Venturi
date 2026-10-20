@@ -146,3 +146,55 @@ redo, lift delete and two undos restoring original revision e3c0f15b. The restor
 fixture was saved. Screenshot records CURRENT at frame 12. An external Rust
 test also verifies immediate GPU_BUSY under occupied lock and that the shared
 lock file is preserved.
+
+## M3b — source playback, thumbnails and waveforms
+
+Implemented on-demand native all-intra H.264/AAC MP4 source preparation,
+including the first audio stream and audio-only media. The new vv-media
+browser_proxy adapter reuses native proxy, audio decode and AAC writing, then
+muxes through FFmpeg library bindings. Production does not spawn ffmpeg CLI.
+The existing desktop proxy path and decoder defaults are preserved. Web video
+decode/encode and thumbnails use two CPU threads, no GPU or Linux audio sink.
+
+A single background worker plus one queued source job owns private staged
+outputs. Repeated requests deduplicate by project epoch, media ID, source file
+identity and quality/version. Completed assets require the current epoch and
+the same source identity on every request. Source handles use root-relative
+NOFOLLOW opens. Changed/offline media and cross-project IDs cannot retrieve
+cached material. Cache is bounded to 2 GiB and approximately 24 completed jobs;
+one staging job adds up to 512 MiB. Entries can be evicted and regenerated.
+Cache is process-local, stored in an owned private temporary directory and
+removed on orderly worker shutdown. Crash-orphan cleanup remains M7 work.
+
+Current bounds: regular sources up to ten minutes, dimensions at most 8192,
+ten-minute job wall budget, 512 MiB job output and 256 MiB of decoded f32 audio
+samples (native AAC staging/copies add temporary memory). This bounded version
+does not claim unrestricted long-file support. Still-image Source, audio
+stream selection and persistent disk cache recovery remain open.
+
+Browser: media double-click or Source opens preparation; native video controls
+play/seek with sound in the Windows browser. Source quality Low/Medium/High,
+cancel, frame stepping and stale-open cancellation are implemented. Source
+transport is independent from the Program playhead. On-demand thumbnail and
+native waveform peaks appear in the media panel and Canvas, with a bounded
+32 MiB / 16-entry browser asset cache. No timeline edit RPC runs on pointermove.
+
+halo2 synthetic H.264/AAC, 48 frames 320x180 24fps: High preparation 102.59 ms,
+224,874-byte MP4, H.264 High YUV420P + AAC LC 48kHz mono. Video duration 2.000 s,
+audio 2.005 s; complete decode passed. HTTP prefix/suffix requests returned
+correct bytes and 206; invalid range 416; stale project epoch 409. Thumbnail
+PNG and 200 waveform peaks were verified. Windows Chromium reported playing,
+readyState 4, 320x180, 2.005-second duration, muted=false and advancing time.
+This is a short feasibility fixture, not long-form A/V drift proof or a
+physical-speaker measurement. Evidence: m3b-halo2-source-validation.json and
+m3b-source-audio-browser.jpg.
+
+Checks: 17 vv-web tests and 11 JavaScript tests passed; vv-media suite passed
+107 tests with two existing ignored tests when run serially. A parallel run
+hit the upstream encoder color-check temporary-name race; serial execution
+avoids that existing shared-file collision. New coverage includes actual A/V and
+audio-only proxy decode, cancellation, job deduplication, epoch/media/file
+identity isolation, Range/If-Range and obsolete browser preparations. Clippy,
+formatting, native desktop check and vv-web build passed. Program playback,
+export and advanced feature parity remain subsequent work, not completed by
+source playback.

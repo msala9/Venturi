@@ -11,4 +11,5 @@ test("editor shortcuts stay out of editable elements and dialogs", () => {
   );
   assert.equal(isTextTarget({ closest: () => null }), false);
   assert.equal(isTextTarget(null), false);
+  assert.equal(isTextTarget({ closest: (selector) => selector.includes("video") ? {} : null }), true);
 });

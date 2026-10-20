@@ -1,0 +1,50 @@
+{
+  "host": "halo2",
+  "source": "synthetic H.264/AAC 320x180 24fps 2 seconds",
+  "quality": "high",
+  "preparation_seconds": 0.10259288002271205,
+  "job_state": "ready",
+  "frames": 48,
+  "bytes": 224874,
+  "sha256": "84dae782846ea8d3b98d2207b38c5689f213a800d888859ef86ce017641a9a46",
+  "range_checks": [
+    {
+      "range": "bytes=0-1023",
+      "status": 206,
+      "content_range": "bytes 0-1023/224874"
+    },
+    {
+      "range": "bytes=-1024",
+      "status": 206,
+      "content_range": "bytes 223850-224873/224874"
+    }
+  ],
+  "invalid_range_status": 416,
+  "stale_epoch_status": 409,
+  "thumbnail_bytes": 15136,
+  "waveform_peaks": 200,
+  "waveform_seconds": 2.0,
+  "streams": [
+    {
+      "codec_name": "h264",
+      "codec_type": "video",
+      "profile": "High",
+      "pix_fmt": "yuv420p",
+      "width": 320,
+      "height": 180,
+      "r_frame_rate": "24/1",
+      "duration": "2.000000"
+    },
+    {
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "profile": "LC",
+      "r_frame_rate": "0/0",
+      "sample_rate": "48000",
+      "channels": 1,
+      "duration": "2.005000"
+    }
+  ],
+  "decode_succeeded": true,
+  "complete": true
+}

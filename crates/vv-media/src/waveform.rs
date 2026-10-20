@@ -72,25 +72,61 @@ pub fn generate_waveforms(
     stream_indices: &[usize],
     num_peaks: usize,
 ) -> Result<Vec<Option<Waveform>>, crate::MediaError> {
+    waveforms(
+        source_path,
+        Some(content_hash),
+        stream_indices,
+        num_peaks,
+        || true,
+    )
+}
+
+/// Computes peaks without changing the shared desktop cache.
+pub fn analyze_waveforms(
+    source_path: &Path,
+    stream_indices: &[usize],
+    num_peaks: usize,
+    keep_running: impl FnMut() -> bool,
+) -> Result<Vec<Option<Waveform>>, crate::MediaError> {
+    waveforms(source_path, None, stream_indices, num_peaks, keep_running)
+}
+
+fn waveforms(
+    source_path: &Path,
+    content_hash: Option<u64>,
+    stream_indices: &[usize],
+    num_peaks: usize,
+    mut keep_running: impl FnMut() -> bool,
+) -> Result<Vec<Option<Waveform>>, crate::MediaError> {
     crate::probe::ensure_init();
     let mut bins: Vec<Option<PeakBins>> = audio_stream_timing(source_path, stream_indices)?
         .into_iter()
         .map(|timing| timing.map(|(secs, rate)| PeakBins::new(secs, rate, num_peaks)))
         .collect();
+    let mut canceled = false;
     crate::audio::decode_audio_streams_streaming(
         source_path,
         stream_indices,
         None,
         |slot, channels, chunk| {
+            if !keep_running() {
+                canceled = true;
+                return ControlFlow::Break(());
+            }
             if let Some(bins) = &mut bins[slot] {
                 bins.push(chunk, channels as usize);
             }
             ControlFlow::Continue(())
         },
     )?;
+    if canceled {
+        return Err(crate::MediaError::Cancelled);
+    }
 
     let dir = waveforms_dir();
-    std::fs::create_dir_all(&dir)?;
+    if content_hash.is_some() {
+        std::fs::create_dir_all(&dir)?;
+    }
     let mut out = Vec::with_capacity(bins.len());
     for (&stream_index, bins) in stream_indices.iter().zip(bins) {
         let Some(bins) = bins else {
@@ -98,12 +134,14 @@ pub fn generate_waveforms(
             continue;
         };
         let waveform = bins.finish();
-        let tmp_path = dir.join(format!(
-            "{content_hash:016x}_{stream_index}.tmp-{}.peaks",
-            std::process::id()
-        ));
-        write_peaks_file(&tmp_path, &waveform.peaks, waveform.audio_duration_secs)?;
-        std::fs::rename(&tmp_path, waveform_path_for(content_hash, stream_index))?;
+        if let Some(content_hash) = content_hash {
+            let tmp_path = dir.join(format!(
+                "{content_hash:016x}_{stream_index}.tmp-{}.peaks",
+                std::process::id()
+            ));
+            write_peaks_file(&tmp_path, &waveform.peaks, waveform.audio_duration_secs)?;
+            std::fs::rename(&tmp_path, waveform_path_for(content_hash, stream_index))?;
+        }
         out.push(Some(waveform));
     }
     Ok(out)

@@ -143,6 +143,36 @@ impl Editor {
                     self.session.add_media(path, meta);
                 }
             }
+            Operation::NewTimeline {
+                name,
+                fps,
+                resolution,
+            } => {
+                if self.session.path().is_none() {
+                    return Err(ApiError::invalid("Create or open a project first"));
+                }
+                if name.trim().is_empty()
+                    || name.len() > 128
+                    || name.chars().any(char::is_control)
+                    || self.session.project.timelines.len() >= 64
+                    || fps.num <= 0
+                    || fps.den <= 0
+                    || fps.as_f64() > 240.0
+                    || resolution.iter().any(|v| *v == 0 || *v > 8192)
+                {
+                    return Err(ApiError::invalid(
+                        "Timeline name, rate or dimensions exceed the supported limits",
+                    ));
+                }
+                self.session.create_timeline(Timeline {
+                    name: name.clone(),
+                    fps: *fps,
+                    resolution: (resolution[0], resolution[1]),
+                    tracks: vec![Track::new(TrackKind::Video), Track::new(TrackKind::Audio)],
+                    markers: vec![],
+                    master: Default::default(),
+                });
+            }
             Operation::NewProject { name } => {
                 if self.session.has_unsaved_changes() {
                     return Err(ApiError::conflict(

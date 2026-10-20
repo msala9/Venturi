@@ -183,3 +183,10 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 - Project `save_as {name}` writes a new `{name}.vvproj` inside the root with
   atomic no-replace semantics. It then switches the current save path. Existing
   names return FILE_EXISTS and never replace the current path or source file.
+- Project `new_timeline {name,fps:{num,den},resolution:[width,height]}` creates
+  a native timeline and its compound media entry. FPS must be positive and no
+  greater than 240; dimensions are 1–8192, with at most 64 timelines.
+- Session media entries expose compound_timeline_id. Native insert_media now
+  accepts these entries, validates cycle safety and conforms native source FPS
+  to the destination. Source double-click opens that timeline; compound media
+  itself uses composed Program playback rather than an original-file proxy.

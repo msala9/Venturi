@@ -417,3 +417,56 @@ fn native_history_jump_restores_selected_position_and_rejects_invalid_targets() 
     assert_eq!(s.timeline_revision(id), before);
     assert_eq!(s.history.position(), end);
 }
+
+#[test]
+fn compound_insert_conforms_native_rate_and_refuses_self_and_indirect_cycles() {
+    let (mut s, parent, _) = fixture();
+    let child = s.create_timeline(Timeline {
+        name: "Nested".into(),
+        fps: core::Rational::new(30, 1),
+        resolution: (640, 360),
+        tracks: vec![core::Track::new(TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    apply(
+        &mut s,
+        child,
+        &Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 30,
+        },
+    )
+    .unwrap();
+    let media = s
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(child))
+        .unwrap()
+        .0;
+    let command = |media: core::MediaId, start_frame| Operation::InsertMedia {
+        media_id: media.raw().to_string(),
+        start_frame,
+        source_in: None,
+        source_out: None,
+    };
+    let original = s.timeline_revision(parent);
+    apply(&mut s, parent, &command(media, 72)).unwrap();
+    let clip = s.project.timelines[parent].tracks[0].clips.last().unwrap();
+    assert_eq!(clip.timeline_len, 24);
+    assert_eq!(clip.source_in(), 0);
+    assert_eq!(clip.source_out(), 30);
+    assert!(apply(&mut s, child, &command(media, 30)).is_err());
+    let parent_media = s
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(parent))
+        .unwrap()
+        .0;
+    assert!(apply(&mut s, child, &command(parent_media, 30)).is_err());
+    apply(&mut s, parent, &Operation::Undo).unwrap();
+    assert_eq!(s.timeline_revision(parent), original);
+}

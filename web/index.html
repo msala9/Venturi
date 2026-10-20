@@ -227,6 +227,18 @@
       </form>
       <div id="command-list"></div>
     </dialog>
+    <dialog id="new-timeline-dialog">
+      <form method="dialog"><button aria-label="Close new timeline">×</button></form>
+      <form id="new-timeline">
+        <h2>New timeline</h2>
+        <label class="field">Timeline name<input name="name" required maxlength="128" value="New timeline"></label>
+        <label class="field">FPS numerator<input name="fps_num" type="number" min="1" max="1000000" step="1" value="24" required></label>
+        <label class="field">FPS denominator<input name="fps_den" type="number" min="1" max="1000000" step="1" value="1" required></label>
+        <label class="field">Timeline width<input name="width" type="number" min="1" max="8192" step="1" value="1920" required></label>
+        <label class="field">Timeline height<input name="height" type="number" min="1" max="8192" step="1" value="1080" required></label>
+        <button>Create timeline</button><p id="timeline-error" role="alert"></p>
+      </form>
+    </dialog>
     <dialog id="imports">
       <form method="dialog">
         <div class="panel-heading">

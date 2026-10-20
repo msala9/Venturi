@@ -66,3 +66,36 @@ fn native_probe_accepts_media_without_reading_symlink_targets() {
     assert!(files.probe("link.mp4").is_err());
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn project_validation_refuses_compound_cycles_and_missing_nested_timelines() {
+    let mut session = vv_session::Session::default();
+    let id = session.create_timeline(vv_core::Timeline {
+        name: "Cycle".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let media = session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, m)| m.compound == Some(id))
+        .unwrap()
+        .0;
+    assert!(validate_project(&session.project).is_ok());
+    let clip = vv_core::Clip::from_source_range(
+        session.project.alloc_clip_id(),
+        vv_core::ClipSource::Media(media),
+        0,
+        24,
+        0,
+        vv_core::Rational::one(),
+    );
+    session.project.timelines[id].tracks[0].insert_sorted(clip);
+    assert!(validate_project(&session.project).is_err());
+    session.project.timelines.remove(id);
+    assert!(validate_project(&session.project).is_err());
+}

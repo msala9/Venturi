@@ -230,6 +230,11 @@ function viewerModeSet(mode) {
 function openSource() {
   const item = documentState?.media.find((m) => m.id === selectedMedia);
   if (!item) return notice("Select a media file first");
+  if (item.compound_timeline_id) {
+    const next=documentState.timelines.find((t)=>t.id===item.compound_timeline_id);
+    if (next) {view.playhead=0;$("timeline-select").value=next.id;installTimeline(next);viewerModeSet("program");}
+    return;
+  }
   sourceOpenId = item.id;
   const range = sourceRanges.get(item.id) || { source_in:0, source_out:item.is_image ? Math.round(5*item.fps.num/item.fps.den) : item.duration_frames };
   $("source-in").value = range.source_in; $("source-out").value = range.source_out;
@@ -646,6 +651,17 @@ for (const [label, audio] of [
   });
   $("command-list").append(button);
 }
+const timelineButton=document.createElement("button");timelineButton.textContent="New timeline";
+timelineButton.addEventListener("click",()=>{$("palette").close();$("timeline-error").textContent="";$("new-timeline-dialog").showModal();});$("command-list").append(timelineButton);
+$("new-timeline").addEventListener("submit",async(event)=>{
+  event.preventDefault();const data=new FormData(event.target),before=new Set(documentState?.timelines.map((t)=>t.id));
+  try {
+    await mutate({kind:"new_timeline",name:data.get("name"),fps:{num:Number(data.get("fps_num")),den:Number(data.get("fps_den"))},resolution:[Number(data.get("width")),Number(data.get("height"))]},true);
+    const next=documentState.timelines.find((t)=>!before.has(t.id));
+    if(next){$("timeline-select").value=next.id;view.playhead=0;installTimeline(next);seek();}
+    $("new-timeline-dialog").close();
+  }catch(error){$("timeline-error").textContent=error.message;}
+});
 const ripple = document.createElement("button");
 ripple.textContent = "Ripple delete selected clips";
 ripple.addEventListener("click", () => {
@@ -723,7 +739,7 @@ $("timeline-select").addEventListener("change", () => {
   const next = documentState?.timelines.find(
     (t) => t.id === $("timeline-select").value,
   );
-  if (next) installTimeline(next);
+  if (next) {programPlayer?.stop();viewer?.invalidate();view.playhead=0;installTimeline(next);seek();}
 });
 async function projects() {
   try {

@@ -31,6 +31,11 @@ pub enum Operation {
     SaveAs {
         name: String,
     },
+    NewTimeline {
+        name: String,
+        fps: core::Rational,
+        resolution: [u32; 2],
+    },
     ImportMedia {
         path_token: String,
     },
@@ -409,9 +414,9 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 .get(media)
                 .ok_or_else(ApiError::missing)?
                 .meta;
-            if session.project.media_pool[media].compound.is_some() {
+            if session.project.would_create_a_cycle(media, id) {
                 return Err(ApiError::invalid(
-                    "Compound insertion is not implemented yet",
+                    "Compound insertion would create a timeline cycle",
                 ));
             }
             let default_out = if meta.is_image() {

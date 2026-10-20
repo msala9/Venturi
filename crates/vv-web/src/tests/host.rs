@@ -130,5 +130,38 @@ fn retries_epochs_revisions_and_writer_lease() {
         "FILE_EXISTS"
     );
     assert_eq!(editor.session.path().unwrap(), root.join("copy.vvproj"));
+    let new_timeline = request(
+        &editor,
+        Operation::NewTimeline {
+            name: "Other rate".into(),
+            fps: Rational::new(30000, 1001),
+            resolution: [1280, 720],
+        },
+        "new-timeline",
+        None,
+    );
+    editor.mutation(None, new_timeline).unwrap();
+    assert_eq!(editor.session.project.timelines.len(), 2);
+    let other = editor
+        .session
+        .project
+        .timelines
+        .values()
+        .find(|t| t.name == "Other rate")
+        .unwrap();
+    assert_eq!(other.fps, Rational::new(30000, 1001));
+    assert_eq!(other.resolution, (1280, 720));
+    let invalid = request(
+        &editor,
+        Operation::NewTimeline {
+            name: "Bad".into(),
+            fps: Rational { num: 0, den: 1 },
+            resolution: [0, 720],
+        },
+        "bad-timeline",
+        None,
+    );
+    assert!(editor.mutation(None, invalid).is_err());
+    assert_eq!(editor.session.project.timelines.len(), 2);
     std::fs::remove_dir_all(root).unwrap();
 }

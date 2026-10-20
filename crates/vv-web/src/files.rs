@@ -267,7 +267,7 @@ fn validate_project(project: &Project) -> Result<()> {
     if project.timelines.len() > 64 || project.media_pool.len() > 10_000 {
         return Err(ApiError::invalid("Project exceeds web host limits"));
     }
-    for tl in project.timelines.values() {
+    for (timeline_id, tl) in project.timelines.iter() {
         if tl.fps.num <= 0
             || tl.fps.den <= 0
             || tl.fps.as_f64() > 240.0
@@ -283,6 +283,13 @@ fn validate_project(project: &Project) -> Result<()> {
         for track in &tl.tracks {
             let mut end = 0;
             for clip in &track.clips {
+                if let vv_core::ClipSource::Media(media) = clip.source
+                    && project.would_create_a_cycle(media, timeline_id)
+                {
+                    return Err(ApiError::invalid(
+                        "Project contains a compound timeline cycle",
+                    ));
+                }
                 if !ids.insert(clip.id)
                     || clip.timeline_start < end
                     || clip.timeline_len < 1
@@ -301,6 +308,14 @@ fn validate_project(project: &Project) -> Result<()> {
         }
     }
     for item in project.media_pool.values() {
+        if item
+            .compound
+            .is_some_and(|id| !project.timelines.contains_key(id))
+        {
+            return Err(ApiError::invalid(
+                "Compound media refers to a missing timeline",
+            ));
+        }
         if item.meta.fps.num <= 0
             || item.meta.fps.den <= 0
             || item.meta.duration_frames < 0

@@ -376,3 +376,25 @@ from History_UI_check, then rejected overwriting the original with FILE_EXISTS.
 Evidence: evidence/m2-save-as-existing-file-refused.png. All 27 web Rust tests,
 18 JavaScript tests, formatting, clippy and build pass. Automated crash recovery
 and asynchronous import remain separate outstanding work.
+
+## M2/M4 independent increment — timeline creation and compound insertion
+
+The command palette creates native timelines with validated rational FPS and
+dimensions; each receives native video/audio tracks and a compound pool entry.
+Timeline switching invalidates old playback/frames and resets the playhead.
+Compound pool entries insert through native media editing, with safe overlap
+checks and native rate conversion. Self/indirect cycles are refused before
+mutation. Project loading also refuses compound cycles and missing child
+timelines. Double-clicking a compound opens its actual timeline for editing.
+This does not implement selection-to-compound, duplicate/rename, or flattened
+compound-copy workflows.
+
+Browser proof: created Nested30 at 30fps, inserted a 150-frame solid, then
+inserted that compound into the 24fps parent: source 0–150 became 120 timeline
+frames. A self-reference insertion was rejected, leaving the saved project
+intact. Double-click opened Nested30 at 30fps. Evidence:
+evidence/m4-compound-native-cycle-refused.png. All 29 Rust web tests, 18
+JavaScript tests, formatting, clippy and build pass. New coverage checks
+rational timeline creation, invalid geometry, native compound FPS conforming,
+self/indirect cycle refusal, undo and malformed project graphs. Rendered
+compound acceptance on R9700 remains pending the shared hardware slot.

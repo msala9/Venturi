@@ -592,10 +592,15 @@ struct SharedLevels {
 
 #[derive(Default)]
 struct LevelsState {
-    parts: HashMap<u64, LevelParts>,
+    parts: HashMap<u64, CachedParts>,
     /// Being measured by a thread: another one waits for them instead of
     /// rendering them too (two threads meeting the same compound clip).
     measuring: HashSet<u64>,
+}
+
+struct CachedParts {
+    parts: LevelParts,
+    sources: Option<Vec<Stamp>>,
 }
 
 impl Default for LevelCache {
@@ -709,8 +714,16 @@ impl LevelCache {
     }
 
     fn get_locked(&self, state: &mut LevelsState, key: u64) -> Option<LevelParts> {
-        if let Some(part) = state.parts.get(&key) {
-            return Some(part.clone());
+        if let Some(cached) = state.parts.get(&key) {
+            let current = cached.sources.as_ref().is_none_or(|sources| {
+                sources
+                    .iter()
+                    .all(|source| stamp(&source.path).as_ref() == Some(source))
+            });
+            if current {
+                return Some(cached.parts.clone());
+            }
+            state.parts.remove(&key);
         }
         let mut bytes = Vec::new();
         std::fs::File::open(self.path(key)?)
@@ -723,7 +736,13 @@ impl LevelCache {
         {
             return None;
         }
-        state.parts.insert(key, part.clone());
+        state.parts.insert(
+            key,
+            CachedParts {
+                parts: part.clone(),
+                sources: Some(sources),
+            },
+        );
         Some(part)
     }
 
@@ -769,7 +788,13 @@ impl LevelCache {
         self.rendered += 1;
         {
             let mut state = self.shared.state.lock().unwrap();
-            state.parts.insert(key, part.clone());
+            state.parts.insert(
+                key,
+                CachedParts {
+                    parts: part.clone(),
+                    sources: sources.map(<[Stamp]>::to_vec),
+                },
+            );
             state.measuring.remove(&key);
             self.shared.measured.notify_all();
         }

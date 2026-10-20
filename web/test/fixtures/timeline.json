@@ -1,0 +1,30 @@
+{
+  "api_version": 1,
+  "project_epoch": 4,
+  "timeline_id": "fixture-timeline",
+  "revision": "fixture-rev-1",
+  "fps": {"num": 24000, "den": 1001},
+  "resolution": {"width": 1920, "height": 1080},
+  "tracks": [
+    {
+      "id": "V1", "kind": "video", "locked": false, "muted": false,
+      "clips": [
+        {"id": "fixture-clip-1", "start_frame": 0, "length_frames": 120,
+         "source_in_frames": 0, "source_out_frames": 120,
+         "media_id": "fixture-media-A", "linked_group": "fixture-link-1", "disabled": false},
+        {"id": "fixture-clip-2", "start_frame": 144, "length_frames": 120,
+         "source_in_frames": 18, "source_out_frames": 138,
+         "media_id": "fixture-media-B", "linked_group": null, "disabled": false}
+      ]
+    },
+    {
+      "id": "A1", "kind": "audio", "locked": false, "muted": false,
+      "clips": [
+        {"id": "fixture-audio-1", "start_frame": 0, "length_frames": 120,
+         "source_in_frames": 0, "source_out_frames": 120,
+         "media_id": "fixture-media-A", "linked_group": "fixture-link-1", "disabled": false}
+      ]
+    }
+  ],
+  "markers": [{"id": "fixture-marker-1", "start_frame": 144, "duration_frames": 0, "note": "review cut", "color": "orange"}]
+}

@@ -1,0 +1,23 @@
+/* Proposed MadRock-inspired values. Not claimed as exact official brand CSS. */
+:root {
+  color-scheme: dark;
+  --bg: #0b090e;
+  --surface: #19131d;
+  --raised: #251c29;
+  --border: #3a2c40;
+  --text: #f5eff5;
+  --muted: #b9aaba;
+  --primary: #ff673d;
+  --pink: #ff2d8d;
+  --violet: #9b59ff;
+  --amber: #ffad45;
+  --danger: #ff6274;
+  --success: #7bcd9b;
+  --spacing-unit: 4px;
+  --radius-sm: 5px;
+  --header-height: 44px;
+  --toolbar-height: 36px;
+  --status-height: 26px;
+  --track-header-width: 150px;
+  --font-ui: "Segoe UI", system-ui, -apple-system, sans-serif;
+}

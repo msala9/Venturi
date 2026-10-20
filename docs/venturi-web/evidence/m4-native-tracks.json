@@ -1,0 +1,505 @@
+{
+  "states": {
+    "before_remove": {
+      "project_name": "Tracks_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "1",
+      "history": {
+        "labels": [
+          "AddTrack"
+        ],
+        "position": 1
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "8a6790137b032144",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "solid_color",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": null,
+                  "name": "Solid color",
+                  "slip_range": null,
+                  "source_in_frames": 0,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 48,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "silence-acceptance.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 60,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [],
+              "crossings": [],
+              "id": "2",
+              "kind": "video",
+              "label": "V2",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "compound_timeline_id": "1",
+          "content_hash": "10",
+          "duration_frames": 120,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "has_audio": true,
+          "has_video": true,
+          "id": "1",
+          "is_image": false,
+          "name": "Timeline 1",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "14462063616822949394",
+          "duration_frames": 60,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "2",
+          "is_image": false,
+          "name": "silence-acceptance.wav",
+          "offline": false
+        }
+      ]
+    },
+    "removed": {
+      "project_name": "Tracks_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "2",
+      "history": {
+        "labels": [
+          "AddTrack",
+          "RemoveTrack"
+        ],
+        "position": 2
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "c6939efaf4881459",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 48,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "silence-acceptance.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 60,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [],
+              "crossings": [],
+              "id": "1",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "compound_timeline_id": "1",
+          "content_hash": "11",
+          "duration_frames": 48,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "1",
+          "is_image": false,
+          "name": "Timeline 1",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "14462063616822949394",
+          "duration_frames": 60,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "2",
+          "is_image": false,
+          "name": "silence-acceptance.wav",
+          "offline": false
+        }
+      ]
+    },
+    "undo_and_armed_saved": {
+      "project_name": "Tracks_UI_check.vvproj",
+      "unsaved": false,
+      "generation": "4",
+      "history": {
+        "labels": [
+          "AddTrack",
+          "ArmTrack"
+        ],
+        "position": 2
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "88e06e9a4bcae1ac",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "1",
+                  "kind": "solid_color",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": null,
+                  "name": "Solid color",
+                  "slip_range": null,
+                  "source_in_frames": 0,
+                  "source_out_frames": 120,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": true,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 48,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "silence-acceptance.wav",
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 60,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [],
+              "crossings": [],
+              "id": "2",
+              "kind": "video",
+              "label": "V2",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "compound_timeline_id": "1",
+          "content_hash": "13",
+          "duration_frames": 120,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "has_audio": true,
+          "has_video": true,
+          "id": "1",
+          "is_image": false,
+          "name": "Timeline 1",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "14462063616822949394",
+          "duration_frames": 60,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "2",
+          "is_image": false,
+          "name": "silence-acceptance.wav",
+          "offline": false
+        }
+      ]
+    }
+  }
+}

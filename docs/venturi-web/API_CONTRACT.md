@@ -145,6 +145,12 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 
 ## Implemented Inspector commands
 
+- `remove_track {track}` reuses native RemoveTrack, including its clips and
+  crossings, as one Undo. Locked tracks and the last track of either kind are
+  refused. `set_track` additionally accepts `armed`; only saved projects with
+  an unlocked audio track can arm recording. Native flag labels now distinguish
+  MuteTrack, SoloTrack, LockTrack and ArmTrack. Snapshots include armed state.
+
 - POST `/analysis/silence` accepts `{query: FrameQuery, clip_ids, params}`.
   The actor captures selected audio and audio linked to selected video; native
   Silero VAD runs on a CPU worker without holding the Session. Params are native

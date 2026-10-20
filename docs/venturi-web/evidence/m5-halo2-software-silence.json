@@ -1,0 +1,36 @@
+{
+  "pid": "1163701",
+  "hardware_device_handles": [],
+  "radv_driver_loaded": false,
+  "software_only": true,
+  "renderer_threads": 2,
+  "native_model": "Silero VAD via vv-session",
+  "proposal": [
+    [
+      0,
+      12
+    ]
+  ],
+  "proposal_applied": false,
+  "source_audio_seconds": 2,
+  "project": "CPU_slip_UI_check.vvproj",
+  "saved": true,
+  "history_position": 0,
+  "shared_hardware_lock": "not acquired or probed",
+  "diagnostics": {
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x0000",
+      "driver": "llvmpipe",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3 (LLVM 21.1.8)",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "llvmpipe (LLVM 21.1.8, 256 bits)",
+      "resident": false,
+      "software": true,
+      "vendor_id": "0x10005"
+    }
+  }
+}

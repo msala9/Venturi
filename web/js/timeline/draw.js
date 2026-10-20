@@ -127,7 +127,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       ctx.fillStyle = color("--muted");
       ctx.fillText(track.label || track.id, 16, top + 22);
       ctx.fillText(
-        `${track.kind}${track.locked ? " · LOCKED" : ""}`,
+        `${track.kind}${track.locked ? " · LOCKED" : ""}${track.armed ? " · REC" : ""}`,
         16,
         top + 41,
       );

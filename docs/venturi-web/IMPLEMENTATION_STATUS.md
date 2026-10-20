@@ -1048,3 +1048,32 @@ including a short final block; all three audio_file tests pass. Fixed-frame
 encoders retain their required padding. Original desktop recording shares this
 correction without changing its UI or editing semantics. Voiceover remains the
 next independent Audio slice; this increment does not close M5 as a whole.
+
+Silero is also deployed on halo2 in explicit software mode, binary SHA-256
+8335ce3f1105d84c6b3bb983704fe54f88e49e8fd84099a6838273093e5d502b.
+The Windows browser analyzed the linked half-second A/V edit and proposed
+0..12 without applying it; the saved project and empty history stayed intact.
+No DRI/KFD handles or RADV library were present, and the shared hardware lock
+was not acquired or probed. Evidence: m5-halo2-software-silence.json/browser.png.
+
+## M4/M5 increment — native track removal and arming
+
+Track Inspector now exposes explicit removal with its clip count, preserving
+one video and one audio track and refusing locked tracks. The native RemoveTrack
+command retains all track content for one Undo. Audio tracks additionally expose
+native arming, restricted to saved projects and unlocked audio tracks. Canvas
+headers show REC for armed tracks. The adapter now preserves the native history
+label for mute/solo/lock/arm rather than labeling every flag as LockTrack.
+
+78 web Rust tests and 37 JavaScript tests pass, with formatting, clippy and build.
+Windows proof adds V2, removes populated V1 in one step, restores V1 and its
+original clip with Undo, then arms A1 and saves Tracks_UI_check. The original
+Speech_UI_check file remains intact. Evidence: m4-native-tracks.json/browser.png.
+Arming is a prerequisite for browser voiceover; it does not by itself claim a
+complete recording workflow.
+
+Shared-library discovery resolved the actual running appliance on halo1:
+http://192.168.1.153:8787. Its catalog responds from halo2, reporting the 14 TB
+archive configured and reachable at /mnt/madrock-share/madrock-library, seven-day
+SSD retention, sequence 5 and zero items. The older 8788 reference was not the
+active listener. No appliance configuration, mount or inference was changed.

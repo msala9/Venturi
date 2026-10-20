@@ -104,11 +104,15 @@ pub enum Operation {
     AddTrack {
         audio: bool,
     },
+    RemoveTrack {
+        track: String,
+    },
     SetTrack {
         track: String,
         locked: Option<bool>,
         muted: Option<bool>,
         solo: Option<bool>,
+        armed: Option<bool>,
     },
     SetProperties {
         clip_id: String,
@@ -945,21 +949,51 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             );
         }
         Operation::RemoveSilences { ranges } => crate::silence::remove_ranges(session, id, ranges)?,
+        Operation::RemoveTrack { track } => {
+            let index = track_index(tl, track)?;
+            let removed = &tl.tracks[index];
+            if removed.locked {
+                return Err(ApiError::conflict(
+                    "TRACK_LOCKED",
+                    "Unlock the track before removing it",
+                ));
+            }
+            if tl
+                .tracks
+                .iter()
+                .filter(|track| track.kind == removed.kind)
+                .count()
+                <= 1
+            {
+                return Err(ApiError::invalid("Keep at least one track of each kind"));
+            }
+            session.apply(Box::new(core::RemoveTrack::new(id, index)));
+        }
         Operation::SetTrack {
             track,
             locked,
             muted,
             solo,
+            armed,
         } => {
             let t = track.parse::<usize>().map_err(|_| ApiError::missing())?;
             if t >= tl.tracks.len() {
                 return Err(ApiError::missing());
+            }
+            if armed.is_some() && tl.tracks[t].kind != TrackKind::Audio {
+                return Err(ApiError::invalid("Only audio tracks can be armed"));
+            }
+            if *armed == Some(true) && (tl.tracks[t].locked || session.path().is_none()) {
+                return Err(ApiError::invalid(
+                    "Save the project and unlock the audio track before arming it",
+                ));
             }
             let mut commands: Vec<Box<dyn Command>> = Vec::new();
             for (flag, value) in [
                 (core::TrackFlag::Locked, locked),
                 (core::TrackFlag::Muted, muted),
                 (core::TrackFlag::Solo, solo),
+                (core::TrackFlag::Armed, armed),
             ] {
                 if let Some(value) = value {
                     commands.push(Box::new(core::SetTrackFlag::new(id, t, flag, *value)));
@@ -968,10 +1002,8 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             if commands.is_empty() {
                 return Err(ApiError::invalid("Choose a track flag"));
             }
-            session.apply(Box::new(CompositeCommand::new(
-                CommandLabel::LockTrack,
-                commands,
-            )));
+            let label = commands[0].label();
+            session.apply(Box::new(CompositeCommand::new(label, commands)));
         }
         _ => {
             return Err(ApiError::invalid(

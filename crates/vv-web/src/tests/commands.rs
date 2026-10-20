@@ -1,4 +1,68 @@
 use super::*;
+
+#[test]
+fn native_track_removal_keeps_one_per_kind_respects_locks_and_undo_restores_contents() {
+    let (mut session, id, _) = fixture();
+    let remove = Operation::RemoveTrack { track: "0".into() };
+    assert!(apply(&mut session, id, &remove).is_err());
+    apply(&mut session, id, &Operation::AddTrack { audio: false }).unwrap();
+    let original = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let position = session.history.position();
+    session.project.timelines[id].tracks[0].locked = true;
+    assert_eq!(
+        apply(&mut session, id, &remove).unwrap_err().1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(session.history.position(), position);
+    session.project.timelines[id].tracks[0].locked = false;
+    apply(&mut session, id, &remove).unwrap();
+    assert_eq!(session.project.timelines[id].tracks.len(), 2);
+    assert_eq!(session.history.position(), position + 1);
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        original
+    );
+}
+
+#[test]
+fn arming_requires_a_saved_unlocked_audio_track_and_uses_native_history_labels() {
+    let (mut session, id, _) = fixture();
+    let arm = |track: &str| Operation::SetTrack {
+        track: track.into(),
+        locked: None,
+        muted: None,
+        solo: None,
+        armed: Some(true),
+    };
+    let position = session.history.position();
+    assert!(apply(&mut session, id, &arm("1")).is_err());
+    assert_eq!(session.history.position(), position);
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-arm-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    session.save_to(&root.join("saved.vvproj")).unwrap();
+    assert!(apply(&mut session, id, &arm("0")).is_err());
+    session.project.timelines[id].tracks[1].locked = true;
+    assert!(apply(&mut session, id, &arm("1")).is_err());
+    session.project.timelines[id].tracks[1].locked = false;
+    apply(&mut session, id, &arm("1")).unwrap();
+    assert!(session.project.timelines[id].tracks[1].armed);
+    assert_eq!(
+        session.history.labels().last(),
+        Some(CommandLabel::ArmTrack)
+    );
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert!(!session.project.timelines[id].tracks[1].armed);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn fixture() -> (Session, TimelineId, Vec<ClipId>) {
     let mut s = Session::default();
     let id = s.create_timeline(Timeline {

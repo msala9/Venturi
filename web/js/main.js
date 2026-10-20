@@ -389,7 +389,7 @@ function selected() {
       heading.className = "section-title";
       heading.textContent = `${track.label || track.id} · ${track.kind}`;
       $("inspector-content").append(heading);
-      for (const flag of ["muted", "solo", "locked"]) {
+      for (const flag of ["muted", "solo", "locked", ...(track.kind === "audio" ? ["armed"] : [])]) {
         const button = document.createElement("button");
         button.textContent = flag;
         button.setAttribute("aria-pressed", track[flag]);
@@ -403,6 +403,11 @@ function selected() {
         );
         $("inspector-content").append(button);
       }
+      const remove=document.createElement("button");
+      remove.textContent=`Remove ${track.label} (${track.clips.length} clips)`;
+      remove.disabled=!writable || busy || !!unresolved || track.locked || timeline.tracks.filter((item)=>item.kind===track.kind).length<=1;
+      remove.addEventListener("click",()=>commit({kind:"remove_track",track:track.id}).catch((error)=>notice(error.message)));
+      $("inspector-content").append(remove);
     }
   if (timeline?.id !== "fixture" && timeline && documentState) {
     const fieldset = document.createElement("fieldset"); fieldset.disabled = !writable || busy || !!unresolved; const legend = document.createElement("legend"); legend.textContent = "Selected clips"; fieldset.append(legend);

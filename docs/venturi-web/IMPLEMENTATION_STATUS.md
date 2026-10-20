@@ -248,3 +248,26 @@ Play/step/quality controls are disabled for stills. Browser proof: imported
 project, screenshot evidence/m3b-still-source-browser.png. Original PNG bytes
 including alpha compare exactly in the native job test. All 20 web Rust tests,
 14 JavaScript tests, formatting and clippy passed.
+
+## M4 independent increment — native properties and scalar keyframes
+
+While shared GPU acceptance is unavailable, CPU-only Edit work adds a guarded
+clip-detail read and atomic native property commands. Inspector covers all 13
+transform/crop/opacity parameters, flip, all 15 native blend modes, four matte
+modes plus none, solid/title RGBA, audio gain and clip fades. Each patch validates
+all fields and track locks before a single native composite command; undo
+restores the whole patch. Native static/default and evaluated values remain
+distinct. Scalar transform/gain keyframes use native source-frame conversion,
+upsert/remove and interpolation. The UI exposes five interpolation presets;
+validated Bezier control points are supported by the API, not a curve editor.
+No JavaScript evaluation of effects or interpolation was added.
+
+Windows browser verification: PositionX 0→48→undo 0; opacity source keyframes
+0=75 Linear and 1=50 EaseInOut persisted with Save. Screenshot:
+evidence/m4-native-inspector-browser.png. All 22 Rust web tests, 16 JavaScript
+tests, formatting, clippy and web build passed. Focused native tests cover
+all-or-nothing validation, one-step undo/redo, lock refusal, source-frame mapping,
+invalid ranges and keyframe removal/interpolation undo. GPU rendering of these
+new edits is pending the shared hardware slot. M4 as a whole remains open:
+transitions, masks, curves, slip, markers, speed, presets and compounds are not
+claimed complete by this increment.

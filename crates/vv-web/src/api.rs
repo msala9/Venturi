@@ -31,6 +31,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/session", get(session))
         .route("/api/v1/timelines/{id}", get(timeline))
+        .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
         .route("/api/v1/projects", get(projects))
         .route("/api/v1/projects/commands", post(project_command))
         .route("/api/v1/timelines/{id}/commands", post(timeline_command))
@@ -237,6 +238,23 @@ async fn frame(
 async fn timeline(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<Value>> {
     state.host.call(Action::Timeline(id)).await.map(Json)
 }
+async fn clip_detail(
+    State(state): State<AppState>,
+    Path((id, clip)): Path<(String, String)>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid clip detail query"))?
+        .0;
+    if query.timeline_id != id {
+        return Err(ApiError::invalid("Timeline ID does not match the query"));
+    }
+    state
+        .host
+        .call(Action::ClipDetail(clip, query))
+        .await
+        .map(Json)
+}
 async fn projects(State(state): State<AppState>) -> Result<Json<Value>> {
     state.host.call(Action::Projects).await.map(Json)
 }
@@ -347,6 +365,7 @@ async fn assets(request: Request) -> Response {
         "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),
         "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),
         "/js/program.js" => asset!("/web/js/program.js", "text/javascript"),
+        "/js/inspector.js" => asset!("/web/js/inspector.js", "text/javascript"),
         "/js/timeline/index.js" => asset!("/web/js/timeline/index.js", "text/javascript"),
         "/js/timeline/geometry.js" => asset!("/web/js/timeline/geometry.js", "text/javascript"),
         "/js/timeline/input.js" => asset!("/web/js/timeline/input.js", "text/javascript"),

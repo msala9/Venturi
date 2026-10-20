@@ -5,6 +5,7 @@ import { request, sendMutation, ApiFailure } from "./api.js";
 import { createViewer } from "./viewer.js";
 import { createSourcePlayer, sourceAssetURL } from "./source.js";
 import { createProgramPlayer } from "./program.js";
+import { detailIdentity, renderProperties } from "./inspector.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -232,7 +233,12 @@ $("play").addEventListener("click", () => {
   if (viewerMode === "program") { viewer?.invalidate(); programPlayer.toggle().catch((error) => notice(error.message)); }
   else sourcePlayer.toggle().catch((error) => notice(error.message));
 });
+let inspectorSequence = 0;
+function inspectorState(clip) {
+  return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
+}
 function selected() {
+  const inspectorSeq = ++inspectorSequence;
   const clip = timeline?.tracks
     .flatMap((track) => track.clips)
     .find((item) => view.selection.includes(item.id));
@@ -240,6 +246,18 @@ function selected() {
   const title = document.createElement("strong");
   title.textContent = clip?.name || "No clip selected";
   $("inspector-content").append(title);
+  if (clip && documentState && timeline.id !== "fixture") {
+    const target = document.createElement("div"); target.textContent = "Reading native properties…";
+    $("inspector-content").append(target);
+    const state = inspectorState(clip.id), identity = detailIdentity(state);
+    const end = Math.max(1, ...timeline.tracks.flatMap((t) => t.clips.map((c) => c.start_frame + c.length_frames)));
+    const query = new URLSearchParams({ project_epoch: state.project_epoch, if_generation: state.generation, timeline_id: state.timeline, revision: state.revision, frame: Math.min(view.playhead, end - 1) });
+    request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(clip.id)}?${query}`).then((detail) => {
+      if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
+      target.replaceChildren();
+      renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice });
+    }).catch((error) => { if (inspectorSeq === inspectorSequence) target.textContent = error.message; });
+  }
   if (clip)
     for (const [label, value] of [
       ["Clip ID", clip.id],
@@ -318,7 +336,7 @@ const canvasTimeline = createTimeline({
   onSeek: (final) => {
     programPlayer?.pauseLocal();
     updateTime();
-    if (final) seek();
+    if (final) { seek(); if (view.selection.length) selected(); }
   },
   onCommand: (operation) => commit(operation),
   onNotice: notice,
@@ -401,6 +419,7 @@ function step(delta) {
   view.playhead = Math.max(0, view.playhead + delta);
   updateTime();
   seek();
+  if (view.selection.length) selected();
 }
 $("step-back").addEventListener("click", () => step(-1));
 $("step-forward").addEventListener("click", () => step(1));

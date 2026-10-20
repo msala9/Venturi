@@ -67,6 +67,14 @@ pub enum Operation {
         muted: Option<bool>,
         solo: Option<bool>,
     },
+    SetProperties {
+        clip_id: String,
+        patch: crate::inspector::Properties,
+    },
+    SetKeyframe {
+        clip_id: String,
+        edit: crate::inspector::Keyframe,
+    },
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -167,6 +175,12 @@ fn free(
 pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Result<()> {
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::SetProperties { clip_id, patch } => {
+            crate::inspector::properties(session, id, clip_id, patch)?
+        }
+        Operation::SetKeyframe { clip_id, edit } => {
+            crate::inspector::keyframe(session, id, clip_id, edit)?
+        }
         Operation::InsertMedia {
             media_id,
             start_frame,

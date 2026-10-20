@@ -142,3 +142,19 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 - Native desktop export retains its defaults. Web decoding/x264 use two CPU
   threads and explicit AMD Vulkan composition under the shared hardware lock.
   Hardware busy fails promptly. There is no realtime or hardware-encode claim.
+
+## Implemented Inspector commands
+
+- GET `/api/v1/timelines/{id}/clips/{clip}` accepts the same revisioned query as
+  exact frame preview. Returns native evaluated/default transform and gain,
+  source-frame keyframes, bounds, fades, RGBA, blend and matte choices. Reads
+  reject stale epoch, generation and revision.
+- Timeline command `set_properties {clip_id, patch}` accepts transform entries
+  `{param,value}`, flip, gain_db, blend, matte, color, fade_in and fade_out.
+  Native enum names are case-sensitive. Matte `None` clears the matte. All
+  supplied properties apply in one undo step after complete validation.
+- `set_keyframe {clip_id,edit:{target,timeline_frame,value,interpolation}}`
+  targets `{kind:transform,param}` or `{kind:gain}`. Native code converts the
+  integer timeline frame into a source frame. Null value removes that keyframe;
+  a number inserts/replaces. Track kind, locks, clip bounds, numeric ranges and
+  interpolation control points are checked before mutation.

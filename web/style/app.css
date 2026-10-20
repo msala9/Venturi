@@ -454,6 +454,11 @@ label {
 #screen[data-program-playback="true"] > #viewer-empty,
 #screen[data-program-playback="true"] > #preview-state { display: none; }
 .media-item img { width: 96px; height: 54px; object-fit: contain; }
+.property-row { display: flex; flex-wrap: wrap; align-items: end; gap: 4px; margin: 8px 0; }
+.property-row .field { flex: 1; min-width: 90px; }
+.property-row input { width: 100%; }
+.keyframe-list { overflow-wrap: anywhere; }
+#inspector-content summary { cursor: pointer; margin: 12px 0; }
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto !important;

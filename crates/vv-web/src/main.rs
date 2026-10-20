@@ -3,6 +3,7 @@ mod commands;
 mod error;
 mod files;
 mod host;
+mod inspector;
 mod preview;
 mod program;
 mod snapshot;

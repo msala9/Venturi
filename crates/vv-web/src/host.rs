@@ -26,6 +26,7 @@ pub enum Action {
     Lookup(String),
     FrameSnapshot(FrameQuery, oneshot::Sender<Result<FrameSnapshot>>),
     CheckFrame(FrameQuery),
+    ClipDetail(String, FrameQuery),
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
@@ -224,6 +225,14 @@ impl Editor {
     }
     fn handle(&mut self, action: Action) -> Result<Value> {
         match action {
+            Action::ClipDetail(clip, query) => {
+                let (id, _) = self.validate_frame(&query)?;
+                let mut detail = crate::inspector::detail(&self.session, id, &clip, query.frame)?;
+                detail["project_epoch"] = json!(query.project_epoch);
+                detail["generation"] = json!(query.if_generation);
+                detail["revision"] = json!(query.revision);
+                Ok(detail)
+            }
             Action::CheckFrame(query) => self.validate_frame(&query).map(|_| Value::Null),
             Action::SourceSnapshot(media_id, query, reply) => {
                 let result = (|| {

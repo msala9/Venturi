@@ -933,3 +933,14 @@ viewer, viewer mask/transition handles, broader compound editing, live audio
 meters/spectrum, browser voiceover/VAD, saved/shared libraries, long exports,
 durable recovery and AI Review also remain open. There is no complete GUI parity
 or production-readiness claim. This increment requires no hardware GPU work.
+
+The development branch is deployed on halo2 in explicit software mode. The
+saved CPU_curves_UI_check copy animates the base video's opacity from 30 to 100
+over source frames 0–47 with Bezier interpolation, while the overlay stays
+colored. Windows can open the panel, see the composed native frame and isolated
+scopes, and retain both keys in native history. Evidence:
+m4-halo2-software-curves.json/browser.png. The binary SHA-256 is
+c2cacb3ca1f10ee2da0484c141a62d4331dd6c264e6d2c8bd0598134df11d61a.
+Inspection confirms software_preview, two renderer threads, root directory
+ownership, no DRI/KFD handles and no loaded RADV library. Staging and this
+acceptance did not acquire or probe the shared hardware GPU reservation.

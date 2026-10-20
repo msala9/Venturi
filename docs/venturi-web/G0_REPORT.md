@@ -104,3 +104,18 @@ M3-M7 complete from navigation placeholders. Avoid modifying any existing
 desktop crate; add a host dependency boundary only.
 
 No source implementation changes were made during G0.
+
+## Verified runtime follow-up
+
+The local check/test prerequisites were installed without GPU driver changes.
+`cargo check -p vv-session` passed; vv-core 250 tests passed, vv-session
+98 passed/1 upstream ignored. Local Vulkan is llvmpipe CPU (0x10005:0x0000),
+Mesa 26.0.3, LLVM 21.1.8. This is baseline coverage, not target GPU validation.
+
+The owner subsequently identified halo2 and authorized its use. Pinned SSH
+access was reused from the lab helper without copying credentials into this
+repository. Read-only PCI inventory confirmed R9700 at 67:00.0 (1002:7551)
+and Strix Halo at 68:00.0 (1002:1586). Initially the node had no Vulkan loader,
+ICD or FFmpeg runtime. The owner explicitly authorized adding Vulkan userspace
+and multimedia dependencies; an apt simulation reported 0 upgrades/removals.
+The existing kernel AMD driver, ROCm and inference configuration are preserved.

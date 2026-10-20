@@ -35,3 +35,26 @@ collision/lock cases, linked IDs, exactly one commit on release, zero commands
 on pointermove and cancellation on Escape/capture loss. Fixture mutations
 are refused explicitly; no browser editing engine/persistence is introduced.
 60 fps and Windows 125/150% scaling benchmarks remain unverified.
+
+## M2a — native HTTP host
+
+Implemented vv-web with Axum/Tokio, embedded first-party assets, normalized
+errors, loopback-only CLI, Host/Origin checks, request limits, CSP/nosniff,
+bounded session actor and native snapshots. Core native project/command
+services and their focused tests were included together so their ownership
+and serialization boundary are concrete; browser integration is recorded in
+M2b/M2c. The eight original default workspace members are preserved.
+
+Verified: cargo check -p vv-session and -p vv-web passed. Native baseline:
+250 vv-core tests passed; 98 vv-session tests passed, 1 upstream test ignored;
+9 vv-web tests passed. Graphics-related baseline tests used WSL llvmpipe,
+not AMD hardware. The new tests cover HTTP boundaries, native import, atomic
+save/backup/symlink refusal, collision refusal, linked/locked edits, history,
+idempotency, epoch/generation conflicts and writer ownership. Browser health
+and project creation/import were exercised against the real host.
+
+Environment: Rust 1.99.1, FFmpeg 8.0.1 with libavdevice/libavfilter headers,
+ALSA and clang. WSL was terminated once by its init lifecycle during the
+first check attempt; persistent cache logs and foreground PTY execution were
+used on the successful retry. Clippy found one manual-range style issue,
+which was corrected; the final rerun is recorded below.

@@ -7,13 +7,14 @@ export function reviewIdentity(context) {
 export function comparisonTime(seconds,duration) {
   return Number.isFinite(seconds) && Number.isFinite(duration) && duration>0?Math.max(0,Math.min(seconds,Math.max(0,duration-0.001))):null;
 }
-export function knownTakeMetadata(media) {
-  const item=media?.shared_origin?.item;if(!item)return "Generation metadata not supplied";
+function formatKnownMetadata(item) {
+  if(!item)return "Generation metadata not supplied";
   return [["Model",item.model],["Seed",item.seed],["Prompt",item.prompt]].filter(([,value])=>value!==null && value!==undefined && value!=="").map(([name,value])=>`${name}: ${value}`).join("\n") || "Generation metadata not supplied";
 }
+export function knownTakeMetadata(media) {return formatKnownMetadata(media?.shared_origin?.item);}
 export function createReview({root,getContext,canCommit,commit,notice,api=request,sourceFactory=createSourcePlayer}) {
   const find=(selector)=>root.querySelector(selector),form=find("form"),status=find("[data-review-status]"),apply=find("[data-review-apply]"),planButton=find("[data-review-plan]"),changes=find("[data-review-changes]"),refresh=find("[data-review-refresh]"),close=find("[data-review-close]"),play=find("[data-review-play]"),swap=find("[data-review-swap]"),sync=find('[name="sync"]'),listen=find('[name="listen"]');
-  let context=null,plan=null,sequence=0,planning=false,applying=false,frameCallback=null,frameOwner=null,closing=false;
+  let context=null,plan=null,annotations=null,sequence=0,planning=false,applying=false,frameCallback=null,frameOwner=null,closing=false;
   const panes=["A","B"].map((name)=>{
     const element=find(`[data-review-pane="${name}"]`),pane={name,select:element.querySelector("select"),video:element.querySelector("video"),image:element.querySelector("img"),status:element.querySelector("output"),cancel:element.querySelector("button"),metadata:element.querySelector("pre"),ready:false,media:null};
     pane.player=sourceFactory({video:pane.video,image:pane.image,status:pane.status,cancel:pane.cancel,onReady:()=>{pane.ready=true;controls();}});return pane;
@@ -32,10 +33,13 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
   }
   function cancelFrame(){if(frameCallback!==null)frameOwner?.cancelVideoFrameCallback?.(frameCallback);frameCallback=null;frameOwner=null;}
   function schedule(){const leader=master();if(!leader || leader.video.paused || closing || frameCallback!==null || !leader.video.requestVideoFrameCallback)return;frameOwner=leader.video;frameCallback=leader.video.requestVideoFrameCallback(()=>{frameCallback=null;align();schedule();});}
-  async function load(pane){
-    pane.ready=false;pane.media=context?.document.media.find(media=>media.id===pane.select.value) || null;
+  function describe(pane){
     const source=pane.media?.is_image?"Original still":pane.media?.fps?`Native source ${pane.media.fps.num}/${pane.media.fps.den} fps · ${pane.media.duration_frames} frames`:"";
-    pane.metadata.textContent=[source,knownTakeMetadata(pane.media)].filter(Boolean).join("\n");controls();if(!pane.media){pane.player.reset();return;}
+    const take=annotations?.items.find(item=>item.media_id===pane.media?.id),label=take?[annotations.shots[take.shot_id],take.label,take.rating!=="unrated"?take.rating:null,take.stale_source?"SOURCE CHANGED · review captured annotations":null].filter(Boolean).join(" · "):"";
+    const known=take?formatKnownMetadata(take.metadata):knownTakeMetadata(pane.media);pane.metadata.textContent=[source,label,known].filter(Boolean).join("\n");
+  }
+  async function load(pane){
+    pane.ready=false;pane.media=context?.document.media.find(media=>media.id===pane.select.value) || null;describe(pane);controls();if(!pane.media){pane.player.reset();return;}
     await pane.player.open(pane.media,context.query.project_epoch,"low");
   }
   for(const pane of panes){
@@ -63,14 +67,17 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
   apply.addEventListener("click",async()=>{if(apply.disabled || !plan || plan.identity!==reviewIdentity(getContext()))return;applying=true;controls();for(const pane of panes)pane.video.pause();try{await commit({kind:"replace_take",replacement:plan.replacement});dismiss();notice("Take replaced with native policies · one Undo step");}catch(error){status.textContent=error.message;notice(error.message);}finally{applying=false;controls();}});
   function dismiss(){closing=true;cancelFrame();for(const pane of panes){if(!pane.cancel.disabled)pane.cancel.click();pane.player.reset();pane.ready=false;}clearPlan();root.close();closing=false;}
   close.addEventListener("click",()=>{if(!applying)dismiss();});root.addEventListener("cancel",(event)=>{event.preventDefault();if(!applying)dismiss();});
-  async function open(){
-    cancelFrame();for(const pane of panes){pane.player.reset();pane.video.playbackRate=1;pane.ready=false;}context=getContext();clearPlan();if(!context){for(const pane of panes){pane.select.replaceChildren();pane.media=null;pane.metadata.textContent="";}status.textContent="Open a saved project first";root.showModal();controls();return;}
+  async function open(options={}){
+    cancelFrame();annotations=null;for(const pane of panes){pane.player.reset();pane.video.playbackRate=1;pane.ready=false;}context=getContext();clearPlan();if(!context){for(const pane of panes){pane.select.replaceChildren();pane.media=null;pane.metadata.textContent="";}status.textContent="Open a saved project first";root.showModal();controls();return;}
     const media=context.document.media.filter(item=>!item.compound_timeline_id),a=context.clip?.media_id || context.selectedMedia || panes[0].select.value;
     for(const pane of panes){const old=pane.select.value;pane.select.replaceChildren(...media.map(item=>new Option(`${item.offline?"OFFLINE · ":""}${item.name}`,item.id)));pane.select.value=media.some(item=>item.id===old)?old:(media[0]?.id || "");}
     if(media.some(item=>item.id===a))panes[0].select.value=a;
     if(panes[1].select.value===panes[0].select.value)panes[1].select.value=media.find(item=>item.id!==panes[0].select.value)?.id || panes[0].select.value;
+    if(options.media_id && media.some(item=>item.id===options.media_id))panes[1].select.value=options.media_id;
     find("[data-review-target]").textContent=context.clip?`Replacement target: clip ${context.clip.id} · ${context.clip.name} · start ${context.clip.start_frame} · ${context.clip.length_frames} frames` : "Select a source clip in the timeline to replace it with B; comparison is available without a selection.";
-    status.textContent="Compare sources, choose explicit replacement policies, then preview native changes";audioChoice();root.showModal();controls();await Promise.all(panes.map(load));
+    status.textContent="Compare sources, choose explicit replacement policies, then preview native changes";audioChoice();root.showModal();controls();const wanted=identity();
+    const metadata=api(`/review?${new URLSearchParams({project_epoch:context.query.project_epoch})}`).then(value=>{if(root.open && current() && identity()===wanted && value.project_epoch===context.query.project_epoch && value.generation===context.query.if_generation && Array.isArray(value.items)){annotations=value;panes.forEach(describe);}}).catch(()=>{});
+    await Promise.all([...panes.map(load),metadata]);
   }
   refresh.addEventListener("click",()=>{open().catch(error=>notice(error.message));});
   return {open,invalidate(){clearPlan(root.open && !current()?"Project or selection changed · refresh review before applying":null);if(root.open && context?.query.project_epoch!==getContext()?.query.project_epoch){cancelFrame();panes.forEach(pane=>pane.player.reset());}}};

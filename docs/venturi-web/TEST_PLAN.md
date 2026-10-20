@@ -69,4 +69,9 @@ linked video/audio replacement with IDs/start/speed retained, no ripple of the
 following clip, mixed 24/50 fps animation/crop preservation, one Undo, Save/
 restart and unchanged original file hashes. Pure state tests cover late plans,
 source/policy/document changes, ownership, explicit confirmation and key-merge
-warnings. Shot/Take metadata/flags and R9700 acceptance remain open.
+warnings. Shot/Take acceptance now also covers exact u64 seed, inherited versus
+explicit metadata, safe literal prompt display, Favorite/Rejected, search,
+reversible annotation restore, independent Save As and restart persistence.
+Tests refuse stale sidecar revisions, source rebinding without confirmation,
+foreign schemas/symlinks, orphan namespace collisions and late/read-only forms.
+Twenty-shot montage and R9700 acceptance remain open.

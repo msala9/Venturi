@@ -33,6 +33,7 @@ pub fn router(state: AppState) -> Router {
             get(|| async { Json(json!({"status":"ok","api_version":1})) }),
         )
         .route("/api/v1/session", get(session))
+        .route("/api/v1/review", get(review_metadata))
         .route("/api/v1/review/replace/plan", post(take_plan))
         .route(
             "/api/v1/recordings/{id}",
@@ -101,6 +102,15 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn review_metadata(
+    State(state): State<AppState>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid review metadata query"))?
+        .0;
+    state.host.call(Action::Review(query)).await.map(Json)
 }
 async fn take_plan(
     State(state): State<AppState>,
@@ -794,6 +804,7 @@ async fn assets(request: Request) -> Response {
         "/js/library.js" => asset!("/web/js/library.js", "text/javascript"),
         "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
         "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),
+        "/js/reviewmeta.js" => asset!("/web/js/reviewmeta.js", "text/javascript"),
         "/js/capture.js" => asset!("/web/js/capture.js", "text/javascript"),
         "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
         "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),

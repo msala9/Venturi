@@ -119,6 +119,98 @@ fn recovering_a_backup_creates_a_retry_safe_copy_and_never_overwrites_the_origin
 }
 
 #[test]
+fn review_commands_are_retry_safe_copy_on_save_as_and_refuse_an_old_project_namespace() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-review-host-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "original".into(),
+        },
+        "review-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let edit = request(
+        &editor,
+        Operation::EditReview {
+            project_token: "original.vvproj".into(),
+            revision: "absent".into(),
+            edit: crate::reviewmeta::Edit::NewShot {
+                id: "arrival".into(),
+                name: "Arrival".into(),
+            },
+        },
+        "review-shot",
+        None,
+    );
+    editor.mutation(None, edit.clone()).unwrap();
+    let bytes = std::fs::read(root.join("original.vvproj.review.json")).unwrap();
+    editor.mutation(None, edit).unwrap();
+    assert_eq!(
+        std::fs::read(root.join("original.vvproj.review.json")).unwrap(),
+        bytes
+    );
+    assert_eq!(editor.session.history.position(), 0);
+    let copy = request(
+        &editor,
+        Operation::SaveAs {
+            name: "copy".into(),
+        },
+        "review-copy",
+        None,
+    );
+    editor.mutation(None, copy).unwrap();
+    assert_eq!(
+        std::fs::read(root.join("copy.vvproj.review.json")).unwrap(),
+        bytes
+    );
+    let current = crate::reviewmeta::read(&editor.files, &editor.session).unwrap();
+    let wrong = request(
+        &editor,
+        Operation::EditReview {
+            project_token: "original.vvproj".into(),
+            revision: current["revision"].as_str().unwrap().into(),
+            edit: crate::reviewmeta::Edit::DeleteShot {
+                id: "arrival".into(),
+            },
+        },
+        "review-old-namespace",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, wrong).unwrap_err().1,
+        "REVISION_CONFLICT"
+    );
+    assert_eq!(
+        std::fs::read(root.join("copy.vvproj.review.json")).unwrap(),
+        bytes
+    );
+    let orphan = root.join("orphan.vvproj.review.json");
+    std::fs::write(&orphan, &bytes).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "orphan".into(),
+        },
+        "review-preserve-orphan",
+        None,
+    );
+    assert_eq!(editor.mutation(None, create).unwrap_err().1, "FILE_EXISTS");
+    assert!(!root.join("orphan.vvproj").exists());
+    assert_eq!(std::fs::read(orphan).unwrap(), bytes);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn otio_import_is_a_new_no_replace_project_with_epoch_and_retry_guards() {
     let root = std::env::temp_dir().join(format!(
         "vv-web-otio-host-{}",

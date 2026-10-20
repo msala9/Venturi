@@ -1,5 +1,27 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+Implemented Review annotations use `GET /api/v1/review?project_epoch=...` and
+project command `edit_review {project_token,revision,edit}`. The latter retains
+the common writer/epoch/generation/idempotency guards. `edit.action` is
+`new_shot`, `rename_shot`, `delete_shot`, `set_take` or `restore_previous`.
+Shot IDs are client UUID strings; take media IDs are native canonical strings.
+`set_take` carries `media_id`, nullable `shot_id`, `label`, `rating`
+(`unrated|favorite|rejected`), nullable `metadata {model,prompt,seed}` and optional
+`rebind_source`. Seeds are exact unsigned 64-bit decimal strings. Null metadata
+inherits captured source provenance; a metadata object with null fields records
+explicitly unknown values. Changed source identities require explicit rebinding.
+The response includes the sidecar revision, project namespace, shots, resolved
+take annotations, stale/offline flags and retained orphan annotations.
+
+Annotations live in the root-scoped version-1 `<project>.vvproj.review.json`
+sidecar, bounded to 4 MiB, 1024 shots and 4096 annotated takes. Writes use
+descriptor-based atomic publication and a rolling previous version. The native
+project and timeline Undo are unchanged; `restore_previous` swaps the last two
+annotation states. Save As copies annotations independently, with rollback on
+failed native save. Existing sidecars, unknown schemas and links are preserved
+and refused when unsafe to edit. Backup recovery copies associated annotations;
+removed media remain visible as retained orphan annotations.
+
 The implemented M2 subset and its deliberate schema deltas are documented in
 [RUNNING.md](RUNNING.md#actual-api-deltas-from-the-proposal). In particular,
 project epoch is now a string and every mutation also requires client ownership

@@ -538,5 +538,20 @@ label {
 #review-dialog .tools label { display: flex; align-items: center; }
 .review-actions { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 10px; }
 #review-dialog > output { margin-top: 10px; }
+.review-pair pre { max-height: 140px; overflow: auto; }
+#review-metadata-dialog { width: min(1000px,calc(100vw - 24px)); }
+#review-metadata-dialog[open] { display: grid; grid-template-rows: auto auto minmax(0,1fr) auto auto; height: 80vh; overflow: hidden; }
+#review-metadata-dialog h2 { margin: 0; }
+.annotation-fields { min-height: 0; overflow: auto; padding-right: 8px; }
+.annotation-shots { display: flex; flex-wrap: wrap; gap: 6px; align-items: end; margin-bottom: 12px; }
+.annotation-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.annotation-columns section, #review-metadata-dialog form:not([method="dialog"]) { display: grid; align-content: start; gap: 10px; margin: 0; min-width: 0; }
+.annotation-columns input, .annotation-columns select, .annotation-columns textarea { width: 100%; min-width: 0; }
+.annotation-columns label:has(input[type="checkbox"]) { display: flex; align-items: center; }
+.annotation-columns input[type="checkbox"] { width: auto; }
+[data-annotation-list] { max-height: 340px; overflow: auto; }
+[data-annotation-list] article { border-top: 1px solid var(--border); padding: 8px 0; display: flex; gap: 4px; flex-wrap: wrap; }
+[data-annotation-list] article > button:first-child { flex: 1; text-align: left; min-width: 100%; white-space: normal; }
+#review-metadata-dialog > output { margin-top: 10px; }
 .shared-library-list article { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; overflow-wrap: anywhere; }
 #panel-content > input, #panel-content > select { width: 100%; margin-top: 8px; }

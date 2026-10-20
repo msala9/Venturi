@@ -62,6 +62,11 @@ pub enum Operation {
     EditCatalog {
         edit: crate::catalog::Edit,
     },
+    EditReview {
+        project_token: String,
+        revision: String,
+        edit: crate::reviewmeta::Edit,
+    },
     ImportOtio {
         path_token: String,
         name: String,

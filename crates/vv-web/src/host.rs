@@ -30,6 +30,7 @@ pub enum Action {
     ClipDetail(String, FrameQuery),
     SlipDetail(String, i64, FrameQuery),
     TakePlan(crate::take::Preview),
+    Review(SourceQuery),
     SpeechSnapshot(
         crate::silence::Request,
         oneshot::Sender<Result<crate::silence::Task>>,
@@ -184,6 +185,13 @@ impl Editor {
             };
         }
         match &request.operation {
+            Operation::EditReview {
+                project_token,
+                revision,
+                edit,
+            } => {
+                crate::reviewmeta::edit(&self.files, &self.session, project_token, revision, edit)?;
+            }
             Operation::EditCatalog { edit } => {
                 crate::catalog::edit(&mut self.session, &self.files, edit)?;
             }
@@ -220,7 +228,9 @@ impl Editor {
                 }
                 let (project, warnings) = self.files.import_otio(path_token)?;
                 let token = format!("{name}.vvproj");
+                let metadata = crate::reviewmeta::reserve_copy(&self.files, None, &token)?;
                 self.files.save(&project, &token, true)?;
+                metadata.commit();
                 self.session
                     .install_project(project, Some(self.files.path(&token)?));
                 self.import_warnings = warnings;
@@ -282,7 +292,9 @@ impl Editor {
                     markers: Vec::new(),
                     master: Default::default(),
                 });
+                let metadata = crate::reviewmeta::reserve_copy(&self.files, None, &path_token)?;
                 self.files.save(&session.project, &path_token, true)?;
+                metadata.commit();
                 self.session
                     .install_project(session.project, Some(self.files.path(&path_token)?));
                 self.import_warnings.clear();
@@ -318,7 +330,13 @@ impl Editor {
                 }
                 let project = self.files.load_backup(path_token)?;
                 let token = format!("{name}.vvproj");
+                let metadata = crate::reviewmeta::reserve_copy(
+                    &self.files,
+                    path_token.strip_suffix(".bak"),
+                    &token,
+                )?;
                 self.files.save(&project, &token, true)?;
+                metadata.commit();
                 self.session
                     .install_project(project, Some(self.files.path(&token)?));
                 self.import_warnings.clear();
@@ -346,7 +364,11 @@ impl Editor {
                     ));
                 }
                 let token = format!("{name}.vvproj");
+                let source = crate::reviewmeta::current_project(&self.files, &self.session).ok();
+                let metadata =
+                    crate::reviewmeta::reserve_copy(&self.files, source.as_deref(), &token)?;
                 self.files.save(&self.session.project, &token, true)?;
+                metadata.commit();
                 self.session.set_path(Some(self.files.path(&token)?));
                 self.session.mark_saved();
             }
@@ -435,6 +457,18 @@ impl Editor {
             Action::TakePlan(request) => {
                 let (id, _) = self.validate_frame(&request.query)?;
                 crate::take::preview(&self.session, &self.files, id, &request)
+            }
+            Action::Review(query) => {
+                if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
+                    return Err(ApiError::conflict(
+                        "REVISION_CONFLICT",
+                        "Project changed before reading review metadata",
+                    ));
+                }
+                let mut value = crate::reviewmeta::read(&self.files, &self.session)?;
+                value["project_epoch"] = json!(query.project_epoch);
+                value["generation"] = json!(self.session.history.generation().to_string());
+                Ok(value)
             }
             Action::CheckFrame(query) => self.validate_frame(&query).map(|_| Value::Null),
             Action::SourceSnapshot(media_id, query, reply) => {

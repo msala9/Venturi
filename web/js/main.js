@@ -16,6 +16,7 @@ import { createSilencePanel } from "./silence.js";
 import { createLibraryPanel } from "./library.js";
 import { createVoiceover } from "./voiceover.js";
 import { createReview } from "./review.js";
+import { createReviewMetadata } from "./reviewmeta.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -26,6 +27,7 @@ let silencePanel = null;
 let sharedLibrary = null;
 let voiceover = null;
 let review = null;
+let reviewMetadata = null;
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
@@ -93,9 +95,9 @@ function showWorkspace(name) {
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono","Analyze silence · VAD","Voiceover"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)) || (name === "Review" && ["Compare A/B","Replace Take"].includes(label)));
+    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono","Analyze silence · VAD","Voiceover"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)) || name === "Review");
     if (!button.disabled) button.addEventListener("click",()=>{
-      if(name==="Review"){programPlayer?.stop();sourcePlayer?.pause();review?.open().catch(error=>notice(error.message));return;}
+      if(name==="Review"){programPlayer?.stop();sourcePlayer?.pause();const panel=["Shot / Take grouping","Prompt / Seed / Model metadata"].includes(label)?reviewMetadata:review;panel?.open().catch(error=>notice(error.message));return;}
       if(label === "Analyze silence · VAD"){programPlayer?.stop();silencePanel?.open();return;}
       if(label === "Voiceover"){viewerModeSet("program");voiceover?.open();return;}
       if(name === "Color") {
@@ -319,6 +321,7 @@ function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
 }
 function selected() {
+  reviewMetadata?.invalidate();
   review?.invalidate();
   voiceover?.invalidate();
   silencePanel?.invalidate();
@@ -1063,12 +1066,14 @@ slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(o
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1),clip_id:clip};
 }});
 sharedLibrary=createLibraryPanel({root:$("panel-content"),getState:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>mutate(operation,true),notice});
-review=createReview({root:$("review-dialog"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:()=>{
+const reviewContext=()=>{
   if(!documentState?.project_name || !timeline || timeline.id==="fixture")return null;
   const clips=timeline.tracks.flatMap(track=>track.clips).filter(clip=>view.selection.includes(clip.id)),oneGroup=clips[0]?.linked_group && clips.every(clip=>clip.linked_group===clips[0].linked_group),clip=(clips.length===1 || oneGroup)?clips.find(clip=>clip.kind==="media"):null;
   const end=Math.max(1,...timeline.tracks.flatMap(track=>track.clips.map(clip=>clip.start_frame+clip.length_frames)));
   return {document:documentState,selectedMedia,clip,query:{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.max(0,Math.min(view.playhead,end-1)),width:640}};
-}});
+};
+review=createReview({root:$("review-dialog"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:reviewContext});
+reviewMetadata=createReviewMetadata({root:$("review-metadata-dialog"),getContext:reviewContext,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),notice,onCompare:media_id=>review.open({media_id}).catch(error=>notice(error.message))});
 voiceover=createVoiceover({root:$("voiceover-dialog"),getClientId:()=>clientId,canCommit:()=>writable && !busy && !unresolved,commit,notice,playback:{video:$("program-video"),start:async()=>{await programPlayer.toggle();if(programPlayer.state()!=="ready")throw new Error("Composed playback is unavailable; try recording without playback");},pause:()=>programPlayer.stop()},onProgress:(progress)=>{
   view.recording=progress;if(progress && timeline){view.recording.length_frames=Math.floor(progress.seconds*timeline.fps.num/timeline.fps.den);if(progress.withoutPlayback){view.playhead=Math.min(1_000_000_000,progress.start_frame+view.recording.length_frames);updateTime();}}canvasTimeline.invalidate();
 },getTarget:()=>documentState?.project_name && timeline && timeline.id!=="fixture"?{project_epoch:documentState.project_epoch,generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,start_frame:view.playhead,tracks:timeline.tracks.filter((track)=>track.kind==="audio" && track.armed && !track.locked).map((track)=>track.id),formats:documentState.recording_formats,canPlayback:!!documentState.capabilities.playback && timeline.tracks.some((track)=>track.clips.length)}:null});

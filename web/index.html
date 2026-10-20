@@ -30,6 +30,32 @@
       <div class="spacer"></div>
       <span class="theme-note">MADROCK THEME</span>
     </nav>
+    <dialog id="review-metadata-dialog" aria-labelledby="review-metadata-heading">
+      <h2 id="review-metadata-heading">Shot / Take annotations</h2>
+      <p>Annotations save separately from the native project. Timeline Undo stays unchanged. Restore previous annotations swaps the last two saved states. Save As copies annotations with the project.</p>
+      <div class="annotation-fields">
+        <div class="annotation-shots"><label>Shot name <input name="shot_name" maxlength="128" placeholder="Arrival"></label><button type="button" data-shot-create>Create shot</button><button type="button" data-shot-rename>Rename filtered shot</button><button type="button" data-shot-delete>Remove filtered shot · keep takes</button></div>
+        <div class="annotation-columns">
+          <section><label>Shot filter <select name="shot_filter"><option value="all">All takes</option><option value="unassigned">Unassigned takes</option></select></label><label>Search takes, model or seed <input type="search" name="take_search"></label><div data-annotation-list role="list" aria-label="Review takes"></div></section>
+          <form data-annotation-form>
+            <h3 data-annotation-source>Select a take</h3>
+            <label>Take label <input name="take_label" maxlength="128"></label>
+            <label>Assigned shot <select name="take_shot"><option value="">Unassigned</option></select></label>
+            <label>Rating <select name="rating"><option value="unrated">Unrated</option><option value="favorite">Favorite</option><option value="rejected">Rejected</option></select></label>
+            <label><input type="checkbox" name="use_origin" checked>Use captured source provenance</label>
+            <label>Known model <input name="model" maxlength="256" placeholder="Unknown"></label>
+            <label>Known seed <input name="seed" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Unknown"></label>
+            <label>Known prompt <textarea name="prompt" rows="4" maxlength="32768" placeholder="Unknown"></textarea></label>
+            <label data-annotation-rebind hidden><input type="checkbox" name="rebind">Source changed: explicitly rebind these retained annotations</label>
+            <button type="submit" data-annotation-save>Save take annotations</button>
+            <button type="button" data-annotation-compare>Compare selected take</button>
+          </form>
+        </div>
+        <details><summary data-annotation-orphan-count>Retained annotations for missing media</summary><ul data-annotation-orphans></ul></details>
+      </div>
+      <output data-annotation-status role="status">Open a saved project first</output>
+      <div class="review-actions"><button type="button" data-annotation-refresh>Refresh saved annotations</button><button type="button" data-annotation-restore>Restore previous annotations</button><button type="button" data-annotation-close>Close annotations</button></div>
+    </dialog>
     <dialog id="review-dialog" aria-labelledby="review-heading">
       <h2 id="review-heading">Compare takes and replace</h2>
       <div class="review-fields">

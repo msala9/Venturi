@@ -1282,3 +1282,31 @@ DRI/KFD handles and no hardware-lock acquisition were verified. Evidence:
 m6-halo2-review.json/browser.png. The detailed local proof retains only the
 relevant native session and complete opacity/crop tracks rather than repeating
 unrelated Inspector catalogs.
+
+## M6 — persistent Shot / Take annotations
+
+Review grouping and metadata tools now open a saved-project annotation editor.
+Users can create/rename/remove shots, assign takes, mark Favorite/Rejected,
+search labels/model/prompt/exact seed and compare a selected take. Source
+provenance is inherited by default; explicit model/prompt/seed overrides and
+unknown values are separate. All source text uses safe DOM text/value APIs.
+Changed source identities require an explicit rebind. Missing media retain
+their annotations in a visible orphan list.
+
+The versioned, bounded project sidecar has revision/namespace guards, atomic
+publication and a rolling previous state. It leaves native project semantics
+and timeline Undo unchanged. Restore previous annotations is reversible. Save
+As copies annotations independently and rolls back only its own reserved file
+on failure; orphan sidecars cannot silently attach to a new project. Read-only,
+stale and failed requests retain the current form and cannot write.
+
+96 web tests and 64 JS tests pass; web clippy with warnings denied, formatting
+and build pass. Real CPU browser acceptance saved an Opening shot, Favorite,
+manual model, multiline literal prompt and exact seed 18446744073709551615.
+Exact seed search and A/B display retained every digit. Restore previous toggled
+the old/new state. Save As copied annotations; rejecting the copy left the
+original Favorite. Server restart and native reopen retained the original
+annotations and unchanged clip ranges/source SHA-256 values. Evidence:
+m6-review-annotations.json, m6-review-annotations-browser.png and
+m6-review-annotations-compare-browser.png. Twenty-shot montage acceptance and
+remaining original-GUI parity/release checks are still open.

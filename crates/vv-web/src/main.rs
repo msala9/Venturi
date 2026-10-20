@@ -13,6 +13,7 @@ mod masks;
 mod preview;
 mod program;
 mod recording;
+mod reviewmeta;
 mod silence;
 mod slip;
 mod snapshot;

@@ -1,0 +1,117 @@
+{
+  "fixture": "Own synthetic 25/30/50 fps H.264/AAC sources; CPU/lavapipe only",
+  "annotations_after_service_restart": {
+    "can_restore_previous": true,
+    "generation": "0",
+    "items": [
+      {
+        "label": "",
+        "media_id": "2",
+        "metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "metadata_override": false,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": null,
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Take_A.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "",
+        "media_id": "3",
+        "metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "metadata_override": false,
+        "offline": false,
+        "rating": "unrated",
+        "shot_id": null,
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Take_B_short.mp4",
+        "stale_source": false
+      },
+      {
+        "label": "Opening C \u00b7 selected",
+        "media_id": "4",
+        "metadata": {
+          "model": "Synthetic acceptance fixture",
+          "prompt": "Synthetic <tag> & take metadata\nSecond line preserved.",
+          "seed": "18446744073709551615"
+        },
+        "metadata_override": true,
+        "offline": false,
+        "rating": "favorite",
+        "shot_id": "80bb95a5-f81f-4647-a8fe-ad8d9d556116",
+        "source_metadata": {
+          "model": null,
+          "prompt": null,
+          "seed": null
+        },
+        "source_name": "Take_C_long.mp4",
+        "stale_source": false
+      }
+    ],
+    "orphans": [],
+    "project_epoch": "1792539485470685629:1",
+    "project_token": "Review_UI_check.vvproj",
+    "revision": "c70433fe5cc3511981c92d797cc86aeedc057be7912665824b294f0f95ec259b",
+    "shots": {
+      "80bb95a5-f81f-4647-a8fe-ad8d9d556116": "Opening"
+    },
+    "version": 1
+  },
+  "save_as_copy_rating": "rejected",
+  "original_rating": "favorite",
+  "source_sha256_unchanged": {
+    "Take_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Take_B_short.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Take_C_long.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3"
+  },
+  "native_project_saved": true,
+  "native_clip_ranges_unchanged": [
+    [
+      "1",
+      12,
+      72
+    ],
+    [
+      "2",
+      110,
+      24
+    ],
+    [
+      "0",
+      12,
+      72
+    ]
+  ],
+  "browser_checks": [
+    "Created Opening shot and assigned Media 4",
+    "Saved Favorite, manual model, multiline literal prompt and exact u64::MAX seed",
+    "Searched exact seed and compared annotated take in A/B",
+    "Restore previous annotations toggled old/new states",
+    "Save As copied annotations; Reject in copy kept original Favorite",
+    "Service restart and native project reopen retained annotations"
+  ],
+  "tests": {
+    "vv_web": 96,
+    "javascript": 64,
+    "clippy": "vv-web all targets; warnings denied"
+  },
+  "hardware_gpu_used": false,
+  "shared_library_modified": false
+}

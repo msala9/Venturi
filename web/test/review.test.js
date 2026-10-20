@@ -33,7 +33,7 @@ function harness(api){
   nodes.form.elements=Object.fromEntries(Object.entries({source_in:"0",duration:"preserve",links:"replace_linked",attributes:"preserve"}).map(([name,value])=>[name,new Control(value)]));nodes.form.reportValidity=()=>true;
   nodes['[name="listen"]'].value="A";
   const context={query:{project_epoch:"epoch",if_generation:"2",timeline_id:"1",revision:"rev",frame:12,width:640},clip:{id:"1",media_id:"2",name:"old.mp4",start_frame:12,length_frames:72},document:{media:[{id:"2",name:"old.mp4"},{id:"3",name:"new.mp4"}]}},commits=[],loaded=[];let writable=true;
-  const review=createReview({root,getContext:()=>context,canCommit:()=>writable,commit:async operation=>{commits.push(operation);context.query.if_generation="3";review.invalidate();},notice(){},api,sourceFactory:({onReady,cancel})=>({reset(){},async open(item){loaded.push(item.id);cancel.disabled=true;onReady();}})});
+  const review=createReview({root,getContext:()=>context,canCommit:()=>writable,commit:async operation=>{commits.push(operation);context.query.if_generation="3";review.invalidate();},notice(){},api:(path,body)=>path.startsWith("/review?")?Promise.resolve({items:[],shots:{},project_epoch:"epoch",generation:"2"}):api(path,body),sourceFactory:({onReady,cancel})=>({reset(){},async open(item){loaded.push(item.id);cancel.disabled=true;onReady();}})});
   return{review,root,nodes,panes,context,commits,loaded,button:name=>nodes[`[data-review-${name}]`],setWritable:value=>{writable=value;},submit:()=>nodes.form.dispatchEvent(new Event("submit",{cancelable:true}))};
 }
 async function settle(){for(let n=0;n<4;n++)await new Promise(resolve=>setImmediate(resolve));}

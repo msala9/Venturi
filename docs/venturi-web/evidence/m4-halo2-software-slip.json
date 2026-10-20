@@ -1,0 +1,396 @@
+{
+  "pid": "1162155",
+  "project": "CPU_slip_UI_check.vvproj",
+  "saved": true,
+  "capabilities": {
+    "editing": true,
+    "export": true,
+    "playback": true,
+    "preview": true,
+    "scopes": true,
+    "software_preview": true,
+    "source_playback": true
+  },
+  "hardware_device_handles": [],
+  "radv_driver_loaded": false,
+  "project_root_owned": true,
+  "environment": {
+    "VK_DRIVER_FILES": "/usr/share/vulkan/icd.d/lvp_icd.json",
+    "LP_NUM_THREADS": "2",
+    "TOKIO_WORKER_THREADS": "2"
+  },
+  "source_commit": "3987e87543b44cc09247eceb6bd47aa046f718d0",
+  "binary": "/home/marco/AI-lab/venturi-web/.runtime/vv-web-d0c2a8f4b785",
+  "sha256": "d0c2a8f4b78568be60004b97c182bd0a7a395a05dfee67498b7548bda9101037",
+  "timeline": {
+    "api_version": 1,
+    "fps": {
+      "den": 1,
+      "num": 24
+    },
+    "id": "1",
+    "marker_colors": [
+      "Red",
+      "Orange",
+      "Yellow",
+      "Green",
+      "Cyan",
+      "Blue",
+      "Indigo",
+      "Purple",
+      "Magenta",
+      "Rose",
+      "Slate",
+      "Gray"
+    ],
+    "markers": [],
+    "master": {
+      "effects": [],
+      "gain_db": 0.0,
+      "pan": 0.0
+    },
+    "name": "GPU composition verification",
+    "resolution": {
+      "height": 1080,
+      "width": 1920
+    },
+    "revision": "bd30f55657f78550",
+    "timeline_id": "1",
+    "tracks": [
+      {
+        "clips": [
+          {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "3",
+            "kind": "media",
+            "length_frames": 12,
+            "linked_group": "0",
+            "media_id": "2",
+            "name": "venturi-smoke.mp4",
+            "slip_range": [
+              -5,
+              31
+            ],
+            "source_in_frames": 5,
+            "source_out_frames": 17,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          }
+        ],
+        "crossings": [],
+        "id": "0",
+        "kind": "video",
+        "label": "V1",
+        "locked": false,
+        "mix": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "muted": false,
+        "solo": false
+      },
+      {
+        "clips": [
+          {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "1",
+            "kind": "solid_color",
+            "length_frames": 48,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Solid color",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 48,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          }
+        ],
+        "crossings": [],
+        "id": "1",
+        "kind": "video",
+        "label": "V2",
+        "locked": false,
+        "mix": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "muted": false,
+        "solo": false
+      },
+      {
+        "clips": [
+          {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "2",
+            "kind": "media",
+            "length_frames": 12,
+            "linked_group": "0",
+            "media_id": "2",
+            "name": "venturi-smoke.mp4",
+            "slip_range": [
+              -5,
+              31
+            ],
+            "source_in_frames": 5,
+            "source_out_frames": 17,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          }
+        ],
+        "crossings": [],
+        "id": "2",
+        "kind": "audio",
+        "label": "A1",
+        "locked": false,
+        "mix": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "muted": false,
+        "solo": false
+      }
+    ]
+  },
+  "manifest": {
+    "clip_id": "3",
+    "clip_ids": [
+      "3",
+      "2"
+    ],
+    "fps": {
+      "den": 1,
+      "num": 24
+    },
+    "frames": [
+      [
+        -5,
+        0,
+        11
+      ],
+      [
+        -4,
+        1,
+        12
+      ],
+      [
+        -3,
+        2,
+        13
+      ],
+      [
+        -2,
+        3,
+        14
+      ],
+      [
+        -1,
+        4,
+        15
+      ],
+      [
+        0,
+        5,
+        16
+      ],
+      [
+        1,
+        6,
+        17
+      ],
+      [
+        2,
+        7,
+        18
+      ],
+      [
+        3,
+        8,
+        19
+      ],
+      [
+        4,
+        9,
+        20
+      ],
+      [
+        5,
+        10,
+        21
+      ],
+      [
+        6,
+        11,
+        22
+      ],
+      [
+        7,
+        12,
+        23
+      ],
+      [
+        8,
+        13,
+        24
+      ],
+      [
+        9,
+        14,
+        25
+      ],
+      [
+        10,
+        15,
+        26
+      ],
+      [
+        11,
+        16,
+        27
+      ],
+      [
+        12,
+        17,
+        28
+      ],
+      [
+        13,
+        18,
+        29
+      ],
+      [
+        14,
+        19,
+        30
+      ],
+      [
+        15,
+        20,
+        31
+      ],
+      [
+        16,
+        21,
+        32
+      ],
+      [
+        17,
+        22,
+        33
+      ],
+      [
+        18,
+        23,
+        34
+      ],
+      [
+        19,
+        24,
+        35
+      ],
+      [
+        20,
+        25,
+        36
+      ],
+      [
+        21,
+        26,
+        37
+      ],
+      [
+        22,
+        27,
+        38
+      ],
+      [
+        23,
+        28,
+        39
+      ],
+      [
+        24,
+        29,
+        40
+      ],
+      [
+        25,
+        30,
+        41
+      ],
+      [
+        26,
+        31,
+        42
+      ],
+      [
+        27,
+        32,
+        43
+      ],
+      [
+        28,
+        33,
+        44
+      ],
+      [
+        29,
+        34,
+        45
+      ],
+      [
+        30,
+        35,
+        46
+      ],
+      [
+        31,
+        36,
+        47
+      ]
+    ],
+    "generation": "2",
+    "locked": false,
+    "max_delta": 31,
+    "media_id": "2",
+    "min_delta": -5,
+    "name": "venturi-smoke.mp4",
+    "preview_available": true,
+    "project_epoch": "1792526799532637635:1",
+    "revision": "bd30f55657f78550",
+    "source_version": "64512:8258099:77146:1792493257:18415300",
+    "window_end": 31,
+    "window_start": -5
+  },
+  "history": {
+    "labels": [
+      "TrimClips",
+      "SlipClips"
+    ],
+    "position": 2
+  }
+}

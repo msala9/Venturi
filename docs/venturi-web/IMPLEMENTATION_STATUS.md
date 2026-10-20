@@ -1007,3 +1007,12 @@ local budget need bounded source-window proxies. Numeric native slip still
 works without a dual movie preview. Stills/audio/compound sources retain their
 native editing semantics but do not claim a dual movie decoder. Closing these
 source-preview limits is required before complete M4 parity is claimed.
+
+The catalog/Slip binary is deployed on halo2 in explicit CPU mode, SHA-256
+d0c2a8f4b78568be60004b97c182bd0a7a395a05dfee67498b7548bda9101037.
+CPU_slip_UI_check is a saved copy: linked video/audio were trimmed to 12 frames
+and slipped +5, while the separate overlay and original project were retained.
+Windows dual preview decoded source frames 5 and 16 from local blob URLs.
+Process inspection again found no DRI/KFD descriptors or loaded RADV library,
+with two renderer threads and project directory ownership. Evidence:
+m4-halo2-software-slip.json/browser.png. No hardware reservation was acquired.

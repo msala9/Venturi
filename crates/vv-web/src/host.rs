@@ -196,6 +196,22 @@ impl Editor {
                 self.files.save(&self.session.project, &name, false)?;
                 self.session.mark_saved();
             }
+            Operation::SaveAs { name } => {
+                if name.is_empty()
+                    || name.len() > 64
+                    || !name
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
+                {
+                    return Err(ApiError::invalid(
+                        "Use letters, digits, underscores or hyphens for the project name",
+                    ));
+                }
+                let token = format!("{name}.vvproj");
+                self.files.save(&self.session.project, &token, true)?;
+                self.session.set_path(Some(self.files.path(&token)?));
+                self.session.mark_saved();
+            }
             _ => {
                 return Err(ApiError::invalid(
                     "Timeline commands require a timeline URL",

@@ -104,5 +104,31 @@ fn retries_epochs_revisions_and_writer_lease() {
     let redo = request(&editor, Operation::Redo, "history-redo", None);
     editor.mutation(None, redo).unwrap();
     assert_eq!(editor.session.project.timelines[id].tracks.len(), 3);
+    let original = std::fs::read(root.join("test.vvproj")).unwrap();
+    let save_as = request(
+        &editor,
+        Operation::SaveAs {
+            name: "copy".into(),
+        },
+        "save-copy",
+        None,
+    );
+    editor.mutation(None, save_as.clone()).unwrap();
+    editor.mutation(None, save_as).unwrap();
+    assert!(root.join("copy.vvproj").exists());
+    assert_eq!(std::fs::read(root.join("test.vvproj")).unwrap(), original);
+    let conflict = request(
+        &editor,
+        Operation::SaveAs {
+            name: "test".into(),
+        },
+        "save-copy-conflict",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, conflict).unwrap_err().1,
+        "FILE_EXISTS"
+    );
+    assert_eq!(editor.session.path().unwrap(), root.join("copy.vvproj"));
     std::fs::remove_dir_all(root).unwrap();
 }

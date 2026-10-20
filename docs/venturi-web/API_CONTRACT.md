@@ -180,3 +180,6 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   history positions run from zero through the current label count. All standard
   writer/epoch/generation/idempotency preconditions apply; timeline preconditions
   are unnecessary for these project-wide history operations.
+- Project `save_as {name}` writes a new `{name}.vvproj` inside the root with
+  atomic no-replace semantics. It then switches the current save path. Existing
+  names return FILE_EXISTS and never replace the current path or source file.

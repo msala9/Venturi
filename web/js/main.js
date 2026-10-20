@@ -767,6 +767,11 @@ $("new-project").addEventListener("submit", async (event) => {
     $("project-error").textContent = error.message;
   }
 });
+$("save-as-project").addEventListener("submit",async(event)=>{
+  event.preventDefault();
+  try {await mutate({kind:"save_as",name:new FormData(event.target).get("name")},true);$("projects").close();}
+  catch(error){$("project-error").textContent=error.message;}
+});
 async function connect() {
   try {
     if (unresolved) {

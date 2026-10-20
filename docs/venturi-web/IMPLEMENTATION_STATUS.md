@@ -364,3 +364,15 @@ position 2 restored the solid and V2. Saved successfully. Evidence:
 evidence/m4-native-history-browser.png. All 27 Rust web tests, 18 JavaScript
 tests, formatting, clippy and build pass. History remains process-local like
 the upstream session; saving a project does not serialize undo commands.
+
+## M2b additional persistence coverage — Save As
+
+Projects now offers Save As to a new validated root filename. It uses the
+existing atomic no-replace writer, then switches the session path and marks
+the saved generation. A conflict leaves the current path and both files intact.
+Host coverage checks same-ID retry, original byte preservation, the new file
+and conflict path preservation. Windows browser created Saved_copy_UI_check
+from History_UI_check, then rejected overwriting the original with FILE_EXISTS.
+Evidence: evidence/m2-save-as-existing-file-refused.png. All 27 web Rust tests,
+18 JavaScript tests, formatting, clippy and build pass. Automated crash recovery
+and asynchronous import remain separate outstanding work.

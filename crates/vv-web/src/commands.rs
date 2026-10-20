@@ -28,6 +28,9 @@ pub enum Operation {
         path_token: String,
     },
     Save,
+    SaveAs {
+        name: String,
+    },
     ImportMedia {
         path_token: String,
     },

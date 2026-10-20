@@ -300,3 +300,23 @@ M3c fixtures are ready on halo2: GPU_composed_AV.vvproj (native linked A/V plus
 animated composited solid) and GPU_sync_5m.vvproj (7200 frames at 24fps, five
 white flashes and 100ms beeps at 0/60/120/180/240 seconds). They are test inputs,
 not successful hardware results. Shared lock remained busy; no GPU job ran.
+
+## M3c local five-minute validation and native encoder correction
+
+An actual 7200-frame native export on WSL llvmpipe found that missing video
+packet durations made the MP4 edit list discard the final reordered frame:
+7199 decoded, duration 299.958 seconds. The shared native encoder now sets the
+one-frame duration only when a video packet omitted it, before time-base
+rescaling. The existing encoder test now requires the exact frame count rather
+than accepting loss of one frame. Audio packet behavior is unchanged.
+
+The repeated native export decoded all 7200 frames, H.264 640x360 at 24fps and
+48kHz stereo AAC. Video duration 300.000s; AAC padded duration 300.010s.
+All five flash/beep onsets differ by one audio sample (0.0005 video frame),
+with no accumulating drift through 240s. Preparation took 58.54s for this
+deliberately simple synthetic composition; this is CPU/llvmpipe evidence,
+not R9700 throughput or physical speaker/browser sync proof. Detailed evidence:
+evidence/m3c-cpu-five-minute-sync.json. Reproduction uses the verify_preview
+fixture_sync/export modes and scripts/venturi-web-validate-sync.py. Full M3c
+GPU/browser acceptance still awaits a shared hardware slot; D41 announced a
+further priority 60–90 minute quality test after the current H3 video.

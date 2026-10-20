@@ -1,0 +1,67 @@
+{
+  "renderer": "llvmpipe Vulkan, CPU validation only",
+  "video_frames": 7200,
+  "audio_samples": 14400512,
+  "flash_frames": [
+    0,
+    1440,
+    2880,
+    4320,
+    5760
+  ],
+  "audio_onset_seconds": [
+    2.0833333333333333e-05,
+    60.00002083333333,
+    120.00002083333334,
+    180.00002083333334,
+    240.00002083333334
+  ],
+  "av_error_frames": [
+    0.0005,
+    0.0004999999999313332,
+    0.0005000000001018634,
+    0.0005000000001018634,
+    0.0005000000001018634
+  ],
+  "streams": [
+    {
+      "codec_name": "h264",
+      "codec_type": "video",
+      "width": 640,
+      "height": 360,
+      "r_frame_rate": "24/1",
+      "sample_rate": null,
+      "channels": null,
+      "duration": "300.000000",
+      "nb_frames": "7200"
+    },
+    {
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "width": null,
+      "height": null,
+      "r_frame_rate": "0/0",
+      "sample_rate": "48000",
+      "channels": 2,
+      "duration": "300.010000",
+      "nb_frames": "14064"
+    }
+  ],
+  "export": {
+    "compose_fps": 124.03932292934084,
+    "compositor": "llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan)",
+    "decode_fps": 92231.30468571793,
+    "elapsed_seconds": 58.543621927,
+    "encode_fps": 1418.9502144011997,
+    "encoder": "Some(X264)",
+    "frames": 7200
+  },
+  "fixture_sha256": "8432623657a3e1d02f88c6b7bf69a29275641b8023a1589a0e049a9a7443ebd5",
+  "audio_fixture_sha256": "213ffa7e387b883b01be6e31d526332b86d6a702c7da2141c63c8aa64c829d18",
+  "output_sha256": "b0142819341fac500693c6655b2bdc16453fd8b955c7abc05f6c5d83151112f4",
+  "before_fix": {
+    "decoded_frames": 7199,
+    "video_duration": "299.958000",
+    "last_packet_flag": "discard"
+  }
+}

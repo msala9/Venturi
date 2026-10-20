@@ -725,6 +725,10 @@ pub(crate) fn drain_packets(
     let mut packet = ffmpeg::Packet::empty();
     while encoder.receive_packet(&mut packet).is_ok() {
         packet.set_stream(stream_index);
+        // MP4 edit lists otherwise discard the final reordered video frame.
+        if packet.duration() == 0 && encoder.medium() == ffmpeg::media::Type::Video {
+            packet.set_duration(1);
+        }
         packet.rescale_ts(time_base, ost_time_base);
         packet.write_interleaved(octx)?;
     }

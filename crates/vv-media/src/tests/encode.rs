@@ -32,11 +32,7 @@ fn encodes_video_only_file_with_correct_dimensions_and_frame_count() {
     while decoder.next_frame().unwrap().is_some() {
         count += 1;
     }
-    // With B-frames (default x264 preset) the encoder/muxer reordering
-    // can shorten by one frame what is read back from the container:
-    // the same tolerance already used elsewhere in this crate for
-    // GOP/container rounding, not an exact count.
-    assert!((24..=25).contains(&count), "count={count}");
+    assert_eq!(count, 25);
 }
 
 #[test]

@@ -8,6 +8,20 @@ use vv_session::Session;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str){
+        Some("export") if args.len()==4=>{
+            let project=vv_core::load_project(std::path::Path::new(&args[2]))?;
+            let id=project.timelines.keys().next().ok_or("No timeline")?;
+            let output=PathBuf::from(&args[3]);if output.exists(){return Err("Output already exists".into());}
+            let lock=OpenOptions::new().create(true).truncate(false).read(true).write(true).open("/tmp/HALO_BENCHMARK.lock")?;
+            rustix::fs::flock(&lock,rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+            let mut settings=vv_session::export::ExportSettings::new(output);settings.video.preset="veryfast".into();settings.video.quality=18;
+            let progress=std::sync::Mutex::new(vv_session::export::ExportProgress::default());
+            vv_session::export::export_timeline_with_gpu(&project,id,&settings,0..project.timelines[id].total_frames(),&progress,&std::sync::atomic::AtomicBool::new(false),
+                ||Ok(vv_render::Compositor::new_headless_with_precision(project.precision)), |_|Ok(()),2)
+                .map_err(|error|std::io::Error::other(error.to_string()))?;
+            let p=progress.lock().unwrap();
+            println!("{}",serde_json::json!({"frames":p.current_frame,"elapsed_seconds":p.elapsed.as_secs_f64(),"compositor":p.compositor,"encoder":format!("{:?}",p.encoder),"decode_fps":p.decode.fps(),"compose_fps":p.compose.fps(),"encode_fps":p.encode.fps()}));
+        }
         Some("fixture_sync") if args.len()==4=>{
             let source=PathBuf::from(&args[2]).canonicalize()?;
             let meta=vv_media::probe_media(&source)?;
@@ -68,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             OpenOptions::new().create_new(true).write(true).open(&args[5])?.write_all(&rgba)?;
             println!("native_adapter={} frame={frame} size={width}x{height} bytes={}",compositor.adapter_name(),rgba.len());
         }
-        _=>return Err("Usage: verify_preview fixture|fixture_av|fixture_sync SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba".into()),
+        _=>return Err("Usage: verify_preview fixture|fixture_av|fixture_sync SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba | export PROJECT OUTPUT.mp4".into()),
     }
     Ok(())
 }

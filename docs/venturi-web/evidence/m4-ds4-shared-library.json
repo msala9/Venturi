@@ -2002,6 +2002,251 @@
           }
         ]
       }
+    },
+    "after_fixture_cleanup": {
+      "project_name": "Library_UI_check.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "timelines": [
+        {
+          "api_version": 1,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "id": "1",
+          "marker_colors": [
+            "Red",
+            "Orange",
+            "Yellow",
+            "Green",
+            "Cyan",
+            "Blue",
+            "Indigo",
+            "Purple",
+            "Magenta",
+            "Rose",
+            "Slate",
+            "Gray"
+          ],
+          "markers": [],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "name": "Timeline 1",
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "revision": "ad4d6819013a5820",
+          "timeline_id": "1",
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "ds4-fd51cabfda8e5329-a50e1957da2bf3cb.png",
+                  "slip_range": [
+                    0,
+                    959999880
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 125,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ]
+        }
+      ],
+      "media": [
+        {
+          "compound_timeline_id": "1",
+          "content_hash": "5",
+          "duration_frames": 120,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "has_audio": false,
+          "has_video": true,
+          "id": "1",
+          "is_image": false,
+          "name": "Timeline 1",
+          "offline": false
+        },
+        {
+          "compound_timeline_id": null,
+          "content_hash": "11714469671047576056",
+          "duration_frames": 1000000000,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 25
+          },
+          "has_audio": false,
+          "has_video": true,
+          "id": "2",
+          "is_image": true,
+          "name": "ds4-fd51cabfda8e5329-a50e1957da2bf3cb.png",
+          "offline": false,
+          "shared_origin": {
+            "item": {
+              "archived": true,
+              "bytes": 2003,
+              "created": "2026-10-20T20:53:53Z",
+              "filename": "fd51cabfda8e5329.png",
+              "height": 180,
+              "id": "fd51cabfda8e5329",
+              "keep": false,
+              "kind": "image",
+              "mime": "image/png",
+              "model": "Venturi integration fixture",
+              "prompt": "Venturi library integration check 14ac7714-4ed4-4e9d-84d3-1cd23090b6b2; synthetic PNG owned by this test.",
+              "seed": "9007199254740993",
+              "steps": 0,
+              "tool": "images",
+              "width": 320
+            },
+            "provider": "ds4-appliance",
+            "service_origin": "http://192.168.1.153:8787/",
+            "sha256": "a50e1957da2bf3cb8a4216c512f99e4ef02799995ab7868b62e7bb8ba1226789",
+            "version": 1
+          }
+        }
+      ],
+      "transform": [
+        {
+          "param": "ZoomX",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "ZoomY",
+          "default": 1.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "PositionY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Rotation",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorX",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "AnchorY",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropLeft",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropTop",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropRight",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropBottom",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "CropSoftness",
+          "default": 0.0,
+          "keyframes": []
+        },
+        {
+          "param": "Opacity",
+          "default": 100.0,
+          "keyframes": [
+            [
+              0,
+              65.0,
+              "EaseInOut"
+            ]
+          ]
+        }
+      ],
+      "catalog": {
+        "configured": true,
+        "archive": {
+          "configured": true,
+          "reachable": true,
+          "retention_days": 7
+        },
+        "sequence": 9,
+        "items": []
+      }
     }
   },
   "fixture": {
@@ -2010,7 +2255,8 @@
     "width": 320,
     "height": 180,
     "sha256": "a50e1957da2bf3cb8a4216c512f99e4ef02799995ab7868b62e7bb8ba1226789",
-    "archived_verified": true
+    "archived_verified": true,
+    "own_fixture_removed": true
   },
   "verification": {
     "rust_web_tests": 83,
@@ -2029,5 +2275,17 @@
     "provenance_survives_save_and_server_restart": true,
     "exact_seed": "9007199254740993",
     "gpu": "explicit CPU only"
+  },
+  "source_after_fixture_cleanup": {
+    "halo2": {
+      "native_source_sha256": "a50e1957da2bf3cb8a4216c512f99e4ef02799995ab7868b62e7bb8ba1226789",
+      "bytes": 2003,
+      "source_delivered_after_shared_fixture_removed": true
+    },
+    "wsl": {
+      "native_source_sha256": "a50e1957da2bf3cb8a4216c512f99e4ef02799995ab7868b62e7bb8ba1226789",
+      "bytes": 2003,
+      "source_delivered_after_shared_fixture_removed": true
+    }
   }
 }

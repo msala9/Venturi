@@ -1,0 +1,133 @@
+{
+  "pid": "1167268",
+  "software_only": true,
+  "hardware_device_handles": [],
+  "radv_driver_loaded": false,
+  "renderer_threads": 2,
+  "project_root_owned": true,
+  "project": "CPU_shared_library_UI_check.vvproj",
+  "saved": true,
+  "history": {
+    "labels": [
+      "ImportMedia",
+      "InsertClips"
+    ],
+    "position": 2
+  },
+  "media_id": "2",
+  "shared_item_id": "fd51cabfda8e5329",
+  "sha256": "a50e1957da2bf3cb8a4216c512f99e4ef02799995ab7868b62e7bb8ba1226789",
+  "seed": "9007199254740993",
+  "archive_reachable": true,
+  "timeline": {
+    "api_version": 1,
+    "fps": {
+      "den": 1,
+      "num": 24
+    },
+    "id": "1",
+    "marker_colors": [
+      "Red",
+      "Orange",
+      "Yellow",
+      "Green",
+      "Cyan",
+      "Blue",
+      "Indigo",
+      "Purple",
+      "Magenta",
+      "Rose",
+      "Slate",
+      "Gray"
+    ],
+    "markers": [],
+    "master": {
+      "effects": [],
+      "gain_db": 0.0,
+      "pan": 0.0
+    },
+    "name": "Timeline 1",
+    "resolution": {
+      "height": 1080,
+      "width": 1920
+    },
+    "revision": "96294b37e34b389c",
+    "timeline_id": "1",
+    "tracks": [
+      {
+        "armed": false,
+        "clips": [
+          {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "0",
+            "kind": "media",
+            "length_frames": 120,
+            "linked_group": null,
+            "media_id": "2",
+            "name": "ds4-fd51cabfda8e5329-a50e1957da2bf3cb.png",
+            "slip_range": [
+              0,
+              959999880
+            ],
+            "source_in_frames": 0,
+            "source_out_frames": 125,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          }
+        ],
+        "crossings": [],
+        "id": "0",
+        "kind": "video",
+        "label": "V1",
+        "locked": false,
+        "mix": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "muted": false,
+        "solo": false
+      },
+      {
+        "armed": false,
+        "clips": [],
+        "crossings": [],
+        "id": "1",
+        "kind": "audio",
+        "label": "A1",
+        "locked": false,
+        "mix": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "muted": false,
+        "solo": false
+      }
+    ]
+  },
+  "shared_hardware_lock": "not acquired or probed",
+  "diagnostics": {
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x0000",
+      "driver": "llvmpipe",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3 (LLVM 21.1.8)",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "llvmpipe (LLVM 21.1.8, 256 bits)",
+      "resident": false,
+      "software": true,
+      "vendor_id": "0x10005"
+    }
+  }
+}

@@ -1117,3 +1117,19 @@ organization or saved/shared attribute-preset workflows. Those remain explicit
 parity work. The active completion goal remains open for the remaining GUI,
 Voiceover, AI Review and release acceptance. No GPU reservation or inference
 configuration was changed by this CPU-only integration.
+
+The verified library binary is deployed on halo2, SHA-256
+89c804446bd17b3578013dbb1429f8d413f856802fa9612d5a915d6193ed92f1,
+with the actual appliance origin configured. CPU_shared_library_UI_check is a
+saved project containing the archived PNG as native media and a 120-frame clip.
+Windows Source decoded 320x180 and displayed the exact seed/provenance. Inspection
+confirmed two renderer threads, the held project directory lock, no DRI/KFD
+descriptors and no RADV library. The hardware reservation was not acquired or
+probed. Evidence: m4-halo2-shared-library.json/browser.png.
+
+The one synthetic appliance item created for this acceptance was then removed
+by exact ID after checking its unique marker and SHA-256. The original catalog
+had no items and is empty again. Both WSL and halo2 still deliver the original
+PNG bytes through their native Source APIs from their persistent project
+copies. No pre-existing library asset was changed or deleted. The redundant
+local offline-test backup was removed only after both copies matched SHA-256.

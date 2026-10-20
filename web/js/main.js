@@ -105,6 +105,7 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
     $("search").parentElement.hidden = name !== "Media";
     $("panel-content").hidden = name === "Media";
     $("panel-content").replaceChildren();
+    if (name === "History") { renderHistory(); return; }
     if (name === "Effects") for (const [label,generator] of [["Add title","title"],["Add adjustment clip","adjustment"]]) {
       const action=document.createElement("button");action.textContent=label;
       action.addEventListener("click",()=>addGenerator(generator));$("panel-content").append(action);
@@ -505,6 +506,7 @@ async function refresh() {
     canvasTimeline.invalidate();
   } else {
     timeline = null;
+    selected();
     canvasTimeline.invalidate();
   }
   $("project-name").textContent = next.project_name || "Untitled project";
@@ -525,7 +527,7 @@ async function refresh() {
     "insert-media",
     "import-button",
   ])
-    $(id).disabled = !writable || busy || !active || !!unresolved;
+    $(id).disabled = !writable || busy || (!active && !["save","undo","redo"].includes(id)) || !!unresolved;
   $("undo").disabled ||= next.history.position === 0;
   $("redo").disabled ||= next.history.position === next.history.labels.length;
   $("demo-button").hidden = true;
@@ -553,15 +555,7 @@ async function refresh() {
     }
     $("media-list").append(card);
   }
-  const history = document.createElement("div");
-  for (const [i, label] of next.history.labels.entries()) {
-    const p = document.createElement("p");
-    p.textContent = `${i < next.history.position ? "✓" : "↻"} ${label}`;
-    history.append(p);
-  }
-  panels.History = next.history.labels.map(
-    (label, i) => `${i < next.history.position ? "✓" : "↻"} ${label}`,
-  );
+  if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
   $("viewer-message").textContent = next.capabilities.preview
     ? "Seek a timeline frame"
     : "Exact preview is not available on this host";
@@ -610,7 +604,17 @@ async function mutate(operation, project = false) {
 }
 commit = (operation) => mutate(operation);
 const run = (operation) =>
-  mutate(operation).catch((error) => notice(error.message));
+  mutate(operation,["undo","redo","history_jump"].includes(operation.kind)).catch((error) => notice(error.message));
+function renderHistory() {
+  const root=$("panel-content");root.replaceChildren();
+  if (!documentState) {root.textContent="Open a project to view native history";return;}
+  for (const [position,label] of ["Initial state",...documentState.history.labels].entries()) {
+    const button=document.createElement("button");button.textContent=`${position} · ${label}`;
+    button.setAttribute("aria-pressed",position === documentState.history.position);
+    button.disabled=!writable || busy || !!unresolved || position === documentState.history.position;
+    button.addEventListener("click",()=>run({kind:"history_jump",position}));root.append(button);
+  }
+}
 function addGenerator(generator) {
   const track=timeline?.tracks.find((t)=>t.kind === "video" && !t.locked);
   if (!track) return notice("Add or unlock a video track first");

@@ -176,3 +176,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   Cut-after requires adjacent clips; duration is at most twice their minimum
   length. Edge duration is at most the selected clip length. Single-edge
   SmoothCut follows the native dissolve fallback.
+- Project commands accept undo, redo and `history_jump {position}`. Native
+  history positions run from zero through the current label count. All standard
+  writer/epoch/generation/idempotency preconditions apply; timeline preconditions
+  are unnecessary for these project-wide history operations.

@@ -129,6 +129,9 @@ impl Editor {
             return commands::apply(&mut self.session, id, &request.operation);
         }
         match &request.operation {
+            Operation::Undo | Operation::Redo | Operation::HistoryJump { .. } => {
+                commands::history(&mut self.session, &request.operation)?
+            }
             Operation::ImportMedia { path_token } => {
                 if self.session.path().is_none() {
                     return Err(ApiError::invalid(

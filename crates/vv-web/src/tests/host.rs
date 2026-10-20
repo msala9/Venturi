@@ -85,5 +85,24 @@ fn retries_epochs_revisions_and_writer_lease() {
         editor.session.project.timelines[id].tracks[0].clips.len(),
         1
     );
+    let change = request(
+        &editor,
+        Operation::AddTrack { audio: false },
+        "history-track",
+        Some(id),
+    );
+    editor.mutation(path.clone(), change).unwrap();
+    let jump = request(
+        &editor,
+        Operation::HistoryJump { position: 0 },
+        "history-jump",
+        None,
+    );
+    editor.mutation(None, jump.clone()).unwrap();
+    editor.mutation(None, jump).unwrap();
+    assert_eq!(editor.session.project.timelines[id].tracks.len(), 2);
+    let redo = request(&editor, Operation::Redo, "history-redo", None);
+    editor.mutation(None, redo).unwrap();
+    assert_eq!(editor.session.project.timelines[id].tracks.len(), 3);
     std::fs::remove_dir_all(root).unwrap();
 }

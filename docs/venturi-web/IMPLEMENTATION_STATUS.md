@@ -349,3 +349,18 @@ duration, native crossing identity, remove and undo. Full native checks after
 the video-duration correction: media 107 pass / 2 ignored, session 99 pass /
 1 ignored, desktop check pass. GPU/UI rendered title/transition proof awaits
 the shared GPU slot; these rows remain partial.
+
+## M4 independent increment — native history navigation
+
+History displays actual native command positions and jumps with History::go_to.
+Undo/redo/jump also use the project command endpoint with epoch/generation and
+idempotency checks, so recovery is possible when no active timeline remains.
+The actor serializes the full native jump; browser frames/preparations invalidate
+as on other mutations. A native regression covers jumping through timeline
+creation/removal, invalid positions and exact restoration. Host coverage checks
+project-level jump retries and redo without a timeline precondition.
+Browser: InsertClips + AddTrack → initial state (no clips, redo enabled) →
+position 2 restored the solid and V2. Saved successfully. Evidence:
+evidence/m4-native-history-browser.png. All 27 Rust web tests, 18 JavaScript
+tests, formatting, clippy and build pass. History remains process-local like
+the upstream session; saving a project does not serialize undo commands.

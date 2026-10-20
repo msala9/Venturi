@@ -55,6 +55,9 @@ pub enum Operation {
     },
     Undo,
     Redo,
+    HistoryJump {
+        position: usize,
+    },
     AddSolid {
         track: String,
         start_frame: FrameIdx,
@@ -216,7 +219,41 @@ fn free(
     }
     Ok(())
 }
+pub fn history(session: &mut Session, operation: &Operation) -> Result<()> {
+    let target = match operation {
+        Operation::HistoryJump { position } => *position,
+        Operation::Undo => session
+            .history
+            .position()
+            .checked_sub(1)
+            .ok_or_else(|| ApiError::invalid("Nothing to undo"))?,
+        Operation::Redo => session.history.position() + 1,
+        _ => return Err(ApiError::invalid("Choose a history operation")),
+    };
+    if target > session.history.labels().count() {
+        return Err(ApiError::invalid(
+            "History position is outside the current command history",
+        ));
+    }
+    session.history.go_to(&mut session.project, target);
+    let compounds: Vec<_> = session
+        .project
+        .media_pool
+        .iter()
+        .filter_map(|(id, m)| m.compound.map(|_| id))
+        .collect();
+    for media in compounds {
+        session.project.sync_compound_meta(media);
+    }
+    Ok(())
+}
 pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Result<()> {
+    if matches!(
+        operation,
+        Operation::Undo | Operation::Redo | Operation::HistoryJump { .. }
+    ) {
+        return history(session, operation);
+    }
     let tl = &session.project.timelines[id];
     match operation {
         Operation::SetTransition {
@@ -591,18 +628,6 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             } else {
                 edit::delete_clips(&mut session.project, &mut session.history, id, &refs);
             }
-        }
-        Operation::Undo => {
-            if session.history.position() == 0 {
-                return Err(ApiError::invalid("Nothing to undo"));
-            }
-            session.history.undo(&mut session.project);
-        }
-        Operation::Redo => {
-            if session.history.position() == session.history.labels().count() {
-                return Err(ApiError::invalid("Nothing to redo"));
-            }
-            session.history.redo(&mut session.project);
         }
         Operation::AddSolid {
             track,

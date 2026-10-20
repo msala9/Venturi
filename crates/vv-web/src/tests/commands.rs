@@ -402,3 +402,18 @@ fn title_and_adjustment_generators_keep_safe_insert_and_native_defaults() {
     apply(&mut s, id, &Operation::Undo).unwrap();
     assert_eq!(s.timeline_revision(id), before);
 }
+
+#[test]
+fn native_history_jump_restores_selected_position_and_rejects_invalid_targets() {
+    let (mut s, id, _) = fixture();
+    let end = s.history.position();
+    let before = s.timeline_revision(id);
+    apply(&mut s, id, &Operation::HistoryJump { position: 0 }).unwrap();
+    assert!(s.project.timelines.is_empty());
+    assert_eq!(s.history.position(), 0);
+    assert!(apply(&mut s, id, &Operation::HistoryJump { position: end + 1 }).is_err());
+    assert_eq!(s.history.position(), 0);
+    apply(&mut s, id, &Operation::HistoryJump { position: end }).unwrap();
+    assert_eq!(s.timeline_revision(id), before);
+    assert_eq!(s.history.position(), end);
+}

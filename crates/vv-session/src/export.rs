@@ -606,6 +606,36 @@ pub fn render_scope_source(
     ))
 }
 
+/// Opaque isolated composition for native Auto Balance, matching the viewer.
+pub fn render_balance_frame_rgba(
+    project: &Project,
+    timeline_id: TimelineId,
+    clip_id: vv_core::ClipId,
+    frame: FrameIdx,
+    size: (u32, u32),
+    compositor: &vv_render::Compositor,
+) -> Result<Vec<u8>, ExportError> {
+    let timeline = project
+        .timelines
+        .get(timeline_id)
+        .ok_or(ExportError::TimelineNotFound)?;
+    let isolation = scope_isolation(timeline, clip_id, frame)?;
+    let layers = decode_video_frame_isolated(
+        project,
+        timeline,
+        &mut StreamingFrameProvider::default(),
+        compositor,
+        frame,
+        timeline.resolution,
+        Some(isolation),
+    )?;
+    let layers: Vec<vv_render::Layer> = layers.iter().map(OwnedLayer::as_render).collect();
+    Ok(compositor.render_layers(
+        &layers,
+        vv_render::OutputFrame::scaled(size.0, size.1, timeline.resolution),
+    ))
+}
+
 fn scope_isolation(
     timeline: &Timeline,
     clip_id: vv_core::ClipId,

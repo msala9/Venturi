@@ -43,6 +43,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/commands/{id}", get(lookup))
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
+        .route("/api/v1/preview/balance/{clip}", get(balance))
         .route(
             "/api/v1/preview/scopes/{clip}/{first}/{second}",
             get(scopes),
@@ -378,7 +379,7 @@ async fn frame(
         return Err(ApiError(
             StatusCode::SERVICE_UNAVAILABLE,
             "GPU_UNAVAILABLE",
-            "Start with an available AMD Vulkan adapter",
+            "Start with an available native Vulkan compositor",
         ));
     }
     let query = query
@@ -403,6 +404,19 @@ async fn scopes(
         .await?;
     state.host.call(Action::CheckFrame(query)).await?;
     Ok(([(header::CONTENT_TYPE, "image/png")], data).into_response())
+}
+async fn balance(
+    State(state): State<AppState>,
+    Path(clip): Path<String>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid balance query"))?
+        .0;
+    let snapshot = state.host.frame_snapshot(query.clone()).await?;
+    let result = state.preview.balance(snapshot, &clip).await?;
+    state.host.call(Action::CheckFrame(query)).await?;
+    Ok(Json(result))
 }
 async fn timeline(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<Value>> {
     state.host.call(Action::Timeline(id)).await.map(Json)
@@ -553,6 +567,7 @@ async fn assets(request: Request) -> Response {
         "/js/api.js" => asset!("/web/js/api.js", "text/javascript"),
         "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),
         "/js/scopes.js" => asset!("/web/js/scopes.js", "text/javascript"),
+        "/js/balance.js" => asset!("/web/js/balance.js", "text/javascript"),
         "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),
         "/js/program.js" => asset!("/web/js/program.js", "text/javascript"),
         "/js/export.js" => asset!("/web/js/export.js", "text/javascript"),

@@ -112,6 +112,11 @@ pub enum Operation {
         clip_id: String,
         edits: Vec<crate::inspector::Keyframe>,
     },
+    ApplyGradeAtFrame {
+        clip_id: String,
+        frame: FrameIdx,
+        values: Vec<crate::visual::GradeValue>,
+    },
     Slip {
         clip_ids: Vec<String>,
         delta_frames: FrameIdx,
@@ -458,6 +463,11 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             crate::inspector::keyframes(session, id, clip_id, edits)?
         }
         Operation::EditFilter { clip_id, edit } => crate::visual::edit(session, id, clip_id, edit)?,
+        Operation::ApplyGradeAtFrame {
+            clip_id,
+            frame,
+            values,
+        } => crate::visual::apply_grade_at_frame(session, id, clip_id, *frame, values)?,
         Operation::EditMask { clip_id, edit } => crate::masks::edit(session, id, clip_id, edit)?,
         Operation::SetAudioEffects { channel, effects } => {
             crate::audio::set_effects(session, id, channel, effects)?

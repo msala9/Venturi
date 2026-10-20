@@ -226,6 +226,24 @@ is checked again before delivery. The UI rejects obsolete selections/kinds,
 updates only on stopped frames and marks retained scopes stale during scrubbing
 and composed playback. There is no browser-side signal measurement.
 
+## Native Auto Balance
+
+GET `/preview/balance/{clip}` takes the same FrameQuery and returns a native
+read-only Auto Balance suggestion plus its captured identity. It composes the
+same isolated track stage against opaque black, samples approximately 250k
+RGB pixels and calls vv-core::auto_balance. An enabled ColorCorrection filter
+is required. It shares the bounded preview worker/cache/lock and rechecks the
+document before delivery. Program seeks take precedence; balance requests take
+precedence over pending scopes. The browser refuses changed target/frame or
+document identity before committing the returned typed operation.
+
+Timeline `apply_grade_at_frame {clip_id,frame,values:[{param,value}]}` validates
+1–18 distinct native values, frame containment, video kind, track lock and
+combined wheel bounds before one native set_clip_filters command. Constant
+wheel rows change defaults; if any parameter in the wheel is animated, changes
+use native source-frame keys (Linear), matching desktop grading semantics.
+Unchanged analysis creates no command. Undo restores the complete filter stack.
+
 ## Explicit software compositor
 
 The launcher accepts --software-preview with only the installed lavapipe ICD,

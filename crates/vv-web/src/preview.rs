@@ -1,5 +1,5 @@
 use crate::error::{ApiError, Result};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
     collections::VecDeque,
@@ -14,7 +14,7 @@ use tokio::sync::oneshot;
 use vv_core::{Project, TimelineId};
 use vv_render::{Compositor, wgpu};
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct FrameQuery {
     pub timeline_id: String,
@@ -67,6 +67,16 @@ struct Job {
 enum FrameMode {
     Program,
     Scopes(vv_core::ClipId, [vv_render::ScopeKind; 2]),
+    Balance(vv_core::ClipId),
+}
+impl FrameMode {
+    fn priority(&self) -> u8 {
+        match self {
+            Self::Program => 2,
+            Self::Balance(_) => 1,
+            Self::Scopes(..) => 0,
+        }
+    }
 }
 #[derive(Clone, Copy)]
 enum AdapterChoice {
@@ -82,10 +92,9 @@ impl Queue {
     fn replace(&self, job: Job) {
         let mut pending = self.pending.lock().unwrap();
         // Analysis must not displace a pending Program seek.
-        if matches!(job.mode, FrameMode::Scopes(..))
-            && pending
-                .as_ref()
-                .is_some_and(|p| matches!(p.mode, FrameMode::Program))
+        if pending
+            .as_ref()
+            .is_some_and(|p| p.mode.priority() > job.mode.priority())
         {
             return;
         }
@@ -120,7 +129,7 @@ impl Preview {
     pub fn disabled() -> Self {
         Self {
             queue: None,
-            diagnostic: json!({"available":false,"reason":"Start with --gpu-device to enable a verified AMD Vulkan adapter"}),
+            diagnostic: json!({"available":false,"reason":"Select --gpu-device or use the launcher with --software-preview"}),
             rendered: Arc::new(AtomicBool::new(false)),
             config: None,
             gpu_gate: Arc::new(Mutex::new(())),
@@ -208,9 +217,9 @@ impl Preview {
                         poll_failed: &poll_failed,
                     };
                     compositor.set_precision(snapshot.project.precision);
-                    let (rgba, size) = match job.mode {
-                        FrameMode::Program => (
-                            vv_session::export::render_frame_rgba(
+                    let data = match job.mode {
+                        FrameMode::Program => encode_png(
+                            &vv_session::export::render_frame_rgba(
                                 &snapshot.project,
                                 snapshot.timeline,
                                 snapshot.query.frame,
@@ -227,11 +236,13 @@ impl Preview {
                             snapshot.size,
                         ),
                         FrameMode::Scopes(clip, kinds) => {
-                            render_scopes(&snapshot, clip, kinds, compositor)?
+                            let (rgba, size) = render_scopes(&snapshot, clip, kinds, compositor)?;
+                            encode_png(&rgba, size)
                         }
+                        FrameMode::Balance(clip) => balance_values(&snapshot, clip, compositor),
                     };
                     drop(permit);
-                    encode_png(&rgba, size)
+                    data
                 }))
                 .unwrap_or_else(|_| Err(unavailable()));
                 if poll_failed.load(Ordering::Relaxed) {
@@ -381,6 +392,15 @@ impl Preview {
         }
         self.render(snapshot, FrameMode::Scopes(clip, kinds)).await
     }
+    pub async fn balance(&self, snapshot: FrameSnapshot, clip: &str) -> Result<Value> {
+        let clip = vv_core::ClipId(
+            clip.parse()
+                .map_err(|_| ApiError::invalid("Invalid balance clip"))?,
+        );
+        balance_grade(&snapshot, clip)?;
+        let bytes = self.render(snapshot, FrameMode::Balance(clip)).await?;
+        serde_json::from_slice(&bytes).map_err(|_| ApiError::io())
+    }
     async fn render(&self, snapshot: FrameSnapshot, mode: FrameMode) -> Result<Vec<u8>> {
         let queue = self.queue.as_ref().ok_or_else(unavailable)?;
         let (tx, rx) = oneshot::channel();
@@ -393,6 +413,67 @@ impl Preview {
             ApiError::conflict("SEEK_SUPERSEDED", "A newer seek replaced this request")
         })?
     }
+}
+fn balance_grade(snapshot: &FrameSnapshot, clip: vv_core::ClipId) -> Result<vv_core::GradeValue> {
+    let clip = snapshot.project.timelines[snapshot.timeline]
+        .tracks
+        .iter()
+        .filter(|t| t.kind == vv_core::TrackKind::Video)
+        .flat_map(|t| &t.clips)
+        .find(|c| c.id == clip && c.contains(snapshot.query.frame))
+        .ok_or_else(|| ApiError::invalid("Select a video clip containing the balance frame"))?;
+    let grade = clip
+        .effects
+        .filters
+        .iter()
+        .find(|f| f.kind == vv_core::FilterKind::ColorCorrection && f.enabled)
+        .ok_or_else(|| ApiError::invalid("Enable ColorCorrection on the selected clip first"))?;
+    Ok(grade
+        .grade
+        .value_at(clip.source_frame_at(snapshot.query.frame)))
+}
+fn balance_values(
+    snapshot: &FrameSnapshot,
+    clip: vv_core::ClipId,
+    compositor: &Compositor,
+) -> Result<Vec<u8>> {
+    let grade = balance_grade(snapshot, clip)?;
+    let pixels = vv_session::export::render_balance_frame_rgba(
+        &snapshot.project,
+        snapshot.timeline,
+        clip,
+        snapshot.query.frame,
+        snapshot.size,
+        compositor,
+    )
+    .map_err(|_| {
+        ApiError::invalid("Native isolated balance rendering failed; check offline media")
+    })?;
+    let pixels = pixels.as_chunks::<4>().0;
+    let balanced = vv_core::auto_balance(
+        &grade,
+        pixels
+            .iter()
+            .step_by((pixels.len() / 250_000).max(1))
+            .map(|p| [p[0], p[1], p[2]].map(|c| c as f32 / 255.0)),
+    );
+    let values = vv_core::GradeParam::ALL
+        .into_iter()
+        .filter(|p| grade.get(*p) != balanced.get(*p))
+        .map(|param| crate::visual::GradeValue {
+            param,
+            value: balanced.get(param),
+        })
+        .collect();
+    let operation = crate::commands::Operation::ApplyGradeAtFrame {
+        clip_id: clip.0.to_string(),
+        frame: snapshot.query.frame,
+        values,
+    };
+    serde_json::to_vec(
+        &json!({"query":snapshot.query,"clip":clip.0.to_string(),"operation":operation}),
+    )
+    .map_err(|_| ApiError::io())
 }
 fn render_scopes(
     snapshot: &FrameSnapshot,

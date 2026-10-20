@@ -21,6 +21,121 @@ fn fixture() -> (Session, TimelineId, String) {
     (s, id, clip.0.to_string())
 }
 #[test]
+fn automatic_grade_values_use_native_source_keys_and_one_atomic_undo() {
+    let (mut session, id, raw) = fixture();
+    edit(
+        &mut session,
+        id,
+        &raw,
+        &FilterEdit::Add {
+            filter: FilterKind::ColorCorrection,
+        },
+    )
+    .unwrap();
+    session.project.timelines[id].tracks[0].clips[0].source_offset = 7;
+    crate::inspector::keyframe(
+        &mut session,
+        id,
+        &raw,
+        &crate::inspector::Keyframe {
+            target: crate::inspector::Target::Grade {
+                param: core::GradeParam::MidtonesLuma,
+            },
+            timeline_frame: 12,
+            value: Some(0.25),
+            interpolation: core::Interpolation::Hold,
+        },
+    )
+    .unwrap();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let history = session.history.position();
+    apply_grade_at_frame(
+        &mut session,
+        id,
+        &raw,
+        6,
+        &[
+            GradeValue {
+                param: core::GradeParam::MidtonesX,
+                value: 0.2,
+            },
+            GradeValue {
+                param: core::GradeParam::MidtonesY,
+                value: -0.1,
+            },
+            GradeValue {
+                param: core::GradeParam::ShadowsX,
+                value: 0.25,
+            },
+        ],
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), history + 1);
+    let grade = &session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .filters[0]
+        .grade;
+    assert_eq!(grade.track(core::GradeParam::MidtonesX).default, 0.0);
+    assert_eq!(grade.track(core::GradeParam::MidtonesX).value_at(13), 0.2);
+    assert!(
+        grade
+            .track(core::GradeParam::MidtonesY)
+            .keyframe_at(13)
+            .is_some()
+    );
+    assert_eq!(
+        grade.track(core::GradeParam::MidtonesLuma).keyframes(),
+        &[(19, 0.25, core::Interpolation::Hold)]
+    );
+    assert!(grade.track(core::GradeParam::ShadowsX).is_constant());
+    assert_eq!(grade.track(core::GradeParam::ShadowsX).default, 0.25);
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    for values in [
+        vec![],
+        vec![GradeValue {
+            param: core::GradeParam::ShadowsX,
+            value: 2.0,
+        }],
+        vec![
+            GradeValue {
+                param: core::GradeParam::ShadowsX,
+                value: 0.9,
+            },
+            GradeValue {
+                param: core::GradeParam::ShadowsY,
+                value: 0.9,
+            },
+        ],
+        vec![
+            GradeValue {
+                param: core::GradeParam::Saturation,
+                value: 1.0,
+            },
+            GradeValue {
+                param: core::GradeParam::Saturation,
+                value: 1.0,
+            },
+        ],
+    ] {
+        assert!(apply_grade_at_frame(&mut session, id, &raw, 6, &values).is_err());
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.position(), history);
+    }
+    let values = [GradeValue {
+        param: core::GradeParam::ShadowsX,
+        value: 0.2,
+    }];
+    assert!(apply_grade_at_frame(&mut session, id, &raw, 48, &values).is_err());
+    session.project.timelines[id].tracks[0].locked = true;
+    assert_eq!(
+        apply_grade_at_frame(&mut session, id, &raw, 6, &values)
+            .unwrap_err()
+            .1,
+        "TRACK_LOCKED"
+    );
+}
+#[test]
 fn filter_patches_are_atomic_and_preserve_native_grade_animation() {
     let (mut s, id, clip) = fixture();
     edit(

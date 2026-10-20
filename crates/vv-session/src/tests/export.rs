@@ -39,6 +39,16 @@ fn scope_isolation_ignores_covering_tracks_and_keeps_adjustment_inputs() {
         )
         .unwrap();
         let pixels = compositor.read_rgba_texture(&texture, 64, 36);
+        let balanced_input = render_balance_frame_rgba(
+            &project,
+            id,
+            vv_core::ClipId(clip),
+            0,
+            (64, 36),
+            &compositor,
+        )
+        .unwrap();
+        assert_eq!(balanced_input, pixels);
         assert!(
             pixels
                 .as_chunks::<4>()

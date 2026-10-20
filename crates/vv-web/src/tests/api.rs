@@ -145,6 +145,8 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/timeline/input.js", 200),
         ("/js/export.js", 200),
         ("/js/scopes.js", 200),
+        ("/js/balance.js", 200),
+        ("/api/v1/preview/balance/0", 422),
         ("/api/v1/preview/scopes/0/Invalid/Parade", 400),
         ("/api/v1/preview/scopes/0/Waveform/Parade", 422),
         ("/api/v1/exports/missing?project_epoch=p:1", 404),

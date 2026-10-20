@@ -9,6 +9,7 @@ import { detailIdentity, renderProperties, renderMarkers } from "./inspector.js"
 import { renderMixer } from "./mixer.js";
 import { createExportPanel } from "./export.js";
 import { createScopes, scopeTarget } from "./scopes.js";
+import { balanceSelected } from "./balance.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -84,9 +85,16 @@ function showWorkspace(name) {
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram"].includes(label)));
+    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance"].includes(label)));
     if (!button.disabled) button.addEventListener("click",()=>{
       if(name === "Color") {
+        if (label === "Auto balance") {
+          if (!writable || busy || unresolved) return notice("A connected writer is required");
+          button.disabled=true;notice("Analyzing the native isolated clip frame…");
+          balanceSelected({getTarget:()=>viewerMode === "program" && !scopePlayback ? scopeTarget(documentState,timeline,view.selection,view.playhead) : null,api:request,commit})
+            .then((changed)=>notice(changed ? "Native Auto Balance applied · one Undo step" : "No native balance correction needed"))
+            .catch((error)=>notice(error.message)).finally(()=>{button.disabled=false;});return;
+        }
         if (label === "Waveform / RGB parade / Vectorscope / Histogram") { scopes?.setVisible($("scopes").hidden); return; }
         const filters=document.querySelector('[data-visual-path="filters"]');if(!filters)return notice("Select a native video clip first");
         revealInspector();filters.open=true;filters.scrollIntoView({block:"start"});return;

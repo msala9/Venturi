@@ -183,6 +183,73 @@ pub fn wheel_palette() -> Value {
             .collect::<Vec<_>>()
     )
 }
+
+pub fn apply_grade_at_frame(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    frame: i64,
+    values: &[GradeValue],
+) -> Result<()> {
+    let (track, clip_id, clip) = inspector::find(session, id, raw)?;
+    inspector::writable(session, id, track)?;
+    if session.project.timelines[id].tracks[track].kind != core::TrackKind::Video
+        || !clip.contains(frame)
+        || values.is_empty()
+        || values.len() > core::GradeParam::COUNT
+    {
+        return Err(ApiError::invalid(
+            "Choose a video clip frame and 1–18 grade values",
+        ));
+    }
+    let source_frame = clip.source_frame_at(frame);
+    let mut filters = clip.effects.filters.clone();
+    let grade = &mut filters
+        .iter_mut()
+        .find(|f| f.kind == FilterKind::ColorCorrection && f.enabled)
+        .ok_or_else(|| ApiError::invalid("Enable ColorCorrection on the selected clip first"))?
+        .grade;
+    let animated = core::GradeParam::ALL.map(|param| {
+        core::GradeWheel::of(param).map_or_else(
+            || !grade.track(param).is_constant(),
+            |wheel| {
+                wheel
+                    .params()
+                    .iter()
+                    .any(|p| !grade.track(*p).is_constant())
+            },
+        )
+    });
+    let mut seen = std::collections::HashSet::new();
+    for entry in values {
+        if !seen.insert(entry.param) {
+            return Err(ApiError::invalid("Duplicate grade parameter"));
+        }
+        let range = entry.param.range();
+        bounded(entry.value, (*range.start(), *range.end()))?;
+        if animated[entry.param.index()] {
+            grade.track_mut(entry.param).upsert(
+                source_frame,
+                entry.value,
+                core::Interpolation::Linear,
+            );
+        } else {
+            grade.track_mut(entry.param).default = entry.value;
+        }
+    }
+    let evaluated = grade.value_at(source_frame);
+    for wheel in core::GradeWheel::ALL {
+        if evaluated.get(wheel.x()).hypot(evaluated.get(wheel.y())) > 1.000001 {
+            return Err(ApiError::invalid(
+                "Grade wheel offsets must stay inside the unit disc",
+            ));
+        }
+    }
+    session.apply(Box::new(core::set_clip_filters(
+        id, track, clip_id, filters,
+    )));
+    Ok(())
+}
 pub fn wheels() -> Value {
     json!(core::GradeWheel::ALL.map(|wheel|json!({"name":format!("{wheel:?}"),"x":wheel.x(),"y":wheel.y(),"luma":wheel.luma(),"saturation":wheel.saturation()})))
 }

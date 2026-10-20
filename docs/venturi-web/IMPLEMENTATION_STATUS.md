@@ -790,3 +790,29 @@ MP4 decoded all 48 video frames, video 2.000s/AAC 2.005s. Process inspection
 found no DRI/KFD handles or mapped RADV library while the shared lock was busy.
 Evidence: m3-halo2-software-export* and m3-halo2-software-isolation.json. This
 synthetic fixture is not a general performance benchmark or AMD qualification.
+
+## M5 independent increment — native Auto Balance
+
+Auto Balance analyzes the selected clip's isolated native stack, with lower
+tracks for adjustments and opaque black as in the desktop viewer. The bounded
+worker calls vv-core::auto_balance on approximately 250k RGB samples, returning
+a read-only suggestion with captured identity. Program seeks take precedence;
+pending scopes cannot displace balance. An enabled ColorCorrection is required.
+The browser refuses obsolete selection/frame/document results before one typed,
+revision/idempotency guarded native filter command. Constants change defaults;
+animated wheel rows write native source-frame keys, matching desktop semantics.
+
+Windows/WSL: frame zero of the trimmed graded fixture maps to source frame 7.
+Auto Balance corrected Midtones X/Y through keys at 7, retaining the existing
+MidtonesLuma key; Highlights X/Y changed their constant defaults. All other
+filters stayed identical. Exactly one native Filters history entry was created;
+one Undo restored the entire original stack. Redo/Save As created the separate
+Auto_balance_UI_check fixture. Evidence: m5-native-auto-balance.json/browser.png.
+Color bars test command/state fidelity, not aesthetic suitability of automatic
+correction. R9700 Auto Balance acceptance remains open.
+
+55 web Rust tests and 25 JavaScript tests pass, including animated wheel grouping,
+source-frame mapping, single undo, atomic invalid/locked refusal and obsolete
+analysis rejection. The native isolated render test now also checks opaque
+Auto Balance pixels. Formatting, web/session clippy, native desktop check and
+web build pass. Curves, presets, live scopes and remaining M5/M6/M7 work are open.

@@ -1,0 +1,90 @@
+{
+  "job": {
+    "error": null,
+    "frames": 0,
+    "id": "1792512588541149065",
+    "program": {
+      "end_frame": 10,
+      "export_settings": {
+        "audio": true,
+        "preset": "medium",
+        "quality": 23
+      },
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "0",
+      "height": 540,
+      "project_epoch": "1792512528360150508:1",
+      "revision": "40a1b21471badafb",
+      "start_frame": 2,
+      "width": 960
+    },
+    "progress": {
+      "compose_fps": 26.827902809684584,
+      "compositor": "llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan)",
+      "current_frame": 8,
+      "decode_fps": 965.6004828002414,
+      "elapsed_ms": 641.2099900000001,
+      "encode_fps": 46.18583064093515,
+      "encoder": "X264",
+      "fps": 12.476411978546997,
+      "startup_ms": 193.39219699999998,
+      "total_frames": 8
+    },
+    "source_asset": null,
+    "state": "ready"
+  },
+  "download_bytes": 45492,
+  "download_sha256": "689cbddb7ceafbd928c68ca66952eaa4043c74cd9c8846cc2652b8ef7bd64a09",
+  "streams": [
+    {
+      "codec_name": "h264",
+      "codec_type": "video",
+      "width": 960,
+      "height": 540,
+      "nb_read_frames": "8",
+      "duration": "0.333333",
+      "channels": null,
+      "sample_rate": null
+    },
+    {
+      "codec_name": "aac",
+      "codec_type": "audio",
+      "width": null,
+      "height": null,
+      "nb_read_frames": "16",
+      "duration": "0.341000",
+      "channels": 2,
+      "sample_rate": "48000"
+    }
+  ],
+  "isolation": {
+    "pid": "94770",
+    "hardware_device_handles": [],
+    "radv_driver_loaded": false,
+    "environment": {
+      "VK_DRIVER_FILES": "/usr/share/vulkan/icd.d/lvp_icd.json",
+      "LP_NUM_THREADS": "2",
+      "TOKIO_WORKER_THREADS": "2"
+    },
+    "diagnostics": {
+      "preview": {
+        "active_programs": 0,
+        "available": true,
+        "backend": "Vulkan",
+        "device_id": "0x0000",
+        "driver": "llvmpipe",
+        "driver_info": "Mesa 26.0.3-1ubuntu1 (LLVM 21.1.8)",
+        "exact_context_resident": false,
+        "frame_rendered": true,
+        "name": "llvmpipe (LLVM 21.1.8, 256 bits)",
+        "resident": false,
+        "software": true,
+        "vendor_id": "0x10005"
+      }
+    }
+  },
+  "scope": "Windows browser end-to-end native Export using isolated CPU lavapipe; does not qualify AMD GPU export"
+}

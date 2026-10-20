@@ -85,6 +85,9 @@ enum Work {
     Program(Box<ProgramTask>),
 }
 impl MediaJobs {
+    pub fn software_lock_path(&self) -> PathBuf {
+        self.root.join("software.lock")
+    }
     pub fn start() -> std::io::Result<Self> {
         let root = std::env::temp_dir().join(format!(
             "venturi-web-media-{}-{}",

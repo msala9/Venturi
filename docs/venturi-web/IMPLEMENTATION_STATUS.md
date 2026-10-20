@@ -731,3 +731,28 @@ cover locked-source copy, locked/overlap refusal with complete state equality,
 effect/key/mask preservation, fresh groups/IDs, internal crossings, missing
 tracks in one undo, FPS/epoch/cycle rejection and host retry-safe copy/paste.
 This remains bounded Edit parity, not clipboard interchange with other apps.
+
+## Independent increment — explicit isolated software preview and export proof
+
+The opt-in --software-preview launcher selects only the installed lavapipe
+driver before native Vulkan enumeration, bounds renderer/Tokio threads at two,
+and refuses privileged or ambiguous configurations. It uses a private cache
+lock, keeping all hardware paths under the shared nonblocking laboratory lock.
+The UI labels CPU/llvmpipe explicitly; this mode does not qualify AMD hardware.
+No kernel/ROCm/inference configuration or foreign process is changed.
+
+Windows browser export of the graded/effected trimmed A/V fixture used frames
+2..10, width 960, CRF 23/medium and AAC. The downloaded 45,492-byte MP4 contains
+exactly eight H.264 frames (0.333333s) and stereo 48kHz AAC (0.341s). Native
+preparation took 641.21ms on WSL llvmpipe. After a real timeline mute command,
+the old export remained ready/HTTP 200 with identical SHA-256 bytes. Undo/Save
+restored the fixture. Browser reload recovered the ready job; a second native
+12-frame export canceled after one frame. CPU process inspection found no
+DRI/KFD handles and no mapped RADV driver. Evidence: m3-export-software-*.
+
+Completed export links now show their captured range/settings, so reload or
+form edits cannot imply that an earlier download uses the new form values.
+54 web Rust tests, 22 JS tests, formatting, clippy and build pass. Tests cover
+software driver/privilege/thread guards and private lock behavior. Successful
+R9700 Export and fresh whole-job reservation acceptance still await shared
+hardware availability; M4/M5/M6/M7 remaining parity is unchanged.

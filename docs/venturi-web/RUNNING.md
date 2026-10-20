@@ -130,10 +130,10 @@ the configured root. Import warnings appear in Projects.
   Reusing the ID with a different request fails. IDs are never silently evicted.
 - Acknowledgments are compact. Fetch `/session` after applying or recovering
   a command. Transport failure triggers same-ID lookup, never a fresh replay.
-- Explicit capabilities report preview and Program playback true only when the
-  requested AMD Vulkan compositor initializes. Program playback implementation
-  still awaits M3c hardware acceptance. Source playback also works CPU-only;
-  user-facing export remains unavailable.
+- Explicit capabilities report preview, Program playback and export only when
+  the selected native Vulkan compositor initializes. Hardware mode selects the
+  requested AMD device; explicit software mode reports software_preview true.
+  Source playback also works without a compositor.
 - GET `/preview/frame` requires project_epoch, if_generation, timeline_id,
   revision, frame and optional width (default 960). Returns a composed PNG;
   stale revisions are refused, a replaced pending job returns SEEK_SUPERSEDED,
@@ -190,6 +190,34 @@ Open that fixture in the browser first. The script waits for the shared lock
 and compares three native frames before its 500-seek check. It never stops a
 foreign workload. RADV currently emits a nonconformance/testing warning;
 these results do not qualify the driver for production.
+
+## Explicit CPU preview while hardware is reserved
+
+Software compositing is optional and never a silent hardware fallback:
+
+```bash
+bash scripts/venturi-web.sh --software-preview --listen 127.0.0.1:8790
+```
+
+The launcher selects only the installed Mesa lavapipe ICD using the process
+environment VK_DRIVER_FILES, and caps LP_NUM_THREADS and Tokio workers at two.
+The native decoder/encoder workers remain bounded at two. No global Vulkan
+configuration or inference setting changes. The server verifies the installed
+lavapipe manifest, an unprivileged Linux process and one or two renderer threads
+before creating a Vulkan instance. Mixed driver discovery and simultaneous
+--gpu-device are refused. This mode uses a private cache lock rather than the
+laboratory hardware lock. The UI identifies CPU/llvmpipe explicitly.
+
+Exact frames, composed Program playback and x264/AAC export still use the
+native Venturi pipeline. They can be slower than real time. The Windows export
+fixture produced exactly eight 960x540 H.264 frames and stereo AAC; its completed
+bytes survived a timeline edit and its status survived browser reload. A second
+export canceled during native preparation. The WSL process had no DRI/KFD
+handles and did not map the RADV library. These are software acceptance results,
+not R9700 export acceptance. See m3-export-software-* evidence.
+
+Driver isolation follows the official [Vulkan loader driver selection](https://github.com/KhronosGroup/Vulkan-Loader/blob/main/docs/LoaderDriverInterface.md);
+the renderer thread cap uses Mesa's [LP_NUM_THREADS](https://docs.mesa3d.org/envvars.html#lp-num-threads).
 
 ## Checks
 

@@ -18,10 +18,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut listen = "127.0.0.1:8787".parse::<std::net::SocketAddr>()?;
     let mut root = std::path::PathBuf::from("venturi-web-data");
     let mut gpu = None;
+    let mut software = false;
     let mut gpu_lock = std::path::PathBuf::from("/tmp/HALO_BENCHMARK.lock");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--software-preview" => software = true,
             "--gpu-device" => {
                 let id = args
                     .next()
@@ -38,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "--help" => {
                 println!(
-                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551] [--gpu-lock FILE]\nOnly loopback addresses are supported."
+                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE]\nOnly loopback addresses are supported. Use the launcher for isolated software preview."
                 );
                 return Ok(());
             }
@@ -48,17 +50,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if !listen.ip().is_loopback() {
         return Err("Only loopback listening is supported; use an SSH tunnel".into());
     }
+    if software && gpu.is_some() {
+        return Err("Choose either AMD GPU or explicit software preview".into());
+    }
+    if software {
+        preview::software_environment()?;
+    }
     let listener = tokio::net::TcpListener::bind(listen).await?;
+    let source = source::MediaJobs::start()?;
+    let preview = if software {
+        preview::Preview::start_software(&source.software_lock_path())
+    } else {
+        gpu.map(|id| preview::Preview::start(id, &gpu_lock))
+            .unwrap_or_else(preview::Preview::disabled)
+    };
     println!("Venturi Web: http://{listen}");
     axum::serve(
         listener,
         api::router(api::AppState {
             host: host::Host::start(&root)?,
-            source: source::MediaJobs::start()?,
+            source,
             port: listen.port(),
-            preview: gpu
-                .map(|id| preview::Preview::start(id, &gpu_lock))
-                .unwrap_or_else(preview::Preview::disabled),
+            preview,
         }),
     )
     .with_graceful_shutdown(async {

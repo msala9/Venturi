@@ -137,7 +137,7 @@ async fn prepare_program(
         return Err(ApiError(
             StatusCode::SERVICE_UNAVAILABLE,
             "GPU_UNAVAILABLE",
-            "An initialized AMD Vulkan compositor is required for Program playback",
+            "An initialized native Vulkan compositor is required for Program playback",
         ));
     }
     let query = payload
@@ -355,6 +355,11 @@ async fn session(State(state): State<AppState>) -> Result<Json<Value>> {
     snapshot["capabilities"]["source_playback"] = json!(true);
     snapshot["capabilities"]["playback"] = json!(state.preview.available());
     snapshot["capabilities"]["export"] = json!(state.preview.available());
+    snapshot["capabilities"]["software_preview"] = json!(
+        state.preview.diagnostic()["software"]
+            .as_bool()
+            .unwrap_or(false)
+    );
     Ok(Json(snapshot))
 }
 async fn diagnostics(State(state): State<AppState>) -> Json<Value> {

@@ -92,7 +92,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
         job = await response.json();
         if (seq !== sequence || !sameComposition(current, getState())) return;
       }
-      if (job.state !== "ready") throw new Error(job.error === "GPU_BUSY" ? "GPU_BUSY · retry after the inference workload releases the GPU" : (job.error || `Composition ${job.state}`));
+      if (job.state !== "ready") throw new Error(job.error === "GPU_BUSY" ? "GPU_BUSY · retry after the inference workload releases the GPU" : job.error === "RENDER_BUSY" ? "The CPU compositor is preparing another job · wait or cancel it" : (job.error || `Composition ${job.state}`));
       query = { ...current, fps: job.program.fps };
       video.src = `/api/v1/preview/program/${encodeURIComponent(job.id)}/program.mp4?${new URLSearchParams(current)}`;
       setState("ready"); status.textContent = `COMPOSED PREVIEW · ${job.program.width}×${job.program.height} · revision ${current.revision.slice(0, 8)}`;

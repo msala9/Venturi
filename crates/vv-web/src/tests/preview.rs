@@ -92,3 +92,56 @@ fn program_stage_descriptors_keep_the_same_global_reservation_until_all_are_drop
     drop(gpu_lock(&path).unwrap());
     std::fs::remove_file(path).unwrap();
 }
+
+#[test]
+fn software_preview_refuses_ambiguous_drivers_privileges_and_unbounded_threads() {
+    let driver = Path::new("/usr/share/vulkan/icd.d/lvp_icd.json");
+    let manifest = json!({"ICD":{"library_path":"libvulkan_lvp.so"}});
+    let normal =
+        "Uid:\t1000\t1000\t1000\t1000\nGid:\t1000\t1000\t1000\t1000\nCapEff:\t0000000000000000\n";
+    assert!(software_settings(driver, &manifest, 2, normal).is_ok());
+    for threads in [0, 3, 256] {
+        assert!(software_settings(driver, &manifest, threads, normal).is_err());
+    }
+    assert!(
+        software_settings(
+            Path::new("/usr/share/vulkan/icd.d/radeon_icd.json"),
+            &manifest,
+            2,
+            normal
+        )
+        .is_err()
+    );
+    assert!(software_settings(Path::new("/tmp/lvp_icd.json"), &manifest, 2, normal).is_err());
+    assert!(
+        software_settings(
+            driver,
+            &json!({"ICD":{"library_path":"libvulkan_radeon.so"}}),
+            2,
+            normal
+        )
+        .is_err()
+    );
+    for privileged in [
+        normal.replace("1000", "0"),
+        normal.replace("1000\t1000\t1000\t1000", "1000\t0\t1000\t1000"),
+        normal.replace("CapEff:\t0000000000000000", "CapEff:\t0000000000000001"),
+    ] {
+        assert!(software_settings(driver, &manifest, 2, &privileged).is_err());
+    }
+}
+
+#[test]
+fn software_jobs_use_private_cache_locks_instead_of_the_hardware_reservation() {
+    let media = crate::source::MediaJobs::start().unwrap();
+    let path = media.software_lock_path();
+    assert!(path.starts_with(std::env::temp_dir()));
+    assert_eq!(path.file_name().unwrap(), "software.lock");
+    let owner = render_lock(&path, AdapterChoice::Software).unwrap();
+    assert_eq!(
+        render_lock(&path, AdapterChoice::Software).unwrap_err().1,
+        "RENDER_BUSY"
+    );
+    drop(owner);
+    drop(render_lock(&path, AdapterChoice::Software).unwrap());
+}

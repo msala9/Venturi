@@ -19,6 +19,11 @@ export function createExportPanel({ form, status, cancel, refresh, download, get
     const progress = job.progress;
     status.textContent = `${job.state.toUpperCase()} · ${progress?.current_frame || 0}/${progress?.total_frames || "…"} frames${job.error ? ` · ${job.error}` : ""}${progress?.compositor ? ` · ${progress.compositor} · ${progress.encoder}` : ""}`;
     download.hidden = job.state !== "ready";
+    if(job.program) {
+      const output=job.program,settings=output.export_settings;
+      status.textContent+=` · snapshot frames ${output.start_frame}–${output.end_frame} · ${output.width}×${output.height}`;
+      download.textContent=`Download MP4 · frames ${output.start_frame}–${output.end_frame}${settings ? ` · CRF ${settings.quality} ${settings.preset}${settings.audio ? " + AAC" : " · silent"}` : ""}`;
+    }
     if (!download.hidden) download.href = `/api/v1/exports/${encodeURIComponent(current.id)}/export.mp4?${new URLSearchParams({ project_epoch: current.epoch })}`;
     clearTimeout(timer);
     if (busy) timer = setTimeout(poll, 500);

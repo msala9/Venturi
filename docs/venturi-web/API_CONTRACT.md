@@ -210,6 +210,16 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   filter_amount, filter_grow and filter_offset. `set_keyframes {clip_id,edits}`
   prevalidates 1–64 edits and applies one native composite history step.
 
+## Explicit software compositor
+
+The launcher accepts --software-preview with only the installed lavapipe ICD,
+an unprivileged Linux process and at most two renderer threads. It is mutually
+exclusive with --gpu-device. Capabilities expose software_preview and native
+diagnostics expose software, adapter/driver and actual residency. This mode uses
+a private cache lock and returns RENDER_BUSY for contention; AMD paths retain
+the shared hardware reservation and GPU_BUSY. Preview, Program and Export use
+the same bounded native pipeline in both modes. No automatic hardware fallback.
+
 ## Native export adapter (bounded first release)
 
 POST `/exports` accepts `{range: ProgramQuery, settings:{quality,preset,audio}}`.

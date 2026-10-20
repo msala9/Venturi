@@ -62,6 +62,11 @@ struct Job {
     snapshot: FrameSnapshot,
     reply: oneshot::Sender<Result<Vec<u8>>>,
 }
+#[derive(Clone, Copy)]
+enum AdapterChoice {
+    Amd(u32),
+    Software,
+}
 #[derive(Default)]
 struct Queue {
     pending: Mutex<Option<Job>>,
@@ -91,7 +96,7 @@ pub struct Preview {
     queue: Option<Arc<Queue>>,
     diagnostic: Value,
     rendered: Arc<AtomicBool>,
-    config: Option<(u32, PathBuf)>,
+    config: Option<(AdapterChoice, PathBuf)>,
     gpu_gate: Arc<Mutex<()>>,
     resident: Arc<AtomicBool>,
     active_programs: Arc<AtomicUsize>,
@@ -109,6 +114,12 @@ impl Preview {
         }
     }
     pub fn start(device: u32, lock_path: &Path) -> Self {
+        Self::start_adapter(AdapterChoice::Amd(device), lock_path)
+    }
+    pub fn start_software(lock_path: &Path) -> Self {
+        Self::start_adapter(AdapterChoice::Software, lock_path)
+    }
+    fn start_adapter(device: AdapterChoice, lock_path: &Path) -> Self {
         let queue = Arc::new(Queue::default());
         let worker = queue.clone();
         let path = lock_path.to_owned();
@@ -123,7 +134,7 @@ impl Preview {
         std::thread::spawn(move || {
             let initialized = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let _local = worker_gate.lock().unwrap();
-                let _lock = gpu_lock(&path)?;
+                let _lock = render_lock(&path, device)?;
                 create_compositor(device)
             }))
             .unwrap_or_else(|_| Err(unavailable()));
@@ -168,7 +179,7 @@ impl Preview {
                 let poll_failed = AtomicBool::new(false);
                 let mut result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     let local = worker_gate.lock().unwrap_or_else(|p| p.into_inner());
-                    let global = gpu_lock(&path)?;
+                    let global = render_lock(&path, device)?;
                     if compositor.is_none() {
                         compositor = Some(create_compositor(device)?.0);
                         worker_resident.store(true, Ordering::Relaxed);
@@ -235,7 +246,7 @@ impl Preview {
             },
             _ => Self {
                 queue: None,
-                diagnostic: json!({"available":false,"reason":"AMD Vulkan device initialization failed or hardware lock is busy"}),
+                diagnostic: json!({"available":false,"reason":"Selected Vulkan compositor initialization failed or render lock is busy"}),
                 rendered,
                 config: None,
                 gpu_gate,
@@ -257,7 +268,7 @@ impl Preview {
     ) -> Result<()> {
         use vv_session::export::ExportError;
         let (device, path) = self.config.as_ref().ok_or_else(unavailable)?;
-        let program_lock = gpu_lock(path)?;
+        let program_lock = render_lock(path, *device)?;
         self.active_programs.fetch_add(1, Ordering::Relaxed);
         let _active = ProgramLease(&self.active_programs);
         let poll_failed = AtomicBool::new(false);
@@ -335,7 +346,7 @@ fn unavailable() -> ApiError {
     ApiError(
         axum::http::StatusCode::SERVICE_UNAVAILABLE,
         "GPU_UNAVAILABLE",
-        "The selected AMD Vulkan compositor is unavailable",
+        "The selected native Vulkan compositor is unavailable",
     )
 }
 fn gpu_lock(path: &Path) -> Result<File> {
@@ -357,7 +368,79 @@ fn gpu_lock(path: &Path) -> Result<File> {
     )?;
     Ok(file)
 }
-fn create_compositor(device: u32) -> Result<(Compositor, Value)> {
+fn render_lock(path: &Path, choice: AdapterChoice) -> Result<File> {
+    gpu_lock(path).map_err(|error| match choice {
+        AdapterChoice::Software if error.1 == "GPU_BUSY" => ApiError(
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            "RENDER_BUSY",
+            "The software compositor is preparing another native job",
+        ),
+        _ => error,
+    })
+}
+pub fn software_environment() -> std::result::Result<(), String> {
+    let driver = std::env::var_os("VK_DRIVER_FILES").ok_or(
+        "Use scripts/venturi-web.sh --software-preview to select the CPU-only Vulkan driver",
+    )?;
+    let driver = Path::new(&driver);
+    let manifest: Value = serde_json::from_slice(
+        &std::fs::read(driver).map_err(|_| "Mesa lavapipe manifest is unavailable")?,
+    )
+    .map_err(|_| "Invalid lavapipe driver manifest")?;
+    let threads = std::env::var("LP_NUM_THREADS")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(0);
+    let status = std::fs::read_to_string("/proc/self/status")
+        .map_err(|_| "Cannot verify unprivileged software rendering")?;
+    software_settings(driver, &manifest, threads, &status)
+}
+fn software_settings(
+    driver: &Path,
+    manifest: &Value,
+    threads: u32,
+    status: &str,
+) -> std::result::Result<(), String> {
+    let unprivileged = status
+        .lines()
+        .find(|l| l.starts_with("Uid:"))
+        .and_then(|line| {
+            let ids = line
+                .split_whitespace()
+                .skip(1)
+                .map(str::parse::<u32>)
+                .collect::<std::result::Result<Vec<_>, _>>()
+                .ok()?;
+            Some(ids.len() == 4 && ids[0] != 0 && ids.iter().all(|id| *id == ids[0]))
+        })
+        .unwrap_or(false)
+        && status
+            .lines()
+            .find(|l| l.starts_with("Gid:"))
+            .is_some_and(|line| {
+                let ids = line.split_whitespace().skip(1).collect::<Vec<_>>();
+                ids.len() == 4 && ids.iter().all(|id| *id == ids[0])
+            })
+        && status.lines().any(|line| {
+            line.strip_prefix("CapEff:")
+                .is_some_and(|value| value.trim() == "0000000000000000")
+        });
+    if driver.parent() != Some(Path::new("/usr/share/vulkan/icd.d"))
+        || !driver
+            .file_name()
+            .is_some_and(|name| name.to_string_lossy().starts_with("lvp_icd"))
+        || manifest["ICD"]["library_path"] != "libvulkan_lvp.so"
+        || !(1..=2).contains(&threads)
+        || !unprivileged
+    {
+        return Err("Software preview requires an unprivileged process, only the installed lavapipe ICD and LP_NUM_THREADS=1 or 2".into());
+    }
+    Ok(())
+}
+fn create_compositor(choice: AdapterChoice) -> Result<(Compositor, Value)> {
+    if matches!(choice, AdapterChoice::Software) {
+        software_environment().map_err(|_| unavailable())?;
+    }
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::VULKAN,
         ..wgpu::InstanceDescriptor::new_without_display_handle()
@@ -366,9 +449,18 @@ fn create_compositor(device: u32) -> Result<(Compositor, Value)> {
         .into_iter()
         .find(|adapter| {
             let info = adapter.get_info();
-            info.vendor == 0x1002
-                && info.device == device
-                && info.device_type != wgpu::DeviceType::Cpu
+            match choice {
+                AdapterChoice::Amd(device) => {
+                    info.vendor == 0x1002
+                        && info.device == device
+                        && info.device_type != wgpu::DeviceType::Cpu
+                }
+                AdapterChoice::Software => {
+                    info.vendor == 0x10005
+                        && info.device_type == wgpu::DeviceType::Cpu
+                        && (info.name.contains("llvmpipe") || info.name.contains("lavapipe"))
+                }
+            }
         })
         .ok_or_else(unavailable)?;
     let info = adapter.get_info();
@@ -386,7 +478,7 @@ fn create_compositor(device: u32) -> Result<(Compositor, Value)> {
     );
     Ok((
         compositor,
-        json!({"available":true,"name":info.name,"vendor_id":format!("0x{:04x}",info.vendor),"device_id":format!("0x{:04x}",info.device),"backend":"Vulkan","driver":info.driver,"driver_info":info.driver_info,"software":false}),
+        json!({"available":true,"name":info.name,"vendor_id":format!("0x{:04x}",info.vendor),"device_id":format!("0x{:04x}",info.device),"backend":"Vulkan","driver":info.driver,"driver_info":info.driver_info,"software":matches!(choice,AdapterChoice::Software)}),
     ))
 }
 pub fn frame_size(full: (u32, u32), width: u32) -> Result<(u32, u32)> {

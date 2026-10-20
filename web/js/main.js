@@ -227,7 +227,7 @@ function updatePlayAvailability() {
   $("step-back").disabled = !!still;
   $("step-forward").disabled = !!still;
   $("source-quality").disabled = !!still;
-  $("play").title = viewerMode === "source" ? "Play source media" : "Play composed timeline · requires an available render GPU";
+  $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
   viewerMode = mode;
@@ -986,7 +986,7 @@ async function diagnostics() {
   try {
     const d = await request("/diagnostics");
     $("gpu-status").textContent = d.preview.available
-      ? `${d.preview.name} · Vulkan`
+      ? `${d.preview.software ? "CPU · " : ""}${d.preview.name} · Vulkan`
       : "GPU preview unavailable";
   } catch {}
 }

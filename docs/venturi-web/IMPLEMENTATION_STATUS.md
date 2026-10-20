@@ -508,3 +508,32 @@ complete 7200-frame protocol. The corrected full GPU/browser run remains
 pending. D41 reacquired the shared slot at 14:38:25 UTC for a short A/B,
 with stated hard bound 14:55 UTC. Venturi returns to CPU-only during that slot;
 the cached file playback itself does not use the server GPU.
+
+## M1/M3 measured acceptance increment — Canvas and five-minute A/V
+
+After D41's effective 14:45:08 UTC release and a fresh nonblocking free-lock
+check, the corrected native R9700 Program API rendered the entire range
+0..7200 at 640x360/24fps. Preparation took 1.979s on the synthetic solid/flash
+fixture; this rate is not a complex-edit performance claim. H.264 decodes
+exactly 7200 frames over 300.000s; stereo AAC lasts 300.010s. All five beep
+onsets (0/60/120/180/240s) differ from their corresponding flashes by one
+48kHz sample (0.0005 video frames), with no accumulated file drift.
+
+Windows Chromium completed continuous playback with sound enabled,
+readyState 4, media time 300.010s, total_frames 7200, dropped_frames 1 and
+7199 presented frames reported by requestVideoFrameCallback. This measures
+the browser's counters and encoded A/V alignment, not physical speaker/display
+latency. After preparation the server had no resident compositor, active
+Program jobs or GPU/KFD file handles. Evidence: m3c-r9700-five-minute-sync.json,
+m3c-r9700-five-minute-browser.json/png. Large effects-heavy timelines remain
+unqualified; original Mesa nonconformant/testing warning still applies.
+
+A development-only page exercises the production Canvas renderer for 720
+animation frames (60 warmup, 660 measured), 500 clips on eight tracks with
+thumbnail/waveform assets, pan, zoom, selection and move ghost. Windows
+Chromium at actual DPR 1.25, 1280x720 viewport, 1225x540 Canvas: paint CPU
+p50/p95 0.70/1.40ms; rAF interval p50/p95 16.70/17.10ms, max 28.70ms, two
+intervals above 25ms. The tab stayed visible. Paint time excludes browser
+raster/compositing. Optional timing is inactive in normal production use;
+the fixture is not an embedded host route. Evidence:
+m1-canvas-500-clips-browser.json/png. OS 100%/150% scaling checks remain open.

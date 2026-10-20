@@ -1,0 +1,30 @@
+{
+  "clips": 500,
+  "tracks": 8,
+  "frames": 720,
+  "warmup_frames": 60,
+  "samples": 660,
+  "device_pixel_ratio": 1.25,
+  "viewport": [
+    1280,
+    720
+  ],
+  "canvas_css": [
+    1225,
+    540
+  ],
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "hidden_during_run": false,
+  "paint_ms": {
+    "p50": 0.7000002861022949,
+    "p95": 1.4000000953674316,
+    "max": 2.8000001907348633
+  },
+  "raf_interval_ms": {
+    "p50": 16.699999809265137,
+    "p95": 17.100000381469727,
+    "max": 28.700000286102295
+  },
+  "over_25ms": 2,
+  "scope": "Windows browser, actual reported DPR only; not an OS 100/125/150% scaling matrix or hardware Program playback"
+}

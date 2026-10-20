@@ -1,0 +1,103 @@
+{
+  "job": {
+    "error": null,
+    "frames": 0,
+    "id": "1792507695780417747",
+    "program": {
+      "end_frame": 7200,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "0",
+      "height": 360,
+      "project_epoch": "1792507663539651161:1",
+      "revision": "fe0e10e7ec7b8d18",
+      "start_frame": 0,
+      "width": 640
+    },
+    "progress": {
+      "compose_fps": 3882.4139436055593,
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "current_frame": 7200,
+      "decode_fps": 3912.0123696005517,
+      "elapsed_ms": 1978.5091559999998,
+      "encode_fps": 5102.8293502687375,
+      "encoder": "X264",
+      "fps": 3639.103705012119,
+      "startup_ms": 68.672152,
+      "total_frames": 7200
+    },
+    "source_asset": null,
+    "state": "ready"
+  },
+  "validation": {
+    "renderer": "R9700 native Program API compositor; see native progress record",
+    "video_frames": 7200,
+    "audio_samples": 14400512,
+    "flash_frames": [
+      0,
+      1440,
+      2880,
+      4320,
+      5760
+    ],
+    "audio_onset_seconds": [
+      2.0833333333333333e-05,
+      60.00002083333333,
+      120.00002083333334,
+      180.00002083333334,
+      240.00002083333334
+    ],
+    "av_error_frames": [
+      0.0005,
+      0.0004999999999313332,
+      0.0005000000001018634,
+      0.0005000000001018634,
+      0.0005000000001018634
+    ],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 640,
+        "height": 360,
+        "r_frame_rate": "24/1",
+        "sample_rate": null,
+        "channels": null,
+        "duration": "300.000000",
+        "nb_frames": "7200"
+      },
+      {
+        "codec_name": "aac",
+        "codec_type": "audio",
+        "width": null,
+        "height": null,
+        "r_frame_rate": "0/0",
+        "sample_rate": "48000",
+        "channels": 2,
+        "duration": "300.010000",
+        "nb_frames": "14064"
+      }
+    ]
+  },
+  "diagnostics_after": {
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    }
+  },
+  "server_gpu_handles_after": [],
+  "artifact": "/home/marco/AI-lab/venturi-web/.runtime/program-sync-1792507695780417747",
+  "query": "project_epoch=1792507663539651161%3A1&if_generation=0&timeline_id=1&revision=fe0e10e7ec7b8d18&start_frame=0&end_frame=7200&width=960"
+}

@@ -1,10 +1,11 @@
 import { HEADER, RULER, TRACK, frameToX, visibleRange } from "./geometry.js";
-export function createDraw(canvas, getTimeline, view, getAssets = () => new Map()) {
+export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint) {
   const ctx = canvas.getContext("2d");
   let queued = false;
   const colors = getComputedStyle(document.documentElement);
   const color = (name) => colors.getPropertyValue(name).trim();
   const paint = () => {
+    const started = onPaint ? performance.now() : 0;
     queued = false;
     const width = canvas.clientWidth,
       height = canvas.clientHeight,
@@ -160,6 +161,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       ctx.strokeStyle = color("--violet");
       ctx.strokeRect(b.x, b.y, b.width, b.height);
     }
+    onPaint?.(performance.now() - started);
   };
   const invalidate = () => {
     if (!queued) {

@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Venturi Canvas timing fixture</title>
+<link rel="stylesheet" href="../style/tokens.css">
+<style>
+body { margin: 20px; background: var(--bg); color: var(--text); font: 14px system-ui; }
+canvas { display: block; width: 100%; height: 540px; border: 1px solid var(--border); }
+button { padding: 8px 20px; margin-bottom: 12px; }
+pre { white-space: pre-wrap; }
+</style>
+<h1>500 clips · production Canvas renderer</h1>
+<p>720 animation frames: pan, zoom, linked selection ghost, waveform and thumbnail. Keep this tab visible. Paint CPU time excludes browser raster/compositing.</p>
+<button id="start">Run timing fixture</button>
+<canvas aria-label="Timeline performance fixture"></canvas>
+<pre id="result">Ready</pre>
+<script type="module" src="./timeline-benchmark.js"></script>
+</html>

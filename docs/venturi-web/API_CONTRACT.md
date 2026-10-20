@@ -253,3 +253,18 @@ arbitrary output formats and timelines longer than five minutes remain open.
   per path with a conservative shared 256-point tessellation budget, including
   animated endpoints. Keyframe target `{kind:mask,index,param}` reuses native
   source-frame mapping, interpolation, insertion and removal.
+
+- Project `import_otio {path_token,name}` reads a flat-root .otio file up to
+  8 MiB/64 distinct media URLs through the native parser. Media probing and
+  fingerprinting use the root policy and NOFOLLOW file descriptors. The imported
+  project, mixer/marker ranges and compound cycles validate before a new
+  no-replace .vvproj is written and installed. Dirty projects are refused.
+  Native parser failure preserves the current session. Import warnings are
+  returned in the session snapshot (at most 65 bounded messages).
+- GET `/timelines/{id}/timeline.otio` accepts the guarded exact-frame query and
+  downloads a native OTIO JSON snapshot, up to 8 MiB, without requiring a GPU.
+  Nonempty timelines are supported. Active compound references are refused:
+  the native exporter does not serialize their contents; export the child
+  timeline instead. Native Venturi metadata now additionally retains track
+  mixer/lock/solo, timeline master and markers. Foreign text layout may differ
+  because headless OTIO uses the native optional-metrics fallback.

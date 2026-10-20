@@ -14,6 +14,92 @@ fn request(
         operation,
     }
 }
+
+#[test]
+fn otio_import_is_a_new_no_replace_project_with_epoch_and_retry_guards() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-otio-host-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let new = request(
+        &editor,
+        Operation::NewProject {
+            name: "original".into(),
+        },
+        "otio-new",
+        None,
+    );
+    editor.mutation(None, new).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let value = vv_core::otio::timeline_to_otio(&editor.session.project, id, None);
+    std::fs::write(
+        root.join("source.otio"),
+        serde_json::to_vec(&value).unwrap(),
+    )
+    .unwrap();
+    let import = request(
+        &editor,
+        Operation::ImportOtio {
+            path_token: "source.otio".into(),
+            name: "imported".into(),
+        },
+        "otio-import",
+        None,
+    );
+    editor.mutation(None, import.clone()).unwrap();
+    let epoch = editor.session.epoch();
+    editor.mutation(None, import).unwrap();
+    assert_eq!(editor.session.epoch(), epoch);
+    assert!(root.join("imported.vvproj").is_file());
+    assert!(root.join("original.vvproj").is_file());
+    let duplicate = request(
+        &editor,
+        Operation::ImportOtio {
+            path_token: "source.otio".into(),
+            name: "original".into(),
+        },
+        "otio-existing",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, duplicate).unwrap_err().1,
+        "FILE_EXISTS"
+    );
+    assert_eq!(editor.session.epoch(), epoch);
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let change = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "otio-dirty",
+        Some(id),
+    );
+    editor
+        .mutation(Some(vv_core::Id::raw(id).to_string()), change)
+        .unwrap();
+    let dirty = request(
+        &editor,
+        Operation::ImportOtio {
+            path_token: "source.otio".into(),
+            name: "discard".into(),
+        },
+        "otio-unsaved",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, dirty).unwrap_err().1,
+        "UNSAVED_CHANGES"
+    );
+    assert!(!root.join("discard.vvproj").exists());
+    std::fs::remove_dir_all(root).unwrap();
+}
 #[test]
 fn retries_epochs_revisions_and_writer_lease() {
     let root = std::env::temp_dir().join(format!(

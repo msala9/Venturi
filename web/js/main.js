@@ -774,6 +774,15 @@ async function projects() {
   try {
     const data = await request("/projects");
     $("project-list").replaceChildren();
+    const otio=$("import-otio").elements.path_token,previousOtio=otio.value;otio.replaceChildren();
+    for(const item of data.importable_otio || [])otio.append(new Option(item.name,item.path_token));
+    if([...otio.options].some((option)=>option.value===previousOtio))otio.value=previousOtio;
+    $("import-otio").querySelector("button").disabled=!data.importable_otio?.length || !writable;
+    const compoundIds=new Set(documentState?.media.filter((media)=>media.compound_timeline_id!==null).map((media)=>media.id));
+    const hasCompound=timeline?.tracks.some((track)=>track.clips.some((clip)=>compoundIds.has(clip.media_id)));
+    $("otio-availability").textContent=hasCompound ? "Open the child timeline to export OTIO; native compound export is unavailable." : "";
+    const download=$("download-otio");download.hidden=hasCompound || !timeline?.tracks.some((track)=>track.clips.length);
+    if(!download.hidden)download.href=`/api/v1/timelines/${encodeURIComponent(timeline.id)}/timeline.otio?${new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0,width:960})}`;
     for (const item of data.projects) {
       const button = document.createElement("button");
       button.textContent = item.name;
@@ -800,6 +809,14 @@ async function projects() {
   }
 }
 $("projects-button").addEventListener("click", projects);
+$("import-otio").addEventListener("submit",async(event)=>{
+    event.preventDefault();const data=new FormData(event.target);$("project-error").textContent="";$("otio-warnings").textContent="";
+    try {
+      await mutate({kind:"import_otio",path_token:data.get("path_token"),name:data.get("name")},true);
+      await projects();
+      $("otio-warnings").textContent=documentState.import_warnings?.join("\n") || "Native OTIO project imported and saved.";
+    }catch(error){$("project-error").textContent=error.message;}
+});
 $("new-project").addEventListener("submit", async (event) => {
   event.preventDefault();
   try {

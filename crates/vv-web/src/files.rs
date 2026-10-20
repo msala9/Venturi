@@ -121,6 +121,7 @@ impl Files {
     pub fn list(&self) -> Result<Value> {
         let mut projects = Vec::new();
         let mut media = Vec::new();
+        let mut otio = Vec::new();
         for entry in std::fs::read_dir(&self.root)
             .map_err(|_| ApiError::io())?
             .take(4096)
@@ -135,6 +136,8 @@ impl Files {
             let item = json!({"path_token":name,"name":name});
             if name.ends_with(".vvproj") {
                 projects.push(item);
+            } else if name.ends_with(".otio") {
+                otio.push(item);
             } else if [
                 "mp4", "mov", "mkv", "webm", "wav", "mp3", "flac", "png", "jpg", "jpeg",
             ]
@@ -144,7 +147,70 @@ impl Files {
                 media.push(item);
             }
         }
-        Ok(json!({"projects":projects,"importable_media":media}))
+        Ok(json!({"projects":projects,"importable_media":media,"importable_otio":otio}))
+    }
+    pub fn import_otio(&self, name: &str) -> Result<(Project, Vec<String>)> {
+        if !name.ends_with(".otio") {
+            return Err(ApiError::invalid("Choose a listed .otio file"));
+        }
+        let value: Value = serde_json::from_slice(&self.read(name)?)
+            .map_err(|_| ApiError::invalid("The OTIO file is not valid JSON"))?;
+        if vv_core::otio::media_url_count(&value) > 64 {
+            return Err(ApiError::invalid(
+                "OTIO import currently supports at most 64 distinct media URLs",
+            ));
+        }
+        let mut imported = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            vv_core::otio::project_from_otio(
+                &value,
+                &self.root,
+                &mut |path| {
+                    if path.parent().and_then(|p| p.canonicalize().ok()).as_ref()
+                        != Some(&self.root)
+                    {
+                        return Err(
+                            "Media must be directly inside the configured project root".into()
+                        );
+                    }
+                    let token = path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .ok_or("Invalid media name")?;
+                    let (safe_path, meta) = self.probe(token).map_err(|_| {
+                        "Media is offline or refused by the configured root policy".to_string()
+                    })?;
+                    let file = self
+                        .media_file(&safe_path)
+                        .map_err(|_| "Media changed before native fingerprinting".to_string())?;
+                    let fd_path = PathBuf::from(format!(
+                        "/proc/self/fd/{}",
+                        std::os::fd::AsRawFd::as_raw_fd(&file)
+                    ));
+                    Ok((meta, vv_media::content_fingerprint(&fd_path).unwrap_or(0)))
+                },
+                None,
+            )
+        }))
+        .map_err(|_| {
+            ApiError::invalid("Native OTIO parsing failed; the current project was preserved")
+        })?
+        .map_err(|_| ApiError::invalid("The native engine could not import this OTIO timeline"))?;
+        self.validate_media(&mut imported.project)?;
+        validate_project(&imported.project)?;
+        imported.project.refresh_clip_rates();
+        let mut warnings = imported
+            .warnings
+            .iter()
+            .take(64)
+            .map(|warning| otio_warning(warning).chars().take(512).collect::<String>())
+            .collect::<Vec<_>>();
+        if imported.warnings.len() > 64 {
+            warnings.push(format!(
+                "{} further native import warnings were omitted",
+                imported.warnings.len() - 64
+            ));
+        }
+        Ok((imported.project, warnings))
     }
     pub fn load(&self, name: &str) -> Result<Project> {
         if !name.ends_with(".vvproj") {
@@ -263,11 +329,68 @@ impl Files {
     }
 }
 
+fn otio_warning(warning: &vv_core::otio::OtioWarning) -> String {
+    use vv_core::otio::OtioWarning::*;
+    match warning {
+        EffectIgnored { effect, clips } => format!("Effect {effect} was omitted on {clips} clips"),
+        EffectPartlyIgnored { effect, clips } => {
+            format!("Effect {effect} was only partly imported on {clips} clips")
+        }
+        SpeedNotApplied { clip, percent } => {
+            format!("Speed {percent}% could not be applied to {clip}")
+        }
+        UnsupportedInStack { schema } | UnsupportedItem { schema } => {
+            format!("Unsupported OTIO item {schema} was omitted")
+        }
+        TrackKindIgnored { .. } => "An unsupported track kind was omitted".into(),
+        TransitionIgnored => "An unsupported transition was omitted".into(),
+        ClipWithoutDuration { clip } => format!("Clip {clip} has no duration and was omitted"),
+        Placeholder { clip } => format!("Clip {clip} became a disabled title placeholder"),
+        ClipShorterThanAFrame { clip } => format!("Clip {clip} is shorter than one frame"),
+        AudioOnlyOnVideoTrack { clip } => {
+            format!("Audio-only clip {clip} was found on a video track")
+        }
+        UnsupportedReference { clip, .. } => {
+            format!("Clip {clip} has an unsupported media reference")
+        }
+        UnsupportedUrl { .. } => "An unsupported media URL was omitted".into(),
+        MediaUnreadable { path, .. } => format!(
+            "Media {} was imported offline",
+            vv_session::file_label(path)
+        ),
+    }
+}
+
 fn validate_project(project: &Project) -> Result<()> {
     if project.timelines.len() > 64 || project.media_pool.len() > 10_000 {
         return Err(ApiError::invalid("Project exceeds web host limits"));
     }
     for (timeline_id, tl) in project.timelines.iter() {
+        for channel in std::iter::once(&tl.master).chain(tl.tracks.iter().map(|t| &t.mix)) {
+            if !channel.gain_db.is_finite()
+                || !(vv_core::GAIN_DB_MIN..=vv_core::GAIN_DB_MAX).contains(&channel.gain_db)
+                || !channel.pan.is_finite()
+                || !(-1.0..=1.0).contains(&channel.pan)
+            {
+                return Err(ApiError::invalid(
+                    "Project mixer parameters exceed the native ranges",
+                ));
+            }
+            crate::audio::validate(&channel.effects)?;
+        }
+        let mut marker_ids = std::collections::HashSet::new();
+        if tl.markers.len() > 4096
+            || tl.markers.iter().any(|m| {
+                !marker_ids.insert(m.id)
+                    || m.id.0 == u64::MAX
+                    || m.start < 0
+                    || m.duration < 0
+                    || m.start > 1_000_000_000 - m.duration
+                    || m.note.len() > 4096
+            })
+        {
+            return Err(ApiError::invalid("Project markers exceed supported ranges"));
+        }
         if tl.fps.num <= 0
             || tl.fps.den <= 0
             || tl.fps.as_f64() > 240.0

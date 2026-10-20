@@ -219,8 +219,8 @@ impl Importer<'_> {
             fps,
             resolution,
             tracks,
-            markers: Vec::new(),
-            master: Default::default(),
+            markers: serde_json::from_value(venturi["markers"].clone()).unwrap_or_default(),
+            master: serde_json::from_value(venturi["master"].clone()).unwrap_or_default(),
         });
     }
 
@@ -248,6 +248,10 @@ impl Importer<'_> {
             };
             let mut track = Track::new(kind);
             track.muted = otio_track["enabled"] == false;
+            let venturi = &otio_track["metadata"]["venturi"];
+            track.mix = serde_json::from_value(venturi["mix"].clone()).unwrap_or_default();
+            track.locked = venturi["locked"].as_bool().unwrap_or(false);
+            track.solo = venturi["solo"].as_bool().unwrap_or(false);
             let mut cursor = 0.0;
             let mut pending = None;
             for item in children(otio_track) {

@@ -59,6 +59,8 @@ pub fn timeline_to_otio(
             "venturi": {
                 "fps": timeline.fps,
                 "resolution": timeline.resolution,
+                "master": timeline.master,
+                "markers": timeline.markers,
             }
         },
         "tracks": {
@@ -131,7 +133,7 @@ fn track_to_otio(
         "effects": [],
         "markers": [],
         "enabled": !track.muted,
-        "metadata": { "Resolve_OTIO": { "Locked": false } },
+        "metadata": { "Resolve_OTIO": { "Locked": track.locked }, "venturi": { "mix":track.mix,"locked":track.locked,"solo":track.solo } },
         "children": children,
     })
 }

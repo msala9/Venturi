@@ -99,3 +99,75 @@ fn project_validation_refuses_compound_cycles_and_missing_nested_timelines() {
     session.project.timelines.remove(id);
     assert!(validate_project(&session.project).is_err());
 }
+
+#[test]
+fn otio_roundtrip_keeps_native_effects_rates_and_refuses_file_escapes() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    let mut session = vv_session::Session::default();
+    let id = session.create_timeline(vv_core::Timeline {
+        name: "OTIO exact".into(),
+        fps: vv_core::Rational::new(24000, 1001),
+        resolution: (640, 360),
+        tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let clip = session.project.alloc_clip_id();
+    let mut source = vv_core::Clip::from_source_range(
+        clip,
+        vv_core::ClipSource::SolidColor,
+        0,
+        48,
+        12,
+        vv_core::Rational::one(),
+    );
+    source.effects.masks.push(vv_core::ClipMask::new(
+        vv_core::MaskShape::Ellipse,
+        (640, 360),
+    ));
+    source
+        .effects
+        .filters
+        .push(vv_core::ClipFilter::new(vv_core::FilterKind::Exposure));
+    source.effects.filters[0].amount.default = 1.25;
+    source.effects.color = Some(vv_core::Keyframed::constant(vv_core::Rgba::BLACK));
+    session.project.timelines[id].tracks[0].insert_sorted(source.clone());
+    let value = vv_core::otio::timeline_to_otio(&session.project, id, None);
+    std::fs::write(
+        root.join("roundtrip.otio"),
+        serde_json::to_vec(&value).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        files.list().unwrap()["importable_otio"][0]["path_token"],
+        "roundtrip.otio"
+    );
+    let (project, warnings) = files.import_otio("roundtrip.otio").unwrap();
+    assert!(warnings.is_empty());
+    let timeline = project
+        .timelines
+        .values()
+        .find(|t| t.name == "OTIO exact")
+        .unwrap();
+    assert_eq!(timeline.fps, vv_core::Rational::new(24000, 1001));
+    let restored = &timeline.tracks[0].clips[0];
+    assert_eq!((restored.timeline_start, restored.timeline_len), (12, 48));
+    assert_eq!(
+        serde_json::to_value(&restored.effects).unwrap(),
+        serde_json::to_value(&source.effects).unwrap()
+    );
+    assert!(files.import_otio("../roundtrip.otio").is_err());
+    std::os::unix::fs::symlink(root.join("roundtrip.otio"), root.join("link.otio")).unwrap();
+    assert!(files.import_otio("link.otio").is_err());
+    let mut hostile = value;
+    hostile["tracks"]["children"][0]["children"][1]["media_references"]["DEFAULT_MEDIA"] = json!({"OTIO_SCHEMA":"ExternalReference.1","target_url":"file:///etc/shadow","available_range":{"start_time":{"OTIO_SCHEMA":"RationalTime.1","value":0,"rate":24},"duration":{"OTIO_SCHEMA":"RationalTime.1","value":48,"rate":24}}});
+    hostile["tracks"]["children"][0]["children"][1]["metadata"] = json!({});
+    std::fs::write(
+        root.join("escape.otio"),
+        serde_json::to_vec(&hostile).unwrap(),
+    )
+    .unwrap();
+    assert!(files.import_otio("escape.otio").is_err());
+    std::fs::remove_dir_all(root).unwrap();
+}

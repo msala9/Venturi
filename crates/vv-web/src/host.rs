@@ -39,6 +39,7 @@ pub struct Editor {
     epoch: String,
     lease: Option<(String, Instant)>,
     completed: HashMap<String, (String, Result<Value>)>,
+    import_warnings: Vec<String>,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
@@ -52,10 +53,13 @@ impl Editor {
                 .to_string(),
             lease: None,
             completed: HashMap::new(),
+            import_warnings: vec![],
         })
     }
     fn snapshot(&self) -> Value {
-        snapshot::session(&self.session, &self.epoch)
+        let mut snapshot = snapshot::session(&self.session, &self.epoch);
+        snapshot["import_warnings"] = json!(self.import_warnings);
+        snapshot
     }
     fn lease(&mut self, client: &str) -> Result<Value> {
         if !valid_key(client) {
@@ -144,6 +148,30 @@ impl Editor {
                     self.session.add_media(path, meta);
                 }
             }
+            Operation::ImportOtio { path_token, name } => {
+                if self.session.has_unsaved_changes() {
+                    return Err(ApiError::conflict(
+                        "UNSAVED_CHANGES",
+                        "Save the current project before importing an OTIO project",
+                    ));
+                }
+                if name.is_empty()
+                    || name.len() > 64
+                    || !name
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
+                {
+                    return Err(ApiError::invalid(
+                        "Use letters, digits, underscores or hyphens for the new project name",
+                    ));
+                }
+                let (project, warnings) = self.files.import_otio(path_token)?;
+                let token = format!("{name}.vvproj");
+                self.files.save(&project, &token, true)?;
+                self.session
+                    .install_project(project, Some(self.files.path(&token)?));
+                self.import_warnings = warnings;
+            }
             Operation::NewTimeline {
                 name,
                 fps,
@@ -204,6 +232,7 @@ impl Editor {
                 self.files.save(&session.project, &path_token, true)?;
                 self.session
                     .install_project(session.project, Some(self.files.path(&path_token)?));
+                self.import_warnings.clear();
             }
             Operation::OpenProject { path_token } => {
                 if self.session.has_unsaved_changes() {
@@ -215,6 +244,7 @@ impl Editor {
                 let project = self.files.load(path_token)?;
                 self.session
                     .install_project(project, Some(self.files.path(path_token)?));
+                self.import_warnings.clear();
             }
             Operation::Save => {
                 let name = self

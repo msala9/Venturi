@@ -622,3 +622,37 @@ window after D41's 15:07:20 UTC release allowed GPU startup, but another agent
 acquired the lock before the Export job: it safely failed GPU_BUSY at 0/24
 frames (m3-export-gpu-busy-browser.png). Only Venturi was restarted CPU-only;
 the successful R9700 Export drawer/download check still remains open.
+
+## M4 independent increment — guarded native OTIO exchange
+
+Projects now downloads a nonempty timeline through native timeline_to_otio and
+imports a listed .otio into a new no-replace .vvproj. Epoch/generation/revision,
+writer/idempotency and unsaved-project rules remain authoritative. Files are
+bounded to 8 MiB/64 distinct URLs; probes/fingerprints use the flat authorized
+root and NOFOLLOW descriptors. The native parser runs before session mutation;
+errors/panics preserve the current project. Native warnings are bounded and
+shown in Projects. Probing remains serialized on the actor as the existing
+media import does; large/slow imports are not qualified for interactive use.
+
+The first actual round trip exposed upstream data loss: clip effects/masks
+survived, but track insert chains/master/markers did not. The native OTIO
+metadata now includes track mix/lock/solo, timeline master and markers, with
+defaulted import for older/foreign files. This additive fix benefits desktop
+OTIO too. Exporting compound contents is not implemented upstream: web export
+explicitly refuses those active references and points to the child timeline,
+rather than writing an offline external-reference placeholder. Foreign title
+layout and external-NLE interoperability still need separate acceptance.
+
+Windows downloaded OTIO from Masks_UI_check and reimported it as
+OTIO_full_UI_check.vvproj. Native masks, their source-frame keys, Bezier handle,
+trim range 7..19 and all four audio inserts/mixer values match; no native import
+warnings. Evidence: m4-native-otio-roundtrip.json and
+m4-native-otio-import-browser.png. The earlier incomplete test project/file
+was preserved and is not used as acceptance evidence.
+
+251 vv-core tests and 43 vv-web tests pass; vv-session has 99 pass/1 upstream
+ignored. 22 JS tests, formatting, clippy core/web and native desktop cargo
+check pass. New tests cover rational-FPS native effects/masks, mixer/master/
+markers/flags, hostile file URLs/symlinks, nonoverwrite, unsaved refusal,
+epoch/idempotent retries, CPU-only OTIO download headers and stale revision
+rejection. GUI was compile-checked, not launched on the headless server.

@@ -106,6 +106,14 @@ snapshot renders; reopening/reloading can recover the latest job status.
 Download the MP4 before server shutdown or cache eviction. This first adapter
 does not offer persistent export queues or hardware encoding.
 
+Projects also downloads the current nonempty timeline as OTIO. To import,
+place .otio directly in the server root, reopen Projects, choose it and supply
+a new project name. Save current edits first; existing names are refused.
+Native Venturi metadata retains clip effects/masks, track/master mixer and
+markers. Compound export requires opening the child timeline first; foreign
+title layout may differ. Media referenced by imported files must remain in
+the configured root. Import warnings appear in Projects.
+
 ## Actual API deltas from the proposal
 
 - Project operations share `POST /api/v1/projects/commands`: typed

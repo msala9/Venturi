@@ -49,6 +49,61 @@ async fn http_command_roundtrip_and_malformed_requests() {
         assert_eq!(response.status(), StatusCode::OK);
     }
     assert!(root.join("http_test.vvproj").is_file());
+    let response = app.clone().oneshot(get()).await.unwrap();
+    let snapshot: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 1024 * 1024).await.unwrap())
+            .unwrap();
+    let timeline = &snapshot["timelines"][0];
+    let id = timeline["id"].as_str().unwrap();
+    let edit = json!({"command_id":"http-solid","client_id":"http-client","project_epoch":snapshot["project_epoch"],"if_generation":snapshot["generation"],"if_revision":timeline["revision"],"operation":{"kind":"add_solid","track":"0","start_frame":0,"length_frames":24}});
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/api/v1/timelines/{id}/commands"))
+                .header("host", "127.0.0.1:8787")
+                .header("content-type", "application/json")
+                .body(Body::from(edit.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let response = app.clone().oneshot(get()).await.unwrap();
+    let latest: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 1024 * 1024).await.unwrap())
+            .unwrap();
+    for (state, status) in [(&latest, StatusCode::OK), (&snapshot, StatusCode::CONFLICT)] {
+        let query = format!(
+            "project_epoch={}&if_generation={}&timeline_id={id}&revision={}&frame=0&width=960",
+            state["project_epoch"].as_str().unwrap(),
+            state["generation"].as_str().unwrap(),
+            state["timelines"][0]["revision"].as_str().unwrap()
+        );
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/api/v1/timelines/{id}/timeline.otio?{query}"))
+                    .header("host", "127.0.0.1:8787")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), status);
+        if status == StatusCode::OK {
+            assert_eq!(
+                response.headers()[header::CONTENT_DISPOSITION],
+                "attachment; filename=\"timeline.otio\""
+            );
+            let otio: Value =
+                serde_json::from_slice(&to_bytes(response.into_body(), 1024 * 1024).await.unwrap())
+                    .unwrap();
+            assert_eq!(otio["OTIO_SCHEMA"], "Timeline.1");
+        }
+    }
     let response = app
         .clone()
         .oneshot(

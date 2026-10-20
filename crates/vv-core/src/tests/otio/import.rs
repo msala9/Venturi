@@ -37,6 +37,59 @@ fn span(clip: &Clip) -> (FrameIdx, FrameIdx, FrameIdx, Rational) {
     )
 }
 
+#[test]
+fn native_otio_metadata_keeps_mixer_master_markers_and_track_flags() {
+    let mut project = Project::default();
+    let mut track = Track::new(TrackKind::Audio);
+    track.locked = true;
+    track.solo = true;
+    track.muted = true;
+    track.mix.gain_db = -6.0;
+    track.mix.pan = 0.25;
+    track.mix.effects.push(crate::AudioEffect {
+        enabled: false,
+        kind: crate::AudioEffectKind::Mono,
+    });
+    let id = project.timelines.insert(Timeline {
+        name: "Mix metadata".into(),
+        fps: Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![Track::new(TrackKind::Video), track],
+        markers: vec![crate::Marker {
+            id: crate::MarkerId(7),
+            start: 12,
+            duration: 8,
+            note: "Cue".into(),
+            color: crate::ClipColor::Orange,
+        }],
+        master: crate::ChannelStrip {
+            gain_db: -2.0,
+            pan: -0.1,
+            ..Default::default()
+        },
+    });
+    let value = timeline_to_otio(&project, id, None);
+    let imported = project_from_otio(
+        &value,
+        Path::new("/tmp"),
+        &mut |_| Err("No media".into()),
+        None,
+    )
+    .unwrap();
+    let timeline = imported.project.timelines.values().next().unwrap();
+    let audio = &timeline.tracks[1];
+    assert!(audio.locked && audio.solo && audio.muted);
+    assert_eq!(
+        serde_json::to_value(&audio.mix).unwrap(),
+        serde_json::to_value(&project.timelines[id].tracks[1].mix).unwrap()
+    );
+    assert_eq!(timeline.markers, project.timelines[id].markers);
+    assert_eq!(
+        serde_json::to_value(&timeline.master).unwrap(),
+        serde_json::to_value(&project.timelines[id].master).unwrap()
+    );
+}
+
 /// Exporting and importing a Venturi project returns the same clips,
 /// even split mid source frame.
 #[test]

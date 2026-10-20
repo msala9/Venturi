@@ -39,6 +39,10 @@ pub enum Operation {
     ImportMedia {
         path_token: String,
     },
+    ImportOtio {
+        path_token: String,
+        name: String,
+    },
     InsertMedia {
         media_id: String,
         start_frame: FrameIdx,

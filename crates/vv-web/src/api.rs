@@ -31,6 +31,7 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/session", get(session))
         .route("/api/v1/timelines/{id}", get(timeline))
+        .route("/api/v1/timelines/{id}/timeline.otio", get(export_otio))
         .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
         .route(
             "/api/v1/timelines/{id}/audio/{channel}/eq/{index}",
@@ -68,6 +69,65 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn export_otio(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid OTIO snapshot query"))?
+        .0;
+    if query.timeline_id != id {
+        return Err(ApiError::missing());
+    }
+    let snapshot = state.host.frame_snapshot(query).await?;
+    if snapshot.project.timelines[snapshot.timeline]
+        .tracks
+        .iter()
+        .flat_map(|t| &t.clips)
+        .any(|clip| {
+            if let vv_core::ClipSource::Media(media) = clip.source {
+                snapshot
+                    .project
+                    .media_pool
+                    .get(media)
+                    .is_some_and(|m| m.compound.is_some())
+            } else {
+                false
+            }
+        })
+    {
+        return Err(ApiError::invalid(
+            "Native OTIO export does not serialize compound contents; open and export the child timeline directly",
+        ));
+    }
+    let bytes = tokio::task::spawn_blocking(move || {
+        serde_json::to_vec_pretty(&vv_core::otio::timeline_to_otio(
+            &snapshot.project,
+            snapshot.timeline,
+            None,
+        ))
+    })
+    .await
+    .map_err(|_| ApiError::io())?
+    .map_err(|_| ApiError::io())?;
+    if bytes.len() > 8 * 1024 * 1024 {
+        return Err(ApiError::invalid(
+            "OTIO export exceeds the 8 MiB download limit",
+        ));
+    }
+    Ok((
+        [
+            (header::CONTENT_TYPE, "application/json"),
+            (
+                header::CONTENT_DISPOSITION,
+                "attachment; filename=\"timeline.otio\"",
+            ),
+        ],
+        bytes,
+    )
+        .into_response())
 }
 async fn prepare_program(
     State(state): State<AppState>,

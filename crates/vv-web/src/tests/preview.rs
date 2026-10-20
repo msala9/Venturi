@@ -33,7 +33,16 @@ fn newest_pending_seek_replaces_the_old_one() {
         old.try_recv(),
         Err(oneshot::error::TryRecvError::Closed)
     ));
-    assert_eq!(queue.next().snapshot.query.frame, 2);
+    assert_eq!(
+        queue
+            .next(std::time::Duration::from_millis(1))
+            .unwrap()
+            .snapshot
+            .query
+            .frame,
+        2
+    );
+    assert!(queue.next(std::time::Duration::from_millis(1)).is_none());
 }
 #[tokio::test]
 async fn a_disabled_renderer_reports_actual_capability() {

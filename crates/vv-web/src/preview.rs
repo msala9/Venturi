@@ -4,10 +4,10 @@ use serde_json::{Value, json};
 use std::{
     collections::VecDeque,
     fs::{File, OpenOptions},
-    path::Path,
+    path::{Path, PathBuf},
     sync::{
         Arc, Condvar, Mutex,
-        atomic::{AtomicBool, Ordering},
+        atomic::{AtomicBool, AtomicUsize, Ordering},
     },
 };
 use tokio::sync::oneshot;
@@ -34,6 +34,30 @@ pub struct FrameSnapshot {
     pub query: FrameQuery,
     pub size: (u32, u32),
 }
+struct GpuPermit<'a> {
+    // Unlock globally before waking another local GPU worker.
+    _global: File,
+    _local: std::sync::MutexGuard<'a, ()>,
+    device: Arc<wgpu::Device>,
+    poll_failed: &'a AtomicBool,
+}
+struct ProgramLease<'a>(&'a AtomicUsize);
+impl Drop for ProgramLease<'_> {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::Relaxed);
+    }
+}
+impl Drop for GpuPermit<'_> {
+    fn drop(&mut self) {
+        if self
+            .device
+            .poll(wgpu::PollType::wait_indefinitely())
+            .is_err()
+        {
+            self.poll_failed.store(true, Ordering::Relaxed);
+        }
+    }
+}
 struct Job {
     snapshot: FrameSnapshot,
     reply: oneshot::Sender<Result<Vec<u8>>>,
@@ -48,13 +72,17 @@ impl Queue {
         *self.pending.lock().unwrap() = Some(job);
         self.wake.notify_one();
     }
-    fn next(&self) -> Job {
+    fn next(&self, idle: std::time::Duration) -> Option<Job> {
         let mut pending = self.pending.lock().unwrap();
         loop {
             if let Some(job) = pending.take() {
-                return job;
+                return Some(job);
             }
-            pending = self.wake.wait(pending).unwrap();
+            let (next, timeout) = self.wake.wait_timeout(pending, idle).unwrap();
+            pending = next;
+            if timeout.timed_out() && pending.is_none() {
+                return None;
+            }
         }
     }
 }
@@ -63,6 +91,10 @@ pub struct Preview {
     queue: Option<Arc<Queue>>,
     diagnostic: Value,
     rendered: Arc<AtomicBool>,
+    config: Option<(u32, PathBuf)>,
+    gpu_gate: Arc<Mutex<()>>,
+    resident: Arc<AtomicBool>,
+    active_programs: Arc<AtomicUsize>,
 }
 impl Preview {
     pub fn disabled() -> Self {
@@ -70,22 +102,32 @@ impl Preview {
             queue: None,
             diagnostic: json!({"available":false,"reason":"Start with --gpu-device to enable a verified AMD Vulkan adapter"}),
             rendered: Arc::new(AtomicBool::new(false)),
+            config: None,
+            gpu_gate: Arc::new(Mutex::new(())),
+            resident: Arc::new(AtomicBool::new(false)),
+            active_programs: Arc::new(AtomicUsize::new(0)),
         }
     }
     pub fn start(device: u32, lock_path: &Path) -> Self {
         let queue = Arc::new(Queue::default());
         let worker = queue.clone();
         let path = lock_path.to_owned();
+        let config = Some((device, path.clone()));
+        let gpu_gate = Arc::new(Mutex::new(()));
+        let worker_gate = gpu_gate.clone();
+        let resident = Arc::new(AtomicBool::new(false));
+        let worker_resident = resident.clone();
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         let rendered = Arc::new(AtomicBool::new(false));
         let rendered_worker = rendered.clone();
         std::thread::spawn(move || {
             let initialized = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                let _local = worker_gate.lock().unwrap();
                 let _lock = gpu_lock(&path)?;
                 create_compositor(device)
             }))
             .unwrap_or_else(|_| Err(unavailable()));
-            let (mut compositor, diagnostic) = match initialized {
+            let (compositor, diagnostic) = match initialized {
                 Ok(value) => value,
                 Err(error) => {
                     let _ = tx.send(Err(error));
@@ -95,10 +137,16 @@ impl Preview {
             if tx.send(Ok(diagnostic)).is_err() {
                 return;
             }
+            let mut compositor = Some(compositor);
+            worker_resident.store(true, Ordering::Relaxed);
             let mut cache: VecDeque<(String, Vec<u8>)> = VecDeque::new();
             let mut bytes = 0;
             loop {
-                let job = worker.next();
+                let Some(job) = worker.next(std::time::Duration::from_secs(2)) else {
+                    compositor = None;
+                    worker_resident.store(false, Ordering::Relaxed);
+                    continue;
+                };
                 if job.reply.is_closed() {
                     continue;
                 }
@@ -117,15 +165,28 @@ impl Preview {
                     let _ = job.reply.send(Ok(data.clone()));
                     continue;
                 }
-                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    let _lock = gpu_lock(&path)?;
+                let poll_failed = AtomicBool::new(false);
+                let mut result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    let local = worker_gate.lock().unwrap_or_else(|p| p.into_inner());
+                    let global = gpu_lock(&path)?;
+                    if compositor.is_none() {
+                        compositor = Some(create_compositor(device)?.0);
+                        worker_resident.store(true, Ordering::Relaxed);
+                    }
+                    let compositor = compositor.as_mut().unwrap();
+                    let permit = GpuPermit {
+                        _global: global,
+                        _local: local,
+                        device: compositor.device().clone(),
+                        poll_failed: &poll_failed,
+                    };
                     compositor.set_precision(snapshot.project.precision);
                     let rgba = vv_session::export::render_frame_rgba(
                         &snapshot.project,
                         snapshot.timeline,
                         snapshot.query.frame,
                         snapshot.size,
-                        &compositor,
+                        compositor,
                     )
                     .map_err(|_| {
                         ApiError(
@@ -134,9 +195,17 @@ impl Preview {
                             "Native frame rendering failed; check offline media",
                         )
                     })?;
+                    drop(permit);
                     encode_png(&rgba, snapshot.size)
                 }))
                 .unwrap_or_else(|_| Err(unavailable()));
+                if poll_failed.load(Ordering::Relaxed) {
+                    result = Err(unavailable());
+                }
+                if result.is_err() {
+                    compositor = None;
+                    worker_resident.store(false, Ordering::Relaxed);
+                }
                 if let Ok(data) = &result {
                     rendered_worker.store(true, Ordering::Relaxed);
                     while bytes + data.len() > 16 * 1024 * 1024 || cache.len() >= 8 {
@@ -159,20 +228,106 @@ impl Preview {
                 queue: Some(queue),
                 diagnostic,
                 rendered,
+                config,
+                gpu_gate,
+                resident,
+                active_programs: Arc::new(AtomicUsize::new(0)),
             },
             _ => Self {
                 queue: None,
                 diagnostic: json!({"available":false,"reason":"AMD Vulkan device initialization failed or hardware lock is busy"}),
                 rendered,
+                config: None,
+                gpu_gate,
+                resident,
+                active_programs: Arc::new(AtomicUsize::new(0)),
             },
         }
     }
     pub fn available(&self) -> bool {
         self.queue.is_some()
     }
+    pub fn export_program(
+        &self,
+        snapshot: &FrameSnapshot,
+        end: i64,
+        settings: &vv_session::export::ExportSettings,
+        progress: &Mutex<vv_session::export::ExportProgress>,
+        cancel: &AtomicBool,
+    ) -> Result<()> {
+        use vv_session::export::ExportError;
+        let (device, path) = self.config.as_ref().ok_or_else(unavailable)?;
+        self.active_programs.fetch_add(1, Ordering::Relaxed);
+        let _active = ProgramLease(&self.active_programs);
+        let foreign_busy = AtomicBool::new(false);
+        let poll_failed = AtomicBool::new(false);
+        let failed = |error: ApiError| {
+            if error.1 == "GPU_BUSY" {
+                foreign_busy.store(true, Ordering::Relaxed);
+            }
+            ExportError::Failed(error.2.into())
+        };
+        let complete = |compositor: &Compositor| {
+            compositor
+                .device()
+                .poll(wgpu::PollType::wait_indefinitely())
+                .map(|_| ())
+                .map_err(|error| ExportError::Failed(error.to_string()))
+        };
+        let result = vv_session::export::export_timeline_with_gpu(
+            &snapshot.project,
+            snapshot.timeline,
+            settings,
+            snapshot.query.frame..end,
+            progress,
+            cancel,
+            || {
+                let _local = self.gpu_gate.lock().unwrap_or_else(|p| p.into_inner());
+                let _global = gpu_lock(path).map_err(failed)?;
+                let (mut compositor, _) = create_compositor(*device).map_err(failed)?;
+                compositor.set_precision(snapshot.project.precision);
+                complete(&compositor)?;
+                Ok(compositor)
+            },
+            |compositor| {
+                let local = self.gpu_gate.lock().unwrap_or_else(|p| p.into_inner());
+                let global = gpu_lock(path).map_err(failed)?;
+                Ok(GpuPermit {
+                    _global: global,
+                    _local: local,
+                    device: compositor.device().clone(),
+                    poll_failed: &poll_failed,
+                })
+            },
+            2,
+        );
+        if poll_failed.load(Ordering::Relaxed) {
+            return Err(unavailable());
+        }
+        if result.is_ok() {
+            self.rendered.store(true, Ordering::Relaxed);
+        }
+        result.map_err(|_| {
+            if foreign_busy.load(Ordering::Relaxed) {
+                ApiError(
+                    axum::http::StatusCode::SERVICE_UNAVAILABLE,
+                    "GPU_BUSY",
+                    "Another workload holds the GPU lock",
+                )
+            } else {
+                ApiError::invalid("Native composition failed or was canceled")
+            }
+        })
+    }
     pub fn diagnostic(&self) -> Value {
         let mut value = self.diagnostic.clone();
         value["frame_rendered"] = json!(self.rendered.load(Ordering::Relaxed));
+        value["exact_context_resident"] = json!(self.resident.load(Ordering::Relaxed));
+        value["active_programs"] = json!(self.active_programs.load(Ordering::Relaxed));
+        value["resident"] = json!(
+            self.resident.load(Ordering::Relaxed)
+                || self.active_programs.load(Ordering::Relaxed) > 0
+        );
         value
     }
     pub async fn frame(&self, snapshot: FrameSnapshot) -> Result<Vec<u8>> {

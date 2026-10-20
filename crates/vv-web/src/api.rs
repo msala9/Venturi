@@ -3,7 +3,8 @@ use crate::{
     error::{ApiError, Result},
     host::{Action, Host},
     preview::{FrameQuery, Preview},
-    source::{Source, SourceQuery},
+    program::{ProgramQuery, ProgramTask},
+    source::{MediaJobs, SourceQuery},
 };
 use axum::{
     Json, Router,
@@ -20,7 +21,7 @@ pub struct AppState {
     pub host: Host,
     pub port: u16,
     pub preview: Preview,
-    pub source: Source,
+    pub source: MediaJobs,
 }
 pub fn router(state: AppState) -> Router {
     Router::new()
@@ -36,6 +37,15 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/commands/{id}", get(lookup))
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
+        .route("/api/v1/preview/program/prepare", post(prepare_program))
+        .route(
+            "/api/v1/preview/program/{job}",
+            get(program_status).delete(cancel_program),
+        )
+        .route(
+            "/api/v1/preview/program/{job}/program.mp4",
+            get(program_asset),
+        )
         .route("/api/v1/diagnostics", get(diagnostics))
         .route("/api/v1/media/{id}/prepare", post(prepare_source))
         .route(
@@ -47,6 +57,69 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn prepare_program(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<ProgramQuery>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>> {
+    if !state.preview.available() {
+        return Err(ApiError(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "GPU_UNAVAILABLE",
+            "An initialized AMD Vulkan compositor is required for Program playback",
+        ));
+    }
+    let query = payload
+        .map_err(|_| ApiError::invalid("Invalid Program request"))?
+        .0;
+    let snapshot = state.host.frame_snapshot(query.frame()).await?;
+    state
+        .source
+        .prepare_program(ProgramTask {
+            snapshot,
+            query,
+            preview: state.preview,
+        })
+        .map(Json)
+}
+async fn program_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<ProgramQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid Program query"))?
+        .0;
+    state.host.call(Action::CheckFrame(query.frame())).await?;
+    state.source.program_status(&job, &query, false).map(Json)
+}
+async fn cancel_program(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<ProgramQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid Program query"))?
+        .0;
+    state.source.program_status(&job, &query, true).map(Json)
+}
+async fn program_asset(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<ProgramQuery>, axum::extract::rejection::QueryRejection>,
+    headers: axum::http::HeaderMap,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid Program query"))?
+        .0;
+    state.host.call(Action::CheckFrame(query.frame())).await?;
+    crate::source::stream_file(
+        state.source.program_asset(&job, &query)?,
+        "video/mp4",
+        &job,
+        &headers,
+    )
+    .await
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -136,6 +209,7 @@ async fn session(State(state): State<AppState>) -> Result<Json<Value>> {
     let mut snapshot = state.host.call(Action::Session).await?;
     snapshot["capabilities"]["preview"] = json!(state.preview.available());
     snapshot["capabilities"]["source_playback"] = json!(true);
+    snapshot["capabilities"]["playback"] = json!(state.preview.available());
     Ok(Json(snapshot))
 }
 async fn diagnostics(State(state): State<AppState>) -> Json<Value> {
@@ -271,6 +345,7 @@ async fn assets(request: Request) -> Response {
         "/js/api.js" => asset!("/web/js/api.js", "text/javascript"),
         "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),
         "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),
+        "/js/program.js" => asset!("/web/js/program.js", "text/javascript"),
         "/js/timeline/index.js" => asset!("/web/js/timeline/index.js", "text/javascript"),
         "/js/timeline/geometry.js" => asset!("/web/js/timeline/geometry.js", "text/javascript"),
         "/js/timeline/input.js" => asset!("/web/js/timeline/input.js", "text/javascript"),

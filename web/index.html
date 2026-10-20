@@ -94,6 +94,10 @@
             ><span>Original Rust engine · Browser workspace</span>
           </div>
           <span id="preview-state">PREVIEW UNAVAILABLE</span>
+          <div id="program-view" hidden>
+            <video id="program-video" controls playsinline preload="metadata" aria-label="Composed timeline playback"></video>
+            <div class="source-toolbar"><span id="program-status" role="status">Prepare composed timeline</span><button id="program-cancel" disabled>Cancel composition</button></div>
+          </div>
           <div id="source-view" hidden>
             <video id="source-video" controls playsinline preload="metadata" aria-label="Source media playback"></video>
             <div class="source-toolbar">

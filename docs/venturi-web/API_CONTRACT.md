@@ -122,3 +122,19 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   is CPU-only, off the session actor. See RUNNING for explicit duration, cache
   and resource limits. Session capabilities expose source_playback separately
   from Program playback. Native FFmpeg library APIs are used throughout.
+
+## Implemented Program preparation (hardware acceptance pending)
+
+- POST `/api/v1/preview/program/prepare` takes project_epoch, if_generation,
+  timeline_id, revision, start_frame, end_frame and width (default 960).
+  Ranges must be nonempty, inside the native timeline and at most five minutes.
+- GET `/api/v1/preview/program/{job}` with the same query returns job state,
+  native stage progress and the actual output dimensions/fps. DELETE requests
+  cancellation, including after the document revision changes.
+- GET `/api/v1/preview/program/{job}/program.mp4` with that query streams only
+  finalized H.264/AAC native composition with byte Range support. Status and
+  delivery reject changed document or media identities. One media job runs,
+  with one pending; source and Program share the bounded queue/cache.
+- Native desktop export retains its defaults. Web decoding/x264 use two CPU
+  threads and explicit AMD Vulkan composition under the shared hardware lock.
+  Hardware busy fails promptly. There is no realtime or hardware-encode claim.

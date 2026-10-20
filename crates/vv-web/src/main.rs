@@ -4,6 +4,7 @@ mod error;
 mod files;
 mod host;
 mod preview;
+mod program;
 mod snapshot;
 mod source;
 
@@ -48,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         listener,
         api::router(api::AppState {
             host: host::Host::start(&root)?,
-            source: source::Source::start()?,
+            source: source::MediaJobs::start()?,
             port: listen.port(),
             preview: gpu
                 .map(|id| preview::Preview::start(id, &gpu_lock))

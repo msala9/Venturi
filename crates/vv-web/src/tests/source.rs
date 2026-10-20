@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn native_source_job_deduplicates_and_publishes_video_audio_thumbnail_and_waveform() {
-    let source = Source::start().unwrap();
+    let source = MediaJobs::start().unwrap();
     let path = source.root.join("input.mp4");
     vv_media::test_support::ffmpeg(
         &[
@@ -137,7 +137,7 @@ async fn byte_delivery_returns_exact_range_416_and_honors_if_range() {
 
 #[test]
 fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
-    let source = Source::start().unwrap();
+    let source = MediaJobs::start().unwrap();
     let path = source.root.join("fixture.mp4");
     std::fs::write(&path, b"source").unwrap();
     let mut spec = SourceSpec {
@@ -169,6 +169,9 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         directory,
         cancel: Arc::new(AtomicBool::new(false)),
         bytes: 5,
+        export: None,
+        descriptor: None,
+        inputs: vec![],
     });
     assert!(source.asset("test", &spec, "source.mp4").is_ok());
     assert!(source.asset("test", &spec, "../source.mp4").is_err());

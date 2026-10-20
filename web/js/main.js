@@ -4,6 +4,7 @@ import { linkedSelection } from "./timeline/geometry.js";
 import { request, sendMutation, ApiFailure } from "./api.js";
 import { createViewer } from "./viewer.js";
 import { createSourcePlayer, sourceAssetURL } from "./source.js";
+import { createProgramPlayer } from "./program.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -197,15 +198,20 @@ let commit = async () => {
   throw new Error("Fixture only · no edit was saved");
 };
 let seek = () => {};
-let viewer = null, viewerMode = "program", sourcePlayer = null;
+let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = null;
 const mediaAssets = new Map();
+function updatePlayAvailability() {
+  $("play").disabled = viewerMode === "program" && (!documentState?.capabilities.playback || !timeline?.tracks.some((t) => t.clips.length));
+  $("play").title = viewerMode === "source" ? "Play source media" : "Play composed timeline · requires an available render GPU";
+}
 function viewerModeSet(mode) {
   viewerMode = mode;
+  if (mode === "source") programPlayer?.stop();
   $("screen").dataset.viewerMode = mode;
   $("source-view").hidden = mode !== "source";
   $("program-mode").setAttribute("aria-pressed", mode === "program");
   $("source-mode").setAttribute("aria-pressed", mode === "source");
-  $("play").disabled = mode !== "source";
+  updatePlayAvailability();
   $("viewer-caption").textContent = mode === "source" ? "Source proxy · independent of timeline edits" : "Exact timeline frame";
   if (mode === "program") { sourcePlayer?.pause(); updateTime(); seek(); }
 }
@@ -218,7 +224,10 @@ function openSource() {
 $("source-mode").addEventListener("click", openSource);
 $("program-mode").addEventListener("click", () => viewerModeSet("program"));
 $("source-quality").addEventListener("change", openSource);
-$("play").addEventListener("click", () => sourcePlayer.toggle().catch((error) => notice(error.message)));
+$("play").addEventListener("click", () => {
+  if (viewerMode === "program") { viewer?.invalidate(); programPlayer.toggle().catch((error) => notice(error.message)); }
+  else sourcePlayer.toggle().catch((error) => notice(error.message));
+});
 function selected() {
   const clip = timeline?.tracks
     .flatMap((track) => track.clips)
@@ -303,6 +312,7 @@ const canvasTimeline = createTimeline({
   getAssets: () => mediaAssets,
   onSelect: selected,
   onSeek: (final) => {
+    programPlayer?.pauseLocal();
     updateTime();
     if (final) seek();
   },
@@ -326,6 +336,7 @@ function updateTime() {
 function installTimeline(next) {
   canvasTimeline.cancel();
   timeline = next;
+  updatePlayAvailability();
   view.selection = [];
   selected();
   $("format").textContent = `${next.fps.num}/${next.fps.den} fps`;
@@ -405,6 +416,7 @@ let documentState = null,
   selectedMedia = null;
 const clientId = crypto.randomUUID();
 async function refresh() {
+  programPlayer?.stop();
   viewer?.invalidate();
   const next = await request("/session");
   if (documentState?.project_epoch !== next.project_epoch) {
@@ -417,6 +429,7 @@ async function refresh() {
   const previousId = timeline?.id,
     selection = view.selection;
   documentState = next;
+  $("play").disabled = viewerMode === "program" && !next.capabilities.playback;
   $("timeline-select").replaceChildren(
     ...next.timelines.map((t) => new Option(t.name, t.id)),
   );
@@ -497,6 +510,7 @@ async function refresh() {
 async function mutate(operation, project = false) {
   if (!writable || busy || unresolved)
     throw new Error("Editing is read only or a command is pending");
+  programPlayer?.stop();
   if (!project && (!timeline || timeline.id === "fixture"))
     throw new Error("Open a real project before editing");
   const body = {
@@ -743,7 +757,19 @@ viewer = createViewer({
         }
       : null,
 });
-seek = () => { if (viewerMode === "program") return viewer.seek(); };
+seek = () => { if (viewerMode === "program") { programPlayer?.stop(); return viewer.seek(); } };
+programPlayer = createProgramPlayer({
+  video: $("program-video"), status: $("program-status"), cancel: $("program-cancel"),
+  getState: () => {
+    if (!documentState?.capabilities.playback || !timeline || viewerMode !== "program") return null;
+    const end = Math.max(0, ...timeline.tracks.flatMap((t) => t.clips.map((c) => c.start_frame + c.length_frames)));
+    const start = Math.min(view.playhead, Math.max(0, end - 1));
+    return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: start, end_frame: Math.min(end, start + Math.floor(300 * timeline.fps.num / timeline.fps.den)), width: 960 } : null;
+  },
+  onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; updateTime(); } },
+  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; $("program-view").hidden = !active; $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
+  onError: notice,
+});
 sourcePlayer = createSourcePlayer({
   video: $("source-video"), status: $("source-status"), cancel: $("source-cancel"),
   onReady: async ({ item, epoch, job }) => {
@@ -782,6 +808,9 @@ $("source-video").addEventListener("timeupdate", () => {
 });
 for (const event of ["play", "pause", "ended"]) $("source-video").addEventListener(event, () => {
   $("play").textContent = $("source-video").paused ? "▶ Play" : "❚❚ Pause";
+});
+for (const event of ["play", "pause", "ended"]) $("program-video").addEventListener(event, () => {
+  if (viewerMode === "program") $("play").textContent = $("program-video").paused ? "▶ Play" : "❚❚ Pause";
 });
 async function diagnostics() {
   try {

@@ -1,6 +1,7 @@
 use crate::{
     error::{ApiError, Result},
     preview::encode_png,
+    program::{self, Inputs, ProgramQuery, ProgramTask},
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -57,19 +58,30 @@ struct Job {
     directory: PathBuf,
     cancel: Arc<AtomicBool>,
     bytes: u64,
+    export: Option<Arc<Mutex<vv_session::export::ExportProgress>>>,
+    descriptor: Option<Value>,
+    inputs: Inputs,
 }
 impl Job {
     fn value(&self) -> Value {
-        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error})
+        let progress = self
+            .export
+            .as_ref()
+            .map(|p| program::progress_value(&p.lock().unwrap()));
+        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"progress":progress})
     }
 }
 #[derive(Clone)]
-pub struct Source {
+pub struct MediaJobs {
     root: Arc<PathBuf>,
     jobs: Arc<Mutex<VecDeque<Job>>>,
-    send: mpsc::SyncSender<(String, SourceSpec, ProxyQuality)>,
+    send: mpsc::SyncSender<(String, Work)>,
 }
-impl Source {
+enum Work {
+    Source(Box<SourceSpec>, ProxyQuality),
+    Program(Box<ProgramTask>),
+}
+impl MediaJobs {
     pub fn start() -> std::io::Result<Self> {
         let root = std::env::temp_dir().join(format!(
             "venturi-web-media-{}-{}",
@@ -83,25 +95,38 @@ impl Source {
         let worker_root = root.clone();
         let jobs = Arc::new(Mutex::new(VecDeque::<Job>::new()));
         let owned = jobs.clone();
-        let (send, receive) = mpsc::sync_channel::<(String, SourceSpec, ProxyQuality)>(1);
+        let (send, receive) = mpsc::sync_channel::<(String, Work)>(1);
         std::thread::spawn(move || {
-            while let Ok((id, spec, quality)) = receive.recv() {
-                let (directory, cancel) = {
+            while let Ok((id, work)) = receive.recv() {
+                let (directory, cancel, progress, inputs) = {
                     let mut jobs = owned.lock().unwrap();
                     let Some(job) = jobs.iter_mut().find(|j| j.id == id) else {
                         continue;
                     };
                     job.state = "running";
-                    (job.directory.clone(), job.cancel.clone())
+                    (
+                        job.directory.clone(),
+                        job.cancel.clone(),
+                        job.export.clone(),
+                        job.inputs.clone(),
+                    )
                 };
-                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    generate(&spec, &directory, quality, &cancel, |frames| {
-                        if let Some(job) = owned.lock().unwrap().iter_mut().find(|j| j.id == id) {
-                            job.progress = frames;
+                let result =
+                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match work {
+                        Work::Source(spec, quality) => {
+                            generate(&spec, &directory, quality, &cancel, |frames| {
+                                if let Some(job) =
+                                    owned.lock().unwrap().iter_mut().find(|j| j.id == id)
+                                {
+                                    job.progress = frames;
+                                }
+                            })
                         }
-                    })
-                }))
-                .unwrap_or_else(|_| Err(ApiError::invalid("Native source generation failed")));
+                        Work::Program(task) => {
+                            task.generate(&directory, &cancel, progress.as_ref().unwrap(), &inputs)
+                        }
+                    }))
+                    .unwrap_or_else(|_| Err(ApiError::invalid("Native source generation failed")));
                 let mut jobs = owned.lock().unwrap();
                 if let Some(job) = jobs.iter_mut().find(|j| j.id == id) {
                     match result {
@@ -181,8 +206,15 @@ impl Source {
             directory: directory.clone(),
             cancel: Arc::new(AtomicBool::new(false)),
             bytes: 0,
+            export: None,
+            descriptor: None,
+            inputs: vec![],
         });
-        if self.send.try_send((id.clone(), spec, quality)).is_err() {
+        if self
+            .send
+            .try_send((id.clone(), Work::Source(Box::new(spec), quality)))
+            .is_err()
+        {
             jobs.pop_back();
             let _ = std::fs::remove_dir(&directory);
             return Err(ApiError::conflict(
@@ -191,6 +223,93 @@ impl Source {
             ));
         }
         Ok(jobs.back().unwrap().value())
+    }
+    pub fn prepare_program(&self, task: ProgramTask) -> Result<Value> {
+        task.validate()?;
+        let key = task.query.key();
+        let inputs = program::inputs(&task.snapshot)?;
+        let mut jobs = self.jobs.lock().unwrap();
+        if let Some(job) = jobs.iter().find(|j| {
+            j.key == key && j.inputs == inputs && !matches!(j.state, "failed" | "canceled")
+        }) {
+            return Ok(job.value());
+        }
+        trim(&mut jobs);
+        let id = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+            .to_string();
+        let directory = self.root.join(&id);
+        std::fs::create_dir(&directory).map_err(|_| ApiError::io())?;
+        let descriptor = task.descriptor(&directory);
+        let progress = vv_session::export::ExportProgress {
+            total_frames: task.query.end_frame - task.query.start_frame,
+            ..Default::default()
+        };
+        jobs.push_back(Job {
+            id: id.clone(),
+            key,
+            state: "queued",
+            progress: 0,
+            error: None,
+            directory: directory.clone(),
+            cancel: Arc::new(AtomicBool::new(false)),
+            bytes: 0,
+            export: Some(Arc::new(Mutex::new(progress))),
+            descriptor: Some(descriptor),
+            inputs,
+        });
+        if self
+            .send
+            .try_send((id, Work::Program(Box::new(task))))
+            .is_err()
+        {
+            jobs.pop_back();
+            let _ = std::fs::remove_dir(directory);
+            return Err(ApiError::conflict(
+                "MEDIA_BUSY",
+                "One media job is running and one is pending",
+            ));
+        }
+        Ok(jobs.back().unwrap().value())
+    }
+    pub fn program_status(&self, id: &str, query: &ProgramQuery, cancel: bool) -> Result<Value> {
+        let mut jobs = self.jobs.lock().unwrap();
+        let job = jobs
+            .iter_mut()
+            .find(|j| j.id == id && j.key == query.key())
+            .ok_or_else(ApiError::missing)?;
+        if !cancel && !program::unchanged(&job.inputs) {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Media changed since Program preparation",
+            ));
+        }
+        if cancel && matches!(job.state, "queued" | "running") {
+            job.cancel.store(true, Ordering::Relaxed);
+        }
+        Ok(job.value())
+    }
+    pub fn program_asset(&self, id: &str, query: &ProgramQuery) -> Result<File> {
+        let mut jobs = self.jobs.lock().unwrap();
+        let job = jobs
+            .iter_mut()
+            .find(|j| j.id == id && j.key == query.key())
+            .ok_or_else(ApiError::missing)?;
+        if job.state != "ready" {
+            return Err(ApiError::conflict(
+                "PROGRAM_NOT_READY",
+                "Wait for composed preview preparation",
+            ));
+        }
+        if !program::unchanged(&job.inputs) {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Media changed since Program preparation",
+            ));
+        }
+        File::open(job.directory.join("program.mp4")).map_err(|_| ApiError::missing())
     }
     fn authorized<'a>(
         jobs: &'a mut VecDeque<Job>,

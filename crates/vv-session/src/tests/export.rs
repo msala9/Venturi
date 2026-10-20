@@ -2,6 +2,58 @@ use super::*;
 use vv_core::ClipSource;
 use vv_core::{Clip, Keyframed, Rgba, Track, TrackKind};
 
+#[test]
+fn headless_host_gpu_hooks_guard_both_native_stages_without_changing_output() {
+    use std::sync::atomic::AtomicUsize;
+    let mut project = Project::default();
+    let mut track = Track::new(TrackKind::Video);
+    track.insert_sorted(solid_color_clip(1, 0, 4, red()));
+    let mut timeline = timeline_with(vec![track]);
+    timeline.resolution = (64, 36);
+    let id = project.timelines.insert(timeline);
+    let path = std::env::temp_dir().join(format!("vv-export-guard-{}.mp4", std::process::id()));
+    let settings = ExportSettings::new(path.clone());
+    let progress = Mutex::new(ExportProgress::default());
+    let gate = Mutex::new(());
+    let entries = AtomicUsize::new(0);
+    let completions = AtomicUsize::new(0);
+    struct Permit<'a> {
+        _guard: std::sync::MutexGuard<'a, ()>,
+        completions: &'a AtomicUsize,
+    }
+    impl Drop for Permit<'_> {
+        fn drop(&mut self) {
+            self.completions.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+    export_timeline_with_gpu(
+        &project,
+        id,
+        &settings,
+        0..4,
+        &progress,
+        &AtomicBool::new(false),
+        || Ok(vv_render::Compositor::new_headless()),
+        |_| {
+            let guard = gate.lock().unwrap();
+            entries.fetch_add(1, Ordering::Relaxed);
+            Ok(Permit {
+                _guard: guard,
+                completions: &completions,
+            })
+        },
+        2,
+    )
+    .unwrap();
+    assert_eq!(entries.load(Ordering::Relaxed), 8);
+    assert_eq!(completions.load(Ordering::Relaxed), 8);
+    assert_eq!(progress.lock().unwrap().current_frame, 4);
+    assert!(progress.lock().unwrap().done);
+    let meta = vv_media::probe_media(&path).unwrap();
+    assert_eq!((meta.width, meta.height), (64, 36));
+    std::fs::remove_file(path).unwrap();
+}
+
 fn solid_color_clip(id: u64, start: FrameIdx, len: FrameIdx, color: Rgba) -> Clip {
     let mut clip = Clip::from_source_range(
         ClipId(id),

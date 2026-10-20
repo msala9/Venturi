@@ -185,10 +185,13 @@ impl ActiveClipDecoder {
         target_source_frame: FrameIdx,
         is_image: bool,
         hw: &[vv_media::HwDevice],
+        cpu_threads: usize,
     ) -> Result<Self, ExportError> {
         // `Decoder::open` on an image would hit EOF after the first frame.
         let mut decoder = if is_image {
             vv_media::Decoder::open_image(path)
+        } else if hw.is_empty() && cpu_threads > 0 {
+            vv_media::Decoder::open_software_bounded(path, cpu_threads)
         } else {
             vv_media::Decoder::open_with(path, hw, vv_media::HwPriority::Normal)
         }
@@ -239,6 +242,7 @@ struct StreamingFrameProvider {
     hw: Vec<vv_media::HwDevice>,
     /// As `ExportProgress::decoders`.
     used: Vec<Option<vv_media::HwDevice>>,
+    cpu_threads: usize,
 }
 
 impl StreamingFrameProvider {
@@ -285,6 +289,7 @@ impl FrameProvider for StreamingFrameProvider {
                 source_frame,
                 is_image,
                 &self.hw,
+                self.cpu_threads,
             )?),
         };
         let frame = decoder.advance_to(source_frame)?;
@@ -304,6 +309,35 @@ pub fn export_timeline(
     range: std::ops::Range<FrameIdx>,
     progress: &Mutex<ExportProgress>,
     cancel: &AtomicBool,
+) -> Result<(), ExportError> {
+    export_timeline_with_gpu(
+        project,
+        timeline_id,
+        settings,
+        range,
+        progress,
+        cancel,
+        || {
+            Ok(vv_render::Compositor::new_headless_with_precision(
+                project.precision,
+            ))
+        },
+        |_| Ok(()),
+        0,
+    )
+}
+
+/// Allows a headless host to select and guard its GPU while sharing the native pipeline.
+pub fn export_timeline_with_gpu<G>(
+    project: &Project,
+    timeline_id: TimelineId,
+    settings: &ExportSettings,
+    range: std::ops::Range<FrameIdx>,
+    progress: &Mutex<ExportProgress>,
+    cancel: &AtomicBool,
+    create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
+    acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
+    cpu_threads: usize,
 ) -> Result<(), ExportError> {
     let started = std::time::Instant::now();
     let finish = || {
@@ -336,13 +370,14 @@ pub fn export_timeline(
     let has_audio_track = audio_settings.is_some();
 
     let (out_w, out_h) = settings.output_size(timeline.resolution);
-    let mut encoder = vv_media::Encoder::new(
+    let mut encoder = vv_media::Encoder::new_with_threads(
         &settings.output_path,
         out_w,
         out_h,
         timeline.fps,
         &settings.video,
         audio_settings.map(|a| (PROJECT_SAMPLE_RATE, PROJECT_CHANNELS, a)),
+        cpu_threads,
     )
     .map_err(ExportError::failed)?;
 
@@ -358,7 +393,7 @@ pub fn export_timeline(
     // in the decode stage and sampled in the composition one,
     // so they must be on the same device. Headless, so as not to contend
     // with the UI's.
-    let compositor = vv_render::Compositor::new_headless_with_precision(project.precision);
+    let compositor = create_compositor()?;
     {
         let mut p = progress.lock().unwrap();
         p.output_path = settings.output_path.clone();
@@ -366,6 +401,7 @@ pub fn export_timeline(
         p.encoder = Some(settings.video.codec);
     }
     let compositor = &compositor;
+    let acquire_gpu = &acquire_gpu;
     std::thread::scope(|scope| {
         let (audio_tx, audio_rx) = std::sync::mpsc::sync_channel::<Vec<f32>>(AUDIO_AHEAD_CHUNKS);
         let audio_mix = has_audio_track.then(|| {
@@ -386,6 +422,7 @@ pub fn export_timeline(
         scope.spawn(move || {
             let mut provider = StreamingFrameProvider {
                 hw: settings.hw_decode.clone(),
+                cpu_threads,
                 ..Default::default()
             };
             for frame in decode_range {
@@ -393,14 +430,17 @@ pub fn export_timeline(
                     return;
                 }
                 let t = std::time::Instant::now();
-                let decoded = decode_video_frame(
-                    project,
-                    timeline,
-                    &mut provider,
-                    compositor,
-                    frame,
-                    resolution,
-                );
+                let decoded = (|| {
+                    let _guard = acquire_gpu(compositor)?;
+                    decode_video_frame(
+                        project,
+                        timeline,
+                        &mut provider,
+                        compositor,
+                        frame,
+                        resolution,
+                    )
+                })();
                 let mut p = progress.lock().unwrap();
                 p.decode.add(t.elapsed());
                 if p.decoders != provider.used {
@@ -418,8 +458,10 @@ pub fn export_timeline(
         scope.spawn(move || {
             for decoded in decoded_rx {
                 let t = std::time::Instant::now();
-                let composed =
-                    decoded.map(|layers| compose_video_frame(compositor, &layers, output));
+                let composed = decoded.and_then(|layers| {
+                    let _guard = acquire_gpu(compositor)?;
+                    Ok(compose_video_frame(compositor, &layers, output))
+                });
                 progress.lock().unwrap().compose.add(t.elapsed());
                 let failed = composed.is_err();
                 if composed_tx.send(composed).is_err() || failed {

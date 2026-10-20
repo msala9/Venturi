@@ -297,12 +297,25 @@ impl Encoder {
         video: &VideoSettings,
         audio: Option<(u32, u16, &AudioSettings)>,
     ) -> Result<Self, crate::MediaError> {
+        Self::new_with_threads(path, width, height, fps, video, audio, 0)
+    }
+
+    pub fn new_with_threads(
+        path: &Path,
+        width: u32,
+        height: u32,
+        fps: vv_core::Rational,
+        video: &VideoSettings,
+        audio: Option<(u32, u16, &AudioSettings)>,
+        cpu_threads: usize,
+    ) -> Result<Self, crate::MediaError> {
         crate::probe::ensure_init();
 
         let mut octx = format::output(path)?;
         let global_header = octx.format().flags().contains(format::Flags::GLOBAL_HEADER);
 
-        let (video_encoder, nv12) = open_video_encoder(video, width, height, fps, global_header)?;
+        let (video_encoder, nv12) =
+            open_video_encoder(video, width, height, fps, global_header, cpu_threads)?;
         let video_time_base = video_encoder.time_base();
         let mut video_ost = octx.add_stream(video_encoder.codec())?;
         let video_stream_index = video_ost.index();
@@ -552,6 +565,7 @@ fn open_video_encoder(
     height: u32,
     fps: vv_core::Rational,
     global_header: bool,
+    cpu_threads: usize,
 ) -> Result<(encoder::Video, Option<ffmpeg::frame::Video>), crate::MediaError> {
     let name = settings.codec.ffmpeg_name();
     let codec = encoder::find_by_name(name)
@@ -577,6 +591,9 @@ fn open_video_encoder(
         flags |= codec::Flags::GLOBAL_HEADER;
     }
     let mut opts = Dictionary::new();
+    if cpu_threads > 0 && settings.codec == VideoCodec::X264 {
+        opts.set("threads", &cpu_threads.min(4).to_string());
+    }
     if !settings.codec.presets().is_empty() {
         opts.set("preset", &settings.preset);
     }

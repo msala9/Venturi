@@ -16,7 +16,7 @@ async fn http_command_roundtrip_and_malformed_requests() {
     ));
     let app = router(AppState {
         preview: Preview::disabled(),
-        source: Source::start().unwrap(),
+        source: MediaJobs::start().unwrap(),
         host: Host::start(&root).unwrap(),
         port: 8787,
     });
@@ -80,7 +80,7 @@ async fn health_assets_snapshot_and_host_boundary() {
     ));
     let app = router(AppState {
         preview: Preview::disabled(),
-        source: Source::start().unwrap(),
+        source: MediaJobs::start().unwrap(),
         host: Host::start(&root).unwrap(),
         port: 8787,
     });

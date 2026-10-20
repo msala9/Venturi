@@ -198,3 +198,40 @@ identity isolation, Range/If-Range and obsolete browser preparations. Clippy,
 formatting, native desktop check and vv-web build passed. Program playback,
 export and advanced feature parity remain subsequent work, not completed by
 source playback.
+
+## M3c implementation checkpoint — GPU acceptance pending
+
+Program preparation now reuses the native bounded decode/compose/encode and
+offline audio-mix pipeline, with an explicit compositor factory and per-stage
+GPU permits. The original desktop export entry point retains its defaults.
+Web permits wait for submitted GPU work before unlocking, including unwinding;
+local GPU workers serialize before trying the shared laboratory lock. Web CPU
+decode and x264 encode use two threads. Preview ranges are currently capped
+at five minutes, ten-minute preparation time and 512 MiB output.
+
+The media worker now serves source and Program jobs with one running and one
+pending item, progress, cancellation and Range delivery. Program identity
+includes epoch, generation, native revision, range, requested quality and used
+source-file identities. Status/download revalidate the document and media.
+Cancellation remains possible after the document revision changes. Only fully
+finalized MP4 files become ready. Browser playback rejects superseded seeks,
+uses media presentation time for the playhead and polls document validity.
+
+CPU/local checks: 19 vv-web tests, 13 JavaScript tests and native session suite
+99 passed / 1 upstream ignored. A focused native test verifies eight permit
+entries/releases for four decoded/composed frames and decodable native output.
+WSL graphics tests use software rendering; they are not R9700 evidence.
+Clippy for vv-web/vv-media/vv-session and formatting passed. Target GPU playback,
+color comparison, long-form A/V timing and actual encoder-stage measurements
+remain unverified; M3c is not accepted yet.
+
+Resource handoff: D41 requested priority for EP2 inference. Venturi stopped its
+GPU process and restarted only its own web service without --gpu-device.
+Verified no /dev/dri or /dev/kfd handles and approximately 51 MiB server RSS.
+No foreign workload was stopped. Hardware testing stays suspended until D41
+confirms release; CPU development continues locally. D41 confirmed its workers
+exited at 12:36:37 UTC; a subsequent check found H3 holding the shared lock.
+Re-enable only Venturi's GPU option during a verified free slot. Exact preview
+now drops its compositor after two idle seconds; Program owns its compositor
+only during preparation. Diagnostics report context residency separately from
+hardware capability. Actual device-handle release still needs hardware proof.

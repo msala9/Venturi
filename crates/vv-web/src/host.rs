@@ -25,6 +25,7 @@ pub enum Action {
     Mutation(Option<String>, Mutation),
     Lookup(String),
     FrameSnapshot(FrameQuery, oneshot::Sender<Result<FrameSnapshot>>),
+    CheckFrame(FrameQuery),
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
@@ -199,8 +200,31 @@ impl Editor {
         }
         Ok(())
     }
+    fn validate_frame(&self, query: &FrameQuery) -> Result<(vv_core::TimelineId, (u32, u32))> {
+        if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch())
+            || query.if_generation != self.session.history.generation().to_string()
+        {
+            return Err(ApiError::conflict(
+                "REVISION_CONFLICT",
+                "Project changed before the frame snapshot",
+            ));
+        }
+        let id = snapshot::timeline_id(&self.session, &query.timeline_id)?;
+        if self.session.timeline_revision(id) != query.revision {
+            return Err(ApiError::conflict(
+                "REVISION_CONFLICT",
+                "Timeline changed before the frame snapshot",
+            ));
+        }
+        let tl = &self.session.project.timelines[id];
+        if !(0..tl.total_frames().max(1)).contains(&query.frame) {
+            return Err(ApiError::invalid("Preview frame is outside the timeline"));
+        }
+        Ok((id, frame_size(tl.resolution, query.width)?))
+    }
     fn handle(&mut self, action: Action) -> Result<Value> {
         match action {
+            Action::CheckFrame(query) => self.validate_frame(&query).map(|_| Value::Null),
             Action::SourceSnapshot(media_id, query, reply) => {
                 let result = (|| {
                     if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
@@ -234,26 +258,7 @@ impl Editor {
             }
             Action::FrameSnapshot(query, reply) => {
                 let result = (|| {
-                    if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch())
-                        || query.if_generation != self.session.history.generation().to_string()
-                    {
-                        return Err(ApiError::conflict(
-                            "REVISION_CONFLICT",
-                            "Project changed before the frame snapshot",
-                        ));
-                    }
-                    let id = snapshot::timeline_id(&self.session, &query.timeline_id)?;
-                    if self.session.timeline_revision(id) != query.revision {
-                        return Err(ApiError::conflict(
-                            "REVISION_CONFLICT",
-                            "Timeline changed before the frame snapshot",
-                        ));
-                    }
-                    let tl = &self.session.project.timelines[id];
-                    if !(0..tl.total_frames().max(1)).contains(&query.frame) {
-                        return Err(ApiError::invalid("Preview frame is outside the timeline"));
-                    }
-                    let size = frame_size(tl.resolution, query.width)?;
+                    let (id, size) = self.validate_frame(&query)?;
                     Ok(FrameSnapshot {
                         project: self.session.project.clone(),
                         timeline: id,

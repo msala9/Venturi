@@ -489,3 +489,6 @@ label {
     scroll-behavior: auto !important;
   }
 }
+.curve-graph { display: block; width: 100%; height: 190px; touch-action: none; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.curve-editor select { width: 100%; min-width: 0; max-width: 100%; }
+.curve-editor fieldset { min-width: 0; margin: 8px 0; padding: 8px; }

@@ -116,6 +116,10 @@ pub enum Operation {
         clip_id: String,
         edits: Vec<crate::inspector::Keyframe>,
     },
+    EditCurveKey {
+        clip_id: String,
+        edit: crate::curves::Edit,
+    },
     ApplyGradeAtFrame {
         clip_id: String,
         frame: FrameIdx,
@@ -474,6 +478,9 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         }
         Operation::SetKeyframes { clip_id, edits } => {
             crate::inspector::keyframes(session, id, clip_id, edits)?
+        }
+        Operation::EditCurveKey { clip_id, edit } => {
+            crate::curves::edit(session, id, clip_id, edit)?
         }
         Operation::EditFilter { clip_id, edit } => crate::visual::edit(session, id, clip_id, edit)?,
         Operation::ApplyGradePreset { clip_id, preset } => {

@@ -145,6 +145,20 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 
 ## Implemented Inspector commands
 
+- Clip detail also returns `curves`: visible native source-frame bounds and
+  scalar transform, gain, grade, filter and mask tracks. Native `value_at`
+  produces at most 769 samples per animated track (two for constants).
+  The first 2048 keys include exact source/timeline frames, outgoing
+  interpolation and native `control_points`; `key_count` reports truncation.
+- `edit_curve_key {clip_id, edit:{target, previous_source_frame, source_frame,
+  value, interpolation}}` adds, edits/moves or deletes (`value:null`) one key.
+  Exact source coordinates avoid a lossy timeline round trip on conformed
+  clips. Existing keys must exist, destinations must be inside the visible
+  source range, and another key at the destination returns
+  `KEYFRAME_COLLISION`. Hidden keys can be deleted. Target/value/Bezier/track
+  lock validation completes before a single native CompositeCommand applies.
+  Usual epoch/generation/revision/writer/idempotency guards apply.
+
 - GET `/api/v1/timelines/{id}/clips/{clip}` accepts the same revisioned query as
   exact frame preview. Returns native evaluated/default transform and gain,
   source-frame keyframes, bounds, fades, RGBA, blend and matte choices. Reads

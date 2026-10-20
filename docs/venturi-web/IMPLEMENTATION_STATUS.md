@@ -898,3 +898,38 @@ Evidence: m5-halo2-final-color-browser.png and m7-halo2-final-runtime.json.
 No foreign process/port, kernel AMD driver, ROCm or inference configuration
 was modified. Long-form Export limits, hardware encode/decode selection and
 the remaining M4–M7 feature ledger are still open.
+
+## M4 independent increment — native scalar curves and Bezier editing
+
+The Inspector now has a working Curves panel, also reachable from the Color
+workspace. Its DPR-aware Canvas plots bounded samples evaluated by native
+Keyframed::value_at. Track selection covers transform, grade, filter and mask
+scalars and audio clip gain. Keys retain exact source coordinates alongside
+native timeline positions. Numeric editing, duplication, deletion, key dragging
+and outgoing Bezier handles use one revisioned edit and one Undo per gesture.
+The browser only maps geometry; it does not evaluate interpolation. Native
+Interpolation::control_points supplies handle positions, including presets.
+
+The adapter refuses occupied destinations, missing original keys, locked tracks,
+out-of-range values/frames and invalid Bezier points before applying any command.
+Moving an odd source-frame key on a conformed clip does not round it through the
+timeline. Escape, capture loss, pointer cancellation and window blur abandon local
+drafts. Unknown mutation outcomes use the existing command lookup/recovery flow.
+Sampling is bounded to 769 points per animated track, with 2048 selectable keys
+and an explicit total count. Constant tracks need at most two samples.
+
+65 vv-web Rust tests and 29 JavaScript tests pass, along with formatting, web
+clippy with warnings denied and a native binary build. Coverage includes every
+advertised scalar target, exact source timing, collision/validation atomicity,
+undo/redo, hidden-key deletion, long dense curves and one commit per completed
+key or handle drag. Browser proof is in m4-native-curves.json and the accompanying
+screenshots: a saved copy of the ranged fixture retains its Bezier keys after
+reload; a handle drag changes only its outgoing control, Undo restores it, a
+collision leaves history unchanged, and deletion is reversible.
+
+Curves parity remains partial: multi-key box selection/group moves, dedicated
+zoom/pan, linked zoom axes and RGBA/text/enum key editing are open. Slip's dual
+viewer, viewer mask/transition handles, broader compound editing, live audio
+meters/spectrum, browser voiceover/VAD, saved/shared libraries, long exports,
+durable recovery and AI Review also remain open. There is no complete GUI parity
+or production-readiness claim. This increment requires no hardware GPU work.

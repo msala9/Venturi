@@ -80,7 +80,7 @@ function showWorkspace(name) {
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance"].includes(label)));
+    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)));
     if (!button.disabled) button.addEventListener("click",()=>{
       if(name === "Color") {
         if (label === "Auto balance") {
@@ -91,6 +91,10 @@ function showWorkspace(name) {
             .catch((error)=>notice(error.message)).finally(()=>{button.disabled=false;});return;
         }
         if (label === "Waveform / RGB parade / Vectorscope / Histogram") { scopes?.setVisible($("scopes").hidden); return; }
+        if (label === "Curves") {
+          const curves=document.querySelector('[data-visual-path="curves"]');if(!curves)return notice("Select a native clip first");
+          revealInspector();curves.open=true;curves.scrollIntoView({block:"start"});return;
+        }
         const filters=document.querySelector('[data-visual-path="filters"]');if(!filters)return notice("Select a native video clip first");
         revealInspector();filters.open=true;filters.scrollIntoView({block:"start"});return;
       }

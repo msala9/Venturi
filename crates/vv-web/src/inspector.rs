@@ -45,7 +45,7 @@ pub struct Parameter {
     pub param: TransformParam,
     pub value: f32,
 }
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Target {
     Transform {
@@ -397,6 +397,15 @@ fn keyframe_command(
     raw: &str,
     edit: &Keyframe,
 ) -> Result<Box<dyn Command>> {
+    keyframe_command_at(session, id, raw, edit, None)
+}
+pub(crate) fn keyframe_command_at(
+    session: &Session,
+    id: TimelineId,
+    raw: &str,
+    edit: &Keyframe,
+    source_frame: Option<i64>,
+) -> Result<Box<dyn Command>> {
     let (track, clip_id, clip) = find(session, id, raw)?;
     writable(session, id, track)?;
     if !(clip.timeline_start..clip.timeline_end()).contains(&edit.timeline_frame) {
@@ -517,7 +526,7 @@ fn keyframe_command(
             ));
         }
     };
-    let frame = clip.source_frame_at(edit.timeline_frame);
+    let frame = source_frame.unwrap_or_else(|| clip.source_frame_at(edit.timeline_frame));
     let command: Box<dyn Command> = if edit.value.is_some() {
         Box::new(core::UpsertKeyframe::new(
             id,
@@ -588,6 +597,7 @@ pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64)
     result["filters"] = crate::visual::detail(clip, frame);
     result["filters"]["wheel_hues"] = crate::visual::wheel_palette();
     result["filters"]["wheels"] = crate::visual::wheels();
+    result["curves"] = crate::curves::detail(session, id, clip, track);
     Ok(result)
 }
 

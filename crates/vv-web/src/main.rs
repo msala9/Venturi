@@ -2,6 +2,7 @@ mod api;
 mod audio;
 mod clipboard;
 mod commands;
+mod curves;
 mod error;
 mod files;
 mod host;

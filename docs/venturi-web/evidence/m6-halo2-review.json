@@ -1,0 +1,12 @@
+{
+  "pid": 1173130,
+  "sha256": "55c81b7dc862f7eae6ce5f52ee6b97a0f7e2377f55882e7adff32f37ed16a3bf",
+  "source_commit": "e15f24af9ca3d11a31a130373f8178c3ed394b64",
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "saved_project": "CPU_shared_library_UI_check.vvproj",
+  "exact_seed": "9007199254740993",
+  "review_script_sha256": "be2d1959fb05ef3de4314a2e68ddbc470d5bd0be0d6b6f78047dfe966aa1b031",
+  "malformed_plan_refused_without_mutation": true
+}

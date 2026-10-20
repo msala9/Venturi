@@ -1270,3 +1270,15 @@ finished at 4.010 s. Evidence: m6-review.json, m6-review-ab-clock.json,
 m6-review-ab-browser.png, m6-review-duration-browser.png and
 m6-review-preserved-key-browser.png. This is CPU acceptance. Shot/Take sidecar,
 favorite/reject/editable metadata and hardware acceptance remain open.
+
+The e15f24a binary is deployed on halo2, SHA-256
+55c81b7dc862f7eae6ce5f52ee6b97a0f7e2377f55882e7adff32f37ed16a3bf.
+Both Review panes decoded the shared original 320x180 PNG and displayed the
+captured model/prompt and exact seed 9007199254740993. Still comparison disables
+movie playback. The original saved library project stayed unchanged. The
+embedded Review module matches the tested source; malformed preview requests
+are rejected without mutation. CPU/lavapipe isolation, two worker caps, no
+DRI/KFD handles and no hardware-lock acquisition were verified. Evidence:
+m6-halo2-review.json/browser.png. The detailed local proof retains only the
+relevant native session and complete opacity/crop tracks rather than repeating
+unrelated Inspector catalogs.

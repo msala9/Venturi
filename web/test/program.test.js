@@ -154,3 +154,181 @@ test("status failure, nonready result and media error release all ready-cache mo
   let reply;const f=heartbeatFixture(()=>new Promise(resolve=>reply=resolve));await f.player.toggle();const pending=f.timers.fire();f.video.dispatchEvent(new Event('error'));
   assert.equal(f.player.state(),"failed");assert.equal(f.calls[0].signal.aborted,true);assert.equal(f.timers.jobs.size,0);reply(Response.json({state:'ready'}));await pending;assert.equal(f.player.state(),"failed");assert.equal(f.timers.jobs.size,0);f.player.stop();
 });
+
+function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
+async function settle(){for(let i=0;i<40;i++)await Promise.resolve();}
+function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek}={}){
+  class Video extends EventTarget {
+    movie="";position=0;readyState=1;seeking=false;paused=true;ended=false;duration=0;plays=0;waitMetadata=false;waitSeek=false;fastPause=false;
+    callbacks=new Map();canceled=[];nextCallback=0;
+    requestVideoFrameCallback(callback){const id=++this.nextCallback;this.callbacks.set(id,callback);return id;}
+    cancelVideoFrameCallback(id){this.canceled.push(id);}
+    get src(){return this.movie;}
+    set src(value){this.movie=value;this.ended=false;this.position=0;this.readyState=this.waitMetadata?0:1;}
+    get currentTime(){return this.position;}
+    set currentTime(value){this.position=value;this.seeking=true;this.dispatchEvent(new Event("seeking"));if(!this.waitSeek)this.seeking=false;}
+    pause(){this.paused=true;this.dispatchEvent(new Event("pause"));}
+    async play(){this.paused=false;this.ended=false;this.plays++;this.dispatchEvent(new Event("play"));if(this.fastPause)this.pause();}
+    removeAttribute(){this.movie="";this.ended=false;}
+    getAttribute(){return this.movie;}
+    load(){}
+    finish(range){this.duration=(range.end_frame-range.start_frame)*fps.den/fps.num;this.position=this.duration;this.ended=true;this.pause();this.dispatchEvent(new Event("timeupdate"));this.dispatchEvent(new Event("ended"));}
+  }
+  const video=new Video(),status={textContent:""},timers=fakeTimers(),requests=[],frames=[],fetches=[];
+  let playhead=origin,document={project_epoch:"epoch",if_generation:"1",timeline_id:"timeline",revision:"revision",width:960};
+  const getState=start=>{
+    if(!document)return null;
+    const frame=start===undefined?Math.min(playhead,total-1):start;
+    return Number.isSafeInteger(frame) && frame>=0 && frame<total ? {...document,start_frame:frame,end_frame:Math.min(total,frame+Math.floor(300*fps.num/fps.den))} : null;
+  };
+  const ready=(range,id=`window${requests.length}`)=>({id,state:"ready",program:{start_frame:range.start_frame,end_frame:range.end_frame,fps,width:960,height:540}});
+  const player=createProgramPlayer({video,status,timers,cancel:new EventTarget(),getState,beforeWindowChange,isInternalSeek,onState(){},onFrame:frame=>{frames.push(frame);playhead=frame;},api:async(path,range)=>{requests.push({...range});return api?api(range,ready):ready(range);},fetcher:async(url,options)=>{fetches.push({url,...options});return fetcher?fetcher(url,options):Response.json({state:"ready"});}});
+  return {video,status,timers,requests,frames,fetches,player,ready,getState,setDocument:value=>{document=value;}};
+}
+
+test("natural EOF advances exactly three foreground windows including a fractional-fps tail and nonzero origin",async()=>{
+  const fps={num:30_000,den:1001},span=Math.floor(300*fps.num/fps.den),origin=137,total=origin+2*span+11;
+  let hooks=0;const f=windowFixture({origin,total,fps,beforeWindowChange:()=>{hooks++;}});
+  try{
+    await f.player.toggle();assert.equal(f.requests.length,1);
+    for(const boundary of [origin+span,origin+2*span]){
+      const previous=f.player.range();f.video.finish(previous);
+      assert.equal(f.player.state(),"preparing");assert.match(f.status.textContent,/Paused.*next/);assert.equal(f.frames.at(-1),boundary-1);
+      f.video.dispatchEvent(new Event("ended"));await settle();
+      assert.equal(f.player.state(),"ready");assert.equal(f.requests.at(-1).start_frame,boundary);assert.equal(f.frames.at(-1),boundary);assert.equal(f.video.currentTime,0);
+      const count=f.requests.length;f.video.dispatchEvent(new Event("ended"));await settle();assert.equal(f.requests.length,count,"a stale ended event cannot advance the new movie");
+      assert.equal(f.timers.jobs.size,1);
+    }
+    assert.equal(f.requests.length,3);assert.equal(f.player.range().end_frame,total);assert.equal(hooks,2);
+    f.video.finish(f.player.range());await settle();assert.equal(f.requests.length,3);assert.equal(f.frames.at(-1),total-1);assert.equal(f.status.textContent,"End of timeline");
+    f.video.dispatchEvent(new Event("ended"));await settle();assert.equal(f.requests.length,3);
+  }finally{f.player.stop();}
+});
+
+test("rollover uses the acknowledged covering range boundary and retains the old frame until tail, metadata and seek finish",async()=>{
+  const tail=deferred();let count=0;
+  const f=windowFixture({origin:137,total:20_000,beforeWindowChange:()=>tail.promise,api:(range,ready)=>ready({...range,start_frame:count++===0?0:range.start_frame,end_frame:range.end_frame+5})});
+  try{
+    await f.player.toggle();assert.equal(f.video.currentTime,137/30);const old=f.player.range(),src=f.video.src;
+    f.video.waitMetadata=true;f.video.waitSeek=true;f.video.finish(old);await settle();
+    assert.equal(f.requests[1].start_frame,old.end_frame);assert.equal(f.video.src,src);assert.equal(f.player.range(),old);assert.equal(f.frames.at(-1),old.end_frame-1);
+    tail.resolve();await settle();assert.notEqual(f.video.src,src);assert.equal(f.video.plays,1);assert.equal(f.frames.at(-1),old.end_frame-1);
+    f.video.readyState=1;f.video.dispatchEvent(new Event("loadedmetadata"));await settle();assert.equal(f.video.plays,1);assert.equal(f.frames.at(-1),old.end_frame-1);
+    f.video.seeking=false;f.video.dispatchEvent(new Event("seeked"));await settle();assert.equal(f.video.plays,2);assert.equal(f.frames.at(-1),old.end_frame);
+  }finally{f.player.stop();}
+});
+
+test("user pause and seek revoke continuation while natural EOF pause and fast startup pause retain it",async()=>{
+  for(const action of ["pause","seek","local"]){
+    const f=windowFixture();try{
+      await f.player.toggle();
+      if(action==="pause")f.video.pause();else if(action==="seek")f.video.currentTime=1;else f.player.pauseLocal();
+      f.video.finish(f.player.range());await settle();assert.equal(f.requests.length,1,action);
+    }finally{f.player.stop();}
+  }
+  const f=windowFixture({beforeWindowChange:()=>f.video.pause()});try{
+    f.video.fastPause=true;await f.player.toggle();assert.equal(f.video.paused,true);
+    f.video.finish(f.player.range());await settle();assert.equal(f.requests.length,2);assert.equal(f.video.plays,2);
+  }finally{f.player.stop();}
+  let correcting=false;const corrected=windowFixture({isInternalSeek:()=>correcting});try{
+    await corrected.player.toggle();correcting=true;corrected.video.currentTime=1;correcting=false;
+    corrected.video.finish(corrected.player.range());await settle();assert.equal(corrected.requests.length,2,"fast clock correction retains continuation intent");
+  }finally{corrected.player.stop();}
+});
+
+test("stop, pause, stale document and disconnect invalidate a pending continuation ACK without deleting shared jobs",async()=>{
+  for(const action of ["stop","pause","stale","disconnect"]){
+    const ack=deferred();let calls=0;const f=windowFixture({api:(range,ready)=>++calls===1?ready(range):ack.promise});
+    try{
+      await f.player.toggle();const old=f.player.range(),src=f.video.src;f.video.finish(old);await settle();
+      if(action==="stop")f.player.stop();else if(action==="pause")f.player.pauseLocal();else f.setDocument(action==="disconnect"?null:{...f.getState(),revision:"changed"});
+      ack.resolve(f.ready(f.requests[1]));await settle();assert.equal(f.video.plays,1);assert.equal(f.video.paused,true);assert.equal(f.fetches.some(call=>call.method==="DELETE"),false);
+      assert.equal(f.video.src,action==="stop"?"":src);if(action==="stale" || action==="disconnect")assert.equal(f.player.state(),"failed");else assert.equal(f.player.state(),'stopped');
+    }finally{f.player.stop();}
+  }
+});
+
+test("canceled tail and media waits cannot install or play a late continuation",async()=>{
+  for(const phase of ["tail","metadata","seek"]){
+    const tail=deferred(),f=windowFixture({beforeWindowChange:()=>tail.promise});
+    try{
+      await f.player.toggle();f.video.waitMetadata=phase==="metadata";f.video.waitSeek=phase==="seek";f.video.finish(f.player.range());await settle();
+      if(phase!=="tail"){tail.resolve();await settle();}
+      f.player.stop();tail.resolve();f.video.readyState=1;f.video.seeking=false;f.video.dispatchEvent(new Event("loadedmetadata"));f.video.dispatchEvent(new Event("seeked"));await settle();
+      assert.equal(f.video.src,"");assert.equal(f.video.plays,1);assert.equal(f.player.state(),"stopped");assert.equal(f.timers.jobs.size,0);
+    }finally{f.player.stop();}
+  }
+});
+
+test("continuation failures do not autoplay and an old heartbeat cannot disrupt the next window",async()=>{
+  for(const failure of ["renderer","range","tail"]){
+    let count=0;const f=windowFixture({beforeWindowChange:()=>{if(failure==="tail")throw new Error("Audio tail incomplete");},api:(range,ready)=>{
+      if(++count===1)return ready(range);
+      if(failure==="renderer")return {state:"failed",error:"PREVIEW_STORAGE_PRESSURE",program:range};
+      return ready(failure==="range"?{...range,end_frame:range.start_frame}:range);
+    }});
+    try{await f.player.toggle();f.video.finish(f.player.range());await settle();assert.equal(f.player.state(),"failed");assert.equal(f.video.plays,1);assert.equal(f.timers.jobs.size,0);}finally{f.player.stop();}
+  }
+  const response=deferred(),f=windowFixture({fetcher:()=>response.promise});
+  await f.player.toggle();const pending=f.timers.fire();assert.equal(f.fetches.length,1);
+  f.video.finish(f.player.range());await settle();const src=f.video.src;
+  assert.equal(f.fetches[0].signal.aborted,true);response.resolve(new Response("",{status:409}));await pending;
+  assert.equal(f.video.src,src);assert.equal(f.player.state(),"ready");assert.equal(f.timers.jobs.size,1);
+  f.player.stop();
+});
+
+test("a late canceled frame callback cannot clear the next window's callback owner",async()=>{
+  const f=windowFixture();try{
+    await f.player.toggle();const old=f.video.callbacks.get(1);
+    f.video.finish(f.player.range());await settle();const current=f.video.nextCallback,frames=f.frames.length;
+    assert.ok(current>1);old(0,{presentedFrames:99,mediaTime:999});assert.equal(f.frames.length,frames);assert.equal(f.video.nextCallback,current);
+    f.player.pauseLocal();assert.equal(f.video.canceled.at(-1),current,"pause must retain and cancel the replacement callback ID");
+  }finally{f.player.stop();}
+});
+
+test('pauseLocal, native pause and user seek end pending preparation truthfully and the next Play works once',async t=>{
+  for(const phase of ['ack','tail','metadata','seek'])for(const action of ['local','pause','seek'])await t.test(`${phase}/${action}`,async()=>{
+    const ack=deferred(),tail=deferred();let calls=0;
+    const f=windowFixture({beforeWindowChange:()=>tail.promise,api:(range,ready)=>++calls===2 && phase==='ack'?ack.promise:ready(range)});
+    try{
+      await f.player.toggle();f.video.waitMetadata=phase==='metadata';f.video.waitSeek=phase==='seek';f.video.finish(f.player.range());await settle();
+      if(phase==='metadata' || phase==='seek'){tail.resolve();await settle();}
+      assert.equal(f.player.state(),'preparing');
+      if(action==='local')f.player.pauseLocal();else if(action==='pause')f.video.pause();else f.video.currentTime=1;
+      assert.equal(f.player.state(),'stopped');assert.equal(f.video.paused,true);assert.match(f.status.textContent,/preparation paused.*Play/);assert.equal(f.timers.jobs.size,0);
+      ack.resolve(f.ready(f.requests[1]));tail.resolve();f.video.readyState=1;f.video.seeking=false;f.video.dispatchEvent(new Event('loadedmetadata'));f.video.dispatchEvent(new Event('seeked'));await settle();
+      assert.equal(f.player.state(),'stopped');assert.equal(f.video.plays,1);assert.equal(f.fetches.some(call=>call.method==='DELETE'),false);
+      f.video.waitMetadata=false;f.video.waitSeek=false;await f.player.toggle();assert.equal(f.player.state(),'ready');assert.equal(f.video.plays,2);assert.equal(f.timers.jobs.size,1);
+    }finally{f.player.stop();}
+  });
+});
+
+test('a queued old error with cleared MediaError cannot fail the replacement ready movie',async()=>{
+  const f=windowFixture();
+  try{
+    await f.player.toggle();const old=f.video.src;f.video.finish(f.player.range());await settle();assert.notEqual(f.video.src,old);
+    const src=f.video.src,text=f.status.textContent;f.video.error=null;f.video.dispatchEvent(new Event('error'));
+    assert.equal(f.player.state(),'ready');assert.equal(f.video.src,src);assert.equal(f.status.textContent,text);assert.equal(f.video.plays,2);assert.equal(f.timers.jobs.size,1);
+    f.video.error={code:3,message:'Current media decode failed'};f.video.dispatchEvent(new Event('error'));assert.equal(f.player.state(),'failed');assert.equal(f.video.paused,true);assert.equal(f.timers.jobs.size,0);
+  }finally{f.player.stop();}
+});
+
+test('cleared old MediaError events cannot reject replacement metadata or seek waits',async()=>{
+  const f=windowFixture();
+  try{
+    await f.player.toggle();f.video.waitMetadata=true;f.video.waitSeek=true;f.video.finish(f.player.range());await settle();assert.equal(f.player.state(),'preparing');
+    f.video.error=null;f.video.dispatchEvent(new Event('error'));await settle();assert.equal(f.player.state(),'preparing');assert.equal(f.video.plays,1);
+    f.video.readyState=1;f.video.dispatchEvent(new Event('loadedmetadata'));await settle();assert.equal(f.player.state(),'preparing');f.video.dispatchEvent(new Event('error'));await settle();assert.equal(f.player.state(),'preparing');
+    f.video.seeking=false;f.video.dispatchEvent(new Event('seeked'));await settle();assert.equal(f.player.state(),'ready');assert.equal(f.video.plays,2);
+  }finally{f.player.stop();}
+});
+
+test('queued old pause and seeking events cannot revoke the playing replacement or cancel its frame owner',async()=>{
+  const f=windowFixture();
+  try{
+    await f.player.toggle();f.video.finish(f.player.range());await settle();const callback=f.video.nextCallback,canceled=f.video.canceled.length;
+    assert.equal(f.video.paused,false);assert.equal(f.video.seeking,false);f.video.dispatchEvent(new Event('pause'));f.video.dispatchEvent(new Event('seeking'));
+    assert.equal(f.player.state(),'ready');assert.equal(f.video.paused,false);assert.equal(f.video.canceled.length,canceled);assert.equal(f.video.nextCallback,callback);
+    f.video.finish(f.player.range());await settle();assert.equal(f.requests.length,3);assert.equal(f.video.plays,3);
+  }finally{f.player.stop();}
+});

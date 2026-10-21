@@ -488,6 +488,14 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   finalized H.264/AAC native composition with byte Range support. Status and
   delivery reject changed document or media identities. One media job runs,
   with one pending; source and Program share the bounded queue/cache.
+- At natural EOF, the browser requests the next window from the prepared movie's
+  actual exclusive end, keeping the same document identity. It prepares one
+  foreground window at a time and displays the preparation pause. End of the
+  timeline stops continuation. Stop, pause, seek, document changes and late
+  replies cannot start an obsolete window. Cached covering ranges retain their
+  actual media origin. Fast audio must finish its old bounded tail before the
+  next movie is installed; canceled or incomplete tails refuse continuation.
+  This does not establish gapless playback or continuous filter state.
 - Native desktop export retains its defaults. Web decoding/x264 use two CPU
   threads and explicit AMD Vulkan composition under the shared hardware lock.
   Hardware busy fails promptly. There is no realtime or hardware-encode claim.

@@ -20,6 +20,16 @@ finds containing ready ranges, so browser reload does not force recomposition.
 Changed composition, source identities, width, eviction or cancellation cannot
 activate an obsolete movie. Existing movie job/disk budgets still apply.
 
+Natural movie EOF continues from the prepared range's exclusive end through
+one foreground window at a time. Preparation pauses remain visible; there is no
+prefetch or gapless playback claim. Timeline end returns no next range, rather
+than clamping a continuation to the last frame. Playback intent and async owners
+are checked across status, metadata, seek and audio-tail handoff; stopped or
+changed documents cannot autoplay later. Fast native audio drains its final
+queued samples before replacement, within its existing 250 ms tail timeout.
+An incomplete/canceled tail stops continuation. Continuous audio/filter-state
+and rendered long-timeline acceptance remain separate qualification work.
+
 API GET `/api/v1/preview/frame` for timeline_id/frame/revision/width. Host creates a valid renderer on specified headless Vulkan adapter; request has bounded resolution (e.g. max 1920, configurable). Use queue coalescing per browser: newest seek wins, at most 1-2 active; stale results discarded based on revision + request_seq. Add ETag based on snapshot/frame/quality when safe; server caches bounded by bytes; do not retain unlimited full images in browser memory. HTTP 503 when Vulkan unavailable; UI can still edit metadata/timeline.
 
 ## Phase B — Source Viewer via source proxy (M3b)

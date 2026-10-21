@@ -104,6 +104,14 @@ reported. Evicted material can be regenerated. PNG/JPEG/WebP stills display thei
 bytes; compound media opens its child timeline for Program preview. Original
 source files are preserved.
 
+Program playback continues through successive preview windows of at most five
+minutes, preparing only the next requested window after natural EOF. The viewer
+shows a preparation pause; there is no gapless playback guarantee. Stop, pause,
+seek or document changes cancel continuation. At 2x/4x/8x, queued native audio
+must finish its old window within the 250 ms tail deadline before replacement;
+incomplete audio stops and requires Play to retry.
+
+
 Existing project saves use same-directory staging, file sync, atomic rename
 and a previous-file `.vvproj.bak`. To recover that previous save, stop the
 host, preserve the current file separately, and copy the backup to another

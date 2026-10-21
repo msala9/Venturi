@@ -1197,6 +1197,7 @@ async fn assets(request: Request) -> Response {
         "/js/balance.js" => asset!("/web/js/balance.js", "text/javascript"),
         "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),
         "/js/program.js" => asset!("/web/js/program.js", "text/javascript"),
+        "/js/program-range.js" => asset!("/web/js/program-range.js", "text/javascript"),
         "/js/export.js" => asset!("/web/js/export.js", "text/javascript"),
         "/js/inspector.js" => asset!("/web/js/inspector.js", "text/javascript"),
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),

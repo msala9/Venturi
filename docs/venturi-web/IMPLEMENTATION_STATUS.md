@@ -23,14 +23,14 @@ ds4 media-catalog integration has actual NAS evidence.
 Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
-selection/placement and preview cache retention now pass
-206 Rust tests, 304 JavaScript tests,
+selection/placement preview cache retention and Program window continuation now pass
+206 Rust tests, 345 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
 `evidence/m4-transition-duration-handles.json`, `evidence/m4-speed-handles.json`,
 `evidence/m4-mask-pen-path-keys.json`, `evidence/m4-transition-placement.json`
-and `evidence/m3-preview-cache-safety.json`;
+`evidence/m3-preview-cache-safety.json` and `evidence/m3-program-rollover.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
@@ -2655,3 +2655,30 @@ segmentation and Program rollover remain open; capability rows stay partial.
 Own test units stop and port 8811 closes. Parent files, source media and the
 primary editor's five unsaved moves remain intact. The candidate is staged
 without restarting that editor.
+
+
+## M3 — foreground Program window continuation
+
+Program continues from the acknowledged movie's actual exclusive end, using one
+foreground window of at most five minutes at a time. A preparation pause is
+visible; no prefetch or gapless playback is claimed. Explicit continuation at
+timeline end returns no range, preserving the final valid playhead. Native
+covering-cache ranges retain their real media origin and frame mapping.
+
+Playback intent and attachment ownership are separate from paused media state.
+Stop, pause, native seek, document changes and late acknowledgment/status/media
+callbacks cannot autoplay a replacement. Fast transport exposes a bounded old
+window handoff: queued native audio must actually finish within its existing
+250 ms tail deadline before changing query/src. Canceled, failed or incomplete
+audio refuses continuation; selected tempo remains intact. Internal fast-video
+drift corrections remain separate from user seeking.
+
+206 Rust and 345 JavaScript tests, fmt, clippy with warnings denied and native
+build pass on halo2. Deterministic tests cover multiple exact windows, final short tails, fractional
+FPS, nonzero starts, covering cache, old heartbeats/frame callbacks, metadata and
+seek gates, cancellation, storage failure and native audio-tail ownership.
+Finite API acceptance serves the embedded assets and verifies unchanged saved
+restart and preservation of parent files and the primary dirty editor. It does
+not render a long timeline or qualify browser, physical audio, continuous filter
+state, GPU or gapless behavior. Source segmentation remains open. Evidence:
+`evidence/m3-program-rollover.json`.

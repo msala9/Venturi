@@ -4,9 +4,9 @@ export function windowPayload(target,start,seconds,tempo,version) {
   const frame=Math.floor(start/RATE*(target.fps.num/target.fps.den));
   return {query:{...target.query,frame},window:{start_sample:start,end_sample:target.end,seconds,tempo,source_version:version}};
 }
-export function createFastTransport({videos,select,status,getTarget,getVideo,notice,onState=()=>{},fetcher=fetch,contextFactory=()=>new AudioContext(),frame=requestAnimationFrame,cancelFrame=cancelAnimationFrame}) {
+export function createFastTransport({videos,select,status,getTarget,getVideo,notice,onState=()=>{},fetcher=fetch,contextFactory=()=>new AudioContext(),frame=requestAnimationFrame,cancelFrame=cancelAnimationFrame,timers=globalThis}) {
   let context=null,active=null,sequence=0;
-  const routes=new Map(),blocked=new Map(),ignoredPauses=new WeakMap();
+  const routes=new Map(),blocked=new Map(),ignoredPauses=new WeakMap(),windowOutcomes=new WeakMap();
   const rate=()=>Number(select.value);
   function pauseInternal(video) {
     if(video.paused)return;
@@ -21,24 +21,29 @@ export function createFastTransport({videos,select,status,getTarget,getVideo,not
     }
     return routes.get(video);
   }
-  function clear(pause=false) {
+  function clear(pause=false,completed=false) {
     sequence++;
     const old=active;active=null;
     if(old) {
-      if(old.video.dataset)old.video.dataset.fastPlaybackMetrics=JSON.stringify({...JSON.parse(old.video.dataset.fastPlaybackMetrics || "{}"),tempo:old.tempo,windows:old.windows,max_drift_seconds:old.maxDrift,video_time:old.video.currentTime,stopped:true,stop_reason:old.reason || "replaced",audio_complete:old.last && (!old.sources.size || context.currentTime>=old.baseTime+(old.next-old.baseSample)/RATE/old.tempo)});
-      old.controller.abort();clearTimeout(old.timer);cancelFrame(old.frame);
+      if(old.video.dataset)old.video.dataset.fastPlaybackMetrics=JSON.stringify({...JSON.parse(old.video.dataset.fastPlaybackMetrics || "{}"),tempo:old.tempo,windows:old.windows,max_drift_seconds:old.maxDrift,video_time:old.video.currentTime,stopped:true,stop_reason:old.reason || "replaced",audio_complete:completed});
+      old.controller.abort();timers.clearTimeout(old.timer);cancelFrame(old.frame);
       for(const source of old.sources) {source.onended=null;source.stop();source.disconnect();}
       old.gain?.disconnect();
+      windowOutcomes.set(old.video,{identity:old.target.identity,tempo:old.tempo,completed});
+      old.finish?.resolve(completed);old.finish=null;
       if(pause)pauseInternal(old.video);
       onState("stopped");
     }
     for(const {gain} of routes.values())gain.gain.value=rate()===1?1:0;
   }
-  function stop(reason="stopped") {if(active)active.reason=reason;clear(true);status.textContent="";}
+  function stop(reason="stopped") {if(active)active.reason=reason;const completed=reason==='ended' && !!active?.last && active.sources.size===0;clear(true,completed);status.textContent="";}
   function ended(run) {
+    if(!current(run))return;
+    if(!run.last){fail(run,new Error('Native audio did not reach the window end · press Play to retry'));return;}
     if(run.last && run.sources.size) {
-      run.draining=true;cancelFrame(run.frame);clearTimeout(run.timer);
-      run.timer=setTimeout(()=>{if(current(run))fail(run,new Error("Audio output did not finish its queued tail · play to retry"));},250);return;
+      if(run.draining)return;
+      run.draining=true;cancelFrame(run.frame);timers.clearTimeout(run.timer);
+      run.timer=timers.setTimeout(()=>{if(active===run){if(current(run))fail(run,new Error("Audio output did not finish its queued tail · play to retry"));else stop('window changed');}},250);return;
     }
     stop("ended");
   }
@@ -72,8 +77,8 @@ export function createFastTransport({videos,select,status,getTarget,getVideo,not
         const result=await response.json(),error=new Error(result.error?.message || "Native fast audio unavailable");error.code=result.error?.code;
         if(error.code!=="AUDIO_BUSY" || attempt===4)throw error;
         await new Promise((resolve,reject)=>{
-          const aborted=()=>{clearTimeout(timer);reject(new DOMException("Canceled","AbortError"));};
-          const timer=setTimeout(()=>{run.controller.signal.removeEventListener("abort",aborted);resolve();},80);
+          const aborted=()=>{timers.clearTimeout(timer);reject(new DOMException("Canceled","AbortError"));};
+          const timer=timers.setTimeout(()=>{run.controller.signal.removeEventListener("abort",aborted);resolve();},80);
           run.controller.signal.addEventListener("abort",aborted,{once:true});
         });
       }
@@ -96,7 +101,7 @@ export function createFastTransport({videos,select,status,getTarget,getVideo,not
       if(first) {
         status.textContent=`${tempo}× · native pitch-preserving audio`;
         run.frame=frame(()=>clock(run));
-        run.timer=setTimeout(()=>{
+        run.timer=timers.setTimeout(()=>{
           if(!current(run))return;
           run.starting=true;
           run.video.play().catch(error=>fail(run,error));
@@ -108,6 +113,7 @@ export function createFastTransport({videos,select,status,getTarget,getVideo,not
   function extend(run) {if(current(run) && !run.last && !run.fetching && run.sources.size<2)prepare(run,run.next,run.seconds);}
   async function start(video) {
     clear();
+    windowOutcomes.delete(video);
     const target=getTarget(video),tempo=rate();
     if(tempo===1){routes.get(video)?.gain.gain.setValueAtTime(1,context.currentTime);await context?.resume();return;}
     if(!target){video.pause();status.textContent="Prepare Source or Program playback first";return;}
@@ -125,9 +131,9 @@ export function createFastTransport({videos,select,status,getTarget,getVideo,not
       if(!current(run)){if(active===run)stop();return;}
       if(context.state!=="running")throw new Error("Audio output is suspended · press Play again");
       if(video.readyState<1)await new Promise((resolve,reject)=>{
-        const cleanup=()=>{clearTimeout(timer);video.removeEventListener("loadedmetadata",ready);video.removeEventListener("error",failed);run.controller.signal.removeEventListener("abort",aborted);};
+        const cleanup=()=>{timers.clearTimeout(timer);video.removeEventListener("loadedmetadata",ready);video.removeEventListener("error",failed);run.controller.signal.removeEventListener("abort",aborted);};
         const ready=()=>{cleanup();resolve();},failed=()=>{cleanup();reject(new Error("Video metadata unavailable"));},aborted=()=>{cleanup();reject(new DOMException("Canceled","AbortError"));};
-        const timer=setTimeout(failed,5000);video.addEventListener("loadedmetadata",ready);video.addEventListener("error",failed);run.controller.signal.addEventListener("abort",aborted,{once:true});
+        const timer=timers.setTimeout(failed,5000);video.addEventListener("loadedmetadata",ready);video.addEventListener("error",failed);run.controller.signal.addEventListener("abort",aborted,{once:true});
       });
       if(!current(run)){if(active===run)stop();return;}
       const sample=target.origin+Math.round(video.currentTime*RATE);
@@ -136,7 +142,20 @@ export function createFastTransport({videos,select,status,getTarget,getVideo,not
   }
   function normal() {
     select.value="1";stop();
-    for(const video of videos)video.playbackRate=1;
+    for(const video of videos){video.playbackRate=1;windowOutcomes.delete(video);}
+  }
+  function finishWindow(video){
+    const run=active?.video===video?active:null;
+    if(!run){
+      const outcome=windowOutcomes.get(video),target=getTarget(video);
+      if(rate()===1 || target?.audio===false)return Promise.resolve(true);
+      return Promise.resolve(!outcome || outcome.identity!==target?.identity || outcome.tempo!==rate() || outcome.completed);
+    }
+    if(run.finish)return run.finish.promise;
+    if(!current(run)){stop('window changed');return Promise.resolve(false);}
+    const atEnd=video.ended || (video.paused && Number.isFinite(video.duration) && video.duration>0 && video.currentTime>=video.duration-0.00001);
+    if(!atEnd || !run.last){fail(run,new Error('Native audio has not completed this window · play to retry'));return Promise.resolve(false);}
+    let resolve;const promise=new Promise(done=>{resolve=done;});run.finish={promise,resolve};ended(run);return promise;
   }
   select.addEventListener("change",()=>{
     const video=getVideo(),playing=video && (!video.paused || active?.video===video);
@@ -168,5 +187,5 @@ export function createFastTransport({videos,select,status,getTarget,getVideo,not
     video.addEventListener("volumechange",()=>{if(active?.video===video)volume(active);});
     video.addEventListener("ratechange",()=>{if(active?.video===video && video.playbackRate!==active.tempo)stop();});
   }
-  return {stop,normal,active:()=>!!active,cancelPreparation(){if(active && !active.started){stop();return true;}return false;}};
+  return {stop,normal,finishWindow,correcting:video=>Boolean(active?.video===video && active.correcting),active:()=>!!active,cancelPreparation(){if(active && !active.started){stop();return true;}return false;}};
 }

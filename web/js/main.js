@@ -6,6 +6,7 @@ import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js"
 import { createViewer } from "./viewer.js";
 import { createSourcePlayer, sourceAssetURL, sourceSelection, sourceFrameAtTime } from "./source.js";
 import { createProgramPlayer } from "./program.js";
+import { buildProgramWindow } from "./program-range.js";
 import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection } from "./inspector.js";
 import { renderMixer } from "./mixer.js";
 import { createExportPanel } from "./export.js";
@@ -1213,12 +1214,14 @@ $("source-video").addEventListener("play",()=>audioScrub?.stop());
 bindSourceScrub($("source-video"),audioScrub,()=>viewerMode==="source" && !fastTransport?.active());
 programPlayer = createProgramPlayer({
   video: $("program-video"), status: $("program-status"), cancel: $("program-cancel"),
-  getState: () => {
+  getState: (startFrame) => {
     if (!documentState?.capabilities.playback || !timeline || viewerMode !== "program") return null;
-    const end = Math.max(0, ...timeline.tracks.flatMap((t) => t.clips.map((c) => c.start_frame + c.length_frames)));
-    const start = Math.min(view.playhead, Math.max(0, end - 1));
-    return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: start, end_frame: Math.min(end, start + Math.floor(300 * timeline.fps.num / timeline.fps.den)), width: 960 } : null;
+    return buildProgramWindow(documentState,timeline,view.playhead,startFrame);
   },
+  beforeWindowChange: async () => {
+    if(fastTransport && !await fastTransport.finishWindow($("program-video")))throw new Error("Fast audio did not finish its preview window · press Play to retry");
+  },
+  isInternalSeek: () => Boolean(fastTransport?.correcting($("program-video"))),
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); } },
   onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
   onStop:async()=>{await viewer?.seek();scopes?.refresh();previewCache.refresh();},

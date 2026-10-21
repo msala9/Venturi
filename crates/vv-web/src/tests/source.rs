@@ -14,6 +14,7 @@ fn cache_fixture_job(directory: PathBuf, state: &'static str, bytes: u64) -> Job
         export: None,
         descriptor: None,
         source_window: None,
+        source_assets: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
         export_epoch: None,
@@ -312,6 +313,18 @@ fn twelve_frame_source_window_job_publishes_only_its_ranged_movie_and_reuses_the
         pending["id"]
     );
     assert_eq!(std::fs::read(&path).unwrap(), original);
+    let assets = service.prepare_assets(cloned_source(&spec)).unwrap();
+    let assets_id = assets["id"].as_str().unwrap();
+    let ready = wait_for_assets(&service, &spec, assets_id);
+    assert_eq!(ready["source_assets"]["total_frames"], 601);
+    assert!(service.asset(assets_id, &spec, "thumb.png").is_ok());
+    assert!(service.asset(assets_id, &spec, "source.mp4").is_err());
+    assert_eq!(
+        std::fs::read_dir(service.root.join(assets_id))
+            .unwrap()
+            .count(),
+        1
+    );
 }
 
 #[test]
@@ -767,6 +780,7 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         export: None,
         descriptor: None,
         source_window: None,
+        source_assets: None,
         program_query: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
@@ -807,6 +821,7 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
         export: None,
         descriptor: None,
         source_window: None,
+        source_assets: None,
         program_query: None,
         inputs: vec![(
             jobs.root.join("source-no-longer-present"),
@@ -967,6 +982,7 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
         export: None,
         descriptor: None,
         source_window: None,
+        source_assets: None,
         inputs: vec![],
         source_asset: None,
         export_epoch: None,
@@ -1168,4 +1184,373 @@ fn saved_export_discard_checks_old_epoch_state_revision_and_download_lifetime_th
     }
     drop(jobs);
     std::fs::remove_dir_all(path).unwrap();
+}
+
+fn wait_for_assets(service: &MediaJobs, spec: &SourceSpec, id: &str) -> Value {
+    let started = Instant::now();
+    loop {
+        let status = service.status(id, spec, false).unwrap();
+        if status["state"] == "ready" {
+            return status;
+        }
+        assert!(
+            matches!(status["state"].as_str(), Some("queued" | "running")),
+            "{status}"
+        );
+        assert!(started.elapsed() < Duration::from_secs(10));
+        std::thread::sleep(Duration::from_millis(10));
+    }
+}
+#[test]
+fn source_assets_admit_long_metadata_and_separate_full_source_identity_without_movie_quality() {
+    let root = cache_fixture_root("assets-meta");
+    let path = root.join("input");
+    std::fs::write(&path, b"fixture").unwrap();
+    let mut spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "a:1".into(),
+        media_id: "1".into(),
+        meta: window_fixture_meta(),
+    };
+    assert!(validate_assets_meta(&spec.meta).is_ok());
+    let identity = spec.identity().unwrap();
+    let key = assets_key(&spec, &identity);
+    assert!(key.ends_with(":v3-assets:full"));
+    assert_ne!(key, source_key(&spec, ProxyQuality::Low, None, &identity));
+    let mut actual = spec.meta.clone();
+    actual.channels = 1;
+    assert!(!same_assets_meta(&spec.meta, &actual));
+    actual = spec.meta.clone();
+    actual.file.video_codec = Some("older-description".into());
+    assert!(same_assets_meta(&spec.meta, &actual));
+    actual = spec.meta.clone();
+    actual.duration_frames += 1;
+    assert!(!same_assets_meta(&spec.meta, &actual));
+    actual = spec.meta.clone();
+    actual.has_audio = true;
+    assert!(!same_assets_meta(&spec.meta, &actual));
+    spec.epoch = "a:2".into();
+    assert_ne!(key, assets_key(&spec, &identity));
+    spec.meta.fps = vv_core::Rational::new(0, 1);
+    assert!(validate_assets_meta(&spec.meta).is_err());
+    std::fs::remove_dir_all(root).unwrap();
+}
+#[test]
+fn native_full_source_assets_publish_only_thumbnail_and_streamed_waveform_and_reuse_scoped_jobs() {
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("input.mp4");
+    let settings = vv_media::VideoSettings {
+        preset: "ultrafast".into(),
+        ..Default::default()
+    };
+    let audio = vv_media::AudioSettings::default();
+    let mut encoder = vv_media::Encoder::new(
+        &path,
+        16,
+        16,
+        vv_core::Rational::new(24, 1),
+        &settings,
+        Some((48_000, 1, &audio)),
+    )
+    .unwrap();
+    let mut frame = vec![64; 256];
+    frame.extend(vec![128; 128]);
+    for _ in 0..24 {
+        encoder.write_video_frame(&frame).unwrap();
+    }
+    let samples: Vec<f32> = (0..48_000)
+        .map(|sample| {
+            if sample < 24_000 {
+                0.0
+            } else {
+                (sample as f32 * 440.0 * std::f32::consts::TAU / 48_000.0).sin() * 0.5
+            }
+        })
+        .collect();
+    encoder.write_audio_samples(&samples).unwrap();
+    encoder.finish().unwrap();
+    let original = std::fs::read(&path).unwrap();
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "assets:1".into(),
+        media_id: "1".into(),
+        meta: vv_media::probe_media(&path).unwrap(),
+    };
+    let pending = service.prepare_assets(cloned_source(&spec)).unwrap();
+    let id = pending["id"].as_str().unwrap();
+    let ready = wait_for_assets(&service, &spec, id);
+    assert!(ready["source_asset"].is_null());
+    assert!(ready["source_window"].is_null());
+    assert!(ready["program"].is_null());
+    assert_eq!(
+        ready["source_assets"]["total_frames"],
+        spec.meta.duration_frames
+    );
+    assert_eq!(
+        ready["source_assets"]["source_version"],
+        spec.identity().unwrap()
+    );
+    assert_eq!(ready["source_assets"]["has_video"], true);
+    assert_eq!(ready["source_assets"]["has_audio"], true);
+    assert!(
+        service
+            .asset(id, &spec, "thumb.png")
+            .unwrap()
+            .metadata()
+            .unwrap()
+            .len()
+            <= 1024 * 1024
+    );
+    let waveform: Value =
+        serde_json::from_reader(service.asset(id, &spec, "waveform.json").unwrap()).unwrap();
+    assert_eq!(waveform["scope"], "full_source");
+    assert!((waveform["duration_seconds"].as_f64().unwrap() - 1.0).abs() < 0.1);
+    let peaks = waveform["peaks"].as_array().unwrap();
+    assert!(peaks.len() <= 65_536);
+    assert!(
+        peaks
+            .iter()
+            .skip(peaks.len() / 2)
+            .any(|peak| peak.as_f64().unwrap() > 0.1)
+    );
+    let directory = service.root.join(id);
+    assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 2);
+    for name in ["source.mp4", "video.mp4", "audio.m4a"] {
+        assert!(!directory.join(name).exists());
+    }
+    assert_eq!(
+        service.prepare_assets(cloned_source(&spec)).unwrap()["id"],
+        pending["id"]
+    );
+    let mut wrong = cloned_source(&spec);
+    wrong.epoch = "assets:2".into();
+    assert!(service.status(id, &wrong, false).is_err());
+    assert!(service.asset(id, &wrong, "thumb.png").is_err());
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    File::options()
+        .append(true)
+        .open(&path)
+        .unwrap()
+        .write_all(b"changed")
+        .unwrap();
+    assert!(service.status(id, &spec, false).is_err());
+    assert!(service.asset(id, &spec, "waveform.json").is_err());
+}
+#[test]
+fn native_audio_only_assets_accept_legacy_descriptive_metadata_and_publish_only_full_source_waveform()
+ {
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("audio.wav");
+    let samples: Vec<f32> = (0..4_800).map(|i| (i as f32 * 0.2).sin() * 0.5).collect();
+    vv_media::audio_file::write_audio_file(
+        &path,
+        vv_media::audio_file::AudioFileFormat::Wav,
+        &samples,
+        48_000,
+        1,
+    )
+    .unwrap();
+    let mut spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "audio:1".into(),
+        media_id: "1".into(),
+        meta: vv_media::probe_media(&path).unwrap(),
+    };
+    assert_ne!(spec.meta.file, vv_core::MediaFileInfo::default());
+    spec.meta.file = Default::default();
+    let pending = service.prepare_assets(cloned_source(&spec)).unwrap();
+    let id = pending["id"].as_str().unwrap();
+    let ready = wait_for_assets(&service, &spec, id);
+    assert_eq!(ready["source_assets"]["has_video"], false);
+    let waveform: Value =
+        serde_json::from_reader(service.asset(id, &spec, "waveform.json").unwrap()).unwrap();
+    assert_eq!(waveform["scope"], "full_source");
+    assert!((waveform["duration_seconds"].as_f64().unwrap() - 0.1).abs() < 0.001);
+    assert_eq!(std::fs::read_dir(service.root.join(id)).unwrap().count(), 1);
+    assert!(service.asset(id, &spec, "source.mp4").is_err());
+    assert!(service.asset(id, &spec, "thumb.png").is_err());
+}
+fn dormant_assets_service() -> (MediaJobs, mpsc::Receiver<(String, Work)>, SourceSpec) {
+    let root = cache_fixture_root("assets-preempt");
+    let path = root.join("input");
+    std::fs::write(&path, b"fixture").unwrap();
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "a:1".into(),
+        media_id: "1".into(),
+        meta: window_fixture_meta(),
+    };
+    let mut analysis = cache_fixture_job(root.join("analysis"), "running", 0);
+    std::fs::create_dir(&analysis.directory).unwrap();
+    analysis.source_assets = Some(json!({}));
+    analysis.source_asset = None;
+    let foreign = cache_fixture_job(root.join("foreign"), "running", 0);
+    std::fs::create_dir(&foreign.directory).unwrap();
+    let (send, receive) = mpsc::sync_channel(1);
+    (
+        MediaJobs {
+            root: Arc::new(root),
+            jobs: Arc::new(Mutex::new(VecDeque::from([analysis, foreign]))),
+            send,
+            exports: None,
+            exports_blocked: false,
+        },
+        receive,
+        spec,
+    )
+}
+#[test]
+fn accepted_foreground_source_preempts_only_running_assets_after_validation_and_queue_admission() {
+    for fail_send in [false, true] {
+        let (service, receiver, spec) = dormant_assets_service();
+        let analysis = service.jobs.lock().unwrap()[0].cancel.clone();
+        let foreign = service.jobs.lock().unwrap()[1].cancel.clone();
+        assert!(
+            service
+                .prepare_window(
+                    cloned_source(&spec),
+                    "low",
+                    SourceWindow {
+                        start_frame: 0,
+                        end_frame: 1_441
+                    }
+                )
+                .is_err()
+        );
+        assert!(!analysis.load(Ordering::Relaxed));
+        let queued = cache_fixture_job(service.root.join("queued"), "queued", 0);
+        service.jobs.lock().unwrap().push_back(queued);
+        assert_eq!(
+            service
+                .prepare_window(
+                    cloned_source(&spec),
+                    "low",
+                    SourceWindow {
+                        start_frame: 0,
+                        end_frame: 12
+                    }
+                )
+                .unwrap_err()
+                .1,
+            "SOURCE_BUSY"
+        );
+        assert!(!analysis.load(Ordering::Relaxed));
+        service.jobs.lock().unwrap().pop_back();
+        if fail_send {
+            drop(receiver);
+        } else {
+            assert!(
+                service
+                    .send
+                    .try_send((
+                        "occupied".into(),
+                        Work::Assets(Box::new(cloned_source(&spec)))
+                    ))
+                    .is_ok()
+            );
+        }
+        assert!(
+            service
+                .prepare_window(
+                    cloned_source(&spec),
+                    "low",
+                    SourceWindow {
+                        start_frame: 0,
+                        end_frame: 12
+                    }
+                )
+                .is_err()
+        );
+        assert!(!analysis.load(Ordering::Relaxed));
+        assert!(!foreign.load(Ordering::Relaxed));
+        let root = (*service.root).clone();
+        drop(service);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+    let (service, receiver, spec) = dormant_assets_service();
+    let analysis = service.jobs.lock().unwrap()[0].cancel.clone();
+    let foreign = service.jobs.lock().unwrap()[1].cancel.clone();
+    service
+        .prepare_window(
+            cloned_source(&spec),
+            "low",
+            SourceWindow {
+                start_frame: 0,
+                end_frame: 12,
+            },
+        )
+        .unwrap();
+    assert!(analysis.load(Ordering::Relaxed));
+    assert!(!foreign.load(Ordering::Relaxed));
+    assert!(matches!(
+        receiver.try_recv().unwrap().1,
+        Work::Source(_, _, _)
+    ));
+    let root = (*service.root).clone();
+    drop(service);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn accepted_legacy_source_and_program_work_preempt_assets_without_canceling_foreign_work() {
+    for program in [false, true] {
+        let (service, receiver, mut spec) = dormant_assets_service();
+        let analysis = service.jobs.lock().unwrap()[0].cancel.clone();
+        let foreign = service.jobs.lock().unwrap()[1].cancel.clone();
+        if program {
+            let mut project = vv_core::Project::default();
+            let mut track = vv_core::Track::new(vv_core::TrackKind::Video);
+            track.insert_sorted(vv_core::Clip::from_source_range(
+                vv_core::ClipId(1),
+                vv_core::ClipSource::SolidColor,
+                0,
+                24,
+                0,
+                vv_core::Rational::one(),
+            ));
+            let timeline = project.timelines.insert(vv_core::Timeline {
+                name: "Assets foreground".into(),
+                fps: vv_core::Rational::new(24, 1),
+                resolution: (640, 360),
+                tracks: vec![track],
+                markers: vec![],
+                master: Default::default(),
+            });
+            let query = ProgramQuery {
+                project_epoch: "p:1".into(),
+                if_generation: "0".into(),
+                timeline_id: "1".into(),
+                revision: "r".into(),
+                start_frame: 0,
+                end_frame: 24,
+                width: 640,
+            };
+            service
+                .prepare_program(ProgramTask {
+                    snapshot: crate::preview::FrameSnapshot {
+                        project,
+                        timeline,
+                        query: query.frame(),
+                        size: (640, 360),
+                    },
+                    query,
+                    preview: crate::preview::Preview::disabled(),
+                    export: None,
+                })
+                .unwrap();
+            assert!(matches!(receiver.try_recv().unwrap().1, Work::Program(_)));
+        } else {
+            spec.meta.duration_frames = 24;
+            service.prepare(spec, "low").unwrap();
+            assert!(matches!(
+                receiver.try_recv().unwrap().1,
+                Work::Source(_, _, None)
+            ));
+        }
+        assert!(analysis.load(Ordering::Relaxed));
+        assert!(!foreign.load(Ordering::Relaxed));
+        let root = (*service.root).clone();
+        drop(service);
+        std::fs::remove_dir_all(root).unwrap();
+    }
 }

@@ -125,6 +125,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/diagnostics", get(diagnostics))
         .route("/api/v1/media/{id}/prepare", post(prepare_source))
         .route(
+            "/api/v1/media/{id}/assets/prepare",
+            post(prepare_source_assets),
+        )
+        .route(
             "/api/v1/media/{id}/jobs/{job}",
             get(source_status).delete(cancel_source),
         )
@@ -844,6 +848,17 @@ async fn prepare_source(
     }
     .map(Json)
 }
+async fn prepare_source_assets(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<Json<SourceQuery>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>> {
+    let query = payload
+        .map_err(|_| ApiError::invalid("Invalid source assets request"))?
+        .0;
+    let spec = state.host.source_snapshot(id, query).await?;
+    state.source.prepare_assets(spec).map(Json)
+}
 async fn source_status(
     State(state): State<AppState>,
     Path((id, job)): Path<(String, String)>,
@@ -1202,6 +1217,7 @@ async fn assets(request: Request) -> Response {
         "/js/scopes.js" => asset!("/web/js/scopes.js", "text/javascript"),
         "/js/balance.js" => asset!("/web/js/balance.js", "text/javascript"),
         "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),
+        "/js/source-assets.js" => asset!("/web/js/source-assets.js", "text/javascript"),
         "/js/source-clock.js" => asset!("/web/js/source-clock.js", "text/javascript"),
         "/js/source-seek.js" => asset!("/web/js/source-seek.js", "text/javascript"),
         "/js/program.js" => asset!("/web/js/program.js", "text/javascript"),

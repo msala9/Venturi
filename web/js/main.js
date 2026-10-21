@@ -9,6 +9,7 @@ import { createProgramPlayer } from "./program.js";
 import { buildProgramWindow } from "./program-range.js";
 import { sourceSampleAtFrame } from "./source-clock.js";
 import { createSourceSeek } from "./source-seek.js";
+import { createSourceAssets } from "./source-assets.js";
 import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection } from "./inspector.js";
 import { renderMixer } from "./mixer.js";
 import { createExportPanel } from "./export.js";
@@ -296,6 +297,7 @@ let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = 
 let transformOverlay=null,transformDetail=null,maskOverlay=null,maskChoice=null,maskPickerIdentity=null,maskSelectionSequence=0,maskSelectionIdentity=null;
 let sourceOpenId = null;
 let sourceSeek=null;
+let sourceAssets=null,forceSourceAssets=false;
 const sourceRanges = new Map();
 const mediaAssets = new Map();
 const mediaState = {selected: [], anchor: null, folder: "*", kind: "all", open: false};
@@ -330,7 +332,7 @@ function viewerModeSet(mode) {
   $("source-mode").setAttribute("aria-pressed", mode === "source");
   updatePlayAvailability();
   $("viewer-caption").textContent = mode === "source" ? "Source proxy · independent of timeline edits" : "Exact timeline frame";
-  if (mode === "program") { sourcePlayer?.pause(); updateTime(); seek(); }
+  if (mode === "program") { sourcePlayer?.pause(); sourceAssets?.cancel(); updateTime(); seek(); }
 }
 function sourcePosition(allowPreparing=false) {
   const position=sourcePlayer?.current();
@@ -340,6 +342,7 @@ function syncSourcePosition() {
   sourceSeek?.sync();
   const valid=Boolean(sourcePosition());
   $("source-mark-in").disabled=!valid;$("source-mark-out").disabled=!valid;
+  $("source-assets-refresh").disabled=!valid;
   const position=sourcePosition(true);
   if(viewerMode!=="source" || !position)return;
   const fps=position.fps.num/position.fps.den,seconds=Math.floor(position.frame/fps);
@@ -354,7 +357,9 @@ function openSource() {
     return;
   }
   const startFrame=sourceOpenId===item.id ? sourcePosition(true)?.frame ?? 0 : 0;
+  if(sourceOpenId!==item.id)sourceAssets?.cancel();
   sourceOpenId = item.id;
+  forceSourceAssets=true;
   const range = sourceRanges.get(item.id) || { source_in:0, source_out:item.is_image ? Math.round(5*item.fps.num/item.fps.den) : item.duration_frames };
   $("source-in").value = range.source_in; $("source-out").value = range.source_out;
   $("source-mark-in").disabled = !!item.is_image; $("source-mark-out").disabled = !!item.is_image;
@@ -737,16 +742,17 @@ async function refresh() {
   viewer?.invalidate();
   const next = await request("/session");
   const sourceChanged=(id)=>documentState?.media.find((item)=>item.id===id)?.content_hash !== next.media.find((item)=>item.id===id)?.content_hash;
-  for(const [id,asset] of mediaAssets)if(sourceChanged(id)){asset.thumbnail?.close();mediaAssets.delete(id);}
-  if(sourceOpenId && (!next.media.some((item)=>item.id===sourceOpenId) || sourceChanged(sourceOpenId))){sourcePlayer?.reset();sourceRanges.delete(sourceOpenId);sourceOpenId=null;}
+  for(const [id,asset] of mediaAssets)if(sourceChanged(id)){releaseMediaAsset(asset);mediaAssets.delete(id);}
+  if(sourceOpenId && (!next.media.some((item)=>item.id===sourceOpenId) || sourceChanged(sourceOpenId))){sourcePlayer?.reset();sourceAssets?.cancel();sourceRanges.delete(sourceOpenId);sourceOpenId=null;}
   if (documentState?.project_epoch !== next.project_epoch) {
     canvasTimeline.cancel();view.retime=false;view.retimeOverwrite=false;view.transitionSelection=null;view.transitionReplace=false;$("transition-replace").checked=false;updateRetimeControls();
     sourcePlayer?.reset();
+    sourceAssets?.cancel();
     sourceOpenId = null; sourceRanges.clear();
     view.playhead=0;view.origin=0;view.scrollY=0;view.selection=[];
     selectedMedia = null;
     mediaState.selected=[];mediaState.anchor=null;mediaState.folder="*";
-    for (const asset of mediaAssets.values()) asset.thumbnail?.close();
+    for (const asset of mediaAssets.values()) releaseMediaAsset(asset);
     mediaAssets.clear();
     viewerModeSet("program");
   }
@@ -1275,7 +1281,16 @@ sourcePlayer = createSourcePlayer({
   isInternalPause: event => Boolean(fastTransport?.pausing($("source-video"),event)),
   onReady: async ({ item, epoch, job, source_window }) => {
     syncSourcePosition();
-    if(source_window)return;
+    const force=forceSourceAssets;forceSourceAssets=false;
+    if(source_window){
+      const cached=mediaAssets.get(item.id),changed=cached && cached.sourceVersion!==source_window.source_version;
+      if(changed){
+        releaseMediaAsset(cached);mediaAssets.delete(item.id);canvasTimeline.invalidate();
+        for(const card of document.querySelectorAll(".media-item"))if(card.dataset.mediaId===item.id)card.querySelector("img")?.remove();
+      }
+      if(!cached || changed)void sourceAssets?.load(item,epoch,{sourceVersion:source_window.source_version,force:force || Boolean(changed)});
+      return;
+    }
     const urls = (name) => sourceAssetURL(item.id, job, name, epoch);
     const [thumb, wave] = await Promise.allSettled([
       fetch(urls("thumb.png")).then((r) => { if (!r.ok) throw new Error("No thumbnail"); return r.blob(); }).then(createImageBitmap),
@@ -1286,20 +1301,32 @@ sourcePlayer = createSourcePlayer({
     const waveform = wave.status === "fulfilled" ? wave.value : null;
     const bytes = (thumbnail ? thumbnail.width * thumbnail.height * 4 : 0) + (waveform?.peaks.length || 0) * 8;
     if (bytes > 16 * 1024 * 1024) { thumbnail?.close(); return; }
-    mediaAssets.get(item.id)?.thumbnail?.close();
-    mediaAssets.delete(item.id);
-    mediaAssets.set(item.id, { thumbnail, waveform, bytes, fps: item.fps, thumbnailURL: urls("thumb.png") });
-    if (thumbnail) for (const card of document.querySelectorAll(".media-item")) {
-      if (card.dataset.mediaId !== item.id) continue;
-      card.querySelector("img")?.remove();
-      const image = document.createElement("img"); image.alt = ""; image.src = urls("thumb.png"); card.prepend(image);
-    }
-    while (mediaAssets.size > 16 || [...mediaAssets.values()].reduce((n, a) => n + a.bytes, 0) > 32 * 1024 * 1024) {
-      const oldest = mediaAssets.keys().next().value;
-      mediaAssets.get(oldest).thumbnail?.close(); mediaAssets.delete(oldest);
-    }
-    canvasTimeline.invalidate();
+    const asset={item,epoch,thumbnail,waveform,bytes,thumbnailURL:urls("thumb.png")};
+    if(!installMediaAsset(asset))releaseMediaAsset(asset);
   },
+});
+function releaseMediaAsset(asset) {
+  asset?.thumbnail?.close();
+  if(asset?.thumbnailURL?.startsWith("blob:"))URL.revokeObjectURL(asset.thumbnailURL);
+}
+function installMediaAsset({item,epoch,thumbnail,waveform,bytes,thumbnailURL,sourceVersion}) {
+  if(documentState?.project_epoch!==epoch || documentState.media.find(media=>media.id===item.id)?.content_hash!==item.content_hash || !Number.isSafeInteger(bytes) || bytes<0 || bytes>16*1024*1024)return false;
+  releaseMediaAsset(mediaAssets.get(item.id));mediaAssets.delete(item.id);
+  mediaAssets.set(item.id,{thumbnail,waveform,bytes,thumbnailURL,sourceVersion,fps:item.fps});
+  if(thumbnail)for(const card of document.querySelectorAll(".media-item")){
+    if(card.dataset.mediaId!==item.id)continue;
+    card.querySelector("img")?.remove();
+    const image=document.createElement("img");image.alt="";image.src=thumbnailURL;card.prepend(image);
+  }
+  while(mediaAssets.size>16 || [...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0)>32*1024*1024){
+    const oldest=mediaAssets.keys().next().value;releaseMediaAsset(mediaAssets.get(oldest));mediaAssets.delete(oldest);
+  }
+  canvasTimeline.invalidate();return true;
+}
+sourceAssets=createSourceAssets({getState:()=>documentState,onReady:installMediaAsset,onStatus:message=>{$("source-assets-status").textContent=message;},onError:error=>notice(error.message || String(error))});
+$("source-assets-refresh").addEventListener("click",()=>{
+  const position=sourcePosition(),item=documentState?.media.find(media=>media.id===sourceOpenId);
+  if(position && item)void sourceAssets.load(item,position.epoch,{sourceVersion:position.source_version,force:true});
 });
 sourceSeek=createSourceSeek({range:$("source-position"),frame:$("source-seek-frame"),seek:$("source-seek"),status:$("source-position-status"),getMedia:()=>{
   const item=viewerMode==="source" ? documentState?.media.find(media=>media.id===sourceOpenId) : null;

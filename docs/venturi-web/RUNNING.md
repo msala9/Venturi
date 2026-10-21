@@ -88,9 +88,11 @@ frame field or frame steps to reach another window; natural playback EOF
 prepares the following window with a visible pause. In/Out remains absolute
 within the original file, independent of the current preview window. Existing
 legacy full-file Review/Slip preparation still has a ten-minute limit.
-Ranged previews currently omit whole-source thumbnails and waveforms; restoring
-these through a bounded media-assets path remains open. Partial waveform peaks
-are never presented as a whole-file waveform.
+Ranged previews request whole-source thumbnails and waveforms through a separate
+bounded CPU analysis job, without creating a whole-file movie. Foreground media
+preparation can interrupt analysis; use Refresh media assets when idle to retry.
+The visible status reports completion or failure. Partial window peaks are never
+presented as a whole-file waveform. Browser acceptance remains open.
 
 Source jobs accept at most 8192 pixels per dimension,
 cap decoded audio samples at 256 MiB plus encoder overhead,

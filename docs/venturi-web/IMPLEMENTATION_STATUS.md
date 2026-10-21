@@ -24,20 +24,20 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-210 Rust tests, 390 JavaScript tests,
+215 Rust tests, 439 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
 `evidence/m4-transition-duration-handles.json`, `evidence/m4-speed-handles.json`,
 `evidence/m4-mask-pen-path-keys.json`, `evidence/m4-transition-placement.json`
 `evidence/m3-preview-cache-safety.json`, `evidence/m3-program-rollover.json`
-and `evidence/m3-source-windows.json`;
+`evidence/m3-source-windows.json` and `evidence/m3-source-assets.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
 Remaining work includes mask/transition browser and rendered qualification,
 native speed strip preset menus, compound and
-import coverage, long-media preview qualification, whole-source asset restoration
+import coverage, long-media preview qualification, full-source asset GUI acceptance
 and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
 and final deployment, DPI, duration and resource qualification. Historical
@@ -2731,3 +2731,37 @@ and sacrificial OOM scoring; build memory is capped at 4 GiB and finite API at
 was started. Own API units stopped and port 8811 closed; the main editor's five
 unsaved moves remain intact. Browser/DPI, large-file pressure/startup performance,
 physical/continuous audio and hardware qualification remain open.
+
+## M3 — independent full-source thumbnails and waveforms
+
+Windowed Source now requests a separate native full-source analysis job. The
+job publishes a thumbnail and streaming waveform without encoding a whole-file
+movie. It shares the bounded ephemeral cache, single CPU worker, retention and
+file authorization. Accepted foreground preparation preempts running analysis;
+failed admission does not cancel existing work. Critical probe metadata and
+file identity must match before and after analysis; missing legacy descriptive
+file metadata remains compatible. Output is bounded to a 1 MiB PNG and 4 MiB
+waveform JSON with at most 65,536 peaks. The waveform retains the actual native
+audio duration, including when it differs from video duration.
+
+The client checks epoch/media/file identity, full-source scope, normalized finite
+peaks, streamed byte limits and decoded thumbnail memory before publication.
+Bitmap and Blob URL ownership is released on stale results, replacement and
+eviction. Analysis failures remain visible; Refresh explicitly retries and
+window continuation does not repeatedly restart canceled analysis. Per-item
+assets remain capped at 16 MiB and the shared browser cache at 16 entries/32 MiB.
+
+215 vv-web tests and 439 JavaScript tests pass on halo2, plus fmt, clippy with
+warnings denied and native build. The existing 601-second tiny-video fixture
+also obtains a full-source thumbnail without a full movie. Finite API acceptance
+uses existing tiny video/audio media to verify typed descriptors, deduplication,
+PNG/JSON delivery, absence of an analysis MP4, retained window movies, stale
+epoch/DTO rejection, unchanged source/session/parents and exact saved restart.
+The temporary units stopped, port 8811 closed, and the main editor retained its
+five unsaved moves. Evidence: `evidence/m3-source-assets.json`.
+
+All execution stayed on halo2 with one CPU, low priority, no swap and sacrificial
+OOM scoring; build memory was capped at 4 GiB and finite API at 512 MiB. Browser
+and DPI interaction, large-media startup/pressure, all audio stream layouts,
+physical audio, GPU and soak qualification remain open. This increment does not
+change the count of fully accepted capability rows or establish full GUI parity.

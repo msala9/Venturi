@@ -464,6 +464,19 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   ownership guards refuse obsolete or changed media. AAC padding at natural EOF
   retains the final valid native frame. This does not establish gapless playback
   or arbitrary delayed-stream timestamp parity.
+- POST `/api/v1/media/{id}/assets/prepare` with `{project_epoch}` creates/reuses a
+  separate full-source analysis job. Its `source_assets` descriptor contains
+  `source_version`, `total_frames`, `fps`, `has_video` and `has_audio`;
+  `program`, `source_window`, `source_asset` and the legacy export-only
+  `project_epoch` field are null. Authorization still requires the query epoch.
+  It publishes `thumb.png` for video and `waveform.json` for the first audio
+  stream; `source.mp4` is absent. Waveform JSON has `scope:"full_source"`, actual
+  native audio `duration_seconds` and at most 65,536 normalized finite peaks.
+  PNG/JSON limits are 1/4 MiB. Critical media metadata and file identity are
+  rechecked; descriptive legacy metadata may be absent. Analysis requires an
+  idle media worker at admission. Accepted foreground preparation preempts
+  running analysis; invalid or rejected requests do not. Cache limits and
+  retention apply. Browser retries are explicit after failure or cancellation.
 - GET `/api/v1/media/{id}/jobs/{job}?project_epoch=...` returns id, state, frames
   and optional error. States: queued, running, ready, failed, canceled.
 - DELETE the same job URL requests cancellation; it never deletes source media.

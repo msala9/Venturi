@@ -105,6 +105,7 @@ struct Job {
     export: Option<Arc<Mutex<vv_session::export::ExportProgress>>>,
     descriptor: Option<Value>,
     source_window: Option<Value>,
+    source_assets: Option<Value>,
     inputs: Inputs,
     source_asset: Option<&'static str>,
     export_epoch: Option<String>,
@@ -144,7 +145,7 @@ impl Job {
             .as_ref()
             .and_then(|stored| stored.record.previous_state.as_ref());
         let revision = self.durable.as_ref().map(StoredExport::revision);
-        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"source_window":self.source_window,"progress":self.progress_value(),"source_asset":self.source_asset,"project_epoch":self.export_epoch,"durable":self.durable.is_some(),"durability_error":self.durability_error,"cancel_requested":self.explicit_cancel,"previous_state":previous,"export_revision":revision})
+        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"source_window":self.source_window,"source_assets":self.source_assets,"progress":self.progress_value(),"source_asset":self.source_asset,"project_epoch":self.export_epoch,"durable":self.durable.is_some(),"durability_error":self.durability_error,"cancel_requested":self.explicit_cancel,"previous_state":previous,"export_revision":revision})
     }
     fn persist(&mut self, store: &ExportStore) -> Result<()> {
         let progress = self.progress_value();
@@ -176,6 +177,7 @@ pub struct MediaJobs {
 enum Work {
     Source(Box<SourceSpec>, ProxyQuality, Option<SourceWindow>),
     Program(Box<ProgramTask>),
+    Assets(Box<SourceSpec>),
 }
 impl MediaJobs {
     pub fn software_lock_path(&self) -> PathBuf {
@@ -228,6 +230,7 @@ impl MediaJobs {
                     export: None,
                     descriptor: Some(stored.record.program.clone()),
                     source_window: None,
+                    source_assets: None,
                     inputs: vec![],
                     source_asset: None,
                     export_epoch: Some(stored.record.epoch.clone()),
@@ -283,6 +286,7 @@ impl MediaJobs {
                                 }
                             })
                         }
+                        Work::Assets(spec) => generate_assets(&spec, &directory, &cancel),
                         Work::Program(task) => task.generate(
                             &directory,
                             &cancel,
@@ -294,7 +298,9 @@ impl MediaJobs {
                     .unwrap_or_else(|_| Err(ApiError::invalid("Native source generation failed")));
                 let mut jobs = owned.lock().unwrap();
                 if let Some(job) = jobs.iter_mut().find(|j| j.id == id) {
-                    let result = if job.export_epoch.is_some() && job.explicit_cancel {
+                    let result = if job.source_assets.is_some() && cancel.load(Ordering::Relaxed) {
+                        Err(ApiError::invalid("Source assets analysis was canceled"))
+                    } else if job.export_epoch.is_some() && job.explicit_cancel {
                         Err(ApiError::invalid("Export was canceled"))
                     } else if job.durable.is_none()
                         && result.is_ok()
@@ -439,6 +445,7 @@ impl MediaJobs {
             export: None,
             descriptor: None,
             source_window,
+            source_assets: None,
             program_query: None,
             inputs: vec![],
             source_asset: Some(source_asset),
@@ -456,6 +463,58 @@ impl MediaJobs {
             return Err(ApiError::conflict(
                 "SOURCE_BUSY",
                 "One source job is running and one is pending",
+            ));
+        }
+        preempt_assets(&jobs);
+        Ok(jobs.back().unwrap().value())
+    }
+    pub fn prepare_assets(&self, spec: SourceSpec) -> Result<Value> {
+        validate_assets_meta(&spec.meta)?;
+        let identity = spec.identity()?;
+        let key = assets_key(&spec, &identity);
+        let mut jobs = self.jobs.lock().unwrap();
+        if let Some(job) = jobs.iter_mut().find(|job| {
+            job.key == key
+                && !matches!(job.state, "failed" | "canceled")
+                && !job.cancel.load(Ordering::Relaxed)
+        }) {
+            job.touch();
+            return Ok(job.value());
+        }
+        if jobs
+            .iter()
+            .any(|job| matches!(job.state, "queued" | "running"))
+        {
+            return Err(ApiError::conflict(
+                "SOURCE_BUSY",
+                "Wait for foreground media preparation before analyzing source assets",
+            ));
+        }
+        admit_cache(&mut jobs, &self.root)?;
+        let id = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+            .to_string();
+        let directory = self.root.join(&id);
+        std::fs::create_dir(&directory).map_err(|_| ApiError::io())?;
+        jobs.push_back(Job {
+            id: id.clone(), key, state: "queued", progress: 0, error: None,
+            directory, cancel: Arc::new(AtomicBool::new(false)), bytes: 0,
+            touched: Instant::now(), export: None, descriptor: None, source_window: None,
+            source_assets: Some(json!({"source_version":identity,"total_frames":spec.meta.duration_frames,"fps":spec.meta.fps,"has_video":spec.meta.has_video,"has_audio":spec.meta.has_audio})),
+            inputs: vec![], source_asset: None, export_epoch: None, program_query: None,
+            durable: None, explicit_cancel: false, durability_error: false,
+        });
+        if self
+            .send
+            .try_send((id, Work::Assets(Box::new(spec))))
+            .is_err()
+        {
+            reject_ephemeral(&mut jobs);
+            return Err(ApiError::conflict(
+                "SOURCE_BUSY",
+                "The media worker is busy",
             ));
         }
         Ok(jobs.back().unwrap().value())
@@ -539,6 +598,7 @@ impl MediaJobs {
             export: Some(Arc::new(Mutex::new(progress))),
             descriptor: Some(descriptor),
             source_window: None,
+            source_assets: None,
             program_query: task.export.is_none().then(|| task.query.clone()),
             inputs,
             source_asset: None,
@@ -571,6 +631,7 @@ impl MediaJobs {
                 "One media job is running and one is pending",
             ));
         }
+        preempt_assets(&jobs);
         Ok(jobs.back().unwrap().value())
     }
     pub fn cached_programs(
@@ -744,9 +805,13 @@ impl MediaJobs {
         let identity = spec.identity()?;
         let prefix = format!("{}:{}:{}:v1:", spec.epoch, spec.media_id, identity);
         let ranged_prefix = format!("{}:{}:{}:v2-window:", spec.epoch, spec.media_id, identity);
+        let assets_prefix = format!("{}:{}:{}:v3-assets:", spec.epoch, spec.media_id, identity);
         jobs.iter_mut()
             .find(|j| {
-                j.id == id && (j.key.starts_with(&prefix) || j.key.starts_with(&ranged_prefix))
+                j.id == id
+                    && (j.key.starts_with(&prefix)
+                        || j.key.starts_with(&ranged_prefix)
+                        || j.key.starts_with(&assets_prefix))
             })
             .ok_or_else(ApiError::missing)
     }
@@ -786,6 +851,139 @@ impl MediaJobs {
         job.touch();
         Ok(file)
     }
+}
+fn preempt_assets(jobs: &VecDeque<Job>) {
+    for job in jobs {
+        if job.state == "running" && job.source_assets.is_some() {
+            job.cancel.store(true, Ordering::Relaxed);
+        }
+    }
+}
+fn assets_key(spec: &SourceSpec, identity: &str) -> String {
+    format!(
+        "{}:{}:{}:v3-assets:full",
+        spec.epoch, spec.media_id, identity
+    )
+}
+fn validate_assets_meta(meta: &vv_core::MediaMeta) -> Result<()> {
+    let seconds = meta.duration_frames as f64 / meta.fps.as_f64();
+    if meta.fps.num <= 0
+        || meta.fps.den <= 0
+        || meta.duration_frames <= 0
+        || !seconds.is_finite()
+        || seconds <= 0.0
+        || (!meta.has_video && !meta.has_audio)
+        || (meta.has_video && (meta.width == 0 || meta.height == 0))
+        || (meta.has_audio
+            && (meta.sample_rate == 0 || meta.channels == 0 || meta.audio_streams == 0))
+        || meta.width > 8192
+        || meta.height > 8192
+    {
+        return Err(ApiError::invalid(
+            "Source assets require valid media metadata and dimensions up to 8192 pixels",
+        ));
+    }
+    Ok(())
+}
+fn same_assets_meta(expected: &vv_core::MediaMeta, actual: &vv_core::MediaMeta) -> bool {
+    expected.duration_frames == actual.duration_frames
+        && expected.fps == actual.fps
+        && expected.width == actual.width
+        && expected.height == actual.height
+        && expected.has_video == actual.has_video
+        && expected.has_audio == actual.has_audio
+        && expected.sample_rate == actual.sample_rate
+        && expected.channels == actual.channels
+        && expected.audio_streams == actual.audio_streams
+}
+fn assets_probe(spec: &SourceSpec, path: &Path, identity: &str) -> Result<()> {
+    let actual = if spec.meta.is_image() {
+        vv_media::probe_image(path)
+    } else {
+        vv_media::probe_media(path)
+    }
+    .map_err(|_| ApiError::invalid("Source assets media is unreadable"))?;
+    validate_assets_meta(&actual)?;
+    if !same_assets_meta(&spec.meta, &actual) || spec.identity()? != identity {
+        return Err(ApiError::conflict(
+            "SOURCE_CHANGED",
+            "Reimport changed media before analyzing source assets",
+        ));
+    }
+    Ok(())
+}
+fn assets_keep_running(directory: &Path, cancel: &AtomicBool, started: Instant) -> bool {
+    !cancel.load(Ordering::Relaxed)
+        && started.elapsed() < Duration::from_secs(600)
+        && directory_bytes(directory) < MAX_JOB_BYTES
+        && disk_headroom(directory)
+}
+fn write_asset(directory: &Path, name: &str, bytes: &[u8], limit: usize) -> Result<()> {
+    if bytes.len() > limit {
+        return Err(ApiError::invalid(
+            "Source asset exceeds its bounded output size",
+        ));
+    }
+    std::fs::write(directory.join(name), bytes).map_err(|_| ApiError::io())
+}
+fn generate_assets(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> Result<()> {
+    validate_assets_meta(&spec.meta)?;
+    let started = Instant::now();
+    let identity = spec.identity()?;
+    let path = PathBuf::from(format!("/proc/self/fd/{}", spec.file.as_raw_fd()));
+    assets_probe(spec, &path, &identity)?;
+    let budget =
+        || ApiError::invalid("Source assets analysis canceled or exceeded its resource budget");
+    if !assets_keep_running(directory, cancel, started) {
+        return Err(budget());
+    }
+    let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
+    if spec.meta.has_video {
+        let thumb = vv_media::thumbnail::generate_thumbnail_bounded(
+            &path,
+            if spec.meta.is_image() { 0.0 } else { seconds },
+            256,
+        )
+        .map_err(|_| ApiError::invalid("Source thumbnail generation failed"))?;
+        if !assets_keep_running(directory, cancel, started) {
+            return Err(budget());
+        }
+        write_asset(
+            directory,
+            "thumb.png",
+            &encode_png(&thumb.rgba, (thumb.width, thumb.height))?,
+            1024 * 1024,
+        )?;
+    }
+    if spec.meta.has_audio {
+        // JSON is larger than the native binary peak cache.
+        let num_peaks = vv_media::recommended_num_peaks(seconds).min(65_536);
+        let waveforms = vv_media::waveform::analyze_waveforms(&path, &[0], num_peaks, || {
+            assets_keep_running(directory, cancel, started)
+        })
+        .map_err(|_| budget())?;
+        let waveform = waveforms
+            .first()
+            .and_then(Option::as_ref)
+            .ok_or_else(|| ApiError::invalid("Source audio stream is unavailable"))?;
+        if !waveform.audio_duration_secs.is_finite()
+            || waveform.audio_duration_secs <= 0.0
+            || waveform.peaks.iter().any(|peak| !peak.is_finite())
+        {
+            return Err(ApiError::invalid("Source waveform timing is invalid"));
+        }
+        let bytes = serde_json::to_vec(&json!({"scope":"full_source","duration_seconds":waveform.audio_duration_secs,"peaks":waveform.peaks}))
+            .map_err(|_| ApiError::io())?;
+        if !assets_keep_running(directory, cancel, started) {
+            return Err(budget());
+        }
+        write_asset(directory, "waveform.json", &bytes, 4 * 1024 * 1024)?;
+    }
+    assets_probe(spec, &path, &identity)?;
+    if !assets_keep_running(directory, cancel, started) {
+        return Err(budget());
+    }
+    Ok(())
 }
 fn source_key(
     spec: &SourceSpec,

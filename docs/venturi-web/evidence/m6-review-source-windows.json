@@ -1,0 +1,705 @@
+{
+  "project": "Review_Windows_API_check.vvproj",
+  "project_sha256": "3fbdcc97b82bd44623c3a5ce94549a5891be133c3f562672bb8daca3b3c06dee",
+  "fixtures": [
+    {
+      "label": "A",
+      "seconds": 601,
+      "media": {
+        "audio_stream_count": 0,
+        "compound_timeline_id": null,
+        "content_hash": "11179371795838570772",
+        "duration_frames": 14424,
+        "folder": null,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "has_audio": false,
+        "has_video": true,
+        "id": "17",
+        "is_image": false,
+        "name": "review-windows-2676595aed80-A.mp4",
+        "offline": false
+      },
+      "sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+      "logical_bytes": 200058,
+      "allocated_bytes": 200704
+    },
+    {
+      "label": "B",
+      "seconds": 605,
+      "media": {
+        "audio_stream_count": 1,
+        "compound_timeline_id": null,
+        "content_hash": "16881597101226649169",
+        "duration_frames": 18150,
+        "folder": null,
+        "fps": {
+          "den": 1,
+          "num": 30
+        },
+        "has_audio": true,
+        "has_video": false,
+        "id": "18",
+        "is_image": false,
+        "name": "review-windows-2676595aed80-B.wav",
+        "offline": false
+      },
+      "sha256": "396d45ddc3481ddfabf1518144d26ea6baddcbfc512b995b5cb3696fd8646f8b",
+      "logical_bytes": 19360044,
+      "allocated_bytes": 8192
+    }
+  ],
+  "fixture_encoder": {
+    "unit": "venturi-review-windows-fixture-2676595aed80.service",
+    "stopped": true,
+    "cpu_only": true,
+    "dimensions": [
+      16,
+      16
+    ],
+    "frames": 14424,
+    "memory_max": 134217728
+  },
+  "source_hashes": {
+    "review-windows-2676595aed80-A.mp4": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+    "review-windows-2676595aed80-B.wav": "396d45ddc3481ddfabf1518144d26ea6baddcbfc512b995b5cb3696fd8646f8b"
+  },
+  "save_restart_exact": true,
+  "parent_hashes_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Take_Audio_API_check.vvproj": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Retime_UI_Retained_677fba04bbac.vvproj": "d9c29a84906ea350ba2bbcb66261e2eb373d58e72e2e0df441f70981c314a63d",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Take_Audio_UI_Retained_fdfc2e75b01e.vvproj": "399a2f41a8b84d767595472d871647585e466b4d6500adb8789b9bd4e562d6ee",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Review_Clock_API_check.vvproj": "19d1c44ae5fa08cd7e7741ea9ab8c95c8ad48cd9b7092048fb224e8c37a6571c",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "hardware_gpu_used": false,
+  "no_gpu_or_shared_lock_fds": true,
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "fixture_import_binary_sha256": "aaef5e3ed6da6b1b0ed7954db9e69450f32fea62873c746c1f01f465c96bdac6",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792607259.2986736,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "48d015e5c30dc962d351a8a8c53748408ed39d13f22d5e864b0f2d46238b27af",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "binary_sha256": "48d015e5c30dc962d351a8a8c53748408ed39d13f22d5e864b0f2d46238b27af",
+  "served_asset_hashes": {
+    "index.html": "7b06084a83081fe1bc14810478cbcd55790616a1f6b39da0183d0268d4929c23",
+    "js/review.js": "6347cda3d61606fb3b17b0e3a8de5e54bf1ee79e08bf0bd96600cac9b13571fc",
+    "js/source.js": "bcdd9cc0c5fa4c03387f975a9273457f2e8353010e342745b7eac2b133be6990"
+  },
+  "project_history_unchanged": true,
+  "parents_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Take_Audio_API_check.vvproj": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Retime_UI_Retained_677fba04bbac.vvproj": "d9c29a84906ea350ba2bbcb66261e2eb373d58e72e2e0df441f70981c314a63d",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Take_Audio_UI_Retained_fdfc2e75b01e.vvproj": "399a2f41a8b84d767595472d871647585e466b4d6500adb8789b9bd4e562d6ee",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Review_Windows_API_check.vvproj": "3fbdcc97b82bd44623c3a5ce94549a5891be133c3f562672bb8daca3b3c06dee",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Review_Clock_API_check.vvproj": "19d1c44ae5fa08cd7e7741ea9ab8c95c8ad48cd9b7092048fb224e8c37a6571c",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "core_tests": 271,
+  "rust_tests": 224,
+  "javascript_tests": 504,
+  "main_editor_preserved": true,
+  "own_ui_test_unit_stopped": true,
+  "windows_ui_observations": {
+    "initial": {
+      "A": {
+        "clock": "A \u00b7 frame 0 / 14423 \u00b7 24/1 fps \u00b7 window [0, 1440)",
+        "currentTime": 0,
+        "end_frame": 1440,
+        "ended": false,
+        "frame": 0,
+        "max_frame": 14423,
+        "media": "17",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/17/jobs/1792607276884498191/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 0,
+        "status": "review-windows-2676595aed80-A.mp4 \u00b7 SOURCE WINDOW \u00b7 0\u20131440 / 14424 frames \u00b7 low"
+      },
+      "B": {
+        "clock": "B \u00b7 frame 0 / 18149 \u00b7 30/1 fps \u00b7 window [0, 1800)",
+        "currentTime": 0,
+        "end_frame": 1800,
+        "ended": false,
+        "frame": 0,
+        "max_frame": 18149,
+        "media": "18",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/18/jobs/1792607277263313296/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 0,
+        "status": "review-windows-2676595aed80-B.wav \u00b7 SOURCE WINDOW \u00b7 0\u20131800 / 18150 frames \u00b7 low"
+      }
+    },
+    "near_boundary": {
+      "A": {
+        "clock": "A \u00b7 frame 1439 / 14423 \u00b7 24/1 fps \u00b7 window [0, 1440)",
+        "currentTime": 59.958333,
+        "end_frame": 1440,
+        "ended": true,
+        "frame": 1439,
+        "max_frame": 14423,
+        "media": "17",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/17/jobs/1792607276884498191/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 0,
+        "status": "review-windows-2676595aed80-A.mp4 \u00b7 SOURCE WINDOW \u00b7 0\u20131440 / 14424 frames \u00b7 low"
+      },
+      "B": {
+        "clock": "B \u00b7 frame 1799 / 18149 \u00b7 30/1 fps \u00b7 window [0, 1800)",
+        "currentTime": 59.966666,
+        "end_frame": 1800,
+        "ended": false,
+        "frame": 1799,
+        "max_frame": 18149,
+        "media": "18",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/18/jobs/1792607277263313296/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 0,
+        "status": "review-windows-2676595aed80-B.wav \u00b7 SOURCE WINDOW \u00b7 0\u20131800 / 18150 frames \u00b7 low"
+      }
+    },
+    "continued": {
+      "A": {
+        "clock": "A \u00b7 frame 1617 / 14423 \u00b7 24/1 fps \u00b7 window [1440, 2880)",
+        "currentTime": 7.623383,
+        "end_frame": 2880,
+        "ended": false,
+        "frame": 1617,
+        "max_frame": 14423,
+        "media": "17",
+        "paused": false,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/17/jobs/1792607302422497932/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 1440,
+        "status": "review-windows-2676595aed80-A.mp4 \u00b7 SOURCE WINDOW \u00b7 1440\u20132880 / 14424 frames \u00b7 low"
+      },
+      "B": {
+        "clock": "B \u00b7 frame 2022 / 18149 \u00b7 30/1 fps \u00b7 window [1800, 3600)",
+        "currentTime": 7.648754,
+        "end_frame": 3600,
+        "ended": false,
+        "frame": 2022,
+        "max_frame": 18149,
+        "media": "18",
+        "paused": false,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/18/jobs/1792607303104375532/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 1800,
+        "status": "review-windows-2676595aed80-B.wav \u00b7 SOURCE WINDOW \u00b7 1800\u20133600 / 18150 frames \u00b7 low"
+      }
+    },
+    "after_pause": {
+      "A": {
+        "clock": "A \u00b7 frame 1848 / 14423 \u00b7 24/1 fps \u00b7 window [1440, 2880)",
+        "currentTime": 17.013802,
+        "end_frame": 2880,
+        "ended": false,
+        "frame": 1848,
+        "max_frame": 14423,
+        "media": "17",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/17/jobs/1792607302422497932/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 1440,
+        "status": "review-windows-2676595aed80-A.mp4 \u00b7 SOURCE WINDOW \u00b7 1440\u20132880 / 14424 frames \u00b7 low"
+      },
+      "B": {
+        "clock": "B \u00b7 frame 2311 / 18149 \u00b7 30/1 fps \u00b7 window [1800, 3600)",
+        "currentTime": 17.040035,
+        "end_frame": 3600,
+        "ended": false,
+        "frame": 2311,
+        "max_frame": 18149,
+        "media": "18",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/18/jobs/1792607303104375532/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 1800,
+        "status": "review-windows-2676595aed80-B.wav \u00b7 SOURCE WINDOW \u00b7 1800\u20133600 / 18150 frames \u00b7 low"
+      }
+    },
+    "late_seek": {
+      "A": {
+        "clock": "A \u00b7 frame 14400 / 14423 \u00b7 24/1 fps \u00b7 window [14400, 14424)",
+        "currentTime": 0,
+        "end_frame": 14424,
+        "ended": false,
+        "frame": 14400,
+        "max_frame": 14423,
+        "media": "17",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/17/jobs/1792607321295331570/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 14400,
+        "status": "review-windows-2676595aed80-A.mp4 \u00b7 SOURCE WINDOW \u00b7 14400\u201314424 / 14424 frames \u00b7 low"
+      },
+      "B": {
+        "clock": "B \u00b7 frame 18000 / 18149 \u00b7 30/1 fps \u00b7 window [18000, 18150)",
+        "currentTime": 0,
+        "end_frame": 18150,
+        "ended": false,
+        "frame": 18000,
+        "max_frame": 18149,
+        "media": "18",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/18/jobs/1792607320898331240/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 18000,
+        "status": "review-windows-2676595aed80-B.wav \u00b7 SOURCE WINDOW \u00b7 18000\u201318150 / 18150 frames \u00b7 low"
+      }
+    },
+    "shorter_hold": {
+      "A": {
+        "clock": "A \u00b7 frame 14423 / 14423 \u00b7 24/1 fps \u00b7 window [14400, 14424)",
+        "currentTime": 0.958333,
+        "end_frame": 14424,
+        "ended": true,
+        "frame": 14423,
+        "max_frame": 14423,
+        "media": "17",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/17/jobs/1792607321295331570/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 14400,
+        "status": "review-windows-2676595aed80-A.mp4 \u00b7 SOURCE WINDOW \u00b7 14400\u201314424 / 14424 frames \u00b7 low"
+      },
+      "B": {
+        "clock": "B \u00b7 frame 18054 / 18149 \u00b7 30/1 fps \u00b7 window [18000, 18150)",
+        "currentTime": 1.86672,
+        "end_frame": 18150,
+        "ended": false,
+        "frame": 18054,
+        "max_frame": 18149,
+        "media": "18",
+        "paused": false,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/18/jobs/1792607320898331240/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 18000,
+        "status": "review-windows-2676595aed80-B.wav \u00b7 SOURCE WINDOW \u00b7 18000\u201318150 / 18150 frames \u00b7 low"
+      }
+    },
+    "finished": {
+      "A": {
+        "clock": "A \u00b7 frame 14423 / 14423 \u00b7 24/1 fps \u00b7 window [14400, 14424)",
+        "currentTime": 0.958333,
+        "end_frame": 14424,
+        "ended": true,
+        "frame": 14423,
+        "max_frame": 14423,
+        "media": "17",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/17/jobs/1792607321295331570/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 14400,
+        "status": "review-windows-2676595aed80-A.mp4 \u00b7 SOURCE WINDOW \u00b7 14400\u201314424 / 14424 frames \u00b7 low"
+      },
+      "B": {
+        "clock": "B \u00b7 frame 18149 / 18149 \u00b7 30/1 fps \u00b7 window [18000, 18150)",
+        "currentTime": 5.013,
+        "end_frame": 18150,
+        "ended": true,
+        "frame": 18149,
+        "max_frame": 18149,
+        "media": "18",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/18/jobs/1792607320898331240/source.mp4?project_epoch=1792607263996650260%3A1",
+        "start_frame": 18000,
+        "status": "review-windows-2676595aed80-B.wav \u00b7 SOURCE WINDOW \u00b7 18000\u201318150 / 18150 frames \u00b7 low"
+      }
+    }
+  },
+  "native_window_states": {
+    "initial": {
+      "stage": "initial",
+      "panes": {
+        "A": {
+          "frame": 0,
+          "window": {
+            "end_frame": 1440,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "source_version": "64512:8261035:200058:1792606922:41550555",
+            "start_frame": 0,
+            "total_frames": 14424
+          },
+          "job": "1792607276884498191",
+          "asset_bytes": 43172,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 0,
+          "window": {
+            "end_frame": 1800,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8260757:19360044:1792606922:609602733",
+            "start_frame": 0,
+            "total_frames": 18150
+          },
+          "job": "1792607277263313296",
+          "asset_bytes": 23497,
+          "paused": true,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    },
+    "near_boundary": {
+      "stage": "near_boundary",
+      "panes": {
+        "A": {
+          "frame": 1439,
+          "window": {
+            "end_frame": 1440,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "source_version": "64512:8261035:200058:1792606922:41550555",
+            "start_frame": 0,
+            "total_frames": 14424
+          },
+          "job": "1792607276884498191",
+          "asset_bytes": 43172,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 1799,
+          "window": {
+            "end_frame": 1800,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8260757:19360044:1792606922:609602733",
+            "start_frame": 0,
+            "total_frames": 18150
+          },
+          "job": "1792607277263313296",
+          "asset_bytes": 23497,
+          "paused": true,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    },
+    "continued": {
+      "stage": "continued",
+      "panes": {
+        "A": {
+          "frame": 1617,
+          "window": {
+            "end_frame": 2880,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "source_version": "64512:8261035:200058:1792606922:41550555",
+            "start_frame": 1440,
+            "total_frames": 14424
+          },
+          "job": "1792607302422497932",
+          "asset_bytes": 43172,
+          "paused": false,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 2022,
+          "window": {
+            "end_frame": 3600,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8260757:19360044:1792606922:609602733",
+            "start_frame": 1800,
+            "total_frames": 18150
+          },
+          "job": "1792607303104375532",
+          "asset_bytes": 23497,
+          "paused": false,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    },
+    "after_pause": {
+      "stage": "after_pause",
+      "panes": {
+        "A": {
+          "frame": 1848,
+          "window": {
+            "end_frame": 2880,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "source_version": "64512:8261035:200058:1792606922:41550555",
+            "start_frame": 1440,
+            "total_frames": 14424
+          },
+          "job": "1792607302422497932",
+          "asset_bytes": 43172,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 2311,
+          "window": {
+            "end_frame": 3600,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8260757:19360044:1792606922:609602733",
+            "start_frame": 1800,
+            "total_frames": 18150
+          },
+          "job": "1792607303104375532",
+          "asset_bytes": 23497,
+          "paused": true,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    },
+    "late_seek": {
+      "stage": "late_seek",
+      "panes": {
+        "A": {
+          "frame": 14400,
+          "window": {
+            "end_frame": 14424,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "source_version": "64512:8261035:200058:1792606922:41550555",
+            "start_frame": 14400,
+            "total_frames": 14424
+          },
+          "job": "1792607321295331570",
+          "asset_bytes": 2108,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 18000,
+          "window": {
+            "end_frame": 18150,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8260757:19360044:1792606922:609602733",
+            "start_frame": 18000,
+            "total_frames": 18150
+          },
+          "job": "1792607320898331240",
+          "asset_bytes": 2703,
+          "paused": true,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    },
+    "shorter_hold": {
+      "stage": "shorter_hold",
+      "panes": {
+        "A": {
+          "frame": 14423,
+          "window": {
+            "end_frame": 14424,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "source_version": "64512:8261035:200058:1792606922:41550555",
+            "start_frame": 14400,
+            "total_frames": 14424
+          },
+          "job": "1792607321295331570",
+          "asset_bytes": 2108,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 18054,
+          "window": {
+            "end_frame": 18150,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8260757:19360044:1792606922:609602733",
+            "start_frame": 18000,
+            "total_frames": 18150
+          },
+          "job": "1792607320898331240",
+          "asset_bytes": 2703,
+          "paused": false,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    },
+    "finished": {
+      "stage": "finished",
+      "panes": {
+        "A": {
+          "frame": 14423,
+          "window": {
+            "end_frame": 14424,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "source_version": "64512:8261035:200058:1792606922:41550555",
+            "start_frame": 14400,
+            "total_frames": 14424
+          },
+          "job": "1792607321295331570",
+          "asset_bytes": 2108,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 18149,
+          "window": {
+            "end_frame": 18150,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8260757:19360044:1792606922:609602733",
+            "start_frame": 18000,
+            "total_frames": 18150
+          },
+          "job": "1792607320898331240",
+          "asset_bytes": 2703,
+          "paused": true,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    }
+  },
+  "focused_source_tests": {
+    "status": "passed",
+    "tests": 69,
+    "code_hashes": {
+      "web/js/source.js": "bcdd9cc0c5fa4c03387f975a9273457f2e8353010e342745b7eac2b133be6990",
+      "web/js/api.js": "f08f84f77f89dd87f8c9de235ac108557d55a9a6716e9fb46aa862871b4d723a",
+      "web/test/source.test.js": "0d3aebe376728a7aa664194223602f16e55c158c2cad24fcb8b9cab4aa9e6639",
+      "web/test/source-windows.test.js": "3fbdc9e4cfe5d699e3d189f8a55181a07e3d8d648f584fb0f3a970183829ef75",
+      "web/package.json": "b29cfb2082ca31855a5c1e3724830f928e0d5598412f2148429d64360ff05445"
+    },
+    "unit_stopped": true
+  },
+  "acceptance": {
+    "code_hashes": {
+      "web/index.html": "7b06084a83081fe1bc14810478cbcd55790616a1f6b39da0183d0268d4929c23",
+      "web/js/review.js": "6347cda3d61606fb3b17b0e3a8de5e54bf1ee79e08bf0bd96600cac9b13571fc",
+      "web/js/source.js": "bcdd9cc0c5fa4c03387f975a9273457f2e8353010e342745b7eac2b133be6990",
+      "web/test/review.test.js": "2d7df56d43018b84fdbc994362b9ad4d6a2422b12a5825d821369953c96a933f",
+      "web/test/source-windows.test.js": "3fbdc9e4cfe5d699e3d189f8a55181a07e3d8d648f584fb0f3a970183829ef75"
+    },
+    "core_tests": 271,
+    "rust_tests": 224,
+    "javascript_tests": 504,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "hardware_gpu": false
+  },
+  "scope_note": "Actual existing Windows browser uses a 601-second 16x16 H.264 video at 24 fps and a sparse silent 605-second WAV at native 30 fps. Full-source absolute seeks, initial windows, exact last-frame start and next-window continuation, paused comparison and 600-second seeks are checked against native job descriptors and byte-range responses. All served Source windows are at most 60 seconds and below 1 MiB. Preparations and playback release are serialized; ended shorter local video tails remain held instead of native play rewinding them to zero. Regression coverage includes longer/shorter native durations, rational frame mapping, delayed events, cancellation and stopped/replaced contexts. CPU-only bounded halo2 instance; no browser installation, GPU, programme render, export or project/history mutation. Full-resolution throughput, sustained long playback, physical audio, selected-stream audition and programme/desktop parity remain separate qualification.",
+  "screenshot_sha256": "90f793a24ad9f6a5a73683c7236e31eb37ffb55a4fd9c647b83281ca1e60edd6"
+}

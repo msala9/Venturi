@@ -24,7 +24,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-224 web Rust tests, 271 native core tests and 477 JavaScript tests,
+224 web Rust tests, 271 native core tests and 504 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -33,7 +33,8 @@ qualification remain open. Latest evidence:
 `evidence/m3-preview-cache-safety.json`, `evidence/m3-program-rollover.json`
 `evidence/m3-source-windows.json`, `evidence/m3-source-assets.json`
 `evidence/m4-speed-presets.json`, `evidence/m4-retime-selected-visibility.json`
-`evidence/m6-take-audio-streams.json` and `evidence/m6-review-longest-clock.json`;
+`evidence/m6-take-audio-streams.json`, `evidence/m6-review-longest-clock.json`
+and `evidence/m6-review-source-windows.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
@@ -2900,3 +2901,42 @@ Evidence: `evidence/m6-review-longest-clock.json` and
 `evidence/m6-review-clock-windows.jpg`. Long-source Review windows, exact native
 last-frame hold, selected-stream audition and physical audio remain open.
 The parity ledger and overall completion estimate are unchanged.
+
+## M6 - full-source A/B windows and exact native clocks
+
+Review now opens bounded Source windows, exposes absolute native-frame seeks,
+and maps synchronized positions through exact rational frame rates. Browser
+controls retain their local-window meaning; visible clocks identify the native
+frame and exclusive range. Preparation is serialized, both synchronized panes
+hold during a window change, and playback resumes only from verified ranges.
+Pause, cancellation, source changes, stale context and delayed native events
+cannot revive obsolete playback. Independent playback keeps its own clock.
+
+The Windows check exposed a real browser edge case: a video can report ended
+at its last decoded frame before its container duration. Calling native Play
+there rewinds the proxy to zero. Review now holds an ended follower or advances
+an ended leader/independent source to the next exclusive window before Play.
+Full-source final-frame hold and intentional replay remain separate branches.
+
+One limited halo2 aggregate passed 271 core, 224 web Rust and 504 JavaScript
+tests, formatting, clippy with warnings denied and native build. The existing
+Windows browser compared a tiny 601-second 24-fps H.264 video with a sparse
+silent 605-second WAV at native 30 fps. It verified initial windows, exact
+last-frame start, continuation beyond 60 seconds, Pause and synchronized seek
+to 600 seconds. A then held native frame 14423 while B advanced at frame 18054;
+both stopped at their exact native final frames. Native job metadata and byte
+ranges confirm every requested window is at most 60 seconds; observed assets
+were 2,108–43,172 bytes. This is functional long-source acceptance, not a
+full-resolution throughput or sustained duration benchmark.
+
+The fixture was saved and restarted exactly; the browser comparison did not
+change project/history or parent/source hashes. The finite service used one CPU,
+512 MiB, no swap, low priority and sacrificial OOM scoring, without GPU/shared
+lock descriptors. Its own server, hidden SSH tunnel and single temporary Windows
+tab were stopped. No browser was installed and no local build was run. The
+primary editor retains its five unsaved MoveClips.
+
+Evidence: `evidence/m6-review-source-windows.json` and
+`evidence/m6-review-source-windows.jpg`. Selected-stream audition, frozen/compound
+replacement, physical audio, hardware and sustained/full-resolution acceptance
+remain open. The parity ledger and completion estimate remain unchanged.

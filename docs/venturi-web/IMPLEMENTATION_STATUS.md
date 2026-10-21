@@ -1466,3 +1466,13 @@ successful project acknowledgments despite unsupported cursor metadata.
 Evidence: m7-saved-project-resume.json, m7-saved-project-resume-browser.png and
 m7-saved-project-changed-browser.png. Unsaved autosave and durable render jobs
 remain open; this increment restores only saved project state.
+
+The 310fe8f binary is deployed on halo2, SHA-256
+a5a9242943e53ef2e3a05ca8c8709f139f9184a7c95087897264078d7eac814c.
+After an initial explicit Open, an owned service restart reopened the saved
+shared-library fixture before any browser Open request. Its cursor matched the
+on-disk project hash and the browser showed the saved project immediately after
+connection. Exact provenance/annotation seed and Favorite stayed intact.
+CPU/lavapipe, two workers and absence of DRI/KFD handles were verified; the
+hardware lock was not acquired or probed. Evidence:
+m7-halo2-saved-resume.json/browser.png.

@@ -1846,3 +1846,11 @@ restored the clip while retaining the pre-existing InsertClips history entry.
 The server confirmed epoch 1, the original project epoch, dirty state and Undo
 position. m7-command-receipt-rotation-browser.png records the editing UI; preview
 is deliberately disabled on this protocol-only fixture.
+
+The same receipt protocol is deployed on halo2 from b5ab90d. Binary SHA-256:
+0b77406c1e25d007797288793d4c8d23a9fb47c27c4f2b8f947e09d64faa1063.
+The real browser applied Copy in command epoch 0 while the shared-library project
+remained Saved with generation 0 and empty history. Project, Review and imported
+source hashes, exact seed and Favorite flag were preserved. The service remains
+explicit software preview with no hardware handles or GPU-lock acquisition.
+Evidence: m7-halo2-command-receipts.json and browser screenshot.

@@ -1,0 +1,26 @@
+{
+  "pid": 1202520,
+  "sha256": "0b77406c1e25d007797288793d4c8d23a9fb47c27c4f2b8f947e09d64faa1063",
+  "binary_source_commit": "b5ab90d404334daaf91ccef1e74bede98790bf73",
+  "command_epoch": "0",
+  "generation": "0",
+  "clipboard_count": 1,
+  "saved_project": "CPU_shared_library_UI_check.vvproj",
+  "history": {
+    "labels": [],
+    "position": 0
+  },
+  "project_and_review_hashes_preserved": true,
+  "original_source_hash_preserved": true,
+  "exact_seed": "9007199254740993",
+  "favorite_preserved": true,
+  "main_asset_sha256": "b7535defe9fd954b860b846549c8cd2c43ce1b63b8450ce773c7daa29cfbe7ea",
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "browser": {
+    "before_timecode": "00:00:00:00",
+    "after_timecode": "00:00:00:00",
+    "notice": "Command applied"
+  }
+}

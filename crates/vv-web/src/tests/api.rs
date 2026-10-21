@@ -417,6 +417,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/balance.js", 200),
         ("/js/silence.js", 200),
         ("/js/library.js", 200),
+        ("/js/native-assets.js", 200),
         ("/api/v1/library", 200),
         ("/js/slip.js", 200),
         ("/js/catalog.js", 200),
@@ -513,4 +514,384 @@ fn source_prepare_audio_stream_is_an_optional_strict_unsigned_native_index() {
         )
         .is_err()
     );
+}
+
+#[test]
+fn native_asset_requests_and_mutations_are_strict_and_keep_legacy_mutation_bytes() {
+    let capture = json!({"project_epoch":"p:1","if_generation":"0","action":{"kind":"capture","media_id":"9007199254740993","name":"Native take"}});
+    assert!(serde_json::from_value::<crate::host::NativeAssetRequest>(capture.clone()).is_ok());
+    for patch in [
+        json!({"kind":"capture","media_id":9007199254740993u64,"name":"Take"}),
+        json!({"kind":"capture","media_id":"1","name":"Take","path":"/etc/passwd"}),
+        json!({"kind":"import","asset_id":"asset","revision":"r","payload":"forged"}),
+        json!({"kind":"publish","job_id":"job"}),
+    ] {
+        let mut invalid = capture.clone();
+        invalid["action"] = patch;
+        assert!(serde_json::from_value::<crate::host::NativeAssetRequest>(invalid).is_err());
+    }
+    let base = json!({"command_id":"command","client_id":"browser","command_epoch":null,"project_epoch":"p:1","if_generation":"0","if_revision":null,"operation":{"kind":"import_media","path_token":"take.wav"}});
+    let legacy: Mutation = serde_json::from_value(base.clone()).unwrap();
+    assert_eq!(serde_json::to_value(legacy).unwrap(), base);
+    for operation in [
+        json!({"kind":"publish_native_asset","job_id":"job"}),
+        json!({"kind":"import_native_asset","job_id":"job","asset_id":"asset","revision":"r"}),
+        json!({"kind":"edit_native_asset_library","edit":{"action":"update","id":"asset","revision":"r","name":"Renamed"}}),
+    ] {
+        let mut body = base.clone();
+        body["operation"] = operation;
+        assert_eq!(
+            serde_json::to_value(serde_json::from_value::<Mutation>(body.clone()).unwrap())
+                .unwrap(),
+            body
+        );
+        body["operation"]["force"] = json!(true);
+        assert!(serde_json::from_value::<Mutation>(body).is_err());
+    }
+}
+
+#[tokio::test]
+async fn native_asset_http_library_readers_import_routes_security_and_download_contract() {
+    use vv_core::{Clip, ClipId, ClipSource, Rational, Timeline, Track, TrackKind};
+    let root = std::env::temp_dir().join(format!(
+        "vv-native-assets-http-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let host = Host::start(&root).unwrap();
+    let session = host.call(Action::Session).await.unwrap();
+    let new=serde_json::from_value::<Mutation>(json!({"command_id":"native-http-project","client_id":"native-browser","project_epoch":session["project_epoch"],"if_generation":session["generation"],"if_revision":null,"operation":{"kind":"new_project","name":"destination"}})).unwrap();
+    host.call(Action::Mutation(None, new)).await.unwrap();
+    let session = host.call(Action::Session).await.unwrap();
+    let epoch = session["project_epoch"].as_str().unwrap();
+    let mut source = vv_session::Session::default();
+    let mut track = Track::new(TrackKind::Video);
+    track.clips.push(Clip::from_source_range(
+        ClipId(9007199254740993),
+        ClipSource::SolidColor,
+        0,
+        24,
+        0,
+        Rational::one(),
+    ));
+    let child = source.create_timeline(Timeline {
+        name: "Generator compound".into(),
+        fps: Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let media = source
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(child))
+        .unwrap()
+        .0;
+    let asset = crate::asset_payload::capture(
+        &source,
+        media,
+        "Native compound",
+        vv_core::clipboard::ClipboardOrigin {
+            instance: 1,
+            epoch: source.epoch(),
+        },
+    )
+    .unwrap();
+    let store = crate::asset_store::Store::new(&root.join(".assets")).unwrap();
+    store.create("native-source", &asset).unwrap();
+    let revision = store.item("native-source", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let make = |method: &str, path: &str, body: Value| {
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("content-type", "application/json")
+            .body(if body.is_null() {
+                Body::empty()
+            } else {
+                Body::from(body.to_string())
+            })
+            .unwrap()
+    };
+    for path in [
+        format!("/api/v1/native-assets/pages/0?project_epoch={epoch}"),
+        format!("/api/v1/native-assets/items/native-source?project_epoch={epoch}"),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(make("GET", &path, Value::Null))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+        let item = if path.contains("pages") {
+            &value["items"][0]
+        } else {
+            &value
+        };
+        assert_eq!(item["id"], "native-source");
+        assert_eq!(item["revision"], revision);
+        assert!(item.get("payload").is_none());
+    }
+    let response = app
+        .clone()
+        .oneshot(make(
+            "GET",
+            &format!("/api/v1/native-assets/items/native-source/download?project_epoch={epoch}"),
+            Value::Null,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    assert_eq!(
+        response.headers()[header::CONTENT_DISPOSITION],
+        "attachment; filename=\"native-source.json\""
+    );
+    let bytes = to_bytes(response.into_body(), 4 * 1024 * 1024)
+        .await
+        .unwrap();
+    assert_eq!(&bytes[..], store.export("native-source").unwrap());
+    assert!(crate::asset_payload::parse(&bytes).is_ok());
+    for (path, status) in [
+        (
+            format!("/api/v1/native-assets/jobs/forged?project_epoch={epoch}"),
+            StatusCode::NOT_FOUND,
+        ),
+        (
+            "/api/v1/native-assets/pages/0?project_epoch=stale".into(),
+            StatusCode::CONFLICT,
+        ),
+        (
+            format!("/api/v1/native-assets/pages/0?project_epoch={epoch}&archived=invalid"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            format!("/api/v1/native-assets/items/..%2Fsecret/download?project_epoch={epoch}"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        assert_eq!(
+            app.clone()
+                .oneshot(make("GET", &path, Value::Null))
+                .await
+                .unwrap()
+                .status(),
+            status
+        );
+    }
+    for path in [
+        format!("/api/v1/native-assets/pages/0?project_epoch={epoch}"),
+        "/api/v1/native-assets/prepare".into(),
+    ] {
+        let mut request = make(
+            if path.contains("prepare") {
+                "POST"
+            } else {
+                "GET"
+            },
+            &path,
+            json!({}),
+        );
+        request
+            .headers_mut()
+            .insert(header::ORIGIN, "https://evil.example".parse().unwrap());
+        assert_eq!(
+            app.clone().oneshot(request).await.unwrap().status(),
+            StatusCode::FORBIDDEN
+        );
+    }
+    let prepare = json!({"project_epoch":epoch,"if_generation":session["generation"],"action":{"kind":"import","asset_id":"native-source","revision":revision}});
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/native-assets/prepare", prepare))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let job: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+    let id = job["id"].as_str().unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(3);
+    loop {
+        let response = app
+            .clone()
+            .oneshot(make(
+                "GET",
+                &format!("/api/v1/native-assets/jobs/{id}?project_epoch={epoch}"),
+                Value::Null,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+        if value["state"] == "ready" {
+            break;
+        }
+        assert_ne!(value["state"], "failed", "{value}");
+        assert!(std::time::Instant::now() < deadline);
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    let mutation = |command: &str, operation: Value| json!({"command_id":command,"client_id":"native-browser","project_epoch":epoch,"if_generation":session["generation"],"if_revision":null,"operation":operation});
+    for (path, operation) in [
+        (
+            "/api/v1/native-assets/commands",
+            json!({"kind":"import_native_asset","job_id":id,"asset_id":"native-source","revision":revision}),
+        ),
+        ("/api/v1/native-assets/commands", json!({"kind":"undo"})),
+        (
+            "/api/v1/projects/commands",
+            json!({"kind":"publish_native_asset","job_id":id}),
+        ),
+        (
+            "/api/v1/projects/commands",
+            json!({"kind":"edit_native_asset_library","edit":{"action":"archive","id":"native-source","revision":revision}}),
+        ),
+    ] {
+        assert_eq!(
+            app.clone()
+                .oneshot(make("POST", path, mutation("wrong-route", operation)))
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::UNPROCESSABLE_ENTITY
+        );
+    }
+    let import = mutation(
+        "native-http-import",
+        json!({"kind":"import_native_asset","job_id":id,"asset_id":"native-source","revision":revision}),
+    );
+    let mut acknowledged = None;
+    for _ in 0..2 {
+        let response = app
+            .clone()
+            .oneshot(make("POST", "/api/v1/projects/commands", import.clone()))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let receipt: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+        assert_eq!(receipt["media_ids"].as_array().unwrap().len(), 1);
+        if let Some(previous) = &acknowledged {
+            assert_eq!(&receipt, previous);
+        } else {
+            acknowledged = Some(receipt);
+        }
+    }
+    let latest = host.call(Action::Session).await.unwrap();
+    assert_eq!(
+        latest["history"]["position"].as_u64().unwrap(),
+        session["history"]["position"].as_u64().unwrap() + 1
+    );
+    assert_eq!(
+        latest["timelines"].as_array().unwrap().len(),
+        session["timelines"].as_array().unwrap().len() + 1
+    );
+    assert!(
+        latest["media"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item["id"] == acknowledged.as_ref().unwrap()["media_ids"][0])
+    );
+    let save = json!({"command_id":"native-http-save","client_id":"native-browser","project_epoch":epoch,"if_generation":latest["generation"],"if_revision":null,"operation":{"kind":"save"}});
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", "/api/v1/projects/commands", save))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK
+    );
+    let switch = json!({"command_id":"native-http-switch","client_id":"native-browser","project_epoch":epoch,"if_generation":latest["generation"],"if_revision":null,"operation":{"kind":"new_project","name":"other"}});
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", "/api/v1/projects/commands", switch))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK
+    );
+    let after_switch = host.call(Action::Session).await.unwrap();
+    assert_ne!(after_switch["project_epoch"], epoch);
+    assert_eq!(
+        app.clone()
+            .oneshot(make(
+                "GET",
+                &format!("/api/v1/native-assets/jobs/{id}?project_epoch={epoch}"),
+                Value::Null
+            ))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::CONFLICT
+    );
+    for (job_id, project_epoch) in [
+        (id, "wrong-project"),
+        ("foreign-job", epoch),
+        (id, after_switch["project_epoch"].as_str().unwrap()),
+    ] {
+        assert_eq!(
+            app.clone()
+                .oneshot(make(
+                    "DELETE",
+                    &format!("/api/v1/native-assets/jobs/{job_id}?project_epoch={project_epoch}"),
+                    Value::Null
+                ))
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::NOT_FOUND
+        );
+    }
+    let response = app
+        .clone()
+        .oneshot(make(
+            "DELETE",
+            &format!("/api/v1/native-assets/jobs/{id}?project_epoch={epoch}"),
+            Value::Null,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let canceled: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
+    assert_eq!(canceled["state"], "canceled");
+    assert_eq!(canceled["project_epoch"], epoch);
+    assert!(canceled["result"].is_null());
+    let after_cancel = host.call(Action::Session).await.unwrap();
+    for field in [
+        "project_epoch",
+        "generation",
+        "history",
+        "media",
+        "timelines",
+    ] {
+        assert_eq!(after_cancel[field], after_switch[field]);
+    }
+    assert!(source.project.media_pool.contains_key(media));
+    drop(app);
+    drop(host);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
 }

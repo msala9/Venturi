@@ -1,5 +1,665 @@
 use super::*;
 
+fn native_asset_fixture(label: &str) -> (std::path::PathBuf, Editor, vv_core::MediaId) {
+    let root = std::env::temp_dir().join(format!(
+        "vv-native-assets-{label}-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "assets".into(),
+        },
+        "asset-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let samples = 800u32;
+    let bytes = samples * 2;
+    let mut wav = Vec::new();
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&(36 + bytes).to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&8000u32.to_le_bytes());
+    wav.extend_from_slice(&16000u32.to_le_bytes());
+    wav.extend_from_slice(&2u16.to_le_bytes());
+    wav.extend_from_slice(&16u16.to_le_bytes());
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&bytes.to_le_bytes());
+    wav.resize(44 + bytes as usize, 0);
+    std::fs::write(root.join("capture.wav"), wav).unwrap();
+    let (path, meta) = editor.files.probe("capture.wav").unwrap();
+    let media = editor.session.add_media(path, meta);
+    (root, editor, media)
+}
+fn native_prepare(editor: &mut Editor, action: NativeAssetAction) -> Value {
+    editor
+        .handle(Action::PrepareNativeAsset(NativeAssetRequest {
+            project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+            if_generation: editor.session.history.generation().to_string(),
+            action,
+        }))
+        .unwrap()
+}
+fn native_wait(editor: &mut Editor, job: &Value) -> Value {
+    let id = job["id"].as_str().unwrap().to_owned();
+    let epoch = job["project_epoch"].as_str().unwrap().to_owned();
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let value = editor
+            .handle(Action::NativeAssetStatus(
+                id.clone(),
+                SourceQuery {
+                    project_epoch: epoch.clone(),
+                },
+                false,
+            ))
+            .unwrap();
+        match value["state"].as_str().unwrap() {
+            "ready" => return value,
+            "failed" | "canceled" => panic!("Native asset job failed: {value}"),
+            _ => {
+                assert!(
+                    Instant::now() < deadline,
+                    "Native asset preparation timed out"
+                );
+                std::thread::sleep(Duration::from_millis(5));
+            }
+        }
+    }
+}
+fn native_publish(editor: &mut Editor, media: vv_core::MediaId, id: &str) -> String {
+    use vv_core::Id;
+    let job = native_prepare(
+        editor,
+        NativeAssetAction::Capture {
+            media_id: media.raw().to_string(),
+            name: "Shared native take".into(),
+        },
+    );
+    native_wait(editor, &job);
+    let publish = request(
+        editor,
+        Operation::PublishNativeAsset {
+            job_id: job["id"].as_str().unwrap().into(),
+        },
+        id,
+        None,
+    );
+    editor.mutation(None, publish).unwrap();
+    editor.assets.item(id, false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .into()
+}
+fn native_import(editor: &mut Editor, id: &str, revision: &str, command: &str) -> Value {
+    let job = native_prepare(
+        editor,
+        NativeAssetAction::Import {
+            asset_id: id.into(),
+            revision: revision.into(),
+        },
+    );
+    native_wait(editor, &job);
+    let import = request(
+        editor,
+        Operation::ImportNativeAsset {
+            job_id: job["id"].as_str().unwrap().into(),
+            asset_id: id.into(),
+            revision: revision.into(),
+        },
+        command,
+        None,
+    );
+    editor.mutation(None, import).unwrap()
+}
+
+#[test]
+fn native_asset_capture_publish_is_lease_free_until_durable_library_write_and_has_no_history_step()
+{
+    use vv_core::Id;
+    let (root, mut editor, media) = native_asset_fixture("publication");
+    let position = editor.session.history.position();
+    let generation = editor.session.history.generation();
+    editor.lease = Some(("another-browser".into(), Instant::now()));
+    let job = native_prepare(
+        &mut editor,
+        NativeAssetAction::Capture {
+            media_id: media.raw().to_string(),
+            name: "Native source".into(),
+        },
+    );
+    let ready = native_wait(&mut editor, &job);
+    assert!(ready["result"]["asset_id"].is_null());
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(editor.session.history.generation(), generation);
+    let publish = request(
+        &editor,
+        Operation::PublishNativeAsset {
+            job_id: job["id"].as_str().unwrap().into(),
+        },
+        "publish-native",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, publish.clone()).unwrap_err().1,
+        "READ_ONLY"
+    );
+    editor.lease = None;
+    let receipt = editor.mutation(None, publish.clone()).unwrap();
+    let bytes = editor.assets.export("publish-native").unwrap();
+    assert_eq!(editor.mutation(None, publish.clone()).unwrap(), receipt);
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(editor.session.history.generation(), generation);
+    assert!(receipt.get("media_ids").is_none());
+    let asset = crate::asset_payload::parse(&bytes).unwrap();
+    let payload = crate::asset_payload::decode(&asset).unwrap();
+    assert_eq!(payload.media_ids().len(), 1);
+    assert!(
+        payload
+            .files()
+            .all(|item| item.path.starts_with(root.join(".assets/media")))
+    );
+    drop(editor);
+    let mut editor = Editor::new(&root).unwrap();
+    let mut restarted_receipt = receipt.clone();
+    restarted_receipt["server_restarted"] = json!(true);
+    assert_eq!(editor.mutation(None, publish).unwrap(), restarted_receipt);
+    assert_eq!(editor.assets.export("publish-native").unwrap(), bytes);
+    let old_status = editor.handle(Action::NativeAssetStatus(
+        job["id"].as_str().unwrap().into(),
+        SourceQuery {
+            project_epoch: editor.snapshot()["project_epoch"].as_str().unwrap().into(),
+        },
+        false,
+    ));
+    assert!(old_status.is_err());
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_import_is_one_undo_and_redo_then_cached_reuse_preserves_an_edited_child() {
+    use vv_core::{Clip, ClipId, ClipSource, Id};
+    let (root, mut source, media) = native_asset_fixture("compound");
+    let child = source.session.create_timeline(Timeline {
+        name: "Native nested take".into(),
+        fps: Rational::new(30, 1),
+        resolution: (640, 360),
+        tracks: vec![Track::new(TrackKind::Audio)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    source.session.project.timelines[child].tracks[0]
+        .clips
+        .push(Clip::from_source_range(
+            ClipId(9007199254740993),
+            ClipSource::Media(media),
+            0,
+            2,
+            0,
+            Rational::one(),
+        ));
+    let compound = source
+        .session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(child))
+        .unwrap()
+        .0;
+    let revision = native_publish(&mut source, compound, "compound-asset");
+    let target = root.join("target");
+    let mut editor =
+        Editor::with_libraries(&target, &target.join(".presets"), &root.join(".assets")).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "destination".into(),
+        },
+        "destination-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let position = editor.session.history.position();
+    let media_before = editor.session.project.media_pool.len();
+    let timelines_before = editor.session.project.timelines.len();
+    let imported = native_import(&mut editor, "compound-asset", &revision, "import-compound");
+    assert_eq!(editor.session.history.position(), position + 1);
+    assert_eq!(editor.session.project.media_pool.len(), media_before + 2);
+    assert_eq!(editor.session.project.timelines.len(), timelines_before + 1);
+    let selected =
+        vv_core::MediaId::from_raw(imported["media_ids"][0].as_str().unwrap().parse().unwrap());
+    assert!(
+        editor.session.project.media_pool[selected]
+            .compound
+            .is_some()
+    );
+    assert!(
+        editor
+            .session
+            .project
+            .media_pool
+            .values()
+            .filter(|item| item.compound.is_none())
+            .all(|item| item.path.parent() == Some(target.as_path()))
+    );
+    let undo = request(&editor, Operation::Undo, "undo-native-import", None);
+    editor.mutation(None, undo).unwrap();
+    assert!(!editor.session.project.media_pool.contains_key(selected));
+    assert_eq!(editor.session.project.timelines.len(), timelines_before);
+    let redo = request(&editor, Operation::Redo, "redo-native-import", None);
+    editor.mutation(None, redo).unwrap();
+    assert!(editor.session.project.media_pool.contains_key(selected));
+    editor.session.apply(Box::new(vv_core::RenameTimeline::new(
+        selected,
+        "Edited imported child".into(),
+    )));
+    let position = editor.session.history.position();
+    let generation = editor.session.history.generation();
+    let reused = native_import(&mut editor, "compound-asset", &revision, "reuse-compound");
+    assert_eq!(reused["media_ids"], imported["media_ids"]);
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(editor.session.history.generation(), generation);
+    let nested = editor.session.project.media_pool[selected]
+        .compound
+        .unwrap();
+    assert_eq!(
+        editor.session.project.timelines[nested].name,
+        "Edited imported child"
+    );
+    drop(editor);
+    drop(source);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_cache_invalidates_after_undo_removes_imported_ids() {
+    let (root, mut source, media) = native_asset_fixture("cache-undo");
+    let revision = native_publish(&mut source, media, "audio-asset");
+    let target = root.join("target");
+    let mut editor =
+        Editor::with_libraries(&target, &target.join(".presets"), &root.join(".assets")).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "destination".into(),
+        },
+        "destination-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let first = native_import(&mut editor, "audio-asset", &revision, "first-import");
+    let position = editor.session.history.position();
+    let undo = request(&editor, Operation::Undo, "undo-import", None);
+    editor.mutation(None, undo).unwrap();
+    let imported = native_import(&mut editor, "audio-asset", &revision, "import-again");
+    assert_ne!(imported["media_ids"], first["media_ids"]);
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(editor.session.history.labels().count(), position);
+    drop(editor);
+    drop(source);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_preparation_and_import_refuse_stale_context_forged_jobs_and_wrong_routes() {
+    use vv_core::Id;
+    let (root, mut editor, media) = native_asset_fixture("guards");
+    let epoch = editor.snapshot()["project_epoch"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let generation = editor.session.history.generation().to_string();
+    let position = editor.session.history.position();
+    for (project_epoch, if_generation) in [
+        ("stale".to_owned(), generation.clone()),
+        (epoch.clone(), "999".into()),
+    ] {
+        assert!(
+            editor
+                .handle(Action::PrepareNativeAsset(NativeAssetRequest {
+                    project_epoch,
+                    if_generation,
+                    action: NativeAssetAction::Capture {
+                        media_id: media.raw().to_string(),
+                        name: "Rejected".into()
+                    }
+                }))
+                .is_err()
+        );
+    }
+    let missing = request(
+        &editor,
+        Operation::ImportNativeAsset {
+            job_id: "forged".into(),
+            asset_id: "asset".into(),
+            revision: "0".repeat(64),
+        },
+        "forged-import",
+        None,
+    );
+    assert!(editor.mutation(None, missing).is_err());
+    assert_eq!(editor.session.history.position(), position);
+    let job = native_prepare(
+        &mut editor,
+        NativeAssetAction::Capture {
+            media_id: media.raw().to_string(),
+            name: "Bound snapshot".into(),
+        },
+    );
+    native_wait(&mut editor, &job);
+    let timeline = editor.session.project.timelines.keys().next().unwrap();
+    let timeline_request = request(
+        &editor,
+        Operation::PublishNativeAsset {
+            job_id: job["id"].as_str().unwrap().into(),
+        },
+        "wrong-timeline-route",
+        Some(timeline),
+    );
+    assert!(
+        editor
+            .mutation(Some(timeline.raw().to_string()), timeline_request)
+            .is_err()
+    );
+    editor.session.create_timeline(Timeline {
+        name: "Change generation".into(),
+        fps: Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let publish = request(
+        &editor,
+        Operation::PublishNativeAsset {
+            job_id: job["id"].as_str().unwrap().into(),
+        },
+        "stale-publication",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, publish).unwrap_err().1,
+        "ASSET_CONTEXT_CHANGED"
+    );
+    assert!(editor.assets.item("stale-publication", false).is_err());
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_capture_counts_all_dependencies_before_opening_any_source_file() {
+    use vv_core::{Clip, ClipId, ClipSource, Id, MediaItem};
+    let (root, mut editor, media) = native_asset_fixture("file-count");
+    let meta = editor.session.project.media_pool[media].meta.clone();
+    let mut track = Track::new(TrackKind::Audio);
+    for index in 0..65u64 {
+        let file = editor.session.project.media_pool.insert(MediaItem {
+            path: root.join(format!("not-created-{index}.wav")),
+            meta: meta.clone(),
+            content_hash: index + 1,
+            compound: None,
+            folder: None,
+        });
+        track.clips.push(Clip::from_source_range(
+            ClipId(index + 1),
+            ClipSource::Media(file),
+            0,
+            1,
+            index as i64,
+            Rational::one(),
+        ));
+    }
+    let timeline = editor.session.create_timeline(Timeline {
+        name: "Too many dependencies".into(),
+        fps: Rational::new(30, 1),
+        resolution: (640, 360),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let compound = editor
+        .session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(timeline))
+        .unwrap()
+        .0;
+    let generation = editor.session.history.generation();
+    let error = editor
+        .handle(Action::PrepareNativeAsset(NativeAssetRequest {
+            project_epoch: editor.snapshot()["project_epoch"].as_str().unwrap().into(),
+            if_generation: generation.to_string(),
+            action: NativeAssetAction::Capture {
+                media_id: compound.raw().to_string(),
+                name: "Refused before source IO".into(),
+            },
+        }))
+        .unwrap_err();
+    assert_eq!(error.1, "INVALID_OPERATION");
+    assert!(error.2.contains("64 source files"));
+    assert_eq!(editor.session.history.generation(), generation);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_invalid_payload_and_destination_limits_preserve_project_history_and_allocators() {
+    use vv_core::{Clip, ClipId, ClipSource};
+    let (root, mut source, _) = native_asset_fixture("atomic-import");
+    let mut track = Track::new(TrackKind::Video);
+    track.clips.push(Clip::from_source_range(
+        ClipId(1),
+        ClipSource::SolidColor,
+        0,
+        24,
+        0,
+        Rational::one(),
+    ));
+    let child = source.session.create_timeline(Timeline {
+        name: "Generated native asset".into(),
+        fps: Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let media = source
+        .session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(child))
+        .unwrap()
+        .0;
+    let revision = native_publish(&mut source, media, "generated-asset");
+    let target = root.join("target");
+    let mut editor =
+        Editor::with_libraries(&target, &target.join(".presets"), &root.join(".assets")).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "destination".into(),
+        },
+        "destination-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    for index in 1..64 {
+        editor.session.create_timeline(Timeline {
+            name: format!("Existing {index}"),
+            fps: Rational::new(24, 1),
+            resolution: (640, 360),
+            tracks: vec![],
+            markers: vec![],
+            master: Default::default(),
+        });
+    }
+    let job = native_prepare(
+        &mut editor,
+        NativeAssetAction::Import {
+            asset_id: "generated-asset".into(),
+            revision: revision.clone(),
+        },
+    );
+    native_wait(&mut editor, &job);
+    let project = ron::to_string(&editor.session.project).unwrap();
+    let generation = editor.session.history.generation();
+    let position = editor.session.history.position();
+    let import = request(
+        &editor,
+        Operation::ImportNativeAsset {
+            job_id: job["id"].as_str().unwrap().into(),
+            asset_id: "generated-asset".into(),
+            revision,
+        },
+        "refused-project-size",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, import).unwrap_err().1,
+        "INVALID_OPERATION"
+    );
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), project);
+    assert_eq!(editor.session.history.generation(), generation);
+    assert_eq!(editor.session.history.position(), position);
+    assert!(editor.asset_imports.is_empty());
+    let bad=br#"{"version":1,"name":"Malformed","folder":null,"payload":"venturi-clipboard/1\nnot a native project"}"#;
+    std::fs::write(root.join(".assets/assets/malformed.json"), bad).unwrap();
+    let bad_revision = format!("{:x}", Sha256::digest(bad));
+    let prepared = editor.handle(Action::PrepareNativeAsset(NativeAssetRequest {
+        project_epoch: editor.snapshot()["project_epoch"].as_str().unwrap().into(),
+        if_generation: generation.to_string(),
+        action: NativeAssetAction::Import {
+            asset_id: "malformed".into(),
+            revision: bad_revision,
+        },
+    }));
+    assert!(prepared.is_err());
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), project);
+    assert_eq!(editor.session.history.position(), position);
+    drop(editor);
+    drop(source);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_project_switch_cancels_obsolete_jobs_and_accepts_exact_old_cancel_without_history()
+{
+    use vv_core::Id;
+    let (root, mut editor, media) = native_asset_fixture("obsolete-project");
+    let revision = native_publish(&mut editor, media, "published-before-switch");
+    let published = editor.assets.export("published-before-switch").unwrap();
+    let job = native_prepare(
+        &mut editor,
+        NativeAssetAction::Capture {
+            media_id: media.raw().to_string(),
+            name: "Unpublished old project".into(),
+        },
+    );
+    native_wait(&mut editor, &job);
+    let old_epoch = job["project_epoch"].as_str().unwrap().to_owned();
+    let id = job["id"].as_str().unwrap().to_owned();
+    let save = request(&editor, Operation::Save, "save-before-switch", None);
+    editor.mutation(None, save).unwrap();
+    let switch = request(
+        &editor,
+        Operation::NewProject {
+            name: "next".into(),
+        },
+        "switch-project",
+        None,
+    );
+    editor.mutation(None, switch).unwrap();
+    assert_ne!(editor.snapshot()["project_epoch"], old_epoch);
+    let project = ron::to_string(&editor.session.project).unwrap();
+    let position = editor.session.history.position();
+    let generation = editor.session.history.generation();
+    let receipts = editor.completed.len();
+    assert_eq!(
+        editor
+            .handle(Action::NativeAssetStatus(
+                id.clone(),
+                SourceQuery {
+                    project_epoch: old_epoch.clone()
+                },
+                false
+            ))
+            .unwrap_err()
+            .1,
+        "REVISION_CONFLICT"
+    );
+    let canceled = editor
+        .handle(Action::NativeAssetStatus(
+            id.clone(),
+            SourceQuery {
+                project_epoch: old_epoch.clone(),
+            },
+            true,
+        ))
+        .unwrap();
+    assert_eq!(canceled["state"], "canceled");
+    assert_eq!(canceled["project_epoch"], old_epoch);
+    assert!(canceled["result"].is_null());
+    for (job_id, epoch) in [
+        (id.clone(), "wrong-project".into()),
+        ("foreign-job".into(), old_epoch.clone()),
+        (
+            id.clone(),
+            editor.snapshot()["project_epoch"].as_str().unwrap().into(),
+        ),
+    ] {
+        assert_eq!(
+            editor
+                .handle(Action::NativeAssetStatus(
+                    job_id,
+                    SourceQuery {
+                        project_epoch: epoch
+                    },
+                    true
+                ))
+                .unwrap_err()
+                .1,
+            "NOT_FOUND"
+        );
+    }
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), project);
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(editor.session.history.generation(), generation);
+    assert_eq!(editor.completed.len(), receipts);
+    let publish = request(
+        &editor,
+        Operation::PublishNativeAsset { job_id: id },
+        "refused-old-job",
+        None,
+    );
+    assert!(editor.mutation(None, publish).is_err());
+    assert!(editor.assets.item("refused-old-job", false).is_err());
+    assert_eq!(
+        editor.assets.export("published-before-switch").unwrap(),
+        published
+    );
+    assert_eq!(
+        editor
+            .assets
+            .item("published-before-switch", false)
+            .unwrap()["revision"],
+        revision
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn compound_navigation_is_a_lease_free_reader_with_raw_frames_and_complete_parent_cas() {
     use crate::compound_navigation::{Ancestor, Navigation, Request as NavigationRequest};

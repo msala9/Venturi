@@ -1,0 +1,1476 @@
+{
+  "status": "passed",
+  "root": "/home/marco/VenturiWeb-native-assets-20261021-2",
+  "project": "Native_Assets_API_check.vvproj",
+  "destination": "Native_Asset_Destination.vvproj",
+  "asset_id": "653b249e-1ead-45e2-b560-c0604be43d2f",
+  "asset_revision": "128fb258994a89a2dcea450732be0559d7e09aec07039f65b734349153802e2f",
+  "asset_sha256": "128fb258994a89a2dcea450732be0559d7e09aec07039f65b734349153802e2f",
+  "native_export": {
+    "version": 1,
+    "name": "Reusable file compound",
+    "folder": null,
+    "payload": "venturi-clipboard/1\n(origin:(instance:17796996845136152839,epoch:1),project:(media_pool:(next:3,items:{1:(path:\"Reusable native compound\",meta:(duration_frames:12,fps:(num:24,den:1),width:1920,height:1080,has_video:true,has_audio:false,sample_rate:48000,channels:2,audio_streams:1,file:()),content_hash:3,compound:Some(1)),2:(path:\"/home/marco/VenturiWeb-native-assets-20261021-2/.assets/media/37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2/native-source.png\",meta:(duration_frames:1000000000,fps:(num:25,den:1),width:16,height:16,has_video:true,has_audio:false,sample_rate:0,channels:0,audio_streams:0,file:(size_bytes:Some(79),video_codec:Some(\"png\"))),content_hash:3806359610182731851,compound:None)}),timelines:(next:2,items:{1:(name:\"Reusable native compound\",fps:(num:24,den:1),resolution:(1920,1080),tracks:[(kind:Video,clips:[(id:(0),source:Media(2),source_offset:0,timeline_start:0,timeline_len:12,effects:(transform:(params:[(keyframes:[],default:1.0),(keyframes:[],default:1.0),(keyframes:[],default:0.0),(keyframes:[],default:0.0),(keyframes:[],default:0.0),(keyframes:[],default:0.0),(keyframes:[],default:0.0),(keyframes:[],default:0.0),(keyframes:[],default:0.0),(keyframes:[],default:0.0),(keyframes:[],default:0.0),(keyframes:[],default:0.0),(keyframes:[],default:100.0)],flip:(false,false)),gain_db:(keyframes:[],default:0.0),color:None,title:None,filters:[],transition_in:None,transition_out:None,blend_mode:Normal,masks:[],matte:None),linked_group:None,audio_stream_index:0,rate:(num:24,den:25),speed:(num:1,den:1),pitch_correction:true,freeze:None,disabled:false,fade_in:0,fade_out:0,display_color:None)],muted:false,solo:false,locked:false,armed:false,crossings:[],mix:(gain_db:0.0,pan:0.0,effects:[]))],markers:[],master:(gain_db:0.0,pan:0.0,effects:[]))}),folders:(next:1,items:{}),next_clip_id:0,next_link_group_id:0,next_compound_id:0,next_compound_generation:0,precision:High,view:(active_timeline:None,playheads:{})),media:[1],clips:[])"
+  },
+  "source_sha256": "37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2",
+  "imported_file": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png",
+  "imported_media_ids": [
+    "2"
+  ],
+  "imported_child": "2",
+  "gui_media_id": "4",
+  "gui_media_sha256": "37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2",
+  "publish_preserves_project": true,
+  "rename_backup_archive_restore": true,
+  "stale_revision": {
+    "status": 409,
+    "error": "ASSET_CHANGED"
+  },
+  "canceled_publish": {
+    "status": 409,
+    "error": "ASSET_NOT_READY"
+  },
+  "one_undo_redo_retry": true,
+  "reuse_preserves_edited_child": true,
+  "desktop_16_hex_layout_import": {
+    "fixture": "desktop-fingerprint-fixture",
+    "native_format_source": "crates/vv-app/src/library.rs copy_to_media; controlled file-layout fixture",
+    "directory_hash": "34d2e7e60456084b",
+    "import_and_undo": true
+  },
+  "independent_copy_after_source_and_library_removal": true,
+  "restart_preserved": true,
+  "binary_sha256": "cc018658fa4cf9fb0f2697d62e3ed7d5fee1aa6eeb5623eec5696f32037243bb",
+  "hardware_gpu_used": false,
+  "failure": null,
+  "failure_traceback": null,
+  "main_editor_preserved": true,
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "cleanup_errors": [],
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792620405.0654662,
+    "inherited_rust_validation": "c62cfa129b186dc0e16b5ad523ec427dc51a04a937b26d7d5f5da13dcc006147",
+    "rust_tests": 291,
+    "core_tests": 277,
+    "desktop_tests": 3,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "cc018658fa4cf9fb0f2697d62e3ed7d5fee1aa6eeb5623eec5696f32037243bb",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "served_asset_hashes": {
+    "/": "801cc72868d19d5ddccf20c8ff7e7a1ab142f78969228dc60b0342c39af1fbd7",
+    "/style/app.css": "8f7da2c112740c55a76c5bc7c6b43f0aa6a8020da287657af5fd15c4a6ee93fc",
+    "/js/main.js": "9195fa728abde5a2391f1b2da0c337fa0f0082748b02bc26c462a30986457cf8",
+    "/js/native-assets.js": "06158f0ab621fd176e662bde7b4f834f788c0872b55dd093ac860cf5205d8114",
+    "/js/library.js": "eb66047fa28c850f86c33a627080827d85c38ab064512773e8eaa65a00ed957b"
+  },
+  "core_tests": 277,
+  "media_proxy_tests": 10,
+  "bounded_decoder_tests": 3,
+  "cached_device_tests": 1,
+  "rust_tests": 291,
+  "javascript_tests": 620,
+  "native_desktop": {
+    "phase": "passed",
+    "updated_unix": 1792620193.5785186,
+    "web_binary_sha256": "c62cfa129b186dc0e16b5ad523ec427dc51a04a937b26d7d5f5da13dcc006147",
+    "native_tests": 3,
+    "native_key_modifier_combinations": 936,
+    "real_desktop_library_parser": true,
+    "clippy_all_targets": true,
+    "fmt_check": true,
+    "hardware_gpu": false
+  },
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "windows_project_saved_bytes_preserved": true,
+  "download_native_json_sha256": "fd7c92d26347027d8b9c613d85a81bf77a58cb9faf22b3c0672df1f2d22164e1",
+  "no_gpu_or_shared_lock_fds": true,
+  "final_native_history": {
+    "labels": [
+      "ImportMedia"
+    ],
+    "position": 0
+  },
+  "final_native_generation": "2",
+  "final_native_unsaved": true,
+  "validation_summary": [
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-core",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 1.84s",
+    "test result: ok. 277 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+    "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media browser_proxy::tests::",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.47s",
+    "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out; finished in 0.45s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_software_thread_bound",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.06s",
+    "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 0.26s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_cached_device_release",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.08s",
+    "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 126 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-web",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 49.55s",
+    "test result: ok. 291 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.40s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo clippy --locked -p vv-core -p vv-media -p vv-web -p vv-app --all-targets -- -D warnings",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 12.76s",
+    "+ /home/marco/.cache/venturi-build/node/bin/node --test --test-concurrency=1 web/test/api.test.js web/test/attributes.test.js web/test/audio-meters.test.js web/test/audition.test.js web/test/balance.test.js web/test/capture.test.js web/test/catalog.test.js web/test/compound-navigation.test.js web/test/curves.test.js web/test/eventkeys.test.js web/test/export-codecs.test.js web/test/export-panel.test.js web/test/export.test.js web/test/fast-transport.test.js web/test/inspector.test.js web/test/keyselection.test.js web/test/library.test.js web/test/masks.test.js web/test/mixer.test.js web/test/native-assets-panel.test.js web/test/native-assets.test.js web/test/preset-panel.test.js web/test/preset-shortcuts.test.js web/test/presets.test.js web/test/preview-cache.test.js web/test/program-range.test.js web/test/program.test.js web/test/recovery.test.js web/test/retime-inspector.test.js web/test/retime-menu.test.js web/test/retime-visibility.test.js web/test/review.test.js web/test/reviewmeta.test.js web/test/scopes.test.js web/test/silence.test.js web/test/slip.test.js web/test/source-assets.test.js web/test/source-clock.test.js web/test/source-seek.test.js web/test/source-streams.test.js web/test/source-windows.test.js web/test/source.test.js web/test/timeline-compound-input.test.js web/test/timeline-fades.test.js web/test/timeline-preset-drop.test.js web/test/timeline-retime-input.test.js web/test/timeline-retime.test.js web/test/timeline-transition-input.test.js web/test/timeline-transition-placement-input.test.js web/test/timeline-transition-placement.test.js web/test/timeline-transitions.test.js web/test/timeline.test.js web/test/transition-selection.test.js web/test/ui.test.js web/test/viewer-mask-overlay.test.js web/test/viewer-mask-pen.test.js web/test/viewer-mask.test.js web/test/viewer-transform-overlay.test.js web/test/viewer-transform.test.js web/test/viewer.test.js web/test/visual.test.js web/test/voiceover.test.js",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo build --locked -p vv-web",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 50.59s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo fmt --all -- --check",
+    "+ /home/marco/.cache/venturi-build/node/bin/node --test --test-concurrency=1 web/test/api.test.js web/test/attributes.test.js web/test/audio-meters.test.js web/test/audition.test.js web/test/balance.test.js web/test/capture.test.js web/test/catalog.test.js web/test/compound-navigation.test.js web/test/curves.test.js web/test/eventkeys.test.js web/test/export-codecs.test.js web/test/export-panel.test.js web/test/export.test.js web/test/fast-transport.test.js web/test/inspector.test.js web/test/keyselection.test.js web/test/library.test.js web/test/masks.test.js web/test/mixer.test.js web/test/native-assets-panel.test.js web/test/native-assets.test.js web/test/preset-panel.test.js web/test/preset-shortcuts.test.js web/test/presets.test.js web/test/preview-cache.test.js web/test/program-range.test.js web/test/program.test.js web/test/recovery.test.js web/test/retime-inspector.test.js web/test/retime-menu.test.js web/test/retime-visibility.test.js web/test/review.test.js web/test/reviewmeta.test.js web/test/scopes.test.js web/test/silence.test.js web/test/slip.test.js web/test/source-assets.test.js web/test/source-clock.test.js web/test/source-seek.test.js web/test/source-streams.test.js web/test/source-windows.test.js web/test/source.test.js web/test/timeline-compound-input.test.js web/test/timeline-fades.test.js web/test/timeline-preset-drop.test.js web/test/timeline-retime-input.test.js web/test/timeline-retime.test.js web/test/timeline-transition-input.test.js web/test/timeline-transition-placement-input.test.js web/test/timeline-transition-placement.test.js web/test/timeline-transitions.test.js web/test/timeline.test.js web/test/transition-selection.test.js web/test/ui.test.js web/test/viewer-mask-overlay.test.js web/test/viewer-mask-pen.test.js web/test/viewer-mask.test.js web/test/viewer-transform-overlay.test.js web/test/viewer-transform.test.js web/test/viewer.test.js web/test/visual.test.js web/test/voiceover.test.js",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo build --locked -p vv-web",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 7.49s"
+  ],
+  "own_ui_test_unit_stopped": true,
+  "windows_ui_observations": {
+    "initial": {
+      "assets": [
+        {
+          "label": "Reusable file compound",
+          "selected": true,
+          "value": "0"
+        },
+        {
+          "label": "Desktop fingerprint layout fixture",
+          "selected": false,
+          "value": "1"
+        }
+      ],
+      "download": "/api/v1/native-assets/items/653b249e-1ead-45e2-b560-c0604be43d2f/download?project_epoch=1792620429344625250%3A1",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "native-source.png \u00b7 OFFLINE",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "Reusable native compound",
+          "selected": "false"
+        },
+        {
+          "id": "4",
+          "name": "native-gui.png",
+          "selected": "true"
+        }
+      ],
+      "name": "Reusable file compound",
+      "project": "Native_Assets_API_check.vvproj",
+      "redoDisabled": true,
+      "saved": "Saved",
+      "status": "Page 1 of 1 \u00b7 2 native assets",
+      "undoDisabled": true
+    },
+    "captured": {
+      "assets": [
+        {
+          "label": "Reusable file compound",
+          "selected": false,
+          "value": "0"
+        },
+        {
+          "label": "native-gui.png",
+          "selected": true,
+          "value": "1"
+        },
+        {
+          "label": "Desktop fingerprint layout fixture",
+          "selected": false,
+          "value": "2"
+        }
+      ],
+      "download": "/api/v1/native-assets/items/91ce3eb7-63d4-428b-ba08-4d8cb80b5b67/download?project_epoch=1792620429344625250%3A1",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "native-source.png \u00b7 OFFLINE",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "Reusable native compound",
+          "selected": "false"
+        },
+        {
+          "id": "4",
+          "name": "native-gui.png",
+          "selected": "true"
+        }
+      ],
+      "name": "native-gui.png",
+      "project": "Native_Assets_API_check.vvproj",
+      "redoDisabled": true,
+      "saved": "Saved",
+      "status": "1 native asset saved \u00b7 timeline unchanged",
+      "undoDisabled": true
+    },
+    "renamed": {
+      "assets": [
+        {
+          "label": "Reusable file compound",
+          "selected": false,
+          "value": "0"
+        },
+        {
+          "label": "Windows reusable native still",
+          "selected": true,
+          "value": "1"
+        },
+        {
+          "label": "Desktop fingerprint layout fixture",
+          "selected": false,
+          "value": "2"
+        }
+      ],
+      "download": "/api/v1/native-assets/items/91ce3eb7-63d4-428b-ba08-4d8cb80b5b67/download?project_epoch=1792620429344625250%3A1",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "native-source.png \u00b7 OFFLINE",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "Reusable native compound",
+          "selected": "false"
+        },
+        {
+          "id": "4",
+          "name": "native-gui.png",
+          "selected": "true"
+        }
+      ],
+      "name": "Windows reusable native still",
+      "project": "Native_Assets_API_check.vvproj",
+      "redoDisabled": true,
+      "saved": "Saved",
+      "status": "Native asset library updated \u00b7 timeline unchanged",
+      "undoDisabled": true
+    },
+    "archived_active_selection": {
+      "assets": [
+        {
+          "label": "Reusable file compound",
+          "selected": true,
+          "value": "0"
+        },
+        {
+          "label": "Desktop fingerprint layout fixture",
+          "selected": false,
+          "value": "1"
+        }
+      ],
+      "download": "/api/v1/native-assets/items/653b249e-1ead-45e2-b560-c0604be43d2f/download?project_epoch=1792620429344625250%3A1",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "native-source.png \u00b7 OFFLINE",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "Reusable native compound",
+          "selected": "false"
+        },
+        {
+          "id": "4",
+          "name": "native-gui.png",
+          "selected": "true"
+        }
+      ],
+      "name": "Reusable file compound",
+      "project": "Native_Assets_API_check.vvproj",
+      "redoDisabled": true,
+      "saved": "Saved",
+      "status": "Native asset library updated \u00b7 timeline unchanged",
+      "undoDisabled": true
+    },
+    "archived": {
+      "assets": [
+        {
+          "label": "Windows reusable native still",
+          "selected": true,
+          "value": "0"
+        }
+      ],
+      "download": "/api/v1/native-assets/items/653b249e-1ead-45e2-b560-c0604be43d2f/download?project_epoch=1792620429344625250%3A1",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "native-source.png \u00b7 OFFLINE",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "Reusable native compound",
+          "selected": "false"
+        },
+        {
+          "id": "4",
+          "name": "native-gui.png",
+          "selected": "true"
+        }
+      ],
+      "name": "Windows reusable native still",
+      "project": "Native_Assets_API_check.vvproj",
+      "redoDisabled": true,
+      "saved": "Saved",
+      "status": "Page 1 of 1 \u00b7 1 archived assets",
+      "undoDisabled": true
+    },
+    "restored_empty_archive": {
+      "assets": [],
+      "download": "/api/v1/native-assets/items/653b249e-1ead-45e2-b560-c0604be43d2f/download?project_epoch=1792620429344625250%3A1",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "native-source.png \u00b7 OFFLINE",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "Reusable native compound",
+          "selected": "false"
+        },
+        {
+          "id": "4",
+          "name": "native-gui.png",
+          "selected": "true"
+        }
+      ],
+      "name": "",
+      "project": "Native_Assets_API_check.vvproj",
+      "redoDisabled": true,
+      "saved": "Saved",
+      "status": "Native asset library updated \u00b7 timeline unchanged",
+      "undoDisabled": true
+    },
+    "restored_empty_controls": [
+      {
+        "disabled": false,
+        "label": "Shared media archive"
+      },
+      {
+        "disabled": false,
+        "label": "Native assets"
+      },
+      {
+        "disabled": false,
+        "label": "Save 1 selected media as native assets"
+      },
+      {
+        "disabled": true,
+        "label": "Cancel native asset preparation"
+      },
+      {
+        "disabled": false,
+        "label": "Search native assets"
+      },
+      {
+        "disabled": true,
+        "label": "Previous native assets"
+      },
+      {
+        "disabled": true,
+        "label": "Next native assets"
+      },
+      {
+        "disabled": false,
+        "label": "Refresh native assets"
+      },
+      {
+        "disabled": true,
+        "label": "Import native asset into project"
+      },
+      {
+        "disabled": true,
+        "label": "Rename native asset"
+      },
+      {
+        "disabled": true,
+        "label": "Archive native asset"
+      },
+      {
+        "disabled": true,
+        "label": "Restore previous native asset settings"
+      }
+    ],
+    "restored": {
+      "assets": [
+        {
+          "label": "Reusable file compound",
+          "selected": false,
+          "value": "0"
+        },
+        {
+          "label": "Windows reusable native still",
+          "selected": true,
+          "value": "1"
+        },
+        {
+          "label": "Desktop fingerprint layout fixture",
+          "selected": false,
+          "value": "2"
+        }
+      ],
+      "download": "/api/v1/native-assets/items/91ce3eb7-63d4-428b-ba08-4d8cb80b5b67/download?project_epoch=1792620429344625250%3A1",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "native-source.png \u00b7 OFFLINE",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "Reusable native compound",
+          "selected": "false"
+        },
+        {
+          "id": "4",
+          "name": "native-gui.png",
+          "selected": "true"
+        }
+      ],
+      "name": "Windows reusable native still",
+      "project": "Native_Assets_API_check.vvproj",
+      "redoDisabled": true,
+      "saved": "Saved",
+      "status": "Page 1 of 1 \u00b7 3 native assets",
+      "undoDisabled": true
+    },
+    "destination_before_import": {
+      "assets": [
+        {
+          "label": "Reusable file compound",
+          "selected": false,
+          "value": "0"
+        },
+        {
+          "label": "Windows reusable native still",
+          "selected": true,
+          "value": "1"
+        },
+        {
+          "label": "Desktop fingerprint layout fixture",
+          "selected": false,
+          "value": "2"
+        }
+      ],
+      "download": "/api/v1/native-assets/items/91ce3eb7-63d4-428b-ba08-4d8cb80b5b67/download?project_epoch=1792620429344625250%3A2",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "Edited imported child",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png",
+          "selected": "false"
+        }
+      ],
+      "name": "Windows reusable native still",
+      "project": "Native_Asset_Destination.vvproj",
+      "redoDisabled": true,
+      "saved": "Saved",
+      "status": "Page 1 of 1 \u00b7 3 native assets",
+      "undoDisabled": true
+    },
+    "imported": {
+      "assets": [
+        {
+          "label": "Reusable file compound",
+          "selected": false,
+          "value": "0"
+        },
+        {
+          "label": "Windows reusable native still",
+          "selected": true,
+          "value": "1"
+        },
+        {
+          "label": "Desktop fingerprint layout fixture",
+          "selected": false,
+          "value": "2"
+        }
+      ],
+      "download": "/api/v1/native-assets/items/91ce3eb7-63d4-428b-ba08-4d8cb80b5b67/download?project_epoch=1792620429344625250%3A2",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "Edited imported child",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png",
+          "selected": "false"
+        },
+        {
+          "id": "5",
+          "name": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-gui.png",
+          "selected": "true"
+        }
+      ],
+      "name": "Windows reusable native still",
+      "project": "Native_Asset_Destination.vvproj",
+      "redoDisabled": true,
+      "saved": "Unsaved changes",
+      "status": "Native asset imported \u00b7 project copy \u00b7 Undo available",
+      "undoDisabled": false
+    },
+    "undone": {
+      "assets": [
+        {
+          "label": "Reusable file compound",
+          "selected": false,
+          "value": "0"
+        },
+        {
+          "label": "Windows reusable native still",
+          "selected": true,
+          "value": "1"
+        },
+        {
+          "label": "Desktop fingerprint layout fixture",
+          "selected": false,
+          "value": "2"
+        }
+      ],
+      "download": "/api/v1/native-assets/items/91ce3eb7-63d4-428b-ba08-4d8cb80b5b67/download?project_epoch=1792620429344625250%3A2",
+      "media": [
+        {
+          "id": "1",
+          "name": "Timeline 1",
+          "selected": "false"
+        },
+        {
+          "id": "2",
+          "name": "Edited imported child",
+          "selected": "false"
+        },
+        {
+          "id": "3",
+          "name": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png",
+          "selected": "false"
+        }
+      ],
+      "name": "Windows reusable native still",
+      "project": "Native_Asset_Destination.vvproj",
+      "redoDisabled": false,
+      "saved": "Unsaved changes",
+      "status": "Native asset imported \u00b7 project copy \u00b7 Undo available",
+      "undoDisabled": true
+    },
+    "history": [
+      {
+        "current": "true",
+        "disabled": true,
+        "label": "0 \u00b7 Initial state"
+      },
+      {
+        "current": "false",
+        "disabled": false,
+        "label": "1 \u00b7 ImportMedia"
+      }
+    ],
+    "consoleErrors": []
+  },
+  "windows_native_snapshots": {
+    "imported": {
+      "session": {
+        "project_name": "Native_Asset_Destination.vvproj",
+        "project_epoch": "1792620429344625250:2",
+        "generation": "1",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 1
+        },
+        "unsaved": true,
+        "media": [
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "1",
+            "content_hash": "8",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "1",
+            "is_image": false,
+            "name": "Timeline 1",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "2",
+            "content_hash": "9",
+            "duration_frames": 12,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "2",
+            "is_image": false,
+            "name": "Edited imported child",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "9139290953265789899",
+            "duration_frames": 1000000000,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 25
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "3",
+            "is_image": true,
+            "name": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "1352067762878934600",
+            "duration_frames": 1000000000,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 25
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "5",
+            "is_image": true,
+            "name": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-gui.png",
+            "offline": false
+          }
+        ],
+        "timelines": [
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "1",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Timeline 1",
+            "resolution": {
+              "height": 1080,
+              "width": 1920
+            },
+            "revision": "d1215a762e8d85aa",
+            "timeline_id": "1",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          },
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "2",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Edited imported child",
+            "resolution": {
+              "height": 1080,
+              "width": 1920
+            },
+            "revision": "8b6ba34a6e26e3db",
+            "timeline_id": "2",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [
+                  {
+                    "disabled": false,
+                    "display_color": null,
+                    "display_rgb": null,
+                    "fade_in": 0,
+                    "fade_out": 0,
+                    "freeze_source_frame": null,
+                    "id": "0",
+                    "kind": "media",
+                    "length_frames": 12,
+                    "linked_group": null,
+                    "media_id": "3",
+                    "name": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png",
+                    "retime": {
+                      "max_length": 1200,
+                      "min_length": 1,
+                      "pitch_correction": true,
+                      "source_span": 12,
+                      "speed_percent": 100.0
+                    },
+                    "slip_range": [
+                      0,
+                      959999988
+                    ],
+                    "source_in_frames": 0,
+                    "source_out_frames": 12,
+                    "speed_percent": 100.0,
+                    "start_frame": 0,
+                    "transition_in": null,
+                    "transition_out": null
+                  }
+                ],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          }
+        ]
+      },
+      "project_saved_bytes_unchanged": true,
+      "media_sha256": {
+        "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png": "37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2",
+        "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-gui.png": "37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2"
+      },
+      "main_editor_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    },
+    "undone": {
+      "session": {
+        "project_name": "Native_Asset_Destination.vvproj",
+        "project_epoch": "1792620429344625250:2",
+        "generation": "2",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 0
+        },
+        "unsaved": true,
+        "media": [
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "1",
+            "content_hash": "10",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "1",
+            "is_image": false,
+            "name": "Timeline 1",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "2",
+            "content_hash": "11",
+            "duration_frames": 12,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "2",
+            "is_image": false,
+            "name": "Edited imported child",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "9139290953265789899",
+            "duration_frames": 1000000000,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 25
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "3",
+            "is_image": true,
+            "name": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png",
+            "offline": false
+          }
+        ],
+        "timelines": [
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "1",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Timeline 1",
+            "resolution": {
+              "height": 1080,
+              "width": 1920
+            },
+            "revision": "d1215a762e8d85aa",
+            "timeline_id": "1",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          },
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "2",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Edited imported child",
+            "resolution": {
+              "height": 1080,
+              "width": 1920
+            },
+            "revision": "8b6ba34a6e26e3db",
+            "timeline_id": "2",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [
+                  {
+                    "disabled": false,
+                    "display_color": null,
+                    "display_rgb": null,
+                    "fade_in": 0,
+                    "fade_out": 0,
+                    "freeze_source_frame": null,
+                    "id": "0",
+                    "kind": "media",
+                    "length_frames": 12,
+                    "linked_group": null,
+                    "media_id": "3",
+                    "name": "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png",
+                    "retime": {
+                      "max_length": 1200,
+                      "min_length": 1,
+                      "pitch_correction": true,
+                      "source_span": 12,
+                      "speed_percent": 100.0
+                    },
+                    "slip_range": [
+                      0,
+                      959999988
+                    ],
+                    "source_in_frames": 0,
+                    "source_out_frames": 12,
+                    "speed_percent": 100.0,
+                    "start_frame": 0,
+                    "transition_in": null,
+                    "transition_out": null
+                  }
+                ],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          }
+        ]
+      },
+      "project_saved_bytes_unchanged": true,
+      "media_sha256": {
+        "asset-37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2-native-source.png": "37ac2413e932e2f25ac60bbf0954d38b2a253bca830801a88affef97310cd3f2"
+      },
+      "main_editor_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    }
+  },
+  "rust_validation_inheritance": {
+    "build": {
+      "phase": "passed",
+      "updated_unix": 1792620193.5787117,
+      "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+      "sha256": "c62cfa129b186dc0e16b5ad523ec427dc51a04a937b26d7d5f5da13dcc006147",
+      "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)",
+      "native_asset_qualification": true,
+      "native_asset_check_state": "asset-native-check-state.json"
+    },
+    "code_hashes": {
+      "crates/vv-app/src/tests/fixtures/web-exported-asset.json": "db8ca3168112bba40be57f34fb195369c686548a34835dd303130a0f9f99d3b4",
+      "crates/vv-app/src/tests/library.rs": "da97ac8405748f3370ed7f9d8dfbce68f10ebb09e2a420e97d53a493866b3b28",
+      "crates/vv-core/src/clipboard.rs": "3d93cc7bacd08db23c3fce4c46be7d43b791886c2058d5410b83a33e7c62f375",
+      "crates/vv-web/src/api.rs": "5618bdf16d038a5f860c729f57f3f829aaeff8023f4a928d415c2611e3a56d05",
+      "crates/vv-web/src/asset_jobs.rs": "9c8ba66ce6fef8ce015a161494e54157dabd30daec2974ea4cc2a9b57d967503",
+      "crates/vv-web/src/asset_payload.rs": "0b54a2ef1498927ed2c1f04be26ee1244847a53a65a4d38e7ed242c01e2fbacd",
+      "crates/vv-web/src/asset_probe.rs": "7dcba43009d278c2ae4d18c551ce3203f2301d07aca9925e87c002555b38b57d",
+      "crates/vv-web/src/asset_store.rs": "349923ba0ffadf96626dbce52771327f5252bae74a6f51e5cc6c657042a82e24",
+      "crates/vv-web/src/commands.rs": "6d30cdb0689113270a35ee43b6f01dfdd1ccf17f70df7302e8dc4f6072b215ee",
+      "crates/vv-web/src/host.rs": "a9c2b6c5dd70d39e674bfeaa5ca322c10c06c6d8d15574b64344c5c10a7b2ae2",
+      "crates/vv-web/src/main.rs": "ed06f3d2dc8b2b6fb258be7c897d733632fc67ae43424e8ea4e2e34f35a19a9c",
+      "crates/vv-web/src/tests/api.rs": "1a4022d025a06c60388fb272914df03f2d04d93b4e568ae802eebbdba93865ac",
+      "crates/vv-web/src/tests/asset_jobs.rs": "76f5a18c3755df1230212891c00627184f3673eb4d4de6a1ff0067bcc9fec3cb",
+      "crates/vv-web/src/tests/asset_payload.rs": "c7b7a23b580b87406774b7b0a3104f6c22ae46918f418daa18212c70dc234137",
+      "crates/vv-web/src/tests/asset_probe.rs": "12611f964ac1b738b0a2935fce4fa52f1af0b1f75387408e659f9d538903ac3c",
+      "crates/vv-web/src/tests/asset_store.rs": "66f03b040500b1ee6fa3cc4e709a3885b4c506cf2b4f1d10847a2e61dd3dddb2",
+      "crates/vv-web/src/tests/host.rs": "21b21d0e7377a7b1b38dfc222f89bcee3175c1d5dfa865edd4fafbb6282dfc65"
+    },
+    "rust_tests": 291,
+    "core_tests": 277,
+    "desktop_tests": 3
+  },
+  "first_browser_attempt": {
+    "binary_sha256": "c62cfa129b186dc0e16b5ad523ec427dc51a04a937b26d7d5f5da13dcc006147",
+    "root": "/home/marco/VenturiWeb-native-assets-20261021",
+    "observations": {
+      "initial": {
+        "assets": [
+          {
+            "label": "Desktop fingerprint layout fixture",
+            "selected": true,
+            "value": "0"
+          },
+          {
+            "label": "Reusable file compound",
+            "selected": false,
+            "value": "1"
+          }
+        ],
+        "download": "/api/v1/native-assets/items/desktop-fingerprint-fixture/download?project_epoch=1792620211500468689%3A1",
+        "media": [
+          {
+            "id": "1",
+            "name": "Timeline 1",
+            "selected": "false"
+          },
+          {
+            "id": "2",
+            "name": "native-source.png \u00b7 OFFLINE",
+            "selected": "false"
+          },
+          {
+            "id": "3",
+            "name": "Reusable native compound",
+            "selected": "false"
+          },
+          {
+            "id": "4",
+            "name": "native-gui.png",
+            "selected": "true"
+          }
+        ],
+        "name": "Desktop fingerprint layout fixture",
+        "project": "Native_Assets_API_check.vvproj",
+        "redoDisabled": true,
+        "saved": "Saved",
+        "status": "Page 1 of 1 \u00b7 2 native assets",
+        "undoDisabled": true
+      },
+      "captured": {
+        "assets": [
+          {
+            "label": "native-gui.png",
+            "selected": true,
+            "value": "0"
+          },
+          {
+            "label": "Desktop fingerprint layout fixture",
+            "selected": false,
+            "value": "1"
+          },
+          {
+            "label": "Reusable file compound",
+            "selected": false,
+            "value": "2"
+          }
+        ],
+        "download": "/api/v1/native-assets/items/b035f355-34a3-409b-877d-71d3b968a5b5/download?project_epoch=1792620211500468689%3A1",
+        "media": [
+          {
+            "id": "1",
+            "name": "Timeline 1",
+            "selected": "false"
+          },
+          {
+            "id": "2",
+            "name": "native-source.png \u00b7 OFFLINE",
+            "selected": "false"
+          },
+          {
+            "id": "3",
+            "name": "Reusable native compound",
+            "selected": "false"
+          },
+          {
+            "id": "4",
+            "name": "native-gui.png",
+            "selected": "true"
+          }
+        ],
+        "name": "native-gui.png",
+        "project": "Native_Assets_API_check.vvproj",
+        "redoDisabled": true,
+        "saved": "Saved",
+        "status": "1 native asset saved \u00b7 timeline unchanged",
+        "undoDisabled": true
+      },
+      "renamed": {
+        "assets": [
+          {
+            "label": "Windows reusable native still",
+            "selected": true,
+            "value": "0"
+          },
+          {
+            "label": "Desktop fingerprint layout fixture",
+            "selected": false,
+            "value": "1"
+          },
+          {
+            "label": "Reusable file compound",
+            "selected": false,
+            "value": "2"
+          }
+        ],
+        "download": "/api/v1/native-assets/items/b035f355-34a3-409b-877d-71d3b968a5b5/download?project_epoch=1792620211500468689%3A1",
+        "media": [
+          {
+            "id": "1",
+            "name": "Timeline 1",
+            "selected": "false"
+          },
+          {
+            "id": "2",
+            "name": "native-source.png \u00b7 OFFLINE",
+            "selected": "false"
+          },
+          {
+            "id": "3",
+            "name": "Reusable native compound",
+            "selected": "false"
+          },
+          {
+            "id": "4",
+            "name": "native-gui.png",
+            "selected": "true"
+          }
+        ],
+        "name": "Windows reusable native still",
+        "project": "Native_Assets_API_check.vvproj",
+        "redoDisabled": true,
+        "saved": "Saved",
+        "status": "Native asset library updated \u00b7 timeline unchanged",
+        "undoDisabled": true
+      },
+      "archive_stale_selection": {
+        "assets": [
+          {
+            "label": "Desktop fingerprint layout fixture",
+            "selected": false,
+            "value": "0"
+          },
+          {
+            "label": "Reusable file compound",
+            "selected": false,
+            "value": "1"
+          }
+        ],
+        "download": "/api/v1/native-assets/items/b035f355-34a3-409b-877d-71d3b968a5b5/download?project_epoch=1792620211500468689%3A1",
+        "media": [
+          {
+            "id": "1",
+            "name": "Timeline 1",
+            "selected": "false"
+          },
+          {
+            "id": "2",
+            "name": "native-source.png \u00b7 OFFLINE",
+            "selected": "false"
+          },
+          {
+            "id": "3",
+            "name": "Reusable native compound",
+            "selected": "false"
+          },
+          {
+            "id": "4",
+            "name": "native-gui.png",
+            "selected": "true"
+          }
+        ],
+        "name": "Windows reusable native still",
+        "project": "Native_Assets_API_check.vvproj",
+        "redoDisabled": true,
+        "saved": "Saved",
+        "status": "Native asset library updated \u00b7 timeline unchanged",
+        "undoDisabled": true
+      }
+    },
+    "defect": "Archive/Restore could retain the old off-page selection. Clear selection before reading the updated source; a new panel regression and repeated full Windows workflow passed.",
+    "retained": true
+  },
+  "native_fixture_origin": {
+    "binary_sha256": "c62cfa129b186dc0e16b5ad523ec427dc51a04a937b26d7d5f5da13dcc006147",
+    "root": "/home/marco/VenturiWeb-native-assets-20261021",
+    "actual_api_export": true,
+    "fixture": "crates/vv-app/src/tests/fixtures/web-exported-asset.json"
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-app/src/tests/library.rs": "da97ac8405748f3370ed7f9d8dfbce68f10ebb09e2a420e97d53a493866b3b28",
+      "crates/vv-core/src/clipboard.rs": "3d93cc7bacd08db23c3fce4c46be7d43b791886c2058d5410b83a33e7c62f375",
+      "crates/vv-web/src/api.rs": "5618bdf16d038a5f860c729f57f3f829aaeff8023f4a928d415c2611e3a56d05",
+      "crates/vv-web/src/commands.rs": "6d30cdb0689113270a35ee43b6f01dfdd1ccf17f70df7302e8dc4f6072b215ee",
+      "crates/vv-web/src/host.rs": "a9c2b6c5dd70d39e674bfeaa5ca322c10c06c6d8d15574b64344c5c10a7b2ae2",
+      "crates/vv-web/src/main.rs": "ed06f3d2dc8b2b6fb258be7c897d733632fc67ae43424e8ea4e2e34f35a19a9c",
+      "crates/vv-web/src/tests/api.rs": "1a4022d025a06c60388fb272914df03f2d04d93b4e568ae802eebbdba93865ac",
+      "crates/vv-web/src/tests/host.rs": "21b21d0e7377a7b1b38dfc222f89bcee3175c1d5dfa865edd4fafbb6282dfc65",
+      "web/js/main.js": "9195fa728abde5a2391f1b2da0c337fa0f0082748b02bc26c462a30986457cf8",
+      "crates/vv-app/src/tests/fixtures/web-exported-asset.json": "db8ca3168112bba40be57f34fb195369c686548a34835dd303130a0f9f99d3b4",
+      "crates/vv-web/src/asset_jobs.rs": "9c8ba66ce6fef8ce015a161494e54157dabd30daec2974ea4cc2a9b57d967503",
+      "crates/vv-web/src/asset_payload.rs": "0b54a2ef1498927ed2c1f04be26ee1244847a53a65a4d38e7ed242c01e2fbacd",
+      "crates/vv-web/src/asset_probe.rs": "7dcba43009d278c2ae4d18c551ce3203f2301d07aca9925e87c002555b38b57d",
+      "crates/vv-web/src/asset_store.rs": "349923ba0ffadf96626dbce52771327f5252bae74a6f51e5cc6c657042a82e24",
+      "crates/vv-web/src/tests/asset_jobs.rs": "76f5a18c3755df1230212891c00627184f3673eb4d4de6a1ff0067bcc9fec3cb",
+      "crates/vv-web/src/tests/asset_payload.rs": "c7b7a23b580b87406774b7b0a3104f6c22ae46918f418daa18212c70dc234137",
+      "crates/vv-web/src/tests/asset_probe.rs": "12611f964ac1b738b0a2935fce4fa52f1af0b1f75387408e659f9d538903ac3c",
+      "crates/vv-web/src/tests/asset_store.rs": "66f03b040500b1ee6fa3cc4e709a3885b4c506cf2b4f1d10847a2e61dd3dddb2",
+      "web/js/native-assets.js": "06158f0ab621fd176e662bde7b4f834f788c0872b55dd093ac860cf5205d8114",
+      "web/test/native-assets-panel.test.js": "a91fd81245d6642bb1e772fc1348211c6927399829b96222322fd876c471fdc7",
+      "web/test/native-assets.test.js": "72ebdcb7990f005211f624874764942987d9bc97a513920963bfaba14a1528e4"
+    },
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "browser_native_asset_save_rename_archive_restore": true,
+    "browser_cross_project_import_one_undo": true,
+    "desktop_native_parser_and_merge": true,
+    "physical_drag": false,
+    "rendered_gpu": false,
+    "core_tests": 277,
+    "rust_tests": 291,
+    "javascript_tests": 620,
+    "native_desktop_tests": 3
+  },
+  "limits": [
+    "Native folder management, batch placement/physical drag and broader library/offline GUI lifecycle remain open; this row remains partial.",
+    "The native store has no new NAS mount or credentials; ds4 14 TB media-catalog integration is separately qualified. Concurrent desktop writers do not share the web lock.",
+    "Known-size tiny PNG/API fixtures and fixed native protocol/kill tests; no hostile-media soak or long-source/GPU/rendered qualification. Production probes are always isolated; tiny Rust worker fixtures use the test-only native adapter inside the bounded remote test unit.",
+    "The last GUI action is Undo. Native Session tracks generation and remains unsaved even at history position0; saved project bytes and the recovery snapshot are retained. The disposable qualification service was stopped; the separate main five-edit session was preserved.",
+    "The final JS-only Archive/Restore fix reuses matching Rust source hashes and the passed291Rust/3desktop results;620JavaScript tests,fmtcheck and the final native binary were rerun. No browser/environment installation or local build/test/render workload."
+  ]
+}

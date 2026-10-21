@@ -21,6 +21,7 @@ import { renderCatalog } from "./catalog.js";
 import { createSlipView } from "./slip.js";
 import { createSilencePanel } from "./silence.js";
 import { createLibraryPanel } from "./library.js";
+import {createNativeAssetPanel} from './native-assets.js';
 import { createVoiceover } from "./voiceover.js";
 import { createReview } from "./review.js";
 import { createReviewMetadata } from "./reviewmeta.js";
@@ -43,6 +44,18 @@ let slipScopesState = null;
 let catalog = null;
 let silencePanel = null;
 let sharedLibrary = null;
+let nativeAssets=null,libraryMode='shared';
+const sharedLibraryRoot=document.createElement('div'),nativeAssetsRoot=document.createElement('div');
+function openLibraryPanel(mode=libraryMode){
+  libraryMode=mode;void sharedLibrary?.cancel();nativeAssets?.hide();
+  const sources=document.createElement('div');sources.className='tools';sources.setAttribute('role','group');sources.setAttribute('aria-label','Library source');
+  sources.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});
+  for(const [value,label] of [['shared','Shared media archive'],['native','Native assets']]){
+    const button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute('aria-pressed',String(value===mode));button.addEventListener('click',()=>openLibraryPanel(value));sources.append(button);
+  }
+  $('panel-content').replaceChildren(sources,mode==='shared'?sharedLibraryRoot:nativeAssetsRoot);
+  if(mode==='shared')void sharedLibrary?.open();else void nativeAssets?.open();
+}
 let voiceover = null;
 let review = null;
 let reviewMetadata = null;
@@ -172,11 +185,12 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
       .forEach((tab) => tab.setAttribute("aria-selected", tab === button));
     const name = button.dataset.panel;
     presetPanel?.hide();
+    void sharedLibrary?.cancel();nativeAssets?.hide();
     $("media-list").hidden = name !== "Media";
     $("search").parentElement.hidden = name !== "Media";
     $("panel-content").hidden = name === "Media";
     $("panel-content").replaceChildren();
-    if (name === "Library") {sharedLibrary?.open();return;}
+    if (name === "Library") {openLibraryPanel();return;}
     if (name === "History") { renderHistory(); return; }
     if (name === "Presets") for (const [label,mode] of [["Open native color presets","Color"],["Open native audio presets","Audio"]]) {
       const action=document.createElement("button");action.textContent=label;action.addEventListener("click",()=>{
@@ -867,7 +881,8 @@ async function refresh() {
   syncSelectionActions();
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
-  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;},onOpen:(id)=>{selectedMedia=id;openSource();},notice});
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;nativeAssets?.invalidate();},onOpen:(id)=>{selectedMedia=id;openSource();},notice});
+  nativeAssets?.invalidate();
   if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
   $("viewer-message").textContent = next.capabilities.preview
     ? "Seek a timeline frame"
@@ -902,6 +917,7 @@ async function mutate(operation, project = false,route=null) {
   };
   busy = true;
   compoundNavigation?.invalidate();
+  nativeAssets?.invalidate();
   notice("Applying command…");
   try {
     const receipt = await sendMutation(
@@ -1194,6 +1210,7 @@ setInterval(() => {
   if (writable)
     request("/lease", { client_id: clientId }).catch(() => {
       writable = false;
+      nativeAssets?.invalidate();
       $("connection").textContent = "Disconnected · read only";
     });
 }, 30_000);
@@ -1434,7 +1451,8 @@ slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(o
   const end=Math.max(1,...timeline.tracks.flatMap((track)=>track.clips.map((item)=>item.start_frame+item.length_frames)));
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1),clip_id:clip};
 }});
-sharedLibrary=createLibraryPanel({root:$("panel-content"),getState:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>mutate(operation,true),notice});
+sharedLibrary=createLibraryPanel({root:sharedLibraryRoot,getState:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>mutate(operation,true),notice});
+nativeAssets=createNativeAssetPanel({root:nativeAssetsRoot,getContext:()=>documentState?{...documentState,selected_ids:[...mediaState.selected]}:null,canCommit:()=>writable && !busy && !unresolved,libraryCommit:operation=>mutate(operation,true,'/native-assets/commands'),projectCommit:operation=>mutate(operation,true),onImported:ids=>{mediaState.selected=ids.filter(id=>documentState.media.some(item=>item.id===id));selectedMedia=mediaState.selected.at(-1) || null;catalog?.search(mediaState.query || '');},notice});
 const reviewContext=()=>{
   if(!documentState?.project_name || !timeline || timeline.id==="fixture")return null;
   const clips=timeline.tracks.flatMap(track=>track.clips).filter(clip=>view.selection.includes(clip.id)),oneGroup=clips[0]?.linked_group && clips.every(clip=>clip.linked_group===clips[0].linked_group),clip=(clips.length===1 || oneGroup)?clips.find(clip=>clip.kind==="media"):null;

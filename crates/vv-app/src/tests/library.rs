@@ -354,3 +354,59 @@ fn web_exported_preset_shortcut_catalog_matches_every_native_key_and_modifier() 
         }
     }
 }
+
+#[test]
+fn web_exported_asset_opens_in_the_desktop_library_and_merges_native_nested_entities() {
+    use vv_core::{Command, CommandLabel, pool::AddEntities};
+    let text = include_str!("fixtures/web-exported-asset.json");
+    let exported: serde_json::Value = serde_json::from_str(text).unwrap();
+    let wrapper = parse::<AssetFile>("web-exported-asset", text).unwrap();
+    assert_eq!(serde_json::to_value(&wrapper).unwrap(), exported);
+    assert_eq!(wrapper.name, "Reusable file compound");
+    let root = std::env::temp_dir().join(format!(
+        "vv-app-web-asset-import-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    std::fs::create_dir(root.join("assets")).unwrap();
+    std::fs::write(root.join("assets/web-exported-asset.json"), text).unwrap();
+    let library = Library::open(root.clone());
+    assert_eq!(library.assets.len(), 1);
+    let asset = &library.assets[0];
+    assert_eq!(asset.id, "web-exported-asset");
+    assert_eq!(asset.name, wrapper.name);
+    assert_eq!(asset.payload.to_text(), wrapper.payload);
+    assert_eq!(asset.payload.files().count(), 1);
+    assert!(asset.item().unwrap().compound.is_some());
+    assert!(
+        asset
+            .payload
+            .files()
+            .next()
+            .unwrap()
+            .path
+            .ends_with("native-source.png")
+    );
+    let mut project = Project::default();
+    let mut additions = AddEntities::new(CommandLabel::ImportMedia);
+    let pasted = asset
+        .payload
+        .clone()
+        .merge_into(&mut project, &mut additions);
+    assert_eq!(pasted.media.len(), 1);
+    assert!(!additions.is_empty());
+    additions.apply(&mut project);
+    assert_eq!(project.media_pool.len(), 2);
+    assert_eq!(project.timelines.len(), 1);
+    let child = project.media_pool[pasted.media[0]].compound.unwrap();
+    assert_eq!(project.timelines[child].name, "Reusable native compound");
+    assert_eq!(project.timelines[child].tracks[0].clips.len(), 1);
+    additions.undo(&mut project);
+    assert!(project.media_pool.is_empty());
+    assert!(project.timelines.is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+}

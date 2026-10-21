@@ -104,6 +104,15 @@ impl ClipboardPayload {
         !self.media.is_empty()
     }
 
+    /// The native fragment, for adapters to validate before importing it.
+    pub fn fragment(&self) -> &Project {
+        &self.project
+    }
+
+    pub fn media_ids(&self) -> &[MediaId] {
+        &self.media
+    }
+
     /// The pool items copied from the media pool, in copy order.
     pub fn media_items(&self) -> impl Iterator<Item = &MediaItem> {
         self.media

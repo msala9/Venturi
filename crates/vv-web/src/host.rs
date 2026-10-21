@@ -6,10 +6,11 @@ use crate::{
     snapshot,
     source::{SourceQuery, SourceSpec},
 };
+use serde::Deserialize;
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::Path,
     sync::mpsc,
     time::{Duration, Instant},
@@ -39,6 +40,11 @@ pub enum Action {
     PresetList(usize, crate::preset_store::Query),
     PresetItem(String, SourceQuery),
     PresetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
+    PrepareNativeAsset(NativeAssetRequest),
+    NativeAssetList(usize, crate::asset_store::Query),
+    NativeAssetItem(String, NativeAssetItemQuery),
+    NativeAssetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
+    NativeAssetStatus(String, SourceQuery, bool),
     SpeechSnapshot(
         crate::silence::Request,
         oneshot::Sender<Result<crate::silence::Task>>,
@@ -48,6 +54,31 @@ pub enum Action {
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
 const MAX_RECEIPTS: usize = 4096;
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeAssetRequest {
+    pub project_epoch: String,
+    pub if_generation: String,
+    pub action: NativeAssetAction,
+}
+#[derive(Clone, Debug, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum NativeAssetAction {
+    Capture { media_id: String, name: String },
+    Import { asset_id: String, revision: String },
+}
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct NativeAssetItemQuery {
+    pub project_epoch: String,
+    #[serde(default)]
+    pub archived: bool,
+}
+struct ImportedAsset {
+    selected: Vec<vv_core::MediaId>,
+    media: HashSet<vv_core::MediaId>,
+    timelines: HashSet<vv_core::TimelineId>,
+}
 #[derive(Clone)]
 pub struct Host(mpsc::SyncSender<Message>);
 pub struct Editor {
@@ -63,14 +94,28 @@ pub struct Editor {
     autosave: crate::autosave::Store,
     receipts: Option<crate::receipts::Store>,
     presets: crate::preset_store::Store,
+    assets: crate::asset_store::Store,
+    asset_jobs: crate::asset_jobs::Jobs,
+    asset_imports: HashMap<(u64, String, String), ImportedAsset>,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
         Self::with_presets(root, &root.join(".presets"))
     }
     fn with_presets(root: &Path, preset_root: &Path) -> std::io::Result<Self> {
+        Self::with_libraries(root, preset_root, &root.join(".assets"))
+    }
+    fn with_libraries(root: &Path, preset_root: &Path, asset_root: &Path) -> std::io::Result<Self> {
         let files = Files::new(root)?;
         let presets = crate::preset_store::Store::new(preset_root)?;
+        let assets = crate::asset_store::Store::new(asset_root)?;
+        let asset_jobs = crate::asset_jobs::Jobs::new(
+            assets.clone(),
+            &root.canonicalize()?,
+            files
+                .root_file()
+                .map_err(|error| std::io::Error::other(error.2))?,
+        )?;
         let mut session = Session::default();
         let mut persistence_notice = match crate::resume::restore(&files) {
             Ok(Some((project, name))) => {
@@ -102,6 +147,9 @@ impl Editor {
         };
         Ok(Self {
             presets,
+            assets,
+            asset_jobs,
+            asset_imports: HashMap::new(),
             session,
             files,
             epoch: std::time::SystemTime::now()
@@ -125,6 +173,7 @@ impl Editor {
     fn snapshot(&self) -> Value {
         let mut snapshot = snapshot::session(&self.session, &self.epoch);
         snapshot["command_epoch"] = json!(self.command_epoch.to_string());
+        snapshot["capabilities"]["native_assets"] = json!(true);
         let origins: HashMap<_, _> = self
             .session
             .project
@@ -195,7 +244,13 @@ impl Editor {
                 "Command receipt epoch expired; refresh without replaying the old command",
             ));
         }
+        let previous_epoch = self.session.epoch();
         let outcome = self.perform(timeline, &request);
+        if self.session.epoch() != previous_epoch {
+            self.asset_jobs
+                .cancel_obsolete(&format!("{}:{}", self.epoch, self.session.epoch()));
+            self.asset_imports.clear();
+        }
         if self.completed.len() >= MAX_RECEIPTS {
             self.completed.clear();
             self.command_epoch = self
@@ -209,7 +264,13 @@ impl Editor {
                 && let Some(name)=self.session.path().and_then(|path|path.file_name()).and_then(|name|name.to_str()) {
                 self.persistence_notice=crate::resume::remember(&self.files,name).err().map(|_|"The project operation succeeded, but automatic reopen could not be updated. Existing recovery metadata was preserved.");
             }
-            json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()})
+            let mut value=json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()});
+            if let Operation::ImportNativeAsset { asset_id,revision,.. }=&request.operation
+                && let Some(imported)=self.asset_imports.get(&(self.session.epoch(),asset_id.clone(),revision.clone())) {
+                use vv_core::Id;
+                value["media_ids"]=json!(imported.selected.iter().map(|id|id.raw().to_string()).collect::<Vec<_>>());
+            }
+            value
         });
         if let Ok(value) = &mut result {
             if !self.session.has_unsaved_changes() {
@@ -325,6 +386,26 @@ impl Editor {
             };
         }
         match &request.operation {
+            Operation::PublishNativeAsset { job_id } => self.asset_jobs.publish(
+                &request.command_id,
+                job_id,
+                &request.project_epoch,
+                &request.if_generation,
+            )?,
+            Operation::EditNativeAssetLibrary { edit } => {
+                self.assets.edit(&request.command_id, edit)?
+            }
+            Operation::ImportNativeAsset {
+                job_id,
+                asset_id,
+                revision,
+            } => self.import_native_asset(
+                job_id,
+                asset_id,
+                revision,
+                &request.project_epoch,
+                &request.if_generation,
+            )?,
             Operation::EditPresetLibrary { edit } => {
                 self.presets.edit(&request.command_id, edit)?
             }
@@ -530,6 +611,175 @@ impl Editor {
         }
         Ok(())
     }
+    fn validate_asset_epoch(&self, epoch: &str, generation: Option<&str>) -> Result<()> {
+        if epoch != format!("{}:{}", self.epoch, self.session.epoch())
+            || generation
+                .is_some_and(|value| value != self.session.history.generation().to_string())
+        {
+            return Err(ApiError::conflict(
+                "REVISION_CONFLICT",
+                "Project changed before the native asset request",
+            ));
+        }
+        Ok(())
+    }
+    fn prepare_native_asset(&self, request: NativeAssetRequest) -> Result<Value> {
+        self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
+        if self.session.path().is_none() {
+            return Err(ApiError::invalid(
+                "Create or open a saved project before preparing native assets",
+            ));
+        }
+        match request.action {
+            NativeAssetAction::Import { asset_id, revision } => self.asset_jobs.prepare_import(
+                &request.project_epoch,
+                &request.if_generation,
+                &asset_id,
+                &revision,
+            ),
+            NativeAssetAction::Capture { media_id, name } => {
+                use vv_core::Id;
+                let media_id = vv_core::MediaId::from_raw(
+                    media_id
+                        .parse()
+                        .map_err(|_| ApiError::invalid("Choose one existing media pool item"))?,
+                );
+                let digest = Sha256::digest(self.epoch.as_bytes());
+                let mut instance = [0u8; 8];
+                instance.copy_from_slice(&digest[..8]);
+                let asset = crate::asset_payload::capture(
+                    &self.session,
+                    media_id,
+                    &name,
+                    vv_core::clipboard::ClipboardOrigin {
+                        instance: u64::from_le_bytes(instance),
+                        epoch: self.session.epoch(),
+                    },
+                )?;
+                let payload = crate::asset_payload::decode(&asset)?;
+                let paths = payload
+                    .files()
+                    .map(|media| media.path.clone())
+                    .collect::<HashSet<_>>();
+                if paths.len() > 64 {
+                    return Err(ApiError::invalid(
+                        "Native assets support at most 64 source files",
+                    ));
+                }
+                let mut sources = Vec::new();
+                let mut bytes = 0u64;
+                for path in paths {
+                    let file = self.files.media_file(&path)?;
+                    let length = file.metadata().map_err(|_| ApiError::io())?.len();
+                    bytes = bytes
+                        .checked_add(length)
+                        .ok_or_else(|| ApiError::invalid("Native asset file budget overflow"))?;
+                    if length > 512 * 1024 * 1024 || bytes > 2 * 1024 * 1024 * 1024 {
+                        return Err(ApiError::invalid(
+                            "Native asset copies are limited to 512 MiB per file and 2 GiB total",
+                        ));
+                    }
+                    let identity = crate::source::file_identity(&file)?;
+                    sources.push(crate::asset_jobs::PinnedSource {
+                        path,
+                        file,
+                        identity,
+                    });
+                }
+                self.asset_jobs.prepare_capture(
+                    &request.project_epoch,
+                    &request.if_generation,
+                    asset,
+                    sources,
+                )
+            }
+        }
+    }
+    fn import_native_asset(
+        &mut self,
+        job: &str,
+        id: &str,
+        revision: &str,
+        epoch: &str,
+        generation: &str,
+    ) -> Result<()> {
+        use vv_core::{Command, CommandLabel, pool::AddEntities};
+        if self.session.path().is_none() {
+            return Err(ApiError::invalid(
+                "Create or open a project before importing native assets",
+            ));
+        }
+        let payload = self
+            .asset_jobs
+            .import_payload(job, id, revision, epoch, generation)?;
+        let session_epoch = self.session.epoch();
+        self.asset_imports
+            .retain(|(epoch, _, _), _| *epoch == session_epoch);
+        let key = (session_epoch, id.to_owned(), revision.to_owned());
+        if self.asset_imports.get(&key).is_some_and(|cached| {
+            cached
+                .media
+                .iter()
+                .all(|id| self.session.project.media_pool.contains_key(*id))
+                && cached
+                    .timelines
+                    .iter()
+                    .all(|id| self.session.project.timelines.contains_key(*id))
+        }) {
+            return Ok(());
+        }
+        let mut trial = self.session.project.clone();
+        let mut additions = AddEntities::new(CommandLabel::ImportMedia);
+        payload.clone().merge_into(&mut trial, &mut additions);
+        additions.apply(&mut trial);
+        crate::files::validate_project(&trial)?;
+        let mut additions = AddEntities::new(CommandLabel::ImportMedia);
+        let selected = payload
+            .merge_into(&mut self.session.project, &mut additions)
+            .media;
+        if !additions.is_empty() {
+            self.session.apply(Box::new(additions));
+        }
+        let mut media = HashSet::new();
+        let mut timelines = HashSet::new();
+        let mut remaining = selected.clone();
+        while let Some(id) = remaining.pop() {
+            if !media.insert(id) {
+                continue;
+            }
+            if let Some(timeline) = self
+                .session
+                .project
+                .media_pool
+                .get(id)
+                .and_then(|item| item.compound)
+                && timelines.insert(timeline)
+            {
+                remaining.extend(
+                    self.session.project.timelines[timeline]
+                        .tracks
+                        .iter()
+                        .flat_map(|track| &track.clips)
+                        .filter_map(|clip| match clip.source {
+                            vv_core::ClipSource::Media(id) => Some(id),
+                            _ => None,
+                        }),
+                );
+            }
+        }
+        if self.asset_imports.len() >= 64 {
+            self.asset_imports.clear();
+        }
+        self.asset_imports.insert(
+            key,
+            ImportedAsset {
+                selected,
+                media,
+                timelines,
+            },
+        );
+        Ok(())
+    }
     fn validate_frame_identity(
         &self,
         query: &FrameQuery,
@@ -663,6 +913,28 @@ impl Editor {
                     ));
                 }
                 self.presets.list(page, &query)
+            }
+            Action::PrepareNativeAsset(request) => self.prepare_native_asset(request),
+            Action::NativeAssetList(page, query) => {
+                self.validate_asset_epoch(&query.project_epoch, None)?;
+                self.assets.list(page, &query)
+            }
+            Action::NativeAssetItem(id, query) => {
+                self.validate_asset_epoch(&query.project_epoch, None)?;
+                self.assets.item(&id, query.archived)
+            }
+            Action::NativeAssetStatus(job, query, cancel) => {
+                if !cancel {
+                    self.validate_asset_epoch(&query.project_epoch, None)?;
+                }
+                self.asset_jobs.status(&job, &query.project_epoch, cancel)
+            }
+            Action::NativeAssetExport(id, query, reply) => {
+                let result = self
+                    .validate_asset_epoch(&query.project_epoch, None)
+                    .and_then(|()| self.assets.export(&id));
+                let _ = reply.send(result);
+                Ok(Value::Null)
             }
             Action::PresetItem(id, query) => {
                 if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
@@ -815,6 +1087,13 @@ impl Host {
     pub fn start_with_presets(root: &Path, preset_root: &Path) -> std::io::Result<Self> {
         Self::run(Editor::with_presets(root, preset_root)?)
     }
+    pub fn start_with_libraries(
+        root: &Path,
+        preset_root: &Path,
+        asset_root: &Path,
+    ) -> std::io::Result<Self> {
+        Self::run(Editor::with_libraries(root, preset_root, asset_root)?)
+    }
     fn run(mut editor: Editor) -> std::io::Result<Self> {
         let (tx, rx) = mpsc::sync_channel::<Message>(16);
         std::thread::spawn(move || {
@@ -845,6 +1124,11 @@ impl Host {
     pub async fn preset_export(&self, id: String, query: SourceQuery) -> Result<Vec<u8>> {
         let (tx, rx) = oneshot::channel();
         self.call(Action::PresetExport(id, query, tx)).await?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
+    pub async fn native_asset_export(&self, id: String, query: SourceQuery) -> Result<Vec<u8>> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::NativeAssetExport(id, query, tx)).await?;
         rx.await.map_err(|_| ApiError::io())?
     }
 }

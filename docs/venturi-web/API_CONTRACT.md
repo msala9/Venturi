@@ -141,6 +141,76 @@ Library mutations preserve native timeline history and share ordinary lease,
 epoch, generation and durable receipt semantics. A changed response after a
 successful ACK requires a read refresh, not a new save/import command.
 
+Native pool assets use the original desktop v1 `AssetFile` JSON wrapper and
+`ClipboardPayload` RON text. They are separate from the ds4 media catalog.
+`--assets-root` selects the native library root (default `<projects>/.assets`),
+containing `assets/<id>.json` and `media/<sha256>/<original-name>`. A configured
+directory alone does not establish NAS availability or concurrent desktop writes.
+
+`POST /api/v1/native-assets/prepare` accepts
+`{project_epoch,if_generation,action}`. The action is either
+`{kind:"capture",media_id,name}` or `{kind:"import",asset_id,revision}`.
+Preparation reads a bound snapshot without a writer lease or history change.
+Capture selects exactly one pool item, including its complete nested dependency
+closure. Missing references, cycles, depth, nonfinite values, invalid native keys
+and unsupported project limits fail before native merge. Raw RON map duplicate
+normalization follows the original parser; this is not a new project format.
+
+`GET`/`DELETE /native-assets/jobs/{job}?project_epoch=...` reads or cancels a job.
+Jobs bind epoch/generation, kind and optional asset ID/revision; browser responses
+contain progress and counts, never native paths or clipboard text. A single worker
+admits one running and one queued job; at most eight records survive in memory.
+Ready jobs expire on process restart. Preparation never publishes an asset or
+imports project entities automatically.
+
+Each job supports 64 unique files, 512 MiB per file and 2 GiB total. Pinned regular
+files, binary signature checks, native metadata probing, source and destination
+identity checks, streamed full SHA-256, no-replace publication and a 512 MiB disk
+reserve protect existing bytes. Imported files are independent flat project-root
+copies accepted by the existing media adapter. Native fingerprints are recomputed
+for their final paths; legacy zero fingerprints are filled only after verified
+probe/copy. Desktop `media/<16-hex-fingerprint>/<name>` entries are also accepted
+only when their directory matches the payload's original fingerprint; the worker
+probes the pinned copy and computes full byte SHA-256 before importing. This
+handles the desktop writer's unchanged fingerprint after copying to its library.
+Native probing always runs in a separate process with pinned stdin, one CPU,
+512 MiB address space, 10 CPU seconds, a 20-second wall deadline, 64 KiB output,
+zero core dumps and OOM score 1000. Cancellation/timeout kills and reaps that child.
+Copying checks cancellation and its 600-second budget between bounded chunks.
+Changing project cancels obsolete jobs; DELETE may cancel the exact original
+job/epoch pair after that change, while GET still requires the current epoch.
+Cancellation removes only owned partial files.
+Completed copies remain available after canceled or rejected publication.
+
+`GET /native-assets/pages/{page}?project_epoch=...&search=...&archived=...` opens
+at most 32 native JSON entries per source page within a 10000-name budget.
+Search filters each source page; the panel advances through empty result pages.
+Items contain ID, SHA-256 revision, name, folder, media/file counts, archive and
+previous-version availability. `GET /native-assets/items/{id}` reads one row;
+`GET /native-assets/items/{id}/download?project_epoch=...` returns the original
+JSON as a no-store attachment, preserving native u64 IDs without browser parsing.
+
+`POST /native-assets/commands` accepts guarded mutations
+`publish_native_asset{job_id}` or `edit_native_asset_library{edit}`. Publication
+uses the command ID as the immutable asset ID. Edits are rename
+`{action:"update",id,revision,name}` or archive/restore/restore_previous
+`{action,id,revision}`. Existing folder metadata is preserved. Library writes use
+ordinary writer lease, epoch, generation and durable receipt checks without a
+timeline Undo step; stale revisions and foreign file replacements are refused.
+
+`POST /projects/commands` accepts
+`import_native_asset{job_id,asset_id,revision}`. Trial validation precedes native
+`ClipboardPayload::merge_into` and one `AddEntities(ImportMedia)` history step.
+The receipt includes selected root `media_ids` as strings; dependency IDs stay
+private. Up to 64 asset/revision imports are cached per project epoch; reuse first
+checks the complete dependency closure still exists and preserves edited children.
+Eviction returns to native merge behavior. Undo invalidates removed cache entries.
+Browser hide, selection/project changes and lease loss cancel pending preparation;
+an already submitted mutation is resolved through its original receipt, never
+replayed. A failed read after an ACK retains the applied outcome and stops a batch.
+Native asset folder management, physical drag and broader sharing remain separate
+parity work.
+
 `GET /api/v1/timelines/{id}/clips/{clip}/keys/{page}` takes the existing
 FrameQuery and validates its epoch, generation, timeline and revision. Pages
 are zero-based and expose up to 256 native keys per parameter, with exact

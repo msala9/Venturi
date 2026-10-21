@@ -1,0 +1,677 @@
+use super::*;
+use vv_core::{
+    Clip, ClipId, ClipSource, MediaItem, Rational, Timeline, Track, TrackKind,
+    clipboard::ClipboardOrigin,
+};
+
+struct Fixture {
+    root: PathBuf,
+    project: PathBuf,
+    store: Store,
+    jobs: Jobs,
+    asset: AssetFile,
+    path: PathBuf,
+}
+impl Fixture {
+    fn new() -> Self {
+        let root = std::env::temp_dir().join(format!(
+            "venturi-assets-jobs-{}-{}",
+            std::process::id(),
+            nonce()
+        ));
+        let project = root.join("project");
+        std::fs::create_dir_all(&project).unwrap();
+        let path = project.join("tiny.png");
+        let file = File::create(&path).unwrap();
+        let mut encoder = png::Encoder::new(file, 16, 16);
+        encoder.set_color(png::ColorType::Rgb);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder
+            .write_header()
+            .unwrap()
+            .write_image_data(&[127; 16 * 16 * 3])
+            .unwrap();
+        let meta = vv_media::probe_image(&path).unwrap();
+        let hash = vv_media::content_fingerprint(&path).unwrap();
+        let mut session = vv_session::Session::default();
+        let media = session.project.media_pool.insert(MediaItem {
+            path: path.clone(),
+            meta,
+            content_hash: hash,
+            compound: None,
+            folder: None,
+        });
+        let child = session.create_timeline(Timeline {
+            name: "Nested file".into(),
+            fps: Rational::new(24, 1),
+            resolution: (16, 16),
+            tracks: vec![Track::new(TrackKind::Video)],
+            markers: vec![],
+            master: Default::default(),
+        });
+        session.project.timelines[child].tracks[0]
+            .clips
+            .push(Clip::from_source_range(
+                ClipId(9007199254740993),
+                ClipSource::Media(media),
+                0,
+                24,
+                0,
+                Rational::one(),
+            ));
+        session.sync_timeline_media(child);
+        let compound = session
+            .project
+            .media_pool
+            .iter()
+            .find(|(_, m)| m.compound == Some(child))
+            .unwrap()
+            .0;
+        let asset = asset_payload::capture(
+            &session,
+            compound,
+            "File-dependent compound",
+            ClipboardOrigin {
+                instance: 1,
+                epoch: 1,
+            },
+        )
+        .unwrap();
+        let store = Store::new(&root.join("library")).unwrap();
+        let jobs = Jobs::new(store.clone(), &project, File::open(&project).unwrap()).unwrap();
+        Self {
+            root,
+            project,
+            store,
+            jobs,
+            asset,
+            path,
+        }
+    }
+    fn sources(&self) -> Vec<PinnedSource> {
+        let file = File::open(&self.path).unwrap();
+        vec![PinnedSource {
+            path: self.path.clone(),
+            identity: crate::source::file_identity(&file).unwrap(),
+            file,
+        }]
+    }
+    fn finish(&self, id: &str) -> Value {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            let job = self.jobs.status(id, "epoch", false).unwrap();
+            if !matches!(job["state"].as_str(), Some("queued" | "running")) {
+                return job;
+            }
+            assert!(Instant::now() < deadline, "worker did not settle: {job}");
+            std::thread::yield_now();
+        }
+    }
+    fn capture(&self) -> Value {
+        let value = self
+            .jobs
+            .prepare_capture("epoch", "7", self.asset.clone(), self.sources())
+            .unwrap();
+        self.finish(value["id"].as_str().unwrap())
+    }
+    fn close(self) {
+        drop(self.jobs);
+        drop(self.store);
+        std::fs::remove_dir_all(self.root).unwrap();
+    }
+}
+
+#[test]
+fn capture_nested_file_asset_is_ephemeral_until_publish_then_import_owns_independent_flat_project_bytes()
+ {
+    let fixture = Fixture::new();
+    let original = fixture.asset.payload.clone();
+    let ready = fixture.capture();
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let id = ready["id"].as_str().unwrap();
+    assert!(fixture.store.item("capture", false).is_err());
+    assert_eq!(ready["result"]["file_count"], 1);
+    assert!(ready["result"]["asset_id"].is_null());
+    fixture.jobs.publish("capture", id, "epoch", "7").unwrap();
+    fixture.jobs.publish("capture", id, "epoch", "7").unwrap();
+    assert!(fixture.jobs.publish("different", id, "epoch", "7").is_err());
+    let row = fixture.store.item("capture", false).unwrap();
+    let revision = row["revision"].as_str().unwrap();
+    let stored = fixture.store.load("capture", revision).unwrap();
+    let payload = asset_payload::decode(&stored).unwrap();
+    let media = payload.files().next().unwrap();
+    assert!(media.path.starts_with(fixture.store.root().join("media")));
+    assert_eq!(media.path.file_name().unwrap(), "tiny.png");
+    assert_eq!(fixture.asset.payload, original);
+    assert_eq!(
+        media.content_hash,
+        vv_media::content_fingerprint(&media.path).unwrap()
+    );
+    let another = fixture.root.join("another");
+    std::fs::create_dir(&another).unwrap();
+    let imported = Jobs::new(
+        fixture.store.clone(),
+        &another,
+        File::open(&another).unwrap(),
+    )
+    .unwrap();
+    let pending = imported
+        .prepare_import("epoch", "8", "capture", revision)
+        .unwrap();
+    let import_id = pending["id"].as_str().unwrap();
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let state = imported.status(import_id, "epoch", false).unwrap();
+        if state["state"] == "ready" {
+            break;
+        }
+        assert_ne!(state["state"], "failed", "{state}");
+        assert!(Instant::now() < deadline);
+        std::thread::yield_now();
+    }
+    let imported_payload = imported
+        .import_payload(import_id, "capture", revision, "epoch", "8")
+        .unwrap();
+    let copied = imported_payload.files().next().unwrap();
+    assert_eq!(copied.path.parent(), Some(another.as_path()));
+    assert!(
+        copied
+            .path
+            .file_name()
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .starts_with("asset-")
+    );
+    assert_eq!(
+        copied.content_hash,
+        vv_media::content_fingerprint(&copied.path).unwrap()
+    );
+    assert_eq!(
+        std::fs::read(&copied.path).unwrap(),
+        std::fs::read(&fixture.path).unwrap()
+    );
+    std::fs::remove_file(&media.path).unwrap();
+    assert!(copied.path.exists());
+    assert_eq!(imported_payload.fragment().timelines.len(), 1);
+    assert_eq!(imported_payload.media_ids().len(), 1);
+    drop(imported);
+    fixture.close();
+}
+
+#[test]
+fn strict_ready_kind_epoch_generation_revision_and_target_identity_guards_refuse_stale_commits() {
+    let fixture = Fixture::new();
+    let ready = fixture.capture();
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let id = ready["id"].as_str().unwrap();
+    assert!(fixture.jobs.status(id, "other", false).is_err());
+    assert_eq!(
+        fixture
+            .jobs
+            .publish("capture", id, "epoch", "8")
+            .unwrap_err()
+            .1,
+        "ASSET_CONTEXT_CHANGED"
+    );
+    assert!(
+        fixture
+            .jobs
+            .import_payload(id, "capture", "bad", "epoch", "7")
+            .is_err()
+    );
+    fixture.jobs.publish("capture", id, "epoch", "7").unwrap();
+    let revision = fixture.store.item("capture", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let pending = fixture
+        .jobs
+        .prepare_import("epoch", "7", "capture", &revision)
+        .unwrap();
+    let ready = fixture.finish(pending["id"].as_str().unwrap());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let import_id = ready["id"].as_str().unwrap();
+    assert!(
+        fixture
+            .jobs
+            .publish("capture2", import_id, "epoch", "7")
+            .is_err()
+    );
+    assert!(
+        fixture
+            .jobs
+            .import_payload(import_id, "capture", "other", "epoch", "7")
+            .is_err()
+    );
+    let payload = fixture
+        .jobs
+        .import_payload(import_id, "capture", &revision, "epoch", "7")
+        .unwrap();
+    let path = payload.files().next().unwrap().path.clone();
+    std::fs::remove_file(&path).unwrap();
+    std::fs::write(&path, b"replacement").unwrap();
+    assert!(
+        fixture
+            .jobs
+            .import_payload(import_id, "capture", &revision, "epoch", "7")
+            .is_err()
+    );
+    fixture.close();
+}
+
+#[test]
+fn native_metadata_and_nonzero_content_hash_must_match_but_legacy_zero_is_filled_without_changing_source()
+ {
+    let fixture = Fixture::new();
+    for mismatch in ["duration", "hash"] {
+        let mut asset = fixture.asset.clone();
+        let mut payload = asset_payload::decode(&asset).unwrap();
+        let media = payload.files_mut().next().unwrap();
+        if mismatch == "duration" {
+            media.meta.width += 1;
+        } else {
+            media.content_hash ^= 1;
+        }
+        asset.payload = payload.to_text();
+        let queued = fixture
+            .jobs
+            .prepare_capture("epoch", "7", asset, fixture.sources())
+            .unwrap();
+        let result = fixture.finish(queued["id"].as_str().unwrap());
+        assert_eq!(result["error"], "SOURCE_CHANGED", "{result}");
+    }
+    let mut asset = fixture.asset.clone();
+    let mut payload = asset_payload::decode(&asset).unwrap();
+    payload.files_mut().next().unwrap().content_hash = 0;
+    asset.payload = payload.to_text();
+    let queued = fixture
+        .jobs
+        .prepare_capture("epoch", "7", asset.clone(), fixture.sources())
+        .unwrap();
+    let result = fixture.finish(queued["id"].as_str().unwrap());
+    assert_eq!(result["state"], "ready", "{result}");
+    fixture
+        .jobs
+        .publish("legacy", result["id"].as_str().unwrap(), "epoch", "7")
+        .unwrap();
+    let revision = fixture.store.item("legacy", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert_ne!(
+        asset_payload::decode(&fixture.store.load("legacy", &revision).unwrap())
+            .unwrap()
+            .files()
+            .next()
+            .unwrap()
+            .content_hash,
+        0
+    );
+    assert_eq!(
+        asset_payload::decode(&asset)
+            .unwrap()
+            .files()
+            .next()
+            .unwrap()
+            .content_hash,
+        0
+    );
+    fixture.close();
+}
+
+#[test]
+fn source_descriptor_and_live_path_swaps_cancel_and_shared_lock_preserve_unrelated_files() {
+    use std::os::unix::fs::symlink;
+    let fixture = Fixture::new();
+    let sources = fixture.sources();
+    let backup = fixture.project.join("original.png");
+    std::fs::rename(&fixture.path, &backup).unwrap();
+    symlink(&backup, &fixture.path).unwrap();
+    let pending = fixture
+        .jobs
+        .prepare_capture("epoch", "7", fixture.asset.clone(), sources)
+        .unwrap();
+    let failed = fixture.finish(pending["id"].as_str().unwrap());
+    assert_eq!(failed["state"], "failed");
+    std::fs::remove_file(&fixture.path).unwrap();
+    std::fs::rename(&backup, &fixture.path).unwrap();
+    let lock = fixture.store.lock().unwrap();
+    let pending = fixture
+        .jobs
+        .prepare_capture("epoch", "7", fixture.asset.clone(), fixture.sources())
+        .unwrap();
+    let failed = fixture.finish(pending["id"].as_str().unwrap());
+    assert_eq!(failed["error"], "LIBRARY_BUSY");
+    drop(lock);
+    let ready = fixture.capture();
+    let id = ready["id"].as_str().unwrap();
+    fixture.jobs.status(id, "epoch", true).unwrap();
+    assert_eq!(
+        fixture
+            .jobs
+            .publish("canceled", id, "epoch", "7")
+            .unwrap_err()
+            .1,
+        "ASSET_NOT_READY"
+    );
+    assert!(fixture.path.exists());
+    assert!(fixture.store.item("canceled", false).is_err());
+    assert!(
+        std::fs::read_dir(fixture.store.root().join("media"))
+            .unwrap()
+            .all(|entry| !entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .ends_with(".part"))
+    );
+    fixture.close();
+}
+
+#[test]
+fn forged_store_paths_and_binary_playlists_are_rejected_before_native_probe_and_nooverwrite_is_preserved()
+ {
+    let fixture = Fixture::new();
+    let mut forged = fixture.asset.clone();
+    let mut payload = asset_payload::decode(&forged).unwrap();
+    payload.files_mut().next().unwrap().path = fixture.path.clone();
+    forged.payload = payload.to_text();
+    fixture.store.create("forged", &forged).unwrap();
+    let revision = fixture.store.item("forged", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    assert!(
+        fixture
+            .jobs
+            .prepare_import("epoch", "7", "forged", &revision)
+            .is_err()
+    );
+    let playlist = fixture.project.join("playlist.mp4");
+    std::fs::write(&playlist, b"#EXTM3U\nhttp://example.invalid/file\n").unwrap();
+    let file = File::open(&playlist).unwrap();
+    assert!(header(&file, &playlist).is_err());
+    let ready = fixture.capture();
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let job_id = ready["id"].as_str().unwrap();
+    let guard = fixture.jobs.0.jobs.lock().unwrap();
+    let prepared = guard
+        .iter()
+        .find(|j| j.id == job_id)
+        .unwrap()
+        .result
+        .as_ref()
+        .unwrap();
+    let stored_path = asset_payload::decode(&prepared.asset)
+        .unwrap()
+        .files()
+        .next()
+        .unwrap()
+        .path
+        .clone();
+    drop(guard);
+    std::fs::write(&stored_path, b"foreign changed destination").unwrap();
+    let failed = fixture.capture();
+    assert_eq!(failed["error"], "FILE_EXISTS", "{failed}");
+    assert_eq!(
+        std::fs::read(&stored_path).unwrap(),
+        b"foreign changed destination"
+    );
+    fixture.close();
+}
+
+#[test]
+fn quota_checks_are_metadata_only_and_cancel_budget_never_removes_completed_or_foreign_files() {
+    let fixture = Fixture::new();
+    assert!(
+        fixture
+            .jobs
+            .prepare_capture("epoch", "7", fixture.asset.clone(), vec![])
+            .is_err()
+    );
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .open(&fixture.path)
+        .unwrap();
+    file.set_len(MAX_FILE + 1).unwrap();
+    assert!(
+        fixture
+            .jobs
+            .prepare_capture("epoch", "7", fixture.asset.clone(), fixture.sources())
+            .is_err()
+    );
+    let cancel = Arc::new(AtomicBool::new(true));
+    let budget = Budget {
+        start: Instant::now(),
+        cancel,
+    };
+    assert_eq!(
+        budget.check(fixture.store.media()).unwrap_err().1,
+        "ASSET_CANCELED"
+    );
+    let expired = Budget {
+        start: Instant::now() - Duration::from_secs(601),
+        cancel: Arc::new(AtomicBool::new(false)),
+    };
+    assert_eq!(
+        expired.check(fixture.store.media()).unwrap_err().1,
+        "ASSET_TIMEOUT"
+    );
+    assert!(fixture.path.exists());
+    fixture.close();
+}
+
+#[test]
+fn queue_admission_is_one_running_one_pending_and_records_are_bounded_without_restarting_old_jobs()
+{
+    let fixture = Fixture::new();
+    let (sender, receiver) = mpsc::sync_channel(1);
+    let isolated = Jobs(Arc::new(Inner {
+        store: fixture.store.clone(),
+        root: fixture.project.clone(),
+        directory: File::open(&fixture.project).unwrap(),
+        jobs: Mutex::new(VecDeque::new()),
+        sender,
+    }));
+    let first = isolated
+        .prepare_capture("epoch", "7", fixture.asset.clone(), fixture.sources())
+        .unwrap();
+    let first_work = receiver.try_recv().unwrap();
+    isolated.0.jobs.lock().unwrap().front_mut().unwrap().state = "running";
+    let second = isolated
+        .prepare_capture("epoch", "7", fixture.asset.clone(), fixture.sources())
+        .unwrap();
+    assert_eq!(
+        isolated
+            .prepare_capture("epoch", "7", fixture.asset.clone(), fixture.sources())
+            .unwrap_err()
+            .1,
+        "ASSET_BUSY"
+    );
+    isolated
+        .status(second["id"].as_str().unwrap(), "epoch", true)
+        .unwrap();
+    assert!(receiver.try_recv().unwrap().cancel.load(Ordering::Acquire));
+    drop(first_work);
+    for job in isolated.0.jobs.lock().unwrap().iter_mut() {
+        job.state = "canceled";
+    }
+    for _ in 0..12 {
+        let queued = isolated
+            .prepare_capture("epoch", "7", fixture.asset.clone(), fixture.sources())
+            .unwrap();
+        receiver.try_recv().unwrap();
+        isolated
+            .0
+            .jobs
+            .lock()
+            .unwrap()
+            .iter_mut()
+            .find(|j| j.id == queued["id"].as_str().unwrap())
+            .unwrap()
+            .state = "canceled";
+    }
+    assert_eq!(isolated.0.jobs.lock().unwrap().len(), MAX_RECORDS);
+    assert!(
+        isolated
+            .status(first["id"].as_str().unwrap(), "epoch", false)
+            .is_err()
+    );
+    let ready = fixture.capture();
+    fixture
+        .jobs
+        .publish("persistent", ready["id"].as_str().unwrap(), "epoch", "7")
+        .unwrap();
+    let restarted = Jobs::new(
+        fixture.store.clone(),
+        &fixture.project,
+        File::open(&fixture.project).unwrap(),
+    )
+    .unwrap();
+    assert!(
+        restarted
+            .status(ready["id"].as_str().unwrap(), "epoch", false)
+            .is_err()
+    );
+    assert!(fixture.store.item("persistent", false).is_ok());
+    drop(restarted);
+    drop(isolated);
+    fixture.close();
+}
+
+#[test]
+fn original_desktop_fingerprint_directories_import_with_stale_path_fingerprint_but_not_wrong_folder_or_metadata()
+ {
+    let fixture = Fixture::new();
+    for hash in [0_u64, 0x0123456789abcdef] {
+        let directory = fixture
+            .store
+            .root()
+            .join("media")
+            .join(format!("{hash:016x}"));
+        std::fs::create_dir(&directory).unwrap();
+        let path = directory.join("desktop.png");
+        std::fs::write(&path, std::fs::read(&fixture.path).unwrap()).unwrap();
+        let mut asset = fixture.asset.clone();
+        let mut payload = asset_payload::decode(&asset).unwrap();
+        let item = payload.files_mut().next().unwrap();
+        item.path = path.clone();
+        item.content_hash = hash;
+        asset.payload = payload.to_text();
+        assert_ne!(hash, vv_media::content_fingerprint(&path).unwrap());
+        let id = format!("desktop-{hash}");
+        fixture.store.create(&id, &asset).unwrap();
+        let revision = fixture.store.item(&id, false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let pending = fixture
+            .jobs
+            .prepare_import("epoch", "7", &id, &revision)
+            .unwrap();
+        let ready = fixture.finish(pending["id"].as_str().unwrap());
+        assert_eq!(ready["state"], "ready", "{ready}");
+        let payload = fixture
+            .jobs
+            .import_payload(ready["id"].as_str().unwrap(), &id, &revision, "epoch", "7")
+            .unwrap();
+        let copied = payload.files().next().unwrap();
+        assert_eq!(copied.path.parent(), Some(fixture.project.as_path()));
+        assert_eq!(
+            copied.content_hash,
+            vv_media::content_fingerprint(&copied.path).unwrap()
+        );
+        let mut wrong = asset.clone();
+        let mut payload = asset_payload::decode(&wrong).unwrap();
+        payload.files_mut().next().unwrap().content_hash = hash ^ 1;
+        wrong.payload = payload.to_text();
+        let bad_id = format!("wrong-{hash}");
+        fixture.store.create(&bad_id, &wrong).unwrap();
+        let revision = fixture.store.item(&bad_id, false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        assert!(
+            fixture
+                .jobs
+                .prepare_import("epoch", "7", &bad_id, &revision)
+                .is_err()
+        );
+        let mut wrong = asset;
+        let mut payload = asset_payload::decode(&wrong).unwrap();
+        payload.files_mut().next().unwrap().meta.width += 1;
+        wrong.payload = payload.to_text();
+        let bad_id = format!("metadata-{hash}");
+        fixture.store.create(&bad_id, &wrong).unwrap();
+        let revision = fixture.store.item(&bad_id, false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let pending = fixture
+            .jobs
+            .prepare_import("epoch", "7", &bad_id, &revision)
+            .unwrap();
+        let failed = fixture.finish(pending["id"].as_str().unwrap());
+        assert_eq!(failed["error"], "SOURCE_CHANGED", "{failed}");
+    }
+    fixture.close();
+}
+
+#[test]
+fn obsolete_project_cancellation_marks_only_old_queue_and_ready_records_and_preserves_published_files()
+ {
+    let fixture = Fixture::new();
+    let ready = fixture.capture();
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let ready_id = ready["id"].as_str().unwrap();
+    fixture
+        .jobs
+        .publish("preserved", ready_id, "epoch", "7")
+        .unwrap();
+    let exported = fixture.store.export("preserved").unwrap();
+    let (sender, receiver) = mpsc::sync_channel(1);
+    let isolated = Jobs(Arc::new(Inner {
+        store: fixture.store.clone(),
+        root: fixture.project.clone(),
+        directory: File::open(&fixture.project).unwrap(),
+        jobs: Mutex::new(VecDeque::new()),
+        sender,
+    }));
+    let old = isolated
+        .prepare_capture("epoch", "7", fixture.asset.clone(), fixture.sources())
+        .unwrap();
+    let running = receiver.try_recv().unwrap();
+    isolated.0.jobs.lock().unwrap().front_mut().unwrap().state = "running";
+    let current = isolated
+        .prepare_capture("current", "1", fixture.asset.clone(), fixture.sources())
+        .unwrap();
+    isolated.cancel_obsolete("current");
+    fixture.jobs.cancel_obsolete("current");
+    assert!(running.cancel.load(Ordering::Acquire));
+    assert!(!receiver.try_recv().unwrap().cancel.load(Ordering::Acquire));
+    assert_eq!(
+        isolated
+            .status(old["id"].as_str().unwrap(), "epoch", false)
+            .unwrap()["state"],
+        "running"
+    );
+    assert_eq!(
+        isolated
+            .status(current["id"].as_str().unwrap(), "current", false)
+            .unwrap()["state"],
+        "queued"
+    );
+    let canceled = fixture.jobs.status(ready_id, "epoch", false).unwrap();
+    assert_eq!(canceled["state"], "canceled");
+    assert!(canceled["result"].is_null());
+    assert_eq!(fixture.store.export("preserved").unwrap(), exported);
+    let loaded = asset_payload::parse(&exported).unwrap();
+    for media in asset_payload::decode(&loaded).unwrap().files() {
+        assert!(media.path.exists());
+    }
+    assert!(fixture.path.exists());
+    drop(running);
+    drop(isolated);
+    fixture.close();
+}

@@ -1,6 +1,6 @@
 # Implementation status
 
-2026-10-21 — development branch feat/venturi-web.
+2026-10-22 — development branch feat/venturi-web.
 
 ## Current completion assessment
 
@@ -11,6 +11,27 @@ implementation effort. Many partial rows already have native adapters and
 working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
+
+Native pool asset capture and cross-project import are implemented and qualified
+in `evidence/m4-native-assets.json`. File-dependent compounds retain their native
+clipboard payload and nested timelines; project-owned copies survive removal of
+the original and library source. Rename, recoverable archive, restore, previous
+settings, revision checks, cancellation and one-Undo import pass finite API/restart
+and the existing Windows browser. The actual API-exported v1 asset also opens
+through the original desktop `Library::open`, merges natively and supports Undo.
+Desktop 16-digit fingerprint directories are imported without pretending their
+original path fingerprint is a byte SHA-256. Production native probes run in
+separate processes with one CPU, 512 MiB address space, 10 CPU seconds, a 20-second
+wall deadline and bounded output; canceled or obsolete jobs cannot publish later.
+The Archive/Restore browser check found a stale-selection bug, which was fixed
+and qualified again with a panel regression. The passed validation is 291 web
+Rust, 277 core, 620 JavaScript and three targeted original-desktop tests, plus
+fmt, clippy and build. The last JavaScript-only fix retained the matching Rust
+source hashes and reran JavaScript/fmt/build. No full native runtime or GPU test
+fleet was run. Native folder management, physical asset placement/drag, broader
+library lifecycle and release qualification remain open; the ledger counts and
+engineering estimate above are unchanged. No NAS mount or browser installation
+was added. The main editor's five unsaved MoveClips and Undo stack were preserved.
 
 Saved native preset storage, its browser panel, full native shortcut assignment
 and explicit session shortcut activation now pass 258 web Rust tests and 594

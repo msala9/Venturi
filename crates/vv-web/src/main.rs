@@ -1,4 +1,8 @@
 mod api;
+mod asset_jobs;
+mod asset_payload;
+mod asset_probe;
+mod asset_store;
 mod audio;
 mod audition;
 mod autosave;
@@ -38,6 +42,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     if args.first().is_some_and(|arg| arg == "--codec-probe") {
         return codecs::child_main(&args);
     }
+    if args.first().is_some_and(|arg| arg == "--asset-probe") {
+        return asset_probe::child_main(&args);
+    }
     serve()
 }
 #[tokio::main]
@@ -48,6 +55,7 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
     let mut software = false;
     let mut library_url = None;
     let mut presets_root: Option<std::path::PathBuf> = None;
+    let mut assets_root: Option<std::path::PathBuf> = None;
     let mut gpu_lock = std::path::PathBuf::from("/tmp/HALO_BENCHMARK.lock");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -57,6 +65,13 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
                 presets_root = Some(
                     args.next()
                         .ok_or("--presets-root requires a directory")?
+                        .into(),
+                )
+            }
+            "--assets-root" => {
+                assets_root = Some(
+                    args.next()
+                        .ok_or("--assets-root requires a directory")?
                         .into(),
                 )
             }
@@ -82,7 +97,7 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
             }
             "--help" => {
                 println!(
-                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE] [--library-url HTTP_ORIGIN] [--presets-root DIRECTORY]\nOnly loopback addresses are supported. Use the launcher for isolated software preview."
+                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE] [--library-url HTTP_ORIGIN] [--presets-root DIRECTORY] [--assets-root DIRECTORY]\nOnly loopback addresses are supported. Use the launcher for isolated software preview."
                 );
                 return Ok(());
             }
@@ -100,10 +115,14 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
     }
     let listener = tokio::net::TcpListener::bind(listen).await?;
     let listen = listener.local_addr()?;
-    let host = if let Some(presets_root) = presets_root {
-        host::Host::start_with_presets(&root, &presets_root)?
-    } else {
-        host::Host::start(&root)?
+    let host = match (presets_root, assets_root) {
+        (None, None) => host::Host::start(&root)?,
+        (Some(presets), None) => host::Host::start_with_presets(&root, &presets)?,
+        (presets, Some(assets)) => host::Host::start_with_libraries(
+            &root,
+            &presets.unwrap_or_else(|| root.join(".presets")),
+            &assets,
+        )?,
     };
     let library = library::Library::start(
         library_url.as_deref(),

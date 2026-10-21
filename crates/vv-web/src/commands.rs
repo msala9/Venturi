@@ -72,6 +72,17 @@ pub enum Operation {
     ImportMedia {
         path_token: String,
     },
+    PublishNativeAsset {
+        job_id: String,
+    },
+    ImportNativeAsset {
+        job_id: String,
+        asset_id: String,
+        revision: String,
+    },
+    EditNativeAssetLibrary {
+        edit: crate::asset_store::Edit,
+    },
     EditCatalog {
         edit: crate::catalog::Edit,
     },
@@ -457,6 +468,16 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     }
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::PublishNativeAsset { .. } | Operation::EditNativeAssetLibrary { .. } => {
+            return Err(ApiError::invalid(
+                "Native asset library writes require the native asset command endpoint",
+            ));
+        }
+        Operation::ImportNativeAsset { .. } => {
+            return Err(ApiError::invalid(
+                "Native asset imports require the project command endpoint",
+            ));
+        }
         Operation::RenameTimeline { name } | Operation::DuplicateTimeline { name } => {
             timeline_name(name)?;
             let media = session

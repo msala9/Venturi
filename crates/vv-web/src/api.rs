@@ -35,6 +35,18 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/session", get(session))
         .route("/api/v1/review", get(review_metadata))
+        .route("/api/v1/native-assets/prepare", post(prepare_native_asset))
+        .route("/api/v1/native-assets/pages/{page}", get(native_asset_list))
+        .route("/api/v1/native-assets/items/{id}", get(native_asset_item))
+        .route(
+            "/api/v1/native-assets/items/{id}/download",
+            get(native_asset_download),
+        )
+        .route(
+            "/api/v1/native-assets/jobs/{job}",
+            get(native_asset_status).delete(cancel_native_asset),
+        )
+        .route("/api/v1/native-assets/commands", post(native_asset_command))
         .route("/api/v1/presets", get(preset_list_first))
         .route("/api/v1/presets/shortcuts", get(preset_shortcuts))
         .route("/api/v1/presets/pages/{page}", get(preset_list))
@@ -325,6 +337,150 @@ async fn preset_shortcuts() -> Response {
         Json(crate::presets::shortcut_catalog()),
     )
         .into_response()
+}
+fn native_asset_json(value: Value) -> Response {
+    ([(header::CACHE_CONTROL, "no-store")], Json(value)).into_response()
+}
+async fn prepare_native_asset(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::host::NativeAssetRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::PrepareNativeAsset(
+            payload
+                .map_err(|_| ApiError::invalid("Invalid native asset preparation"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn native_asset_list(
+    State(state): State<AppState>,
+    Path(page): Path<usize>,
+    query: std::result::Result<
+        Query<crate::asset_store::Query>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::NativeAssetList(
+            page,
+            query
+                .map_err(|_| ApiError::invalid("Invalid native asset list query"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn native_asset_item(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    query: std::result::Result<
+        Query<crate::host::NativeAssetItemQuery>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::NativeAssetItem(
+            id,
+            query
+                .map_err(|_| ApiError::invalid("Invalid native asset item query"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn native_asset_download(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    let bytes = state
+        .host
+        .native_asset_export(
+            id.clone(),
+            query
+                .map_err(|_| ApiError::invalid("Invalid native asset download query"))?
+                .0,
+        )
+        .await?;
+    Ok((
+        [
+            (
+                header::CONTENT_TYPE,
+                "application/json; charset=utf-8".to_owned(),
+            ),
+            (
+                header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{id}.json\""),
+            ),
+            (header::CACHE_CONTROL, "no-store".into()),
+        ],
+        bytes,
+    )
+        .into_response())
+}
+async fn native_asset_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::NativeAssetStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid native asset job query"))?
+                .0,
+            false,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn cancel_native_asset(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::NativeAssetStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid native asset job query"))?
+                .0,
+            true,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn native_asset_command(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<Mutation>, axum::extract::rejection::JsonRejection>,
+) -> Result<Response> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid native asset library mutation"))?
+        .0;
+    if !matches!(
+        request.operation,
+        crate::commands::Operation::PublishNativeAsset { .. }
+            | crate::commands::Operation::EditNativeAssetLibrary { .. }
+    ) {
+        return Err(ApiError::invalid(
+            "This route accepts only native asset publication and library edits",
+        ));
+    }
+    state
+        .host
+        .call(Action::Mutation(None, request))
+        .await
+        .map(native_asset_json)
 }
 async fn preset_list_first(
     State(state): State<AppState>,
@@ -1174,14 +1330,21 @@ async fn project_command(
     State(state): State<AppState>,
     payload: std::result::Result<Json<Mutation>, axum::extract::rejection::JsonRejection>,
 ) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid command JSON"))?
+        .0;
+    if matches!(
+        request.operation,
+        crate::commands::Operation::PublishNativeAsset { .. }
+            | crate::commands::Operation::EditNativeAssetLibrary { .. }
+    ) {
+        return Err(ApiError::invalid(
+            "Native asset library writes require the native asset command endpoint",
+        ));
+    }
     state
         .host
-        .call(Action::Mutation(
-            None,
-            payload
-                .map_err(|_| ApiError::invalid("Invalid command JSON"))?
-                .0,
-        ))
+        .call(Action::Mutation(None, request))
         .await
         .map(Json)
 }
@@ -1306,6 +1469,7 @@ async fn assets(request: Request) -> Response {
         "/js/slip.js" => asset!("/web/js/slip.js", "text/javascript"),
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),
         "/js/library.js" => asset!("/web/js/library.js", "text/javascript"),
+        "/js/native-assets.js" => asset!("/web/js/native-assets.js", "text/javascript"),
         "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
         "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),
         "/js/reviewmeta.js" => asset!("/web/js/reviewmeta.js", "text/javascript"),

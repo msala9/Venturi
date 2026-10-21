@@ -59,6 +59,35 @@ operations and `/proc/self/fd` for safe media probing; build it on Linux/WSL.
 Native desktop builds remain `cargo run -p vv-app`; original default workspace
 members are preserved so the added binary does not change default selection.
 
+## Native asset library
+
+The Library panel offers Shared media archive (the existing ds4 catalog) and
+Native assets. Select project media in Media, open Library / Native assets and
+save the selection. Each selected item becomes a separate reusable asset;
+compound assets include their nested timelines and file dependencies. Import
+adds the selected asset to the destination project pool with one Undo. Insert
+the imported pool item into a timeline through the existing media controls.
+
+The server stores native assets in `<projects-root>/.assets` by default. Override
+with `--assets-root DIRECTORY` to reuse an authorized native library. The root
+contains the desktop-compatible `assets` and `media` directories. The download
+action exports original desktop v1 JSON. Rename, archive, restore and restore
+previous settings preserve native folder metadata. Folder organization is not
+implemented by this increment.
+
+Preparation runs one copy/probe worker, with one queued job, 64 unique files,
+512 MiB per file, 2 GiB per asset and a 512 MiB disk reserve. Files are copied into
+the library and independently into each importing project; cancellation never
+removes existing or completed shared files. Synchronous native probing has
+its own process with one CPU, 512 MiB address space and a 20-second deadline;
+cancellation terminates and reaps it. Desktop libraries using their original
+16-digit fingerprint folders are validated and imported within the same bounds.
+Existing binary media formats are
+supported; playlists and arbitrary external paths are refused. The native store
+is separate from the ds4 archive API. No NAS mount, credentials, browser or driver
+installation is performed, and concurrent native-desktop library writes are not
+supported by the web store's lock.
+
 ## First editing session
 
 1. Click the Venturi name and create a project, or open a listed `.vvproj`.

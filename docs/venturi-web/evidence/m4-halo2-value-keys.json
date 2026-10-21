@@ -1,0 +1,61 @@
+{
+  "source_commit": "d4e23f893942fb95f117121926152bd5c7575a66",
+  "binary_sha256": "b3c5d16b6df9ec1b7633c7263a4635ea91c29f0f47888bc2cd4cada4a4674c9a",
+  "pid": 1207671,
+  "url": "http://127.0.0.1:8811",
+  "isolated_root": "/home/marco/VenturiWeb-value-keys-20261021",
+  "project": "Rebased_shared_library_UI_check.vvproj",
+  "saved": true,
+  "generation": "4",
+  "history": {
+    "labels": [
+      "InsertClips",
+      "SetKeyframe",
+      "SetKeyframe",
+      "MoveKeyframes"
+    ],
+    "position": 4
+  },
+  "keys": [
+    {
+      "controls": null,
+      "interpolation": "Hold",
+      "source_frame": 2,
+      "timeline_frame": 146,
+      "value": "Halo2 <literal> α"
+    },
+    {
+      "controls": null,
+      "interpolation": "Hold",
+      "source_frame": 14,
+      "timeline_frame": 158,
+      "value": "Shared archive title"
+    }
+  ],
+  "main_session_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "unsaved": true,
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    }
+  },
+  "original_project_review_source_hashes_preserved": true,
+  "provenance_seed": "9007199254740993",
+  "favorite_preserved": true,
+  "assets": {
+    "main.js": "00a0b9fcaa1b29fd0b52d88029d72e33c157fd8ba4d165aa68be3f077acd2ef0",
+    "eventkeys.js": "e58eddeebec9731ddf2d28396bfc2549a6794cc72975d8033d4d657eda9ceef1"
+  },
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "fixture_note": "Absolute media paths rebased in isolated test fixture only; live project and its unsaved edits untouched"
+}

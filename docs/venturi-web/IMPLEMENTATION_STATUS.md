@@ -2028,3 +2028,23 @@ temporary viewport overrides were reset. Title/key text areas now use the full
 inspector width. Workspace tooltips identify their actual action. Evidence:
 m4-value-keys-drawer-browser.png and the drawer metadata in m4-value-keys.json.
 No OS DPI qualification or hardware GPU claim is inferred from these viewports.
+
+### halo2 acceptance without interrupting the live editor
+
+The d4e23f8 binary was staged on halo2, but replacing port 8790 was refused:
+the live project had five unsaved MoveClips commands under another writer lease.
+That process, history and recovery checkpoint were left untouched. Instead, an
+isolated CPU instance on port 8811 uses a separate project root containing only
+copies of the saved project, Review sidecar, shared PNG and origin sidecar.
+Absolute media paths were rebased only in a derived test fixture; the original
+project copies and live files retain their original hashes.
+
+The actual browser added a title at frame 144, created two literal Unicode text
+keys, and moved both from source 0/12 to 2/14 with one native MoveKeyframes step.
+Save retained Hold interpolation, exact text and native history position 4.
+The composed CPU viewer shows the literal text. Original project/Review/source
+hashes, exact seed 9007199254740993, Favorite, and the live editor's generation 5
+and five unsaved moves remain unchanged. Assets match d4e23f8. No hardware GPU
+handles or shared lock were used. Evidence: m4-halo2-value-keys.json and browser
+PNG. Port 8790 remains on 84ef827 until its live edits can be preserved through
+the editor; staging the newer binary does not mean the main service was upgraded.

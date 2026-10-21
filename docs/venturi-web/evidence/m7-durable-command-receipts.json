@@ -1,0 +1,51 @@
+{
+  "url": "http://127.0.0.1:8805",
+  "old_pid": 310375,
+  "restarted_pid": 310381,
+  "kill_delay_after_ack_ms": 7.458199004759081,
+  "ack": {
+    "command_epoch": "0",
+    "command_id": "durable-solid",
+    "durability": {
+      "recovery_revision": "9df0286fb26603295f7ff7ebd69b1330f0858c23bacf63c3d7f57fbf6c512a05",
+      "state": "recovery"
+    },
+    "generation": "1",
+    "project_epoch": "1792560789777951866:1",
+    "receipt_persisted": true,
+    "status": "applied"
+  },
+  "restart_lookup": {
+    "command_epoch": "0",
+    "command_id": "durable-solid",
+    "durability": {
+      "recovery_revision": "9df0286fb26603295f7ff7ebd69b1330f0858c23bacf63c3d7f57fbf6c512a05",
+      "state": "recovery"
+    },
+    "generation": "1",
+    "project_epoch": "1792560789777951866:1",
+    "receipt_persisted": true,
+    "server_restarted": true,
+    "status": "applied"
+  },
+  "before_project_epoch": "1792560789777951866:1",
+  "after_project_epoch": "1792560789856624565:1",
+  "saved_file_sha256": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20",
+  "saved_file_unchanged": true,
+  "journal_sha256": "7801980cab9f4bfa367c9ea98861c5e27fb9f606ad0075d14d41288efb0f9ebe",
+  "journal_unchanged_by_lookup_and_retry": true,
+  "checkpoint_revision": "9df0286fb26603295f7ff7ebd69b1330f0858c23bacf63c3d7f57fbf6c512a05",
+  "checkpoint_project_sha256": "2c88cbfea9362f9cb45d038209fc9af43aef73dc94ef252f7babd8c0c0fe8c70",
+  "recovery_pending": true,
+  "native_edit_not_replayed": true,
+  "changed_request_refused": true,
+  "gpu_initialized": false,
+  "browser_recovery": {
+    "project": "Durable_receipt_recovered_UI.vvproj",
+    "saved": true,
+    "fresh_history": true,
+    "exact_native_ron_preserved": true,
+    "original_saved_file_unchanged": true,
+    "notice": "Recovery copy saved as Durable_receipt_recovered_UI.vvproj"
+  }
+}

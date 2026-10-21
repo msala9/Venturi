@@ -1,6 +1,127 @@
 use super::*;
 
 #[test]
+fn acknowledged_edits_have_a_synchronous_recovery_checkpoint_and_restart_receipt_without_replay() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-durable-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "durable".into(),
+        },
+        "durable-new",
+        None,
+    );
+    let saved = editor.mutation(None, create).unwrap();
+    assert_eq!(saved["durability"]["state"], "saved");
+    let original = std::fs::read(root.join("durable.vvproj")).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let path = Some(vv_core::Id::raw(id).to_string());
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 48,
+        },
+        "durable-add",
+        Some(id),
+    );
+    let ack = editor.mutation(path.clone(), add.clone()).unwrap();
+    assert_eq!(ack["durability"]["state"], "recovery");
+    assert_eq!(ack["receipt_persisted"], true);
+    let revision = ack["durability"]["recovery_revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let expected = serde_json::to_value(&editor.session.project).unwrap();
+    drop(editor);
+    let mut editor = Editor::new(&root).unwrap();
+    assert_eq!(editor.autosave.info()["state"], "pending");
+    assert_eq!(editor.autosave.info()["revision"], revision);
+    let mut recovered_ack = ack;
+    recovered_ack["server_restarted"] = json!(true);
+    assert_eq!(
+        editor.handle(Action::Lookup("durable-add".into())).unwrap(),
+        recovered_ack
+    );
+    assert_eq!(
+        editor.mutation(path.clone(), add.clone()).unwrap(),
+        recovered_ack
+    );
+    assert!(
+        editor.session.project.timelines[id].tracks[0]
+            .clips
+            .is_empty()
+    );
+    let mut changed = add.clone();
+    changed.operation = Operation::Undo;
+    assert_eq!(
+        editor.mutation(path.clone(), changed).unwrap_err().1,
+        "COMMAND_ID_REUSED"
+    );
+    let mut unknown = add;
+    unknown.command_id = "unrecorded-old-command".into();
+    assert_eq!(
+        editor.mutation(path, unknown).unwrap_err().1,
+        "REVISION_CONFLICT"
+    );
+    editor
+        .autosave
+        .recover(&editor.files, &mut editor.session, &revision, "Kept", true)
+        .unwrap();
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        expected
+    );
+    assert_eq!(
+        std::fs::read(root.join("durable.vvproj")).unwrap(),
+        original
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn incomplete_receipts_preserve_recovery_and_report_unavailable_persistence_without_failed_edits() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-torn-receipt-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    let bytes = b"{interrupted-write";
+    std::fs::write(root.join(".venturi-command-receipts.jsonl"), bytes).unwrap();
+    let mut editor = Editor::new(&root).unwrap();
+    assert!(editor.persistence_notice.is_some());
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "still_usable".into(),
+        },
+        "unavailable-new",
+        None,
+    );
+    let ack = editor.mutation(None, create).unwrap();
+    assert_eq!(ack["status"], "applied");
+    assert_eq!(ack["receipt_persisted"], false);
+    assert_eq!(
+        std::fs::read(root.join(".venturi-command-receipts.jsonl")).unwrap(),
+        bytes
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn receipt_rotation_keeps_editing_state_and_rejects_evicted_commands_even_without_a_history_change()
 {
     let root = std::env::temp_dir().join(format!(

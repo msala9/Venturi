@@ -229,17 +229,22 @@ impl Store {
             return;
         }
         self.next = Instant::now() + Duration::from_secs(2);
+        self.checkpoint(files, session);
+    }
+    pub fn checkpoint(&mut self, files: &Files, session: &Session) -> Option<String> {
+        if self.pending || self.blocked {
+            return None;
+        }
         let generation = (session.epoch(), session.history.generation());
         if !session.has_unsaved_changes() || self.generation == Some(generation) {
-            return;
+            return (self.generation == Some(generation))
+                .then(|| self.receipt.clone())
+                .flatten();
         }
-        let Some(name) = session
+        let name = session
             .path()
             .and_then(|path| path.file_name())
-            .and_then(|name| name.to_str())
-        else {
-            return;
-        };
+            .and_then(|name| name.to_str())?;
         let result = (|| {
             let base_sha256 = files.saved_fingerprint(name).ok_or_else(|| {
                 ApiError::invalid("Save the project before creating a recovery snapshot")
@@ -272,7 +277,9 @@ impl Store {
         })();
         if let Err(error) = result {
             self.fail(error);
+            return None;
         }
+        self.receipt.clone()
     }
     fn resolve(&mut self, files: &Files, name: &str, sha256: String) -> Result<()> {
         let bytes = raw(files)?.ok_or_else(ApiError::missing)?;

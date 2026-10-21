@@ -56,12 +56,13 @@ pub struct Editor {
     clipboard: Option<crate::clipboard::Clipboard>,
     persistence_notice: Option<&'static str>,
     autosave: crate::autosave::Store,
+    receipts: Option<crate::receipts::Store>,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
         let files = Files::new(root)?;
         let mut session = Session::default();
-        let persistence_notice = match crate::resume::restore(&files) {
+        let mut persistence_notice = match crate::resume::restore(&files) {
             Ok(Some((project, name))) => {
                 session.install_project(
                     project,
@@ -79,6 +80,16 @@ impl Editor {
             ),
         };
         let autosave = crate::autosave::Store::new(&files);
+        let (receipts, completed) = match crate::receipts::Store::open(&files) {
+            Ok((store, entries)) => (Some(store), entries),
+            Err(error) if error.1 == "ROOT_BUSY" => return Err(std::io::Error::other(error.2)),
+            Err(_) => {
+                persistence_notice = Some(
+                    "Command receipts are unavailable or incomplete. Existing data was preserved. Recover unsaved edits if offered; do not replay old commands.",
+                );
+                (None, HashMap::new())
+            }
+        };
         Ok(Self {
             session,
             files,
@@ -88,12 +99,16 @@ impl Editor {
                 .as_nanos()
                 .to_string(),
             lease: None,
-            completed: HashMap::new(),
+            completed: completed
+                .into_iter()
+                .map(|(id, (fingerprint, value))| (id, (fingerprint, Ok(value))))
+                .collect(),
             command_epoch: 0,
             import_warnings: vec![],
             clipboard: None,
             persistence_notice,
             autosave,
+            receipts,
         })
     }
     fn snapshot(&self) -> Value {
@@ -177,7 +192,7 @@ impl Editor {
                 .checked_add(1)
                 .expect("Command epoch exhausted");
         }
-        let result=outcome.map(|_|{
+        let mut result=outcome.map(|_|{
             if matches!(request.operation,Operation::Save|Operation::SaveAs{..}) {self.autosave.saved(&self.files,&self.session);}
             if matches!(request.operation,Operation::NewProject{..}|Operation::OpenProject{..}|Operation::Save|Operation::SaveAs{..}|Operation::RecoverBackup{..}|Operation::ImportOtio{..}|Operation::RecoverAutosave{open:true,..})
                 && let Some(name)=self.session.path().and_then(|path|path.file_name()).and_then(|name|name.to_str()) {
@@ -185,6 +200,46 @@ impl Editor {
             }
             json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()})
         });
+        if let Ok(value) = &mut result {
+            if !self.session.has_unsaved_changes() {
+                self.autosave.saved(&self.files, &self.session);
+            }
+            let checkpoint = if self.session.has_unsaved_changes() {
+                self.autosave.checkpoint(&self.files, &self.session)
+            } else {
+                None
+            };
+            let saved = !self.session.has_unsaved_changes()
+                && self
+                    .session
+                    .path()
+                    .and_then(|path| path.file_name())
+                    .and_then(|name| name.to_str())
+                    .is_some_and(|name| {
+                        self.files.saved_fingerprint(name).is_some_and(|expected| {
+                            self.files.project_fingerprint(name).ok().as_ref() == Some(&expected)
+                        })
+                    });
+            let state = if saved {
+                "saved"
+            } else if checkpoint.is_some() {
+                "recovery"
+            } else {
+                "volatile"
+            };
+            value["durability"] = json!({"state":state,"recovery_revision":checkpoint});
+            value["receipt_persisted"] = json!(true);
+            if !self.receipts.as_mut().is_some_and(|store| {
+                store
+                    .append(&self.files, &request.command_id, fingerprint, value)
+                    .is_ok()
+            }) {
+                value["receipt_persisted"] = json!(false);
+                self.persistence_notice = Some(
+                    "The command applied, but its receipt could not be persisted. Save current edits before restarting; do not replay an uncertain command.",
+                );
+            }
+        }
         self.completed
             .insert(request.command_id.clone(), (fingerprint, result.clone()));
         result

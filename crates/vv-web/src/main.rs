@@ -14,6 +14,7 @@ mod library;
 mod masks;
 mod preview;
 mod program;
+mod receipts;
 mod recording;
 mod resume;
 mod reviewmeta;

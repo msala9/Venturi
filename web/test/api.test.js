@@ -43,3 +43,15 @@ test("unknown outcomes remain explicit and are never blindly resent", async () =
   );
   assert.equal(count, 2);
 });
+test("a restarted server returns a historical receipt and recovery checkpoint without replay", async () => {
+  const receipt={command_id:"before-restart",status:"applied",server_restarted:true,receipt_persisted:true,durability:{state:"recovery",recovery_revision:"native-checkpoint"}};
+  const calls=[];
+  const result=await sendMutation('/projects/commands',{command_id:receipt.command_id},async(path,options)=>{
+    calls.push(options.method);
+    if(options.method==='POST')throw new TypeError('Connection closed during restart');
+    assert.equal(path,'/api/v1/commands/before-restart');
+    return {ok:true,json:async()=>receipt};
+  });
+  assert.deepEqual(calls,['POST','GET']);
+  assert.deepEqual(result,receipt);
+});

@@ -1854,3 +1854,36 @@ remained Saved with generation 0 and empty history. Project, Review and imported
 source hashes, exact seed and Favorite flag were preserved. The service remains
 explicit software preview with no hardware handles or GPU-lock acquisition.
 Evidence: m7-halo2-command-receipts.json and browser screenshot.
+
+## M7 — synced command receipts and acknowledgment checkpoints
+
+Successful command acknowledgments now have a bounded root-local JSONL journal:
+4096 successes / 8 MiB, SHA-256 request identities and record checksums, fsync
+before confirmation, atomic rotation, no-follow regular files and exclusive root
+ownership while the healthy journal is open. Changed/replaced journals are
+preserved and reported unavailable. Receipt failure never turns an applied native
+operation into a rejected edit. Dirty named projects synchronously publish native
+RON recovery before their ACK; the response explicitly distinguishes saved,
+recovery-backed and volatile state from receipt persistence. Earlier unresolved
+recovery snapshots remain frozen and are not overwritten to satisfy a new ACK.
+
+Retained receipts survive restart with server_restarted=true. Repeated matching
+requests return the historical result without engine execution; changed ID reuse
+is rejected. New server project epochs reject unknown old envelopes. The UI
+warns to check recovery on both immediate lost-response lookup and Reconnect.
+Restart still reopens the saved project, offers unsaved state as an explicit new
+recovery copy, and starts fresh native Undo/clipboard/transport state. Historical
+checkpoint revisions can be superseded or resolved by later edits/Save. Failed
+commands, evicted successes, external side-effect transactions and durable render
+queues remain outside this guarantee. Torn/corrupt journals are preserved with a
+visible persistence notice; recovery and manual Save remain available.
+
+125 web Rust tests and 94 JavaScript tests pass; fmt, clippy and build pass.
+An isolated GPU-disabled HTTP host was SIGKILLed 7.46 ms after its edit ACK,
+before the periodic autosave interval. Restart retained the exact receipt and
+checkpoint; lookup/retry did not replay the edit or change the journal. The real
+browser recovered the Solid clip into Durable_receipt_recovered_UI.vvproj, Saved
+with a fresh history. Its native RON is byte-identical to the acknowledged
+checkpoint, and the original saved file hash is unchanged. Evidence:
+m7-durable-command-receipts.json and m7-durable-command-receipts-browser.png.
+No shared library mutation or hardware GPU work was performed.

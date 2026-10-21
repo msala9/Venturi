@@ -700,6 +700,13 @@ async function refresh() {
   updatePlayAvailability();
   if (next.capabilities.preview) seek();
 }
+function commandNotice(receipt) {
+  return receipt.server_restarted
+    ? "Command applied before the server restarted. Check project recovery before continuing."
+    : receipt.receipt_persisted === false || receipt.durability?.state === "volatile"
+      ? "Command applied. Save current edits before restarting the server."
+      : "Command applied";
+}
 async function mutate(operation, project = false) {
   fastTransport?.stop();
   audioScrub?.stop();
@@ -721,13 +728,13 @@ async function mutate(operation, project = false) {
   busy = true;
   notice("Applying command…");
   try {
-    await sendMutation(
+    const receipt = await sendMutation(
       project
         ? "/projects/commands"
         : `/timelines/${encodeURIComponent(timeline.id)}/commands`,
       body,
     );
-    notice("Command applied");
+    notice(commandNotice(receipt));
   } catch (error) {
     if (error.code === "OUTCOME_UNKNOWN") {
       unresolved = body.command_id;
@@ -981,18 +988,20 @@ $("recover-project").addEventListener("submit",async(event)=>{
 });
 async function connect() {
   try {
+    let outcomeNotice = null;
     if (unresolved) {
       try {
-        await request(`/commands/${encodeURIComponent(unresolved)}`);
+        outcomeNotice = commandNotice(await request(`/commands/${encodeURIComponent(unresolved)}`));
       } catch (error) {
         if (!(error instanceof ApiFailure) || error.status !== 404) throw error;
+        outcomeNotice = "Previous command outcome remains unknown. Current state refreshed; check project recovery before continuing.";
       }
       unresolved = null;
     }
     await request("/lease", { client_id: clientId });
     writable = true;
     await refresh();
-    notice("Connected to native Venturi session");
+    notice(outcomeNotice || "Connected to native Venturi session");
   } catch (error) {
     writable = false;
     await refresh().catch(() => {

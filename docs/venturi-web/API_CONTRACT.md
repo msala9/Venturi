@@ -160,7 +160,29 @@ effect. Evicted commands from an earlier receipt epoch return
 `COMMAND_EPOCH_EXPIRED` before engine work, even if history generation is unchanged.
 Unknown old lookups remain 404. Never refresh the epoch of an unresolved envelope
 to replay it. A missing/null command epoch is accepted only in the initial epoch
-for legacy clients. This bounded in-memory registry is not a durable command log.
+for legacy clients.
+
+Successful receipts are also appended to a root-local, checksum-checked, synced
+JSONL journal (4096 successes / 8 MiB, atomic rotation). The journal retains request
+fingerprints and acknowledgments, never request bodies or credentials. Before an
+edit ACK, a named dirty project is synchronously checkpointed through the existing
+native RON recovery store. ACK `durability.state` is `saved`, `recovery` (with a
+checkpoint revision), or `volatile` when recovery is unavailable, blocked or held
+for an earlier unresolved project. `receipt_persisted` separately reports journal
+success. An auxiliary persistence failure does not disguise an applied edit as a
+failed operation. Save current edits when either field reports unavailable safety.
+
+After server restart, retained successful lookup/retries include
+`server_restarted: true` and never execute the command again. The normal saved
+project is reopened; unsaved native state remains an explicit recovery copy. The
+browser warns to check recovery. Historical checkpoint revisions may have been
+superseded by later edits or resolved by a later Save. Undo stacks, writer leases,
+clipboard contents and transport state are process-local. Receipt lookup confirms
+the historical operation, not that its transient UI state was restored. Failed
+commands and evicted successes are not persisted; unknown old envelopes still
+cannot pass the new project epoch. Incomplete/corrupt/linked journals are preserved,
+reported unavailable, and do not prevent recovery or manual Save. This is not a
+durable render queue or an exactly-once transaction for external sidecar writes.
 
 All endpoints below are **new** `vv-web` routes to implement. Do not say Venturi already exposes REST. `vv-app mcp` is a stdio tool server; use it only as a temporary proof-of-concept backend.
 

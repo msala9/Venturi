@@ -1406,3 +1406,10 @@ This detects ordinary external edits; it does not lock arbitrary external
 writers across the final check/rename interval. Directory ownership only
 coordinates cooperating web hosts. Unsaved-edit autosave, durable jobs, saved
 session restoration and the rest of the release checks remain open.
+
+The fd0df82 binary is deployed on halo2, SHA-256
+92172373336309e8fb27c9e71112c06bb9ea620e34764e0c906b2badddaa27ce.
+The embedded main module matches the tested source; the saved shared project,
+Favorite annotation and exact seed remain available. CPU/lavapipe and two-worker
+caps are retained, with no DRI/KFD handles or hardware-lock probe/acquisition.
+Evidence: m7-halo2-save-conflict.json.

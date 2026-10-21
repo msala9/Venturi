@@ -35,3 +35,26 @@ export function createAudioScrub({ enabled, status, getState, getURL=query=>`/ap
   enabled.addEventListener("change",stop);
   return {request,stop};
 }
+
+export function bindSourceScrub(video, scrub, isActive, pointerRoot=window) {
+  let pointer=false, pending=false, canceled=false;
+  video.addEventListener("pointerdown",()=>{pointer=true;pending=false;canceled=false;scrub.stop();},{capture:true});
+  video.addEventListener("seeking",()=>{if(isActive())scrub.stop();});
+  video.addEventListener("seeked",()=>{
+    if(!isActive() || !video.paused || canceled)return;
+    if(pointer)pending=true;else scrub.request();
+  });
+  pointerRoot.addEventListener("pointerup",()=>{
+    if(!pointer)return;
+    pointer=false;
+    if(pending && isActive() && video.paused)scrub.request();
+    pending=false;
+  },{capture:true});
+  const cancelPointer=()=>{
+    if(!pointer)return;
+    pointer=false;pending=false;canceled=true;scrub.stop();
+  };
+  pointerRoot.addEventListener("pointercancel",cancelPointer,{capture:true});
+  pointerRoot.addEventListener("blur",cancelPointer);
+  video.addEventListener("keydown",()=>{canceled=false;});
+}

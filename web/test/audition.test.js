@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {createAudioScrub} from "../js/audition.js";
+import {createAudioScrub,bindSourceScrub} from "../js/audition.js";
 const turn=()=>new Promise(resolve=>setTimeout(resolve,10));
 function fixture() {
   let state={project_epoch:"p",if_generation:"0",timeline_id:"1",revision:"r",frame:0,width:640};
@@ -29,4 +29,27 @@ test("a rejected browser audio resume reports the problem without requesting ser
   const status={textContent:""};let requests=0;
   const scrub=createAudioScrub({enabled:{checked:true,addEventListener(){}},status,getState:()=>({frame:1}),delay:0,fetcher:()=>{requests++;},contextFactory:()=>({resume:()=>Promise.reject(new Error("Output denied"))})});
   scrub.request();await turn();assert.equal(requests,0);assert.equal(status.textContent,"Output denied");scrub.stop();
+});
+
+function seekFixture() {
+  const events={},rootEvents={},calls=[];let active=true;
+  const video={paused:true,addEventListener:(name,fn)=>events[name]=fn};
+  bindSourceScrub(video,{request:()=>calls.push("request"),stop:()=>calls.push("stop")},()=>active,{addEventListener:(name,fn)=>rootEvents[name]=fn});
+  return {events,rootEvents,calls,video,deactivate:()=>active=false};
+}
+test("Source pointer seeking defers every fragment until release, including a late final seek",()=>{
+  const f=seekFixture();f.events.pointerdown();
+  for(let i=0;i<5;i++){f.events.seeking();f.events.seeked();}
+  assert.equal(f.calls.filter(x=>x==="request").length,0);
+  f.rootEvents.pointerup();assert.equal(f.calls.at(-1),"request");
+  f.events.seeked();assert.equal(f.calls.filter(x=>x==="request").length,2);
+});
+test("Source canceled gestures and playing or inactive media do not audition",()=>{
+  const f=seekFixture();f.events.pointerdown();f.events.seeked();f.rootEvents.pointercancel();f.events.seeked();f.rootEvents.pointerup();
+  assert.equal(f.calls.includes("request"),false);
+  f.events.keydown();f.video.paused=false;f.events.seeked();assert.equal(f.calls.includes("request"),false);
+  f.video.paused=true;f.deactivate();f.events.seeked();assert.equal(f.calls.includes("request"),false);
+});
+test("Source keyboard seeks audition once they have settled",()=>{
+  const f=seekFixture();f.events.seeking();f.events.seeked();assert.deepEqual(f.calls,["stop","request"]);
 });

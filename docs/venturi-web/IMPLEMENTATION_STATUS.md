@@ -1588,3 +1588,14 @@ The browser reached the audio output path while the project stayed Saved.
 CPU/lavapipe, two workers, no DRI/KFD handles and no lock probe/acquisition are
 verified in m5-halo2-audio-scrub.json/browser.png. Transport wrapping was visually
 checked in the narrower main editor panel as well as the local editing layout.
+
+Source native-control scrubbing now also auditions after pointer release or a
+settled keyboard seek. Pointer seeking only marks a pending fragment; release
+coalesces the final position, while cancellation/focus loss, playback and inactive
+media suppress output. The request uses the same source frame as the readout and
+In mark. 80 JavaScript tests pass, including several seeks during one held pointer,
+late completion, cancellation and playing/hidden Source refusal. Actual browser
+acceptance dragged the paused Source bar from zero to 1.37181 seconds, showed
+Source 00:00:01:11 and reached Native audio · 80 ms with the native project Saved.
+The audio scrub parity row is now complete for the required release-based web
+interaction. Evidence: m5-source-pointer-scrub.png and m5-audio-scrub.json.

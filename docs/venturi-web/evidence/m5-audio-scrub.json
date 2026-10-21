@@ -214,5 +214,14 @@
     "source_video_height_css_px": 125.6,
     "program_tools_and_scopes_restored": true,
     "hardware_speaker_output_measured": false
+  },
+  "source_pointer_seek": {
+    "before_seconds": 0,
+    "after_seconds": 1.37181,
+    "paused": true,
+    "readout": "00:00:01:11",
+    "output_status": "Native audio \u00b7 80 ms",
+    "project_saved": true,
+    "javascript_tests": 80
   }
 }

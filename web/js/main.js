@@ -19,7 +19,7 @@ import { createReview } from "./review.js";
 import { createReviewMetadata } from "./reviewmeta.js";
 import { createPasteAttributes } from "./attributes.js";
 import { createRecoveryPanel } from "./recovery.js";
-import { createAudioScrub } from "./audition.js";
+import { createAudioScrub, bindSourceScrub } from "./audition.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -1037,13 +1037,14 @@ audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-stat
   if(!documentState)return null;
   if(viewerMode==="source") {
     const media=documentState.media.find(m=>m.id===sourceOpenId),video=$("source-video");
-    return media?.has_audio && video.readyState>=1 ? {project_epoch:documentState.project_epoch,media_id:media.id,frame:Math.min(media.duration_frames-1,Math.round(video.currentTime*media.fps.num/media.fps.den))} : null;
+    return media?.has_audio && video.readyState>=1 ? {project_epoch:documentState.project_epoch,media_id:media.id,frame:Math.min(media.duration_frames-1,sourceFrameAtTime(video.currentTime,media.fps.num/media.fps.den))} : null;
   }
   return timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,width:960} : null;
 },getURL:query=>query.media_id ? `/api/v1/media/${encodeURIComponent(query.media_id)}/audio.wav?${new URLSearchParams({project_epoch:query.project_epoch,frame:query.frame})}` : `/api/v1/preview/audio.wav?${new URLSearchParams(query)}`});
 $("play").addEventListener("click",()=>audioScrub?.stop());
 $("program-video").addEventListener("play",()=>audioScrub?.stop());
 $("source-video").addEventListener("play",()=>audioScrub?.stop());
+bindSourceScrub($("source-video"),audioScrub,()=>viewerMode==="source");
 programPlayer = createProgramPlayer({
   video: $("program-video"), status: $("program-status"), cancel: $("program-cancel"),
   getState: () => {

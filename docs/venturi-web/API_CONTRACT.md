@@ -13,8 +13,9 @@ CPU work runs outside the actor with one non-queued worker and a five-second
 cancellation budget. Changed files, stale Program snapshots and removed/replaced
 sources are refused. The browser opts in through Audio scrub, coalesces requests,
 cancels obsolete output, and plays the last fragment only after a timeline seek
-or Source frame step. Pointer movement never makes an audition request. Continuous
-Source pointer scrubbing and fast-forward audio are separate remaining work.
+or Source seek. Source pointer seeking defers requests until release; settled
+keyboard seeks also audition. Pointer movement never makes an audition request.
+Fast-forward audio is separate remaining work.
 
 Implemented Review annotations use `GET /api/v1/review?project_epoch=...` and
 project command `edit_review {project_token,revision,edit}`. The latter retains

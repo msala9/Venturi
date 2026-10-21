@@ -101,6 +101,110 @@ fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_th
         .max()
         .unwrap();
     assert!((i32::from(peak) - 16384).abs() < 3);
+    let start = timeline_frame_to_sample(
+        3,
+        source.snapshot.project.timelines[source.snapshot.timeline]
+            .fps
+            .as_f64(),
+        PROJECT_SAMPLE_RATE,
+    );
+    for tempo in [2, 4, 8] {
+        let window = source
+            .window(
+                WindowParams {
+                    start_sample: start,
+                    seconds: 2,
+                    tempo,
+                    source_version: None,
+                    end_sample: None,
+                },
+                Arc::new(AtomicBool::new(false)),
+            )
+            .unwrap();
+        assert_eq!(window.start, start);
+        assert!(window.last);
+        let frames = (window.end - start) / u64::from(tempo);
+        assert_eq!(window.bytes.len(), 44 + frames as usize * 4);
+        let left: Vec<_> = window.bytes[44..]
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|b| i16::from_le_bytes([b[0], b[1]]))
+            .collect();
+        let crossings: Vec<_> = (left.len() / 4 + 1..left.len() * 3 / 4)
+            .filter(|&i| left[i - 1] <= 0 && left[i] > 0)
+            .collect();
+        assert!(crossings.len() > 5);
+        let frequency = 48000.0 * (crossings.len() - 1) as f64
+            / (crossings.last().unwrap() - crossings[0]) as f64;
+        assert!(
+            (frequency - 440.0).abs() < 8.0,
+            "tempo {tempo}: {frequency} Hz"
+        );
+    }
+    let stale = source
+        .window(
+            WindowParams {
+                start_sample: start,
+                seconds: 2,
+                tempo: 2,
+                source_version: Some("0".repeat(64)),
+                end_sample: None,
+            },
+            Arc::new(AtomicBool::new(false)),
+        )
+        .err()
+        .unwrap();
+    assert_eq!(stale.1, "SOURCE_CHANGED");
+    let limited = source
+        .window(
+            WindowParams {
+                start_sample: start,
+                seconds: 2,
+                tempo: 2,
+                source_version: None,
+                end_sample: Some(start + 2400),
+            },
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+    assert_eq!(limited.end, start + 2400);
+    assert!(limited.last);
+    assert_eq!(limited.bytes.len(), 44 + 1200 * 4);
+    for end_sample in [start, u64::MAX] {
+        assert!(
+            source
+                .window(
+                    WindowParams {
+                        start_sample: start,
+                        seconds: 2,
+                        tempo: 2,
+                        source_version: None,
+                        end_sample: Some(end_sample)
+                    },
+                    Arc::new(AtomicBool::new(false))
+                )
+                .is_err()
+        );
+    }
+    for (start_sample, seconds, tempo) in
+        [(0, 2, 2), (start, 1, 2), (start, 2, 1), (u64::MAX, 8, 8)]
+    {
+        assert!(
+            source
+                .window(
+                    WindowParams {
+                        start_sample,
+                        seconds,
+                        tempo,
+                        source_version: None,
+                        end_sample: None
+                    },
+                    Arc::new(AtomicBool::new(false))
+                )
+                .is_err()
+        );
+    }
     project.timelines[timeline].tracks[0].muted = true;
     let silence = pin(snapshot(project), &files)
         .unwrap()

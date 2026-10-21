@@ -94,6 +94,25 @@ impl Drop for MonitorDone<'_> {
         self.0.store(true, Ordering::Relaxed);
     }
 }
+fn retry_software_render(
+    cancel: &AtomicBool,
+    mut operation: impl FnMut() -> Result<()>,
+) -> Result<()> {
+    let started = Instant::now();
+    loop {
+        if cancel.load(Ordering::Relaxed) {
+            return Err(ApiError::invalid("Program preparation was canceled"));
+        }
+        match operation() {
+            Err(error)
+                if error.1 == "RENDER_BUSY" && started.elapsed() < Duration::from_secs(2) =>
+            {
+                std::thread::sleep(Duration::from_millis(50))
+            }
+            result => return result,
+        }
+    }
+}
 fn identity(path: &Path) -> Result<String> {
     let m = std::fs::symlink_metadata(path)
         .map_err(|_| ApiError::invalid("Program media is offline"))?;
@@ -229,13 +248,15 @@ impl ProgramTask {
                 }
             });
             let _done = MonitorDone(&done);
-            self.preview.export_program(
-                &self.snapshot,
-                self.query.end_frame,
-                &settings,
-                progress,
-                cancel,
-            )
+            retry_software_render(cancel, || {
+                self.preview.export_program(
+                    &self.snapshot,
+                    self.query.end_frame,
+                    &settings,
+                    progress,
+                    cancel,
+                )
+            })
         });
         if budget.load(Ordering::Relaxed) {
             return Err(ApiError::invalid(

@@ -199,11 +199,11 @@
           </div>
           <span id="preview-state">PREVIEW UNAVAILABLE</span>
           <div id="program-view" hidden>
-            <video id="program-video" controls playsinline preload="metadata" aria-label="Composed timeline playback"></video>
+            <video id="program-video" controls controlslist="noplaybackrate" playsinline preload="metadata" aria-label="Composed timeline playback"></video>
             <div class="source-toolbar"><span id="program-status" role="status">Prepare composed timeline</span><button id="program-cancel" disabled>Cancel composition</button></div>
           </div>
           <div id="source-view" hidden>
-            <video id="source-video" controls playsinline preload="metadata" aria-label="Source media playback"></video>
+            <video id="source-video" controls controlslist="noplaybackrate" playsinline preload="metadata" aria-label="Source media playback"></video>
             <img id="source-image" hidden alt="Source still image">
             <div class="source-toolbar">
               <span id="source-status" role="status">Select media and open Source</span>
@@ -224,8 +224,10 @@
           ><output id="timecode">00:00:00:00</output>
           <label title="Play 80 ms of native Program audio after a timeline seek or Source audio after a frame step; no audio during a pointer drag"><input id="audio-scrub" type="checkbox">Audio scrub</label>
           <output id="audio-scrub-status" aria-live="polite"></output>
+          <label>Speed <select id="playback-rate" aria-label="Playback speed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label>
           <div class="spacer"></div>
           <span id="format" class="muted">—</span>
+          <output id="fast-playback-status" aria-live="polite"></output>
         </div>
         <div id="workspace-tools" class="workspace-tools" hidden></div>
         <section id="scopes" aria-label="Native clip scopes" hidden>

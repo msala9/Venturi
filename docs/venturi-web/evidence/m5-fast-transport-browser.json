@@ -1,0 +1,148 @@
+{
+  "fixture": "Own local CPU-only synthetic montage",
+  "physical_output_measured": false,
+  "source": {
+    "2": {
+      "duration": 6.016,
+      "ended": true,
+      "metrics": {
+        "audio_complete": true,
+        "audio_time": 2.9606666666666666,
+        "drift_seconds": 0.01772924999999992,
+        "max_drift_seconds": 0.02658324999999999,
+        "queued_buffers": 1,
+        "stop_reason": "ended",
+        "stopped": true,
+        "tempo": 2,
+        "video_time": 6.016,
+        "windows": 2
+      },
+      "rate": 2
+    },
+    "4": {
+      "duration": 6.016,
+      "ended": true,
+      "metrics": {
+        "audio_complete": true,
+        "audio_time": 1.4913333333333334,
+        "drift_seconds": -0.0018490833333333343,
+        "max_drift_seconds": 0.009079583333334695,
+        "queued_buffers": 1,
+        "stop_reason": "ended",
+        "stopped": true,
+        "tempo": 4,
+        "video_time": 6.016,
+        "windows": 2
+      },
+      "rate": 4
+    },
+    "8": {
+      "duration": 6.016,
+      "ended": true,
+      "metrics": {
+        "audio_complete": true,
+        "audio_time": 0.7206666666666663,
+        "drift_seconds": 0.01505308333333366,
+        "max_drift_seconds": 0.019521833333336347,
+        "queued_buffers": 1,
+        "stop_reason": "ended",
+        "stopped": true,
+        "tempo": 8,
+        "video_time": 6.016,
+        "windows": 2
+      },
+      "rate": 8
+    }
+  },
+  "live_source_changes": [
+    {
+      "paused": false,
+      "rate": 2,
+      "time": 0.455021
+    },
+    {
+      "paused": false,
+      "rate": 4,
+      "time": 0.6625
+    },
+    {
+      "muted": false,
+      "paused": false,
+      "rate": 1,
+      "time": 0.837687
+    }
+  ],
+  "program": {
+    "2": {
+      "duration": 60.01,
+      "ended": true,
+      "metrics": {
+        "audio_complete": true,
+        "audio_time": 30.00066666666669,
+        "drift_seconds": -0.015395666666687902,
+        "max_drift_seconds": 0.01815616666674913,
+        "queued_buffers": 0,
+        "stop_reason": "ended",
+        "stopped": true,
+        "tempo": 2,
+        "video_time": 60.01,
+        "windows": 9
+      },
+      "rate": 2
+    },
+    "4": {
+      "duration": 60.01,
+      "ended": true,
+      "metrics": {
+        "audio_complete": true,
+        "audio_time": 15.000666666666689,
+        "drift_seconds": -0.010895916666688876,
+        "max_drift_seconds": 0.014411416666698427,
+        "queued_buffers": 0,
+        "stop_reason": "ended",
+        "stopped": true,
+        "tempo": 4,
+        "video_time": 60.01,
+        "windows": 9
+      },
+      "rate": 4
+    },
+    "8": {
+      "duration": 60.01,
+      "ended": true,
+      "metrics": {
+        "audio_complete": true,
+        "audio_time": 7.520666666666667,
+        "drift_seconds": 0,
+        "max_drift_seconds": 0.012852708333333409,
+        "queued_buffers": 0,
+        "stop_reason": "ended",
+        "stopped": true,
+        "tempo": 8,
+        "video_time": 60.01,
+        "windows": 9
+      },
+      "rate": 8
+    }
+  },
+  "program_layout": {
+    "scopes_hidden": true,
+    "tools_hidden": true,
+    "video_height": 148.8000030517578
+  },
+  "stop_returns_frame": {
+    "frame_status": "CURRENT",
+    "program_hidden": true,
+    "scopes_visible": true,
+    "tools_visible": true
+  },
+  "verification": {
+    "native_project_sha256": "249bc8581e2d701746bf55b9a24fce477456a01e4aa5b6f7315e3344012f9e13",
+    "native_project_and_history_unchanged": true,
+    "sixty_source_hashes_unchanged": true,
+    "review_annotations_unchanged": true,
+    "software_only": true,
+    "web_rust_tests": 117,
+    "javascript_tests": 86
+  }
+}

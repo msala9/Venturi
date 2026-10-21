@@ -4,6 +4,7 @@ use crate::{
     preview::FrameSnapshot,
     source::file_identity,
 };
+use sha2::{Digest, Sha256};
 use std::{
     fs::File,
     ops::ControlFlow,
@@ -13,7 +14,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
     },
 };
-use vv_audio::mixer::{PROJECT_SAMPLE_RATE, timeline_frame_to_sample};
+use vv_audio::mixer::{PROJECT_SAMPLE_RATE, sample_to_timeline_frame, timeline_frame_to_sample};
 use vv_session::audio_render::{LevelCache, render_offline};
 
 #[derive(Clone, serde::Deserialize)]
@@ -21,6 +22,26 @@ use vv_session::audio_render::{LevelCache, render_offline};
 pub struct SourceQuery {
     pub project_epoch: String,
     pub frame: i64,
+}
+
+#[derive(Clone, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct WindowParams {
+    pub start_sample: u64,
+    pub seconds: u8,
+    pub tempo: u8,
+    #[serde(default)]
+    pub source_version: Option<String>,
+    #[serde(default)]
+    pub end_sample: Option<u64>,
+}
+pub struct Window {
+    pub bytes: Vec<u8>,
+    pub start: u64,
+    pub end: u64,
+    pub tempo: u8,
+    pub last: bool,
+    pub source_version: String,
 }
 
 pub const FRAMES: usize = PROJECT_SAMPLE_RATE as usize * 80 / 1000;
@@ -121,29 +142,127 @@ impl Task {
         })
     }
     pub fn run(&self, cancel: Arc<AtomicBool>) -> Result<Vec<u8>> {
-        let intact = || {
-            self.files
-                .iter()
-                .all(|(file, before)| file_identity(file).is_ok_and(|now| now == *before))
-                && crate::program::unchanged(&self.inputs)
-        };
-        if !intact() {
-            return Err(changed());
-        }
         let timeline = &self.snapshot.project.timelines[self.snapshot.timeline];
         let start = timeline_frame_to_sample(
             self.snapshot.query.frame,
             timeline.fps.as_f64(),
             PROJECT_SAMPLE_RATE,
         );
+        Ok(wav(&self.render(start, FRAMES, cancel)?))
+    }
+    pub fn window(&self, params: WindowParams, cancel: Arc<AtomicBool>) -> Result<Window> {
+        let source_version = format!(
+            "{:x}",
+            Sha256::digest(
+                serde_json::to_vec(&(
+                    &self.inputs,
+                    self.files
+                        .iter()
+                        .map(|(_, identity)| identity)
+                        .collect::<Vec<_>>()
+                ))
+                .map_err(|_| ApiError::io())?
+            )
+        );
+        if params
+            .source_version
+            .as_ref()
+            .is_some_and(|expected| expected != &source_version)
+        {
+            return Err(changed());
+        }
+        let timeline = &self.snapshot.project.timelines[self.snapshot.timeline];
+        let total = timeline_frame_to_sample(
+            timeline.total_frames(),
+            timeline.fps.as_f64(),
+            PROJECT_SAMPLE_RATE,
+        );
+        if ![2, 4, 8].contains(&params.tempo)
+            || ![2, 4, 8].contains(&params.seconds)
+            || params.start_sample >= total
+            || sample_to_timeline_frame(
+                params.start_sample,
+                timeline.fps.as_f64(),
+                PROJECT_SAMPLE_RATE,
+            ) != self.snapshot.query.frame
+        {
+            return Err(ApiError::invalid(
+                "Choose a matching audio position, 2/4/8 second window and 2x/4x/8x tempo",
+            ));
+        }
+        let limit = params.end_sample.unwrap_or(total);
+        if limit > total || limit <= params.start_sample {
+            return Err(ApiError::invalid(
+                "Audio playback end is outside the snapshot range",
+            ));
+        }
+        let end = params
+            .start_sample
+            .saturating_add(u64::from(params.seconds) * u64::from(PROJECT_SAMPLE_RATE))
+            .min(limit);
+        let frames = (end - params.start_sample) as usize;
+        if frames < usize::from(params.tempo) {
+            return Err(ApiError::conflict(
+                "AUDIO_END",
+                "Audio playback reached its end",
+            ));
+        }
+        let mut samples = self.render(params.start_sample, frames, cancel.clone())?;
+        // Keep the desktop stretch window at a clipped playback end.
+        samples.resize(
+            usize::from(params.seconds) * PROJECT_SAMPLE_RATE as usize * 2,
+            0.0,
+        );
+        let mut stretched =
+            vv_audio::stretch_samples(&samples, PROJECT_SAMPLE_RATE, 2, f64::from(params.tempo))
+                .map_err(|_| {
+                    ApiError::invalid("Native pitch-preserving playback stretch failed")
+                })?;
+        if cancel.load(Ordering::Relaxed) {
+            return Err(ApiError::conflict(
+                "AUDIO_CANCELED",
+                "Audio window was canceled",
+            ));
+        }
+        self.check_inputs()?;
+        if stretched.iter().any(|value| !value.is_finite()) {
+            return Err(ApiError::invalid(
+                "Native stretch returned non-finite audio",
+            ));
+        }
+        stretched.resize(frames / usize::from(params.tempo) * 2, 0.0);
+        Ok(Window {
+            bytes: wav(&stretched),
+            start: params.start_sample,
+            end,
+            tempo: params.tempo,
+            last: end == limit,
+            source_version,
+        })
+    }
+    fn check_inputs(&self) -> Result<()> {
+        if self
+            .files
+            .iter()
+            .all(|(file, before)| file_identity(file).is_ok_and(|now| now == *before))
+            && crate::program::unchanged(&self.inputs)
+        {
+            Ok(())
+        } else {
+            Err(changed())
+        }
+    }
+    fn render(&self, start: u64, frames: usize, cancel: Arc<AtomicBool>) -> Result<Vec<f32>> {
+        self.check_inputs()?;
+        let timeline = &self.snapshot.project.timelines[self.snapshot.timeline];
         let mut levels = LevelCache::on_disk();
         levels.threads = 1;
         levels.cancel = Some(cancel.clone());
-        let mut samples = Vec::with_capacity(FRAMES * 2);
+        let mut samples = Vec::with_capacity(frames * 2);
         render_offline(
             &self.snapshot.project,
             timeline,
-            start..start + FRAMES as u64,
+            start..start + frames as u64,
             &mut levels,
             |chunk| {
                 if cancel.load(Ordering::Relaxed) {
@@ -160,15 +279,13 @@ impl Task {
                 "Audio audition was canceled",
             ));
         }
-        if !intact() {
-            return Err(changed());
-        }
-        if samples.len() != FRAMES * 2 || samples.iter().any(|v| !v.is_finite()) {
+        self.check_inputs()?;
+        if samples.len() != frames * 2 || samples.iter().any(|v| !v.is_finite()) {
             return Err(ApiError::invalid(
                 "Native audio returned an invalid fragment",
             ));
         }
-        Ok(wav(&samples))
+        Ok(samples)
     }
 }
 fn wav(samples: &[f32]) -> Vec<u8> {

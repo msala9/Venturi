@@ -82,7 +82,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, api 
     if (video.getAttribute("src")) status.textContent = "Browser could not decode this proxy; reopen Source or choose another quality";
   });
   return { open, reset, pause: () => video.pause(),
-    async toggle() { if (ready) { if (video.paused) await video.play(); else video.pause(); } },
+    async toggle() { if (ready) { if (video.paused) {try{await video.play();}catch(error){if(error.name!=="AbortError")throw error;}} else video.pause(); } },
     step(delta, fps, totalFrames) { if (ready) { video.pause(); const frame = Math.max(0, Math.min(totalFrames - 1, Math.round(video.currentTime * fps) + delta)); video.currentTime = frame / fps; } },
   };
 }

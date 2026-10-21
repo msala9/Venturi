@@ -73,7 +73,9 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
         .route("/api/v1/preview/audio.wav", get(audition))
+        .route("/api/v1/preview/audio/window", post(program_audio_window))
         .route("/api/v1/media/{id}/audio.wav", get(source_audition))
+        .route("/api/v1/media/{id}/audio/window", post(source_audio_window))
         .route("/api/v1/preview/balance/{clip}", get(balance))
         .route(
             "/api/v1/preview/scopes/{clip}/{first}/{second}",
@@ -147,7 +149,78 @@ async fn source_audition(
     }
     Ok(audio_response(bytes))
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ProgramAudioWindow {
+    query: FrameQuery,
+    window: crate::audition::WindowParams,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SourceAudioWindow {
+    query: crate::audition::SourceQuery,
+    window: crate::audition::WindowParams,
+}
+async fn program_audio_window(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<ProgramAudioWindow>, axum::extract::rejection::JsonRejection>,
+) -> Result<Response> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid Program audio window"))?
+        .0;
+    let task = state.host.audio_snapshot(payload.query.clone()).await?;
+    let window = render_audio(move |cancel| task.window(payload.window, cancel)).await?;
+    state.host.call(Action::CheckFrame(payload.query)).await?;
+    Ok(window_response(window))
+}
+async fn source_audio_window(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<Json<SourceAudioWindow>, axum::extract::rejection::JsonRejection>,
+) -> Result<Response> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid Source audio window"))?
+        .0;
+    let source_query = SourceQuery {
+        project_epoch: payload.query.project_epoch,
+    };
+    let spec = state
+        .host
+        .source_snapshot(id.clone(), source_query.clone())
+        .await?;
+    let identity = crate::source::file_identity(&spec.file)?;
+    let task = crate::audition::Task::source(spec, payload.query.frame)?;
+    let window = render_audio(move |cancel| task.window(payload.window, cancel)).await?;
+    let current = state.host.source_snapshot(id, source_query).await?;
+    if crate::source::file_identity(&current.file)? != identity {
+        return Err(ApiError::conflict(
+            "SOURCE_CHANGED",
+            "Audio source changed; prepare again",
+        ));
+    }
+    Ok(window_response(window))
+}
+fn window_response(window: crate::audition::Window) -> Response {
+    let mut response = audio_response(window.bytes);
+    for (name, value) in [
+        ("x-audio-start-sample", window.start.to_string()),
+        ("x-audio-end-sample", window.end.to_string()),
+        ("x-audio-tempo", window.tempo.to_string()),
+        ("x-audio-last", window.last.to_string()),
+        ("x-audio-source-version", window.source_version),
+    ] {
+        response
+            .headers_mut()
+            .insert(name, value.parse().expect("numeric audio metadata"));
+    }
+    response
+}
 async fn render_audition(task: crate::audition::Task) -> Result<Vec<u8>> {
+    render_audio(move |cancel| task.run(cancel)).await
+}
+async fn render_audio<T: Send + 'static>(
+    work: impl FnOnce(std::sync::Arc<std::sync::atomic::AtomicBool>) -> Result<T> + Send + 'static,
+) -> Result<T> {
     static WORKER: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
     let permit = WORKER
         .try_acquire()
@@ -157,7 +230,7 @@ async fn render_audition(task: crate::audition::Task) -> Result<Vec<u8>> {
     let worker_cancel = cancel.clone();
     let worker = tokio::task::spawn_blocking(move || {
         let _permit = permit;
-        task.run(worker_cancel)
+        work(worker_cancel)
     });
     let bytes = match tokio::time::timeout(std::time::Duration::from_secs(5), worker).await {
         Ok(result) => result.map_err(|_| ApiError::io())??,
@@ -889,6 +962,7 @@ async fn assets(request: Request) -> Response {
         "/js/attributes.js" => asset!("/web/js/attributes.js", "text/javascript"),
         "/js/recovery.js" => asset!("/web/js/recovery.js", "text/javascript"),
         "/js/audition.js" => asset!("/web/js/audition.js", "text/javascript"),
+        "/js/fast-transport.js" => asset!("/web/js/fast-transport.js", "text/javascript"),
         "/js/capture.js" => asset!("/web/js/capture.js", "text/javascript"),
         "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
         "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),

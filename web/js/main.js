@@ -20,6 +20,7 @@ import { createReviewMetadata } from "./reviewmeta.js";
 import { createPasteAttributes } from "./attributes.js";
 import { createRecoveryPanel } from "./recovery.js";
 import { createAudioScrub, bindSourceScrub } from "./audition.js";
+import { createFastTransport } from "./fast-transport.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -34,6 +35,7 @@ let reviewMetadata = null;
 let pasteAttributes = null;
 let recoveryPanel = null;
 let audioScrub = null;
+let fastTransport = null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
@@ -86,14 +88,14 @@ const workspaceTools = {
 
 function showWorkspace(name) {
   editor.dataset.workspace = name;
-  scopes?.setVisible(name === "Color" && $("screen").dataset.viewerMode !== "source" && $("slip-view").hidden);
+  scopes?.setVisible(name === "Color" && !scopePlayback && $("screen").dataset.viewerMode !== "source" && $("slip-view").hidden);
   document.querySelectorAll("[data-workspace]").forEach((button) => {
     if (button.tagName === "BUTTON")
       button.setAttribute("aria-pressed", button.dataset.workspace === name);
   });
   const area = $("workspace-tools");
   area.replaceChildren();
-  area.hidden = name === "Edit" || $("screen").dataset.viewerMode === "source";
+  area.hidden = name === "Edit" || $("screen").dataset.viewerMode === "source" || !!scopePlayback;
   const note = document.createElement("p");
   note.className = "muted";
   note.textContent = `${name} tools · Unavailable integrations are disabled`;
@@ -271,7 +273,10 @@ const mediaAssets = new Map();
 const mediaState = {selected: [], anchor: null, folder: "*", kind: "all", open: false};
 function updatePlayAvailability() {
   const armed=timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked);
-  const still = viewerMode === "source" && documentState?.media.find((m) => m.id === sourceOpenId)?.is_image;
+  const sourceMedia=viewerMode==="source"?documentState?.media.find(m=>m.id===sourceOpenId):null;
+  const still=sourceMedia?.is_image;
+  const format=sourceMedia?.fps || timeline?.fps;
+  $("format").textContent=still?"Still image":format?`${format.num}/${format.den} fps${sourceMedia?" · Source":""}`:"—";
   $("play").disabled = still || (viewerMode === "program" && (!documentState?.capabilities.playback || !timeline?.tracks.some((t) => t.clips.length)));
   if(viewerMode==="program" && armed){$("play").disabled=!writable;$("play").textContent="Record armed audio";}
   $("step-back").disabled = !!still;
@@ -280,6 +285,7 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  fastTransport?.stop();
   audioScrub?.stop();
   viewerMode = mode;
   $("workspace-tools").hidden = mode === "source" || editor.dataset.workspace === "Edit";
@@ -321,6 +327,7 @@ for (const [id,out] of [["source-mark-in",false],["source-mark-out",true]]) $(id
   $(out ? "source-out" : "source-in").value = Math.min(item.duration_frames - (out ? 0 : 1),frame+(out ? 1 : 0)); rememberSourceRange();
 });
 $("play").addEventListener("click", () => {
+  if(fastTransport?.cancelPreparation())return;
   if(viewerMode==="program" && timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked)){voiceover?.open();return;}
   if (viewerMode === "program") { viewer?.invalidate(); programPlayer.toggle().catch((error) => notice(error.message)); }
   else sourcePlayer.toggle().catch((error) => notice(error.message));
@@ -608,6 +615,7 @@ let documentState = null,
   selectedMedia = null;
 const clientId = persistentClientId();
 async function refresh() {
+  fastTransport?.stop();
   audioScrub?.stop();
   slipView?.reset();
   programPlayer?.stop();
@@ -682,6 +690,7 @@ async function refresh() {
   if (next.capabilities.preview) seek();
 }
 async function mutate(operation, project = false) {
+  fastTransport?.stop();
   audioScrub?.stop();
   if (!writable || busy || unresolved)
     throw new Error("Editing is read only or a command is pending");
@@ -1034,7 +1043,7 @@ scopes = createScopes({ panel: $("scopes"), getTarget: () => viewerMode === "pro
 scopes.setVisible(editor.dataset.workspace === "Color");
 seek = async () => { if (viewerMode === "program") { programPlayer?.stop(); scopes.invalidate("SEEKING"); await viewer.seek(); scopes.refresh(); } };
 audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-status"),getState:()=>{
-  if(!documentState)return null;
+  if(!documentState || fastTransport?.active())return null;
   if(viewerMode==="source") {
     const media=documentState.media.find(m=>m.id===sourceOpenId),video=$("source-video");
     return media?.has_audio && video.readyState>=1 ? {project_epoch:documentState.project_epoch,media_id:media.id,frame:Math.min(media.duration_frames-1,sourceFrameAtTime(video.currentTime,media.fps.num/media.fps.den))} : null;
@@ -1044,7 +1053,7 @@ audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-stat
 $("play").addEventListener("click",()=>audioScrub?.stop());
 $("program-video").addEventListener("play",()=>audioScrub?.stop());
 $("source-video").addEventListener("play",()=>audioScrub?.stop());
-bindSourceScrub($("source-video"),audioScrub,()=>viewerMode==="source");
+bindSourceScrub($("source-video"),audioScrub,()=>viewerMode==="source" && !fastTransport?.active());
 programPlayer = createProgramPlayer({
   video: $("program-video"), status: $("program-status"), cancel: $("program-cancel"),
   getState: () => {
@@ -1054,9 +1063,21 @@ programPlayer = createProgramPlayer({
     return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: start, end_frame: Math.min(end, start + Math.floor(300 * timeline.fps.num / timeline.fps.den)), width: 960 } : null;
   },
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); } },
-  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
+  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
+  onStop:()=>{viewer?.seek();scopes?.refresh();},
   onError: notice,
 });
+fastTransport=createFastTransport({videos:[$("program-video"),$("source-video")],select:$("playback-rate"),status:$("fast-playback-status"),getVideo:()=>$(viewerMode==="program"?"program-video":"source-video"),notice,onState:state=>{$("play").textContent=state==="preparing"?"Cancel fast audio":state==="playing"?"❚❚ Pause":"▶ Play";},getTarget:video=>{
+  if(!documentState)return null;
+  if(video===$("source-video") && viewerMode==="source") {
+    const media=documentState.media.find(item=>item.id===sourceOpenId);
+    if(!media || media.is_image || !video.getAttribute("src"))return null;
+    return {identity:JSON.stringify([documentState.project_epoch,media.id,video.getAttribute("src")]),audio:media.has_audio,fps:media.fps,origin:0,end:Math.round(media.duration_frames/(media.fps.num/media.fps.den)*48000),url:`/api/v1/media/${encodeURIComponent(media.id)}/audio/window`,query:{project_epoch:documentState.project_epoch}};
+  }
+  const range=programPlayer?.range();
+  if(video!==$("program-video") || viewerMode!=="program" || !range || !video.getAttribute("src"))return null;
+  return {identity:JSON.stringify([range.project_epoch,range.if_generation,range.timeline_id,range.revision,video.getAttribute("src")]),fps:range.fps,origin:Math.round(range.start_frame/(range.fps.num/range.fps.den)*48000),end:Math.round(range.end_frame/(range.fps.num/range.fps.den)*48000),url:"/api/v1/preview/audio/window",query:{project_epoch:range.project_epoch,if_generation:range.if_generation,timeline_id:range.timeline_id,revision:range.revision,width:range.width}};
+}});
 sourcePlayer = createSourcePlayer({
   video: $("source-video"), image: $("source-image"), status: $("source-status"), cancel: $("source-cancel"),
   onReady: async ({ item, epoch, job }) => {
@@ -1134,7 +1155,7 @@ reviewMetadata=createReviewMetadata({root:$("review-metadata-dialog"),getContext
 pasteAttributes=createPasteAttributes({root:$("paste-attributes-dialog"),getContext:()=>documentState && timeline?{epoch:documentState.project_epoch,generation:documentState.generation,timeline:timeline.id,revision:timeline.revision,clipboard:documentState.clipboard_revision,clip_ids:[...view.selection]}:null,canCommit:()=>writable && !busy && !unresolved,commit,notice});
 recoveryPanel=createRecoveryPanel({root:$("recovery-panel"),status:$("recovery-status"),button:$("recovery-button"),canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),openProjects:async()=>{$("projects").showModal();await projects();if(!$("recovery-panel").hidden){$("recovery-panel").scrollIntoView({block:"start"});$("recovery-panel").querySelector("input").focus();}},onOpened:()=>$("projects").close(),notice});
 setInterval(()=>{if(documentState)recoveryPanel.refresh();},3000);
-voiceover=createVoiceover({root:$("voiceover-dialog"),getClientId:()=>clientId,canCommit:()=>writable && !busy && !unresolved,commit,notice,playback:{video:$("program-video"),start:async()=>{await programPlayer.toggle();if(programPlayer.state()!=="ready")throw new Error("Composed playback is unavailable; try recording without playback");},pause:()=>programPlayer.stop()},onProgress:(progress)=>{
+voiceover=createVoiceover({root:$("voiceover-dialog"),getClientId:()=>clientId,canCommit:()=>writable && !busy && !unresolved,commit,notice,playback:{video:$("program-video"),start:async()=>{fastTransport.normal();await programPlayer.toggle();if(programPlayer.state()!=="ready")throw new Error("Composed playback is unavailable; try recording without playback");},pause:()=>programPlayer.stop()},onProgress:(progress)=>{
   view.recording=progress;if(progress && timeline){view.recording.length_frames=Math.floor(progress.seconds*timeline.fps.num/timeline.fps.den);if(progress.withoutPlayback){view.playhead=Math.min(1_000_000_000,progress.start_frame+view.recording.length_frames);updateTime();}}canvasTimeline.invalidate();
 },getTarget:()=>documentState?.project_name && timeline && timeline.id!=="fixture"?{project_epoch:documentState.project_epoch,generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,start_frame:view.playhead,tracks:timeline.tracks.filter((track)=>track.kind==="audio" && track.armed && !track.locked).map((track)=>track.id),formats:documentState.recording_formats,canPlayback:!!documentState.capabilities.playback && timeline.tracks.some((track)=>track.clips.length)}:null});
 silencePanel=createSilencePanel({root:$("silence-dialog"),notice,preview:(ranges)=>{view.silencePreview=ranges;canvasTimeline.invalidate();},canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>commit(operation),getTarget:()=>{

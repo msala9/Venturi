@@ -13,7 +13,9 @@ test("an old composed range cannot replace a later seek; native media time drive
   const requests = [], events = {}, frames = [];
   const video = { src: "", currentTime: 0, paused: true, pause() { this.paused = true; }, play() { this.paused = false; return Promise.resolve(); }, load() {}, removeAttribute() { this.src = ""; }, addEventListener(name, callback) { events[name] = callback; } };
   let state = { project_epoch: "p:1", if_generation: "2", timeline_id: "1", revision: "revision", width: 960, start_frame: 0, end_frame: 48 };
-  const player = createProgramPlayer({ video, status: { textContent: "" }, cancel: { addEventListener() {} }, getState: () => state, onFrame: (frame) => frames.push(frame), onState() {}, api: () => new Promise((resolve) => requests.push(resolve)) });
+  let stopped=0;
+  const cancel={addEventListener:(_,callback)=>events.cancel=callback};
+  const player = createProgramPlayer({ video, status: { textContent: "" }, cancel, getState: () => state, onFrame: (frame) => frames.push(frame), onState() {},onStop:()=>stopped++, api: () => new Promise((resolve) => requests.push(resolve)) });
   const old = player.toggle(); player.stop(); state = { ...state, start_frame: 12 };
   const latest = player.toggle();
   requests[1]({ id: "latest", state: "ready", program: { width: 320, height: 180, fps: { num: 24, den: 1 } } }); await latest;
@@ -21,9 +23,11 @@ test("an old composed range cannot replace a later seek; native media time drive
   requests[0]({ id: "old", state: "ready", program: { width: 960, height: 540, fps: { num: 24, den: 1 } } }); await old;
   assert.equal(video.src, url);
   assert.match(url, /latest\/program.mp4/);
+  assert.equal(cancel.disabled,false);assert.equal(cancel.textContent,"Stop playback");
+  video.currentTime=.041666;events.timeupdate();assert.equal(frames.at(-1),13);
   video.currentTime = 0.5; events.timeupdate(); assert.equal(frames.at(-1), 24);
   player.pauseLocal();video.currentTime=1;events.timeupdate();assert.equal(frames.at(-1),24,"a delayed pause clock cannot override a manual seek");
   await player.toggle();video.currentTime=0.75;events.timeupdate();assert.equal(frames.at(-1),30,"resuming reattaches the media clock");
   state = { ...state, revision: "next" }; video.currentTime = 1; events.timeupdate(); assert.equal(frames.at(-1), 30);
-  player.stop(); assert.equal(video.src, ""); assert.equal(video.paused, true);
+  events.cancel(); assert.equal(stopped,1);assert.equal(video.src, ""); assert.equal(video.paused, true);
 });

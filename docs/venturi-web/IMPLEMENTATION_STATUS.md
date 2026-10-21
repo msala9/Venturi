@@ -1625,3 +1625,47 @@ all other saved lines match the source project. These invalidation counters are
 preserved by native Undo/Redo. The core command is unchanged. Evidence:
 m4-clip-disable.json and m4-clip-disable-browser.png. Rendering was CPU/lavapipe;
 no hardware acceptance is implied by this check.
+
+## M5 — pitch-preserving 2x/4x/8x Source and Program transport
+
+The transport Speed control now supports 1x/2x/4x/8x. Fast audio renders through
+the shared native mixer and `vv_audio::stretch_samples`; it retains the desktop's
+2/4/8-second window growth and padded last window, with output trimmed to a
+validated playback end. Root media descriptors are pinned, source versions bind
+successive windows, and snapshot generation/revision/source checks reject stale
+work. A single CPU audio worker, a five-second budget and fixed window sizes bound
+work. Native PCM is scheduled in the browser with at most two buffers plus one
+request, with an audio clock synchronizing the prepared video. Web Audio only
+routes output/volume; it does not implement timeline mixing or stretching.
+
+Pause, seek, source/document change and preparation cancellation discard old
+output. Returning to 1x restores ordinary media audio with existing mute/volume.
+Video EOF waits for the queued native audio completion event, with a bounded
+failure path; it does not cut the tail based on a guessed wall-clock delay.
+Voiceover forces composed playback to 1x and retains capture on external rate
+changes. Native browser rate menus are hidden in favor of the explicit transport.
+
+117 web Rust tests and 86 JavaScript tests pass; formatting, web clippy warnings
+denied and build pass. Native tests cover pitch at all three tempos, exact output
+lengths, short tails, explicit range ends, stale source versions, canceled/changed
+files and unchanged project state. Client tests cover asynchronous media events,
+bounded buffering, stale responses, routing restoration, cancel and audio EOF.
+CPU contention at startup now briefly retries only RENDER_BUSY before output is
+created; GPU_BUSY still returns immediately and cancellation never starts work.
+
+Actual browser acceptance played a six-second Source and the complete 60-second,
+20-shot composed montage at each tempo. All six runs completed their audio tails;
+Source used two windows, Program nine. Maximum measured software audio/video-clock
+drift was below 27 ms on Source and 19 ms on Program. Backend tone windows stayed
+near 660 Hz while output durations divided by 2/4/8. Live Source 2x-to-4x-to-1x
+changes retained playback, volume and mute. Stop returned a current native frame
+and restored Color tools/scopes. Movie playback temporarily hides those stopped
+tools to retain a readable picture at the smaller editing layout. Source rate
+readout now shows its actual FPS. Physical loudspeaker loopback was not measured.
+
+The saved native project hash, history, all 60 source hashes and Review annotations
+remained unchanged. Evidence: m5-native-fast-audio-windows.json,
+m5-fast-transport-browser.json and the fast Source/Program screenshots. This is
+CPU/lavapipe acceptance; existing longer-source/program bounds and full hardware
+qualification remain on their separate parity rows. No inference process, shared
+GPU slot, AMD kernel driver or ROCm configuration was touched.

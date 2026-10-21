@@ -3,9 +3,9 @@ import { request } from "./api.js";
 export function sameComposition(a, b) {
   return !!a && !!b && ["project_epoch", "if_generation", "timeline_id", "revision", "width"].every((key) => a[key] === b[key]);
 }
-export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, api = request }) {
+export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, api = request }) {
   let sequence = 0, controller = null, query = null, jobURL = null, state = "stopped", monitor = null, frameCallback = null, suspended = true, presented = 0;
-  const setState = (next) => { state = next; cancel.disabled = next !== "preparing"; onState(next); };
+  const setState = (next) => { state = next; cancel.disabled = next === "stopped"; cancel.textContent = next === "preparing" ? "Cancel preparation" : "Stop playback"; onState(next); };
   function pauseLocal() {
     suspended = true;
     controller?.abort();
@@ -29,7 +29,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   function present(seconds = video.currentTime) {
     if (suspended || !query || !sameComposition(query, getState())) return;
     const fps = query.fps.num / query.fps.den;
-    onFrame(Math.max(query.start_frame, Math.min(query.end_frame - 1, query.start_frame + Math.floor(seconds * fps + 1e-6))));
+    onFrame(Math.max(query.start_frame, Math.min(query.end_frame - 1, query.start_frame + Math.floor((seconds + 1e-6) * fps))));
   }
   function scheduleFrame() {
     if (!video.requestVideoFrameCallback || video.paused || frameCallback !== null) return;
@@ -61,12 +61,12 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   video.addEventListener("error", () => {
     if (video.getAttribute("src")) { status.textContent = "Program media unavailable or changed · prepare again"; setState("failed"); }
   });
-  cancel.addEventListener("click", stop);
+  cancel.addEventListener("click", () => {stop();onStop?.();});
   async function toggle() {
     if (state === "preparing") { stop(); return; }
     if (state === "ready" && sameComposition(query, getState())) {
       monitorDocument(sequence);
-      if (video.paused) {suspended=false;await video.play();} else video.pause();
+      if (video.paused) {suspended=false;try{await video.play();}catch(error){if(error.name!=="AbortError")throw error;}} else video.pause();
       return;
     }
     stop();
@@ -97,10 +97,10 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       video.src = `/api/v1/preview/program/${encodeURIComponent(job.id)}/program.mp4?${new URLSearchParams(current)}`;
       setState("ready"); status.textContent = `COMPOSED PREVIEW · ${job.program.width}×${job.program.height} · revision ${current.revision.slice(0, 8)}`;
       monitorDocument(seq);
-      try { suspended=false;await video.play(); } catch { if (seq === sequence) status.textContent += " · press Play"; }
+      try { suspended=false;await video.play(); } catch(error) { if (seq === sequence && error.name!=="AbortError") status.textContent += " · press Play"; }
     } catch (error) {
       if (seq === sequence && error.name !== "AbortError") { status.textContent = error.message; setState("failed"); onError?.(error.message); }
     }
   }
-  return { toggle, stop, pauseLocal, state: () => state };
+  return { toggle, stop, pauseLocal, state: () => state, range: () => query };
 }

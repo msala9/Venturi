@@ -1,6 +1,32 @@
 use super::*;
 use vv_core::{Clip, ClipId, ClipSource, Rational, Timeline, Track, TrackKind};
 
+#[test]
+fn initial_cpu_frame_contention_retries_but_shared_gpu_busy_and_cancel_do_not() {
+    let cancel = AtomicBool::new(false);
+    let mut calls = 0;
+    retry_software_render(&cancel, || {
+        calls += 1;
+        if calls < 3 {
+            Err(ApiError::conflict("RENDER_BUSY", "CPU busy"))
+        } else {
+            Ok(())
+        }
+    })
+    .unwrap();
+    assert_eq!(calls, 3);
+    calls = 0;
+    let error = retry_software_render(&cancel, || {
+        calls += 1;
+        Err(ApiError::conflict("GPU_BUSY", "GPU reserved"))
+    })
+    .unwrap_err();
+    assert_eq!(error.1, "GPU_BUSY");
+    assert_eq!(calls, 1);
+    cancel.store(true, Ordering::Relaxed);
+    assert!(retry_software_render(&cancel, || panic!("Canceled work must not start")).is_err());
+}
+
 fn task() -> ProgramTask {
     let mut project = vv_core::Project::default();
     let mut track = Track::new(TrackKind::Video);

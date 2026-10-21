@@ -1,0 +1,72 @@
+{
+  "fixture": "Own CPU-only synthetic montage; native backend window acceptance",
+  "windows": [
+    {
+      "mode": "program",
+      "tempo": 2,
+      "seconds": 0.1285711000673473,
+      "output_frames": 48000,
+      "frequency": 659.3186372745491,
+      "bytes": 192044,
+      "sha256": "0c8d9a528d4782c9c7e0278ad590e7e850652a44091519f725c58bb1189ea225"
+    },
+    {
+      "mode": "program",
+      "tempo": 4,
+      "seconds": 0.06876870011910796,
+      "output_frames": 24000,
+      "frequency": 657.9739217652959,
+      "bytes": 96044,
+      "sha256": "dbcf31f1e8e28a5dd5421b5015ec756fa40d5ea4797c45d9a10f995a04f7522a"
+    },
+    {
+      "mode": "program",
+      "tempo": 8,
+      "seconds": 0.06589450035244226,
+      "output_frames": 12000,
+      "frequency": 658.4250635055038,
+      "bytes": 48044,
+      "sha256": "01058d2fe5addcc176483d90b13e1dad9c7a9335454c24b139901755ac622cd0"
+    },
+    {
+      "mode": "source",
+      "tempo": 2,
+      "seconds": 0.06550859985873103,
+      "output_frames": 48000,
+      "frequency": 659.3186372745491,
+      "bytes": 192044,
+      "sha256": "0c8d9a528d4782c9c7e0278ad590e7e850652a44091519f725c58bb1189ea225"
+    },
+    {
+      "mode": "source",
+      "tempo": 4,
+      "seconds": 0.06549109984189272,
+      "output_frames": 24000,
+      "frequency": 657.9739217652959,
+      "bytes": 96044,
+      "sha256": "dbcf31f1e8e28a5dd5421b5015ec756fa40d5ea4797c45d9a10f995a04f7522a"
+    },
+    {
+      "mode": "source",
+      "tempo": 8,
+      "seconds": 0.06530010001733899,
+      "output_frames": 12000,
+      "frequency": 658.4250635055038,
+      "bytes": 48044,
+      "sha256": "01058d2fe5addcc176483d90b13e1dad9c7a9335454c24b139901755ac622cd0"
+    }
+  ],
+  "source_versions": {
+    "program": "0187b02b4efaa54281f7036c44be87786ac3753f6f98f837984779d8ca92887a",
+    "source": "bc1448a541ba9eb569fbc163aa15bc9b0d0b39ee16d00a94be285a010beb8faa"
+  },
+  "source_version_mismatch_refused": true,
+  "explicit_playback_range_clamped": true,
+  "padded_short_source_tail": true,
+  "invalid_windows_refused": [
+    "INVALID_OPERATION",
+    "INVALID_OPERATION",
+    "INVALID_OPERATION"
+  ],
+  "session_unchanged": true
+}

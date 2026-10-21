@@ -89,6 +89,7 @@ export function createVoiceover({root,getTarget,getClientId,canCommit,commit,pla
   start.addEventListener("click",()=>record().catch((error)=>{status.textContent=error.message;}));stop.addEventListener("click",()=>finish());save.addEventListener("click",upload);
   playback.video.addEventListener("playing",()=>{if(["preparing","waiting"].includes(phase))begin(take);});
   for(const event of ["pause","ended","error"])playback.video.addEventListener(event,()=>{if(phase==="recording")finish("Composed playback stopped; captured audio is retained");});
+  playback.video.addEventListener("ratechange",()=>{if(phase==="recording" && playback.video.playbackRate!==1)finish("Playback rate changed; captured audio is retained");});
   apply.addEventListener("click",async()=>{
     if(!take?.receipt || !current() || !canCommit() || !form.reportValidity())return;
     apply.disabled=true;audio.pause();

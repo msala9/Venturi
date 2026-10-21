@@ -15,7 +15,29 @@ sources are refused. The browser opts in through Audio scrub, coalesces requests
 cancels obsolete output, and plays the last fragment only after a timeline seek
 or Source seek. Source pointer seeking defers requests until release; settled
 keyboard seeks also audition. Pointer movement never makes an audition request.
-Fast-forward audio is separate remaining work.
+Fast-forward audio uses the bounded native window API below.
+
+`POST /api/v1/preview/audio/window` accepts `{query:FrameQuery,window}`;
+`POST /api/v1/media/{id}/audio/window` accepts
+`{query:{project_epoch,frame},window}`. Window parameters are `start_sample`
+(48 kHz integer audio frames), `seconds` (2, 4 or 8), `tempo` (2, 4 or 8),
+optional `end_sample` inside the snapshot and optional `source_version`.
+The start sample must map to the query's native timeline/source frame. Replies
+are PCM WAV plus `X-Audio-Start-Sample`, `X-Audio-End-Sample`, `X-Audio-Tempo`,
+`X-Audio-Last` and `X-Audio-Source-Version` headers. Subsequent windows bind the
+first returned version, an aggregate of pinned input identities; changed inputs
+return `SOURCE_CHANGED`. End limits prevent audio escaping a prepared Movie range.
+
+Native rendering and `vv_audio::stretch_samples` do all mixing and pitch-preserving
+stretching. The desktop's 2/4/8-second growth and padded tail window are retained,
+with output trimmed to the selected range. The single CPU audio worker, source
+checks and cancellation budget also cover these requests. Browser output keeps
+at most two native buffers plus one request, uses their audio clock to synchronize
+video, and leaves volume/mute controls intact. Pausing, seeking, changing document
+or canceling preparation stops old output; returning to 1x restores media audio.
+At video EOF the queued native tail completes through its audio completion event.
+No timeline DSP is implemented in JavaScript. Voiceover playback stays at 1x and
+retains captured audio if an external rate change stops its transport.
 
 Implemented Review annotations use `GET /api/v1/review?project_epoch=...` and
 project command `edit_review {project_token,revision,edit}`. The latter retains

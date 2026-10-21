@@ -244,3 +244,266 @@ fn listing_is_shallow_paged_and_reports_bad_native_json_without_importing_it() {
     drop(store);
     std::fs::remove_dir_all(root).unwrap();
 }
+
+fn receipt(store: &Store, id: &str) -> Completion {
+    Completion {
+        version: 1,
+        command_id: id.into(),
+        fingerprint: [3; 32],
+        project_root_binding: asset_journal::project_binding(&store.0.directory).unwrap(),
+        receipt: json!({"command_id":id,"status":"applied","library_durable":true}),
+    }
+}
+fn folders_revision(store: &Store) -> String {
+    store.folders().unwrap()["folders_revision"]
+        .as_str()
+        .unwrap()
+        .into()
+}
+fn apply_folder(store: &Store, id: &str, edit: &Edit) {
+    let mut prepared = store
+        .prepare_edit(edit, receipt(store, id), &AtomicBool::new(false))
+        .unwrap();
+    store
+        .commit_edit(&mut prepared, &AtomicBool::new(false))
+        .unwrap();
+}
+
+#[test]
+fn remove_folder_reparents_direct_native_children_and_active_assets_preserving_archives_backup_and_payload()
+ {
+    let (root, store, mut asset) = fixture();
+    for (id, parent) in [
+        ("parent", None),
+        ("removed", Some("parent")),
+        ("direct", Some("removed")),
+        ("deep", Some("direct")),
+    ] {
+        apply_folder(
+            &store,
+            id,
+            &Edit::CreateFolder {
+                folders_revision: folders_revision(&store),
+                name: id.into(),
+                parent: parent.map(str::to_owned),
+            },
+        );
+    }
+    asset.folder = Some("removed".into());
+    store.create("active", &asset).unwrap();
+    store.create("archived", &asset).unwrap();
+    let archived_rev = revision(&store, "archived", false);
+    store
+        .edit(
+            "archive",
+            &Edit::Archive {
+                id: "archived".into(),
+                revision: archived_rev,
+            },
+        )
+        .unwrap();
+    let archived = std::fs::read(root.join("assets/archived.json.deleted")).unwrap();
+    let original = store.export("active").unwrap();
+    std::fs::write(root.join("assets/active.json.bak"), &original).unwrap();
+    apply_folder(
+        &store,
+        "remove-command",
+        &Edit::RemoveFolder {
+            id: "removed".into(),
+            folders_revision: folders_revision(&store),
+        },
+    );
+    let tree = store.folders().unwrap();
+    assert!(
+        tree["folders"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|folder| folder["id"] != "removed")
+    );
+    assert_eq!(
+        tree["folders"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|folder| folder["id"] == "direct")
+            .unwrap()["parent"],
+        "parent"
+    );
+    assert_eq!(
+        tree["folders"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|folder| folder["id"] == "deep")
+            .unwrap()["parent"],
+        "direct"
+    );
+    let moved = asset_payload::parse(&store.export("active").unwrap()).unwrap();
+    assert_eq!(moved.folder.as_deref(), Some("parent"));
+    assert_eq!(moved.payload, asset.payload);
+    assert_eq!(
+        std::fs::read(root.join("assets/archived.json.deleted")).unwrap(),
+        archived
+    );
+    assert_eq!(
+        std::fs::read(root.join("assets/active.json.bak")).unwrap(),
+        original
+    );
+    assert_eq!(store.item("archived", true).unwrap()["folder"], "removed");
+    assert!(store.item("archived", true).unwrap()["effective_folder"].is_null());
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn batch_moves_guard_unchanged_folder_tree_and_noop_asset_revisions_without_rewriting_native_json()
+{
+    let (root, store, mut asset) = fixture();
+    apply_folder(
+        &store,
+        "dest",
+        &Edit::CreateFolder {
+            folders_revision: folders_revision(&store),
+            name: "Destination".into(),
+            parent: None,
+        },
+    );
+    asset.folder = Some("dest".into());
+    store.create("one", &asset).unwrap();
+    let edit = Edit::MoveAssets {
+        folders_revision: folders_revision(&store),
+        items: vec![AssetRef {
+            id: "one".into(),
+            revision: revision(&store, "one", false),
+        }],
+        folder: Some("dest".into()),
+    };
+    let mut prepared = store
+        .prepare_edit(&edit, receipt(&store, "old-plan"), &AtomicBool::new(false))
+        .unwrap();
+    let native_folders = std::fs::read(root.join("folders.json")).unwrap();
+    store
+        .edit(
+            "rename-asset",
+            &Edit::Update {
+                id: "one".into(),
+                revision: revision(&store, "one", false),
+                name: "Changed".into(),
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        store
+            .commit_edit(&mut prepared, &AtomicBool::new(false))
+            .unwrap_err()
+            .1,
+        "ASSET_JOURNAL_CONFLICT"
+    );
+    drop(prepared);
+    let edit = Edit::MoveAssets {
+        folders_revision: folders_revision(&store),
+        items: vec![AssetRef {
+            id: "one".into(),
+            revision: revision(&store, "one", false),
+        }],
+        folder: None,
+    };
+    let mut prepared = store
+        .prepare_edit(
+            &edit,
+            receipt(&store, "stale-tree"),
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    apply_folder(
+        &store,
+        "rename-dest",
+        &Edit::RenameFolder {
+            id: "dest".into(),
+            folders_revision: folders_revision(&store),
+            name: "Renamed".into(),
+        },
+    );
+    assert_eq!(
+        store
+            .commit_edit(&mut prepared, &AtomicBool::new(false))
+            .unwrap_err()
+            .1,
+        "ASSET_JOURNAL_CONFLICT"
+    );
+    drop(prepared);
+    let bytes = std::fs::read(root.join("folders.json")).unwrap();
+    apply_folder(
+        &store,
+        "move-ok",
+        &Edit::MoveAssets {
+            folders_revision: folders_revision(&store),
+            items: vec![AssetRef {
+                id: "one".into(),
+                revision: revision(&store, "one", false),
+            }],
+            folder: None,
+        },
+    );
+    assert_eq!(std::fs::read(root.join("folders.json")).unwrap(), bytes);
+    assert_ne!(native_folders, bytes);
+    assert!(store.item("one", false).unwrap()["folder"].is_null());
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_folder_queries_keep_candidate_paging_and_orphan_metadata_and_revision_guards() {
+    let (root, store, asset) = fixture();
+    assert_eq!(folders_revision(&store), "absent");
+    store.create("orphan", &asset).unwrap();
+    let query = Query {
+        folder: Some(String::new()),
+        folders_revision: Some("absent".into()),
+        ..Default::default()
+    };
+    let listed = store.list(0, &query).unwrap();
+    assert_eq!(listed["items"][0]["folder"], "desktop-folder");
+    assert!(listed["items"][0]["effective_folder"].is_null());
+    apply_folder(
+        &store,
+        "folder",
+        &Edit::CreateFolder {
+            folders_revision: "absent".into(),
+            name: "Folder".into(),
+            parent: None,
+        },
+    );
+    assert!(store.list(0, &query).is_err());
+    let bad = Edit::MoveAssets {
+        folders_revision: folders_revision(&store),
+        items: vec![AssetRef {
+            id: "orphan".into(),
+            revision: "stale".into(),
+        }],
+        folder: None,
+    };
+    assert!(
+        store
+            .prepare_edit(&bad, receipt(&store, "bad"), &AtomicBool::new(false))
+            .is_err()
+    );
+    assert!(store.raw_limit("orphan.json", 1).is_err());
+    let original = store.export("orphan").unwrap();
+    assert_eq!(
+        asset_payload::parse(&original).unwrap().folder,
+        asset.folder
+    );
+    assert!(
+        store
+            .completion(
+                "bad",
+                &asset_journal::project_binding(&store.0.directory).unwrap()
+            )
+            .unwrap()
+            .is_none()
+    );
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}

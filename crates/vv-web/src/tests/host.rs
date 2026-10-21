@@ -1,5 +1,411 @@
 use super::*;
 
+fn folder_editor() -> (std::path::PathBuf, Editor) {
+    let root = std::env::temp_dir().join(format!(
+        "vv-folder-command-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let editor = Editor::new(&root).unwrap();
+    (root, editor)
+}
+fn folder_request(editor: &Editor, id: &str, name: &str) -> Mutation {
+    request(
+        editor,
+        Operation::EditNativeAssetLibrary {
+            edit: crate::asset_store::Edit::CreateFolder {
+                folders_revision: editor.assets.folders().unwrap()["folders_revision"]
+                    .as_str()
+                    .unwrap()
+                    .into(),
+                name: name.into(),
+                parent: None,
+            },
+        },
+        id,
+        None,
+    )
+}
+fn folder_prepare(editor: &mut Editor, request: Mutation) -> NativeEditGuard {
+    let NativeEditPreparation::Pending(guard) = editor.prepare_native_edit(request).unwrap() else {
+        panic!("Expected a new folder preparation");
+    };
+    let deadline = Instant::now() + Duration::from_secs(5);
+    loop {
+        let status = guard.jobs.status(&guard.job, &guard.epoch, false).unwrap();
+        match status["state"].as_str().unwrap() {
+            "ready" => return guard,
+            "failed" | "canceled" => panic!("Folder preparation failed: {status}"),
+            _ => {
+                assert!(Instant::now() < deadline, "Folder preparation timed out");
+                std::thread::sleep(Duration::from_millis(5));
+            }
+        }
+    }
+}
+
+#[test]
+fn native_folder_commit_has_one_durable_receipt_without_project_or_recovery_mutation() {
+    let (root, mut editor) = folder_editor();
+    let project = ron::to_string(&editor.session.project).unwrap();
+    let generation = editor.session.history.generation();
+    let position = editor.session.history.position();
+    let command = folder_request(&editor, "create-folder", "Shared takes");
+    let mut guard = folder_prepare(&mut editor, command.clone());
+    let pending = editor.lookup("create-folder").unwrap();
+    assert_eq!(pending["status"], "preparing");
+    assert_eq!(pending["job_id"], guard.job);
+    let receipt = editor.mutation(None, command.clone()).unwrap();
+    guard.armed = false;
+    assert_eq!(receipt["library_durable"], true);
+    assert_eq!(receipt["receipt_persisted"], true);
+    assert_eq!(
+        receipt["durability"],
+        json!({"state":"volatile","recovery_revision":null})
+    );
+    assert_eq!(
+        receipt["command_epoch"],
+        command.command_epoch.as_deref().unwrap()
+    );
+    let folders = std::fs::read(root.join(".assets/folders.json")).unwrap();
+    let log = std::fs::read(root.join(".venturi-command-receipts.jsonl")).unwrap();
+    assert!(
+        matches!(editor.prepare_native_edit(command.clone()).unwrap(),NativeEditPreparation::Complete(value) if value==receipt)
+    );
+    assert_eq!(editor.mutation(None, command.clone()).unwrap(), receipt);
+    assert_eq!(editor.lookup("create-folder").unwrap(), receipt);
+    assert_eq!(
+        std::fs::read(root.join(".assets/folders.json")).unwrap(),
+        folders
+    );
+    assert_eq!(
+        std::fs::read(root.join(".venturi-command-receipts.jsonl")).unwrap(),
+        log
+    );
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), project);
+    assert_eq!(editor.session.history.generation(), generation);
+    assert_eq!(editor.session.history.position(), position);
+    assert!(editor.native_edits.is_empty());
+    assert!(
+        editor
+            .assets
+            .completion("create-folder", &editor.asset_binding)
+            .unwrap()
+            .is_none()
+    );
+    let mut changed = command;
+    changed.client_id = "different-client".into();
+    assert_eq!(
+        editor.prepare_native_edit(changed).err().unwrap().1,
+        "COMMAND_ID_REUSED"
+    );
+    drop(guard);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_folder_completion_is_harvested_on_restart_before_a_retry_or_unknown_lookup() {
+    let (root, mut editor) = folder_editor();
+    let command = folder_request(&editor, "crash-folder", "Recovered");
+    let mut guard = folder_prepare(&mut editor, command.clone());
+    let fingerprint = editor.native_edits["crash-folder"].fingerprint;
+    let Operation::EditNativeAssetLibrary { edit } = &command.operation else {
+        unreachable!()
+    };
+    guard
+        .jobs
+        .commit_edit(
+            &command.command_id,
+            fingerprint,
+            &command.project_epoch,
+            &command.if_generation,
+            edit,
+        )
+        .unwrap();
+    guard.armed = false;
+    assert!(
+        editor
+            .assets
+            .completion("crash-folder", "foreign-root-binding")
+            .unwrap()
+            .is_none()
+    );
+    assert!(
+        editor
+            .assets
+            .completion("crash-folder", &editor.asset_binding)
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        editor
+            .receipts
+            .as_ref()
+            .unwrap()
+            .recorded("crash-folder")
+            .is_none()
+    );
+    let folders = std::fs::read(root.join(".assets/folders.json")).unwrap();
+    drop(guard);
+    drop(editor);
+    let mut restarted = Editor::new(&root).unwrap();
+    let receipt = restarted.lookup("crash-folder").unwrap();
+    assert_eq!(receipt["status"], "applied");
+    assert_eq!(receipt["server_restarted"], true);
+    assert_eq!(receipt["receipt_persisted"], true);
+    assert_eq!(receipt["durability"]["state"], "volatile");
+    assert_eq!(restarted.mutation(None, command.clone()).unwrap(), receipt);
+    assert_eq!(
+        std::fs::read(root.join(".assets/folders.json")).unwrap(),
+        folders
+    );
+    assert!(
+        restarted
+            .assets
+            .completion("crash-folder", &restarted.asset_binding)
+            .unwrap()
+            .is_none()
+    );
+    let log = std::fs::read(root.join(".venturi-command-receipts.jsonl")).unwrap();
+    assert_eq!(log.iter().filter(|byte| **byte == b'\n').count(), 1);
+    let mut changed = command;
+    changed.operation = Operation::EditNativeAssetLibrary {
+        edit: crate::asset_store::Edit::CreateFolder {
+            folders_revision: "absent".into(),
+            name: "Other".into(),
+            parent: None,
+        },
+    };
+    assert_eq!(
+        restarted.prepare_native_edit(changed).err().unwrap().1,
+        "COMMAND_ID_REUSED"
+    );
+    drop(restarted);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn canceled_folder_preparations_keep_command_identity_without_exhausting_the_pending_map() {
+    let (root, mut editor) = folder_editor();
+    let command = folder_request(&editor, "canceled-folder", "Canceled");
+    let guard = folder_prepare(&mut editor, command.clone());
+    drop(guard);
+    editor.prune_native_edits();
+    assert!(editor.native_edits.is_empty());
+    assert!(!root.join(".assets/folders.json").exists());
+    let mut changed = command;
+    changed.client_id = "changed-client".into();
+    assert_eq!(
+        editor.prepare_native_edit(changed).err().unwrap().1,
+        "COMMAND_ID_REUSED"
+    );
+    // Evicted worker records still retain request identity until normal receipt retirement.
+    for index in 0..64 {
+        editor.native_edits.insert(
+            format!("evicted-{index}"),
+            PendingNativeEdit {
+                fingerprint: [index as u8; 32],
+                job: format!("missing-job-{index}"),
+                epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+            },
+        );
+    }
+    editor.prune_native_edits();
+    assert!(editor.native_edits.is_empty());
+    assert!(editor.completed.contains_key("evicted-63"));
+    let next = folder_request(&editor, "after-cancellation", "Usable");
+    let mut guard = folder_prepare(&mut editor, next.clone());
+    editor.mutation(None, next).unwrap();
+    guard.armed = false;
+    assert_eq!(
+        editor.assets.folders().unwrap()["folders"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    drop(guard);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn prepared_folder_commit_cannot_cross_receipt_epoch_retirement() {
+    let (root, mut editor) = folder_editor();
+    let command = folder_request(&editor, "retired-folder", "Not committed");
+    let guard = folder_prepare(&mut editor, command.clone());
+    let original_epoch = editor.command_epoch;
+    for index in 0..MAX_RECEIPTS {
+        editor.completed.insert(
+            format!("older-{index}"),
+            ([0; 32], Ok(json!({"status":"applied"}))),
+        );
+    }
+    assert_eq!(
+        editor.mutation(None, command).unwrap_err().1,
+        "COMMAND_EPOCH_EXPIRED"
+    );
+    assert_eq!(editor.command_epoch, original_epoch + 1);
+    assert!(!root.join(".assets/folders.json").exists());
+    drop(guard);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_folder_readers_are_lease_free_cas_bound_and_preserve_unknown_native_membership() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-native-folder-host-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let epoch = editor.snapshot()["project_epoch"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    editor.lease = Some(("another-browser".into(), Instant::now()));
+    let project = ron::to_string(&editor.session.project).unwrap();
+    let generation = editor.session.history.generation();
+    let position = editor.session.history.position();
+    let receipts = editor.completed.len();
+    let folders = editor
+        .handle(Action::NativeAssetFolders(SourceQuery {
+            project_epoch: epoch.clone(),
+        }))
+        .unwrap();
+    assert_eq!(
+        folders,
+        json!({"project_epoch":epoch,"version":1,"folders_revision":"absent","folders":[]})
+    );
+    let tree = json!({"version":1,"folders":[{"id":"parent","name":"Parent","parent":null},{"id":"child","name":"Child","parent":"parent"}]});
+    std::fs::write(
+        root.join(".assets/folders.json"),
+        serde_json::to_vec(&tree).unwrap(),
+    )
+    .unwrap();
+    let folders = editor
+        .handle(Action::NativeAssetFolders(SourceQuery {
+            project_epoch: epoch.clone(),
+        }))
+        .unwrap();
+    let revision = folders["folders_revision"].as_str().unwrap().to_owned();
+    assert_ne!(revision, "absent");
+    assert_eq!(folders["folders"], tree["folders"]);
+    let mut native = Session::default();
+    let id = native.create_timeline(Timeline {
+        name: "Native empty compound".into(),
+        fps: Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let media = native
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(id))
+        .unwrap()
+        .0;
+    let mut asset = crate::asset_payload::capture(
+        &native,
+        media,
+        "Unknown native folder",
+        vv_core::clipboard::ClipboardOrigin {
+            instance: 1,
+            epoch: native.epoch(),
+        },
+    )
+    .unwrap();
+    asset.folder = Some("imported-orphan".into());
+    editor.assets.create("orphan-asset", &asset).unwrap();
+    let listed = editor
+        .handle(Action::NativeAssetList(
+            0,
+            crate::asset_store::Query {
+                project_epoch: epoch.clone(),
+                folder: Some(String::new()),
+                folders_revision: Some(revision.clone()),
+                ..Default::default()
+            },
+        ))
+        .unwrap();
+    assert_eq!(listed["items"][0]["folder"], "imported-orphan");
+    assert!(listed["items"][0]["effective_folder"].is_null());
+    let loaded = editor.assets.item("orphan-asset", false).unwrap();
+    assert_eq!(loaded["folder"], "imported-orphan");
+    assert!(loaded["effective_folder"].is_null());
+    let child = editor
+        .handle(Action::NativeAssetList(
+            0,
+            crate::asset_store::Query {
+                project_epoch: epoch.clone(),
+                folder: Some("child".into()),
+                folders_revision: Some(revision.clone()),
+                ..Default::default()
+            },
+        ))
+        .unwrap();
+    assert!(child["items"].as_array().unwrap().is_empty());
+    assert_eq!(child["total"], listed["total"]);
+    assert_eq!(child["pages"], listed["pages"]);
+    for (folder, folders_revision) in [
+        (Some(String::new()), None),
+        (Some("child".into()), Some("stale".into())),
+        (Some("unknown".into()), Some(revision)),
+    ] {
+        assert!(
+            editor
+                .handle(Action::NativeAssetList(
+                    0,
+                    crate::asset_store::Query {
+                        project_epoch: epoch.clone(),
+                        folder,
+                        folders_revision,
+                        ..Default::default()
+                    }
+                ))
+                .is_err()
+        );
+    }
+    assert_eq!(
+        editor
+            .handle(Action::NativeAssetFolders(SourceQuery {
+                project_epoch: "stale".into()
+            }))
+            .unwrap_err()
+            .1,
+        "REVISION_CONFLICT"
+    );
+    let malformed = b"not native folders JSON";
+    std::fs::write(root.join(".assets/folders.json"), malformed).unwrap();
+    assert!(
+        editor
+            .handle(Action::NativeAssetFolders(SourceQuery {
+                project_epoch: epoch.clone()
+            }))
+            .is_err()
+    );
+    assert_eq!(
+        std::fs::read(root.join(".assets/folders.json")).unwrap(),
+        malformed
+    );
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), project);
+    assert_eq!(editor.session.history.generation(), generation);
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(editor.completed.len(), receipts);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn native_asset_fixture(label: &str) -> (std::path::PathBuf, Editor, vv_core::MediaId) {
     let root = std::env::temp_dir().join(format!(
         "vv-native-assets-{label}-{}-{}",

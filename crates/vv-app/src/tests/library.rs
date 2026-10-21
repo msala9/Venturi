@@ -410,3 +410,149 @@ fn web_exported_asset_opens_in_the_desktop_library_and_merges_native_nested_enti
     assert!(project.timelines.is_empty());
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn web_compatible_folder_removal_reopens_in_native_library_without_changing_nested_assets() {
+    let root = temp_root("web-folder-compatibility");
+    let assets = root.join("assets");
+    std::fs::create_dir(&assets).unwrap();
+    let exported: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/web-exported-asset.json")).unwrap();
+    let write_asset = |id: &str, name: &str, folder: Option<&str>| {
+        let mut wrapper = exported.clone();
+        wrapper["name"] = serde_json::json!(name);
+        wrapper["folder"] = serde_json::json!(folder);
+        std::fs::write(
+            assets.join(format!("{id}.json")),
+            serde_json::to_vec_pretty(&wrapper).unwrap(),
+        )
+        .unwrap();
+    };
+    let write_folders = |folders: serde_json::Value| {
+        std::fs::write(
+            root.join("folders.json"),
+            serde_json::to_vec_pretty(&serde_json::json!({
+                "version": 1,
+                "folders": folders,
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+    };
+    write_folders(serde_json::json!([
+        {"id":"outer_1-abc","name":"Outer","parent":null},
+        {"id":"inner","name":"Shared","parent":"outer_1-abc"},
+        {"id":"deep","name":"Deep","parent":"inner"},
+        {"id":"leaf","name":"Leaf","parent":"deep"},
+        {"id":"sibling","name":"Shared","parent":"outer_1-abc"}
+    ]));
+    write_asset("direct", "Direct member", Some("inner"));
+    write_asset("descendant", "Descendant member", Some("leaf"));
+    write_asset("orphan", "Imported orphan", Some("unknown-imported-folder"));
+    write_asset("root", "Root member", None);
+    let untouched: Vec<_> = ["descendant.json", "orphan.json", "root.json"]
+        .into_iter()
+        .map(|name| (assets.join(name), std::fs::read(assets.join(name)).unwrap()))
+        .collect();
+    let mut archived = exported.clone();
+    archived["folder"] = serde_json::json!("inner");
+    let archived_bytes = serde_json::to_vec_pretty(&archived).unwrap();
+    for name in ["archived.json.deleted", "previous.json.bak"] {
+        std::fs::write(assets.join(name), &archived_bytes).unwrap();
+    }
+
+    let before = Library::open(root.clone());
+    assert_eq!(before.folders.len(), 5);
+    assert_eq!(before.assets.len(), 4);
+    assert_eq!(
+        before.folder("inner").unwrap().parent.as_deref(),
+        Some("outer_1-abc")
+    );
+    assert_eq!(
+        before
+            .folders
+            .iter()
+            .filter(|folder| folder.name == "Shared")
+            .count(),
+        2
+    );
+    drop(before);
+
+    // The web transaction removes one folder and moves only its direct contents up.
+    write_folders(serde_json::json!([
+        {"id":"outer_1-abc","name":"Outer","parent":null},
+        {"id":"deep","name":"Deep","parent":"outer_1-abc"},
+        {"id":"leaf","name":"Leaf","parent":"deep"},
+        {"id":"sibling","name":"Shared","parent":"outer_1-abc"}
+    ]));
+    write_asset("direct", "Direct member", Some("outer_1-abc"));
+    let mut library = Library::open(root.clone());
+    assert_eq!(library.assets.len(), 4);
+    assert_eq!(library.folders.len(), 4);
+    assert!(library.folder("inner").is_none());
+    assert_eq!(
+        library.folder("deep").unwrap().parent.as_deref(),
+        Some("outer_1-abc")
+    );
+    assert_eq!(
+        library.folder("leaf").unwrap().parent.as_deref(),
+        Some("deep")
+    );
+    let asset_folder = |library: &Library, id: &str| {
+        library
+            .assets
+            .iter()
+            .find(|asset| asset.id == id)
+            .unwrap()
+            .folder
+            .clone()
+    };
+    assert_eq!(
+        asset_folder(&library, "direct").as_deref(),
+        Some("outer_1-abc")
+    );
+    assert_eq!(
+        asset_folder(&library, "descendant").as_deref(),
+        Some("leaf")
+    );
+    assert_eq!(
+        asset_folder(&library, "orphan").as_deref(),
+        Some("unknown-imported-folder")
+    );
+    assert_eq!(asset_folder(&library, "root"), None);
+    for asset in &library.assets {
+        assert_eq!(
+            asset.payload.to_text(),
+            exported["payload"].as_str().unwrap()
+        );
+        assert!(asset.item().unwrap().compound.is_some());
+    }
+
+    // Native edits can continue from the same files and survive another reopen.
+    library.remove_folder("outer_1-abc").unwrap();
+    drop(library);
+    let reopened = Library::open(root.clone());
+    assert!(reopened.folder("outer_1-abc").is_none());
+    assert_eq!(reopened.folder("deep").unwrap().parent, None);
+    assert_eq!(reopened.folder("sibling").unwrap().parent, None);
+    assert_eq!(
+        reopened.folder("leaf").unwrap().parent.as_deref(),
+        Some("deep")
+    );
+    assert_eq!(asset_folder(&reopened, "direct"), None);
+    assert_eq!(
+        asset_folder(&reopened, "descendant").as_deref(),
+        Some("leaf")
+    );
+    assert_eq!(
+        asset_folder(&reopened, "orphan").as_deref(),
+        Some("unknown-imported-folder")
+    );
+    for (path, bytes) in untouched {
+        assert_eq!(std::fs::read(path).unwrap(), bytes);
+    }
+    for name in ["archived.json.deleted", "previous.json.bak"] {
+        assert_eq!(std::fs::read(assets.join(name)).unwrap(), archived_bytes);
+    }
+    std::fs::remove_dir_all(root).unwrap();
+}

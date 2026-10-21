@@ -41,6 +41,8 @@ pub enum Action {
     PresetItem(String, SourceQuery),
     PresetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
     PrepareNativeAsset(NativeAssetRequest),
+    PrepareNativeAssetEdit(Mutation, oneshot::Sender<Result<NativeEditPreparation>>),
+    NativeAssetFolders(SourceQuery),
     NativeAssetList(usize, crate::asset_store::Query),
     NativeAssetItem(String, NativeAssetItemQuery),
     NativeAssetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
@@ -79,6 +81,28 @@ struct ImportedAsset {
     media: HashSet<vv_core::MediaId>,
     timelines: HashSet<vv_core::TimelineId>,
 }
+pub enum NativeEditPreparation {
+    Complete(Value),
+    Pending(NativeEditGuard),
+}
+pub struct NativeEditGuard {
+    jobs: crate::asset_jobs::Jobs,
+    job: String,
+    epoch: String,
+    armed: bool,
+}
+impl Drop for NativeEditGuard {
+    fn drop(&mut self) {
+        if self.armed {
+            let _ = self.jobs.status(&self.job, &self.epoch, true);
+        }
+    }
+}
+struct PendingNativeEdit {
+    fingerprint: [u8; 32],
+    job: String,
+    epoch: String,
+}
 #[derive(Clone)]
 pub struct Host(mpsc::SyncSender<Message>);
 pub struct Editor {
@@ -97,6 +121,8 @@ pub struct Editor {
     assets: crate::asset_store::Store,
     asset_jobs: crate::asset_jobs::Jobs,
     asset_imports: HashMap<(u64, String, String), ImportedAsset>,
+    asset_binding: String,
+    native_edits: HashMap<String, PendingNativeEdit>,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
@@ -116,6 +142,12 @@ impl Editor {
                 .root_file()
                 .map_err(|error| std::io::Error::other(error.2))?,
         )?;
+        let asset_binding = crate::asset_journal::project_binding(
+            &files
+                .root_file()
+                .map_err(|error| std::io::Error::other(error.2))?,
+        )
+        .map_err(|error| std::io::Error::other(error.2))?;
         let mut session = Session::default();
         let mut persistence_notice = match crate::resume::restore(&files) {
             Ok(Some((project, name))) => {
@@ -145,11 +177,13 @@ impl Editor {
                 (None, HashMap::new())
             }
         };
-        Ok(Self {
+        let mut editor = Self {
             presets,
             assets,
             asset_jobs,
             asset_imports: HashMap::new(),
+            asset_binding,
+            native_edits: HashMap::new(),
             session,
             files,
             epoch: std::time::SystemTime::now()
@@ -168,7 +202,13 @@ impl Editor {
             persistence_notice,
             autosave,
             receipts,
-        })
+        };
+        if editor.harvest_native_completions(true).is_err() {
+            editor.persistence_notice = Some(
+                "Native library command outcomes require recovery. Existing metadata was preserved; resolve the command before retrying.",
+            );
+        }
+        Ok(editor)
     }
     fn snapshot(&self) -> Value {
         let mut snapshot = snapshot::session(&self.session, &self.epoch);
@@ -228,6 +268,15 @@ impl Editor {
         let encoded = serde_json::to_vec(&(timeline.clone(), &request))
             .map_err(|_| ApiError::invalid("Invalid command"))?;
         let fingerprint: [u8; 32] = Sha256::digest(&encoded).into();
+        if let Some(recorded) = self
+            .receipts
+            .as_ref()
+            .and_then(|store| store.recorded(&request.command_id))
+        {
+            self.completed
+                .entry(request.command_id.clone())
+                .or_insert_with(|| (recorded.0, Ok(recorded.1)));
+        }
         if let Some((original, result)) = self.completed.get(&request.command_id) {
             if original != &fingerprint {
                 return Err(ApiError::conflict(
@@ -237,6 +286,20 @@ impl Editor {
             }
             return result.clone();
         }
+        if self
+            .native_edits
+            .get(&request.command_id)
+            .is_some_and(|pending| pending.fingerprint != fingerprint)
+        {
+            return Err(ApiError::conflict(
+                "COMMAND_ID_REUSED",
+                "Command ID was already used for another native library request",
+            ));
+        }
+        let prepared_edit = matches!(&request.operation,Operation::EditNativeAssetLibrary {edit} if edit.requires_preparation());
+        if prepared_edit && let Some((original,value))=self.harvest_native_completion(&request.command_id,false).map_err(|_|ApiError::conflict("OUTCOME_UNKNOWN","Native library commit requires recovery; resolve its command before retrying"))? {
+            if original!=fingerprint {return Err(ApiError::conflict("COMMAND_ID_REUSED","Command ID was already used with another request"));}return Ok(value);
+        }
         self.lease(&request.client_id)?;
         if request.command_epoch.as_deref().unwrap_or("0") != self.command_epoch.to_string() {
             return Err(ApiError::conflict(
@@ -244,12 +307,30 @@ impl Editor {
                 "Command receipt epoch expired; refresh without replaying the old command",
             ));
         }
+        if prepared_edit {
+            self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
+            self.native_command_capacity()?;
+        }
         let previous_epoch = self.session.epoch();
         let outcome = self.perform(timeline, &request);
         if self.session.epoch() != previous_epoch {
             self.asset_jobs
                 .cancel_obsolete(&format!("{}:{}", self.epoch, self.session.epoch()));
             self.asset_imports.clear();
+        }
+        if prepared_edit && let Err(error) = &outcome {
+            return match self.harvest_native_completion(&request.command_id, false) {
+                Ok(Some((original, value))) if original == fingerprint => Ok(value),
+                Ok(Some(_)) => Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Command ID was already used with another request",
+                )),
+                Ok(None) => Err(error.clone()),
+                Err(_) => Err(ApiError::conflict(
+                    "OUTCOME_UNKNOWN",
+                    "Native library commit requires recovery; resolve its command before retrying",
+                )),
+            };
         }
         if self.completed.len() >= MAX_RECEIPTS {
             self.completed.clear();
@@ -265,6 +346,7 @@ impl Editor {
                 self.persistence_notice=crate::resume::remember(&self.files,name).err().map(|_|"The project operation succeeded, but automatic reopen could not be updated. Existing recovery metadata was preserved.");
             }
             let mut value=json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()});
+            if prepared_edit {value["library_durable"]=json!(true);}
             if let Operation::ImportNativeAsset { asset_id,revision,.. }=&request.operation
                 && let Some(imported)=self.asset_imports.get(&(self.session.epoch(),asset_id.clone(),revision.clone())) {
                 use vv_core::Id;
@@ -273,33 +355,38 @@ impl Editor {
             value
         });
         if let Ok(value) = &mut result {
-            if !self.session.has_unsaved_changes() {
-                self.autosave.saved(&self.files, &self.session);
+            if prepared_edit {
+                value["durability"] = json!({"state":"volatile","recovery_revision":null});
+            } else {
+                if !self.session.has_unsaved_changes() {
+                    self.autosave.saved(&self.files, &self.session);
+                }
+                let checkpoint = if self.session.has_unsaved_changes() {
+                    self.autosave.checkpoint(&self.files, &self.session)
+                } else {
+                    None
+                };
+                let saved = !self.session.has_unsaved_changes()
+                    && self
+                        .session
+                        .path()
+                        .and_then(|path| path.file_name())
+                        .and_then(|name| name.to_str())
+                        .is_some_and(|name| {
+                            self.files.saved_fingerprint(name).is_some_and(|expected| {
+                                self.files.project_fingerprint(name).ok().as_ref()
+                                    == Some(&expected)
+                            })
+                        });
+                let state = if saved {
+                    "saved"
+                } else if checkpoint.is_some() {
+                    "recovery"
+                } else {
+                    "volatile"
+                };
+                value["durability"] = json!({"state":state,"recovery_revision":checkpoint});
             }
-            let checkpoint = if self.session.has_unsaved_changes() {
-                self.autosave.checkpoint(&self.files, &self.session)
-            } else {
-                None
-            };
-            let saved = !self.session.has_unsaved_changes()
-                && self
-                    .session
-                    .path()
-                    .and_then(|path| path.file_name())
-                    .and_then(|name| name.to_str())
-                    .is_some_and(|name| {
-                        self.files.saved_fingerprint(name).is_some_and(|expected| {
-                            self.files.project_fingerprint(name).ok().as_ref() == Some(&expected)
-                        })
-                    });
-            let state = if saved {
-                "saved"
-            } else if checkpoint.is_some() {
-                "recovery"
-            } else {
-                "volatile"
-            };
-            value["durability"] = json!({"state":state,"recovery_revision":checkpoint});
             value["receipt_persisted"] = json!(true);
             if !self.receipts.as_mut().is_some_and(|store| {
                 store
@@ -310,10 +397,22 @@ impl Editor {
                 self.persistence_notice = Some(
                     "The command applied, but its receipt could not be persisted. Save current edits before restarting; do not replay an uncertain command.",
                 );
+            } else if prepared_edit
+                && self
+                    .assets
+                    .acknowledge_completion(&request.command_id, fingerprint, &self.asset_binding)
+                    .is_err()
+            {
+                self.persistence_notice.get_or_insert(
+                    "Native library command applied durably; completion cleanup will be retried.",
+                );
             }
         }
         self.completed
             .insert(request.command_id.clone(), (fingerprint, result.clone()));
+        if prepared_edit && result.is_ok() {
+            self.native_edits.remove(&request.command_id);
+        }
         result
     }
     fn perform(&mut self, timeline: Option<String>, request: &Mutation) -> Result<()> {
@@ -393,7 +492,22 @@ impl Editor {
                 &request.if_generation,
             )?,
             Operation::EditNativeAssetLibrary { edit } => {
-                self.assets.edit(&request.command_id, edit)?
+                if edit.requires_preparation() {
+                    let fingerprint = Sha256::digest(
+                        serde_json::to_vec(&(None::<String>, request))
+                            .map_err(|_| ApiError::invalid("Invalid native library command"))?,
+                    )
+                    .into();
+                    self.asset_jobs.commit_edit(
+                        &request.command_id,
+                        fingerprint,
+                        &request.project_epoch,
+                        &request.if_generation,
+                        edit,
+                    )?;
+                } else {
+                    self.assets.edit(&request.command_id, edit)?;
+                }
             }
             Operation::ImportNativeAsset {
                 job_id,
@@ -622,6 +736,276 @@ impl Editor {
             ));
         }
         Ok(())
+    }
+    fn harvest_native_completion(
+        &mut self,
+        id: &str,
+        restarted: bool,
+    ) -> Result<Option<([u8; 32], Value)>> {
+        let Some((fingerprint, seed)) = self.assets.completion(id, &self.asset_binding)? else {
+            return Ok(None);
+        };
+        if !valid_key(id) || seed["status"] != "applied" || seed["command_id"] != id {
+            return Err(ApiError::invalid(
+                "Invalid durable native library completion; existing metadata was preserved",
+            ));
+        }
+        if self
+            .completed
+            .get(id)
+            .is_some_and(|(original, _)| *original != fingerprint)
+        {
+            return Err(ApiError::conflict(
+                "COMMAND_ID_REUSED",
+                "Native library completion conflicts with a recorded command",
+            ));
+        }
+        let recorded = self.receipts.as_ref().and_then(|store| store.recorded(id));
+        if recorded
+            .as_ref()
+            .is_some_and(|(original, _)| *original != fingerprint)
+        {
+            return Err(ApiError::conflict(
+                "COMMAND_ID_REUSED",
+                "Native library completion conflicts with a durable command",
+            ));
+        }
+        let already_recorded = recorded.is_some();
+        let mut value = recorded.map_or(seed, |(_, value)| value);
+        if restarted {
+            value["server_restarted"] = json!(true);
+        }
+        value["receipt_persisted"] = json!(true);
+        let persisted = already_recorded
+            || self
+                .receipts
+                .as_mut()
+                .is_some_and(|store| store.append(&self.files, id, fingerprint, &value).is_ok());
+        if persisted {
+            let _ = self
+                .assets
+                .acknowledge_completion(id, fingerprint, &self.asset_binding);
+        } else {
+            value["receipt_persisted"] = json!(false);
+            self.persistence_notice.get_or_insert("Native library changes are durable, but their command receipt still needs recovery. Resolve the command before retrying.");
+        }
+        self.completed
+            .insert(id.to_owned(), (fingerprint, Ok(value.clone())));
+        self.native_edits.remove(id);
+        Ok(Some((fingerprint, value)))
+    }
+    fn harvest_native_completions(&mut self, restarted: bool) -> Result<()> {
+        let completions = self.assets.completions(&self.asset_binding)?;
+        for (id, _, _) in completions {
+            self.harvest_native_completion(&id, restarted)?;
+        }
+        Ok(())
+    }
+    fn prepare_native_edit(&mut self, request: Mutation) -> Result<NativeEditPreparation> {
+        if !matches!(&request.operation,Operation::EditNativeAssetLibrary {edit} if edit.requires_preparation())
+        {
+            return self
+                .mutation(None, request)
+                .map(NativeEditPreparation::Complete);
+        }
+        if !valid_key(&request.command_id) {
+            return Err(ApiError::invalid("Invalid command ID"));
+        }
+        self.prune_native_edits();
+        let fingerprint: [u8; 32] = Sha256::digest(
+            serde_json::to_vec(&(None::<String>, &request))
+                .map_err(|_| ApiError::invalid("Invalid native library command"))?,
+        )
+        .into();
+        if self
+            .native_edits
+            .get(&request.command_id)
+            .is_some_and(|pending| pending.fingerprint != fingerprint)
+        {
+            return Err(ApiError::conflict(
+                "COMMAND_ID_REUSED",
+                "Command ID was already used for another native library request",
+            ));
+        }
+        if let Some((original, result)) =
+            self.completed
+                .get(&request.command_id)
+                .cloned()
+                .or_else(|| {
+                    self.receipts
+                        .as_ref()
+                        .and_then(|store| store.recorded(&request.command_id))
+                        .map(|(hash, value)| (hash, Ok(value)))
+                })
+        {
+            if original != fingerprint {
+                return Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Command ID was already used with another request",
+                ));
+            }
+            return result.map(NativeEditPreparation::Complete);
+        }
+        if let Some((original, value)) = self
+            .harvest_native_completion(&request.command_id, false)
+            .map_err(|_| {
+                ApiError::conflict(
+                    "OUTCOME_UNKNOWN",
+                    "Native library commit requires recovery; resolve its command before retrying",
+                )
+            })?
+        {
+            if original != fingerprint {
+                return Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Command ID was already used with another request",
+                ));
+            }
+            return Ok(NativeEditPreparation::Complete(value));
+        }
+        self.lease(&request.client_id)?;
+        if request.command_epoch.as_deref().unwrap_or("0") != self.command_epoch.to_string() {
+            return Err(ApiError::conflict(
+                "COMMAND_EPOCH_EXPIRED",
+                "Command receipt epoch expired; refresh without replaying the old command",
+            ));
+        }
+        self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
+        self.native_command_capacity()?;
+        let Operation::EditNativeAssetLibrary { edit } = &request.operation else {
+            unreachable!()
+        };
+        let seed = json!({"command_id":request.command_id,"status":"applied","project_epoch":request.project_epoch,"generation":request.if_generation,"command_epoch":self.command_epoch.to_string(),"durability":{"state":"volatile","recovery_revision":null},"receipt_persisted":false,"library_durable":true});
+        if self.native_edits.len() >= 64 && !self.native_edits.contains_key(&request.command_id) {
+            return Err(ApiError::conflict(
+                "ASSET_BUSY",
+                "Resolve previous native library preparations before starting more",
+            ));
+        }
+        let job = self.asset_jobs.prepare_edit(
+            &request.project_epoch,
+            &request.if_generation,
+            &request.command_id,
+            fingerprint,
+            seed,
+            edit.clone(),
+        )?;
+        let id = job["id"].as_str().ok_or_else(ApiError::io)?.to_owned();
+        self.native_edits.insert(
+            request.command_id,
+            PendingNativeEdit {
+                fingerprint,
+                job: id.clone(),
+                epoch: request.project_epoch.clone(),
+            },
+        );
+        Ok(NativeEditPreparation::Pending(NativeEditGuard {
+            jobs: self.asset_jobs.clone(),
+            job: id,
+            epoch: request.project_epoch,
+            armed: true,
+        }))
+    }
+    fn native_command_capacity(&mut self) -> Result<()> {
+        if self.completed.len() < MAX_RECEIPTS {
+            return Ok(());
+        }
+        self.completed.clear();
+        self.command_epoch = self
+            .command_epoch
+            .checked_add(1)
+            .expect("Command epoch exhausted");
+        Err(ApiError::conflict(
+            "COMMAND_EPOCH_EXPIRED",
+            "Command receipt window retired before native library commit; refresh and submit a new command",
+        ))
+    }
+    fn prune_native_edits(&mut self) {
+        let ids = self.native_edits.keys().cloned().collect::<Vec<_>>();
+        for id in ids {
+            if self.completed.contains_key(&id)
+                || self
+                    .receipts
+                    .as_ref()
+                    .is_some_and(|store| store.recorded(&id).is_some())
+            {
+                self.native_edits.remove(&id);
+                continue;
+            }
+            let pending = &self.native_edits[&id];
+            let fingerprint = pending.fingerprint;
+            let terminal = match self.asset_jobs.status(&pending.job, &pending.epoch, false) {
+                Ok(value) => matches!(value["state"].as_str(), Some("failed" | "canceled")),
+                Err(error) => error.1 == "NOT_FOUND",
+            };
+            let error = self.native_edit_failure(pending);
+            if terminal && matches!(self.harvest_native_completion(&id, false), Ok(None)) {
+                self.completed.insert(id.clone(), (fingerprint, Err(error)));
+                self.native_edits.remove(&id);
+            }
+        }
+    }
+    fn native_edit_failure(&self, pending: &PendingNativeEdit) -> ApiError {
+        self.asset_jobs
+            .read_failure(&pending.job, &pending.epoch)
+            .ok()
+            .flatten()
+            .unwrap_or_else(|| {
+                ApiError::conflict(
+                    "ASSET_EDIT_NOT_APPLIED",
+                    "Native library preparation did not commit; retry with a new command",
+                )
+            })
+    }
+    fn lookup(&mut self, id: &str) -> Result<Value> {
+        if !valid_key(id) {
+            return Err(ApiError::missing());
+        }
+        if let Some((_, result)) = self.completed.get(id).cloned() {
+            if result.as_ref().is_ok_and(|value| {
+                value["library_durable"] == true && value["receipt_persisted"] == false
+            }) && let Ok(Some((_, value))) = self.harvest_native_completion(id, false)
+            {
+                return Ok(value);
+            }
+            return result;
+        }
+        if let Some((_, value)) = self.receipts.as_ref().and_then(|store| store.recorded(id)) {
+            return Ok(value);
+        }
+        match self.harvest_native_completion(id, false) {
+            Ok(Some((_, value))) => return Ok(value),
+            Err(_) => {
+                return Ok(
+                    json!({"command_id":id,"status":"pending","job_id":self.native_edits.get(id).map(|pending|&pending.job),"recovery_pending":true}),
+                );
+            }
+            Ok(None) => {}
+        }
+        if let Some(pending) = self.native_edits.get(id) {
+            let value = match self.asset_jobs.status(&pending.job, &pending.epoch, false) {
+                Ok(value) => Some(value),
+                Err(error) if error.1 == "NOT_FOUND" => None,
+                Err(error) => return Err(error),
+            };
+            if let Some(value) = value
+                && matches!(
+                    value["state"].as_str(),
+                    Some("queued" | "running" | "ready")
+                )
+            {
+                return Ok(
+                    json!({"command_id":id,"status":"preparing","job_id":pending.job,"project_epoch":pending.epoch,"job":value}),
+                );
+            }
+            let fingerprint = pending.fingerprint;
+            let error = self.native_edit_failure(pending);
+            self.completed
+                .insert(id.to_owned(), (fingerprint, Err(error.clone())));
+            self.native_edits.remove(id);
+            return Err(error);
+        }
+        Err(ApiError::missing())
     }
     fn prepare_native_asset(&self, request: NativeAssetRequest) -> Result<Value> {
         self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
@@ -915,6 +1299,16 @@ impl Editor {
                 self.presets.list(page, &query)
             }
             Action::PrepareNativeAsset(request) => self.prepare_native_asset(request),
+            Action::PrepareNativeAssetEdit(request, reply) => {
+                let _ = reply.send(self.prepare_native_edit(request));
+                Ok(Value::Null)
+            }
+            Action::NativeAssetFolders(query) => {
+                self.validate_asset_epoch(&query.project_epoch, None)?;
+                let mut value = self.assets.folders()?;
+                value["project_epoch"] = json!(query.project_epoch);
+                Ok(value)
+            }
             Action::NativeAssetList(page, query) => {
                 self.validate_asset_epoch(&query.project_epoch, None)?;
                 self.assets.list(page, &query)
@@ -1037,11 +1431,7 @@ impl Editor {
             Action::Recovery => Ok(self.autosave.info()),
             Action::Lease(client) => self.lease(&client),
             Action::Mutation(timeline, request) => self.mutation(timeline, request),
-            Action::Lookup(id) => self
-                .completed
-                .get(&id)
-                .map(|(_, result)| result.clone())
-                .unwrap_or_else(|| Err(ApiError::missing())),
+            Action::Lookup(id) => self.lookup(&id),
         }
     }
 }
@@ -1053,6 +1443,48 @@ fn valid_key(key: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
 }
 impl Host {
+    pub async fn native_asset_mutation(&self, request: Mutation) -> Result<Value> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::PrepareNativeAssetEdit(request.clone(), tx))
+            .await?;
+        let preparation = rx.await.map_err(|_| ApiError::io())??;
+        let mut guard = match preparation {
+            NativeEditPreparation::Complete(value) => return Ok(value),
+            NativeEditPreparation::Pending(guard) => guard,
+        };
+        let started = Instant::now();
+        loop {
+            let status = guard.jobs.status(&guard.job, &guard.epoch, false)?;
+            match status["state"].as_str() {
+                Some("ready") => break,
+                Some("queued" | "running") => {}
+                Some("failed") => {
+                    let error = guard.jobs.read_failure(&guard.job, &guard.epoch)?.unwrap_or_else(|| ApiError::conflict(
+                        "ASSET_EDIT_NOT_APPLIED",
+                        "Native library preparation failed before commit; refresh and retry with a new command",
+                    ));
+                    guard.armed = false;
+                    return Err(error);
+                }
+                _ => {
+                    return Err(ApiError::conflict(
+                        "ASSET_EDIT_NOT_APPLIED",
+                        "Native library preparation did not commit; refresh and retry with a new command",
+                    ));
+                }
+            }
+            if started.elapsed() >= Duration::from_secs(20) {
+                return Err(ApiError::conflict(
+                    "ASSET_TIMEOUT",
+                    "Native library preparation timed out before commit",
+                ));
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+        let value = self.call(Action::Mutation(None, request)).await?;
+        guard.armed = false;
+        Ok(value)
+    }
     pub async fn media_root(&self) -> Result<std::fs::File> {
         let (tx, rx) = oneshot::channel();
         self.call(Action::MediaRoot(tx)).await?;

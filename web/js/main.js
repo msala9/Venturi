@@ -891,6 +891,9 @@ async function refresh() {
   if (next.capabilities.preview) seek();
 }
 function commandNotice(receipt) {
+  if(receipt.library_durable===true)return receipt.receipt_persisted===false
+    ? 'Library changes saved. Command receipt needs recovery; do not repeat the command.'
+    : receipt.server_restarted?'Library command applied before the server restarted.':'Native library updated';
   return receipt.server_restarted
     ? "Command applied before the server restarted. Check project recovery before continuing."
     : receipt.receipt_persisted === false || receipt.durability?.state === "volatile"

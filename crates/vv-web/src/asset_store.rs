@@ -1,4 +1,6 @@
 use crate::{
+    asset_folders::Tree,
+    asset_journal::{self, Before, Completion, PreparedEdit},
     asset_payload::{self, AssetFile},
     error::{ApiError, Result},
 };
@@ -11,7 +13,10 @@ use std::{
     io::{Read, Write},
     os::fd::AsRawFd,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 pub(crate) const MAX_JSON: u64 = 4 * 1024 * 1024;
@@ -36,6 +41,16 @@ pub struct Query {
     pub search: String,
     #[serde(default)]
     pub archived: bool,
+    #[serde(default)]
+    pub folder: Option<String>,
+    #[serde(default)]
+    pub folders_revision: Option<String>,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AssetRef {
+    pub id: String,
+    pub revision: String,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
@@ -57,6 +72,42 @@ pub enum Edit {
         id: String,
         revision: String,
     },
+    CreateFolder {
+        folders_revision: String,
+        name: String,
+        parent: Option<String>,
+    },
+    RenameFolder {
+        id: String,
+        folders_revision: String,
+        name: String,
+    },
+    MoveFolder {
+        id: String,
+        folders_revision: String,
+        parent: Option<String>,
+    },
+    RemoveFolder {
+        id: String,
+        folders_revision: String,
+    },
+    MoveAssets {
+        folders_revision: String,
+        items: Vec<AssetRef>,
+        folder: Option<String>,
+    },
+}
+impl Edit {
+    pub fn requires_preparation(&self) -> bool {
+        matches!(
+            self,
+            Self::CreateFolder { .. }
+                | Self::RenameFolder { .. }
+                | Self::MoveFolder { .. }
+                | Self::RemoveFolder { .. }
+                | Self::MoveAssets { .. }
+        )
+    }
 }
 fn name(id: &str, archived: bool) -> Result<String> {
     if id.is_empty()
@@ -112,12 +163,14 @@ impl Store {
         )?);
         let assets = directory(&root_dir, "assets").map_err(|e| std::io::Error::other(e.2))?;
         let media = directory(&root_dir, "media").map_err(|e| std::io::Error::other(e.2))?;
-        Ok(Self(Arc::new(Directories {
+        let store = Self(Arc::new(Directories {
             root: root.canonicalize()?,
             directory: root_dir,
             assets,
             media,
-        })))
+        }));
+        let _lock = store.read_guard().map_err(|e| std::io::Error::other(e.2))?;
+        Ok(store)
     }
     pub(crate) fn root(&self) -> &Path {
         &self.0.root
@@ -175,9 +228,123 @@ impl Store {
                 )
             },
         )?;
+        let _catalog = self.catalog_lock(true)?;
+        asset_journal::recover(&self.0.directory, &self.0.assets)?;
         Ok(file)
     }
+    fn catalog_lock(&self, exclusive: bool) -> Result<File> {
+        let file = File::from(
+            openat(
+                &self.0.directory,
+                ".venturi-assets-catalog.lock",
+                OFlags::RDWR
+                    | OFlags::CREATE
+                    | OFlags::NOFOLLOW
+                    | OFlags::NONBLOCK
+                    | OFlags::CLOEXEC,
+                Mode::RUSR | Mode::WUSR,
+            )
+            .map_err(|_| ApiError::io())?,
+        );
+        if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
+            return Err(changed());
+        }
+        rustix::fs::flock(
+            &file,
+            if exclusive {
+                rustix::fs::FlockOperation::NonBlockingLockExclusive
+            } else {
+                rustix::fs::FlockOperation::NonBlockingLockShared
+            },
+        )
+        .map_err(|_| {
+            ApiError::conflict(
+                "LIBRARY_BUSY",
+                "Asset catalog is busy; retry after the current operation",
+            )
+        })?;
+        Ok(file)
+    }
+    fn read_guard(&self) -> Result<File> {
+        self.validate_root()?;
+        let guard = self.catalog_lock(false)?;
+        if !asset_journal::pending(&self.0.directory)? {
+            return Ok(guard);
+        }
+        drop(guard);
+        let _global = self.lock()?;
+        self.catalog_lock(false)
+    }
+    fn folders_raw(&self) -> Result<(Tree, String, Option<Before>)> {
+        let fd = match openat(
+            &self.0.directory,
+            "folders.json",
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        ) {
+            Ok(fd) => fd,
+            Err(rustix::io::Errno::NOENT) => return Ok((Tree::default(), "absent".into(), None)),
+            Err(_) => return Err(changed()),
+        };
+        let file = File::from(fd);
+        if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
+            return Err(changed());
+        }
+        let identity = stable_identity(&file)?;
+        let mut bytes = Vec::new();
+        (&file)
+            .take(crate::asset_folders::MAX_BYTES as u64 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|_| ApiError::io())?;
+        if bytes.len() > crate::asset_folders::MAX_BYTES
+            || stable_identity(&file)? != identity
+            || stable_identity(&regular(&self.0.directory, "folders.json")?)? != identity
+        {
+            return Err(changed());
+        }
+        let revision = format!("{:x}", Sha256::digest(&bytes));
+        Ok((
+            crate::asset_folders::parse(&bytes)?,
+            revision.clone(),
+            Some(Before {
+                identity,
+                sha256: revision,
+            }),
+        ))
+    }
+    pub fn folders(&self) -> Result<Value> {
+        let _guard = self.read_guard()?;
+        let (tree, revision, _) = self.folders_raw()?;
+        Ok(json!({"version":1,"folders_revision":revision,"folders":tree.folders}))
+    }
+    pub fn completion(&self, id: &str, binding: &str) -> Result<Option<([u8; 32], Value)>> {
+        let _guard = self.read_guard()?;
+        Ok(
+            asset_journal::completion_for(&self.0.directory, id, binding)?
+                .map(|entry| (entry.fingerprint, entry.receipt)),
+        )
+    }
+    pub fn completions(&self, binding: &str) -> Result<Vec<(String, [u8; 32], Value)>> {
+        let _guard = self.read_guard()?;
+        Ok(asset_journal::completions(&self.0.directory, binding)?
+            .into_iter()
+            .map(|entry| (entry.command_id, entry.fingerprint, entry.receipt))
+            .collect())
+    }
+    pub fn acknowledge_completion(
+        &self,
+        id: &str,
+        fingerprint: [u8; 32],
+        binding: &str,
+    ) -> Result<()> {
+        let _global = self.lock()?;
+        let _catalog = self.catalog_lock(true)?;
+        asset_journal::acknowledge(&self.0.directory, id, fingerprint, binding)
+    }
     fn raw(&self, file_name: &str) -> Result<Option<Raw>> {
+        self.raw_limit(file_name, MAX_JSON)
+    }
+    fn raw_limit(&self, file_name: &str, limit: u64) -> Result<Option<Raw>> {
         self.validate_root()?;
         let fd = match openat(
             &self.0.assets,
@@ -195,7 +362,7 @@ impl Store {
         };
         let file = File::from(fd);
         let meta = file.metadata().map_err(|_| ApiError::io())?;
-        if !meta.is_file() || meta.len() > MAX_JSON {
+        if !meta.is_file() || meta.len() > limit {
             return Err(ApiError::invalid(
                 "Native assets must be regular files within 4 MiB",
             ));
@@ -203,10 +370,10 @@ impl Store {
         let identity = stable_identity(&file)?;
         let mut bytes = Vec::new();
         (&file)
-            .take(MAX_JSON + 1)
+            .take(limit + 1)
             .read_to_end(&mut bytes)
             .map_err(|_| ApiError::io())?;
-        if bytes.len() as u64 > MAX_JSON || stable_identity(&file)? != identity {
+        if bytes.len() as u64 > limit || stable_identity(&file)? != identity {
             return Err(changed());
         }
         let live = regular(&self.0.assets, file_name)?;
@@ -287,6 +454,7 @@ impl Store {
         let file_name = name(id, false)?;
         let bytes = serde_json::to_vec_pretty(asset).map_err(|_| ApiError::io())?;
         let _lock = self.lock()?;
+        let _catalog = self.catalog_lock(true)?;
         if let Some(existing) = self.raw(&file_name)? {
             return if existing.bytes == bytes {
                 Ok(())
@@ -300,15 +468,19 @@ impl Store {
         self.publish_bytes(&file_name, &bytes, None)
     }
     pub fn load(&self, id: &str, revision: &str) -> Result<AssetFile> {
+        let _guard = self.read_guard()?;
         asset_payload::parse(&self.checked(&name(id, false)?, revision)?.bytes)
     }
     pub fn export(&self, id: &str) -> Result<Vec<u8>> {
+        let _guard = self.read_guard()?;
         Ok(self
             .raw(&name(id, false)?)?
             .ok_or_else(ApiError::missing)?
             .bytes)
     }
     pub fn item(&self, id: &str, archived: bool) -> Result<Value> {
+        let _guard = self.read_guard()?;
+        let (tree, _, _) = self.folders_raw()?;
         let raw = self
             .raw(&name(id, archived)?)?
             .ok_or_else(ApiError::missing)?;
@@ -320,7 +492,8 @@ impl Store {
                 } else {
                     self.raw(&format!("{id}.json.bak"))?.is_some()
                 };
-                json!({"id":id,"revision":raw.revision,"name":asset.name,"folder":asset.folder,"media_count":payload.media_items().count(),"file_count":payload.files().map(|m| &m.path).collect::<std::collections::HashSet<_>>().len(),"archived":archived,"can_restore_previous":previous})
+                let effective = asset.folder.as_deref().filter(|id| tree.contains(id));
+                json!({"id":id,"revision":raw.revision,"name":asset.name,"folder":asset.folder,"effective_folder":effective,"media_count":payload.media_items().count(),"file_count":payload.files().map(|m| &m.path).collect::<std::collections::HashSet<_>>().len(),"archived":archived,"can_restore_previous":previous})
             }
             Err(e) => {
                 json!({"id":id,"revision":raw.revision,"name":id,"error":e.2,"archived":archived})
@@ -328,6 +501,19 @@ impl Store {
         })
     }
     pub fn list(&self, page: usize, query: &Query) -> Result<Value> {
+        let _guard = self.read_guard()?;
+        let (tree, folders_revision, _) = self.folders_raw()?;
+        if let Some(folder) = &query.folder {
+            if query.folders_revision.as_deref() != Some(folders_revision.as_str()) {
+                return Err(ApiError::conflict(
+                    "FOLDERS_CHANGED",
+                    "Native asset folders changed; refresh the library",
+                ));
+            }
+            if !folder.is_empty() && !tree.contains(folder) {
+                return Err(ApiError::missing());
+            }
+        }
         if query.search.len() > 128 {
             return Err(ApiError::invalid(
                 "Asset search is limited to 128 UTF-8 bytes",
@@ -371,6 +557,15 @@ impl Store {
                 Err(e) if e.1 == "NOT_FOUND" => continue,
                 Err(e) => json!({"id":id,"name":id,"error":e.2,"archived":query.archived}),
             };
+            if query.folder.as_ref().is_some_and(|folder| {
+                if folder.is_empty() {
+                    !item["effective_folder"].is_null()
+                } else {
+                    item["effective_folder"].as_str() != Some(folder.as_str())
+                }
+            }) {
+                continue;
+            }
             if search.is_empty()
                 || id.to_lowercase().contains(&search)
                 || item["name"]
@@ -383,11 +578,18 @@ impl Store {
             }
         }
         Ok(
-            json!({"project_epoch":query.project_epoch,"page":page,"pages":pages,"page_size":32,"total":total,"archived":query.archived,"items":items}),
+            json!({"project_epoch":query.project_epoch,"page":page,"pages":pages,"page_size":32,"total":total,"archived":query.archived,"folder":query.folder,"folders_revision":folders_revision,"items":items}),
         )
     }
     pub fn edit(&self, _command_id: &str, edit: &Edit) -> Result<()> {
+        if edit.requires_preparation() {
+            return Err(ApiError::conflict(
+                "ASSET_PREPARATION_REQUIRED",
+                "Prepare native asset folder edits on the bounded worker",
+            ));
+        }
         let _lock = self.lock()?;
+        let _catalog = self.catalog_lock(true)?;
         match edit {
             Edit::Update {
                 id,
@@ -452,7 +654,197 @@ impl Store {
                 .map_err(|_| ApiError::io())?;
                 self.0.assets.sync_all().map_err(|_| ApiError::io())
             }
+            _ => unreachable!("Prepared folder edits are handled separately"),
         }
+    }
+    pub(crate) fn prepare_edit(
+        &self,
+        edit: &Edit,
+        completion: Completion,
+        cancel: &AtomicBool,
+    ) -> Result<PreparedEdit> {
+        let _global = self.lock()?;
+        if !edit.requires_preparation() {
+            return Err(ApiError::invalid(
+                "This native asset edit does not require folder preparation",
+            ));
+        }
+        let (mut tree, revision, before) = self.folders_raw()?;
+        let expected = match edit {
+            Edit::CreateFolder {
+                folders_revision, ..
+            }
+            | Edit::RenameFolder {
+                folders_revision, ..
+            }
+            | Edit::MoveFolder {
+                folders_revision, ..
+            }
+            | Edit::RemoveFolder {
+                folders_revision, ..
+            }
+            | Edit::MoveAssets {
+                folders_revision, ..
+            } => folders_revision,
+            _ => unreachable!(),
+        };
+        if expected != &revision {
+            return Err(ApiError::conflict(
+                "FOLDERS_CHANGED",
+                "Native asset folders changed; refresh before editing",
+            ));
+        }
+        let mut prepared = PreparedEdit::new(&self.0.directory, completion.clone(), json!({}))?;
+        prepared.guard(false, "folders.json".into(), before.clone());
+        let mut affected = 0;
+        let mut read_bytes = if before.is_some() {
+            regular(&self.0.directory, "folders.json")?
+                .metadata()
+                .map_err(|_| ApiError::io())?
+                .len()
+        } else {
+            0
+        };
+        let mut tree_changed = false;
+        match edit {
+            Edit::CreateFolder { name, parent, .. } => {
+                tree_changed = tree.create(&completion.command_id, name, parent.as_deref())?;
+            }
+            Edit::RenameFolder { id, name, .. } => {
+                tree_changed = tree.rename(id, name)?;
+            }
+            Edit::MoveFolder { id, parent, .. } => {
+                tree_changed = tree.move_folder(id, parent.as_deref())?;
+            }
+            Edit::RemoveFolder { id, .. } => {
+                let parent = tree.remove(id)?.parent;
+                tree_changed = true;
+                let entries = asset_journal::active_roster(&self.0.assets)?;
+                for entry in &entries {
+                    if cancel.load(Ordering::Acquire) {
+                        return Err(ApiError::conflict(
+                            "ASSET_CANCELED",
+                            "Asset preparation was canceled",
+                        ));
+                    }
+                    let raw = self
+                        .raw_limit(
+                            &entry.name,
+                            MAX_JSON.min(asset_journal::MAX_METADATA.saturating_sub(read_bytes)),
+                        )?
+                        .ok_or_else(changed)?;
+                    read_bytes = read_bytes.saturating_add(raw.bytes.len() as u64);
+                    if read_bytes > asset_journal::MAX_METADATA {
+                        return Err(ApiError::invalid(
+                            "Native folder removal exceeds its 16 MiB metadata read budget",
+                        ));
+                    }
+                    let mut asset = asset_payload::parse(&raw.bytes)?;
+                    if asset.folder.as_deref() == Some(id) {
+                        affected += 1;
+                        if affected > asset_journal::MAX_AFFECTED {
+                            return Err(ApiError::invalid(
+                                "Native folder removal affects more than 128 assets",
+                            ));
+                        }
+                        asset.folder = parent.clone();
+                        prepared.add(
+                            true,
+                            entry.name.clone(),
+                            Some(Before {
+                                identity: raw.identity,
+                                sha256: raw.revision,
+                            }),
+                            &serde_json::to_vec_pretty(&asset).map_err(|_| ApiError::io())?,
+                        )?;
+                    }
+                }
+                prepared.roster(entries);
+            }
+            Edit::MoveAssets { items, folder, .. } => {
+                if items.is_empty() || items.len() > 64 {
+                    return Err(ApiError::invalid(
+                        "Choose between 1 and 64 native assets to move",
+                    ));
+                }
+                if let Some(id) = folder {
+                    tree.path(id)?;
+                }
+                let mut ids = std::collections::HashSet::new();
+                for item in items {
+                    if !ids.insert(&item.id) {
+                        return Err(ApiError::invalid("Native asset move IDs must be unique"));
+                    }
+                    if cancel.load(Ordering::Acquire) {
+                        return Err(ApiError::conflict(
+                            "ASSET_CANCELED",
+                            "Asset preparation was canceled",
+                        ));
+                    }
+                    let file_name = name(&item.id, false)?;
+                    let raw = self
+                        .raw_limit(
+                            &file_name,
+                            MAX_JSON.min(asset_journal::MAX_METADATA.saturating_sub(read_bytes)),
+                        )?
+                        .ok_or_else(ApiError::missing)?;
+                    read_bytes = read_bytes.saturating_add(raw.bytes.len() as u64);
+                    if raw.revision != item.revision {
+                        return Err(changed());
+                    }
+                    if read_bytes > asset_journal::MAX_METADATA {
+                        return Err(ApiError::invalid(
+                            "Native asset moves exceed their 16 MiB metadata read budget",
+                        ));
+                    }
+                    prepared.guard(
+                        true,
+                        file_name.clone(),
+                        Some(Before {
+                            identity: raw.identity.clone(),
+                            sha256: raw.revision.clone(),
+                        }),
+                    );
+                    let mut asset = asset_payload::parse(&raw.bytes)?;
+                    if &asset.folder != folder {
+                        affected += 1;
+                        asset.folder = folder.clone();
+                        prepared.add(
+                            true,
+                            file_name,
+                            Some(Before {
+                                identity: raw.identity,
+                                sha256: raw.revision,
+                            }),
+                            &serde_json::to_vec_pretty(&asset).map_err(|_| ApiError::io())?,
+                        )?;
+                    }
+                }
+            }
+            _ => unreachable!(),
+        }
+        let folder_bytes = tree.serialize()?;
+        let folder_revision = if tree_changed {
+            format!("{:x}", Sha256::digest(&folder_bytes))
+        } else {
+            revision.clone()
+        };
+        prepared
+            .set_summary(json!({"affected_assets":affected,"folders_revision":folder_revision}));
+        if tree_changed {
+            prepared.add(false, "folders.json".into(), before, &folder_bytes)?;
+        }
+        Ok(prepared)
+    }
+    pub(crate) fn commit_edit(
+        &self,
+        prepared: &mut PreparedEdit,
+        cancel: &AtomicBool,
+    ) -> Result<()> {
+        let _global = self.lock()?;
+        let _catalog = self.catalog_lock(true)?;
+        self.validate_root()?;
+        prepared.commit(&self.0.directory, &self.0.assets, cancel)
     }
 }
 pub(crate) fn changed() -> ApiError {

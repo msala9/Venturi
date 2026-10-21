@@ -675,3 +675,224 @@ fn obsolete_project_cancellation_marks_only_old_queue_and_ready_records_and_pres
     drop(isolated);
     fixture.close();
 }
+
+fn edit_receipt(id: &str) -> Value {
+    json!({"command_id":id,"status":"applied","project_epoch":"epoch","generation":"7","library_durable":true})
+}
+
+#[test]
+fn folder_worker_retains_original_validation_missing_and_conflict_failures_without_changing_job_wire()
+ {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.store.root().join("folders.json"),
+        serde_json::to_vec(
+            &json!({"version":1,"folders":[{"id":"root","name":"Root","parent":null}]}),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let revision = fixture.store.folders().unwrap()["folders_revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    for (id, edit, status, code) in [
+        (
+            "cycle",
+            asset_store::Edit::MoveFolder {
+                id: "root".into(),
+                folders_revision: revision.clone(),
+                parent: Some("root".into()),
+            },
+            422,
+            "INVALID_OPERATION",
+        ),
+        (
+            "missing",
+            asset_store::Edit::RenameFolder {
+                id: "missing".into(),
+                folders_revision: revision.clone(),
+                name: "Name".into(),
+            },
+            404,
+            "NOT_FOUND",
+        ),
+        (
+            "stale",
+            asset_store::Edit::RenameFolder {
+                id: "root".into(),
+                folders_revision: "stale".into(),
+                name: "Name".into(),
+            },
+            409,
+            "FOLDERS_CHANGED",
+        ),
+    ] {
+        let queued = fixture
+            .jobs
+            .prepare_edit("epoch", "7", id, [1; 32], edit_receipt(id), edit)
+            .unwrap();
+        let job = fixture.finish(queued["id"].as_str().unwrap());
+        assert_eq!(job["state"], "failed", "{job}");
+        assert_eq!(job["error"], code);
+        assert!(job.get("failure").is_none());
+        let error = fixture
+            .jobs
+            .read_failure(job["id"].as_str().unwrap(), "epoch")
+            .unwrap()
+            .unwrap();
+        assert_eq!(error.0.as_u16(), status);
+        assert_eq!(error.1, code);
+        assert!(!error.2.is_empty());
+        assert!(
+            fixture
+                .jobs
+                .read_failure(job["id"].as_str().unwrap(), "other")
+                .is_err()
+        );
+    }
+    assert!(fixture.jobs.read_failure("unknown", "epoch").is_err());
+    fixture.close();
+}
+
+#[test]
+fn folder_preparation_uses_shared_worker_dedup_binds_full_request_and_durable_completion_before_applied_status()
+ {
+    let fixture = Fixture::new();
+    let edit = asset_store::Edit::CreateFolder {
+        folders_revision: "absent".into(),
+        name: "Original folder".into(),
+        parent: None,
+    };
+    let queued = fixture
+        .jobs
+        .prepare_edit(
+            "epoch",
+            "7",
+            "folder-command",
+            [9; 32],
+            edit_receipt("folder-command"),
+            edit.clone(),
+        )
+        .unwrap();
+    let duplicate = fixture
+        .jobs
+        .prepare_edit(
+            "epoch",
+            "7",
+            "folder-command",
+            [9; 32],
+            edit_receipt("folder-command"),
+            edit.clone(),
+        )
+        .unwrap();
+    assert_eq!(queued["id"], duplicate["id"]);
+    assert_eq!(queued["kind"], "library_edit");
+    assert_eq!(
+        fixture
+            .jobs
+            .prepare_edit(
+                "epoch",
+                "7",
+                "folder-command",
+                [8; 32],
+                edit_receipt("folder-command"),
+                edit.clone()
+            )
+            .unwrap_err()
+            .1,
+        "COMMAND_ID_REUSED"
+    );
+    let ready = fixture.finish(queued["id"].as_str().unwrap());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert!(
+        fixture.store.folders().unwrap()["folders"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(
+        fixture
+            .jobs
+            .commit_edit("folder-command", [9; 32], "epoch", "8", &edit)
+            .unwrap_err()
+            .1,
+        "ASSET_CONTEXT_CHANGED"
+    );
+    fixture
+        .jobs
+        .commit_edit("folder-command", [9; 32], "epoch", "7", &edit)
+        .unwrap();
+    let status = fixture
+        .jobs
+        .status(queued["id"].as_str().unwrap(), "epoch", true)
+        .unwrap();
+    assert_eq!(status["state"], "applied");
+    let binding = crate::asset_journal::project_binding(&fixture.jobs.0.directory).unwrap();
+    let completion = fixture
+        .store
+        .completion("folder-command", &binding)
+        .unwrap()
+        .unwrap();
+    assert_eq!(completion.0, [9; 32]);
+    assert_eq!(completion.1, edit_receipt("folder-command"));
+    fixture
+        .store
+        .acknowledge_completion("folder-command", [9; 32], &binding)
+        .unwrap();
+    assert!(
+        fixture
+            .store
+            .completion("folder-command", &binding)
+            .unwrap()
+            .is_none()
+    );
+    fixture.close();
+}
+
+#[test]
+fn canceled_or_obsolete_folder_preparations_never_publish_native_files_or_command_receipts() {
+    let fixture = Fixture::new();
+    let edit = asset_store::Edit::CreateFolder {
+        folders_revision: "absent".into(),
+        name: "Canceled".into(),
+        parent: None,
+    };
+    for (id, obsolete) in [("cancel", false), ("obsolete", true)] {
+        let queued = fixture
+            .jobs
+            .prepare_edit("epoch", "7", id, [2; 32], edit_receipt(id), edit.clone())
+            .unwrap();
+        let ready = fixture.finish(queued["id"].as_str().unwrap());
+        assert_eq!(ready["state"], "ready", "{ready}");
+        if obsolete {
+            fixture.jobs.cancel_obsolete("another");
+        } else {
+            fixture
+                .jobs
+                .status(queued["id"].as_str().unwrap(), "epoch", true)
+                .unwrap();
+        }
+        assert_eq!(
+            fixture
+                .jobs
+                .commit_edit(id, [2; 32], "epoch", "7", &edit)
+                .unwrap_err()
+                .1,
+            "ASSET_NOT_READY"
+        );
+    }
+    assert!(!fixture.store.root().join("folders.json").exists());
+    let binding = crate::asset_journal::project_binding(&fixture.jobs.0.directory).unwrap();
+    assert!(fixture.store.completions(&binding).unwrap().is_empty());
+    assert!(
+        std::fs::read_dir(fixture.store.root())
+            .unwrap()
+            .all(|entry| !entry
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .starts_with(".venturi-asset-stage-"))
+    );
+    fixture.close();
+}

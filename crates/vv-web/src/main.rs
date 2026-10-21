@@ -1,5 +1,7 @@
 mod api;
+mod asset_folders;
 mod asset_jobs;
+mod asset_journal;
 mod asset_payload;
 mod asset_probe;
 mod asset_store;

@@ -77,26 +77,36 @@ struct Job {
     bytes: u64,
     total: u64,
     error: Option<&'static str>,
+    failure: Option<ApiError>,
     asset_id: Option<String>,
     revision: Option<String>,
     cancel: Arc<AtomicBool>,
     result: Option<Prepared>,
+    edit_result: Option<crate::asset_journal::PreparedEdit>,
+    edit: Option<asset_store::Edit>,
+    command_id: Option<String>,
+    fingerprint: Option<[u8; 32]>,
 }
 impl Job {
     fn value(&self) -> Value {
         let result = self.result.as_ref().map(|prepared| {
             let payload = asset_payload::decode(&prepared.asset).ok();
             json!({"asset_id":self.asset_id,"revision":self.revision,"name":prepared.asset.name,"media_count":payload.as_ref().map_or(0,|p| p.media_items().count()),"file_count":prepared.files.len(),"bytes":self.bytes})
-        });
+        }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary()));
         json!({"id":self.id,"kind":self.kind,"project_epoch":self.epoch,"generation":self.generation,"state":self.state,"bytes":self.bytes,"total_bytes":self.total,"error":self.error,"result":result})
     }
 }
 struct Work {
     id: String,
-    asset: AssetFile,
+    asset: Option<AssetFile>,
     sources: Vec<PinnedSource>,
     cancel: Arc<AtomicBool>,
     import: Option<(String, String)>,
+    edit: Option<(asset_store::Edit, crate::asset_journal::Completion)>,
+}
+enum Finished {
+    Media(Prepared),
+    Edit(crate::asset_journal::PreparedEdit),
 }
 struct Inner {
     store: Store,
@@ -177,7 +187,14 @@ impl Jobs {
                     {
                         job.state = "running";
                     }
-                    let result = run(&inner, &work);
+                    let result = if let Some((edit, completion)) = &work.edit {
+                        inner
+                            .store
+                            .prepare_edit(edit, completion.clone(), &work.cancel)
+                            .map(Finished::Edit)
+                    } else {
+                        run(&inner, &work).map(Finished::Media)
+                    };
                     if let Ok(mut jobs) = inner.jobs.lock()
                         && let Some(job) = jobs.iter_mut().find(|j| j.id == work.id)
                     {
@@ -185,11 +202,15 @@ impl Jobs {
                             Ok(prepared) if !job.cancel.load(Ordering::Acquire) => {
                                 job.state = "ready";
                                 job.bytes = job.total;
-                                job.result = Some(prepared);
+                                match prepared {
+                                    Finished::Media(prepared) => job.result = Some(prepared),
+                                    Finished::Edit(prepared) => job.edit_result = Some(prepared),
+                                }
                             }
                             Ok(_) => {
                                 job.state = "canceled";
                                 job.error = Some("ASSET_CANCELED");
+                                job.failure = Some(canceled());
                             }
                             Err(error) => {
                                 job.state = if job.cancel.load(Ordering::Acquire)
@@ -200,6 +221,7 @@ impl Jobs {
                                     "failed"
                                 };
                                 job.error = Some(error.1);
+                                job.failure = Some(error);
                             }
                         }
                     }
@@ -237,6 +259,108 @@ impl Jobs {
             )?;
         }
         self.enqueue(epoch, generation, asset, sources, None)
+    }
+    pub fn prepare_edit(
+        &self,
+        epoch: &str,
+        generation: &str,
+        command_id: &str,
+        fingerprint: [u8; 32],
+        receipt: Value,
+        edit: asset_store::Edit,
+    ) -> Result<Value> {
+        binding(epoch, generation)?;
+        if !edit.requires_preparation() {
+            return Err(ApiError::invalid("Choose a native asset folder operation"));
+        }
+        let completion = crate::asset_journal::Completion {
+            version: 1,
+            command_id: command_id.into(),
+            fingerprint,
+            project_root_binding: crate::asset_journal::project_binding(&self.0.directory)?,
+            receipt,
+        };
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        if let Some(job) = jobs
+            .iter()
+            .find(|job| job.command_id.as_deref() == Some(command_id))
+        {
+            if job.fingerprint != Some(fingerprint) {
+                return Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Native asset command ID was reused",
+                ));
+            }
+            return Ok(job.value());
+        }
+        reserve(&mut jobs)?;
+        let id = format!("asset-{}", nonce());
+        let cancel = Arc::new(AtomicBool::new(false));
+        let work = Work {
+            id: id.clone(),
+            asset: None,
+            sources: vec![],
+            cancel: cancel.clone(),
+            import: None,
+            edit: Some((edit.clone(), completion)),
+        };
+        let job = Job {
+            id,
+            kind: "library_edit",
+            epoch: epoch.into(),
+            generation: generation.into(),
+            state: "queued",
+            bytes: 0,
+            total: 0,
+            error: None,
+            failure: None,
+            asset_id: None,
+            revision: None,
+            cancel,
+            result: None,
+            edit_result: None,
+            edit: Some(edit),
+            command_id: Some(command_id.into()),
+            fingerprint: Some(fingerprint),
+        };
+        let value = job.value();
+        jobs.push_back(job);
+        if self.0.sender.try_send(work).is_err() {
+            jobs.pop_back();
+            return Err(busy());
+        }
+        Ok(value)
+    }
+    pub fn commit_edit(
+        &self,
+        command_id: &str,
+        fingerprint: [u8; 32],
+        epoch: &str,
+        generation: &str,
+        edit: &asset_store::Edit,
+    ) -> Result<()> {
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter_mut()
+            .find(|job| job.command_id.as_deref() == Some(command_id))
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, "library_edit")?;
+        if job.fingerprint != Some(fingerprint)
+            || serde_json::to_vec(&job.edit).map_err(|_| ApiError::io())?
+                != serde_json::to_vec(&Some(edit)).map_err(|_| ApiError::io())?
+        {
+            return Err(ApiError::conflict(
+                "COMMAND_ID_REUSED",
+                "Native asset command ID was reused",
+            ));
+        }
+        self.0.store.commit_edit(
+            job.edit_result.as_mut().ok_or_else(ApiError::missing)?,
+            &job.cancel,
+        )?;
+        job.state = "applied";
+        job.edit_result = None;
+        Ok(())
     }
     pub fn prepare_import(
         &self,
@@ -309,31 +433,16 @@ impl Jobs {
             return Err(ApiError::invalid("Native assets are limited to 2 GiB"));
         }
         let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
-        if jobs
-            .iter()
-            .filter(|j| matches!(j.state, "running" | "queued"))
-            .count()
-            >= 2
-        {
-            return Err(busy());
-        }
-        while jobs.len() >= MAX_RECORDS {
-            let Some(index) = jobs
-                .iter()
-                .position(|j| !matches!(j.state, "running" | "queued"))
-            else {
-                return Err(busy());
-            };
-            jobs.remove(index);
-        }
+        reserve(&mut jobs)?;
         let id = format!("asset-{}", nonce());
         let cancel = Arc::new(AtomicBool::new(false));
         let work = Work {
             id: id.clone(),
-            asset,
+            asset: Some(asset),
             sources,
             cancel: cancel.clone(),
             import: import.clone(),
+            edit: None,
         };
         let job = Job {
             id,
@@ -348,10 +457,15 @@ impl Jobs {
             bytes: 0,
             total,
             error: None,
+            failure: None,
             asset_id: import.as_ref().map(|v| v.0.clone()),
             revision: import.map(|v| v.1),
             cancel,
             result: None,
+            edit_result: None,
+            edit: None,
+            command_id: None,
+            fingerprint: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -367,15 +481,28 @@ impl Jobs {
             .iter_mut()
             .find(|j| j.id == id && j.epoch == epoch)
             .ok_or_else(ApiError::missing)?;
+        if job.state == "applied" {
+            return Ok(job.value());
+        }
         if cancel {
             job.cancel.store(true, Ordering::Release);
             if !matches!(job.state, "running" | "queued") {
                 job.state = "canceled";
                 job.result = None;
+                job.edit_result = None;
                 job.error = Some("ASSET_CANCELED");
+                job.failure = Some(canceled());
             }
         }
         Ok(job.value())
+    }
+    pub fn read_failure(&self, id: &str, epoch: &str) -> Result<Option<ApiError>> {
+        let jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter()
+            .find(|job| job.id == id && job.epoch == epoch)
+            .ok_or_else(ApiError::missing)?;
+        Ok(job.failure.clone())
     }
     pub fn cancel_obsolete(&self, epoch: &str) {
         let mut jobs = self
@@ -383,12 +510,17 @@ impl Jobs {
             .jobs
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        for job in jobs.iter_mut().filter(|job| job.epoch != epoch) {
+        for job in jobs
+            .iter_mut()
+            .filter(|job| job.epoch != epoch && job.state != "applied")
+        {
             job.cancel.store(true, Ordering::Release);
             job.result = None;
+            job.edit_result = None;
             if !matches!(job.state, "running" | "queued") {
                 job.state = "canceled";
                 job.error = Some("ASSET_CANCELED");
+                job.failure = Some(canceled());
             }
         }
     }
@@ -446,6 +578,24 @@ impl Jobs {
         }
         asset_payload::decode(&prepared.asset)
     }
+}
+fn reserve(jobs: &mut VecDeque<Job>) -> Result<()> {
+    if jobs
+        .iter()
+        .filter(|job| matches!(job.state, "queued" | "running"))
+        .count()
+        >= 2
+    {
+        return Err(busy());
+    }
+    while jobs.len() >= MAX_RECORDS {
+        let index = jobs
+            .iter()
+            .position(|job| !matches!(job.state, "queued" | "running"))
+            .ok_or_else(busy)?;
+        jobs.remove(index);
+    }
+    Ok(())
 }
 fn ready(job: &Job, epoch: &str, generation: &str, kind: &str) -> Result<()> {
     if job.epoch != epoch || job.generation != generation {
@@ -855,7 +1005,8 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
     if let Some((id, revision)) = &work.import {
         inner.store.load(id, revision)?;
     }
-    let mut payload = asset_payload::decode(&work.asset)?;
+    let source_asset = work.asset.as_ref().ok_or_else(ApiError::missing)?;
+    let mut payload = asset_payload::decode(source_asset)?;
     let mut remap = HashMap::new();
     let mut files = Vec::new();
     let mut bytes = 0_u64;
@@ -893,9 +1044,9 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
         item.content_hash = *hash;
     }
     let asset = AssetFile {
-        version: work.asset.version,
-        name: work.asset.name.clone(),
-        folder: work.asset.folder.clone(),
+        version: source_asset.version,
+        name: source_asset.name.clone(),
+        folder: source_asset.folder.clone(),
         payload: payload.to_text(),
     };
     asset_payload::decode(&asset)?;

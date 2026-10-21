@@ -36,6 +36,7 @@ pub struct Store {
     length: u64,
     count: usize,
     _lock: File,
+    recorded: Entries,
 }
 impl Store {
     pub fn open(files: &Files) -> Result<(Self, Entries)> {
@@ -108,6 +109,7 @@ impl Store {
                 length: metadata.len(),
                 count,
                 _lock: lock,
+                recorded: entries.clone(),
             },
             entries,
         ))
@@ -151,6 +153,16 @@ impl Store {
         {
             return Err(ApiError::io());
         }
+        if let Some((previous, _)) = self.recorded.get(id) {
+            return if previous == &fingerprint {
+                Ok(())
+            } else {
+                Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Command ID was already recorded with another request",
+                ))
+            };
+        }
         if self.count >= MAX_ENTRIES || self.length + bytes.len() as u64 > MAX_BYTES {
             let dir = files.root_file()?;
             let temp = format!(".venturi-receipts-{}.tmp", std::process::id());
@@ -180,13 +192,19 @@ impl Store {
             self.file = file;
             self.length = bytes.len() as u64;
             self.count = 1;
+            self.recorded.clear();
         } else {
             self.file.write_all(&bytes).map_err(|_| ApiError::io())?;
             self.file.sync_all().map_err(|_| ApiError::io())?;
             self.length += bytes.len() as u64;
             self.count += 1;
         }
+        self.recorded
+            .insert(id.to_owned(), (fingerprint, result.clone()));
         Ok(())
+    }
+    pub fn recorded(&self, id: &str) -> Option<([u8; 32], Value)> {
+        self.recorded.get(id).cloned()
     }
 }
 

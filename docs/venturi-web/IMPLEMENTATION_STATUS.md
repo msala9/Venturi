@@ -12,6 +12,29 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Native library folder organization now passes `evidence/m4-native-asset-folders.json`.
+The existing Windows browser verified create/rename, a new child under the selected
+folder, folder reparenting, a two-asset move and removal of a nonempty folder:
+its direct assets and child move up without media deletion or timeline history.
+The Root filter survives panel reopening; unknown native memberships retain their
+raw metadata while appearing at root. Source-page filtering, stale revisions,
+archive/backup preservation, restart and command retry passed finite API checks.
+Bounded journal tests cover interrupted multi-file installation, foreign changes,
+cleanup and durable command completion; the original desktop parser/reopen test
+retains the native v1 format. Latest validation is 317 web Rust, 277 core, 636
+JavaScript and four targeted desktop tests, fmt, Clippy and native build.
+The API check found that worker failures hid cycle/missing/stale errors; original
+422/404/409 errors now survive POST, lookup and retry. Preparation shares the
+existing one-worker queue, with bounded metadata/staging and no new media copy.
+All compilation and tests ran on halo2 with one CPU, 4 GiB RAM, no swap and OOM
+score 1000. The sampled build peak was about 2.2 GiB with no cgroup OOM events.
+The finite API/browser server used 512 MiB with preview/export disabled; it, its
+single temporary Windows tab and its SSH tunnel were closed. No environment,
+browser, driver or NAS installation occurred. The main editor retained its five
+unsaved MoveClips and Undo. Physical placement/drag, broader offline/library
+lifecycle and release work remain open; overall ledger counts and estimate stay
+unchanged.
+
 Native pool asset capture and cross-project import are implemented and qualified
 in `evidence/m4-native-assets.json`. File-dependent compounds retain their native
 clipboard payload and nested timelines; project-owned copies survive removal of
@@ -28,8 +51,8 @@ and qualified again with a panel regression. The passed validation is 291 web
 Rust, 277 core, 620 JavaScript and three targeted original-desktop tests, plus
 fmt, clippy and build. The last JavaScript-only fix retained the matching Rust
 source hashes and reran JavaScript/fmt/build. No full native runtime or GPU test
-fleet was run. Native folder management, physical asset placement/drag, broader
-library lifecycle and release qualification remain open; the ledger counts and
+fleet was run. The folder follow-up is qualified above; physical asset placement/drag,
+broader library lifecycle and release qualification remain open; the ledger counts and
 engineering estimate above are unchanged. No NAS mount or browser installation
 was added. The main editor's five unsaved MoveClips and Undo stack were preserved.
 

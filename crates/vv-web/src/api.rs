@@ -36,6 +36,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/session", get(session))
         .route("/api/v1/review", get(review_metadata))
         .route("/api/v1/native-assets/prepare", post(prepare_native_asset))
+        .route("/api/v1/native-assets/folders", get(native_asset_folders))
         .route("/api/v1/native-assets/pages/{page}", get(native_asset_list))
         .route("/api/v1/native-assets/items/{id}", get(native_asset_item))
         .route(
@@ -358,6 +359,20 @@ async fn prepare_native_asset(
         .await
         .map(native_asset_json)
 }
+async fn native_asset_folders(
+    State(state): State<AppState>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::NativeAssetFolders(
+            query
+                .map_err(|_| ApiError::invalid("Invalid native asset folder query"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
 async fn native_asset_list(
     State(state): State<AppState>,
     Path(page): Path<usize>,
@@ -478,7 +493,7 @@ async fn native_asset_command(
     }
     state
         .host
-        .call(Action::Mutation(None, request))
+        .native_asset_mutation(request)
         .await
         .map(native_asset_json)
 }
@@ -1364,8 +1379,12 @@ async fn timeline_command(
         .await
         .map(Json)
 }
-async fn lookup(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<Value>> {
-    state.host.call(Action::Lookup(id)).await.map(Json)
+async fn lookup(State(state): State<AppState>, Path(id): Path<String>) -> Result<Response> {
+    let value = state.host.call(Action::Lookup(id)).await?;
+    if matches!(value["status"].as_str(), Some("pending" | "preparing")) {
+        return Ok((StatusCode::CONFLICT,[(header::CACHE_CONTROL,"no-store")],Json(json!({"error":{"code":"OUTCOME_UNKNOWN","message":"Native library command is preparing or requires recovery; resolve this command before retrying","details":value,"recoverable":true}}))).into_response());
+    }
+    Ok(Json(value).into_response())
 }
 #[derive(serde::Deserialize)]
 struct Lease {
@@ -1470,6 +1489,9 @@ async fn assets(request: Request) -> Response {
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),
         "/js/library.js" => asset!("/web/js/library.js", "text/javascript"),
         "/js/native-assets.js" => asset!("/web/js/native-assets.js", "text/javascript"),
+        "/js/native-asset-folders.js" => {
+            asset!("/web/js/native-asset-folders.js", "text/javascript")
+        }
         "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
         "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),
         "/js/reviewmeta.js" => asset!("/web/js/reviewmeta.js", "text/javascript"),

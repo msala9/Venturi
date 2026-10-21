@@ -29,6 +29,37 @@ fn persisted_receipts_survive_restart_with_exact_request_identity_and_single_roo
     std::fs::remove_dir_all(root).unwrap();
 }
 #[test]
+fn durable_completion_harvest_is_idempotent_and_cannot_replace_the_original_receipt() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    let (mut store, _) = Store::open(&files).unwrap();
+    let original = json!({"status":"applied","command_id":"folder-command","library_durable":true,"receipt_persisted":true});
+    store
+        .append(&files, "folder-command", [19; 32], &original)
+        .unwrap();
+    let before = std::fs::read(root.join(NAME)).unwrap();
+    store.append(&files,"folder-command",[19;32],&json!({"status":"applied","command_id":"folder-command","different":"conservative recovery seed"})).unwrap();
+    assert_eq!(std::fs::read(root.join(NAME)).unwrap(), before);
+    assert_eq!(
+        store.recorded("folder-command"),
+        Some(([19; 32], original.clone()))
+    );
+    assert_eq!(
+        store
+            .append(&files, "folder-command", [20; 32], &original)
+            .unwrap_err()
+            .1,
+        "COMMAND_ID_REUSED"
+    );
+    drop(store);
+    let (store, entries) = Store::open(&files).unwrap();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries["folder-command"].0, [19; 32]);
+    assert_eq!(entries["folder-command"].1["server_restarted"], true);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+#[test]
 fn receipt_window_rotates_atomically_and_torn_or_changed_logs_are_preserved() {
     let root = root();
     let files = Files::new(&root).unwrap();

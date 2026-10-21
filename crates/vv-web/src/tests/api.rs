@@ -418,6 +418,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/silence.js", 200),
         ("/js/library.js", 200),
         ("/js/native-assets.js", 200),
+        ("/js/native-asset-folders.js", 200),
         ("/api/v1/library", 200),
         ("/js/slip.js", 200),
         ("/js/catalog.js", 200),
@@ -631,6 +632,202 @@ async fn native_asset_http_library_readers_import_routes_security_and_download_c
             })
             .unwrap()
     };
+    let response = app
+        .clone()
+        .oneshot(make(
+            "GET",
+            &format!("/api/v1/native-assets/folders?project_epoch={epoch}"),
+            Value::Null,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let folders: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    assert_eq!(
+        folders,
+        json!({"project_epoch":epoch,"version":1,"folders_revision":"absent","folders":[]})
+    );
+    for (path, status) in [
+        (
+            "/api/v1/native-assets/folders".into(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "/api/v1/native-assets/folders?project_epoch=stale".into(),
+            StatusCode::CONFLICT,
+        ),
+        (
+            format!("/api/v1/native-assets/folders?project_epoch={epoch}&force=true"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        assert_eq!(
+            app.clone()
+                .oneshot(make("GET", &path, Value::Null))
+                .await
+                .unwrap()
+                .status(),
+            status
+        );
+    }
+    let folder_command = |id: &str| json!({"command_id":id,"client_id":"native-browser","command_epoch":session["command_epoch"],"project_epoch":epoch,"if_generation":session["generation"],"if_revision":null,"operation":{"kind":"edit_native_asset_library","edit":{"action":"create_folder","folders_revision":"absent","name":"Takes","parent":null}}});
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    host.call(Action::PrepareNativeAssetEdit(
+        serde_json::from_value(folder_command("pending-http-folder")).unwrap(),
+        tx,
+    ))
+    .await
+    .unwrap();
+    let preparation = rx.await.unwrap().unwrap();
+    assert!(matches!(
+        &preparation,
+        crate::host::NativeEditPreparation::Pending(_)
+    ));
+    let response = app
+        .clone()
+        .oneshot(make(
+            "GET",
+            "/api/v1/commands/pending-http-folder",
+            Value::Null,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::CONFLICT);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let pending: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    assert_eq!(pending["error"]["code"], "OUTCOME_UNKNOWN");
+    assert_eq!(pending["error"]["details"]["status"], "preparing");
+    assert!(pending["error"]["details"]["job_id"].is_string());
+    drop(preparation);
+    let command = folder_command("create-http-folder");
+    let response = app
+        .clone()
+        .oneshot(make(
+            "POST",
+            "/api/v1/native-assets/commands",
+            command.clone(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let receipt: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    assert_eq!(receipt["status"], "applied");
+    assert_eq!(receipt["library_durable"], true);
+    assert_eq!(receipt["generation"], session["generation"]);
+    assert_eq!(receipt["durability"]["state"], "volatile");
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/native-assets/commands", command))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&to_bytes(response.into_body(), 32768).await.unwrap())
+            .unwrap(),
+        receipt
+    );
+    let current = host.call(Action::Session).await.unwrap();
+    assert_eq!(current["generation"], session["generation"]);
+    let graph = store.folders().unwrap();
+    assert_eq!(graph["folders"].as_array().unwrap().len(), 1);
+    assert_eq!(graph["folders"][0]["name"], "Takes");
+    let folder_bytes = std::fs::read(root.join(".assets/folders.json")).unwrap();
+    let project_bytes = std::fs::read(root.join("destination.vvproj")).unwrap();
+    let asset_bytes = store.export("native-source").unwrap();
+    let receipt_bytes = std::fs::read(root.join(".venturi-command-receipts.jsonl")).unwrap();
+    for (id, edit, status, code) in [
+        (
+            "cycle-http-folder",
+            json!({"action":"move_folder","id":graph["folders"][0]["id"],"parent":graph["folders"][0]["id"],"folders_revision":graph["folders_revision"]}),
+            StatusCode::UNPROCESSABLE_ENTITY,
+            "INVALID_OPERATION",
+        ),
+        (
+            "missing-http-folder",
+            json!({"action":"rename_folder","id":"does-not-exist","name":"Missing","folders_revision":graph["folders_revision"]}),
+            StatusCode::NOT_FOUND,
+            "NOT_FOUND",
+        ),
+        (
+            "stale-http-folder",
+            json!({"action":"rename_folder","id":graph["folders"][0]["id"],"name":"Stale","folders_revision":"absent"}),
+            StatusCode::CONFLICT,
+            "FOLDERS_CHANGED",
+        ),
+    ] {
+        let mut command = folder_command(id);
+        command["operation"]["edit"] = edit;
+        let response = app
+            .clone()
+            .oneshot(make(
+                "POST",
+                "/api/v1/native-assets/commands",
+                command.clone(),
+            ))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), status, "{id}");
+        let failure: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+        assert_eq!(failure["error"]["code"], code);
+        if id == "cycle-http-folder" {
+            assert!(
+                failure["error"]["message"]
+                    .as_str()
+                    .unwrap()
+                    .contains("cycle")
+            );
+        }
+        let lookup = app
+            .clone()
+            .oneshot(make("GET", &format!("/api/v1/commands/{id}"), Value::Null))
+            .await
+            .unwrap();
+        assert_eq!(lookup.status(), status);
+        assert_eq!(
+            serde_json::from_slice::<Value>(&to_bytes(lookup.into_body(), 32768).await.unwrap())
+                .unwrap(),
+            failure
+        );
+        let retry = app
+            .clone()
+            .oneshot(make("POST", "/api/v1/native-assets/commands", command))
+            .await
+            .unwrap();
+        assert_eq!(retry.status(), status);
+        assert_eq!(
+            serde_json::from_slice::<Value>(&to_bytes(retry.into_body(), 32768).await.unwrap())
+                .unwrap(),
+            failure
+        );
+        assert_eq!(
+            std::fs::read(root.join(".assets/folders.json")).unwrap(),
+            folder_bytes
+        );
+        assert_eq!(
+            std::fs::read(root.join("destination.vvproj")).unwrap(),
+            project_bytes
+        );
+        assert_eq!(store.export("native-source").unwrap(), asset_bytes);
+        assert_eq!(
+            std::fs::read(root.join(".venturi-command-receipts.jsonl")).unwrap(),
+            receipt_bytes
+        );
+        let unchanged = host.call(Action::Session).await.unwrap();
+        for key in [
+            "project_epoch",
+            "generation",
+            "history",
+            "timelines",
+            "media",
+        ] {
+            assert_eq!(unchanged[key], current[key], "{id}: {key}");
+        }
+    }
     for path in [
         format!("/api/v1/native-assets/pages/0?project_epoch={epoch}"),
         format!("/api/v1/native-assets/items/native-source?project_epoch={epoch}"),
@@ -702,6 +899,7 @@ async fn native_asset_http_library_readers_import_routes_security_and_download_c
     }
     for path in [
         format!("/api/v1/native-assets/pages/0?project_epoch={epoch}"),
+        format!("/api/v1/native-assets/folders?project_epoch={epoch}"),
         "/api/v1/native-assets/prepare".into(),
     ] {
         let mut request = make(
@@ -894,4 +1092,50 @@ async fn native_asset_http_library_readers_import_routes_security_and_download_c
     drop(host);
     drop(store);
     std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_asset_folder_edits_reuse_library_operation_and_require_strict_folder_and_asset_revisions()
+{
+    let base = json!({"command_id":"folder-command","client_id":"browser","command_epoch":null,"project_epoch":"p:1","if_generation":"0","if_revision":null,"operation":{"kind":"edit_native_asset_library","edit":{"action":"update","id":"asset","revision":"asset-r1","name":"Legacy update"}}});
+    assert_eq!(
+        serde_json::to_value(serde_json::from_value::<Mutation>(base.clone()).unwrap()).unwrap(),
+        base
+    );
+    for edit in [
+        json!({"action":"create_folder","folders_revision":"absent","name":"Folder","parent":null}),
+        json!({"action":"rename_folder","id":"folder","folders_revision":"folders-r1","name":"Renamed"}),
+        json!({"action":"move_folder","id":"folder","folders_revision":"folders-r1","parent":"parent"}),
+        json!({"action":"remove_folder","id":"folder","folders_revision":"folders-r1"}),
+        json!({"action":"move_assets","folders_revision":"folders-r1","items":[{"id":"asset","revision":"asset-r1"}],"folder":null}),
+    ] {
+        let mut body = base.clone();
+        body["operation"]["edit"] = edit;
+        assert_eq!(
+            serde_json::to_value(serde_json::from_value::<Mutation>(body.clone()).unwrap())
+                .unwrap(),
+            body
+        );
+        let mut missing = body.clone();
+        missing["operation"]["edit"]
+            .as_object_mut()
+            .unwrap()
+            .remove("folders_revision");
+        assert!(serde_json::from_value::<Mutation>(missing).is_err());
+        body["operation"]["edit"]["force"] = json!(true);
+        assert!(serde_json::from_value::<Mutation>(body).is_err());
+    }
+    let mut missing_asset_revision = base;
+    missing_asset_revision["operation"]["edit"] = json!({"action":"move_assets","folders_revision":"folders-r1","items":[{"id":"asset"}],"folder":null});
+    assert!(serde_json::from_value::<Mutation>(missing_asset_revision).is_err());
+    let all: crate::asset_store::Query =
+        serde_json::from_value(json!({"project_epoch":"p:1"})).unwrap();
+    assert!(all.folder.is_none());
+    assert!(all.folders_revision.is_none());
+    let root: crate::asset_store::Query = serde_json::from_value(
+        json!({"project_epoch":"p:1","folder":"","folders_revision":"absent"}),
+    )
+    .unwrap();
+    assert_eq!(root.folder.as_deref(), Some(""));
+    assert_eq!(root.folders_revision.as_deref(), Some("absent"));
 }

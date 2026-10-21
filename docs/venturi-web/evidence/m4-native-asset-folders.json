@@ -1,0 +1,2680 @@
+{
+  "project": "Native_Folders_API_check.vvproj",
+  "root": "/home/marco/VenturiWeb-native-folders-20261022-3",
+  "folder_ids": {
+    "child": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+    "grandchild": "699c6efd-61f7-4a6e-945a-ca205e185617",
+    "other": "c011e486-a05b-403d-88d8-b72f63871181"
+  },
+  "asset_count": 35,
+  "commands_no_timeline_history": true,
+  "native_v1_manifest": true,
+  "missing_manifest_revision": "absent",
+  "batch_move_atomic_stale_rejection": true,
+  "nonempty_remove_direct_contents_up": true,
+  "descendants_unchanged": true,
+  "orphan_raw_membership_preserved": true,
+  "archive_backup_bytes_preserved": {
+    "c-nested.json": "f3fba17f2e9f19245abdad31d6cfd1b32b4f2fcf84309ccb3c7ab5fa5814f0e2",
+    "d-orphan.json": "14e89e5a0a6e0a034c171b7138964c6f2543708cd96295be938f03c0a1be6ee0",
+    "zz-late.json": "e4101c8c5173d9e9b29d3032f45e4d460c5501375d5d9a68b171914fc09cd1c0",
+    "archived-kept.json.deleted": "832507ad5940d8c301f88c25e7224dcf76cef64cc6b01aabf02e899eb30228d4",
+    "a-direct.json.bak": "a7404e8806e6de3be032b289c444e74bfdf8b1b05bde60c7ecb7ec2e3b6eaa44"
+  },
+  "source_paging_before_filter": true,
+  "malformed_manifest_preserved": true,
+  "restart_preserved": true,
+  "durable_command_retry": true,
+  "binary_sha256": "760d9c32f5e7e43165144fe99425c3f9743d6e6cf6cd3e1bb92daf928f85c501",
+  "hardware_gpu_used": false,
+  "no_gpu_or_shared_lock_fds": true,
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "primary_editor_preserved": true,
+  "parent_hashes_preserved": {
+    "Native_Folders_API_check.vvproj": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20"
+  },
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792622890.175819,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "760d9c32f5e7e43165144fe99425c3f9743d6e6cf6cd3e1bb92daf928f85c501",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "served_asset_hashes": {
+    "/": "801cc72868d19d5ddccf20c8ff7e7a1ab142f78969228dc60b0342c39af1fbd7",
+    "/style/app.css": "8f7da2c112740c55a76c5bc7c6b43f0aa6a8020da287657af5fd15c4a6ee93fc",
+    "/js/main.js": "eb6080586ed54af4082a876956f494e6b2bfff197b7ed5fc0012d0eeb35e1cd4",
+    "/js/native-assets.js": "1d4b435ed255b08617e245afb486f3498fdc80ece639e56ef0d18bf023615d0a",
+    "/js/native-asset-folders.js": "9d200a70a0bf7db18b8cf3ee2ea21836e737a48ee5fb8c1f4076e2cdf72d3de0"
+  },
+  "core_tests": 277,
+  "media_proxy_tests": 10,
+  "bounded_decoder_tests": 3,
+  "cached_device_tests": 1,
+  "rust_tests": 317,
+  "javascript_tests": 636,
+  "native_desktop_tests": 4,
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "windows_project_saved_bytes_preserved": true,
+  "validation_summary": [
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-core",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.06s",
+    "test result: ok. 277 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+    "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media browser_proxy::tests::",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.06s",
+    "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out; finished in 0.46s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_software_thread_bound",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.06s",
+    "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 0.28s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_cached_device_release",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.07s",
+    "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 126 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-web",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 40.90s",
+    "test result: ok. 317 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.50s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo clippy --locked -p vv-core -p vv-media -p vv-web -p vv-app --all-targets -- -D warnings",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 5.25s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-app --bin vv-app web_exported_ -- --test-threads=1",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 3.34s",
+    "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 545 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-app --bin vv-app web_compatible_folder_removal_ -- --test-threads=1",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.11s",
+    "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 547 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/node/bin/node --test --test-concurrency=1 web/test/api.test.js web/test/attributes.test.js web/test/audio-meters.test.js web/test/audition.test.js web/test/balance.test.js web/test/capture.test.js web/test/catalog.test.js web/test/compound-navigation.test.js web/test/curves.test.js web/test/eventkeys.test.js web/test/export-codecs.test.js web/test/export-panel.test.js web/test/export.test.js web/test/fast-transport.test.js web/test/inspector.test.js web/test/keyselection.test.js web/test/library.test.js web/test/masks.test.js web/test/mixer.test.js web/test/native-asset-folders.test.js web/test/native-assets-panel.test.js web/test/native-assets.test.js web/test/preset-panel.test.js web/test/preset-shortcuts.test.js web/test/presets.test.js web/test/preview-cache.test.js web/test/program-range.test.js web/test/program.test.js web/test/recovery.test.js web/test/retime-inspector.test.js web/test/retime-menu.test.js web/test/retime-visibility.test.js web/test/review.test.js web/test/reviewmeta.test.js web/test/scopes.test.js web/test/silence.test.js web/test/slip.test.js web/test/source-assets.test.js web/test/source-clock.test.js web/test/source-seek.test.js web/test/source-streams.test.js web/test/source-windows.test.js web/test/source.test.js web/test/timeline-compound-input.test.js web/test/timeline-fades.test.js web/test/timeline-preset-drop.test.js web/test/timeline-retime-input.test.js web/test/timeline-retime.test.js web/test/timeline-transition-input.test.js web/test/timeline-transition-placement-input.test.js web/test/timeline-transition-placement.test.js web/test/timeline-transitions.test.js web/test/timeline.test.js web/test/transition-selection.test.js web/test/ui.test.js web/test/viewer-mask-overlay.test.js web/test/viewer-mask-pen.test.js web/test/viewer-mask.test.js web/test/viewer-transform-overlay.test.js web/test/viewer-transform.test.js web/test/viewer.test.js web/test/visual.test.js web/test/voiceover.test.js",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo build --locked -p vv-web",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 32.62s"
+  ],
+  "main_editor_preserved": true,
+  "own_ui_test_unit_stopped": true,
+  "windows_ui_observations": {
+    "initial": {
+      "assets": [
+        {
+          "label": "a-direct",
+          "selected": true,
+          "value": "0"
+        },
+        {
+          "label": "b-direct",
+          "selected": false,
+          "value": "1"
+        },
+        {
+          "label": "c-nested",
+          "selected": false,
+          "value": "2"
+        },
+        {
+          "label": "d-orphan",
+          "selected": false,
+          "value": "3"
+        },
+        {
+          "label": "m-00",
+          "selected": false,
+          "value": "4"
+        },
+        {
+          "label": "m-01",
+          "selected": false,
+          "value": "5"
+        },
+        {
+          "label": "m-02",
+          "selected": false,
+          "value": "6"
+        },
+        {
+          "label": "m-03",
+          "selected": false,
+          "value": "7"
+        },
+        {
+          "label": "m-04",
+          "selected": false,
+          "value": "8"
+        },
+        {
+          "label": "m-05",
+          "selected": false,
+          "value": "9"
+        },
+        {
+          "label": "m-06",
+          "selected": false,
+          "value": "10"
+        },
+        {
+          "label": "m-07",
+          "selected": false,
+          "value": "11"
+        },
+        {
+          "label": "m-08",
+          "selected": false,
+          "value": "12"
+        },
+        {
+          "label": "m-09",
+          "selected": false,
+          "value": "13"
+        },
+        {
+          "label": "m-10",
+          "selected": false,
+          "value": "14"
+        },
+        {
+          "label": "m-11",
+          "selected": false,
+          "value": "15"
+        },
+        {
+          "label": "m-12",
+          "selected": false,
+          "value": "16"
+        },
+        {
+          "label": "m-13",
+          "selected": false,
+          "value": "17"
+        },
+        {
+          "label": "m-14",
+          "selected": false,
+          "value": "18"
+        },
+        {
+          "label": "m-15",
+          "selected": false,
+          "value": "19"
+        },
+        {
+          "label": "m-16",
+          "selected": false,
+          "value": "20"
+        },
+        {
+          "label": "m-17",
+          "selected": false,
+          "value": "21"
+        },
+        {
+          "label": "m-18",
+          "selected": false,
+          "value": "22"
+        },
+        {
+          "label": "m-19",
+          "selected": false,
+          "value": "23"
+        },
+        {
+          "label": "m-20",
+          "selected": false,
+          "value": "24"
+        },
+        {
+          "label": "m-21",
+          "selected": false,
+          "value": "25"
+        },
+        {
+          "label": "m-22",
+          "selected": false,
+          "value": "26"
+        },
+        {
+          "label": "m-23",
+          "selected": false,
+          "value": "27"
+        },
+        {
+          "label": "m-24",
+          "selected": false,
+          "value": "28"
+        },
+        {
+          "label": "m-25",
+          "selected": false,
+          "value": "29"
+        },
+        {
+          "label": "m-26",
+          "selected": false,
+          "value": "30"
+        },
+        {
+          "label": "m-27",
+          "selected": false,
+          "value": "31"
+        }
+      ],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": false,
+          "label": "Move 1 native assets to folder"
+        }
+      ],
+      "filter": "*",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": true,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": false,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        }
+      ],
+      "name": "",
+      "newParent": "",
+      "parent": "",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Page 1 of 2 \u00b7 35 native assets in library",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "created": {
+      "assets": [],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": true,
+          "label": "Move native assets to folder"
+        }
+      ],
+      "filter": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": false,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows folder check",
+          "selected": true,
+          "value": "bf169255-e694-4f0a-826e-f5b1635df9f2"
+        }
+      ],
+      "name": "Windows folder check",
+      "newParent": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "parent": "",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Native library folders updated \u00b7 timeline unchanged",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "renamed": {
+      "assets": [],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": true,
+          "label": "Move native assets to folder"
+        }
+      ],
+      "filter": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": false,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows folder renamed",
+          "selected": true,
+          "value": "bf169255-e694-4f0a-826e-f5b1635df9f2"
+        }
+      ],
+      "name": "Windows folder renamed",
+      "newParent": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "parent": "",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Native library folders updated \u00b7 timeline unchanged",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "multi_selected": {
+      "assets": [
+        {
+          "label": "a-direct",
+          "selected": true,
+          "value": "0"
+        },
+        {
+          "label": "b-direct",
+          "selected": true,
+          "value": "1"
+        },
+        {
+          "label": "c-nested",
+          "selected": false,
+          "value": "2"
+        },
+        {
+          "label": "d-orphan",
+          "selected": false,
+          "value": "3"
+        },
+        {
+          "label": "m-00",
+          "selected": false,
+          "value": "4"
+        },
+        {
+          "label": "m-01",
+          "selected": false,
+          "value": "5"
+        },
+        {
+          "label": "m-02",
+          "selected": false,
+          "value": "6"
+        },
+        {
+          "label": "m-03",
+          "selected": false,
+          "value": "7"
+        },
+        {
+          "label": "m-04",
+          "selected": false,
+          "value": "8"
+        },
+        {
+          "label": "m-05",
+          "selected": false,
+          "value": "9"
+        },
+        {
+          "label": "m-06",
+          "selected": false,
+          "value": "10"
+        },
+        {
+          "label": "m-07",
+          "selected": false,
+          "value": "11"
+        },
+        {
+          "label": "m-08",
+          "selected": false,
+          "value": "12"
+        },
+        {
+          "label": "m-09",
+          "selected": false,
+          "value": "13"
+        },
+        {
+          "label": "m-10",
+          "selected": false,
+          "value": "14"
+        },
+        {
+          "label": "m-11",
+          "selected": false,
+          "value": "15"
+        },
+        {
+          "label": "m-12",
+          "selected": false,
+          "value": "16"
+        },
+        {
+          "label": "m-13",
+          "selected": false,
+          "value": "17"
+        },
+        {
+          "label": "m-14",
+          "selected": false,
+          "value": "18"
+        },
+        {
+          "label": "m-15",
+          "selected": false,
+          "value": "19"
+        },
+        {
+          "label": "m-16",
+          "selected": false,
+          "value": "20"
+        },
+        {
+          "label": "m-17",
+          "selected": false,
+          "value": "21"
+        },
+        {
+          "label": "m-18",
+          "selected": false,
+          "value": "22"
+        },
+        {
+          "label": "m-19",
+          "selected": false,
+          "value": "23"
+        },
+        {
+          "label": "m-20",
+          "selected": false,
+          "value": "24"
+        },
+        {
+          "label": "m-21",
+          "selected": false,
+          "value": "25"
+        },
+        {
+          "label": "m-22",
+          "selected": false,
+          "value": "26"
+        },
+        {
+          "label": "m-23",
+          "selected": false,
+          "value": "27"
+        },
+        {
+          "label": "m-24",
+          "selected": false,
+          "value": "28"
+        },
+        {
+          "label": "m-25",
+          "selected": false,
+          "value": "29"
+        },
+        {
+          "label": "m-26",
+          "selected": false,
+          "value": "30"
+        },
+        {
+          "label": "m-27",
+          "selected": false,
+          "value": "31"
+        }
+      ],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": false,
+          "label": "Move 2 native assets to folder"
+        }
+      ],
+      "filter": "*",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": true,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": false,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows folder renamed",
+          "selected": false,
+          "value": "bf169255-e694-4f0a-826e-f5b1635df9f2"
+        }
+      ],
+      "name": "",
+      "newParent": "",
+      "parent": "",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Page 1 of 2 \u00b7 35 native assets in library",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "multi_moved": {
+      "assets": [
+        {
+          "label": "a-direct",
+          "selected": true,
+          "value": "0"
+        },
+        {
+          "label": "b-direct",
+          "selected": false,
+          "value": "1"
+        }
+      ],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": false,
+          "label": "Move 1 native assets to folder"
+        }
+      ],
+      "filter": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": false,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows folder renamed",
+          "selected": true,
+          "value": "bf169255-e694-4f0a-826e-f5b1635df9f2"
+        }
+      ],
+      "name": "Windows folder renamed",
+      "newParent": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "parent": "",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Page 1 of 2 \u00b7 35 native assets in library",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "child_created": {
+      "assets": [],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": true,
+          "label": "Move native assets to folder"
+        }
+      ],
+      "filter": "2018e83e-ebbc-49e5-85e8-1eea7defa31a",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": false,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows folder renamed",
+          "selected": false,
+          "value": "bf169255-e694-4f0a-826e-f5b1635df9f2"
+        },
+        {
+          "label": "Windows folder renamed / Windows child",
+          "selected": true,
+          "value": "2018e83e-ebbc-49e5-85e8-1eea7defa31a"
+        }
+      ],
+      "name": "Windows child",
+      "newParent": "2018e83e-ebbc-49e5-85e8-1eea7defa31a",
+      "parent": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Native library folders updated \u00b7 timeline unchanged",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "folder_moved": {
+      "assets": [],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": true,
+          "label": "Move native assets to folder"
+        }
+      ],
+      "filter": "2018e83e-ebbc-49e5-85e8-1eea7defa31a",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": false,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Shots / Windows child",
+          "selected": true,
+          "value": "2018e83e-ebbc-49e5-85e8-1eea7defa31a"
+        },
+        {
+          "label": "Windows folder renamed",
+          "selected": false,
+          "value": "bf169255-e694-4f0a-826e-f5b1635df9f2"
+        }
+      ],
+      "name": "Windows child",
+      "newParent": "2018e83e-ebbc-49e5-85e8-1eea7defa31a",
+      "parent": "c011e486-a05b-403d-88d8-b72f63871181",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Native library folders updated \u00b7 timeline unchanged",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "folder_returned": {
+      "assets": [],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": true,
+          "label": "Move native assets to folder"
+        }
+      ],
+      "filter": "2018e83e-ebbc-49e5-85e8-1eea7defa31a",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": false,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows folder renamed",
+          "selected": false,
+          "value": "bf169255-e694-4f0a-826e-f5b1635df9f2"
+        },
+        {
+          "label": "Windows folder renamed / Windows child",
+          "selected": true,
+          "value": "2018e83e-ebbc-49e5-85e8-1eea7defa31a"
+        }
+      ],
+      "name": "Windows child",
+      "newParent": "2018e83e-ebbc-49e5-85e8-1eea7defa31a",
+      "parent": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Native library folders updated \u00b7 timeline unchanged",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "before_remove": {
+      "assets": [
+        {
+          "label": "a-direct",
+          "selected": true,
+          "value": "0"
+        },
+        {
+          "label": "b-direct",
+          "selected": false,
+          "value": "1"
+        }
+      ],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": false,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": false,
+          "label": "Move 1 native assets to folder"
+        }
+      ],
+      "filter": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": false,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows folder renamed",
+          "selected": true,
+          "value": "bf169255-e694-4f0a-826e-f5b1635df9f2"
+        },
+        {
+          "label": "Windows folder renamed / Windows child",
+          "selected": false,
+          "value": "2018e83e-ebbc-49e5-85e8-1eea7defa31a"
+        }
+      ],
+      "name": "Windows folder renamed",
+      "newParent": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+      "parent": "",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Page 1 of 2 \u00b7 35 native assets in library",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "removed": {
+      "assets": [
+        {
+          "label": "a-direct",
+          "selected": true,
+          "value": "0"
+        },
+        {
+          "label": "b-direct",
+          "selected": false,
+          "value": "1"
+        },
+        {
+          "label": "d-orphan",
+          "selected": false,
+          "value": "2"
+        },
+        {
+          "label": "m-00",
+          "selected": false,
+          "value": "3"
+        },
+        {
+          "label": "m-01",
+          "selected": false,
+          "value": "4"
+        },
+        {
+          "label": "m-02",
+          "selected": false,
+          "value": "5"
+        },
+        {
+          "label": "m-03",
+          "selected": false,
+          "value": "6"
+        },
+        {
+          "label": "m-04",
+          "selected": false,
+          "value": "7"
+        },
+        {
+          "label": "m-05",
+          "selected": false,
+          "value": "8"
+        },
+        {
+          "label": "m-06",
+          "selected": false,
+          "value": "9"
+        },
+        {
+          "label": "m-07",
+          "selected": false,
+          "value": "10"
+        },
+        {
+          "label": "m-08",
+          "selected": false,
+          "value": "11"
+        },
+        {
+          "label": "m-09",
+          "selected": false,
+          "value": "12"
+        },
+        {
+          "label": "m-10",
+          "selected": false,
+          "value": "13"
+        },
+        {
+          "label": "m-11",
+          "selected": false,
+          "value": "14"
+        },
+        {
+          "label": "m-12",
+          "selected": false,
+          "value": "15"
+        },
+        {
+          "label": "m-13",
+          "selected": false,
+          "value": "16"
+        },
+        {
+          "label": "m-14",
+          "selected": false,
+          "value": "17"
+        },
+        {
+          "label": "m-15",
+          "selected": false,
+          "value": "18"
+        },
+        {
+          "label": "m-16",
+          "selected": false,
+          "value": "19"
+        },
+        {
+          "label": "m-17",
+          "selected": false,
+          "value": "20"
+        },
+        {
+          "label": "m-18",
+          "selected": false,
+          "value": "21"
+        },
+        {
+          "label": "m-19",
+          "selected": false,
+          "value": "22"
+        },
+        {
+          "label": "m-20",
+          "selected": false,
+          "value": "23"
+        },
+        {
+          "label": "m-21",
+          "selected": false,
+          "value": "24"
+        },
+        {
+          "label": "m-22",
+          "selected": false,
+          "value": "25"
+        },
+        {
+          "label": "m-23",
+          "selected": false,
+          "value": "26"
+        },
+        {
+          "label": "m-24",
+          "selected": false,
+          "value": "27"
+        },
+        {
+          "label": "m-25",
+          "selected": false,
+          "value": "28"
+        },
+        {
+          "label": "m-26",
+          "selected": false,
+          "value": "29"
+        },
+        {
+          "label": "m-27",
+          "selected": false,
+          "value": "30"
+        }
+      ],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": false,
+          "label": "Move 1 native assets to folder"
+        }
+      ],
+      "filter": "",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": true,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows child",
+          "selected": false,
+          "value": "2018e83e-ebbc-49e5-85e8-1eea7defa31a"
+        }
+      ],
+      "name": "",
+      "newParent": "",
+      "parent": "",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Native library folders updated \u00b7 timeline unchanged",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "reopened": {
+      "assets": [
+        {
+          "label": "a-direct",
+          "selected": true,
+          "value": "0"
+        },
+        {
+          "label": "b-direct",
+          "selected": false,
+          "value": "1"
+        },
+        {
+          "label": "d-orphan",
+          "selected": false,
+          "value": "2"
+        },
+        {
+          "label": "m-00",
+          "selected": false,
+          "value": "3"
+        },
+        {
+          "label": "m-01",
+          "selected": false,
+          "value": "4"
+        },
+        {
+          "label": "m-02",
+          "selected": false,
+          "value": "5"
+        },
+        {
+          "label": "m-03",
+          "selected": false,
+          "value": "6"
+        },
+        {
+          "label": "m-04",
+          "selected": false,
+          "value": "7"
+        },
+        {
+          "label": "m-05",
+          "selected": false,
+          "value": "8"
+        },
+        {
+          "label": "m-06",
+          "selected": false,
+          "value": "9"
+        },
+        {
+          "label": "m-07",
+          "selected": false,
+          "value": "10"
+        },
+        {
+          "label": "m-08",
+          "selected": false,
+          "value": "11"
+        },
+        {
+          "label": "m-09",
+          "selected": false,
+          "value": "12"
+        },
+        {
+          "label": "m-10",
+          "selected": false,
+          "value": "13"
+        },
+        {
+          "label": "m-11",
+          "selected": false,
+          "value": "14"
+        },
+        {
+          "label": "m-12",
+          "selected": false,
+          "value": "15"
+        },
+        {
+          "label": "m-13",
+          "selected": false,
+          "value": "16"
+        },
+        {
+          "label": "m-14",
+          "selected": false,
+          "value": "17"
+        },
+        {
+          "label": "m-15",
+          "selected": false,
+          "value": "18"
+        },
+        {
+          "label": "m-16",
+          "selected": false,
+          "value": "19"
+        },
+        {
+          "label": "m-17",
+          "selected": false,
+          "value": "20"
+        },
+        {
+          "label": "m-18",
+          "selected": false,
+          "value": "21"
+        },
+        {
+          "label": "m-19",
+          "selected": false,
+          "value": "22"
+        },
+        {
+          "label": "m-20",
+          "selected": false,
+          "value": "23"
+        },
+        {
+          "label": "m-21",
+          "selected": false,
+          "value": "24"
+        },
+        {
+          "label": "m-22",
+          "selected": false,
+          "value": "25"
+        },
+        {
+          "label": "m-23",
+          "selected": false,
+          "value": "26"
+        },
+        {
+          "label": "m-24",
+          "selected": false,
+          "value": "27"
+        },
+        {
+          "label": "m-25",
+          "selected": false,
+          "value": "28"
+        },
+        {
+          "label": "m-26",
+          "selected": false,
+          "value": "29"
+        },
+        {
+          "label": "m-27",
+          "selected": false,
+          "value": "30"
+        }
+      ],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": false,
+          "label": "Move 1 native assets to folder"
+        }
+      ],
+      "filter": "",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": true,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows child",
+          "selected": false,
+          "value": "2018e83e-ebbc-49e5-85e8-1eea7defa31a"
+        }
+      ],
+      "name": "",
+      "newParent": "",
+      "parent": "",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Page 1 of 2 \u00b7 35 native assets in library",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    },
+    "consoleErrors": [],
+    "final": {
+      "assets": [
+        {
+          "label": "a-direct",
+          "selected": false,
+          "value": "0"
+        },
+        {
+          "label": "b-direct",
+          "selected": false,
+          "value": "1"
+        },
+        {
+          "label": "d-orphan",
+          "selected": false,
+          "value": "2"
+        },
+        {
+          "label": "m-00",
+          "selected": true,
+          "value": "3"
+        },
+        {
+          "label": "m-01",
+          "selected": false,
+          "value": "4"
+        },
+        {
+          "label": "m-02",
+          "selected": false,
+          "value": "5"
+        },
+        {
+          "label": "m-03",
+          "selected": false,
+          "value": "6"
+        },
+        {
+          "label": "m-04",
+          "selected": false,
+          "value": "7"
+        },
+        {
+          "label": "m-05",
+          "selected": false,
+          "value": "8"
+        },
+        {
+          "label": "m-06",
+          "selected": false,
+          "value": "9"
+        },
+        {
+          "label": "m-07",
+          "selected": false,
+          "value": "10"
+        },
+        {
+          "label": "m-08",
+          "selected": false,
+          "value": "11"
+        },
+        {
+          "label": "m-09",
+          "selected": false,
+          "value": "12"
+        },
+        {
+          "label": "m-10",
+          "selected": false,
+          "value": "13"
+        },
+        {
+          "label": "m-11",
+          "selected": false,
+          "value": "14"
+        },
+        {
+          "label": "m-12",
+          "selected": false,
+          "value": "15"
+        },
+        {
+          "label": "m-13",
+          "selected": false,
+          "value": "16"
+        },
+        {
+          "label": "m-14",
+          "selected": false,
+          "value": "17"
+        },
+        {
+          "label": "m-15",
+          "selected": false,
+          "value": "18"
+        },
+        {
+          "label": "m-16",
+          "selected": false,
+          "value": "19"
+        },
+        {
+          "label": "m-17",
+          "selected": false,
+          "value": "20"
+        },
+        {
+          "label": "m-18",
+          "selected": false,
+          "value": "21"
+        },
+        {
+          "label": "m-19",
+          "selected": false,
+          "value": "22"
+        },
+        {
+          "label": "m-20",
+          "selected": false,
+          "value": "23"
+        },
+        {
+          "label": "m-21",
+          "selected": false,
+          "value": "24"
+        },
+        {
+          "label": "m-22",
+          "selected": false,
+          "value": "25"
+        },
+        {
+          "label": "m-23",
+          "selected": false,
+          "value": "26"
+        },
+        {
+          "label": "m-24",
+          "selected": false,
+          "value": "27"
+        },
+        {
+          "label": "m-25",
+          "selected": false,
+          "value": "28"
+        },
+        {
+          "label": "m-26",
+          "selected": false,
+          "value": "29"
+        },
+        {
+          "label": "m-27",
+          "selected": false,
+          "value": "30"
+        }
+      ],
+      "controls": [
+        {
+          "disabled": false,
+          "label": "Create native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Rename native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Move native folder"
+        },
+        {
+          "disabled": true,
+          "label": "Remove folder and move contents up"
+        },
+        {
+          "disabled": false,
+          "label": "Move 1 native assets to folder"
+        }
+      ],
+      "filter": "",
+      "folderOptions": [
+        {
+          "label": "All native assets",
+          "selected": false,
+          "value": "*"
+        },
+        {
+          "label": "Library root",
+          "selected": true,
+          "value": ""
+        },
+        {
+          "label": "Day one",
+          "selected": false,
+          "value": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+        },
+        {
+          "label": "Day one / Details",
+          "selected": false,
+          "value": "699c6efd-61f7-4a6e-945a-ca205e185617"
+        },
+        {
+          "label": "Shots",
+          "selected": false,
+          "value": "c011e486-a05b-403d-88d8-b72f63871181"
+        },
+        {
+          "label": "Windows child",
+          "selected": false,
+          "value": "2018e83e-ebbc-49e5-85e8-1eea7defa31a"
+        }
+      ],
+      "name": "",
+      "newParent": "",
+      "parent": "",
+      "redoDisabled": true,
+      "statuses": [
+        "Open a saved project first",
+        "Comparison paused \u00b7 absolute native source clocks",
+        "Choose two imported takes",
+        "Save the project and arm audio tracks first",
+        "Select audio clips or their linked video",
+        "Page 1 of 2 \u00b7 35 native assets in library",
+        "Prepare composed timeline",
+        "Select media and open Source",
+        "",
+        "",
+        "Connected \u00b7 writer",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "encoder: x264 \u00b7 catalog unavailable \u00b7 decoder: software \u00b7 catalog unavailable",
+        "",
+        "No export started",
+        ""
+      ],
+      "undoDisabled": true
+    }
+  },
+  "windows_native_snapshots": {
+    "initial": {
+      "session": {
+        "project_name": "Native_Folders_API_check.vvproj",
+        "project_epoch": "1792622931875032106:1",
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "unsaved": false
+      },
+      "folders": {
+        "folders": [
+          {
+            "id": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+            "name": "Day one",
+            "parent": null
+          },
+          {
+            "id": "699c6efd-61f7-4a6e-945a-ca205e185617",
+            "name": "Details",
+            "parent": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+          },
+          {
+            "id": "c011e486-a05b-403d-88d8-b72f63871181",
+            "name": "Shots",
+            "parent": null
+          }
+        ],
+        "folders_revision": "db749f6c878205ed61d0034d95fdc45c7a38585172c87b0b4de17ed770fa4bd6",
+        "project_epoch": "1792622931875032106:1",
+        "version": 1
+      },
+      "assets": {
+        "a-direct": {
+          "archived": false,
+          "can_restore_previous": true,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": null,
+          "id": "a-direct",
+          "media_count": 1,
+          "name": "a-direct",
+          "revision": "82a60b73e6fb7632302923a3d45f11cd2c4ee5a451c21c49cc9573c25f03a844"
+        },
+        "b-direct": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": null,
+          "id": "b-direct",
+          "media_count": 1,
+          "name": "b-direct",
+          "revision": "8062a6243a6970fad31cee7ca14c7f10504f842098cd1ba6b241a628eb202187"
+        },
+        "c-nested": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "file_count": 1,
+          "folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "id": "c-nested",
+          "media_count": 1,
+          "name": "c-nested",
+          "revision": "f3fba17f2e9f19245abdad31d6cfd1b32b4f2fcf84309ccb3c7ab5fa5814f0e2"
+        },
+        "d-orphan": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": "native-unknown",
+          "id": "d-orphan",
+          "media_count": 1,
+          "name": "d-orphan",
+          "revision": "14e89e5a0a6e0a034c171b7138964c6f2543708cd96295be938f03c0a1be6ee0"
+        },
+        "zz-late": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "file_count": 1,
+          "folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "id": "zz-late",
+          "media_count": 1,
+          "name": "zz-late",
+          "revision": "e4101c8c5173d9e9b29d3032f45e4d460c5501375d5d9a68b171914fc09cd1c0"
+        }
+      },
+      "project_saved_bytes_unchanged": true,
+      "main_editor_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    },
+    "renamed": {
+      "session": {
+        "project_name": "Native_Folders_API_check.vvproj",
+        "project_epoch": "1792622931875032106:1",
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "unsaved": false
+      },
+      "folders": {
+        "folders": [
+          {
+            "id": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+            "name": "Day one",
+            "parent": null
+          },
+          {
+            "id": "699c6efd-61f7-4a6e-945a-ca205e185617",
+            "name": "Details",
+            "parent": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+          },
+          {
+            "id": "c011e486-a05b-403d-88d8-b72f63871181",
+            "name": "Shots",
+            "parent": null
+          },
+          {
+            "id": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+            "name": "Windows folder renamed",
+            "parent": null
+          }
+        ],
+        "folders_revision": "6ff7db51aaa9f0a701a857b632012625c8c7ce11d4da286905fa26178f9c2700",
+        "project_epoch": "1792622931875032106:1",
+        "version": 1
+      },
+      "assets": {
+        "a-direct": {
+          "archived": false,
+          "can_restore_previous": true,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": null,
+          "id": "a-direct",
+          "media_count": 1,
+          "name": "a-direct",
+          "revision": "82a60b73e6fb7632302923a3d45f11cd2c4ee5a451c21c49cc9573c25f03a844"
+        },
+        "b-direct": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": null,
+          "id": "b-direct",
+          "media_count": 1,
+          "name": "b-direct",
+          "revision": "8062a6243a6970fad31cee7ca14c7f10504f842098cd1ba6b241a628eb202187"
+        },
+        "c-nested": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "file_count": 1,
+          "folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "id": "c-nested",
+          "media_count": 1,
+          "name": "c-nested",
+          "revision": "f3fba17f2e9f19245abdad31d6cfd1b32b4f2fcf84309ccb3c7ab5fa5814f0e2"
+        },
+        "d-orphan": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": "native-unknown",
+          "id": "d-orphan",
+          "media_count": 1,
+          "name": "d-orphan",
+          "revision": "14e89e5a0a6e0a034c171b7138964c6f2543708cd96295be938f03c0a1be6ee0"
+        },
+        "zz-late": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "file_count": 1,
+          "folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "id": "zz-late",
+          "media_count": 1,
+          "name": "zz-late",
+          "revision": "e4101c8c5173d9e9b29d3032f45e4d460c5501375d5d9a68b171914fc09cd1c0"
+        }
+      },
+      "project_saved_bytes_unchanged": true,
+      "main_editor_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    },
+    "multi_moved": {
+      "session": {
+        "project_name": "Native_Folders_API_check.vvproj",
+        "project_epoch": "1792622931875032106:1",
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "unsaved": false
+      },
+      "folders": {
+        "folders": [
+          {
+            "id": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+            "name": "Day one",
+            "parent": null
+          },
+          {
+            "id": "699c6efd-61f7-4a6e-945a-ca205e185617",
+            "name": "Details",
+            "parent": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+          },
+          {
+            "id": "c011e486-a05b-403d-88d8-b72f63871181",
+            "name": "Shots",
+            "parent": null
+          },
+          {
+            "id": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+            "name": "Windows folder renamed",
+            "parent": null
+          }
+        ],
+        "folders_revision": "6ff7db51aaa9f0a701a857b632012625c8c7ce11d4da286905fa26178f9c2700",
+        "project_epoch": "1792622931875032106:1",
+        "version": 1
+      },
+      "assets": {
+        "a-direct": {
+          "archived": false,
+          "can_restore_previous": true,
+          "effective_folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "file_count": 1,
+          "folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "id": "a-direct",
+          "media_count": 1,
+          "name": "a-direct",
+          "revision": "7cad1175b23b7010b7d88a4847df0e235f0f48990968922e17499be82a43656b"
+        },
+        "b-direct": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "file_count": 1,
+          "folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "id": "b-direct",
+          "media_count": 1,
+          "name": "b-direct",
+          "revision": "9f0887f860b7712b9765611deb91a7d98d7484bf52dd5ed0459149a5c4920181"
+        },
+        "c-nested": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "file_count": 1,
+          "folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "id": "c-nested",
+          "media_count": 1,
+          "name": "c-nested",
+          "revision": "f3fba17f2e9f19245abdad31d6cfd1b32b4f2fcf84309ccb3c7ab5fa5814f0e2"
+        },
+        "d-orphan": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": "native-unknown",
+          "id": "d-orphan",
+          "media_count": 1,
+          "name": "d-orphan",
+          "revision": "14e89e5a0a6e0a034c171b7138964c6f2543708cd96295be938f03c0a1be6ee0"
+        },
+        "zz-late": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "file_count": 1,
+          "folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "id": "zz-late",
+          "media_count": 1,
+          "name": "zz-late",
+          "revision": "e4101c8c5173d9e9b29d3032f45e4d460c5501375d5d9a68b171914fc09cd1c0"
+        }
+      },
+      "project_saved_bytes_unchanged": true,
+      "main_editor_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    },
+    "child_created": {
+      "session": {
+        "project_name": "Native_Folders_API_check.vvproj",
+        "project_epoch": "1792622931875032106:1",
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "unsaved": false
+      },
+      "folders": {
+        "folders": [
+          {
+            "id": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+            "name": "Day one",
+            "parent": null
+          },
+          {
+            "id": "699c6efd-61f7-4a6e-945a-ca205e185617",
+            "name": "Details",
+            "parent": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+          },
+          {
+            "id": "c011e486-a05b-403d-88d8-b72f63871181",
+            "name": "Shots",
+            "parent": null
+          },
+          {
+            "id": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+            "name": "Windows folder renamed",
+            "parent": null
+          },
+          {
+            "id": "2018e83e-ebbc-49e5-85e8-1eea7defa31a",
+            "name": "Windows child",
+            "parent": "bf169255-e694-4f0a-826e-f5b1635df9f2"
+          }
+        ],
+        "folders_revision": "42006ca342c202fdfb646f9442a17c493adca5997a33b3088a461bcf2f7178d4",
+        "project_epoch": "1792622931875032106:1",
+        "version": 1
+      },
+      "assets": {
+        "a-direct": {
+          "archived": false,
+          "can_restore_previous": true,
+          "effective_folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "file_count": 1,
+          "folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "id": "a-direct",
+          "media_count": 1,
+          "name": "a-direct",
+          "revision": "7cad1175b23b7010b7d88a4847df0e235f0f48990968922e17499be82a43656b"
+        },
+        "b-direct": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "file_count": 1,
+          "folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "id": "b-direct",
+          "media_count": 1,
+          "name": "b-direct",
+          "revision": "9f0887f860b7712b9765611deb91a7d98d7484bf52dd5ed0459149a5c4920181"
+        },
+        "c-nested": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "file_count": 1,
+          "folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "id": "c-nested",
+          "media_count": 1,
+          "name": "c-nested",
+          "revision": "f3fba17f2e9f19245abdad31d6cfd1b32b4f2fcf84309ccb3c7ab5fa5814f0e2"
+        },
+        "d-orphan": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": "native-unknown",
+          "id": "d-orphan",
+          "media_count": 1,
+          "name": "d-orphan",
+          "revision": "14e89e5a0a6e0a034c171b7138964c6f2543708cd96295be938f03c0a1be6ee0"
+        },
+        "zz-late": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "file_count": 1,
+          "folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "id": "zz-late",
+          "media_count": 1,
+          "name": "zz-late",
+          "revision": "e4101c8c5173d9e9b29d3032f45e4d460c5501375d5d9a68b171914fc09cd1c0"
+        }
+      },
+      "project_saved_bytes_unchanged": true,
+      "main_editor_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    },
+    "folder_moved": {
+      "session": {
+        "project_name": "Native_Folders_API_check.vvproj",
+        "project_epoch": "1792622931875032106:1",
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "unsaved": false
+      },
+      "folders": {
+        "folders": [
+          {
+            "id": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+            "name": "Day one",
+            "parent": null
+          },
+          {
+            "id": "699c6efd-61f7-4a6e-945a-ca205e185617",
+            "name": "Details",
+            "parent": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+          },
+          {
+            "id": "c011e486-a05b-403d-88d8-b72f63871181",
+            "name": "Shots",
+            "parent": null
+          },
+          {
+            "id": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+            "name": "Windows folder renamed",
+            "parent": null
+          },
+          {
+            "id": "2018e83e-ebbc-49e5-85e8-1eea7defa31a",
+            "name": "Windows child",
+            "parent": "c011e486-a05b-403d-88d8-b72f63871181"
+          }
+        ],
+        "folders_revision": "eb2dd467e6fed3aeb95555c0953112e84790659b952103d2b24e9c50797bcd47",
+        "project_epoch": "1792622931875032106:1",
+        "version": 1
+      },
+      "assets": {
+        "a-direct": {
+          "archived": false,
+          "can_restore_previous": true,
+          "effective_folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "file_count": 1,
+          "folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "id": "a-direct",
+          "media_count": 1,
+          "name": "a-direct",
+          "revision": "7cad1175b23b7010b7d88a4847df0e235f0f48990968922e17499be82a43656b"
+        },
+        "b-direct": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "file_count": 1,
+          "folder": "bf169255-e694-4f0a-826e-f5b1635df9f2",
+          "id": "b-direct",
+          "media_count": 1,
+          "name": "b-direct",
+          "revision": "9f0887f860b7712b9765611deb91a7d98d7484bf52dd5ed0459149a5c4920181"
+        },
+        "c-nested": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "file_count": 1,
+          "folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "id": "c-nested",
+          "media_count": 1,
+          "name": "c-nested",
+          "revision": "f3fba17f2e9f19245abdad31d6cfd1b32b4f2fcf84309ccb3c7ab5fa5814f0e2"
+        },
+        "d-orphan": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": "native-unknown",
+          "id": "d-orphan",
+          "media_count": 1,
+          "name": "d-orphan",
+          "revision": "14e89e5a0a6e0a034c171b7138964c6f2543708cd96295be938f03c0a1be6ee0"
+        },
+        "zz-late": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "file_count": 1,
+          "folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "id": "zz-late",
+          "media_count": 1,
+          "name": "zz-late",
+          "revision": "e4101c8c5173d9e9b29d3032f45e4d460c5501375d5d9a68b171914fc09cd1c0"
+        }
+      },
+      "project_saved_bytes_unchanged": true,
+      "main_editor_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    },
+    "removed": {
+      "session": {
+        "project_name": "Native_Folders_API_check.vvproj",
+        "project_epoch": "1792622931875032106:1",
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "unsaved": false
+      },
+      "folders": {
+        "folders": [
+          {
+            "id": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+            "name": "Day one",
+            "parent": null
+          },
+          {
+            "id": "699c6efd-61f7-4a6e-945a-ca205e185617",
+            "name": "Details",
+            "parent": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be"
+          },
+          {
+            "id": "c011e486-a05b-403d-88d8-b72f63871181",
+            "name": "Shots",
+            "parent": null
+          },
+          {
+            "id": "2018e83e-ebbc-49e5-85e8-1eea7defa31a",
+            "name": "Windows child",
+            "parent": null
+          }
+        ],
+        "folders_revision": "46cb2ac7d389668309ffbd61ebe976ecdce03d26ea20d05d8e285beb5e44a41b",
+        "project_epoch": "1792622931875032106:1",
+        "version": 1
+      },
+      "assets": {
+        "a-direct": {
+          "archived": false,
+          "can_restore_previous": true,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": null,
+          "id": "a-direct",
+          "media_count": 1,
+          "name": "a-direct",
+          "revision": "82a60b73e6fb7632302923a3d45f11cd2c4ee5a451c21c49cc9573c25f03a844"
+        },
+        "b-direct": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": null,
+          "id": "b-direct",
+          "media_count": 1,
+          "name": "b-direct",
+          "revision": "8062a6243a6970fad31cee7ca14c7f10504f842098cd1ba6b241a628eb202187"
+        },
+        "c-nested": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "file_count": 1,
+          "folder": "0f88c67a-fe8b-4bb3-8786-22fd6111f9be",
+          "id": "c-nested",
+          "media_count": 1,
+          "name": "c-nested",
+          "revision": "f3fba17f2e9f19245abdad31d6cfd1b32b4f2fcf84309ccb3c7ab5fa5814f0e2"
+        },
+        "d-orphan": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": "native-unknown",
+          "id": "d-orphan",
+          "media_count": 1,
+          "name": "d-orphan",
+          "revision": "14e89e5a0a6e0a034c171b7138964c6f2543708cd96295be938f03c0a1be6ee0"
+        },
+        "zz-late": {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "file_count": 1,
+          "folder": "699c6efd-61f7-4a6e-945a-ca205e185617",
+          "id": "zz-late",
+          "media_count": 1,
+          "name": "zz-late",
+          "revision": "e4101c8c5173d9e9b29d3032f45e4d460c5501375d5d9a68b171914fc09cd1c0"
+        }
+      },
+      "project_saved_bytes_unchanged": true,
+      "main_editor_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    }
+  },
+  "build_resource_sample": {
+    "unit": "venturi-build-20261021.service",
+    "properties": {
+      "ActiveState": "active",
+      "RuntimeMaxUSec": "30min",
+      "MainPID": "1434946",
+      "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-build-20261021.service",
+      "MemoryCurrent": "2170355712",
+      "MemoryPeak": "2366287872",
+      "CPUQuotaPerSecUSec": "1s",
+      "IOWeight": "10",
+      "MemoryMax": "4294967296",
+      "MemorySwapMax": "0",
+      "OOMScoreAdjust": "1000",
+      "Nice": "19"
+    },
+    "memory_events": {
+      "low": "0",
+      "high": "0",
+      "max": "0",
+      "oom": "0",
+      "oom_kill": "0",
+      "oom_group_kill": "0",
+      "sock_throttled": "0"
+    },
+    "mem_available_bytes": 65440804864
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-app/src/tests/library.rs": "1d4924a52bcd4284a4ee7307f80da3ef80f5f07261d56cd8dfb098fe86e47e48",
+      "crates/vv-web/src/api.rs": "320738718df386d7f3f879fc25aeb027a31c22d80f052a1387d1621081424af8",
+      "crates/vv-web/src/asset_jobs.rs": "bdaf29b49539c1c24976a8fd70b813c2f79da06fe7f09faffc0f1e5bd3e78151",
+      "crates/vv-web/src/asset_store.rs": "e1fa998629f47d5510459cbc9225108d67cfc02d52cfa770e610874e59355061",
+      "crates/vv-web/src/host.rs": "1d1c03a6f107084af76f633a17c22d8241ea3ade4895380033888581c94901c3",
+      "crates/vv-web/src/main.rs": "36b3d898e1e7fb79f816a5256aab8d8acbaa2e330d31411c4aaefcc3442d41db",
+      "crates/vv-web/src/receipts.rs": "6ed7a16e7045e165918827fbc8413aa69bcce845ec440a5a72f0d041c36d2c85",
+      "crates/vv-web/src/tests/api.rs": "b9807630f732061e530ea2190b26f42bb785b6eba7f94d48078173a6c928da21",
+      "crates/vv-web/src/tests/asset_jobs.rs": "3852a3089f55766bb8f2f6f9ed618a118f58d9a81689cf53ce4ac9ae12a363b5",
+      "crates/vv-web/src/tests/asset_store.rs": "564e6b50eae28502b357d0eb1af193cb9051d800ced3a55d28c4caf327421b1b",
+      "crates/vv-web/src/tests/host.rs": "5545cfed321ef1d09ea2613599dffac4eb81f3376e1606270e225c49c96e633f",
+      "crates/vv-web/src/tests/receipts.rs": "da92ca3e2f4cffb1aca3f043db2152f1fd29e1e4ba480d35cc0134843aed1ea8",
+      "web/js/main.js": "eb6080586ed54af4082a876956f494e6b2bfff197b7ed5fc0012d0eeb35e1cd4",
+      "web/js/native-assets.js": "1d4b435ed255b08617e245afb486f3498fdc80ece639e56ef0d18bf023615d0a",
+      "web/test/native-assets-panel.test.js": "419fe295d18ec4f6a37a05a0f730977a1082aa789427f2c576296ad8d8b03446",
+      "crates/vv-web/src/asset_folders.rs": "930eabed6b4c58d2d788ad832a50af7d69c6481f7ab1401cb7d6522fd356952f",
+      "crates/vv-web/src/asset_journal.rs": "06d61fd9495d8894a47aebe0d689b84ec36c9a3bff09e3c4c0138f5dac04d7c2",
+      "crates/vv-web/src/tests/asset_folders.rs": "2c57cac48565870c48d095cc89c74ca1e32dbcb0dd5a327c749357ed66e0cd44",
+      "crates/vv-web/src/tests/asset_journal.rs": "6c5e3355e4033ad6078d5b67a47862687ff6266224e1df40889ac821f240c7bc",
+      "web/js/native-asset-folders.js": "9d200a70a0bf7db18b8cf3ee2ea21836e737a48ee5fb8c1f4076e2cdf72d3de0",
+      "web/test/native-asset-folders.test.js": "3a3170eb8172819af4a5b65ae03fde9d6427ef0813da0a5876232e7561276c0e"
+    },
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "browser_folder_crud": true,
+    "browser_multiasset_move": true,
+    "native_desktop_folder_roundtrip": true,
+    "recoverable_multi_json": true,
+    "core_tests": 277,
+    "rust_tests": 317,
+    "javascript_tests": 636,
+    "native_desktop_tests": 4,
+    "physical_drag": false,
+    "rendered_gpu": false,
+    "browser_filter_reopen": true,
+    "browser_tab_closed": true,
+    "temporary_tunnel_stopped": true,
+    "original_worker_errors_preserved": true
+  },
+  "first_api_attempt": {
+    "status": "failed",
+    "own_test_units_stopped": true,
+    "port8811_closed": true,
+    "primary_editor_preserved": true,
+    "parent_hashes_preserved": {},
+    "failure": "AssertionError((409, {'error': {'code': 'ASSET_EDIT_NOT_APPLIED', 'details': {}, 'message': 'Native library preparation did not commit; refresh and retry with a new command', 'recoverable': True}}))",
+    "failure_traceback": "Traceback (most recent call last):\n  File \"<stdin>\", line 46, in request\n  File \"/usr/lib/python3.14/urllib/request.py\", line 187, in urlopen\n    return opener.open(url, data, timeout)\n           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.14/urllib/request.py\", line 493, in open\n    response = meth(req, response)\n  File \"/usr/lib/python3.14/urllib/request.py\", line 602, in http_response\n    response = self.parent.error(\n        'http', request, response, code, msg, hdrs)\n  File \"/usr/lib/python3.14/urllib/request.py\", line 531, in error\n    return self._call_chain(*args)\n           ~~~~~~~~~~~~~~~~^^^^^^^\n  File \"/usr/lib/python3.14/urllib/request.py\", line 464, in _call_chain\n    result = func(*args)\n  File \"/usr/lib/python3.14/urllib/request.py\", line 611, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 409: Conflict\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<stdin>\", line 150, in <module>\n  File \"<stdin>\", line 136, in folder_edit\n  File \"<stdin>\", line 135, in write\n  File \"<stdin>\", line 51, in request\nAssertionError: (409, {'error': {'code': 'ASSET_EDIT_NOT_APPLIED', 'details': {}, 'message': 'Native library preparation did not commit; refresh and retry with a new command', 'recoverable': True}})\n",
+    "cleanup_errors": []
+  },
+  "validation_repairs": [
+    "First run passed 316 web Rust tests, then Clippy refused the equivalent >=MAX+1 transaction target bound; changed to >MAX and repeated Rust/Clippy validation.",
+    "Second run passed Rust, Clippy and four original-desktop tests. One existing no-project panel regression failed because undefined epochs incorrectly counted as a valid catalog; added an explicit catalog presence guard. All 636 JavaScript tests and the native binary were rerun with exact inherited Rust hashes. The following real API cycle check exposed hidden worker validation errors; original status/message propagation was fixed and a new full Rust/Clippy/desktop/JavaScript/native build run passed."
+  ],
+  "limits": [
+    "Metadata-only qualification with small native JSON and bounded crash-recovery fixtures. No rendered GPU, long media, physical pointer/DPI or hostile-media soak acceptance.",
+    "Native folder tree <=512 folders/16 levels/256 KiB; per operation asset JSON read/staging <=16 MiB, <=128 affected assets, <=64 selected batch assets; global prepared stage admission <=16 directories, unconfirmed completions <=4096/8 MiB. Unknown orphan stages are preserved and admission refuses instead of deleting foreign work.",
+    "Preparation runs on the existing one-worker/one-pending asset queue. Final commit checks bounded file witnesses and installs metadata; roster <=10000 stats and receipt-capacity <=4096 stats remain filesystem latency, not a claim of zero actor IO.",
+    "Shared web writers cooperate through the catalog/global locks. Concurrent native desktop writers do not honor those locks; sequential native compatibility only.",
+    "No new NAS mount or browser/environment installation. The 14 TB ds4 media catalog remains separately qualified. No local build/render/test fleet; browser checks used the existing Windows browser and one temporary tab.",
+    "The separate main editor retained five unsaved MoveClips and its Undo history. This evidence closes the bounded native folder workflow; the shared-library capability remains partial for physical placement/drag and broader offline/lifecycle acceptance."
+  ],
+  "second_api_attempt": {
+    "raw": {
+      "status": "failed",
+      "own_test_units_stopped": true,
+      "port8811_closed": true,
+      "primary_editor_preserved": true,
+      "parent_hashes_preserved": {},
+      "failure": "AssertionError((409, {'error': {'code': 'FOLDERS_CHANGED', 'details': {}, 'message': 'Native asset folders changed; refresh the library', 'recoverable': True}}))",
+      "failure_traceback": "Traceback (most recent call last):\n  File \"<stdin>\", line 46, in request\n  File \"/usr/lib/python3.14/urllib/request.py\", line 187, in urlopen\n    return opener.open(url, data, timeout)\n           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.14/urllib/request.py\", line 493, in open\n    response = meth(req, response)\n  File \"/usr/lib/python3.14/urllib/request.py\", line 602, in http_response\n    response = self.parent.error(\n        'http', request, response, code, msg, hdrs)\n  File \"/usr/lib/python3.14/urllib/request.py\", line 531, in error\n    return self._call_chain(*args)\n           ~~~~~~~~~~~~~~~~^^^^^^^\n  File \"/usr/lib/python3.14/urllib/request.py\", line 464, in _call_chain\n    result = func(*args)\n  File \"/usr/lib/python3.14/urllib/request.py\", line 611, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 409: Conflict\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"<stdin>\", line 167, in <module>\n  File \"<stdin>\", line 51, in request\nAssertionError: (409, {'error': {'code': 'FOLDERS_CHANGED', 'details': {}, 'message': 'Native asset folders changed; refresh the library', 'recoverable': True}})\n",
+      "cleanup_errors": []
+    },
+    "classification": "Qualification fixture expected 422 for a missing folder-selector CAS revision. Existing Store rejects missing and stale revisions uniformly with 409 FOLDERS_CHANGED; aligned the fixture, retained the failed root and repeated on a fresh root. No production change was needed."
+  },
+  "browser": {
+    "platform": "Windows",
+    "environment": "Existing Codex in-app browser 2",
+    "temporary_tab": "17",
+    "visible": false,
+    "closed": true,
+    "installed": false,
+    "downloaded": false,
+    "screenshots": [
+      "m4-native-asset-folders.jpg",
+      "m4-native-asset-folders-removed.jpg"
+    ]
+  }
+}

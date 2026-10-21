@@ -198,6 +198,54 @@ uses the command ID as the immutable asset ID. Edits are rename
 ordinary writer lease, epoch, generation and durable receipt checks without a
 timeline Undo step; stale revisions and foreign file replacements are refused.
 
+`GET /native-assets/folders?project_epoch=...` returns a no-store native v1 tree
+`{project_epoch,version:1,folders_revision,folders:[{id,name,parent}]}`.
+The root `folders.json` remains compatible with the desktop library. A truly
+absent manifest has revision `"absent"`; a present manifest uses its SHA-256.
+Malformed files are preserved and refused. Trees contain at most 512 folders,
+16 levels and 256 KiB of JSON. Names are trimmed, nonempty and limited to 128
+UTF-8 bytes without control characters; duplicate display names are allowed.
+
+The native asset page query additionally accepts `folder` and
+`folders_revision`. Omit `folder` for All, use an empty string for Library root,
+or supply a known folder ID. A selector requires the current folder revision.
+Folder filtering follows source paging, like search; totals describe the source
+files, and clients advance through empty filtered pages. Rows preserve the raw
+native `folder` and expose `effective_folder`: unknown native memberships appear
+at root without rewriting their JSON.
+
+`edit_native_asset_library` also accepts these explicit edits:
+
+- `create_folder {folders_revision,name,parent}`; folder ID is the command ID.
+- `rename_folder {id,folders_revision,name}`.
+- `move_folder {id,folders_revision,parent}`; cycles and excess depth are refused.
+- `remove_folder {id,folders_revision}`; direct child folders and active assets
+  move to the removed folder's parent. Nested descendants stay attached to their
+  own parents. Archived and previous-version JSON is preserved.
+- `move_assets {folders_revision,items:[{id,revision}],folder}`; up to 64 active
+  assets move together, with an explicit revision for each asset.
+
+These are library metadata operations and never create timeline Undo steps or
+delete media files. The panel supports multiple asset selection for moving;
+import, rename and archive controls require a single selected asset.
+Preparation shares the existing asset worker and queue. It reads at most 16 MiB
+of asset JSON and stages at most 16 MiB, one file at a time; folder removal can
+affect at most 128 assets. Final commit rechecks file witnesses and installs the
+folder manifest after its affected assets. A private journal rolls accepted
+transactions forward after interruption; foreign replacements stop recovery
+and preserve its inputs. Catalog readers do not expose a partially installed
+transaction. The native desktop writer does not participate in the web locks.
+
+The journal retains the full request fingerprint and a project-root-bound
+completion until the ordinary command receipt has been fsynced. A recovered
+receipt reports the library change as durable without implying that unrelated
+project edits were saved. A still-preparing or unresolved command lookup returns
+409 `OUTCOME_UNKNOWN`, never an applied result or an invitation to replay.
+Unconfirmed completions are bounded to 4096 entries/8 MiB; global staging
+admission is limited to 16 directories, including retained orphan stages.
+Capacity refusal preserves existing data. Native folder validation errors use
+422, missing folders 404 and stale revisions 409.
+
 `POST /projects/commands` accepts
 `import_native_asset{job_id,asset_id,revision}`. Trial validation precedes native
 `ClipboardPayload::merge_into` and one `AddEntities(ImportMedia)` history step.
@@ -208,8 +256,7 @@ Eviction returns to native merge behavior. Undo invalidates removed cache entrie
 Browser hide, selection/project changes and lease loss cancel pending preparation;
 an already submitted mutation is resolved through its original receipt, never
 replayed. A failed read after an ACK retains the applied outcome and stops a batch.
-Native asset folder management, physical drag and broader sharing remain separate
-parity work.
+Physical drag and broader sharing remain separate parity work.
 
 `GET /api/v1/timelines/{id}/clips/{clip}/keys/{page}` takes the existing
 FrameQuery and validates its epoch, generation, timeline and revision. Pages

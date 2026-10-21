@@ -10,7 +10,7 @@ export function keyframeOperation(clip, target, frame, value, interpolation = "L
   if (!Number.isSafeInteger(frame) || frame < 0) throw new Error("Choose an integer timeline frame");
   return { kind: "set_keyframe", clip_id: clip, edit: { target, timeline_frame: frame, value, interpolation } };
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope }) {
   const disabled = !writable || detail.locked;
   const report = (operation) => commit(operation).catch((error) => notice(error.message));
   const section = document.createElement("details"); section.open = true;
@@ -72,7 +72,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   root.append(section);
   renderRetime(root,detail,disabled,getFrame,report,visualState);
   const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
-  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState});if(curves)controls.push(curves);
+  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope});if(curves)controls.push(curves);
   if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState});
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report);

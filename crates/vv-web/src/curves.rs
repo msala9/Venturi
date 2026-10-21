@@ -18,6 +18,16 @@ pub struct Edit {
     pub interpolation: core::Interpolation,
 }
 
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct GroupEdit {
+    pub target: Target,
+    pub source_frames: Vec<i64>,
+    pub delta_source_frames: i64,
+    pub delta_value: f32,
+    pub delete: bool,
+}
+
 struct Curve<'a> {
     target: Target,
     name: String,
@@ -209,6 +219,108 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &Edit) -> Re
             Some(edit.source_frame),
         )?);
     }
+    session.apply(Box::new(core::CompositeCommand::new(
+        core::CommandLabel::SetKeyframe,
+        commands,
+    )));
+    Ok(())
+}
+
+pub fn edit_group(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    edit: &GroupEdit,
+) -> Result<()> {
+    let selected = edit.source_frames.iter().copied().collect::<BTreeSet<_>>();
+    if selected.is_empty()
+        || selected.len() > 2048
+        || selected.len() != edit.source_frames.len()
+        || !edit.delta_value.is_finite()
+    {
+        return Err(ApiError::invalid(
+            "Choose between 1 and 2048 distinct native keyframes and finite deltas",
+        ));
+    }
+    let (lane, _, clip) = inspector::find(session, id, raw)?;
+    inspector::writable(session, id, lane)?;
+    let entries = curves(session, id, clip, lane);
+    let curve = entries
+        .iter()
+        .find(|curve| curve.target == edit.target)
+        .ok_or_else(ApiError::missing)?;
+    let keys = curve
+        .track
+        .keyframes()
+        .iter()
+        .filter(|key| selected.contains(&key.0))
+        .copied()
+        .collect::<Vec<_>>();
+    if keys.len() != selected.len() {
+        return Err(ApiError::invalid("A selected keyframe no longer exists"));
+    }
+    let start = clip.source_frame_at(clip.timeline_start);
+    let end = clip.source_frame_at(clip.timeline_end() - 1);
+    let mut commands = Vec::new();
+    let mut inserts = Vec::new();
+    for (frame, value, interpolation) in keys {
+        let change = Keyframe {
+            target: edit.target.clone(),
+            timeline_frame: clip.timeline_start,
+            value: None,
+            interpolation,
+        };
+        commands.push(inspector::keyframe_command_at(
+            session,
+            id,
+            raw,
+            &change,
+            Some(frame),
+        )?);
+        if edit.delete {
+            continue;
+        }
+        let destination = frame
+            .checked_add(edit.delta_source_frames)
+            .ok_or_else(|| ApiError::invalid("Keyframe frame overflow"))?;
+        if !(start..=end).contains(&destination) {
+            return Err(ApiError::invalid(
+                "Keep every moved keyframe inside the visible source range",
+            ));
+        }
+        if !selected.contains(&destination)
+            && curve
+                .track
+                .keyframes()
+                .iter()
+                .any(|key| key.0 == destination)
+        {
+            return Err(ApiError::conflict(
+                "KEYFRAME_COLLISION",
+                "Another keyframe occupies a group destination",
+            ));
+        }
+        let value = value + edit.delta_value;
+        if !value.is_finite() || value < curve.bounds.0 || value > curve.bounds.1 {
+            return Err(ApiError::invalid(
+                "Keep every moved value inside the native parameter range",
+            ));
+        }
+        inserts.push(inspector::keyframe_command_at(
+            session,
+            id,
+            raw,
+            &Keyframe {
+                value: Some(value),
+                ..change
+            },
+            Some(destination),
+        )?);
+    }
+    if !edit.delete && edit.delta_source_frames == 0 && edit.delta_value == 0.0 {
+        return Ok(());
+    }
+    commands.extend(inserts);
     session.apply(Box::new(core::CompositeCommand::new(
         core::CommandLabel::SetKeyframe,
         commands,

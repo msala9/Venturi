@@ -457,6 +457,17 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   `KEYFRAME_COLLISION`. Hidden keys can be deleted. Target/value/Bezier/track
   lock validation completes before a single native CompositeCommand applies.
   Usual epoch/generation/revision/writer/idempotency guards apply.
+- `edit_curve_keys {clip_id, edit:{target,source_frames,delta_source_frames,
+  delta_value,delete}}` moves or deletes 1–2048 distinct keys on one native scalar
+  track. Moves preserve each key's outgoing interpolation/Bezier controls and
+  use one shared frame/value delta. Every destination/value is validated before
+  native commands apply. Selected origins may become selected destinations;
+  unselected keys are never overwritten. Removes precede inserts in one native
+  CompositeCommand, so Undo restores the whole group. Invalid/overflowing/stale
+  selections and locked tracks are refused without partial edits. Zero movement
+  has no history effect. The browser supports box/additive selection, accessible
+  multi-select/delta controls, local drafts and Delete scoped to curve focus.
+  Zoom/pan operate on bounded browser viewport state, never the native project.
 
 - GET `/api/v1/timelines/{id}/clips/{clip}` accepts the same revisioned query as
   exact frame preview. Returns native evaluated/default transform and gain,

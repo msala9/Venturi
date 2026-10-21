@@ -1,6 +1,43 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {bindCurveGesture, curveGeometry, curveHandles, curveKeyOperation} from "../js/curves.js";
+import {bindCurveGesture, curveGeometry, curveHandles, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport} from "../js/curves.js";
+
+test("group curve drafts share one clamped delta and retain exact source identities without native evaluation",()=>{
+  const curve={min:0,max:100,keys:[{source_frame:10,value:20,interpolation:"Hold"},{source_frame:20,value:80,interpolation:"EaseIn"},{source_frame:30,value:50}]};
+  const draft=curveGroupDraft(curve,{source_start:0,source_end:40},[10,20],30,50);
+  assert.equal(draft.deltaFrame,20);assert.equal(draft.deltaValue,20);
+  assert.deepEqual(draft.keys,[{source_frame:30,value:40,interpolation:"Hold"},{source_frame:40,value:100,interpolation:"EaseIn"}]);
+  assert.equal(curve.keys[0].source_frame,10);
+  assert.equal(curveGroupDraft(curve,{source_start:0,source_end:40},[],1,1),null);
+  assert.deepEqual(curveGroupOperation("c",{kind:"gain"},[10,20],2,3),{kind:"edit_curve_keys",clip_id:"c",edit:{target:{kind:"gain"},source_frames:[10,20],delta_source_frames:2,delta_value:3,delete:false}});
+  for(const frames of [[],[10,10],[1.5],[Number.MAX_SAFE_INTEGER+1]])assert.throws(()=>curveGroupOperation("c",{},frames,0,0));
+  assert.throws(()=>curveGroupOperation("c",{},[1],1.5,0));assert.throws(()=>curveGroupOperation("c",{},[1],1,Infinity));
+});
+
+test("curve viewport zoom/pan stays inside source/native value bounds and supports a single-frame clip",()=>{
+  const range={source_start:0,source_end:100},curve={min:0,max:100},g={min:0,max:100};
+  const zoomed=curveViewport(range,range,curve,g,{zoomX:2,zoomY:2});
+  assert.deepEqual(zoomed,{source_start:25,source_end:75,value_min:25,value_max:75});
+  const panned=curveViewport(zoomed,range,curve,{min:25,max:75},{panX:1000,panY:-1000});
+  assert.deepEqual(panned,{source_start:50,source_end:100,value_min:0,value_max:50});
+  const single=curveViewport({source_start:7,source_end:7},{source_start:7,source_end:7},curve,g,{zoomX:2});
+  assert.equal(single.source_start,7);assert.equal(single.source_end,7);
+  assert.equal(curveViewport(range,range,curve,{min:-10,max:110},{zoomX:2}).value_min,undefined,"Time-only zoom preserves automatic value bounds");
+});
+
+test("box selection and group drag are local until release; pan never submits a key edit",()=>{
+  const events={},boxes=[],drafts=[],commits=[],pans=[];let selection=[10,20];
+  const canvas={addEventListener:(name,fn)=>events[name]=fn,focus(){},setPointerCapture(){},releasePointerCapture(){events.lostpointercapture();},getBoundingClientRect:()=>({left:0,top:0})};
+  bindCurveGesture(canvas,{getCurve:()=>({keys:[{source_frame:10,value:20},{source_frame:20,value:40}]}),getGeometry:()=>({x:x=>x,y:y=>y,frame:Math.round,value:y=>y}),getSelection:()=>selection,isBusy:()=>false,canEdit:()=>true,select(){},selectBox:box=>boxes.push(box),draftBox:box=>drafts.push(box),draft:(point,members)=>drafts.push({point,members}),finish:(point,members)=>commits.push({point,members}),pan:value=>pans.push(value),reset(){}});
+  const event=(x,y,extra={})=>({button:0,pointerId:1,clientX:x,clientY:y,...extra});
+  events.pointerdown(event(0,0));events.pointermove(event(30,60));assert.equal(boxes.length,0);events.pointerup(event(30,60));
+  assert.deepEqual(boxes,[{start:0,end:30,min:0,max:60,append:undefined,moved:true}]);assert.equal(commits.length,0);
+  events.pointerdown(event(10,20));events.pointermove(event(15,25));assert.equal(commits.length,0);events.pointerup(event(15,25));
+  assert.deepEqual(commits,[{point:{frame:15,value:25},members:[10,20]}]);
+  events.pointerdown(event(5,5,{button:1}));events.pointermove(event(15,25,{button:1}));events.pointerup(event(15,25,{button:1}));
+  assert.equal(commits.length,1);assert.deepEqual(pans,[{frames:-10,value:-20,final:false},{final:true}]);
+  selection=[];events.pointerdown(event(10,20,{shiftKey:true}));events.pointermove(event(15,25));events.pointerup(event(15,25));assert.equal(commits.length,1);
+});
 
 test("curve edits retain exact source frames, outgoing Bezier and deletion identity", () => {
   const target = {kind: "transform", param: "Opacity"};

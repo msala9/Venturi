@@ -1940,3 +1940,36 @@ Its project/Review/source hashes, exact seed and Favorite provenance are unchang
 The separate marker test copy is retained. Evidence:
 m4-halo2-marker-gestures.json and m4-halo2-marker-gestures-browser.png. Renderer
 remains software-only with no hardware handles or shared GPU-lock acquisition.
+
+## M4 — scalar curve group editing and two-axis view controls
+
+The curve editor now supports box/additive key selection and an accessible native
+multi-select, with shared frame/value deltas, pointer group moves and group Delete.
+The new edit_curve_keys adapter builds native removal/insertion commands in one
+CompositeCommand. It preserves outgoing interpolation and Bezier controls; every
+key/destination/value/lock is checked before applying, including overflow and
+collisions with unselected keys. Selected origins can be selected destinations.
+Zero movement has no Undo effect. There is no browser interpolation/edit engine.
+
+Time/value zoom, time/value pan, wheel/Shift-wheel and Alt/middle-drag pan affect
+only local view geometry. Draft moves/boxes stay local until release; Escape and
+capture loss cancel. Keyboard Delete is scoped to the curve canvas and deletes
+selected keys without reaching the global clip-delete shortcut. Selection survives
+successful moves and rejected collisions. View/selection state is scoped to the
+project/timeline/clip/parameter and capped at 128 compact state entries; native
+samples and clip payloads are not retained in that map.
+
+128 web Rust tests and 99 JavaScript tests pass, with fmt, clippy and build. Actual
+browser acceptance on the isolated renderer-disabled host created Hold, explicit
+Bezier and EaseInOut opacity keys. A box selected keys 0/10 without changing the
+project. A colliding move was refused with native state/history and UI selection
+unchanged. Numeric group move produced 5/15, and a real graph drag produced 7/17,
+each in one SetKeyframe Undo. Graph-focused Delete removed both selected keys and
+kept the clip; one Undo restored them. Two further Undo restored the original
+native curve revision and samples, and two Redo restored the final curve. Both
+axis zoom/pan controls changed only the displayed viewport, not native history.
+Save/process restart preserved exact native keys, interpolation/control values,
+samples and timeline revision, with fresh history. Parent saved projects and clip
+snapshot hashes are unchanged. Evidence: m4-curve-groups.json and browser PNG.
+Cross-parameter linked zoom and RGBA/text/enum key tracks remain open; the ledger
+row remains partial. No shared GPU, archive or inference changes were involved.

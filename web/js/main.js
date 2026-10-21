@@ -388,7 +388,7 @@ function selected() {
     request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(clip.id)}?${query}`).then((detail) => {
       if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
       target.replaceChildren();
-      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState });
+      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}` });
     }).catch((error) => { if (inspectorSeq === inspectorSequence) target.textContent = error.message; });
   }
   if (clip)

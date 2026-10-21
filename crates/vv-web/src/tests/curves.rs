@@ -42,6 +42,153 @@ fn change() -> Edit {
     }
 }
 
+fn group() -> GroupEdit {
+    GroupEdit {
+        target: change().target,
+        source_frames: vec![25, 40],
+        delta_source_frames: 2,
+        delta_value: 5.0,
+        delete: false,
+    }
+}
+
+#[test]
+fn group_move_delete_and_undo_preserve_native_source_timing_values_and_outgoing_interpolation() {
+    let (mut session, id, raw) = fixture();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    edit_group(&mut session, id, &raw, &group()).unwrap();
+    let keys = inspector::find(&session, id, &raw)
+        .unwrap()
+        .2
+        .effects
+        .transform
+        .track(TransformParam::Opacity)
+        .keyframes();
+    assert_eq!(
+        keys,
+        &[
+            (27, 25.0, Interpolation::EaseIn),
+            (42, 85.0, Interpolation::Hold)
+        ]
+    );
+    assert_eq!(session.history.position(), position + 1);
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    edit_group(
+        &mut session,
+        id,
+        &raw,
+        &GroupEdit {
+            delete: true,
+            ..group()
+        },
+    )
+    .unwrap();
+    assert!(
+        inspector::find(&session, id, &raw)
+            .unwrap()
+            .2
+            .effects
+            .transform
+            .track(TransformParam::Opacity)
+            .keyframes()
+            .is_empty()
+    );
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+}
+
+#[test]
+fn group_destinations_can_overlap_selected_origins_but_never_overwrite_unselected_keys_or_partially_apply()
+ {
+    let (mut session, id, raw) = fixture();
+    let (_, _, clip) = inspector::find(&session, id, &raw).unwrap();
+    let end = clip.source_frame_at(clip.timeline_end() - 1);
+    assert!(end >= 55);
+    edit_group(
+        &mut session,
+        id,
+        &raw,
+        &GroupEdit {
+            delta_source_frames: 15,
+            delta_value: 0.0,
+            ..group()
+        },
+    )
+    .unwrap();
+    let keys = inspector::find(&session, id, &raw)
+        .unwrap()
+        .2
+        .effects
+        .transform
+        .track(TransformParam::Opacity)
+        .keyframes();
+    assert_eq!(
+        keys,
+        &[
+            (40, 20.0, Interpolation::EaseIn),
+            (55, 80.0, Interpolation::Hold)
+        ]
+    );
+    session.history.undo(&mut session.project);
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    let cases = [
+        GroupEdit {
+            source_frames: vec![25],
+            delta_source_frames: 15,
+            ..group()
+        },
+        GroupEdit {
+            delta_source_frames: i64::MAX,
+            ..group()
+        },
+        GroupEdit {
+            delta_source_frames: -100,
+            ..group()
+        },
+        GroupEdit {
+            delta_value: 30.0,
+            ..group()
+        },
+        GroupEdit {
+            delta_value: f32::NAN,
+            ..group()
+        },
+        GroupEdit {
+            source_frames: vec![25, 25],
+            ..group()
+        },
+        GroupEdit {
+            source_frames: vec![25, 41],
+            ..group()
+        },
+    ];
+    for edit in cases {
+        assert!(edit_group(&mut session, id, &raw, &edit).is_err());
+        assert_eq!(session.history.position(), position);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    }
+    edit_group(
+        &mut session,
+        id,
+        &raw,
+        &GroupEdit {
+            delta_source_frames: 0,
+            delta_value: 0.0,
+            ..group()
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), position);
+    session.project.timelines[id].tracks[0].locked = true;
+    assert_eq!(
+        edit_group(&mut session, id, &raw, &group()).unwrap_err().1,
+        "TRACK_LOCKED"
+    );
+}
+
 #[test]
 fn curve_samples_use_native_evaluation_and_exact_source_keys() {
     let (session, id, raw) = fixture();

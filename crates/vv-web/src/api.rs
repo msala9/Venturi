@@ -50,6 +50,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/timelines/{id}/timeline.otio", get(export_otio))
         .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
         .route(
+            "/api/v1/timelines/{id}/clips/{clip}/keys/{page}",
+            get(clip_key_page),
+        )
+        .route(
             "/api/v1/timelines/{id}/clips/{clip}/slip/{center}",
             get(slip_detail),
         )
@@ -849,7 +853,24 @@ async fn clip_detail(
     }
     state
         .host
-        .call(Action::ClipDetail(clip, query))
+        .call(Action::ClipDetail(clip, query, None))
+        .await
+        .map(Json)
+}
+async fn clip_key_page(
+    State(state): State<AppState>,
+    Path((id, clip, page)): Path<(String, String, usize)>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid clip key page query"))?
+        .0;
+    if query.timeline_id != id {
+        return Err(ApiError::invalid("Timeline ID does not match the query"));
+    }
+    state
+        .host
+        .call(Action::ClipDetail(clip, query, Some(page)))
         .await
         .map(Json)
 }

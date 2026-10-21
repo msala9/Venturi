@@ -12,12 +12,16 @@ export function retainedCrossKeys(stored,picks) {
   const ids=Array.isArray(stored)?stored:stored?.before?.length && stored.before.every(id=>available.has(id))?stored.before:stored?.after || [];
   return ids.filter(id=>available.has(id));
 }
-export function renderKeySelection(root,detail,{disabled,commit,notice,openState,scope=detail.clip_id,zoomLink}) {
+export function mergeCrossSelection(stored,visible,chosen) {
+  const visibleIds=new Set(visible.map(identity));
+  const result=[...new Set([...stored.filter(id=>!visibleIds.has(id)),...chosen.map(identity)])];
+  if(result.length>2048)throw Error("Select at most 2048 keys across all pages");
+  return result;
+}
+export function renderKeySelection(root,detail,{disabled,commit,notice,openState,scope=detail.clip_id,zoomLink,reload}) {
   const rows=[...(detail.curves?.tracks || []),...(detail.event_keys || [])];
-  const total=rows.reduce((sum,row)=>sum+row.keys.length,0),shown=[];
+  const total=rows.reduce((sum,row)=>sum+row.key_count,0);
   if(!total)return null;
-  for(const row of rows)for(const key of row.keys.slice(0,2048-shown.length))shown.push({target:row.target,source_frame:key.source_frame,name:row.name,timeline:key.timeline_frame});
-  const picks=shown.map(({target,source_frame})=>({target,source_frame}));
   const stateKey=`all-keys:${scope}`;
   function remember(value){
     if(!openState)return;
@@ -26,10 +30,11 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
     for(const key of keys.slice(0,Math.max(0,keys.length-32)))openState.delete(key);
   }
   const section=document.createElement("details"),summary=document.createElement("summary");section.className="curve-editor";section.dataset.visualPath="all-keys";section.open=openState?.get("all-keys") || false;summary.textContent="Keys across parameters";section.append(summary);
-  const note=document.createElement("p");note.className="muted";note.textContent="Select keys from different rows with Ctrl/Shift. Move preserves each native value and interpolation. Link Zoom X/Y also includes existing twins at the same source frame; it does not create missing twins. Each action is one Undo.";section.append(note);
+  const note=document.createElement("p");note.className="muted";note.textContent="Select keys with Ctrl/Shift. Selection retains keys from other parameters and pages. Move preserves native values and interpolation. Missing keys reject the whole action. Link Zoom includes existing twins. Each action is one Undo.";section.append(note);
+  const filter=document.createElement("select");filter.setAttribute("aria-label","Cross-parameter key row");filter.append(new Option("All parameters on this page",""));rows.forEach((row,index)=>filter.append(new Option(`${row.name} (${row.key_count} keys)`,String(index))));filter.value=openState?.get("all-keys-row") || "";section.append(filter);
   const form=document.createElement("form"),list=document.createElement("select");list.multiple=true;list.size=8;list.setAttribute("aria-label","Keys across parameters");list.disabled=disabled;
-  const stored=openState?.get(stateKey),retained=new Set(retainedCrossKeys(stored,picks));
-  shown.forEach((key,index)=>{const option=new Option(`${key.name} · source ${key.source_frame} · timeline ${key.timeline}`,String(index));option.selected=retained.has(identity(picks[index]));list.append(option);});form.append(list);
+  const stored=openState?.get(stateKey);let selectedIds=stored?.ids || (Array.isArray(stored)?stored:stored?.after || []),shown=[],picks=[];form.append(list);
+  const clear=document.createElement("button");clear.type="button";clear.textContent="Clear keys on all pages";form.append(clear);
   const status=document.createElement("p");status.className="muted";status.setAttribute("aria-live","polite");form.append(status);
   const linkedLabel=document.createElement("label"),linked=document.createElement("input");linked.type="checkbox";linked.checked=Boolean(openState?.get("key-selection-zoom-link"));linked.disabled=disabled;linkedLabel.append(linked," Link Zoom X/Y key times and interpolation");form.append(linkedLabel);
   zoomLink?.register(linked);
@@ -46,32 +51,38 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   const remove=document.createElement("button");remove.type="button";remove.textContent="Delete keys across parameters";form.append(remove);section.append(form);root.append(section);
   let waiting=false,disposed=false;
   if(stored?.focus && !disabled && section.open){
-    remember({...stored,focus:false});
+    remember({ids:selectedIds,focus:false});
     queueMicrotask(()=>{if(!disposed && list.isConnected && document.activeElement===document.body)list.focus({preventScroll:true});});
   }
-  const selected=()=>[...list.selectedOptions].map(option=>picks[Number(option.value)]);
-  function update(){const count=selected().length;status.textContent=`${count} selected · ${shown.length} shown${total>shown.length?` of ${total} advertised keys`:""}`;move.disabled=remove.disabled=interpolate.disabled=disabled || waiting || !count;}
+  const selected=()=>selectedIds.map(id=>{const [target,source_frame]=JSON.parse(id);return {target,source_frame};});
+  function update(){const ids=new Set(selectedIds),hidden=selectedIds.length-picks.filter(pick=>ids.has(identity(pick))).length;status.textContent=`${selectedIds.length} selected · ${hidden} selected outside this list · ${shown.length} shown of ${total} native keys${shown.length===2048?" · choose a parameter row to access more keys on this page":""}`;move.disabled=remove.disabled=interpolate.disabled=disabled || waiting || !selectedIds.length;clear.disabled=waiting || !selectedIds.length;}
+  function show(){
+    shown=[];for(const row of filter.value===""?rows:[rows[Number(filter.value)]].filter(Boolean))for(const key of row.keys.slice(0,2048-shown.length))shown.push({target:row.target,source_frame:key.source_frame,name:row.name,timeline:key.timeline_frame});
+    picks=shown.map(({target,source_frame})=>({target,source_frame}));const ids=new Set(selectedIds);list.replaceChildren(...shown.map((key,index)=>{const option=new Option(`${key.name} · source ${key.source_frame} · timeline ${key.timeline}`,String(index));option.selected=ids.has(identity(picks[index]));return option;}));update();
+  }
   async function send(action){
-    if(disabled || waiting || !selected().length || action.kind==="move" && !delta.reportValidity())return;
+    if(disabled || waiting || !selectedIds.length || action.kind==="move" && !delta.reportValidity())return;
     const before=selected();
     try{
       const operation=keySelectionOperation(detail.clip_id,before,action,linked.checked);
       waiting=true;form.inert=true;update();
       const after=action.kind==="delete"?[]:before.map(pick=>({...pick,source_frame:pick.source_frame+(action.kind==="move"?action.delta_source_frames:0)}));
-      remember({before:before.map(identity),after:after.map(identity),focus:true});
+      selectedIds=after.map(identity);remember({ids:selectedIds,focus:true});
       await commit(operation);
-    }catch(error){remember({before:before.map(identity),after:before.map(identity),focus:true});notice(error.message);if(!disposed && list.isConnected)list.focus({preventScroll:true});}
-    finally{waiting=false;form.inert=false;if(!disposed)update();}
+    }catch(error){selectedIds=before.map(identity);remember({ids:selectedIds,focus:true});notice(error.message);if(disposed)reload?.();else if(list.isConnected)list.focus({preventScroll:true});}
+    finally{waiting=false;form.inert=false;if(!disposed)show();}
   }
-  list.addEventListener("change",()=>{remember(selected().map(identity));update();});
+  list.addEventListener("change",()=>{try{selectedIds=mergeCrossSelection(selectedIds,picks,[...list.selectedOptions].map(option=>picks[Number(option.value)]));remember({ids:selectedIds});update();}catch(error){notice(error.message);show();}});
+  filter.addEventListener("change",()=>{openState?.set("all-keys-row",filter.value);show();});
+  clear.addEventListener("click",()=>{selectedIds=[];remember({ids:selectedIds});show();});
   list.addEventListener("keydown",event=>{if(event.key==="Delete" || event.key==="Backspace"){event.preventDefault();event.stopPropagation();send({kind:"delete"});}});
   if(!zoomLink)linked.addEventListener("change",()=>openState?.set("key-selection-zoom-link",linked.checked));
   mode.addEventListener("change",()=>{controls.hidden=mode.value!=="Bezier";controls.disabled=controls.hidden || disabled;});
   form.addEventListener("submit",event=>{event.preventDefault();send({kind:"move",delta_source_frames:Number(delta.value)});});
   interpolate.addEventListener("click",()=>{try{if(mode.value==="Bezier" && !values.every(input=>input.reportValidity()))return;send({kind:"interpolation",interpolation:curveInterpolation(mode.value,values.map(input=>Number(input.value)))});}catch(error){notice(error.message);}});
-  remove.addEventListener("click",()=>send({kind:"delete"}));update();
+  remove.addEventListener("click",()=>send({kind:"delete"}));show();
   return {cancel(){
-    if(document.activeElement===list){const state=openState?.get(stateKey);remember(Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}
+    if(document.activeElement===list)remember({ids:selectedIds,focus:true});
     disposed=true;
   }};
 }

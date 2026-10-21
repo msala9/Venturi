@@ -1,5 +1,23 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+`GET /api/v1/timelines/{id}/clips/{clip}/keys/{page}` takes the existing
+FrameQuery and validates its epoch, generation, timeline and revision. Pages
+are zero-based and expose up to 256 native keys per parameter, with exact
+values, interpolation and source/timeline coordinates. `key_page` contains
+`index`, `page_size` and `total_pages` (the maximum page count among parameters,
+at least one). An overflowing or out-of-range page is rejected. Reads do not
+create history steps. The original clip detail route retains its first-page
+scalar/typed limits for existing clients.
+
+Property, filter, mask and title summaries retain at most 16 keys plus the
+native `key_count`; complete scalar and typed keys are available through the
+key pages. These summaries do not replace native tracks or modify saved files.
+The browser retains up to 2048 cross-parameter picks across page/row changes,
+reports picks outside the displayed list and provides an explicit clear action.
+The all-parameter list is bounded to 2048 options; its parameter filter exposes
+each row's complete current page. Native mutation validation rejects a group
+containing a removed key rather than silently dropping a hidden pick.
+
 Scalar `edit_curve_key` and `edit_curve_keys` edits accept optional
 `link_zoom:true`. Omitted or false preserves the original request serialization,
 including durable receipt fingerprints. For Zoom X/Y, creation adds both keys;

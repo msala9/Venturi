@@ -351,7 +351,7 @@ const mixerPaths = new Set();
 const visualState = new Map();
 let visualControls=[];
 function inspectorState(clip) {
-  return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
+  return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead,key_page:visualState.get(`key-page:${documentState.project_epoch}:${timeline.id}:${clip}`) || 0 } : null;
 }
 function selected() {
   recoveryPanel?.invalidate();
@@ -390,11 +390,17 @@ function selected() {
     const state = inspectorState(clip.id), identity = detailIdentity(state);
     const end = Math.max(1, ...timeline.tracks.flatMap((t) => t.clips.map((c) => c.start_frame + c.length_frames)));
     const query = new URLSearchParams({ project_epoch: state.project_epoch, if_generation: state.generation, timeline_id: state.timeline, revision: state.revision, frame: Math.min(view.playhead, end - 1) });
-    request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(clip.id)}?${query}`).then((detail) => {
+    function setKeyPage(page){
+      visualState.set(`key-page:${state.project_epoch}:${state.timeline}:${clip.id}`,page);
+      visualState.set("key-page-focus",`${state.project_epoch}:${state.timeline}:${clip.id}`);
+      const keys=[...visualState.keys()].filter(key=>key.startsWith("key-page:"));for(const key of keys.slice(0,Math.max(0,keys.length-32)))visualState.delete(key);
+      selected();
+    }
+    request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(clip.id)}/keys/${state.key_page}?${query}`).then((detail) => {
       if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
       target.replaceChildren();
-      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}` });
-    }).catch((error) => { if (inspectorSeq === inspectorSequence) target.textContent = error.message; });
+      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage });
+    }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else target.textContent = error.message;} });
   }
   if (clip)
     for (const [label, value] of [

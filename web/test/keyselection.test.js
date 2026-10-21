@@ -1,6 +1,17 @@
 import {test} from "node:test";
 import assert from "node:assert/strict";
-import {keySelectionOperation,retainedCrossKeys} from "../js/keyselection.js";
+import {keySelectionOperation,retainedCrossKeys,mergeCrossSelection} from "../js/keyselection.js";
+
+test("cross-page selection retains hidden native picks and changes only the displayed list",()=>{
+  const a={target:{kind:"transform",param:"ZoomX"},source_frame:2},b={target:{kind:"text"},source_frame:2200},c={target:{kind:"gain"},source_frame:2};
+  const id=p=>JSON.stringify([p.target,p.source_frame]);
+  let selection=mergeCrossSelection([], [a,c], [a,c]);
+  selection=mergeCrossSelection(selection,[b],[b]);assert.deepEqual(selection,[id(a),id(c),id(b)]);
+  selection=mergeCrossSelection(selection,[a,c],[c]);assert.deepEqual(selection,[id(b),id(c)]);
+  assert.deepEqual(mergeCrossSelection(selection,[],[]),selection);
+  assert.deepEqual(mergeCrossSelection(selection,[b],[]),[id(c)]);
+  assert.throws(()=>mergeCrossSelection(Array.from({length:2048},(_,index)=>id({...a,source_frame:index})),[b],[b]));
+});
 
 test("cross-parameter operations preserve native target identities and source coordinates",()=>{
   const picks=[{target:{kind:"transform",param:"ZoomX"},source_frame:10},{target:{kind:"text"},source_frame:10}];

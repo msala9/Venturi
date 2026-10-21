@@ -30,7 +30,7 @@ pub enum Action {
     FrameSnapshot(FrameQuery, oneshot::Sender<Result<FrameSnapshot>>),
     AudioSnapshot(FrameQuery, oneshot::Sender<Result<crate::audition::Task>>),
     CheckFrame(FrameQuery),
-    ClipDetail(String, FrameQuery),
+    ClipDetail(String, FrameQuery, Option<usize>),
     SlipDetail(String, i64, FrameQuery),
     TakePlan(crate::take::Preview),
     Review(SourceQuery),
@@ -538,9 +538,18 @@ impl Editor {
                 value["generation"] = json!(query.if_generation);
                 Ok(value)
             }
-            Action::ClipDetail(clip, query) => {
+            Action::ClipDetail(clip, query, page) => {
                 let (id, _) = self.validate_frame(&query)?;
-                let mut detail = crate::inspector::detail(&self.session, id, &clip, query.frame)?;
+                let mut detail = match page {
+                    Some(page) => crate::inspector::detail_page(
+                        &self.session,
+                        id,
+                        &clip,
+                        query.frame,
+                        Some(page),
+                    )?,
+                    None => crate::inspector::detail(&self.session, id, &clip, query.frame)?,
+                };
                 detail["project_epoch"] = json!(query.project_epoch);
                 detail["generation"] = json!(query.if_generation);
                 detail["revision"] = json!(query.revision);

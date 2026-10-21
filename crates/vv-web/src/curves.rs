@@ -155,6 +155,17 @@ fn curves<'a>(session: &Session, id: TimelineId, clip: &'a Clip, lane: usize) ->
 }
 
 pub fn detail(session: &Session, id: TimelineId, clip: &Clip, lane: usize) -> Value {
+    detail_page(session, id, clip, lane, 0, 2048)
+}
+
+pub fn detail_page(
+    session: &Session,
+    id: TimelineId,
+    clip: &Clip,
+    lane: usize,
+    offset: usize,
+    limit: usize,
+) -> Value {
     let start = clip.source_frame_at(clip.timeline_start);
     let end = clip.source_frame_at(clip.timeline_end() - 1);
     let entries: Vec<_> = curves(session, id, clip, lane).into_iter().map(|curve| {
@@ -169,7 +180,7 @@ pub fn detail(session: &Session, id: TimelineId, clip: &Clip, lane: usize) -> Va
             }
         }
         let samples: Vec<_> = frames.into_iter().map(|frame| (frame, curve.track.value_at(frame))).collect();
-        let keys: Vec<_> = curve.track.keyframes().iter().take(2048).map(|&(frame, value, interpolation)| json!({"source_frame":frame,"timeline_frame":clip.timeline_frame_at(frame),"value":value,"interpolation":interpolation,"controls":interpolation.control_points()})).collect();
+        let keys: Vec<_> = curve.track.keyframes().iter().skip(offset).take(limit).map(|&(frame, value, interpolation)| json!({"source_frame":frame,"timeline_frame":clip.timeline_frame_at(frame),"value":value,"interpolation":interpolation,"controls":interpolation.control_points()})).collect();
         json!({"name":curve.name,"target":curve.target,"min":curve.bounds.0,"max":curve.bounds.1,"default":curve.track.default,"samples":samples,"keys":keys,"key_count":curve.track.keyframes().len()})
     }).collect();
     json!({"source_start":start,"source_end":end,"timeline_start":clip.timeline_start,"timeline_end":clip.timeline_end(),"tracks":entries})

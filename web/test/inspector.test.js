@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { detailIdentity, propertyOperation, keyframeOperation,transformPatch } from "../js/inspector.js";
+import { detailIdentity, propertyOperation, keyframeOperation,transformPatch,keyPageIndex } from "../js/inspector.js";
+
+test("native key pages validate bounds and distinguish otherwise identical inspector requests",()=>{
+  assert.equal(keyPageIndex("10",10),9);
+  for(const value of ["",0,11,1.5,Infinity,"bad"])assert.throws(()=>keyPageIndex(value,10));
+  assert.notEqual(detailIdentity({clip:"1",key_page:0}),detailIdentity({clip:"1",key_page:1}));
+});
 
 test("linked zoom defaults and playhead keys use one existing atomic native request",()=>{
   assert.deepEqual(transformPatch("ZoomX",1.5,true),{transform:[{param:"ZoomX",value:1.5},{param:"ZoomY",value:1.5}]});

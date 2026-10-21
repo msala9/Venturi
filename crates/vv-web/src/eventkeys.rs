@@ -47,10 +47,15 @@ fn row<T: Clone + Serialize>(
     name: String,
     track: &core::Keyframed<T>,
     choices: Value,
+    offset: usize,
+    limit: usize,
 ) -> Value {
-    json!({"target":target,"name":name,"default":track.default,"choices":choices,"key_count":track.keyframes().len(),"keys":track.keyframes().iter().take(1024).map(|(frame,value,interpolation)|json!({"source_frame":frame,"timeline_frame":clip.timeline_frame_at(*frame),"value":value,"interpolation":interpolation,"controls":interpolation.control_points()})).collect::<Vec<_>>()})
+    json!({"target":target,"name":name,"default":track.default,"choices":choices,"key_count":track.keyframes().len(),"keys":track.keyframes().iter().skip(offset).take(limit).map(|(frame,value,interpolation)|json!({"source_frame":frame,"timeline_frame":clip.timeline_frame_at(*frame),"value":value,"interpolation":interpolation,"controls":interpolation.control_points()})).collect::<Vec<_>>()})
 }
 pub fn detail(clip: &Clip) -> Value {
+    detail_page(clip, 0, 1024)
+}
+pub fn detail_page(clip: &Clip, offset: usize, limit: usize) -> Value {
     let mut rows = Vec::new();
     if let Some(color) = &clip.effects.color {
         rows.push(row(
@@ -59,6 +64,8 @@ pub fn detail(clip: &Clip) -> Value {
             "RGBA color".into(),
             color,
             Value::Null,
+            offset,
+            limit,
         ));
     }
     if let Some(title) = &clip.effects.title {
@@ -68,6 +75,8 @@ pub fn detail(clip: &Clip) -> Value {
             "Title content".into(),
             &title.content,
             Value::Null,
+            offset,
+            limit,
         ));
     }
     for filter in &clip.effects.filters {
@@ -80,6 +89,8 @@ pub fn detail(clip: &Clip) -> Value {
                 format!("{:?} direction", filter.kind),
                 &filter.direction,
                 json!(core::BlurDirection::ALL),
+                offset,
+                limit,
             ));
         }
     }

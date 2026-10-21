@@ -277,8 +277,8 @@ pub fn wheels() -> Value {
 pub fn detail(clip: &core::Clip, frame: i64) -> Value {
     json!({"grade_presets":core::GradePreset::ALL.map(|p|format!("{p:?}")),"kinds":[FilterKind::ColorCorrection,FilterKind::BoxBlur,FilterKind::GaussianBlur,FilterKind::Exposure,FilterKind::DropShadow],"blur_radius_max":core::BLUR_RADIUS_MAX,"shadow_grow_max":core::SHADOW_GROW_MAX,"blur_directions":core::BlurDirection::ALL,
     "stack":clip.effects.filters.iter().map(|filter|{
-        let value=|track:&core::Keyframed<f32>|json!({"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes()});
-        json!({"kind":filter.kind,"enabled":filter.enabled,"radius":value(&filter.radius),"direction":filter.direction.value_at(frame),"amount":value(&filter.amount),"amount_range":amount_range(filter.kind).ok(),"offset":[value(&filter.offset[0]),value(&filter.offset[1])],"grow":value(&filter.grow),"color":filter.color,"grade":core::GradeParam::ALL.map(|param|{let track=filter.grade.track(param);let range=param.range();json!({"param":param,"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes(),"range":[range.start(),range.end()]})})})
+        let value=|track:&core::Keyframed<f32>|json!({"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":track.keyframes().len()});
+        json!({"kind":filter.kind,"enabled":filter.enabled,"radius":value(&filter.radius),"direction":filter.direction.value_at(frame),"amount":value(&filter.amount),"amount_range":amount_range(filter.kind).ok(),"offset":[value(&filter.offset[0]),value(&filter.offset[1])],"grow":value(&filter.grow),"color":filter.color,"grade":core::GradeParam::ALL.map(|param|{let track=filter.grade.track(param);let range=param.range();json!({"param":param,"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":track.keyframes().len(),"range":[range.start(),range.end()]})})})
     }).collect::<Vec<_>>()})
 }
 

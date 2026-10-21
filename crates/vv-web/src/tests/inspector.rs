@@ -1,5 +1,100 @@
 use super::*;
 use vv_core::{Rational, Timeline, Track, TrackKind};
+
+#[test]
+fn dense_key_pages_expose_every_native_scalar_and_text_key_without_unbounded_summaries() {
+    let (mut session, id, raw) = fixture();
+    let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+    clip.timeline_len = 6000;
+    clip.effects.title = Some(Default::default());
+    let interpolation = core::Interpolation::Bezier {
+        c1: [0.2, 0.1],
+        c2: [0.8, 0.9],
+    };
+    for index in 0..2501 {
+        clip.effects
+            .transform
+            .track_mut(TransformParam::ZoomX)
+            .upsert(index * 2, 1.25, interpolation);
+        clip.effects.title.as_mut().unwrap().content.upsert(
+            index * 2,
+            format!("Title {index} α"),
+            core::Interpolation::Hold,
+        );
+    }
+    let revision = session.timeline_revision(id);
+    let position = session.history.position();
+    let mut scalar = Vec::new();
+    let mut text = Vec::new();
+    for page in 0..10 {
+        let detail = detail_page(&session, id, &raw, 12, Some(page)).unwrap();
+        assert_eq!(
+            detail["key_page"],
+            json!({"index":page,"page_size":256,"total_pages":10})
+        );
+        let zoom = detail["curves"]["tracks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["target"]["param"] == "ZoomX")
+            .unwrap();
+        assert!(zoom["keys"].as_array().unwrap().len() <= 256);
+        scalar.extend(zoom["keys"].as_array().unwrap().iter().cloned());
+        let title = detail["event_keys"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["target"]["kind"] == "text")
+            .unwrap();
+        text.extend(title["keys"].as_array().unwrap().iter().cloned());
+        let summary = detail["transform"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["param"] == "ZoomX")
+            .unwrap();
+        assert_eq!(summary["key_count"], 2501);
+        assert_eq!(summary["keyframes"].as_array().unwrap().len(), 16);
+        assert_eq!(
+            detail["title"]["content"]["keyframes"]
+                .as_array()
+                .unwrap()
+                .len(),
+            16
+        );
+    }
+    assert_eq!(scalar.len(), 2501);
+    assert_eq!(text.len(), 2501);
+    for index in 0..2501 {
+        assert_eq!(scalar[index]["source_frame"], json!(index * 2));
+        assert_eq!(scalar[index]["interpolation"], json!(interpolation));
+        assert_eq!(text[index]["value"], json!(format!("Title {index} α")));
+        assert_eq!(text[index]["interpolation"], "Hold");
+    }
+    assert!(detail_page(&session, id, &raw, 12, Some(10)).is_err());
+    assert!(detail_page(&session, id, &raw, 12, Some(usize::MAX)).is_err());
+    assert_eq!(session.history.position(), position);
+    assert_eq!(session.timeline_revision(id), revision);
+    crate::curves::edit(
+        &mut session,
+        id,
+        &raw,
+        &crate::curves::Edit {
+            target: Target::Transform {
+                param: TransformParam::ZoomX,
+            },
+            previous_source_frame: Some(4400),
+            source_frame: 4401,
+            value: Some(1.5),
+            interpolation,
+            link_zoom: false,
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    session.history.undo(&mut session.project);
+    assert_eq!(session.timeline_revision(id), revision);
+}
 fn fixture() -> (Session, TimelineId, String) {
     let mut session = Session::default();
     let id = session.create_timeline(Timeline {

@@ -5,7 +5,7 @@ import {renderEventKeys} from "./eventkeys.js";
 import {renderKeySelection} from "./keyselection.js";
 
 export function detailIdentity(state) {
-  return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame].join(":") : null;
+  return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame,state.key_page].join(":") : null;
 }
 export function propertyOperation(clip, patch) { return { kind: "set_properties", clip_id: clip, patch }; }
 export function transformPatch(param,value,linked=false){return {transform:zoomParameters(param,linked).map(param=>({param,value}))};}
@@ -15,8 +15,21 @@ export function keyframeOperation(clip, target, frame, value, interpolation = "L
   const params=target.kind==="transform"?zoomParameters(target.param,linked):[];
   return params.length===2?{kind:"set_keyframes",clip_id:clip,edits:params.map(param=>({...edit,target:{kind:"transform",param}}))}:{kind:"set_keyframe",clip_id:clip,edit};
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope }) {
+export function keyPageIndex(value,total) {
+  const page=Number(value);
+  if(!Number.isSafeInteger(page) || page<1 || page>total)throw Error(`Choose a key page from 1 to ${total}`);
+  return page-1;
+}
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage }) {
   const disabled = !writable || detail.locked;
+  if(detail.key_page){
+    const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
+    label.className="field";label.textContent="Native key page";input.type="number";input.min=1;input.max=page.total_pages;input.step=1;input.required=true;input.value=page.index+1;label.append(input);
+    previous.type=next.type="button";previous.textContent="Previous key page";next.textContent="Next key page";go.textContent="Read key page";previous.disabled=page.index===0;next.disabled=page.index+1>=page.total_pages;
+    previous.addEventListener("click",()=>setKeyPage(page.index-1));next.addEventListener("click",()=>setKeyPage(page.index+1));form.addEventListener("submit",event=>{event.preventDefault();if(form.reportValidity()){try{setKeyPage(keyPageIndex(input.value,page.total_pages));}catch(error){notice(error.message);}}});
+    note.className="muted";note.textContent=`Page ${page.index+1} of ${page.total_pages} · up to ${page.page_size} keys per parameter. Curve and value-key selections apply to this page; cross-parameter selection retains keys from other pages.`;form.append(label,previous,next,go,note);root.append(form);
+    if(visualState?.get("key-page-focus")===scope){visualState.delete("key-page-focus");queueMicrotask(()=>{if(input.isConnected)input.focus({preventScroll:true});});}
+  }
   const zoomLink=createZoomLink(visualState);
   const report = (operation) => commit(operation).catch((error) => notice(error.message));
   const section = document.createElement("details"); section.open = true;
@@ -28,7 +41,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   const interpolation = document.createElement("select"); interpolation.setAttribute("aria-label", "Keyframe interpolation");
   for (const name of ["Linear", "Hold", "EaseInOut", "EaseIn", "EaseOut"]) interpolation.append(new Option(name, name));
   section.append(interpolation);
-  function number(label, value, min, max, patch, target = null, keys = []) {
+  function number(label, value, min, max, patch, target = null, keys = [],keyCount=keys.length) {
     const form = document.createElement("form"); form.className = "property-row";
     const field = document.createElement("label"); field.className = "field"; field.textContent = label;
     const input = document.createElement("input"); input.type = "number"; input.step = "any"; input.min = min; input.max = max; input.value = value; input.disabled = disabled;
@@ -44,13 +57,13 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     section.append(form);
     if (keys.length) {
       const list = document.createElement("p"); list.className = "muted keyframe-list";
-      list.textContent = `Source keyframes: ${keys.map(([frame, value, mode]) => `${frame}: ${value} (${typeof mode === "string" ? mode : "Bezier"})`).join(", ")}`;
+      list.textContent = `Source keyframes: ${keys.map(([frame, value, mode]) => `${frame}: ${value} (${typeof mode === "string" ? mode : "Bezier"})`).join(", ")}${keyCount>keys.length?` · ${keys.length} of ${keyCount} summarized; use native key pages for all keys`:""}`;
       section.append(list);
     }
   }
   if (detail.video) {
     const linkLabel=document.createElement("label"),linkInput=document.createElement("input");linkInput.type="checkbox";linkInput.disabled=disabled;zoomLink.register(linkInput);linkLabel.append(linkInput," Link Zoom X/Y");section.append(linkLabel);
-    for (const parameter of detail.transform) number(parameter.param, parameter.value, parameter.min, parameter.max, (value) => transformPatch(parameter.param,value,zoomLink.get()), { kind: "transform", param: parameter.param }, parameter.keyframes);
+    for (const parameter of detail.transform) number(parameter.param, parameter.value, parameter.min, parameter.max, (value) => transformPatch(parameter.param,value,zoomLink.get()), { kind: "transform", param: parameter.param }, parameter.keyframes,parameter.key_count);
     function choice(label, value, values, patch) {
       const field = document.createElement("label"); field.className = "field"; field.textContent = label;
       const select = document.createElement("select"); select.disabled = disabled;
@@ -73,7 +86,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
       const apply = document.createElement("button"); apply.textContent = "Apply RGBA"; apply.disabled = disabled; form.append(apply);
       form.addEventListener("submit", (event) => { event.preventDefault(); report(propertyOperation(detail.clip_id, { color: Object.fromEntries(Object.entries(fields).map(([key,input]) => [key,Number(input.value)])) })); }); section.append(form);
     }
-  } else number("Gain dB", detail.gain.value, -100, 30, (gain_db) => ({ gain_db }), { kind: "gain" }, detail.gain.keyframes);
+  } else number("Gain dB", detail.gain.value, -100, 30, (gain_db) => ({ gain_db }), { kind: "gain" }, detail.gain.keyframes,detail.gain.key_count);
   number("Fade in frames", detail.fade_in, 0, detail.length_frames, (fade_in) => ({ fade_in }));
   number("Fade out frames", detail.fade_out, 0, detail.length_frames, (fade_out) => ({ fade_out }));
   root.append(section);
@@ -81,7 +94,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
   const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink});if(curves)controls.push(curves);
   const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope});if(eventKeys)controls.push(eventKeys);
-  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink});if(keySelection)controls.push(keySelection);
+  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload});if(keySelection)controls.push(keySelection);
   if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState});
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report);

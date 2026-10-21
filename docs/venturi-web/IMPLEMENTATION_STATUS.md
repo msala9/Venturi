@@ -2159,3 +2159,42 @@ The scalar curve retains keyboard focus after refresh/error so Delete remains
 scoped to its keys. Dense-key paging remains open; the bounded first-page key
 lists do not yet provide full native key access. This increment does not close
 full GUI parity or the failed duration qualification.
+
+## M4 — dense native key pages and selection across pages
+
+The inspector now reads explicit pages of up to 256 native keys per parameter.
+First/last page bounds and overflowing offsets are validated under the normal
+snapshot identity checks. Previous/Next and direct page entry retain accessible
+focus, and stale page replies cannot replace a newer inspector request. Property,
+filter, mask and title summaries retain at most 16 keys plus the native count;
+complete scalar/RGBA/text/direction keys remain reachable through the pages.
+
+Cross-parameter selection retains up to 2048 picks across pages and row filters,
+reports selected keys outside the list, and offers an explicit clear action.
+The all-parameter list stays bounded; choosing a parameter exposes every key in
+that row's current page. Removed/stale picks reject the complete native command.
+Curve/value graph selection remains scoped to the displayed page. No browser
+interpolation or project format change was introduced.
+
+140 Rust tests and 107 JavaScript tests, fmt, clippy with warnings denied and the
+native build pass on halo2. A native fixture contains 2501 Zoom X and 2501 literal
+Unicode title keys. Ten read pages expose every key exactly once; the largest
+compact reply in this fixture is 128757 bytes. Out-of-range/overflowing pages and
+stale snapshots are rejected without changing history.
+
+Actual GUI acceptance moved/edited a Bezier key at source 5000 to 5001, selected
+Zoom X source 0 on page 1 and text source 4800 on page 10, and retained both across
+page/parameter changes. A colliding move was rejected with unchanged history,
+visible error, focus and selection. A valid +1 move and focused keyboard Delete
+each used one native history step while retaining all four clips. Undo restored
+the original revision and complete key hashes. Redo/Save/process restart retained
+the exact saved keys/file hash with fresh history. The CPU viewer displays the
+late literal title. One invalid preparation fixture was rejected by the existing
+clip-range validation; it remains separate from the accepted v2 fixture.
+
+Evidence: m4-dense-key-pages.json and m4-dense-key-pages-browser.png. The finite
+build/fixture jobs and isolated software preview were limited to one CPU, bounded
+RAM and OOMScoreAdjust=1000. Parent project/source/Review hashes and the primary
+editor's five unsaved moves were preserved. The temporary browser tab was closed.
+No hardware lock was acquired/probed and no long soak was resumed. Full hardware,
+browser-memory and duration qualification remain open.

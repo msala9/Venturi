@@ -223,6 +223,12 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/slip.js", 200),
         ("/js/catalog.js", 200),
         ("/api/v1/timelines/1/clips/1/slip/0", 422),
+        ("/api/v1/timelines/1/clips/1/keys/0", 422),
+        ("/api/v1/timelines/1/clips/1/keys/bad", 400),
+        (
+            "/api/v1/timelines/1/clips/1/keys/0?project_epoch=p&if_generation=0&timeline_id=other&revision=r&frame=0",
+            422,
+        ),
         (
             "/api/v1/timelines/1/clips/1/slip/bad?project_epoch=p&if_generation=0&timeline_id=1&revision=r&frame=0",
             422,

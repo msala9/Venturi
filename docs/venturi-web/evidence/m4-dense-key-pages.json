@@ -1,0 +1,2749 @@
+{
+  "fixture": {
+    "clip_id": "3",
+    "timeline_id": "1",
+    "project": "Dense_Keys_Halo2_UI_check_v2.vvproj",
+    "root": "/home/marco/VenturiWeb-value-keys-20261021",
+    "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+    "parent_hashes": {
+      "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+      "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+      "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+      "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+      "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+      "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63"
+    }
+  },
+  "phases": {
+    "baseline": {
+      "generation": "0",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "revision": "4b28ce22eb254110",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "6db90550ed51616524a3d17a660d6252a0b3e028031f8b16ea9dfccb91e1f051",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4600,
+              "timeline_frame": 5000,
+              "value": 1.2000000476837158
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": 1.100000023841858
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "eeec57184a570fb677a56d806223379be432fa9939dabe9a5bb8b7010b63459e",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4600,
+              "timeline_frame": 5000,
+              "value": "Title 2300 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128757,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {
+        "past_end": {
+          "status": 422,
+          "error": "INVALID_OPERATION"
+        },
+        "overflow": {
+          "status": 422,
+          "error": "INVALID_OPERATION"
+        },
+        "stale": {
+          "status": 409,
+          "error": "REVISION_CONFLICT"
+        }
+      }
+    },
+    "scalar": {
+      "generation": "1",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "SetKeyframe"
+        ],
+        "position": 1
+      },
+      "revision": "6ccb361ebe33c24a",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "3a6259f1a201379ddbee72b20ef26cba99178c921cb76ce321a80f4f6ed4cb8c",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "eeec57184a570fb677a56d806223379be432fa9939dabe9a5bb8b7010b63459e",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128198,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "rejected": {
+      "generation": "1",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "SetKeyframe"
+        ],
+        "position": 1
+      },
+      "revision": "6ccb361ebe33c24a",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "3a6259f1a201379ddbee72b20ef26cba99178c921cb76ce321a80f4f6ed4cb8c",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "eeec57184a570fb677a56d806223379be432fa9939dabe9a5bb8b7010b63459e",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128198,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "moved": {
+      "generation": "2",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "MoveKeyframes"
+        ],
+        "position": 2
+      },
+      "revision": "03717969ea232778",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "54fb9d3d07cdb52ffb5797c4b7b2fc61d002b6df02583de6c790e6e48133e118",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 1,
+              "timeline_frame": 401,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "9c54b977cd2e5454f1e68c02b70a678f2202aca8102a446daa7ce83c54a60700",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4801,
+              "timeline_frame": 5201,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128183,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "deleted": {
+      "generation": "3",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "MoveKeyframes",
+          "SetKeyframe"
+        ],
+        "position": 3
+      },
+      "revision": "5f5a21999c34bb3e",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2500,
+          "sha256": "8f94da263b0055d7f99c9920bfa7dc1f4c91467dae267995c2be5c157ad4a841",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2500,
+          "sha256": "f50217f6ff3458470e9cfa7096a95d27a2658e97a9887837c1b8605a3bdae306",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128292,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "undo_delete": {
+      "generation": "4",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "MoveKeyframes",
+          "SetKeyframe"
+        ],
+        "position": 2
+      },
+      "revision": "03717969ea232778",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "54fb9d3d07cdb52ffb5797c4b7b2fc61d002b6df02583de6c790e6e48133e118",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 1,
+              "timeline_frame": 401,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "9c54b977cd2e5454f1e68c02b70a678f2202aca8102a446daa7ce83c54a60700",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4801,
+              "timeline_frame": 5201,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128183,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "undo_move": {
+      "generation": "5",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "MoveKeyframes",
+          "SetKeyframe"
+        ],
+        "position": 1
+      },
+      "revision": "6ccb361ebe33c24a",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "3a6259f1a201379ddbee72b20ef26cba99178c921cb76ce321a80f4f6ed4cb8c",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "eeec57184a570fb677a56d806223379be432fa9939dabe9a5bb8b7010b63459e",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128198,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "undone": {
+      "generation": "6",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "MoveKeyframes",
+          "SetKeyframe"
+        ],
+        "position": 0
+      },
+      "revision": "4b28ce22eb254110",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "6db90550ed51616524a3d17a660d6252a0b3e028031f8b16ea9dfccb91e1f051",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": 1.100000023841858
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "eeec57184a570fb677a56d806223379be432fa9939dabe9a5bb8b7010b63459e",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128757,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "redo_scalar": {
+      "generation": "7",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "MoveKeyframes",
+          "SetKeyframe"
+        ],
+        "position": 1
+      },
+      "revision": "6ccb361ebe33c24a",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "3a6259f1a201379ddbee72b20ef26cba99178c921cb76ce321a80f4f6ed4cb8c",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "eeec57184a570fb677a56d806223379be432fa9939dabe9a5bb8b7010b63459e",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128198,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "redo_move": {
+      "generation": "8",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "MoveKeyframes",
+          "SetKeyframe"
+        ],
+        "position": 2
+      },
+      "revision": "03717969ea232778",
+      "project_sha256": "313b2e83f79f1ac87dd39eb6613eeef9f4c8f9826b3336e2d893d424b72ff7b1",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "54fb9d3d07cdb52ffb5797c4b7b2fc61d002b6df02583de6c790e6e48133e118",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 1,
+              "timeline_frame": 401,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "9c54b977cd2e5454f1e68c02b70a678f2202aca8102a446daa7ce83c54a60700",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4801,
+              "timeline_frame": 5201,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128183,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "saved": {
+      "generation": "8",
+      "unsaved": false,
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "MoveKeyframes",
+          "SetKeyframe"
+        ],
+        "position": 2
+      },
+      "revision": "03717969ea232778",
+      "project_sha256": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "54fb9d3d07cdb52ffb5797c4b7b2fc61d002b6df02583de6c790e6e48133e118",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 1,
+              "timeline_frame": 401,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "9c54b977cd2e5454f1e68c02b70a678f2202aca8102a446daa7ce83c54a60700",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4801,
+              "timeline_frame": 5201,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128183,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    },
+    "reopened": {
+      "generation": "0",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "revision": "03717969ea232778",
+      "project_sha256": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "count": 2501,
+          "sha256": "54fb9d3d07cdb52ffb5797c4b7b2fc61d002b6df02583de6c790e6e48133e118",
+          "witnesses": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 1,
+              "timeline_frame": 401,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4800,
+              "timeline_frame": 5200,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 5001,
+              "timeline_frame": 5401,
+              "value": 1.75
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "PositionY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Rotation"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorX"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "AnchorY"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropLeft"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropTop"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropRight"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropBottom"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "CropSoftness"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "count": 0
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "count": 2501,
+          "sha256": "9c54b977cd2e5454f1e68c02b70a678f2202aca8102a446daa7ce83c54a60700",
+          "witnesses": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 400,
+              "value": "Title 0 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4801,
+              "timeline_frame": 5201,
+              "value": "Title 2400 \u03b1"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5000,
+              "timeline_frame": 5400,
+              "value": "Title 2500 \u03b1"
+            }
+          ]
+        }
+      ],
+      "key_pages": 10,
+      "max_compact_reply_bytes": 128183,
+      "all_parent_hashes_preserved": true,
+      "read_guards": {}
+    }
+  },
+  "acceptance": {
+    "rust_tests": 140,
+    "javascript_tests": 107,
+    "fmt": true,
+    "clippy": true,
+    "build": true,
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "f98b180e6c0386fb845439eca0b80d057fc36825f71e3de3da2c7bafe794a224",
+      "crates/vv-web/src/host.rs": "66362781e0d05e12a1c4f1c81c1186ab44df65e8e52aacd80a034fc7392590dd",
+      "crates/vv-web/src/inspector.rs": "ad1955033c430066dc37b5211adb27dd3b2e5a841d4493efec5d44d7b8c97c78",
+      "crates/vv-web/src/curves.rs": "92f043a6ebcaba69d5a3b97df4596fae9c80f320f75abc06ea8e816c3d8bee50",
+      "crates/vv-web/src/eventkeys.rs": "8337e73eb329aa650ffe198b1da764b466591aac20271774d6e7395ec8a839c3",
+      "crates/vv-web/src/visual.rs": "2087eeddefbaccce8893d90945edf16950b159efcbbbce9be8a26dc1a6f9dd6b",
+      "crates/vv-web/src/masks.rs": "f902423b5548fc5b78940bb27bd2698e972d96a26fdad57ce32eb90b5acd45c9",
+      "crates/vv-web/src/tests/inspector.rs": "3069fa29a90728106c97eea5e1975fc0f23f0bbd42055865a16e1471e5091dab",
+      "crates/vv-web/src/tests/api.rs": "4f718220d5139384cb4dfcd699960c517d7525b55f2f2bebab6d8a921a1b00db",
+      "web/js/main.js": "e849185049836dec957c6b1616a0b1bb6b1639aaddf05f89d05d28cffab01499",
+      "web/js/inspector.js": "57b8c2917daa8163f1f069df800786aaf8cab2b2266fb70d093b7e82c12027d0",
+      "web/js/curves.js": "e44634c2f3db9306ec75c740ec6a430c7b616ade22f9a25a2307a04ffe3ae944",
+      "web/js/eventkeys.js": "eb0bd00460e0f301475db7e7340bd60abfe98d10cbec753c3dc89f9e760f50df",
+      "web/js/keyselection.js": "18de96757f0d65bade8e1f48fad41f3bbc9799b09ee3d27e70739b32b5c4ad34",
+      "web/test/inspector.test.js": "8451302005364ff81775c26fa3d34a55ce3aa9b660daa5c90b783aca00dfc96a",
+      "web/test/keyselection.test.js": "71ef22375d9bce9624bfd1fdaec420586a1077a5bc83c29e2d814b116f6fe0fc"
+    },
+    "binary_sha256": "48e0dd30631040cb046b13817d286381f2eadf63cd3b60f3691c4f8c4af108ba",
+    "pid": 1244544,
+    "source_base_commit": "b949f0a824847c12059c6ad781d68d23bf341df9",
+    "hardware_handles": [],
+    "hardware_lock": "not acquired or probed",
+    "runtime_limits": "CPUQuotaPerSecUSec=1s\nMemoryMax=2147483648\n",
+    "oom_score_adj": 1000,
+    "live_editor_unsaved_moves_and_saved_hashes_preserved": true
+  },
+  "browser": {
+    "afterMove": {
+      "active": "Keys across parameters",
+      "page": "10",
+      "selected": [
+        "Title content \u00b7 source 4801 \u00b7 timeline 5201"
+      ],
+      "status": "2 selected \u00b7 1 selected outside this list \u00b7 197 shown of 5002 native keys"
+    },
+    "navigation": {
+      "page": "10",
+      "pageFocused": "Native key page",
+      "selected": [
+        "Title content \u00b7 source 4801 \u00b7 timeline 5201"
+      ],
+      "status": "2 selected \u00b7 1 selected outside this list \u00b7 197 shown of 5002 native keys"
+    },
+    "final": {
+      "clipButtons": 4,
+      "frame": "\n          \n            \n              Preparing source edge\u2026\n              Preparing source edge\u2026\n            \n            Slip preview delta frames Refresh edgesApply slipClose slip preview\n            Slip closed\n          \n          \n          \n            VSeek a timeline frameOriginal Rust engine \u00b7 Browser workspace\n          \n          CURRENT\n          \n            \n            Prepare composed timelineStop playback\n          \n          \n            \n            \n            \n              Select media and open Source\n              Proxy quality Low \u00b7 640Medium \u00b7 960High \u00b7 1920\n              Cancel preparation\n              Source in frame \n              Source out frame (exclusive) \n              Set In\n              Set Out\n            \n          \n        ",
+      "notice": "Command applied",
+      "page": "10",
+      "save": "Saved",
+      "selected": [
+        "Title content \u00b7 source 4801 \u00b7 timeline 5201"
+      ],
+      "status": "2 selected \u00b7 1 selected outside this list \u00b7 197 shown of 5002 native keys",
+      "time": "00:03:45:04"
+    }
+  },
+  "scope_note": "CPU native key paging and actual GUI cross-page selection/move/collision/Delete/Undo/Redo/Save/restart verified. No duration, browser-memory soak or hardware qualification claim. One invalid preparation fixture was refused by existing range validation and retained; v2 is the accepted fixture."
+}

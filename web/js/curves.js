@@ -175,7 +175,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   const events = new AbortController();
   const current = () => range.tracks[Number(tracks.value)];
   const previous = () => select.value === "" ? null : Number(select.value);
-  const selectionKey=()=>`curves-group:${scope}:${JSON.stringify(current().target)}`;
+  const selectionKey=()=>`curves-group:${scope}:${detail.key_page?.index ?? 0}:${JSON.stringify(current().target)}`;
   const viewportKey=()=>`curves-viewport:${scope}:${JSON.stringify(current().target)}`;
   const rememberViewport=()=>remember(viewportKey(),viewRange);
   function updateGroup(){
@@ -252,7 +252,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
     if(previous()===null && selectedFrames.size)select.value=String([...selectedFrames][0]);
     load();
     if(openState?.get(selectionKey())?.focus && !disabled && section.open){remember(selectionKey(),[...selectedFrames]);queueMicrotask(()=>{if(!disposed && canvas.isConnected && document.activeElement===document.body)canvas.focus({preventScroll:true});});}
-    if (current().key_count > current().keys.length) status.textContent += " · first 2048 keys shown";
+    if (current().key_count > current().keys.length) status.textContent += ` · ${current().keys.length} of ${current().key_count} keys on this page`;
   }
   async function save(deleting = false) {
     if (waiting || disabled || (!deleting && !form.reportValidity())) return;

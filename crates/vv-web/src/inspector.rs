@@ -572,22 +572,35 @@ pub fn keyframes(
     Ok(())
 }
 pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64) -> Result<Value> {
+    detail_page(session, id, raw, timeline_frame, None)
+}
+pub fn detail_page(
+    session: &Session,
+    id: TimelineId,
+    raw: &str,
+    timeline_frame: i64,
+    page: Option<usize>,
+) -> Result<Value> {
+    let offset = page
+        .unwrap_or(0)
+        .checked_mul(256)
+        .ok_or_else(|| ApiError::invalid("Key page is too large"))?;
     let (track, _, clip) = find(session, id, raw)?;
     let frame =
         clip.source_frame_at(timeline_frame.clamp(clip.timeline_start, clip.timeline_end() - 1));
     let parameters: Vec<_> = TransformParam::ALL.into_iter().map(|param| {
         let values = clip.effects.transform.track(param);
         let bounds = limits(param, size(session, id, clip));
-        json!({"param":param,"default":values.default,"value":values.value_at(frame),"keyframes":values.keyframes(),"min":bounds.0,"max":bounds.1})
+        json!({"param":param,"default":values.default,"value":values.value_at(frame),"keyframes":values.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":values.keyframes().len(),"min":bounds.0,"max":bounds.1})
     }).collect();
     let lane = &session.project.timelines[id].tracks[track];
     let right = lane
         .clips
         .iter()
         .find(|c| c.timeline_start == clip.timeline_end() && c.id != clip.id && !c.is_adjustment());
-    let mut result = json!({"clip_id":raw,"source_frame":frame,"timeline_frame":timeline_frame,"locked":session.project.timelines[id].tracks[track].locked,"video":session.project.timelines[id].tracks[track].kind == core::TrackKind::Video,"transform":parameters,"flip":clip.effects.transform.flip,"blend":clip.effects.blend_mode,"blends":core::BlendMode::ALL,"matte":clip.effects.matte.map(|m|format!("{m:?}")).unwrap_or_else(||"None".into()),"mattes":["None","Alpha","AlphaInverted","Luma","LumaInverted"],"gain":{"default":clip.effects.gain_db.default,"value":clip.effects.gain_db.value_at(frame),"keyframes":clip.effects.gain_db.keyframes()},"color":clip.effects.color.as_ref().map(|c|c.default),"fade_in":clip.fade_in,"fade_out":clip.fade_out,"length_frames":clip.timeline_len});
+    let mut result = json!({"clip_id":raw,"source_frame":frame,"timeline_frame":timeline_frame,"locked":session.project.timelines[id].tracks[track].locked,"video":session.project.timelines[id].tracks[track].kind == core::TrackKind::Video,"transform":parameters,"flip":clip.effects.transform.flip,"blend":clip.effects.blend_mode,"blends":core::BlendMode::ALL,"matte":clip.effects.matte.map(|m|format!("{m:?}")).unwrap_or_else(||"None".into()),"mattes":["None","Alpha","AlphaInverted","Luma","LumaInverted"],"gain":{"default":clip.effects.gain_db.default,"value":clip.effects.gain_db.value_at(frame),"keyframes":clip.effects.gain_db.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":clip.effects.gain_db.keyframes().len()},"color":clip.effects.color.as_ref().map(|c|c.default),"fade_in":clip.fade_in,"fade_out":clip.fade_out,"length_frames":clip.timeline_len});
     result["transitions"] = json!({"in":clip.effects.transition_in,"out":clip.effects.transition_out,"cut_after":lane.crossing_from(clip.id).map(|c|&c.transition),"cut_max_frames":right.map(|r|2*r.timeline_len.min(clip.timeline_len))});
-    result["title"] = json!(clip.effects.title);
+    result["title"] = clip.effects.title.as_ref().map(|title|json!({"content":{"default":title.content.default,"keyframes":title.content.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":title.content.keyframes().len()},"font_family":title.font_family,"font_weight":title.font_weight,"italic":title.italic,"color":title.color,"size":title.size,"tracking":title.tracking,"line_spacing":title.line_spacing,"underline":title.underline,"strikethrough":title.strikethrough,"case":title.case,"align":title.align,"anchor":title.anchor,"position":title.position,"background":title.background})).unwrap_or(Value::Null);
     result["masks"] = crate::masks::detail(clip, frame);
     result["display_color"] = json!(clip.display_color);
     result["display_colors"] = json!(core::ClipColor::ALL);
@@ -597,13 +610,38 @@ pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64)
     result["filters"] = crate::visual::detail(clip, frame);
     result["filters"]["wheel_hues"] = crate::visual::wheel_palette();
     result["filters"]["wheels"] = crate::visual::wheels();
-    result["curves"] = crate::curves::detail(session, id, clip, track);
+    result["curves"] = if page.is_some() {
+        crate::curves::detail_page(session, id, clip, track, offset, 256)
+    } else {
+        crate::curves::detail(session, id, clip, track)
+    };
     result["event_keys"] =
         if session.project.timelines[id].tracks[track].kind == core::TrackKind::Video {
-            crate::eventkeys::detail(clip)
+            if page.is_some() {
+                crate::eventkeys::detail_page(clip, offset, 256)
+            } else {
+                crate::eventkeys::detail(clip)
+            }
         } else {
             json!([])
         };
+    if let Some(page) = page {
+        let count = result["curves"]["tracks"]
+            .as_array()
+            .into_iter()
+            .flatten()
+            .chain(result["event_keys"].as_array().into_iter().flatten())
+            .filter_map(|row| row["key_count"].as_u64())
+            .max()
+            .unwrap_or(0);
+        let pages = count.div_ceil(256).max(1);
+        if page as u64 >= pages {
+            return Err(ApiError::invalid(
+                "Key page is beyond the last native key page",
+            ));
+        }
+        result["key_page"] = json!({"index":page,"page_size":256,"total_pages":pages});
+    }
     Ok(result)
 }
 

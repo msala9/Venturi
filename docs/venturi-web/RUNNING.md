@@ -113,10 +113,22 @@ The Export drawer accepts integer In/exclusive Out frames anywhere inside the
 timeline, width up to 1920 and native x264 quality/speed settings. Each job has a
 ten-minute processing and 512 MiB output budget; the five-minute Program preview
 window does not restrict export duration. The server mixes
-AAC unless disabled. Close the drawer or continue editing while the immutable
-snapshot renders; reopening/reloading can recover the latest job status.
-Download the MP4 before server shutdown or cache eviction. This first adapter
-does not offer persistent export queues or hardware encoding.
+AAC when requested and the captured timeline contains audio clips. Close the
+drawer or continue editing while the immutable snapshot renders. Saved exports
+lists jobs retained in `<projects-root>/.exports`; completed files and their
+status survive server restarts. Interrupted jobs are listed for review and do
+not restart automatically. Previously requested cancellation recovers as canceled.
+Changed or missing completed files are refused. Source/Program caches remain
+ephemeral and separate.
+
+History retains at most 64 jobs and 2 GiB of output/partial files, with 512 MiB
+reserved per pending job. New jobs are refused when capacity is full; there is
+no automatic eviction or deletion UI. An unreadable history preserves files and
+blocks exports while editing/previews remain available. Hardware encoding and
+automatic job resume are unavailable. Finite API acceptance verified software
+H.264 output and download identity across a forced restart, interrupted running
+work and persisted cancellation. GUI/hardware qualification remains open; see
+`evidence/m4-animated-viewer-durable-exports.json`.
 
 Projects also downloads the current nonempty timeline as OTIO. To import,
 place .otio directly in the server root, reopen Projects, choose it and supply
@@ -266,8 +278,10 @@ HTTP deadline, native media validation and SHA-256/no-replace publication.
 Selected project copies are persistent; the ordinary preview cache remains
 bounded independently. Canceling a transfer never removes shared originals or
 edits a project. An already completed copy can remain available in the picker.
-Native compound-library organization and saved/shared attribute presets remain
-separate parity work; this is the appliance media-catalog integration.
+Native compound-library organization remains separate parity work. Saved native
+attribute presets have API/restart evidence, but desktop import and NAS preset
+sharing remain unqualified; the appliance media catalog does not configure the
+preset folder automatically.
 
 ## Browser voiceover
 
@@ -320,7 +334,7 @@ skipped. Filters/masks replace their stacks. Speed/pitch uses native Ripple and
 may move following clips or unfreeze media. Locked/stale targets or a ripple
 that would separate a linked group refuse the whole operation. One Undo restores
 all properties and timing. Cross-timeline paste requires matching timeline FPS;
-saved custom attribute presets remain separate work.
+saved custom attribute presets use the separate Presets panel below.
 
 ## Following the playhead
 
@@ -408,11 +422,15 @@ adapter's supported format/name/frame bounds. GUI qualification remains pending.
 ## Viewer and fade handles
 
 On a current stopped Program frame, select a video clip and enable Transform.
-Drag inside its outline to move or a corner to scale; Shift scales the axes
-independently. This increment edits static position/scale axes. Animated axes
-continue through the Inspector; crop, anchor and rotation handles are not yet
-exposed. The outline is a local draft until release; Escape cancels. Stale frames,
-playback, Source/slip views, locked clips and changed selections cannot commit.
+Drag inside its outline to move, a corner to scale, the diamond to move the
+anchor, the knob to rotate or an edge bar to crop. Shift scales the axes
+independently or snaps rotation to 15 degrees. Crop retains at least one source
+pixel per axis. Static properties change defaults; animated properties create
+or replace Linear keys at the native current source frame, matching desktop
+handles. Undo restores previous interpolation. The outline is a local draft
+until release; Escape cancels. Stale frames, playback, Source/slip views, locked
+clips and changed selections cannot commit. Numeric Inspector controls remain
+the keyboard alternative; mask/path handles remain separate work.
 
 Timeline fade handles occupy the upper band of sufficiently wide clips. Drag a
 handle to set that clip's fade; lower edge trims and the Slip tool retain their

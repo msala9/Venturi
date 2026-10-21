@@ -55,8 +55,8 @@ test('only the owner pointer releases one native edit and pointer moves never su
     assert.equal(h.commands.length,0);assert.equal(h.pendingFrames(),1);
     h.pointer('pointermove',{pointerId:2,clientX:800});h.pointer('pointerup',{pointerId:2,clientX:800});assert.equal(h.commands.length,0);assert.equal(h.canvas.hasPointerCapture(1),true);
     h.pointer('pointerup',{clientX:550,clientY:450});await settle();assert.equal(h.commands.length,1);
-    assert.equal(h.commands[0].kind,'set_properties');assert.equal(h.commands[0].clip_id,'9007199254740993');
-    assert.deepEqual(h.commands[0].patch.transform,[{param:'PositionX',value:96},{param:'PositionY',value:96}]);
+    assert.equal(h.commands[0].kind,'edit_viewer_transform');assert.equal(h.commands[0].clip_id,'9007199254740993');assert.equal(h.commands[0].timeline_frame,24);
+    assert.deepEqual(h.commands[0].transform,[{param:'AnchorX',value:96},{param:'AnchorY',value:96}]);
     assert.equal(h.canvas.hasPointerCapture(1),false);h.pointer('pointerup',{clientX:560});assert.equal(h.commands.length,1);
     h.flush();assert.equal(h.pendingFrames(),0);
   }finally{h.overlay.dispose();}

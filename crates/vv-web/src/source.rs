@@ -1,5 +1,6 @@
 use crate::{
     error::{ApiError, Result},
+    export_store::{self, Record as ExportRecord, Store as ExportStore, Stored as StoredExport},
     preview::encode_png,
     program::{self, Inputs, ProgramQuery, ProgramTask},
 };
@@ -58,7 +59,7 @@ struct Job {
     key: String,
     state: &'static str,
     progress: u64,
-    error: Option<&'static str>,
+    error: Option<String>,
     directory: PathBuf,
     cancel: Arc<AtomicBool>,
     bytes: u64,
@@ -68,14 +69,45 @@ struct Job {
     source_asset: Option<&'static str>,
     export_epoch: Option<String>,
     program_query: Option<ProgramQuery>,
+    durable: Option<StoredExport>,
+    explicit_cancel: bool,
+    durability_error: bool,
 }
 impl Job {
-    fn value(&self) -> Value {
-        let progress = self
-            .export
+    fn progress_value(&self) -> Option<Value> {
+        self.export
             .as_ref()
-            .map(|p| program::progress_value(&p.lock().unwrap()));
-        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"progress":progress,"source_asset":self.source_asset})
+            .map(|p| program::progress_value(&p.lock().unwrap()))
+            .or_else(|| {
+                self.durable
+                    .as_ref()
+                    .and_then(|stored| stored.record.progress.clone())
+            })
+    }
+    fn value(&self) -> Value {
+        let previous = self
+            .durable
+            .as_ref()
+            .and_then(|stored| stored.record.previous_state.as_ref());
+        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"progress":self.progress_value(),"source_asset":self.source_asset,"project_epoch":self.export_epoch,"durable":self.durable.is_some(),"durability_error":self.durability_error,"cancel_requested":self.explicit_cancel,"previous_state":previous})
+    }
+    fn persist(&mut self, store: &ExportStore) -> Result<()> {
+        let progress = self.progress_value();
+        if let Some(stored) = &mut self.durable {
+            let mut record = stored.record.clone();
+            record.state = self.state.into();
+            record.error = self.error.clone();
+            record.cancel_requested = self.explicit_cancel;
+            record.progress = progress;
+            record.bytes = ExportStore::bytes(stored);
+            self.bytes = record.bytes;
+            if let Err(error) = store.save(stored, record) {
+                self.durability_error = true;
+                return Err(error);
+            }
+            self.durability_error = false;
+        }
+        Ok(())
     }
 }
 #[derive(Clone)]
@@ -83,6 +115,8 @@ pub struct MediaJobs {
     root: Arc<PathBuf>,
     jobs: Arc<Mutex<VecDeque<Job>>>,
     send: mpsc::SyncSender<(String, Work)>,
+    exports: Option<Arc<ExportStore>>,
+    exports_blocked: bool,
 }
 enum Work {
     Source(Box<SourceSpec>, ProxyQuality),
@@ -92,7 +126,20 @@ impl MediaJobs {
     pub fn software_lock_path(&self) -> PathBuf {
         self.root.join("software.lock")
     }
+    #[cfg(test)]
     pub fn start() -> std::io::Result<Self> {
+        Self::start_inner(None, false)
+    }
+    pub fn start_with_exports(root: File) -> std::io::Result<Self> {
+        match ExportStore::open(&root) {
+            Ok(store) => Self::start_inner(Some(Arc::new(store)), false),
+            Err(_) => Self::start_inner(None, true),
+        }
+    }
+    fn start_inner(
+        exports: Option<Arc<ExportStore>>,
+        mut exports_blocked: bool,
+    ) -> std::io::Result<Self> {
         let root = std::env::temp_dir().join(format!(
             "venturi-web-media-{}-{}",
             std::process::id(),
@@ -103,22 +150,69 @@ impl MediaJobs {
         ));
         std::fs::DirBuilder::new().mode(0o700).create(&root)?;
         let worker_root = root.clone();
-        let jobs = Arc::new(Mutex::new(VecDeque::<Job>::new()));
+        let mut recovered = VecDeque::<Job>::new();
+        if let Some(store) = &exports {
+            let history = match store.recover() {
+                Ok(history) => history,
+                Err(_) => {
+                    exports_blocked = true;
+                    vec![]
+                }
+            };
+            for stored in history {
+                recovered.push_back(Job {
+                    id: stored.record.id.clone(),
+                    key: stored.record.key.clone(),
+                    state: stored.record.state_name(),
+                    progress: 0,
+                    error: stored.record.error.clone(),
+                    directory: stored.directory(),
+                    cancel: Arc::new(AtomicBool::new(false)),
+                    bytes: stored.record.bytes,
+                    export: None,
+                    descriptor: Some(stored.record.program.clone()),
+                    inputs: vec![],
+                    source_asset: None,
+                    export_epoch: Some(stored.record.epoch.clone()),
+                    program_query: None,
+                    explicit_cancel: stored.record.cancel_requested,
+                    durability_error: false,
+                    durable: Some(stored),
+                });
+            }
+        }
+        let jobs = Arc::new(Mutex::new(recovered));
         let owned = jobs.clone();
+        let worker_exports = exports.clone();
         let (send, receive) = mpsc::sync_channel::<(String, Work)>(1);
         std::thread::spawn(move || {
             while let Ok((id, work)) = receive.recv() {
-                let (directory, cancel, progress, inputs) = {
+                let (directory, cancel, progress, inputs, durable) = {
                     let mut jobs = owned.lock().unwrap();
                     let Some(job) = jobs.iter_mut().find(|j| j.id == id) else {
                         continue;
                     };
+                    if job.export_epoch.is_some() && job.explicit_cancel {
+                        job.state = "canceled";
+                        if let Some(store) = &worker_exports {
+                            let _ = job.persist(store);
+                        }
+                        continue;
+                    }
                     job.state = "running";
+                    if let Some(store) = &worker_exports
+                        && let Err(error) = job.persist(store)
+                    {
+                        job.state = "failed";
+                        job.error = Some(error.1.into());
+                        continue;
+                    }
                     (
                         job.directory.clone(),
                         job.cancel.clone(),
                         job.export.clone(),
                         job.inputs.clone(),
+                        job.durable.is_some(),
                     )
                 };
                 let result =
@@ -132,27 +226,63 @@ impl MediaJobs {
                                 }
                             })
                         }
-                        Work::Program(task) => {
-                            task.generate(&directory, &cancel, progress.as_ref().unwrap(), &inputs)
-                        }
+                        Work::Program(task) => task.generate(
+                            &directory,
+                            &cancel,
+                            progress.as_ref().unwrap(),
+                            &inputs,
+                            durable,
+                        ),
                     }))
                     .unwrap_or_else(|_| Err(ApiError::invalid("Native source generation failed")));
                 let mut jobs = owned.lock().unwrap();
                 if let Some(job) = jobs.iter_mut().find(|j| j.id == id) {
+                    let result = if job.export_epoch.is_some() && job.explicit_cancel {
+                        Err(ApiError::invalid("Export was canceled"))
+                    } else {
+                        result
+                    };
                     match result {
                         Ok(()) => {
-                            job.state = "ready";
-                            job.bytes = directory_bytes(&directory);
+                            let published = match (&worker_exports, &mut job.durable) {
+                                (Some(store), Some(stored)) => {
+                                    store.publish_output(stored).map(|output| {
+                                        stored.record.output = Some(output);
+                                    })
+                                }
+                                _ => Ok(()),
+                            };
+                            match published {
+                                Ok(()) => {
+                                    job.state = "ready";
+                                    job.bytes = directory_bytes(&directory);
+                                }
+                                Err(error) => {
+                                    job.state = "failed";
+                                    job.error = Some(error.1.into());
+                                }
+                            }
                         }
                         Err(error) => {
-                            job.state = if cancel.load(Ordering::Relaxed) {
-                                "canceled"
+                            let canceled = if job.export_epoch.is_some() {
+                                job.explicit_cancel
                             } else {
-                                "failed"
+                                cancel.load(Ordering::Relaxed)
                             };
-                            job.error = Some(error.1);
-                            let _ = std::fs::remove_dir_all(&directory);
+                            job.state = if canceled { "canceled" } else { "failed" };
+                            job.error = Some(error.1.into());
+                            if job.durable.is_none() {
+                                let _ = std::fs::remove_dir_all(&directory);
+                            }
                         }
+                    }
+                    if let Some(store) = &worker_exports
+                        && let Err(error) = job.persist(store)
+                    {
+                        if job.state == "ready" {
+                            job.state = "failed";
+                        }
+                        job.error = Some(error.1.into());
                     }
                 }
                 trim(&mut jobs);
@@ -163,6 +293,8 @@ impl MediaJobs {
             root: Arc::new(root),
             jobs,
             send,
+            exports,
+            exports_blocked,
         })
     }
     pub fn prepare(&self, spec: SourceSpec, quality: &str) -> Result<Value> {
@@ -199,7 +331,7 @@ impl MediaJobs {
             return Ok(job.value());
         }
         trim(&mut jobs);
-        if jobs.len() >= 32 {
+        if jobs.iter().filter(|job| job.durable.is_none()).count() >= 32 {
             return Err(ApiError::conflict(
                 "SOURCE_BUSY",
                 "The source cache is full; cancel a pending job",
@@ -227,6 +359,9 @@ impl MediaJobs {
             inputs: vec![],
             source_asset: Some(source_asset),
             export_epoch: None,
+            durable: None,
+            explicit_cancel: false,
+            durability_error: false,
         });
         if self
             .send
@@ -243,6 +378,9 @@ impl MediaJobs {
         Ok(jobs.back().unwrap().value())
     }
     pub fn prepare_program(&self, task: ProgramTask) -> Result<Value> {
+        if task.export.is_some() {
+            self.check_exports()?;
+        }
         task.validate()?;
         let key = task.key();
         let inputs = program::inputs(&task.snapshot)?;
@@ -258,18 +396,49 @@ impl MediaJobs {
         }) {
             return Ok(job.value());
         }
+        if task.export.is_some()
+            && self.exports.is_some()
+            && jobs.iter().any(|job| job.state == "queued")
+        {
+            return Err(ApiError::conflict(
+                "MEDIA_BUSY",
+                "One media job is running and one is pending",
+            ));
+        }
         trim(&mut jobs);
         let id = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_nanos()
             .to_string();
-        let directory = self.root.join(&id);
-        std::fs::create_dir(&directory).map_err(|_| ApiError::io())?;
+        let mut directory = self.root.join(&id);
         let descriptor = task.descriptor(&directory);
         let progress = vv_session::export::ExportProgress {
             total_frames: task.query.end_frame - task.query.start_frame,
             ..Default::default()
+        };
+        let durable = if let Some(store) = &self.exports
+            && task.export.is_some()
+        {
+            let stored = store.admit(ExportRecord {
+                version: 1,
+                id: id.clone(),
+                key: key.clone(),
+                epoch: task.query.project_epoch.clone(),
+                state: "queued".into(),
+                previous_state: None,
+                cancel_requested: false,
+                error: None,
+                program: descriptor.clone(),
+                progress: Some(program::progress_value(&progress)),
+                bytes: 0,
+                output: None,
+            })?;
+            directory = stored.directory();
+            Some(stored)
+        } else {
+            std::fs::create_dir(&directory).map_err(|_| ApiError::io())?;
+            None
         };
         jobs.push_back(Job {
             id: id.clone(),
@@ -289,14 +458,27 @@ impl MediaJobs {
                 .export
                 .as_ref()
                 .map(|_| task.query.project_epoch.clone()),
+            durable,
+            explicit_cancel: false,
+            durability_error: false,
         });
         if self
             .send
             .try_send((id, Work::Program(Box::new(task))))
             .is_err()
         {
-            jobs.pop_back();
-            let _ = std::fs::remove_dir(directory);
+            if let Some(job) = jobs.back_mut()
+                && job.durable.is_some()
+            {
+                job.state = "failed";
+                job.error = Some("MEDIA_BUSY".into());
+                if let Some(store) = &self.exports {
+                    job.persist(store)?;
+                }
+            } else {
+                jobs.pop_back();
+                let _ = std::fs::remove_dir(directory);
+            }
             return Err(ApiError::conflict(
                 "MEDIA_BUSY",
                 "One media job is running and one is pending",
@@ -333,17 +515,40 @@ impl MediaJobs {
         Ok(job.value())
     }
     pub fn export_status(&self, id: &str, epoch: &str, cancel: bool) -> Result<Value> {
+        self.check_exports()?;
         let mut jobs = self.jobs.lock().unwrap();
         let job = jobs
             .iter_mut()
             .find(|j| j.id == id && j.export_epoch.as_deref() == Some(epoch))
             .ok_or_else(ApiError::missing)?;
         if cancel && matches!(job.state, "queued" | "running") {
+            job.explicit_cancel = true;
             job.cancel.store(true, Ordering::Relaxed);
+            if let Some(store) = &self.exports {
+                job.persist(store)?;
+            }
         }
         Ok(job.value())
     }
+    pub fn export_history(&self) -> Result<Value> {
+        self.check_exports()?;
+        let jobs = self.jobs.lock().unwrap();
+        let exports: Vec<_> = jobs
+            .iter()
+            .filter(|job| job.export_epoch.is_some())
+            .collect();
+        let charged = exports
+            .iter()
+            .filter_map(|job| job.durable.as_ref())
+            .fold(0u64, |total, stored| {
+                total.saturating_add(stored.record.charge())
+            });
+        Ok(
+            json!({"jobs":exports.iter().rev().map(|job| job.value()).collect::<Vec<_>>(),"capacity":{"max_jobs":export_store::MAX_JOBS,"max_bytes":export_store::MAX_TOTAL,"reservation_bytes":export_store::MAX_OUTPUT,"used_jobs":exports.len(),"charged_bytes":charged}}),
+        )
+    }
     pub fn export_asset(&self, id: &str, epoch: &str) -> Result<File> {
+        self.check_exports()?;
         let jobs = self.jobs.lock().unwrap();
         let job = jobs
             .iter()
@@ -355,7 +560,23 @@ impl MediaJobs {
                 "Wait for export completion",
             ));
         }
+        if let Some(stored) = &job.durable {
+            return self
+                .exports
+                .as_ref()
+                .ok_or_else(ApiError::io)?
+                .output(stored);
+        }
         File::open(job.directory.join("program.mp4")).map_err(|_| ApiError::missing())
+    }
+    fn check_exports(&self) -> Result<()> {
+        if self.exports_blocked {
+            return Err(ApiError::conflict(
+                "EXPORT_HISTORY_UNAVAILABLE",
+                "Export history could not be opened or recovered; files were preserved. Editing and previews remain available.",
+            ));
+        }
+        Ok(())
     }
     pub fn program_asset(&self, id: &str, query: &ProgramQuery) -> Result<File> {
         let mut jobs = self.jobs.lock().unwrap();
@@ -420,10 +641,17 @@ impl MediaJobs {
     }
 }
 fn trim(jobs: &mut VecDeque<Job>) {
-    while jobs.len() >= 24 || jobs.iter().map(|j| j.bytes).sum::<u64>() > MAX_CACHE_BYTES {
+    while jobs.iter().filter(|job| job.durable.is_none()).count() >= 24
+        || jobs
+            .iter()
+            .filter(|job| job.durable.is_none())
+            .map(|j| j.bytes)
+            .sum::<u64>()
+            > MAX_CACHE_BYTES
+    {
         let Some(i) = jobs
             .iter()
-            .position(|j| !matches!(j.state, "queued" | "running"))
+            .position(|j| j.durable.is_none() && !matches!(j.state, "queued" | "running"))
         else {
             break;
         };

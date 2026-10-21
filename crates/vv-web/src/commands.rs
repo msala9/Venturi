@@ -142,6 +142,11 @@ pub enum Operation {
         clip_id: String,
         patch: Box<crate::inspector::Properties>,
     },
+    EditViewerTransform {
+        clip_id: String,
+        timeline_frame: FrameIdx,
+        transform: Vec<crate::inspector::Parameter>,
+    },
     SetKeyframe {
         clip_id: String,
         edit: crate::inspector::Keyframe,
@@ -828,6 +833,11 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         Operation::SetProperties { clip_id, patch } => {
             crate::inspector::properties(session, id, clip_id, patch)?
         }
+        Operation::EditViewerTransform {
+            clip_id,
+            timeline_frame,
+            transform,
+        } => crate::inspector::viewer_transform(session, id, clip_id, *timeline_frame, transform)?,
         Operation::SetKeyframe { clip_id, edit } => {
             crate::inspector::keyframe(session, id, clip_id, edit)?
         }

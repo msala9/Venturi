@@ -70,9 +70,20 @@ containing a removed key rather than silently dropping a hidden pick.
 Clip detail includes `source_size:[width,height]`, using native media dimensions
 or timeline dimensions for generated sources. Transform `value` remains native
 evaluation at the reported source frame. The viewer overlay does not interpolate
-in JavaScript; its static-axis edits use the existing guarded SetProperties route.
-Its displayed-frame identity must match the project/generation/timeline/revision
-and playhead before a gesture can begin or complete.
+in JavaScript. Guarded timeline command
+`edit_viewer_transform{clip_id,timeline_frame,transform:[{param,value}]}` accepts
+1–11 distinct geometric axes: ZoomX/Y, PositionX/Y, Rotation, AnchorX/Y and the
+four Crop sides. The selected video clip must be unlocked and contain the frame.
+All values and the resulting evaluated crop pairs are validated before mutation;
+each crop axis must retain at least one source pixel. Unchanged f32 values are
+skipped. Native constant tracks change defaults; animated tracks upsert a Linear
+key at `clip.source_frame_at(timeline_frame)`, including replacement of existing
+interpolation, matching desktop handles. Undo restores the exact previous value
+and interpolation. Frozen pictures retain native effect-animation time mapping.
+Mixed static/animated axes form one native composite; no effective change adds
+no history. Existing `set_properties` default-edit semantics remain unchanged.
+Displayed-frame, property, project/generation/timeline/revision, playhead and
+viewport identities must remain current before a gesture begins or completes.
 
 Scalar `edit_curve_key` and `edit_curve_keys` edits accept optional
 `link_zoom:true`. Omitted or false preserves the original request serialization,
@@ -601,6 +612,8 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   `{param,value}`, flip, gain_db, blend, matte, color, fade_in and fade_out.
   Native enum names are case-sensitive. Matte `None` clears the matte. All
   supplied properties apply in one undo step after complete validation.
+  Viewer handles use `edit_viewer_transform` above to choose native default or
+  current-source-frame key changes per axis.
 - `set_keyframe {clip_id,edit:{target,timeline_frame,value,interpolation}}`
   targets `{kind:transform,param}` or `{kind:gain}`. Native code converts the
   integer timeline frame into a source frame. Null value removes that keyframe;
@@ -689,8 +702,8 @@ and composed playback. There is no browser-side signal measurement.
   changes only that insert's parameters, retaining bypass and chain order.
   There are seven EQ and seven compressor choices, shared with desktop through
   vv-core::presets. Wrong-kind/unknown IDs, absent inserts and locked tracks
-  refuse the command without a partial edit. Saved/custom preset libraries are
-  outside this increment.
+  refuse the command without a partial edit. Saved attribute presets use the
+  separate library endpoints described above.
 
 ## Native Auto Balance
 
@@ -751,8 +764,9 @@ audio is included when an audio track contains clips. Download labels use this
 actual stream choice; empty audio tracks do not announce an AAC stream.
 
 The shared bounded media worker runs one job and queues one more; output is
-limited to 512 MiB and ten minutes of processing, inside the private 2 GiB process
-cache. Native normalization analysis respects the caller's nonzero CPU thread
+limited to 512 MiB and ten minutes of processing. Export records and output use
+`<projects-root>/.exports`, separate from the ephemeral Source/Program cache.
+Native normalization analysis respects the caller's nonzero CPU thread
 budget; the desktop's default automatic policy is preserved. Identical
 snapshot/settings/input identities return the existing job. GET/DELETE
 `/exports/{job}?project_epoch=...` reports/cancels it. GET
@@ -763,11 +777,35 @@ completed encoded files remain independent of later media changes. Export
 job IDs cannot retrieve Program/Source jobs or vice versa. There is no
 user-selected server output path and no overwrite of source/project files.
 
-Jobs continue while the browser is closed, until server shutdown or cache
-eviction. The UI remembers the latest job in browser session storage and can
-resume status polling after reload. Durable queues/server restart recovery,
-and arbitrary output formats remain open. A six-minute 24 fps synthetic export
-and its actual Windows browser download are verified in m3-six-minute-export.json.
+`GET /exports` lists retained jobs, their original `project_epoch`, saved progress
+and capacity. Status/download references use that saved epoch even after server
+restart or opening another project. State includes `interrupted`,
+`previous_state`, `cancel_requested`, `durable` and `durability_error`.
+Manifests are atomically published with file/directory sync; completed output
+is finalized before READY is persisted and its file identity is checked on
+download/recovery. Queued/running records recovered after restart become
+`interrupted` with `SERVER_RESTARTED`; persisted cancellation requests recover
+as canceled. Jobs are never automatically resumed. Changed/missing completed
+output becomes failed rather than downloadable. Failed persistence hides the
+UI download; unreadable history blocks export endpoints with
+`EXPORT_HISTORY_UNAVAILABLE`, preserving files and editor/preview availability.
+
+Retention is bounded to 64 records and 2 GiB of charged output, including failed
+or interrupted partials. Each pending job reserves 512 MiB. Admission refuses
+`EXPORT_CAPACITY` when either limit would be exceeded; there is no automatic
+eviction or deletion UI. Source/Program jobs remain ephemeral and cannot read
+export records. The drawer lists saved exports and retains the latest selection
+in session storage. Hardware codec selection, arbitrary output formats, automatic
+resume and retention-management controls remain open.
+
+169 Rust and 151 JavaScript tests, fmt, clippy and build pass. Finite software
+API acceptance verified mixed animated/static edits, exact Undo/Redo/retry,
+atomic crop rejection and completed H.264 download preservation after an owned
+forced restart. Running work recovered as interrupted and persisted queued
+cancellation recovered as canceled, without automatic rerender.
+See `evidence/m4-animated-viewer-durable-exports.json`; GUI/hardware acceptance
+remains open. Earlier six-minute export/browser-download proof remains in
+`m3-six-minute-export.json`.
 
 - Timeline `set_speed {clip_ids,percent,pitch_correction,fit}` uses native
   SetClipSpeed with percent 1–10000, whole linked groups and fit keep_length,

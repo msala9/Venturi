@@ -1,0 +1,127 @@
+{
+  "project": "Viewer_Animated_Export_API_check.vvproj",
+  "project_sha256": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+  "viewer": {
+    "timeline": "1",
+    "clip": "3",
+    "timeline_frame": 401,
+    "source_frame": 1,
+    "key_page": 0,
+    "existing_key_replaced_linear": true,
+    "mixed_static_and_animated": true,
+    "undo_exact": true,
+    "redo_exact": true,
+    "retry_exact": true,
+    "invalid_crop_atomic": true
+  },
+  "short_export": {
+    "sha256": "047831d4494ac1caa4597b2de72fcd2bbc44adb41f3c4c9017e033ae2c7cd4f5",
+    "bytes": 2375,
+    "ffprobe": {
+      "codec_name": "h264",
+      "width": 640,
+      "height": 360,
+      "r_frame_rate": "24/1",
+      "nb_read_frames": "12"
+    },
+    "compositor": "llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan)",
+    "no_hardware_gpu_or_shared_lock_fds": true
+  },
+  "long_job_a": {
+    "id": "1792586203304536924",
+    "state": "interrupted",
+    "previous_state": "running",
+    "frame_before_kill": 17
+  },
+  "queued_job_b": {
+    "id": "1792586203621738099",
+    "state": "canceled",
+    "cancel_requested": true
+  },
+  "old_epoch_download_sha_preserved": true,
+  "wrong_epoch_rejected": true,
+  "own_guarded_sigkill": true,
+  "no_auto_rerender": true,
+  "binary_sha256": "e9d3814a7f79bff91a7da322f875a51dddf1d42d805314cc3eab18ba8c90e3a4",
+  "gui_acceptance": false,
+  "hardware_gpu_used": false,
+  "limits": {
+    "cpu": "one CPU",
+    "memory": "768 MiB",
+    "swap": 0,
+    "oom_score": 1000,
+    "runtime_max_seconds": 120
+  },
+  "parent_hashes_preserved": {
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "checkpoint": "/home/marco/.cache/venturi-viewer-export-check/acceptance.json",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792585740.6966054,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "e9d3814a7f79bff91a7da322f875a51dddf1d42d805314cc3eab18ba8c90e3a4",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "main_editor_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    },
+    "unsaved": true
+  },
+  "syntax_checks": true,
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "a2b054cb565f3d4b9c366e419ebbcc5c261909c4425030da8b1519ca113872a8",
+      "crates/vv-web/src/commands.rs": "5517091b3b9bed95298c09e9992380ccce1d9cacffcc1b8dcfd790b9676dadea",
+      "crates/vv-web/src/inspector.rs": "1584bbb56ad35514a19bcef6932985752eb3fb81e3577e57120c1fffda7ec080",
+      "crates/vv-web/src/main.rs": "99cc92f00c9d80eefc8a0c2aad1c758a19b4b9e44e6e76b0a0c9e45245e43964",
+      "crates/vv-web/src/source.rs": "2f5667aac2ba4fc0c76f4571131ac25951bfcb4cc2f5606497c29d2c0dc93832",
+      "crates/vv-web/src/program.rs": "b726caa16f8611bc27c6a4576b3f36158cef6e76e28b5a06db20cc90dcc64c95",
+      "crates/vv-web/src/export_store.rs": "1ac042a1d703d362a240acef3c01c60c9ed21f60eb83ba079e71d715c23092d3",
+      "crates/vv-web/src/tests/inspector.rs": "5798997b1e1ebe75ddade253b743e15e3314f77ebf18dd6a2b1e2ba35e40e5ae",
+      "crates/vv-web/src/tests/source.rs": "b4a9515618faa553edafa1ec1bc4512fc4e84cf3029181ab43a7ac79ac1b30da",
+      "crates/vv-web/src/tests/export_store.rs": "2796944b7fad813a9561251f5ec115e220e91aaf19a3b01a2b066ee3ed73e336",
+      "web/index.html": "6e746584b78ea42c7bce2147969f76d1b258628441201fba5b1a37e76df4a746",
+      "web/js/main.js": "2c685bd7f148bccd3a76d7982191b4dc385f85676f041c296bb63d38b87f6db6",
+      "web/js/export.js": "e85fb29d33ba2b8421aa6696f214bccdce5640b9075492d9c8f7b5c3ca62fe0d",
+      "web/js/viewer-transform.js": "2dd52d80ec86b34b8429eb4202def83c9c4fbd9c25437181d1958659c1ae7a6a",
+      "web/js/viewer-transform-overlay.js": "dd2b98c8fe4328eb570c9b680c9ac9c0ac9c848376c5c84ea841a6426315d444",
+      "web/test/export.test.js": "4c400b24833c9885c4a1a46f562bc10f06c04b35c272c7bbe09e9e598f45a1e4",
+      "web/test/export-panel.test.js": "df5d29342f9c2b299f199e6e57fcf8697aa4d6359da42de2ca583873969c41aa",
+      "web/test/viewer-transform.test.js": "819df12b5c4add5d9ad0e3d03934b25486441ccd09aee489c681ac1660aa1624",
+      "web/test/viewer-transform-overlay.test.js": "113d72281f1f4bdccca5cf8dcfc4f6a32b50d353040fc2ba21474f2660a10be9"
+    },
+    "rust_tests": 169,
+    "javascript_tests": 151,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": false,
+    "hardware_gpu": false
+  },
+  "scope_note": "Native mixed static/animated viewer edits, atomic crop rejection and one-step Undo/Redo/retry accepted. Software export download survives guarded process SIGKILL and restart; running work becomes interrupted and durable queued cancellation survives. No automatic rerender. Browser gestures, rendered equivalence, hardware codecs, export discard/retention controls and full GUI parity remain open."
+}

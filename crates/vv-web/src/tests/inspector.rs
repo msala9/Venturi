@@ -154,6 +154,390 @@ fn fixture() -> (Session, TimelineId, String) {
     (session, id, clip_id.0.to_string())
 }
 #[test]
+fn viewer_transform_mixes_defaults_and_animated_keys_as_one_native_undo() {
+    let (mut session, id, raw) = fixture();
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(TransformParam::PositionY)
+        .upsert(20, 5.0, core::Interpolation::Hold);
+    let original = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let position = session.history.position();
+    crate::commands::apply(
+        &mut session,
+        id,
+        &crate::commands::Operation::EditViewerTransform {
+            clip_id: raw.clone(),
+            timeline_frame: 108,
+            transform: vec![
+                Parameter {
+                    param: TransformParam::PositionY,
+                    value: 15.0,
+                },
+                Parameter {
+                    param: TransformParam::PositionX,
+                    value: 30.0,
+                },
+            ],
+        },
+    )
+    .unwrap();
+    let transform = &session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform;
+    assert_eq!(transform.track(TransformParam::PositionX).default, 30.0);
+    assert!(transform.track(TransformParam::PositionX).is_constant());
+    assert_eq!(transform.track(TransformParam::PositionY).default, 0.0);
+    assert_eq!(
+        transform.track(TransformParam::PositionY).keyframe_at(20),
+        Some((15.0, core::Interpolation::Linear))
+    );
+    assert_eq!(session.history.position(), position + 1);
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        original
+    );
+    session.history.redo(&mut session.project);
+    assert_eq!(
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .value_at(20)
+            .position,
+        [30.0, 15.0]
+    );
+}
+
+#[test]
+fn viewer_transform_replaces_existing_interpolation_with_desktop_linear_and_undo_restores_it() {
+    for interpolation in [
+        core::Interpolation::Hold,
+        core::Interpolation::Bezier {
+            c1: [0.2, 0.1],
+            c2: [0.8, 0.9],
+        },
+    ] {
+        let (mut session, id, raw) = fixture();
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .track_mut(TransformParam::ZoomX)
+            .upsert(20, 2.0, interpolation);
+        let original = serde_json::to_value(&session.project).unwrap();
+        viewer_transform(
+            &mut session,
+            id,
+            &raw,
+            108,
+            &[Parameter {
+                param: TransformParam::ZoomX,
+                value: 1.5,
+            }],
+        )
+        .unwrap();
+        let track = session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .track(TransformParam::ZoomX);
+        assert_eq!(track.keyframes().len(), 1);
+        assert_eq!(
+            track.keyframe_at(20),
+            Some((1.5, core::Interpolation::Linear))
+        );
+        session.history.undo(&mut session.project);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), original);
+    }
+}
+
+#[test]
+fn viewer_transform_adds_keys_using_native_offset_rate_mapping_even_with_a_frozen_picture() {
+    for (rate, expected) in [
+        (Rational::one(), 20),
+        (Rational::new(2, 1), 10),
+        (Rational::new(1, 2), 40),
+    ] {
+        let (mut session, id, raw) = fixture();
+        let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+        clip.conform(rate);
+        clip.freeze = Some(3);
+        clip.effects
+            .transform
+            .track_mut(TransformParam::Rotation)
+            .upsert(0, 0.0, core::Interpolation::Hold);
+        clip.effects
+            .transform
+            .track_mut(TransformParam::Rotation)
+            .upsert(100, 0.0, core::Interpolation::Hold);
+        assert_eq!(clip.source_frame_at(108), expected);
+        assert_eq!(clip.picture_frame_at(108), 3);
+        let original = serde_json::to_value(&session.project).unwrap();
+        viewer_transform(
+            &mut session,
+            id,
+            &raw,
+            108,
+            &[Parameter {
+                param: TransformParam::Rotation,
+                value: 45.0,
+            }],
+        )
+        .unwrap();
+        let clip = &session.project.timelines[id].tracks[0].clips[0];
+        let track = clip.effects.transform.track(TransformParam::Rotation);
+        assert_eq!(
+            track.keyframe_at(expected),
+            Some((45.0, core::Interpolation::Linear))
+        );
+        assert_eq!(track.keyframe_at(3), None);
+        assert_eq!(clip.freeze, Some(3));
+        session.history.undo(&mut session.project);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), original);
+    }
+}
+
+#[test]
+fn viewer_transform_noop_preserves_history_and_existing_interpolation() {
+    let (mut session, id, raw) = fixture();
+    let transform = &mut session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform;
+    transform.track_mut(TransformParam::PositionX).default = 1_000_000.0;
+    transform
+        .track_mut(TransformParam::ZoomX)
+        .upsert(20, 1.25, core::Interpolation::Hold);
+    let original = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    viewer_transform(
+        &mut session,
+        id,
+        &raw,
+        108,
+        &[
+            Parameter {
+                param: TransformParam::PositionX,
+                value: 1_000_000.0,
+            },
+            Parameter {
+                param: TransformParam::ZoomX,
+                value: 1.25,
+            },
+        ],
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), position);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), original);
+}
+
+#[test]
+fn viewer_crop_rejects_erased_source_axes_using_evaluated_opposite_sides_without_partial_edits() {
+    let (mut session, id, raw) = fixture();
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(TransformParam::CropRight)
+        .upsert(20, 100.0, core::Interpolation::Hold);
+    let original = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    let revision = session.timeline_revision(id);
+    for crop in [
+        vec![Parameter {
+            param: TransformParam::CropLeft,
+            value: 640.0,
+        }],
+        vec![Parameter {
+            param: TransformParam::CropLeft,
+            value: 540.0,
+        }],
+        vec![Parameter {
+            param: TransformParam::CropTop,
+            value: 360.0,
+        }],
+        vec![
+            Parameter {
+                param: TransformParam::CropLeft,
+                value: 400.0,
+            },
+            Parameter {
+                param: TransformParam::CropRight,
+                value: 240.0,
+            },
+        ],
+        vec![
+            Parameter {
+                param: TransformParam::CropTop,
+                value: 200.0,
+            },
+            Parameter {
+                param: TransformParam::CropBottom,
+                value: 160.0,
+            },
+        ],
+    ] {
+        let mut parameters = vec![Parameter {
+            param: TransformParam::PositionX,
+            value: 40.0,
+        }];
+        parameters.extend(crop);
+        assert!(viewer_transform(&mut session, id, &raw, 108, &parameters).is_err());
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), original);
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.timeline_revision(id), revision);
+    }
+}
+
+#[test]
+fn viewer_crop_validates_joint_result_and_allows_one_source_pixel_on_each_axis() {
+    let (mut session, id, raw) = fixture();
+    let transform = &mut session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform;
+    transform
+        .track_mut(TransformParam::CropRight)
+        .upsert(20, 500.0, core::Interpolation::Hold);
+    transform.track_mut(TransformParam::CropBottom).default = 300.0;
+    let original = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    viewer_transform(
+        &mut session,
+        id,
+        &raw,
+        108,
+        &[
+            Parameter {
+                param: TransformParam::CropLeft,
+                value: 400.0,
+            },
+            Parameter {
+                param: TransformParam::CropTop,
+                value: 200.0,
+            },
+            Parameter {
+                param: TransformParam::CropRight,
+                value: 239.0,
+            },
+            Parameter {
+                param: TransformParam::CropBottom,
+                value: 159.0,
+            },
+        ],
+    )
+    .unwrap();
+    let transform = &session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform;
+    assert_eq!(transform.value_at(20).crop, [400.0, 200.0, 239.0, 159.0]);
+    assert_eq!(
+        transform.track(TransformParam::CropRight).keyframe_at(20),
+        Some((239.0, core::Interpolation::Linear))
+    );
+    assert_eq!(session.history.position(), position + 1);
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), original);
+}
+
+#[test]
+fn viewer_transform_validates_every_axis_frame_and_track_before_mutation() {
+    let (mut session, id, raw) = fixture();
+    let original = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    for parameters in [
+        vec![],
+        vec![
+            Parameter {
+                param: TransformParam::PositionX,
+                value: 5.0
+            };
+            12
+        ],
+        vec![
+            Parameter {
+                param: TransformParam::PositionX,
+                value: 5.0,
+            },
+            Parameter {
+                param: TransformParam::PositionX,
+                value: 10.0,
+            },
+        ],
+        vec![
+            Parameter {
+                param: TransformParam::PositionX,
+                value: 5.0,
+            },
+            Parameter {
+                param: TransformParam::Opacity,
+                value: 50.0,
+            },
+        ],
+        vec![
+            Parameter {
+                param: TransformParam::PositionX,
+                value: 5.0,
+            },
+            Parameter {
+                param: TransformParam::CropSoftness,
+                value: 1.0,
+            },
+        ],
+        vec![
+            Parameter {
+                param: TransformParam::PositionX,
+                value: 5.0,
+            },
+            Parameter {
+                param: TransformParam::ZoomY,
+                value: f32::NAN,
+            },
+        ],
+        vec![
+            Parameter {
+                param: TransformParam::PositionX,
+                value: 5.0,
+            },
+            Parameter {
+                param: TransformParam::ZoomY,
+                value: f32::INFINITY,
+            },
+        ],
+        vec![
+            Parameter {
+                param: TransformParam::PositionX,
+                value: 5.0,
+            },
+            Parameter {
+                param: TransformParam::ZoomY,
+                value: 21.0,
+            },
+        ],
+    ] {
+        assert!(viewer_transform(&mut session, id, &raw, 108, &parameters).is_err());
+        assert_eq!(session.history.position(), position);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), original);
+    }
+    let parameters = [Parameter {
+        param: TransformParam::PositionX,
+        value: 5.0,
+    }];
+    for frame in [99, 148, i64::MAX] {
+        assert!(viewer_transform(&mut session, id, &raw, frame, &parameters).is_err());
+    }
+    session.project.timelines[id].tracks[0].locked = true;
+    assert_eq!(
+        viewer_transform(&mut session, id, &raw, 108, &parameters)
+            .unwrap_err()
+            .1,
+        "TRACK_LOCKED"
+    );
+    session.project.timelines[id].tracks[0].locked = false;
+    let clip = session.project.timelines[id].tracks[0].clips.remove(0);
+    session.project.timelines[id].tracks[1].insert_sorted(clip);
+    let audio = serde_json::to_value(&session.project).unwrap();
+    assert!(viewer_transform(&mut session, id, &raw, 108, &parameters).is_err());
+    assert_eq!(session.history.position(), position);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), audio);
+}
+#[test]
 fn properties_validate_every_field_before_mutation_and_undo_as_one_step() {
     let (mut session, id, clip) = fixture();
     let position = session.history.position();

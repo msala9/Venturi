@@ -1089,7 +1089,7 @@ viewer = createViewer({
 });
 transformOverlay=createViewerTransformOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-transform"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:()=>{
   if(!documentState || !timeline || viewerMode!=="program" || !$("program-view").hidden || !$("slip-view").hidden)return null;
-  const clips=timeline.tracks.filter(track=>track.kind==="video").flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id)));
+  const clips=timeline.tracks.filter(track=>track.kind==="video" && !track.muted).flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id)));
   const clip=clips.length===1?clips[0]:null,current=viewer.current();
   if(!clip || clip.disabled || clip.kind==="adjustment" || view.playhead<clip.start_frame || view.playhead>=clip.start_frame+clip.length_frames || transformDetail?.identity!==detailIdentity(inspectorState(clip.id)))return null;
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,clip_id:clip.id,preview_current:Boolean(current),timeline_size:[timeline.resolution.width,timeline.resolution.height],detail:transformDetail.detail};
@@ -1119,7 +1119,7 @@ programPlayer = createProgramPlayer({
     return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: start, end_frame: Math.min(end, start + Math.floor(300 * timeline.fps.num / timeline.fps.den)), width: 960 } : null;
   },
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); } },
-  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
+  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; transformOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
   onStop:async()=>{await viewer?.seek();scopes?.refresh();previewCache.refresh();},
   onCache:()=>previewCache.refresh(),
   onError: notice,
@@ -1189,7 +1189,7 @@ async function diagnostics() {
       : "GPU preview unavailable";
   } catch {}
 }
-const exportPanel = createExportPanel({ form: $("export-form"), status: $("export-status"), cancel: $("export-cancel"), refresh: $("export-refresh"), download: $("export-download"), getState: () => {
+const exportPanel = createExportPanel({ form: $("export-form"), status: $("export-status"), cancel: $("export-cancel"), refresh: $("export-refresh"), download: $("export-download"), history:{select:$("export-history"),refresh:$("export-history-refresh"),status:$("export-history-status")}, getState: () => {
   if (!timeline || !documentState) return null;
   const end = Math.max(0, ...timeline.tracks.flatMap((track) => track.clips.map((clip) => clip.start_frame + clip.length_frames)));
   return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: 0, end_frame: end, width: 1920, fps: timeline.fps } : null;

@@ -104,7 +104,7 @@ pub fn router(state: AppState) -> Router {
             get(scopes),
         )
         .route("/api/v1/preview/program/prepare", post(prepare_program))
-        .route("/api/v1/exports", post(prepare_export))
+        .route("/api/v1/exports", post(prepare_export).get(export_history))
         .route(
             "/api/v1/exports/{job}",
             get(export_status).delete(cancel_export),
@@ -673,6 +673,9 @@ async fn prepare_program(
             export: None,
         })
         .map(Json)
+}
+async fn export_history(State(state): State<AppState>) -> Result<Json<Value>> {
+    state.source.export_history().map(Json)
 }
 async fn prepare_export(
     State(state): State<AppState>,

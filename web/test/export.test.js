@@ -1,6 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { exportRequest, exportAudioLabel } from "../js/export.js";
+import { exportRequest, exportAudioLabel,exportReference,savedExportJobs } from "../js/export.js";
+
+test('saved export history retains its original epoch across a new editor session',()=>{
+  const ready={id:'export-9007199254740993',project_epoch:'old-server:7',state:'ready'},interrupted={id:'export-2',project_epoch:'old-server:8',state:'interrupted',previous_state:'running'};
+  assert.deepEqual(savedExportJobs({jobs:[ready,interrupted]}),[ready,interrupted]);
+  assert.deepEqual(exportReference(ready),{id:ready.id,epoch:'old-server:7'});
+  assert.throws(()=>exportReference({...ready,id:'../outside'}));
+  assert.throws(()=>exportReference({...ready,project_epoch:7}));
+  assert.throws(()=>savedExportJobs({jobs:Array(65).fill(ready)}));
+  assert.throws(()=>savedExportJobs({jobs:[{...ready,state:'resumed'}]}));
+});
 test("the download describes actual native audio presence rather than the requested checkbox",()=>{
   assert.equal(exportAudioLabel({audio_present:false,export_settings:{audio:true}})," · silent");
   assert.equal(exportAudioLabel({audio_present:true,export_settings:{audio:true}})," + AAC");

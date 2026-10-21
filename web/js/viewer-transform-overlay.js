@@ -39,8 +39,17 @@ export function createViewerTransformOverlay({screen,image,toggle,getContext,can
     painter.strokeStyle=ghost?accent:foreground;painter.lineWidth=1.5;painter.setLineDash(ghost?[5,4]:[]);painter.beginPath();points.forEach(([x,y],index)=>index?painter.lineTo(x,y):painter.moveTo(x,y));painter.closePath();painter.stroke();painter.setLineDash([]);
     painter.fillStyle=surface;painter.strokeStyle=accent;
     for(const [x,y] of points){painter.beginPath();painter.arc(x,y,4.5,0,Math.PI*2);painter.fill();painter.stroke();}
+    const local=point=>[point[0]-bounds.left,point[1]-bounds.top];
+    if(geometry.pivot && geometry.knob){
+      const [px,py]=local(geometry.pivot),[kx,ky]=local(geometry.knob);
+      painter.beginPath();painter.moveTo(px,py);painter.lineTo(kx,ky);painter.stroke();
+      painter.beginPath();painter.moveTo(px,py-6.5);painter.lineTo(px+6.5,py);painter.lineTo(px,py+6.5);painter.lineTo(px-6.5,py);painter.closePath();painter.fill();painter.stroke();
+      painter.beginPath();painter.arc(kx,ky,4.5,0,Math.PI*2);painter.fill();painter.stroke();
+    }
+    painter.lineWidth=5;
+    for(const bar of geometry.crop_bars || []){const [a,b]=bar.segment.map(local);painter.beginPath();painter.moveTo(...a);painter.lineTo(...b);painter.stroke();}
     const writable=canCommit();canvas.style.pointerEvents=writable?'auto':'none';
-    text(ghost?`Draft ${handle?.kind==='scale'?'scale':'position'} outline · release to apply · Escape cancels · Shift: independent scale`:writable?'Drag inside to move · drag a corner to scale · Shift: independent scale · animated axes use numeric Inspector controls':'Read only · use numeric Inspector controls');
+    text(ghost?`Draft ${handle?.kind || 'transform'} · release to apply · Escape cancels`:writable?'Inside: move · corners: scale · diamond: anchor · knob: rotate · edge bars: crop · Shift: independent scale / 15° rotation · animated properties create Linear keys':'Read only · use numeric Inspector controls');
   }
   function invalidate(){
     if(disposed)return;

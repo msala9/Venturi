@@ -290,6 +290,9 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         inputs: vec![],
         source_asset: Some("source.mp4"),
         export_epoch: None,
+        durable: None,
+        explicit_cancel: false,
+        durability_error: false,
     });
     assert!(source.asset("test", &spec, "source.mp4").is_ok());
     assert!(source.asset("test", &spec, "../source.mp4").is_err());
@@ -328,6 +331,9 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
         )],
         source_asset: None,
         export_epoch: Some("p:1".into()),
+        durable: None,
+        explicit_cancel: false,
+        durability_error: false,
     });
     assert_eq!(
         jobs.export_status("export-test", "p:1", false).unwrap()["state"],
@@ -369,4 +375,204 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
     assert!(cancel.load(Ordering::Relaxed));
     jobs.jobs.lock().unwrap()[0].export_epoch = None;
     assert!(jobs.export_status("export-test", "p:1", false).is_err());
+}
+
+#[test]
+fn durable_export_history_restores_old_epoch_downloads_without_restarting_jobs_or_cache_eviction() {
+    let path = std::env::temp_dir().join(format!(
+        "venturi-durable-history-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&path).unwrap();
+    let root = File::open(&path).unwrap();
+    let store = ExportStore::open(&root).unwrap();
+    let make = |id: &str| ExportRecord {
+        version: 1,
+        id: id.into(),
+        key: format!("export:old:{id}"),
+        epoch: "old-process:7".into(),
+        state: "queued".into(),
+        previous_state: None,
+        cancel_requested: false,
+        error: None,
+        program: json!({"start_frame":0,"end_frame":24,"width":640,"height":360}),
+        progress: None,
+        bytes: 0,
+        output: None,
+    };
+    let queued = store.admit(make("1")).unwrap();
+    let mut completed = store.admit(make("2")).unwrap();
+    std::fs::write(
+        completed.directory().join("rendering.mp4"),
+        b"frozen completed output",
+    )
+    .unwrap();
+    let output = store.publish_output(&completed).unwrap();
+    let mut ready = completed.record.clone();
+    ready.state = "ready".into();
+    ready.bytes = output.bytes;
+    ready.output = Some(output);
+    store.save(&mut completed, ready).unwrap();
+    drop((queued, completed));
+    drop(store);
+    let jobs = MediaJobs::start_with_exports(root).unwrap();
+    assert_eq!(
+        jobs.export_status("1", "old-process:7", false).unwrap()["state"],
+        "interrupted"
+    );
+    assert_eq!(
+        jobs.export_status("2", "old-process:7", false).unwrap()["state"],
+        "ready"
+    );
+    assert!(jobs.export_status("2", "new-process:1", false).is_err());
+    let mut bytes = vec![];
+    std::io::Read::read_to_end(
+        &mut jobs.export_asset("2", "old-process:7").unwrap(),
+        &mut bytes,
+    )
+    .unwrap();
+    assert_eq!(bytes, b"frozen completed output");
+    {
+        let mut owned = jobs.jobs.lock().unwrap();
+        owned[1].bytes = MAX_CACHE_BYTES + 1;
+        trim(&mut owned);
+        assert_eq!(owned.len(), 2);
+    }
+    let history = jobs.export_history().unwrap();
+    assert_eq!(history["jobs"][0]["project_epoch"], "old-process:7");
+    assert_eq!(history["capacity"]["used_jobs"], 2);
+    assert_eq!(
+        history["capacity"]["charged_bytes"],
+        b"frozen completed output".len() as u64
+    );
+    assert_eq!(
+        jobs.export_status("1", "old-process:7", false).unwrap()["state"],
+        "interrupted"
+    );
+    assert!(path.join(".exports/2/program.mp4").is_file());
+    drop(jobs);
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
+fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
+    let path = std::env::temp_dir().join(format!(
+        "venturi-export-queue-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&path).unwrap();
+    let jobs = MediaJobs::start_with_exports(File::open(&path).unwrap()).unwrap();
+    jobs.jobs.lock().unwrap().push_back(Job {
+        id: "queued-marker".into(),
+        key: "source:queued".into(),
+        state: "queued",
+        progress: 0,
+        error: None,
+        directory: jobs.root.join("queued-marker"),
+        cancel: Arc::new(AtomicBool::new(false)),
+        bytes: 0,
+        export: None,
+        descriptor: None,
+        inputs: vec![],
+        source_asset: None,
+        export_epoch: None,
+        program_query: None,
+        durable: None,
+        explicit_cancel: false,
+        durability_error: false,
+    });
+    let mut project = vv_core::Project::default();
+    let mut track = vv_core::Track::new(vv_core::TrackKind::Video);
+    track.insert_sorted(vv_core::Clip::from_source_range(
+        vv_core::ClipId(1),
+        vv_core::ClipSource::SolidColor,
+        0,
+        24,
+        0,
+        vv_core::Rational::one(),
+    ));
+    let timeline = project.timelines.insert(vv_core::Timeline {
+        name: "Queued export".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let query = ProgramQuery {
+        project_epoch: "p:1".into(),
+        if_generation: "0".into(),
+        timeline_id: "1".into(),
+        revision: "r".into(),
+        start_frame: 0,
+        end_frame: 24,
+        width: 640,
+    };
+    for _ in 0..3 {
+        let task = ProgramTask {
+            snapshot: crate::preview::FrameSnapshot {
+                project: project.clone(),
+                timeline,
+                query: query.frame(),
+                size: (640, 360),
+            },
+            query: query.clone(),
+            preview: crate::preview::Preview::disabled(),
+            export: Some(program::ExportOptions {
+                quality: 23,
+                preset: "medium".into(),
+                audio: false,
+            }),
+        };
+        assert_eq!(jobs.prepare_program(task).unwrap_err().1, "MEDIA_BUSY");
+    }
+    assert!(jobs.exports.as_ref().unwrap().recover().unwrap().is_empty());
+    assert_eq!(jobs.jobs.lock().unwrap().len(), 1);
+    drop(jobs);
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
+fn corrupt_export_history_blocks_exports_without_preventing_media_service_startup() {
+    let path = std::env::temp_dir().join(format!(
+        "venturi-corrupt-export-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&path).unwrap();
+    let root = File::open(&path).unwrap();
+    {
+        let _store = ExportStore::open(&root).unwrap();
+    }
+    let bytes = b"unreadable existing export manifest";
+    std::fs::write(path.join(".exports/1.json"), bytes).unwrap();
+    let jobs = MediaJobs::start_with_exports(root).unwrap();
+    assert_eq!(
+        jobs.export_history().unwrap_err().1,
+        "EXPORT_HISTORY_UNAVAILABLE"
+    );
+    assert_eq!(
+        jobs.export_status("1", "old:1", false).unwrap_err().1,
+        "EXPORT_HISTORY_UNAVAILABLE"
+    );
+    assert_eq!(
+        jobs.export_asset("1", "old:1").unwrap_err().1,
+        "EXPORT_HISTORY_UNAVAILABLE"
+    );
+    assert!(jobs.jobs.lock().unwrap().is_empty());
+    assert!(jobs.software_lock_path().parent().unwrap().is_dir());
+    assert_eq!(std::fs::read(path.join(".exports/1.json")).unwrap(), bytes);
+    drop(jobs);
+    std::fs::remove_dir_all(path).unwrap();
 }

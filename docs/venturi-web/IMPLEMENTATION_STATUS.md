@@ -20,7 +20,12 @@ and desktop import qualification remain open. A configurable preset
 folder does not establish sharing through the 14 TB archive; only the existing
 ds4 media-catalog integration has actual NAS evidence.
 
-Remaining work includes viewer/mask/path and timeline handles, compound and
+Animated viewer move/scale/rotation/anchor/crop and persistent export history now
+pass 169 Rust tests, 151 JavaScript tests, fmt, clippy and build, plus finite
+software API/forced-restart qualification. GUI, DPI and hardware qualification
+remain open. The latest evidence is `evidence/m4-animated-viewer-durable-exports.json`.
+
+Remaining work includes mask/path and transition/speed timeline handles, compound and
 import coverage, long-media preview and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
 and final deployment, DPI, duration and resource qualification. Historical
@@ -2357,3 +2362,43 @@ caps; both are stopped. Parent files and the primary editor's five unsaved moves
 were preserved. No local browser/build, hardware probe or long soak was started.
 GUI/rendered-equivalence/hardware acceptance remains open; affected ledger rows
 remain partial.
+
+## M3/M4 — animated native viewer handles and persistent export history
+
+Viewer gestures now support move, scale, rotation, anchor and crop using native
+evaluated values. One guarded EditViewerTransform command chooses a static
+default edit or native source-frame Linear key per changed axis. Replacing an
+existing key matches desktop interpolation behavior; Undo restores the previous
+interpolation. Complete crop-pair validation preserves at least one source pixel
+per axis. Rotation accumulates full turns and Shift snaps to 15 degrees; Shift
+scale remains independent by axis. No pointermove starts rendering or sends HTTP.
+Existing current-frame/selection/viewport guards, f32 no-op handling, cancellation
+and bounded event-driven overlay drawing remain in force. Mask/path handles and
+real GUI/DPI/hardware acceptance remain open.
+
+Exports now retain synchronized manifests and completed output under the project
+root's `.exports`, independent of ephemeral Source/Program caches. Saved exports
+lists retained jobs across server restarts using their original epoch references.
+Recovered running/queued work becomes interrupted, or canceled for a persisted
+cancel request; no job automatically restarts. Changed/missing output is refused.
+Unreadable history preserves files and blocks exports while editing and previews
+remain available. Retention is bounded to 64 jobs and 2 GiB including partials
+and 512 MiB reservations per pending job; admission refuses overflow. Automatic
+resume, deletion/retention controls, hardware codec selection and arbitrary output
+formats remain open. This is persistent history/output with interrupted-job
+recovery, rather than a resumable render scheduler.
+
+169 Rust tests, 151 JavaScript tests, fmt, clippy with warnings denied and native
+build pass on halo2. Finite API qualification verified mixed static/animated edits,
+exact Undo/Redo/retry and atomic invalid-crop rejection. A 12-frame 640x360/24 fps
+software H.264 export produced 2,375 bytes with the same download SHA after an
+owned guarded SIGKILL/restart. Running work interrupted at frame 17; a queued
+persisted cancellation recovered as canceled. No automatic rerender occurred;
+incorrect epoch references were rejected. Parent project hashes and the primary
+editor's five unsaved moves remained unchanged.
+
+Evidence: `evidence/m4-animated-viewer-durable-exports.json`. The proof used one
+CPU, 768 MiB, no swap, OOMScoreAdjust=1000 and 120-second runtime caps, with
+software Vulkan and no hardware GPU/shared-lock descriptors. No local browser,
+build or long soak was started. GUI/hardware acceptance and broader release
+qualification remain open; affected capability rows remain partial.

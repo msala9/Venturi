@@ -236,10 +236,14 @@ impl ProgramTask {
         cancel: &Arc<AtomicBool>,
         progress: &Mutex<ExportProgress>,
         inputs: &Inputs,
+        durable: bool,
     ) -> Result<()> {
         let done = AtomicBool::new(false);
         let budget = AtomicBool::new(false);
-        let settings = self.settings(directory);
+        let mut settings = self.settings(directory);
+        if durable {
+            settings.output_path = directory.join("rendering.mp4");
+        }
         let result = std::thread::scope(|scope| {
             scope.spawn(|| {
                 let start = Instant::now();
@@ -267,7 +271,9 @@ impl ProgramTask {
             })
         });
         if budget.load(Ordering::Relaxed) {
-            return Err(ApiError::invalid(
+            return Err(ApiError(
+                axum::http::StatusCode::UNPROCESSABLE_ENTITY,
+                "EXPORT_BUDGET_EXCEEDED",
                 "Program preparation exceeded its ten-minute or 512 MiB budget",
             ));
         }

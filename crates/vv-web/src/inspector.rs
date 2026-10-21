@@ -207,6 +207,104 @@ pub(crate) fn writable(session: &Session, id: TimelineId, track: usize) -> Resul
     }
     Ok(())
 }
+pub fn viewer_transform(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    timeline_frame: i64,
+    parameters: &[Parameter],
+) -> Result<()> {
+    if parameters.is_empty() || parameters.len() > 11 {
+        return Err(ApiError::invalid(
+            "Choose between 1 and 11 viewer transform axes",
+        ));
+    }
+    let (track, clip_id, clip) = find(session, id, raw)?;
+    writable(session, id, track)?;
+    if session.project.timelines[id].tracks[track].kind != core::TrackKind::Video {
+        return Err(ApiError::invalid("Viewer transforms require a video clip"));
+    }
+    if !clip.contains(timeline_frame) {
+        return Err(ApiError::invalid(
+            "Place the playhead inside the selected clip",
+        ));
+    }
+    let source_size = size(session, id, clip);
+    let mut seen = std::collections::HashSet::new();
+    for parameter in parameters {
+        if matches!(
+            parameter.param,
+            TransformParam::Opacity | TransformParam::CropSoftness
+        ) || !seen.insert(parameter.param)
+        {
+            return Err(ApiError::invalid(
+                "Choose distinct geometric viewer transform axes",
+            ));
+        }
+        bounded(parameter.value, limits(parameter.param, source_size))?;
+    }
+    let source_frame = clip.source_frame_at(timeline_frame);
+    let crop_params = [
+        TransformParam::CropLeft,
+        TransformParam::CropTop,
+        TransformParam::CropRight,
+        TransformParam::CropBottom,
+    ];
+    if crop_params.iter().any(|param| seen.contains(param)) {
+        let crop = crop_params.map(|param| {
+            parameters
+                .iter()
+                .find(|parameter| parameter.param == param)
+                .map(|parameter| parameter.value)
+                .unwrap_or_else(|| clip.effects.transform.track(param).value_at(source_frame))
+        });
+        if crop.iter().any(|value| !value.is_finite() || *value < 0.0)
+            || source_size.0 == 0
+            || source_size.1 == 0
+            || crop[0] + crop[2] > source_size.0.saturating_sub(1) as f32
+            || crop[1] + crop[3] > source_size.1.saturating_sub(1) as f32
+        {
+            return Err(ApiError::invalid(
+                "Viewer crop must retain at least one source pixel per axis",
+            ));
+        }
+    }
+    let mut commands: Vec<Box<dyn Command>> = Vec::new();
+    for param in TransformParam::ALL {
+        let Some(parameter) = parameters.iter().find(|parameter| parameter.param == param) else {
+            continue;
+        };
+        let values = clip.effects.transform.track(param);
+        if values.value_at(source_frame) == parameter.value {
+            continue;
+        }
+        commands.push(if values.is_constant() {
+            Box::new(core::set_clip_transform_param(
+                id,
+                track,
+                clip_id,
+                param,
+                parameter.value,
+            ))
+        } else {
+            Box::new(core::UpsertKeyframe::new(
+                id,
+                track,
+                clip_id,
+                source_frame,
+                core::KeyframeValue::TransformParam(param, parameter.value),
+                core::Interpolation::Linear,
+            ))
+        });
+    }
+    if let Some(first) = commands.first() {
+        session.apply(Box::new(core::CompositeCommand::new(
+            first.label(),
+            commands,
+        )));
+    }
+    Ok(())
+}
 pub fn properties(
     session: &mut Session,
     id: TimelineId,

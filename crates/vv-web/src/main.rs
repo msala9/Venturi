@@ -8,6 +8,7 @@ mod commands;
 mod curves;
 mod error;
 mod eventkeys;
+mod export_store;
 mod files;
 mod host;
 mod inspector;
@@ -99,7 +100,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         host.media_root().await.map_err(|error| error.2)?,
     )
     .map_err(|error| error.2)?;
-    let source = source::MediaJobs::start()?;
+    let source =
+        source::MediaJobs::start_with_exports(host.media_root().await.map_err(|error| error.2)?)?;
     let recordings = recording::Store::new(host.media_root().await.map_err(|error| error.2)?);
     let preview = if software {
         preview::Preview::start_software(&source.software_lock_path())

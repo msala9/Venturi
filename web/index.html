@@ -189,7 +189,7 @@
           <span id="viewer-caption" class="muted">Exact timeline frame</span>
           <div class="spacer"></div>
           <button id="show-inspector" type="button" aria-label="Show inspector" aria-controls="inspector">Inspector</button>
-          <button id="viewer-transform" type="button" aria-pressed="false" aria-controls="screen" title="Move or scale the selected clip on a current stopped Program frame">Transform</button>
+          <button id="viewer-transform" type="button" aria-pressed="false" aria-controls="screen" title="Move, scale, rotate, anchor or crop the selected clip. Animated properties create Linear keys at the current frame.">Transform</button>
           <button id="fullscreen" aria-label="Fullscreen viewer">⛶</button>
         </div>
         <div id="screen">
@@ -449,7 +449,10 @@
         <label class="field">Include audio<input name="audio" type="checkbox" checked></label>
         <button id="export-start" class="primary">Start export</button>
       </form>
-      <p class="muted">Select any range inside the timeline, up to 1920 pixels wide. Each job has a 10-minute processing and 512 MiB output budget. CPU x264 encoding. Export continues while you edit or close this panel. Download completed files before stopping the server; the bounded cache can evict older jobs.</p>
+      <p class="muted">Select any range inside the timeline, up to 1920 pixels wide. Each job has a 10-minute processing and 512 MiB output budget. CPU x264 encoding. Completed exports are retained across server restarts. Interrupted jobs are listed for review and do not restart automatically. History is limited to 64 jobs and 2 GiB of output; new jobs are refused when full.</p>
+      <label class="field">Saved exports<select id="export-history" aria-label="Saved exports"><option value="">Choose a saved export</option></select></label>
+      <button id="export-history-refresh" type="button">Refresh saved exports</button>
+      <p id="export-history-status" class="muted" role="status"></p>
       <p id="export-status" role="status">No export started</p>
       <button id="export-cancel" disabled>Cancel export</button>
       <button id="export-refresh" disabled>Refresh export status</button>

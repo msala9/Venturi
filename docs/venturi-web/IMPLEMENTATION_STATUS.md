@@ -2059,7 +2059,8 @@ Further heavy work belongs on halo2 under explicit CPU/memory limits.
 
 The backend soak stopped after 80 samples and 4741 seconds, short of its two-hour
 target. Every sampled source hash and native export hash remained consistent;
-FD count stayed 16 and thread count 14. RSS grew from 267931648 to 330891264 bytes.
+FD count stayed 16; threads were 14 in 77 samples and 15 in three samples.
+RSS grew from 267931648 to 330891264 bytes.
 This is interrupted evidence, not a passed two-hour qualification or a browser
 memory test. The retained JSON is marked `interrupted`; no local soak was resumed.
 

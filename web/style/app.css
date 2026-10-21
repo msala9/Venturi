@@ -478,8 +478,8 @@ label {
 #screen[data-program-playback="true"] > #preview-state { display: none; }
 .media-item img { width: 96px; height: 54px; object-fit: contain; }
 .property-row { display: flex; flex-wrap: wrap; align-items: end; gap: 4px; margin: 8px 0; }
-.property-row .field { flex: 1; min-width: 90px; }
-.property-row input { width: 100%; }
+.property-row .field { flex: 1 0 100%; min-width: 0; grid-template-columns: minmax(0,1fr) minmax(70px,100px); margin: 0; overflow-wrap: anywhere; }
+.property-row input { width: 100%; min-width: 0; }
 .eq-response { width: 100%; height: auto; }
 .grade-wheels { display: grid; grid-template-columns: repeat(auto-fit,minmax(150px,1fr)); gap: 8px; }
 .color-wheel { display: block; width: 150px; height: 150px; touch-action: none; }

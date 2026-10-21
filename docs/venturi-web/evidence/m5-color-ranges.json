@@ -1,0 +1,588 @@
+{
+  "fixture": "Own CPU-only synthetic montage copy; original saved projects preserved",
+  "phases": {
+    "defaults": {
+      "history": {
+        "labels": [
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters"
+        ],
+        "position": 7
+      },
+      "unsaved": true,
+      "frame": 0,
+      "grade": {
+        "ShadowsSat": {
+          "default": 0.800000011920929,
+          "keyframes": [],
+          "param": "ShadowsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.800000011920929
+        },
+        "MidtonesSat": {
+          "default": 1.2000000476837158,
+          "keyframes": [],
+          "param": "MidtonesSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 1.2000000476837158
+        },
+        "HighlightsSat": {
+          "default": 0.6000000238418579,
+          "keyframes": [],
+          "param": "HighlightsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.6000000238418579
+        },
+        "Saturation": {
+          "default": 0.8999999761581421,
+          "keyframes": [],
+          "param": "Saturation",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.8999999761581421
+        },
+        "LowRange": {
+          "default": 0.25,
+          "keyframes": [],
+          "param": "LowRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.25
+        },
+        "HighRange": {
+          "default": 0.75,
+          "keyframes": [],
+          "param": "HighRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.75
+        }
+      }
+    },
+    "undo": {
+      "history": {
+        "labels": [
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters"
+        ],
+        "position": 6
+      },
+      "unsaved": true,
+      "frame": 0,
+      "grade": {
+        "ShadowsSat": {
+          "default": 0.800000011920929,
+          "keyframes": [],
+          "param": "ShadowsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.800000011920929
+        },
+        "MidtonesSat": {
+          "default": 1.2000000476837158,
+          "keyframes": [],
+          "param": "MidtonesSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 1.2000000476837158
+        },
+        "HighlightsSat": {
+          "default": 0.6000000238418579,
+          "keyframes": [],
+          "param": "HighlightsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.6000000238418579
+        },
+        "Saturation": {
+          "default": 0.8999999761581421,
+          "keyframes": [],
+          "param": "Saturation",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.8999999761581421
+        },
+        "LowRange": {
+          "default": 0.25,
+          "keyframes": [],
+          "param": "LowRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.25
+        },
+        "HighRange": {
+          "default": 0.6666666865348816,
+          "keyframes": [],
+          "param": "HighRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.6666666865348816
+        }
+      }
+    },
+    "animated_end": {
+      "history": {
+        "labels": [
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "SetKeyframe",
+          "SetKeyframe"
+        ],
+        "position": 9
+      },
+      "unsaved": true,
+      "frame": 24,
+      "grade": {
+        "ShadowsSat": {
+          "default": 0.800000011920929,
+          "keyframes": [],
+          "param": "ShadowsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.800000011920929
+        },
+        "MidtonesSat": {
+          "default": 1.2000000476837158,
+          "keyframes": [],
+          "param": "MidtonesSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 1.2000000476837158
+        },
+        "HighlightsSat": {
+          "default": 0.6000000238418579,
+          "keyframes": [],
+          "param": "HighlightsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.6000000238418579
+        },
+        "Saturation": {
+          "default": 0.8999999761581421,
+          "keyframes": [],
+          "param": "Saturation",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.8999999761581421
+        },
+        "LowRange": {
+          "default": 0.25,
+          "keyframes": [
+            [
+              0,
+              0.25,
+              "Linear"
+            ],
+            [
+              30,
+              0.4000000059604645,
+              "Linear"
+            ]
+          ],
+          "param": "LowRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.4000000059604645
+        },
+        "HighRange": {
+          "default": 0.75,
+          "keyframes": [],
+          "param": "HighRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.75
+        }
+      }
+    },
+    "interpolated": {
+      "history": {
+        "labels": [
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "Filters",
+          "SetKeyframe",
+          "SetKeyframe"
+        ],
+        "position": 9
+      },
+      "unsaved": true,
+      "frame": 12,
+      "grade": {
+        "ShadowsSat": {
+          "default": 0.800000011920929,
+          "keyframes": [],
+          "param": "ShadowsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.800000011920929
+        },
+        "MidtonesSat": {
+          "default": 1.2000000476837158,
+          "keyframes": [],
+          "param": "MidtonesSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 1.2000000476837158
+        },
+        "HighlightsSat": {
+          "default": 0.6000000238418579,
+          "keyframes": [],
+          "param": "HighlightsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.6000000238418579
+        },
+        "Saturation": {
+          "default": 0.8999999761581421,
+          "keyframes": [],
+          "param": "Saturation",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.8999999761581421
+        },
+        "LowRange": {
+          "default": 0.25,
+          "keyframes": [
+            [
+              0,
+              0.25,
+              "Linear"
+            ],
+            [
+              30,
+              0.4000000059604645,
+              "Linear"
+            ]
+          ],
+          "param": "LowRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.32499998807907104
+        },
+        "HighRange": {
+          "default": 0.75,
+          "keyframes": [],
+          "param": "HighRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.75
+        }
+      }
+    },
+    "reopened": {
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "frame": 12,
+      "grade": {
+        "ShadowsSat": {
+          "default": 0.800000011920929,
+          "keyframes": [],
+          "param": "ShadowsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.800000011920929
+        },
+        "MidtonesSat": {
+          "default": 1.2000000476837158,
+          "keyframes": [],
+          "param": "MidtonesSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 1.2000000476837158
+        },
+        "HighlightsSat": {
+          "default": 0.6000000238418579,
+          "keyframes": [],
+          "param": "HighlightsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.6000000238418579
+        },
+        "Saturation": {
+          "default": 0.8999999761581421,
+          "keyframes": [
+            [
+              30,
+              0.8999999761581421,
+              "Linear"
+            ]
+          ],
+          "param": "Saturation",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.8999999761581421
+        },
+        "LowRange": {
+          "default": 0.25,
+          "keyframes": [
+            [
+              0,
+              0.25,
+              "Linear"
+            ],
+            [
+              30,
+              0.4000000059604645,
+              "Linear"
+            ]
+          ],
+          "param": "LowRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.32499998807907104
+        },
+        "HighRange": {
+          "default": 0.75,
+          "keyframes": [],
+          "param": "HighRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.75
+        }
+      }
+    },
+    "restarted": {
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "frame": 12,
+      "grade": {
+        "ShadowsSat": {
+          "default": 0.800000011920929,
+          "keyframes": [],
+          "param": "ShadowsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.800000011920929
+        },
+        "MidtonesSat": {
+          "default": 1.2000000476837158,
+          "keyframes": [],
+          "param": "MidtonesSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 1.2000000476837158
+        },
+        "HighlightsSat": {
+          "default": 0.6000000238418579,
+          "keyframes": [],
+          "param": "HighlightsSat",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.6000000238418579
+        },
+        "Saturation": {
+          "default": 0.8999999761581421,
+          "keyframes": [
+            [
+              30,
+              0.8999999761581421,
+              "Linear"
+            ]
+          ],
+          "param": "Saturation",
+          "range": [
+            0.0,
+            2.0
+          ],
+          "value": 0.8999999761581421
+        },
+        "LowRange": {
+          "default": 0.25,
+          "keyframes": [
+            [
+              0,
+              0.25,
+              "Linear"
+            ],
+            [
+              30,
+              0.4000000059604645,
+              "Linear"
+            ]
+          ],
+          "param": "LowRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.32499998807907104
+        },
+        "HighRange": {
+          "default": 0.75,
+          "keyframes": [],
+          "param": "HighRange",
+          "range": [
+            0.0,
+            1.0
+          ],
+          "value": 0.75
+        }
+      }
+    }
+  },
+  "source_sha256": {
+    "Montage_01_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_01_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_01_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_02_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_02_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_02_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_03_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_03_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_03_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_04_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_04_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_04_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_05_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_05_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_05_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_06_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_06_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_06_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_07_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_07_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_07_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_08_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_08_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_08_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_09_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_09_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_09_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_10_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_10_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_10_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_11_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_11_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_11_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_12_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_12_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_12_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_13_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_13_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_13_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_14_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_14_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_14_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_15_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_15_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_15_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_16_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_16_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_16_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_17_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_17_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_17_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_18_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_18_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_18_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_19_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_19_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_19_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3",
+    "Montage_20_A.mp4": "11e8dcfdd55385f451c10ca6e2d4319322636485647e9e9144158fdb1e9094f5",
+    "Montage_20_B.mp4": "738e1092d110836a9e6e3e0057fc6dc4dc4910e867cf39bcdb41a553c58daf0e",
+    "Montage_20_C.mp4": "5bdddc0120fa757e398d58dbbe1637e456b64b576a64c915d2536d72463272f3"
+  },
+  "original_project_sha256": "c80a4798fcb83d805dfb776762d6a4cb1b2feba43bdeec4426692f4efddc9986",
+  "verification": {
+    "six_defaults": true,
+    "undo_redo": true,
+    "native_interpolation": true,
+    "save_open_process_restart": true,
+    "sixty_source_hashes_unchanged": true,
+    "cpu_only": true
+  }
+}

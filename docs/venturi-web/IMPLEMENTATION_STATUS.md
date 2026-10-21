@@ -1524,3 +1524,23 @@ Known provenance, exact annotation seed and Favorite remain intact. CPU/lavapipe
 two workers, no DRI/KFD handles and no hardware-lock probe/acquisition are
 verified in m7-halo2-unsaved-recovery.json. No other agent's process or GPU slot
 was used by this deployment.
+
+## M5 — native color range and saturation acceptance
+
+The existing ColorCorrection adapter exposes the same native ShadowsSat,
+MidtonesSat, HighlightsSat, global Saturation, LowRange and HighRange controls
+as the desktop grade panel, including native keyframes. The parity row was
+stale and is now verified rather than reimplemented. Actual browser acceptance
+on a separate synthetic montage copy set all six defaults, verified exact Undo
+and Redo of HighRange, wrote two LowRange keys and a Saturation key, and checked
+native evaluation at the intermediate timeline frame. LowRange interpolated
+from 0.25 to 0.4 as 0.325 at frame 12. Save/Open and an owned CPU-service restart
+retained all values and animation with fresh history. All 60 media hashes and
+the original saved project stayed unchanged. This is CPU/lavapipe evidence;
+no shared GPU slot was acquired.
+
+Visual QA also fixed numeric Inspector rows whose two-column labels overlapped
+their action buttons at the normal narrow panel width. Labels and inputs now
+share their own full-width row, with actions below. The updated binary was
+built and visually checked after restart. Evidence: m5-color-ranges.json and
+m5-color-ranges-browser.png. No editing/DSP semantics changed in this increment.

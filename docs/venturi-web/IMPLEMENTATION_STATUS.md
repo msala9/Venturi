@@ -1804,3 +1804,15 @@ through the same native condition used by encoding, and the UI names AAC or
 silent output accordingly. The six-minute WAV case retains AAC and exactly the
 same encoded bytes after this extraction. 119 web tests, 100 session tests,
 93 JavaScript tests, clippy, formatting, native GUI compilation and build pass.
+
+The 1bb9927 build is deployed on halo2, SHA-256
+f4e1d14f2ff88d295f4145491d2d3d4076c1436e9de8349e9920397ce8411560.
+An independent saved copy exported a six-minute 64x36/24 fps generated timeline.
+Native probe confirms 8,640 H.264 frames and 360 seconds, with no audio stream
+when the audio track is empty. The UI correctly labels this silent; its Windows
+download matches the native artifact SHA-256
+1a81c9efc2b82fbc398f767ed013ab6900616dc16545943da7f4ee10db01dc59.
+The original shared project was reopened afterward with identical project and
+Review hashes, original PNG hash, exact seed and Favorite. CPU isolation and no
+hardware-lock acquisition are recorded in m3-halo2-six-minute-export.json and
+its browser screenshot. Shared archive content and inference were untouched.

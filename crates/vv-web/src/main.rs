@@ -11,6 +11,7 @@ mod eventkeys;
 mod files;
 mod host;
 mod inspector;
+mod keyselection;
 mod library;
 mod masks;
 mod preview;

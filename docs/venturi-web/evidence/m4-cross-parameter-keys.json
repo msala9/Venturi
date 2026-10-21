@@ -1,0 +1,1935 @@
+{
+  "url": "http://127.0.0.1:8811",
+  "fixture": {
+    "project": "Cross_Parameter_Halo2_UI_check.vvproj",
+    "clip_id": "2",
+    "project_sha256": "5f40db8f63677329735a19cd923bcec8b812ce9b5c42ab435f8aba3c43ae9d2b",
+    "timeline_revision": "ae2d92a47b2d35ff",
+    "parent_hashes": {
+      "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+      "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+      "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63"
+    },
+    "history": {
+      "labels": [
+        "InsertClips",
+        "SetKeyframe",
+        "SetKeyframe",
+        "MoveKeyframes",
+        "InsertClips",
+        "Filters",
+        "SetKeyframe",
+        "SetKeyframe",
+        "SetKeyframe",
+        "SetKeyframe",
+        "SetKeyframe",
+        "SetKeyframe",
+        "SetKeyframe",
+        "SetKeyframe",
+        "SetKeyframe",
+        "SetKeyframe"
+      ],
+      "position": 16
+    },
+    "generation": "16",
+    "curves": [
+      {
+        "default": 1.0,
+        "key_count": 2,
+        "keys": [
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 0,
+            "timeline_frame": 288,
+            "value": 1.0
+          },
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 10,
+            "timeline_frame": 298,
+            "value": 1.5
+          }
+        ],
+        "max": 20.0,
+        "min": 0.009999999776482582,
+        "name": "Transform \u00b7 ZoomX",
+        "samples": [
+          [
+            0,
+            1.0
+          ],
+          [
+            1,
+            1.0
+          ],
+          [
+            2,
+            1.0
+          ],
+          [
+            3,
+            1.0
+          ],
+          [
+            4,
+            1.0
+          ],
+          [
+            5,
+            1.0
+          ],
+          [
+            6,
+            1.0
+          ],
+          [
+            7,
+            1.0
+          ],
+          [
+            8,
+            1.0
+          ],
+          [
+            9,
+            1.0
+          ],
+          [
+            10,
+            1.5
+          ],
+          [
+            11,
+            1.5
+          ],
+          [
+            12,
+            1.5
+          ],
+          [
+            13,
+            1.5
+          ],
+          [
+            14,
+            1.5
+          ],
+          [
+            15,
+            1.5
+          ],
+          [
+            16,
+            1.5
+          ],
+          [
+            17,
+            1.5
+          ],
+          [
+            18,
+            1.5
+          ],
+          [
+            19,
+            1.5
+          ],
+          [
+            20,
+            1.5
+          ],
+          [
+            21,
+            1.5
+          ],
+          [
+            22,
+            1.5
+          ],
+          [
+            23,
+            1.5
+          ],
+          [
+            24,
+            1.5
+          ],
+          [
+            25,
+            1.5
+          ],
+          [
+            26,
+            1.5
+          ],
+          [
+            27,
+            1.5
+          ],
+          [
+            28,
+            1.5
+          ],
+          [
+            29,
+            1.5
+          ],
+          [
+            30,
+            1.5
+          ],
+          [
+            31,
+            1.5
+          ],
+          [
+            32,
+            1.5
+          ],
+          [
+            33,
+            1.5
+          ],
+          [
+            34,
+            1.5
+          ],
+          [
+            35,
+            1.5
+          ],
+          [
+            36,
+            1.5
+          ],
+          [
+            37,
+            1.5
+          ],
+          [
+            38,
+            1.5
+          ],
+          [
+            39,
+            1.5
+          ],
+          [
+            40,
+            1.5
+          ],
+          [
+            41,
+            1.5
+          ],
+          [
+            42,
+            1.5
+          ],
+          [
+            43,
+            1.5
+          ],
+          [
+            44,
+            1.5
+          ],
+          [
+            45,
+            1.5
+          ],
+          [
+            46,
+            1.5
+          ],
+          [
+            47,
+            1.5
+          ]
+        ],
+        "target": {
+          "kind": "transform",
+          "param": "ZoomX"
+        }
+      },
+      {
+        "default": 1.0,
+        "key_count": 2,
+        "keys": [
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 0,
+            "timeline_frame": 288,
+            "value": 1.0
+          },
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 10,
+            "timeline_frame": 298,
+            "value": 1.5
+          }
+        ],
+        "max": 20.0,
+        "min": 0.009999999776482582,
+        "name": "Transform \u00b7 ZoomY",
+        "samples": [
+          [
+            0,
+            1.0
+          ],
+          [
+            1,
+            1.0
+          ],
+          [
+            2,
+            1.0
+          ],
+          [
+            3,
+            1.0
+          ],
+          [
+            4,
+            1.0
+          ],
+          [
+            5,
+            1.0
+          ],
+          [
+            6,
+            1.0
+          ],
+          [
+            7,
+            1.0
+          ],
+          [
+            8,
+            1.0
+          ],
+          [
+            9,
+            1.0
+          ],
+          [
+            10,
+            1.5
+          ],
+          [
+            11,
+            1.5
+          ],
+          [
+            12,
+            1.5
+          ],
+          [
+            13,
+            1.5
+          ],
+          [
+            14,
+            1.5
+          ],
+          [
+            15,
+            1.5
+          ],
+          [
+            16,
+            1.5
+          ],
+          [
+            17,
+            1.5
+          ],
+          [
+            18,
+            1.5
+          ],
+          [
+            19,
+            1.5
+          ],
+          [
+            20,
+            1.5
+          ],
+          [
+            21,
+            1.5
+          ],
+          [
+            22,
+            1.5
+          ],
+          [
+            23,
+            1.5
+          ],
+          [
+            24,
+            1.5
+          ],
+          [
+            25,
+            1.5
+          ],
+          [
+            26,
+            1.5
+          ],
+          [
+            27,
+            1.5
+          ],
+          [
+            28,
+            1.5
+          ],
+          [
+            29,
+            1.5
+          ],
+          [
+            30,
+            1.5
+          ],
+          [
+            31,
+            1.5
+          ],
+          [
+            32,
+            1.5
+          ],
+          [
+            33,
+            1.5
+          ],
+          [
+            34,
+            1.5
+          ],
+          [
+            35,
+            1.5
+          ],
+          [
+            36,
+            1.5
+          ],
+          [
+            37,
+            1.5
+          ],
+          [
+            38,
+            1.5
+          ],
+          [
+            39,
+            1.5
+          ],
+          [
+            40,
+            1.5
+          ],
+          [
+            41,
+            1.5
+          ],
+          [
+            42,
+            1.5
+          ],
+          [
+            43,
+            1.5
+          ],
+          [
+            44,
+            1.5
+          ],
+          [
+            45,
+            1.5
+          ],
+          [
+            46,
+            1.5
+          ],
+          [
+            47,
+            1.5
+          ]
+        ],
+        "target": {
+          "kind": "transform",
+          "param": "ZoomY"
+        }
+      },
+      {
+        "default": 100.0,
+        "key_count": 2,
+        "keys": [
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 7,
+            "timeline_frame": 295,
+            "value": 20.0
+          },
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 17,
+            "timeline_frame": 305,
+            "value": 80.0
+          }
+        ],
+        "max": 100.0,
+        "min": 0.0,
+        "name": "Transform \u00b7 Opacity",
+        "samples": [
+          [
+            0,
+            20.0
+          ],
+          [
+            1,
+            20.0
+          ],
+          [
+            2,
+            20.0
+          ],
+          [
+            3,
+            20.0
+          ],
+          [
+            4,
+            20.0
+          ],
+          [
+            5,
+            20.0
+          ],
+          [
+            6,
+            20.0
+          ],
+          [
+            7,
+            20.0
+          ],
+          [
+            8,
+            20.0
+          ],
+          [
+            9,
+            20.0
+          ],
+          [
+            10,
+            20.0
+          ],
+          [
+            11,
+            20.0
+          ],
+          [
+            12,
+            20.0
+          ],
+          [
+            13,
+            20.0
+          ],
+          [
+            14,
+            20.0
+          ],
+          [
+            15,
+            20.0
+          ],
+          [
+            16,
+            20.0
+          ],
+          [
+            17,
+            80.0
+          ],
+          [
+            18,
+            80.0
+          ],
+          [
+            19,
+            80.0
+          ],
+          [
+            20,
+            80.0
+          ],
+          [
+            21,
+            80.0
+          ],
+          [
+            22,
+            80.0
+          ],
+          [
+            23,
+            80.0
+          ],
+          [
+            24,
+            80.0
+          ],
+          [
+            25,
+            80.0
+          ],
+          [
+            26,
+            80.0
+          ],
+          [
+            27,
+            80.0
+          ],
+          [
+            28,
+            80.0
+          ],
+          [
+            29,
+            80.0
+          ],
+          [
+            30,
+            80.0
+          ],
+          [
+            31,
+            80.0
+          ],
+          [
+            32,
+            80.0
+          ],
+          [
+            33,
+            80.0
+          ],
+          [
+            34,
+            80.0
+          ],
+          [
+            35,
+            80.0
+          ],
+          [
+            36,
+            80.0
+          ],
+          [
+            37,
+            80.0
+          ],
+          [
+            38,
+            80.0
+          ],
+          [
+            39,
+            80.0
+          ],
+          [
+            40,
+            80.0
+          ],
+          [
+            41,
+            80.0
+          ],
+          [
+            42,
+            80.0
+          ],
+          [
+            43,
+            80.0
+          ],
+          [
+            44,
+            80.0
+          ],
+          [
+            45,
+            80.0
+          ],
+          [
+            46,
+            80.0
+          ],
+          [
+            47,
+            80.0
+          ]
+        ],
+        "target": {
+          "kind": "transform",
+          "param": "Opacity"
+        }
+      }
+    ],
+    "event_keys": [
+      {
+        "choices": null,
+        "default": {
+          "a": 1.0,
+          "b": 0.0,
+          "g": 1.0,
+          "r": 1.0
+        },
+        "key_count": 2,
+        "keys": [
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 2,
+            "timeline_frame": 290,
+            "value": {
+              "a": 0.800000011920929,
+              "b": 0.6000000238418579,
+              "g": 0.4000000059604645,
+              "r": 0.20000000298023224
+            }
+          },
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 12,
+            "timeline_frame": 300,
+            "value": {
+              "a": 0.20000000298023224,
+              "b": 0.4000000059604645,
+              "g": 0.6000000238418579,
+              "r": 0.800000011920929
+            }
+          }
+        ],
+        "name": "RGBA color",
+        "target": {
+          "kind": "color"
+        }
+      },
+      {
+        "choices": [
+          "Both",
+          "Horizontal",
+          "Vertical"
+        ],
+        "default": "Both",
+        "key_count": 2,
+        "keys": [
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 5,
+            "timeline_frame": 293,
+            "value": "Horizontal"
+          },
+          {
+            "controls": null,
+            "interpolation": "Hold",
+            "source_frame": 17,
+            "timeline_frame": 305,
+            "value": "Vertical"
+          }
+        ],
+        "name": "GaussianBlur direction",
+        "target": {
+          "filter": "GaussianBlur",
+          "kind": "direction"
+        }
+      }
+    ],
+    "root": "/home/marco/VenturiWeb-value-keys-20261021",
+    "saved": true
+  },
+  "phases": {
+    "moved": {
+      "generation": "1",
+      "history": {
+        "labels": [
+          "MoveKeyframes"
+        ],
+        "position": 1
+      },
+      "revision": "a98897a9c8f14214",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 2,
+              "timeline_frame": 290,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 2,
+              "timeline_frame": 290,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 9,
+              "timeline_frame": 297,
+              "value": 20.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": 80.0
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "color"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 4,
+              "timeline_frame": 292,
+              "value": {
+                "a": 0.800000011920929,
+                "b": 0.6000000238418579,
+                "g": 0.4000000059604645,
+                "r": 0.20000000298023224
+              }
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 12,
+              "timeline_frame": 300,
+              "value": {
+                "a": 0.20000000298023224,
+                "b": 0.4000000059604645,
+                "g": 0.6000000238418579,
+                "r": 0.800000011920929
+              }
+            }
+          ]
+        },
+        {
+          "target": {
+            "filter": "GaussianBlur",
+            "kind": "direction"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 7,
+              "timeline_frame": 295,
+              "value": "Horizontal"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": "Vertical"
+            }
+          ]
+        }
+      ],
+      "saved": false,
+      "project_sha256": "1a4b399fa4bca61d4ab169ca0caebb246a2429236573cc4f826091ca18e47811",
+      "clip_count": 3,
+      "parent_hashes_preserved": true,
+      "hardware_handles": [],
+      "runtime_limits": "CPUQuotaPerSecUSec=1s\nMemoryMax=2147483648\n"
+    },
+    "interpolated": {
+      "generation": "2",
+      "history": {
+        "labels": [
+          "MoveKeyframes",
+          "SetInterpolation"
+        ],
+        "position": 2
+      },
+      "revision": "e695d681e4e6d767",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 2,
+              "timeline_frame": 290,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 2,
+              "timeline_frame": 290,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 9,
+              "timeline_frame": 297,
+              "value": 20.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": 80.0
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "color"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4,
+              "timeline_frame": 292,
+              "value": {
+                "a": 0.800000011920929,
+                "b": 0.6000000238418579,
+                "g": 0.4000000059604645,
+                "r": 0.20000000298023224
+              }
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 12,
+              "timeline_frame": 300,
+              "value": {
+                "a": 0.20000000298023224,
+                "b": 0.4000000059604645,
+                "g": 0.6000000238418579,
+                "r": 0.800000011920929
+              }
+            }
+          ]
+        },
+        {
+          "target": {
+            "filter": "GaussianBlur",
+            "kind": "direction"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 7,
+              "timeline_frame": 295,
+              "value": "Horizontal"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": "Vertical"
+            }
+          ]
+        }
+      ],
+      "saved": false,
+      "project_sha256": "1a4b399fa4bca61d4ab169ca0caebb246a2429236573cc4f826091ca18e47811",
+      "clip_count": 3,
+      "parent_hashes_preserved": true,
+      "hardware_handles": [],
+      "runtime_limits": "CPUQuotaPerSecUSec=1s\nMemoryMax=2147483648\n"
+    },
+    "undone": {
+      "generation": "6",
+      "history": {
+        "labels": [
+          "MoveKeyframes",
+          "SetInterpolation",
+          "SetKeyframe"
+        ],
+        "position": 0
+      },
+      "revision": "ae2d92a47b2d35ff",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 288,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 0,
+              "timeline_frame": 288,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 7,
+              "timeline_frame": 295,
+              "value": 20.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": 80.0
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "color"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 2,
+              "timeline_frame": 290,
+              "value": {
+                "a": 0.800000011920929,
+                "b": 0.6000000238418579,
+                "g": 0.4000000059604645,
+                "r": 0.20000000298023224
+              }
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 12,
+              "timeline_frame": 300,
+              "value": {
+                "a": 0.20000000298023224,
+                "b": 0.4000000059604645,
+                "g": 0.6000000238418579,
+                "r": 0.800000011920929
+              }
+            }
+          ]
+        },
+        {
+          "target": {
+            "filter": "GaussianBlur",
+            "kind": "direction"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 5,
+              "timeline_frame": 293,
+              "value": "Horizontal"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": "Vertical"
+            }
+          ]
+        }
+      ],
+      "saved": false,
+      "project_sha256": "1a4b399fa4bca61d4ab169ca0caebb246a2429236573cc4f826091ca18e47811",
+      "clip_count": 3,
+      "parent_hashes_preserved": true,
+      "hardware_handles": [],
+      "runtime_limits": "CPUQuotaPerSecUSec=1s\nMemoryMax=2147483648\n"
+    },
+    "deleted": {
+      "generation": "3",
+      "history": {
+        "labels": [
+          "MoveKeyframes",
+          "SetInterpolation",
+          "SetKeyframe"
+        ],
+        "position": 3
+      },
+      "revision": "bbc6f82e84c60d9e",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": 80.0
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "color"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 12,
+              "timeline_frame": 300,
+              "value": {
+                "a": 0.20000000298023224,
+                "b": 0.4000000059604645,
+                "g": 0.6000000238418579,
+                "r": 0.800000011920929
+              }
+            }
+          ]
+        },
+        {
+          "target": {
+            "filter": "GaussianBlur",
+            "kind": "direction"
+          },
+          "keys": [
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": "Vertical"
+            }
+          ]
+        }
+      ],
+      "saved": false,
+      "project_sha256": "1a4b399fa4bca61d4ab169ca0caebb246a2429236573cc4f826091ca18e47811",
+      "clip_count": 3,
+      "parent_hashes_preserved": true,
+      "hardware_handles": [],
+      "runtime_limits": "CPUQuotaPerSecUSec=1s\nMemoryMax=2147483648\n"
+    },
+    "saved": {
+      "generation": "8",
+      "history": {
+        "labels": [
+          "MoveKeyframes",
+          "SetInterpolation",
+          "SetKeyframe"
+        ],
+        "position": 2
+      },
+      "revision": "e695d681e4e6d767",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 2,
+              "timeline_frame": 290,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 2,
+              "timeline_frame": 290,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 9,
+              "timeline_frame": 297,
+              "value": 20.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": 80.0
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "color"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4,
+              "timeline_frame": 292,
+              "value": {
+                "a": 0.800000011920929,
+                "b": 0.6000000238418579,
+                "g": 0.4000000059604645,
+                "r": 0.20000000298023224
+              }
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 12,
+              "timeline_frame": 300,
+              "value": {
+                "a": 0.20000000298023224,
+                "b": 0.4000000059604645,
+                "g": 0.6000000238418579,
+                "r": 0.800000011920929
+              }
+            }
+          ]
+        },
+        {
+          "target": {
+            "filter": "GaussianBlur",
+            "kind": "direction"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 7,
+              "timeline_frame": 295,
+              "value": "Horizontal"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": "Vertical"
+            }
+          ]
+        }
+      ],
+      "saved": true,
+      "project_sha256": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+      "clip_count": 3,
+      "parent_hashes_preserved": true,
+      "hardware_handles": [],
+      "runtime_limits": "CPUQuotaPerSecUSec=1s\nMemoryMax=2147483648\n"
+    },
+    "reopened": {
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "revision": "e695d681e4e6d767",
+      "rows": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 2,
+              "timeline_frame": 290,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomY"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 2,
+              "timeline_frame": 290,
+              "value": 1.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 10,
+              "timeline_frame": 298,
+              "value": 1.5
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "transform",
+            "param": "Opacity"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 9,
+              "timeline_frame": 297,
+              "value": 20.0
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": 80.0
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "color"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 4,
+              "timeline_frame": 292,
+              "value": {
+                "a": 0.800000011920929,
+                "b": 0.6000000238418579,
+                "g": 0.4000000059604645,
+                "r": 0.20000000298023224
+              }
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 12,
+              "timeline_frame": 300,
+              "value": {
+                "a": 0.20000000298023224,
+                "b": 0.4000000059604645,
+                "g": 0.6000000238418579,
+                "r": 0.800000011920929
+              }
+            }
+          ]
+        },
+        {
+          "target": {
+            "filter": "GaussianBlur",
+            "kind": "direction"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.20000000298023224,
+                  0.10000000149011612
+                ],
+                [
+                  0.800000011920929,
+                  0.8999999761581421
+                ]
+              ],
+              "interpolation": {
+                "Bezier": {
+                  "c1": [
+                    0.20000000298023224,
+                    0.10000000149011612
+                  ],
+                  "c2": [
+                    0.800000011920929,
+                    0.8999999761581421
+                  ]
+                }
+              },
+              "source_frame": 7,
+              "timeline_frame": 295,
+              "value": "Horizontal"
+            },
+            {
+              "controls": null,
+              "interpolation": "Hold",
+              "source_frame": 17,
+              "timeline_frame": 305,
+              "value": "Vertical"
+            }
+          ]
+        }
+      ],
+      "saved": true,
+      "project_sha256": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+      "clip_count": 3,
+      "parent_hashes_preserved": true,
+      "hardware_handles": [],
+      "runtime_limits": "CPUQuotaPerSecUSec=1s\nMemoryMax=2147483648\n"
+    }
+  },
+  "software_only": true,
+  "focus_regression_before_fix": {
+    "history_labels": [
+      "MoveKeyframes",
+      "SetInterpolation",
+      "DeleteClips"
+    ],
+    "undo_position": 0,
+    "baseline_revision_restored": true,
+    "native_counter_change_on_save": {
+      "before": 18,
+      "after": 24
+    },
+    "project_sha256_after_undo_save": "1a4b399fa4bca61d4ab169ca0caebb246a2429236573cc4f826091ca18e47811"
+  },
+  "acceptance": {
+    "tests": {
+      "rust": 135,
+      "javascript": 103,
+      "clippy": true,
+      "build": true,
+      "fmt": true
+    },
+    "code_hashes": {
+      "crates/vv-web/src/main.rs": "f0206560b5353cb00381132377589612c26a7325c6ea36a8cabb2079a33376e0",
+      "crates/vv-web/src/api.rs": "1537f937d0dd3bbed8a9f274f055b2c3134d504b450f6b6d4a7b11cd9ad80b4b",
+      "crates/vv-web/src/commands.rs": "b4a0ec2d2caf2abea3b91fd0c2c4a6ef2baffa7fa3c86f3c355e1deae8649ccf",
+      "crates/vv-web/src/curves.rs": "e4f93205e38567598f87cc0d2e19270ab680eed99e38165f86fca58608f85760",
+      "crates/vv-web/src/eventkeys.rs": "dc4bfc10b6e454f50abe8da3a4ca03d4b90915e0896e98cdb8796dfdf49e4a95",
+      "crates/vv-web/src/keyselection.rs": "4bd4353dead8629b8996b27854d55825bba487b709ff7ea5256256de0e51899f",
+      "crates/vv-web/src/tests/keyselection.rs": "6f11c1edf17553b0dd0931bf6bbade87c099f0ae0ef2d9e985ad6839f98fe1e2",
+      "web/js/inspector.js": "30f67a9b7df94749b3e23b5319376c50e52a7f9c1634e44af7da009b068ad467",
+      "web/js/keyselection.js": "852a990d7185e7b7e6ed056a3c6a70e6c06e7158c32455dafed3516e9b41f273",
+      "web/test/keyselection.test.js": "61c5e91b483eb8fa9dc42b07573472a2859f8ee8c1c7933ee9799759791d4c80"
+    },
+    "binary_sha256": "df9af87d0b07e6118c878afc2501cedc189a32db0ba9f791908abac63321b820",
+    "pid": 1231597,
+    "source_base_commit": "d4e23f893942fb95f117121926152bd5c7575a66",
+    "live_editor_unsaved_moves_preserved": true,
+    "live_project_review_source_hashes_preserved": true,
+    "shared_seed_preserved": true,
+    "build_toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "hardware_lock": "not acquired or probed"
+  },
+  "browser": {
+    "collision": {
+      "focus": "Keys across parameters",
+      "footer": "\n      Connected \u00b7 writerReconnectAn unselected key occupies a destination\n      RecoveryRecovery snapshot protected by a saved project\n      \n      Cache \u00b7 1 frames \u00b7 0 moviesCPU \u00b7 llvmpipe (LLVM 21.1.8, 256 bits) \u00b7 VulkanRevision e695d681\n    ",
+      "selected": [
+        "Transform \u00b7 ZoomX \u00b7 source 2 \u00b7 timeline 290",
+        "Transform \u00b7 Opacity \u00b7 source 9 \u00b7 timeline 297",
+        "RGBA color \u00b7 source 4 \u00b7 timeline 292",
+        "GaussianBlur direction \u00b7 source 7 \u00b7 timeline 295"
+      ]
+    },
+    "afterMoveFocus": "Keys across parameters",
+    "afterInterpolationFocus": "Keys across parameters",
+    "deleteWithEmptyDelta": true,
+    "layout": {
+      "frame": "00:00:12:00",
+      "inspector": {
+        "scrollWidth": 263,
+        "width": 263
+      },
+      "keys": {
+        "selected": 4,
+        "width": 222
+      }
+    }
+  },
+  "scope_note": "Cross-parameter time/interpolation/delete and existing Zoom twins verified. Scalar graph vertical value/default coupling remains open. CPU-only halo2 proof; no hardware or full GUI parity claim."
+}

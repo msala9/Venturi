@@ -155,6 +155,20 @@ pub fn detail(session: &Session, id: TimelineId, clip: &Clip, lane: usize) -> Va
     json!({"source_start":start,"source_end":end,"timeline_start":clip.timeline_start,"timeline_end":clip.timeline_end(),"tracks":entries})
 }
 
+pub(crate) fn key_frames(
+    session: &Session,
+    id: TimelineId,
+    clip: &Clip,
+    lane: usize,
+    target: &Target,
+) -> Result<Vec<i64>> {
+    curves(session, id, clip, lane)
+        .into_iter()
+        .find(|curve| &curve.target == target)
+        .map(|curve| curve.track.keyframes().iter().map(|key| key.0).collect())
+        .ok_or_else(ApiError::missing)
+}
+
 pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &Edit) -> Result<()> {
     let (lane, _, clip) = inspector::find(session, id, raw)?;
     inspector::writable(session, id, lane)?;

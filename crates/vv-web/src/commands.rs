@@ -166,6 +166,10 @@ pub enum Operation {
         clip_id: String,
         edit: crate::eventkeys::Group,
     },
+    EditKeySelection {
+        clip_id: String,
+        edit: crate::keyselection::Edit,
+    },
     ApplyGradeAtFrame {
         clip_id: String,
         frame: FrameIdx,
@@ -541,6 +545,9 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         }
         Operation::EditEventKeys { clip_id, edit } => {
             crate::eventkeys::group(session, id, clip_id, edit)?
+        }
+        Operation::EditKeySelection { clip_id, edit } => {
+            crate::keyselection::edit(session, id, clip_id, edit)?
         }
         Operation::EditFilter { clip_id, edit } => crate::visual::edit(session, id, clip_id, edit)?,
         Operation::ApplyGradePreset { clip_id, preset } => {

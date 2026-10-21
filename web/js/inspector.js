@@ -2,6 +2,7 @@ import {renderFilters} from "./visual.js";
 import {renderMasks} from "./masks.js";
 import {renderCurves} from "./curves.js";
 import {renderEventKeys} from "./eventkeys.js";
+import {renderKeySelection} from "./keyselection.js";
 
 export function detailIdentity(state) {
   return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame].join(":") : null;
@@ -75,6 +76,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
   const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope});if(curves)controls.push(curves);
   const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope});if(eventKeys)controls.push(eventKeys);
+  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope});if(keySelection)controls.push(keySelection);
   if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState});
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report);

@@ -16,7 +16,7 @@ pub enum Target {
     Direction { filter: core::FilterKind },
 }
 impl Target {
-    fn native(&self) -> core::KeyframeTarget {
+    pub(crate) fn native(&self) -> core::KeyframeTarget {
         match self {
             Self::Color => core::KeyframeTarget::Color,
             Self::Text => core::KeyframeTarget::Text,
@@ -85,7 +85,7 @@ pub fn detail(clip: &Clip) -> Value {
     }
     json!(rows)
 }
-fn keys(clip: &Clip, target: &Target) -> Result<Vec<i64>> {
+pub(crate) fn keys(clip: &Clip, target: &Target) -> Result<Vec<i64>> {
     match target {
         Target::Color => clip
             .effects
@@ -144,7 +144,7 @@ fn parse_value(target: &Target, value: &Value) -> Result<core::KeyframeValue> {
         )),
     }
 }
-fn interpolation(interpolation: core::Interpolation) -> Result<()> {
+pub(crate) fn interpolation(interpolation: core::Interpolation) -> Result<()> {
     if let core::Interpolation::Bezier { c1, c2 } = interpolation {
         for point in [c1, c2] {
             if !point[0].is_finite()

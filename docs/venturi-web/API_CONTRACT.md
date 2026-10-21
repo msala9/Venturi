@@ -1,5 +1,24 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+`edit_key_selection {clip_id,edit:{picks,link_zoom,action}}` groups keys from
+different parameter rows of one clip. Each pick is
+`{target,source_frame}` using the existing scalar or RGBA/text/direction target
+DTO. Requests contain 1–2048 distinct picks. With `link_zoom:true`, existing
+Zoom X/Y twins at the same source frame join the operation; absent twins are
+not created. Values remain under native engine control.
+
+Actions are `{kind:"move",delta_source_frames:integer}`, `{kind:"delete"}` or
+`{kind:"interpolation",interpolation:<native interpolation>}`. Moves validate
+all selected keys and twins, checked integer addition, the visible source range
+and collisions with unselected keys before applying native MoveKeyframes.
+Delete uses a native RemoveKeyframe composite; interpolation uses native
+SetKeyframeInterpolation, including bounded Bezier controls. Every successful
+nonzero move, deletion or interpolation operation is one history step. A zero
+move adds no step. Missing targets/keys, locked tracks or any invalid member
+refuse the whole group. The normal lease, epoch, generation, timeline revision
+and durable receipt rules apply. This command does not alter default parameter
+values or couple vertical value edits in the separate scalar curve graph.
+
 `GET /api/v1/preview/cache` accepts a normal `FrameQuery` and returns
 `{frames:[integer],programs:[{id,start_frame,end_frame}]}` with `no-store`.
 Only cached composed frames and ready composed movies matching the current

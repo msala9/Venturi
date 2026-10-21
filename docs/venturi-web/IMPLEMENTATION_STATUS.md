@@ -2070,3 +2070,40 @@ upgraded. The finite systemd user build unit is constrained to CPUQuota=100%,
 MemoryMax=4G, MemorySwapMax=0, one Cargo job, Nice=19 and IOWeight=10. Software
 Vulkan is forced for tests. It does not take the hardware GPU lock or modify
 the running editor. A running build is not a passed validation result.
+
+## M4 — cross-parameter native key selection
+
+The inspector now has a bounded multi-select list combining scalar and typed
+RGBA/text/direction rows. It moves, deletes or changes interpolation for keys
+from different parameters of one clip through native MoveKeyframes,
+RemoveKeyframe and SetKeyframeInterpolation commands. Optional Zoom X/Y linking
+includes existing twins at matching source frames; missing twins are ignored.
+All keys, locks, frame arithmetic, source bounds and unselected destinations are
+validated before mutation. Each action is one Undo; zero movement adds no step.
+The list shows at most 2048 advertised keys and reports truncation. Scalar graph
+vertical value/default coupling remains separate and open.
+
+135 Rust tests and 103 JavaScript tests pass on halo2, along with fmt, clippy and
+build. No heavy local build or render was resumed. The runtime proof uses a
+separate CPU instance constrained to one CPU, 2 GiB, low priority and software
+Vulkan. The live port 8790 process still retains its five unsaved moves.
+
+Actual browser acceptance selected Zoom X, opacity, RGBA and blur direction;
+the existing Zoom Y twin joined the move. Five keys moved by two source frames
+without changing their values. One interpolation operation set explicit Bezier
+controls on all five. Focused Delete removed the selected keys while retaining
+all three clips, even with an empty movement delta. Three Undo operations
+restored the original timeline revision and keys. Redo/Save/process restart
+retained exact values, interpolation and the saved file hash with fresh history.
+A colliding move was rejected with no generation/history change, a visible error
+and retained selection. Parent projects and the live shared project, Review,
+source hash and exact seed remain unchanged.
+
+Acceptance caught two frontend problems: DOM replacement lost the key-list
+focus, and a rejected command's message could be suppressed after refresh.
+Both are corrected. Key-list focus returns after mutation/refresh and on error;
+Delete stays scoped to the list. The existing curve-editor CSS also constrains
+the list to the inspector width. The initial accidental test-copy clip deletion
+was undone; native timeline cache counters advanced, while the restored timeline
+revision and key values matched the baseline. No byte-identical Undo-save claim
+is made for those counters. Evidence: m4-cross-parameter-keys.json and browser PNG.

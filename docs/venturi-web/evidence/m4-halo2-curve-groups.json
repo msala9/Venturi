@@ -1,0 +1,89 @@
+{
+  "pid": 1205629,
+  "sha256": "01e5b4c58a7e9bf22b3057b0f9d54c88958ec1bd92b563109f2be6bdc38ef7f6",
+  "binary_source_commit": "84ef827c5a1d1cd7a5877628cc68eaac63f80c19",
+  "command_epoch": "0",
+  "generation": "0",
+  "clipboard_count": 0,
+  "saved_project": "CPU_shared_library_UI_check.vvproj",
+  "history": {
+    "labels": [],
+    "position": 0
+  },
+  "project_and_review_hashes_preserved": true,
+  "original_source_hash_preserved": true,
+  "exact_seed": "9007199254740993",
+  "favorite_preserved": true,
+  "main_asset_sha256": "8eb73e00f96a5ccb7b8fae0573d226e00dca73c20a3ceb44aba2dca108a07b24",
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "copy": {
+    "project": "Curve_Group_Halo2_UI_check.vvproj",
+    "saved": true,
+    "history": {
+      "labels": [
+        "SetKeyframe",
+        "SetKeyframe",
+        "SetKeyframe"
+      ],
+      "position": 3
+    },
+    "generation": "3",
+    "keys": [
+      {
+        "controls": null,
+        "interpolation": "Hold",
+        "source_frame": 2,
+        "timeline_frame": 2,
+        "value": 20.0
+      },
+      {
+        "controls": [
+          [
+            0.41999998688697815,
+            0.0
+          ],
+          [
+            1.0,
+            1.0
+          ]
+        ],
+        "interpolation": "EaseIn",
+        "source_frame": 12,
+        "timeline_frame": 12,
+        "value": 80.0
+      }
+    ],
+    "media_fps": {
+      "den": 1,
+      "num": 25
+    },
+    "timeline_fps": {
+      "den": 1,
+      "num": 24
+    },
+    "original_project_review_source_hashes_preserved": true,
+    "exact_seed_and_favorite_preserved": true
+  },
+  "restored": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "saved": true,
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "generation": "0",
+    "keys": [],
+    "media_fps": {
+      "den": 1,
+      "num": 25
+    },
+    "timeline_fps": {
+      "den": 1,
+      "num": 24
+    },
+    "original_project_review_source_hashes_preserved": true,
+    "exact_seed_and_favorite_preserved": true
+  }
+}

@@ -1973,3 +1973,15 @@ samples and timeline revision, with fresh history. Parent saved projects and cli
 snapshot hashes are unchanged. Evidence: m4-curve-groups.json and browser PNG.
 Cross-parameter linked zoom and RGBA/text/enum key tracks remain open; the ledger
 row remains partial. No shared GPU, archive or inference changes were involved.
+
+Halo2 now runs 84ef827, binary SHA-256
+01e5b4c58a7e9bf22b3057b0f9d54c88958ec1bd92b563109f2be6bdc38ef7f6.
+The real browser created two opacity keys on an explicit shared-library project
+copy, selected them through the accessible multi-select and moved both by two
+source frames in one native history step. Saved keys are 2/12 with values 20/80
+and the original Hold/EaseIn interpolation. This uses the actual 25 fps shared
+image source in a 24 fps timeline. The original shared project was then reopened
+Saved with fresh history; project/Review/source hashes and exact seed/Favorite
+remain unchanged. Evidence: m4-halo2-curve-groups.json and browser PNG. The test
+copy is retained. Preview is still explicitly CPU-only; no hardware lock, AMD
+driver or inference work was touched.

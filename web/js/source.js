@@ -1,5 +1,10 @@
 import { request } from "./api.js";
 
+export function sourceFrameAtTime(seconds, fps) {
+  // Media clocks round requested seeks to microseconds.
+  return Math.max(0, Math.floor((seconds + 1e-6) * fps));
+}
+
 export function sourceSelection(start, end, duration) {
   if (![start,end,duration].every(Number.isSafeInteger) || start < 0 || end <= start || end > duration) throw new Error("Source in/out must be integer frames inside the media; out is exclusive");
   return { source_in:start, source_out:end };

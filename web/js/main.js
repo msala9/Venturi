@@ -3,7 +3,7 @@ import { createTimeline, fixtureTimeline } from "./timeline/index.js";
 import { linkedSelection, playheadSelection } from "./timeline/geometry.js";
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import { createViewer } from "./viewer.js";
-import { createSourcePlayer, sourceAssetURL, sourceSelection } from "./source.js";
+import { createSourcePlayer, sourceAssetURL, sourceSelection, sourceFrameAtTime } from "./source.js";
 import { createProgramPlayer } from "./program.js";
 import { detailIdentity, renderProperties, renderMarkers } from "./inspector.js";
 import { renderMixer } from "./mixer.js";
@@ -19,6 +19,7 @@ import { createReview } from "./review.js";
 import { createReviewMetadata } from "./reviewmeta.js";
 import { createPasteAttributes } from "./attributes.js";
 import { createRecoveryPanel } from "./recovery.js";
+import { createAudioScrub } from "./audition.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -32,6 +33,7 @@ let review = null;
 let reviewMetadata = null;
 let pasteAttributes = null;
 let recoveryPanel = null;
+let audioScrub = null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
@@ -84,14 +86,14 @@ const workspaceTools = {
 
 function showWorkspace(name) {
   editor.dataset.workspace = name;
-  scopes?.setVisible(name === "Color" && $("slip-view").hidden);
+  scopes?.setVisible(name === "Color" && $("screen").dataset.viewerMode !== "source" && $("slip-view").hidden);
   document.querySelectorAll("[data-workspace]").forEach((button) => {
     if (button.tagName === "BUTTON")
       button.setAttribute("aria-pressed", button.dataset.workspace === name);
   });
   const area = $("workspace-tools");
   area.replaceChildren();
-  area.hidden = name === "Edit";
+  area.hidden = name === "Edit" || $("screen").dataset.viewerMode === "source";
   const note = document.createElement("p");
   note.className = "muted";
   note.textContent = `${name} tools · Unavailable integrations are disabled`;
@@ -278,7 +280,10 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  audioScrub?.stop();
   viewerMode = mode;
+  $("workspace-tools").hidden = mode === "source" || editor.dataset.workspace === "Edit";
+  scopes?.setVisible(mode === "program" && editor.dataset.workspace === "Color" && $("slip-view").hidden);
   scopes?.refresh();
   if (mode === "source") programPlayer?.stop();
   $("screen").dataset.viewerMode = mode;
@@ -312,7 +317,7 @@ for (const id of ["source-in","source-out"]) $(id).addEventListener("input",reme
 for (const [id,out] of [["source-mark-in",false],["source-mark-out",true]]) $(id).addEventListener("click",()=>{
   const item = documentState?.media.find((m)=>m.id===sourceOpenId);
   if (!item || item.is_image) return;
-  const frame = Math.floor($("source-video").currentTime*item.fps.num/item.fps.den + 1e-6);
+  const frame = sourceFrameAtTime($("source-video").currentTime,item.fps.num/item.fps.den);
   $(out ? "source-out" : "source-in").value = Math.min(item.duration_frames - (out ? 0 : 1),frame+(out ? 1 : 0)); rememberSourceRange();
 });
 $("play").addEventListener("click", () => {
@@ -488,11 +493,12 @@ const canvasTimeline = createTimeline({
   getAssets: () => mediaAssets,
   onSelect: selected,
   onSeek: (final) => {
+    audioScrub?.stop();
     programPlayer?.pauseLocal();
     scopes?.invalidate("STALE · scrubbing");
     syncPlayheadSelection(false);
     updateTime();
-    if (final) { seek(); selected(); }
+    if (final) { seek(); selected(); audioScrub?.request(); }
   },
   onCommand: (operation) => commit(operation),
   onNotice: notice,
@@ -573,6 +579,7 @@ function step(delta) {
     const media = documentState?.media.find((m) => m.id === sourceOpenId);
     const fps = media?.fps;
     sourcePlayer.step(delta, fps ? fps.num / fps.den : 24, media?.duration_frames || 1);
+    audioScrub?.request();
     return;
   }
   view.playhead = Math.max(0, view.playhead + delta);
@@ -580,6 +587,7 @@ function step(delta) {
   updateTime();
   seek();
   selected();
+  audioScrub?.request();
 }
 $("step-back").addEventListener("click", () => step(-1));
 $("step-forward").addEventListener("click", () => step(1));
@@ -600,6 +608,7 @@ let documentState = null,
   selectedMedia = null;
 const clientId = persistentClientId();
 async function refresh() {
+  audioScrub?.stop();
   slipView?.reset();
   programPlayer?.stop();
   viewer?.invalidate();
@@ -673,6 +682,7 @@ async function refresh() {
   if (next.capabilities.preview) seek();
 }
 async function mutate(operation, project = false) {
+  audioScrub?.stop();
   if (!writable || busy || unresolved)
     throw new Error("Editing is read only or a command is pending");
   programPlayer?.stop();
@@ -1023,6 +1033,17 @@ viewer = createViewer({
 scopes = createScopes({ panel: $("scopes"), getTarget: () => viewerMode === "program" && !scopePlayback ? scopeTarget(documentState, timeline, view.selection, view.playhead) : null });
 scopes.setVisible(editor.dataset.workspace === "Color");
 seek = async () => { if (viewerMode === "program") { programPlayer?.stop(); scopes.invalidate("SEEKING"); await viewer.seek(); scopes.refresh(); } };
+audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-status"),getState:()=>{
+  if(!documentState)return null;
+  if(viewerMode==="source") {
+    const media=documentState.media.find(m=>m.id===sourceOpenId),video=$("source-video");
+    return media?.has_audio && video.readyState>=1 ? {project_epoch:documentState.project_epoch,media_id:media.id,frame:Math.min(media.duration_frames-1,Math.round(video.currentTime*media.fps.num/media.fps.den))} : null;
+  }
+  return timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,width:960} : null;
+},getURL:query=>query.media_id ? `/api/v1/media/${encodeURIComponent(query.media_id)}/audio.wav?${new URLSearchParams({project_epoch:query.project_epoch,frame:query.frame})}` : `/api/v1/preview/audio.wav?${new URLSearchParams(query)}`});
+$("play").addEventListener("click",()=>audioScrub?.stop());
+$("program-video").addEventListener("play",()=>audioScrub?.stop());
+$("source-video").addEventListener("play",()=>audioScrub?.stop());
 programPlayer = createProgramPlayer({
   video: $("program-video"), status: $("program-status"), cancel: $("program-cancel"),
   getState: () => {
@@ -1067,7 +1088,7 @@ $("source-video").addEventListener("timeupdate", () => {
   if (viewerMode !== "source") return;
   const rate = documentState?.media.find((m) => m.id === sourceOpenId)?.fps;
   const fps = rate ? rate.num / rate.den : 24;
-  const frames = Math.floor($("source-video").currentTime * fps);
+  const frames = sourceFrameAtTime($("source-video").currentTime, fps);
   const seconds = Math.floor(frames / fps);
   $("timecode").textContent = `Source ${[Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60, frames % Math.round(fps)].map((n) => String(n).padStart(2, "0")).join(":")}`;
 });

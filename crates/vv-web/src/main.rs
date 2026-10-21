@@ -1,5 +1,6 @@
 mod api;
 mod audio;
+mod audition;
 mod autosave;
 mod catalog;
 mod clipboard;

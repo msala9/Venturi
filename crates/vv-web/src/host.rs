@@ -27,6 +27,7 @@ pub enum Action {
     Mutation(Option<String>, Mutation),
     Lookup(String),
     FrameSnapshot(FrameQuery, oneshot::Sender<Result<FrameSnapshot>>),
+    AudioSnapshot(FrameQuery, oneshot::Sender<Result<crate::audition::Task>>),
     CheckFrame(FrameQuery),
     ClipDetail(String, FrameQuery),
     SlipDetail(String, i64, FrameQuery),
@@ -572,6 +573,22 @@ impl Editor {
                 let _ = reply.send(result);
                 Ok(Value::Null)
             }
+            Action::AudioSnapshot(query, reply) => {
+                let result = (|| {
+                    let (id, size) = self.validate_frame(&query)?;
+                    crate::audition::pin(
+                        FrameSnapshot {
+                            project: self.session.project.clone(),
+                            timeline: id,
+                            query,
+                            size,
+                        },
+                        &self.files,
+                    )
+                })();
+                let _ = reply.send(result);
+                Ok(Value::Null)
+            }
             Action::FrameSnapshot(query, reply) => {
                 let result = (|| {
                     let (id, size) = self.validate_frame(&query)?;
@@ -633,6 +650,11 @@ impl Host {
     pub async fn frame_snapshot(&self, query: FrameQuery) -> Result<FrameSnapshot> {
         let (tx, rx) = oneshot::channel();
         self.call(Action::FrameSnapshot(query, tx)).await?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
+    pub async fn audio_snapshot(&self, query: FrameQuery) -> Result<crate::audition::Task> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::AudioSnapshot(query, tx)).await?;
         rx.await.map_err(|_| ApiError::io())?
     }
     pub fn start(root: &Path) -> std::io::Result<Self> {

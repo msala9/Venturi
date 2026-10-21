@@ -1,5 +1,21 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+Audio audition is implemented by `GET /api/v1/preview/audio.wav` with the normal
+`FrameQuery`, and `GET /api/v1/media/{id}/audio.wav?project_epoch=...&frame=...`
+for a source frame. Each returns exactly 80 ms of 48 kHz stereo PCM16 WAV with
+`Cache-Control: no-store`. Program audio uses the native offline mixer, including
+its gains, fades, inserts, normalization and compounds. Source audio uses the
+same native renderer on an isolated unmodified source, independent of timeline
+effects. There is no browser mixer or DSP implementation.
+
+The actor validates snapshot identity and pins root-scoped regular media files;
+CPU work runs outside the actor with one non-queued worker and a five-second
+cancellation budget. Changed files, stale Program snapshots and removed/replaced
+sources are refused. The browser opts in through Audio scrub, coalesces requests,
+cancels obsolete output, and plays the last fragment only after a timeline seek
+or Source frame step. Pointer movement never makes an audition request. Continuous
+Source pointer scrubbing and fast-forward audio are separate remaining work.
+
 Implemented Review annotations use `GET /api/v1/review?project_epoch=...` and
 project command `edit_review {project_token,revision,edit}`. The latter retains
 the common writer/epoch/generation/idempotency guards. `edit.action` is

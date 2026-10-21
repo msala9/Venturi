@@ -72,6 +72,8 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/commands/{id}", get(lookup))
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
+        .route("/api/v1/preview/audio.wav", get(audition))
+        .route("/api/v1/media/{id}/audio.wav", get(source_audition))
         .route("/api/v1/preview/balance/{clip}", get(balance))
         .route(
             "/api/v1/preview/scopes/{clip}/{first}/{second}",
@@ -103,6 +105,81 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn audition(
+    State(state): State<AppState>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid audio audition query"))?
+        .0;
+    let task = state.host.audio_snapshot(query.clone()).await?;
+    let bytes = render_audition(task).await?;
+    state.host.call(Action::CheckFrame(query)).await?;
+    Ok(audio_response(bytes))
+}
+async fn source_audition(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    query: std::result::Result<
+        Query<crate::audition::SourceQuery>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid source audition query"))?
+        .0;
+    let source_query = SourceQuery {
+        project_epoch: query.project_epoch,
+    };
+    let spec = state
+        .host
+        .source_snapshot(id.clone(), source_query.clone())
+        .await?;
+    let identity = crate::source::file_identity(&spec.file)?;
+    let bytes = render_audition(crate::audition::Task::source(spec, query.frame)?).await?;
+    let current = state.host.source_snapshot(id, source_query).await?;
+    if crate::source::file_identity(&current.file)? != identity {
+        return Err(ApiError::conflict(
+            "SOURCE_CHANGED",
+            "Audio source changed; seek again",
+        ));
+    }
+    Ok(audio_response(bytes))
+}
+async fn render_audition(task: crate::audition::Task) -> Result<Vec<u8>> {
+    static WORKER: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
+    let permit = WORKER
+        .try_acquire()
+        .map_err(|_| ApiError::conflict("AUDIO_BUSY", "Audio audition is busy; seek again"))?;
+    let cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let _cancel_on_drop = crate::audition::CancelOnDrop(cancel.clone());
+    let worker_cancel = cancel.clone();
+    let worker = tokio::task::spawn_blocking(move || {
+        let _permit = permit;
+        task.run(worker_cancel)
+    });
+    let bytes = match tokio::time::timeout(std::time::Duration::from_secs(5), worker).await {
+        Ok(result) => result.map_err(|_| ApiError::io())??,
+        Err(_) => {
+            cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+            return Err(ApiError::conflict(
+                "AUDIO_TIMEOUT",
+                "Audio audition exceeded its time budget",
+            ));
+        }
+    };
+    Ok(bytes)
+}
+fn audio_response(bytes: Vec<u8>) -> Response {
+    (
+        [
+            (header::CONTENT_TYPE, "audio/wav"),
+            (header::CACHE_CONTROL, "no-store"),
+        ],
+        bytes,
+    )
+        .into_response()
 }
 async fn review_metadata(
     State(state): State<AppState>,
@@ -811,6 +888,7 @@ async fn assets(request: Request) -> Response {
         "/js/reviewmeta.js" => asset!("/web/js/reviewmeta.js", "text/javascript"),
         "/js/attributes.js" => asset!("/web/js/attributes.js", "text/javascript"),
         "/js/recovery.js" => asset!("/web/js/recovery.js", "text/javascript"),
+        "/js/audition.js" => asset!("/web/js/audition.js", "text/javascript"),
         "/js/capture.js" => asset!("/web/js/capture.js", "text/javascript"),
         "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
         "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),

@@ -245,6 +245,10 @@ input[type="search"] {
 .transport {
   padding: 8px 12px;
 }
+.transport > label { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+#audio-scrub { width: 14px; height: 14px; min-height: 0; padding: 0; accent-color: var(--primary); }
+#audio-scrub-status { color: var(--muted); font-size: 10px; }
+#audio-scrub-status:empty { display: none; }
 #timecode {
   font:
     14px ui-monospace,

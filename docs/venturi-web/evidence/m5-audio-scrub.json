@@ -1,0 +1,218 @@
+{
+  "fixture": "Own CPU-only synthetic montage; native 80 ms stereo Program mix",
+  "phases": {
+    "audible": {
+      "fragments": [
+        {
+          "frame": 0,
+          "expected_frequency": 660,
+          "frequency": 660.01617686708,
+          "rms": 0.0921612334038903,
+          "seconds": 0.009396599605679512,
+          "bytes": 15404,
+          "sha256": "44f53513931e9eed76ae7b5bb80015828bec45cf77e0a34281bd4b40f8051014"
+        },
+        {
+          "frame": 60,
+          "expected_frequency": 0,
+          "frequency": 0,
+          "rms": 0.0,
+          "seconds": 0.0032279998995363712,
+          "bytes": 15404,
+          "sha256": "e8781053aa46562aa13544a0d5ab92673e9417df384f943f2eb45e231426f3d1"
+        },
+        {
+          "frame": 72,
+          "expected_frequency": 880,
+          "frequency": 879.9149840595112,
+          "rms": 0.08791280757239403,
+          "seconds": 0.009145299904048443,
+          "bytes": 15404,
+          "sha256": "e97e656bafd1568c1e1ea3d73cdc5d5fbf81b8b7da574592a6127a9081fb9e77"
+        }
+      ],
+      "session_unchanged": true,
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    },
+    "muted": {
+      "fragments": [
+        {
+          "frame": 0,
+          "expected_frequency": 0,
+          "frequency": 0,
+          "rms": 0.0,
+          "seconds": 0.0038705002516508102,
+          "bytes": 15404,
+          "sha256": "e8781053aa46562aa13544a0d5ab92673e9417df384f943f2eb45e231426f3d1"
+        },
+        {
+          "frame": 60,
+          "expected_frequency": 0,
+          "frequency": 0,
+          "rms": 0.0,
+          "seconds": 0.003317799884825945,
+          "bytes": 15404,
+          "sha256": "e8781053aa46562aa13544a0d5ab92673e9417df384f943f2eb45e231426f3d1"
+        },
+        {
+          "frame": 72,
+          "expected_frequency": 0,
+          "frequency": 0,
+          "rms": 0.0,
+          "seconds": 0.0026422999799251556,
+          "bytes": 15404,
+          "sha256": "e8781053aa46562aa13544a0d5ab92673e9417df384f943f2eb45e231426f3d1"
+        }
+      ],
+      "session_unchanged": true,
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MuteTrack"
+        ],
+        "position": 1
+      }
+    },
+    "restarted": {
+      "fragments": [
+        {
+          "frame": 0,
+          "expected_frequency": 660,
+          "frequency": 660.01617686708,
+          "rms": 0.0921612334038903,
+          "seconds": 0.012456399854272604,
+          "bytes": 15404,
+          "sha256": "44f53513931e9eed76ae7b5bb80015828bec45cf77e0a34281bd4b40f8051014"
+        },
+        {
+          "frame": 60,
+          "expected_frequency": 0,
+          "frequency": 0,
+          "rms": 0.0,
+          "seconds": 0.003455200232565403,
+          "bytes": 15404,
+          "sha256": "e8781053aa46562aa13544a0d5ab92673e9417df384f943f2eb45e231426f3d1"
+        },
+        {
+          "frame": 72,
+          "expected_frequency": 880,
+          "frequency": 879.9149840595112,
+          "rms": 0.08791280757239403,
+          "seconds": 0.009911099914461374,
+          "bytes": 15404,
+          "sha256": "e97e656bafd1568c1e1ea3d73cdc5d5fbf81b8b7da574592a6127a9081fb9e77"
+        }
+      ],
+      "source_fragments": [
+        {
+          "media": "Montage_01_B.mp4",
+          "frequency": 660.01617686708,
+          "bytes": 15404
+        },
+        {
+          "media": "Montage_02_C.mp4",
+          "frequency": 879.9149840595112,
+          "bytes": 15404
+        }
+      ],
+      "refusals": [
+        {
+          "status": 409,
+          "code": "REVISION_CONFLICT"
+        },
+        {
+          "status": 422,
+          "code": "INVALID_OPERATION"
+        },
+        {
+          "status": 422,
+          "code": "INVALID_OPERATION"
+        }
+      ],
+      "session_unchanged": true,
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    },
+    "final": {
+      "fragments": [
+        {
+          "frame": 0,
+          "expected_frequency": 660,
+          "frequency": 660.01617686708,
+          "rms": 0.0921612334038903,
+          "seconds": 0.01152870012447238,
+          "bytes": 15404,
+          "sha256": "44f53513931e9eed76ae7b5bb80015828bec45cf77e0a34281bd4b40f8051014"
+        },
+        {
+          "frame": 60,
+          "expected_frequency": 0,
+          "frequency": 0,
+          "rms": 0.0,
+          "seconds": 0.0033267000690102577,
+          "bytes": 15404,
+          "sha256": "e8781053aa46562aa13544a0d5ab92673e9417df384f943f2eb45e231426f3d1"
+        },
+        {
+          "frame": 72,
+          "expected_frequency": 880,
+          "frequency": 879.9149840595112,
+          "rms": 0.08791280757239403,
+          "seconds": 0.011653800029307604,
+          "bytes": 15404,
+          "sha256": "e97e656bafd1568c1e1ea3d73cdc5d5fbf81b8b7da574592a6127a9081fb9e77"
+        }
+      ],
+      "source_fragments": [
+        {
+          "media": "Montage_01_B.mp4",
+          "frequency": 660.01617686708,
+          "bytes": 15404
+        },
+        {
+          "media": "Montage_02_C.mp4",
+          "frequency": 879.9149840595112,
+          "bytes": 15404
+        }
+      ],
+      "refusals": [
+        {
+          "status": 409,
+          "code": "REVISION_CONFLICT"
+        },
+        {
+          "status": 422,
+          "code": "INVALID_OPERATION"
+        },
+        {
+          "status": 422,
+          "code": "INVALID_OPERATION"
+        }
+      ],
+      "session_unchanged": true,
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  },
+  "source_hashes_unchanged": true,
+  "browser_checks": {
+    "program_running_audio_output": true,
+    "source_running_audio_output": true,
+    "source_media_time": 0.033333,
+    "source_readout": "00:00:00:01",
+    "source_mark_in": 1,
+    "source_video_height_css_px": 125.6,
+    "program_tools_and_scopes_restored": true,
+    "hardware_speaker_output_measured": false
+  }
+}

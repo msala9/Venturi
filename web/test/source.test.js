@@ -1,10 +1,18 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createSourcePlayer, sourceAssetURL, sourceSelection } from "../js/source.js";
+import { createSourcePlayer, sourceAssetURL, sourceSelection, sourceFrameAtTime } from "../js/source.js";
 
 test("source selection preserves exclusive integer bounds and refuses invalid values before JSON encoding", () => {
   assert.deepEqual(sourceSelection(6,18,48),{source_in:6,source_out:18});
   for (const values of [[-1,18,48],[6,6,48],[6,49,48],[6.5,18,48],[NaN,18,48],[6,Infinity,48]]) assert.throws(()=>sourceSelection(...values));
+});
+
+test("Source frame readout and marks retain a requested frame after microsecond clock rounding",()=>{
+  for(const fps of [24,25,30,50,60,30000/1001])for(const frame of [1,2,19,147]) {
+    assert.equal(sourceFrameAtTime(Math.round(frame/fps*1e6)/1e6,fps),frame);
+    assert.equal(sourceFrameAtTime(Math.floor(frame/fps*1e6)/1e6,fps),frame);
+  }
+  assert.equal(sourceFrameAtTime(.02,30),0);
 });
 
 test("still Source uses the original image without playing or stepping a media clock", async () => {

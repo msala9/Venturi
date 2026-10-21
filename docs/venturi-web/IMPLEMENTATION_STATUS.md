@@ -1544,3 +1544,36 @@ their action buttons at the normal narrow panel width. Labels and inputs now
 share their own full-width row, with actions below. The updated binary was
 built and visually checked after restart. Evidence: m5-color-ranges.json and
 m5-color-ranges-browser.png. No editing/DSP semantics changed in this increment.
+
+## M5 — bounded native audio audition for Program and Source
+
+Audio scrub now opts in to an 80 ms native audio fragment after a completed
+timeline seek or a Source frame step. The server uses `audio_render::render_offline`
+on a snapshot, preserving native gain, mute/solo, fades, inserts, normalization
+and compound mixing. Source audition uses an isolated native source timeline,
+so timeline effects and mute do not alter its sound. Root-scoped media descriptors
+are pinned and identities checked before/after rendering; Program history and
+source membership are rechecked before sending output. One CPU worker, no queued
+render, a five-second cancellation budget and a fixed 15,404-byte PCM WAV keep
+this independent of GPU ownership. Browser playback uses Web Audio only as an
+output device. It debounces seeks and discards responses after a newer gesture,
+document change, opt-out or playback start; no HTTP runs on pointer movement.
+
+116 web Rust tests and 77 JavaScript tests pass, with web clippy warnings denied,
+formatting and build. Native acceptance covers source-independent gain, mute,
+unchanged project contents, cancellation and changed files. Actual HTTP fragments
+on the synthetic montage measured 660.02 Hz and 879.91 Hz, exact silence in the
+gap and with the track muted, and unchanged native session data/source hashes.
+Frame/epoch/generation refusal paths were checked. Local fragment requests took
+about 3–13 ms for this tiny fixture; this is not a general latency guarantee.
+The actual browser reached its running audio output path in Program and Source.
+Physical loudspeaker output was not measured. Continuous Source pointer scrub
+and native fast-forward audio remain open.
+
+Visual acceptance also corrected the Source frame readout/mark quantization for
+microsecond media clocks and hides workspace editing tools and timeline-only
+Color scopes when viewing an original Source. Program restores those controls.
+This keeps the Source video visible at the normal narrow layout.
+Evidence: m5-audio-scrub.json, m5-audio-scrub-program.png and
+m5-audio-scrub-source.png. halo2 deployment follows after this local acceptance;
+no GPU slot or inference process has been used.

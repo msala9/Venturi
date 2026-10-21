@@ -72,6 +72,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/commands/{id}", get(lookup))
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
+        .route("/api/v1/preview/cache", get(preview_cache))
         .route("/api/v1/preview/audio.wav", get(audition))
         .route("/api/v1/preview/audio/window", post(program_audio_window))
         .route("/api/v1/media/{id}/audio.wav", get(source_audition))
@@ -747,6 +748,28 @@ async fn session(State(state): State<AppState>) -> Result<Json<Value>> {
 async fn diagnostics(State(state): State<AppState>) -> Json<Value> {
     Json(json!({"preview":state.preview.diagnostic()}))
 }
+async fn preview_cache(
+    State(state): State<AppState>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid cache query"))?
+        .0;
+    let snapshot = state.host.frame_snapshot(query.clone()).await?;
+    let (frames, programs) = match crate::program::inputs(&snapshot) {
+        Ok(inputs) => (
+            state.preview.cached_frames(&query, &inputs),
+            state.source.cached_programs(&query, &inputs),
+        ),
+        Err(_) => (vec![], vec![]),
+    };
+    state.host.call(Action::CheckFrame(query)).await?;
+    Ok((
+        [(header::CACHE_CONTROL, "no-store")],
+        Json(json!({"frames":frames,"programs":programs})),
+    )
+        .into_response())
+}
 async fn frame(
     State(state): State<AppState>,
     query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
@@ -963,6 +986,7 @@ async fn assets(request: Request) -> Response {
         "/js/recovery.js" => asset!("/web/js/recovery.js", "text/javascript"),
         "/js/audition.js" => asset!("/web/js/audition.js", "text/javascript"),
         "/js/fast-transport.js" => asset!("/web/js/fast-transport.js", "text/javascript"),
+        "/js/preview-cache.js" => asset!("/web/js/preview-cache.js", "text/javascript"),
         "/js/capture.js" => asset!("/web/js/capture.js", "text/javascript"),
         "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
         "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),

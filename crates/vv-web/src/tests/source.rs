@@ -286,6 +286,7 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         bytes: 5,
         export: None,
         descriptor: None,
+        program_query: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
         export_epoch: None,
@@ -320,6 +321,7 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
         bytes: 13,
         export: None,
         descriptor: None,
+        program_query: None,
         inputs: vec![(
             jobs.root.join("source-no-longer-present"),
             "old-identity".into(),
@@ -332,9 +334,36 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
         "ready"
     );
     assert!(jobs.export_asset("export-test", "p:1").is_ok());
+    let query = ProgramQuery {
+        project_epoch: "p:1".into(),
+        if_generation: "0".into(),
+        timeline_id: "1".into(),
+        revision: "r".into(),
+        start_frame: 0,
+        end_frame: 48,
+        width: 960,
+    };
+    let inputs = jobs.jobs.lock().unwrap()[0].inputs.clone();
+    assert!(
+        jobs.cached_programs(&query.frame(), &inputs).is_empty(),
+        "Exports are not preview cache"
+    );
+    jobs.jobs.lock().unwrap()[0].program_query = Some(query.clone());
+    assert_eq!(
+        jobs.cached_programs(&query.frame(), &inputs)[0]["end_frame"],
+        48
+    );
+    assert!(
+        jobs.cached_programs(&query.frame(), &vec![]).is_empty(),
+        "Changed inputs cannot advertise cached movies"
+    );
+    let mut changed = query.clone();
+    changed.revision = "new".into();
+    assert!(jobs.cached_programs(&changed.frame(), &inputs).is_empty());
     assert!(jobs.export_asset("export-test", "p:2").is_err());
     assert!(jobs.export_status("another-job", "p:1", false).is_err());
     jobs.jobs.lock().unwrap()[0].state = "running";
+    assert!(jobs.cached_programs(&query.frame(), &inputs).is_empty());
     assert!(jobs.export_asset("export-test", "p:1").is_err());
     jobs.export_status("export-test", "p:1", true).unwrap();
     assert!(cancel.load(Ordering::Relaxed));

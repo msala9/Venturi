@@ -73,6 +73,17 @@ fn program_bounds_and_cache_identity_include_native_revision_and_output_range() 
     assert!(task.validate().is_ok());
     assert_eq!(task.descriptor(Path::new("/tmp"))["width"], 960);
     let before = task.query.key();
+    let mut inside = task.query.clone();
+    inside.start_frame = 12;
+    assert!(task.query.contains(&inside));
+    inside.end_frame = 49;
+    assert!(!task.query.contains(&inside));
+    inside.end_frame = 48;
+    inside.width = 640;
+    assert!(!task.query.contains(&inside));
+    inside.width = 960;
+    inside.start_frame = 48;
+    assert!(!task.query.contains(&inside));
     task.query.revision = "next".into();
     assert_ne!(before, task.query.key());
     task.query.end_frame = 49;

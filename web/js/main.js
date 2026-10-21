@@ -21,10 +21,11 @@ import { createPasteAttributes } from "./attributes.js";
 import { createRecoveryPanel } from "./recovery.js";
 import { createAudioScrub, bindSourceScrub } from "./audition.js";
 import { createFastTransport } from "./fast-transport.js";
+import { createPreviewCache } from "./preview-cache.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
-let scopes = null, scopePlayback = false;
+let scopes = null, scopePlayback = false, previewCache = null;
 let slipScopesState = null;
 let catalog = null;
 let silencePanel = null;
@@ -498,6 +499,7 @@ const canvasTimeline = createTimeline({
   getTimeline: () => timeline,
   view,
   getAssets: () => mediaAssets,
+  getCache: () => previewCache?.ranges(),
   onSelect: selected,
   onSeek: (final) => {
     audioScrub?.stop();
@@ -1041,7 +1043,8 @@ viewer = createViewer({
 });
 scopes = createScopes({ panel: $("scopes"), getTarget: () => viewerMode === "program" && !scopePlayback ? scopeTarget(documentState, timeline, view.selection, view.playhead) : null });
 scopes.setVisible(editor.dataset.workspace === "Color");
-seek = async () => { if (viewerMode === "program") { programPlayer?.stop(); scopes.invalidate("SEEKING"); await viewer.seek(); scopes.refresh(); } };
+previewCache = createPreviewCache({getState: () => documentState?.capabilities.preview && timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0,width:960} : null,status:$("preview-cache-status"),onChange:()=>canvasTimeline.invalidate()});
+seek = async () => { if (viewerMode === "program") { programPlayer?.stop(); scopes.invalidate("SEEKING"); await viewer.seek(); scopes.refresh(); previewCache.refresh(); } };
 audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-status"),getState:()=>{
   if(!documentState || fastTransport?.active())return null;
   if(viewerMode==="source") {
@@ -1064,7 +1067,8 @@ programPlayer = createProgramPlayer({
   },
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); } },
   onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
-  onStop:()=>{viewer?.seek();scopes?.refresh();},
+  onStop:async()=>{await viewer?.seek();scopes?.refresh();previewCache.refresh();},
+  onCache:()=>previewCache.refresh(),
   onError: notice,
 });
 fastTransport=createFastTransport({videos:[$("program-video"),$("source-video")],select:$("playback-rate"),status:$("fast-playback-status"),getVideo:()=>$(viewerMode==="program"?"program-video":"source-video"),notice,onState:state=>{$("play").textContent=state==="preparing"?"Cancel fast audio":state==="playing"?"❚❚ Pause":"▶ Play";},getTarget:video=>{

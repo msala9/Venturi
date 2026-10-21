@@ -78,6 +78,54 @@ impl FrameMode {
         }
     }
 }
+impl FrameQuery {
+    pub fn same_composition(&self, other: &Self) -> bool {
+        self.project_epoch == other.project_epoch
+            && self.if_generation == other.if_generation
+            && self.timeline_id == other.timeline_id
+            && self.revision == other.revision
+            && self.width == other.width
+    }
+}
+struct CachedFrame {
+    key: String,
+    query: FrameQuery,
+    inputs: crate::program::Inputs,
+    program: bool,
+    data: Vec<u8>,
+}
+#[derive(Default)]
+struct FrameCache {
+    entries: VecDeque<CachedFrame>,
+    bytes: usize,
+}
+impl FrameCache {
+    fn insert(&mut self, entry: CachedFrame) {
+        if entry.data.len() > 16 * 1024 * 1024 {
+            return;
+        }
+        while self.bytes + entry.data.len() > 16 * 1024 * 1024 || self.entries.len() >= 8 {
+            if let Some(old) = self.entries.pop_front() {
+                self.bytes -= old.data.len();
+            }
+        }
+        self.bytes += entry.data.len();
+        self.entries.push_back(entry);
+    }
+    fn frames(&self, query: &FrameQuery, inputs: &crate::program::Inputs) -> Vec<i64> {
+        let mut frames: Vec<_> = self
+            .entries
+            .iter()
+            .filter(|entry| {
+                entry.program && entry.query.same_composition(query) && entry.inputs == *inputs
+            })
+            .map(|entry| entry.query.frame)
+            .collect();
+        frames.sort_unstable();
+        frames.dedup();
+        frames
+    }
+}
 #[derive(Clone, Copy)]
 enum AdapterChoice {
     Amd(u32),
@@ -124,6 +172,7 @@ pub struct Preview {
     gpu_gate: Arc<Mutex<()>>,
     resident: Arc<AtomicBool>,
     active_programs: Arc<AtomicUsize>,
+    cache: Arc<Mutex<FrameCache>>,
 }
 impl Preview {
     pub fn disabled() -> Self {
@@ -135,6 +184,7 @@ impl Preview {
             gpu_gate: Arc::new(Mutex::new(())),
             resident: Arc::new(AtomicBool::new(false)),
             active_programs: Arc::new(AtomicUsize::new(0)),
+            cache: Arc::new(Mutex::new(FrameCache::default())),
         }
     }
     pub fn start(device: u32, lock_path: &Path) -> Self {
@@ -155,6 +205,8 @@ impl Preview {
         let (tx, rx) = std::sync::mpsc::sync_channel(1);
         let rendered = Arc::new(AtomicBool::new(false));
         let rendered_worker = rendered.clone();
+        let cache = Arc::new(Mutex::new(FrameCache::default()));
+        let worker_cache = cache.clone();
         std::thread::spawn(move || {
             let initialized = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let _local = worker_gate.lock().unwrap();
@@ -174,8 +226,6 @@ impl Preview {
             }
             let mut compositor = Some(compositor);
             worker_resident.store(true, Ordering::Relaxed);
-            let mut cache: VecDeque<(String, Vec<u8>)> = VecDeque::new();
-            let mut bytes = 0;
             loop {
                 let Some(job) = worker.next(std::time::Duration::from_secs(2)) else {
                     compositor = None;
@@ -197,8 +247,18 @@ impl Preview {
                     snapshot.size.1,
                     job.mode,
                 );
-                if let Some((_, data)) = cache.iter().find(|(candidate, _)| candidate == &key) {
-                    let _ = job.reply.send(Ok(data.clone()));
+                let inputs = crate::program::inputs(&snapshot).ok();
+                let cached = inputs.as_ref().and_then(|inputs| {
+                    worker_cache
+                        .lock()
+                        .unwrap()
+                        .entries
+                        .iter()
+                        .find(|entry| entry.key == key && entry.inputs == *inputs)
+                        .map(|entry| entry.data.clone())
+                });
+                if let Some(data) = cached {
+                    let _ = job.reply.send(Ok(data));
                     continue;
                 }
                 let poll_failed = AtomicBool::new(false);
@@ -254,16 +314,14 @@ impl Preview {
                 }
                 if let Ok(data) = &result {
                     rendered_worker.store(true, Ordering::Relaxed);
-                    while bytes + data.len() > 16 * 1024 * 1024 || cache.len() >= 8 {
-                        if let Some((_, old)) = cache.pop_front() {
-                            bytes -= old.len();
-                        } else {
-                            break;
-                        }
-                    }
-                    if data.len() <= 16 * 1024 * 1024 {
-                        bytes += data.len();
-                        cache.push_back((key, data.clone()));
+                    if let Some(inputs) = inputs.filter(crate::program::unchanged) {
+                        worker_cache.lock().unwrap().insert(CachedFrame {
+                            key,
+                            query: snapshot.query,
+                            inputs,
+                            program: matches!(job.mode, FrameMode::Program),
+                            data: data.clone(),
+                        });
                     }
                 }
                 let _ = job.reply.send(result);
@@ -278,6 +336,7 @@ impl Preview {
                 gpu_gate,
                 resident,
                 active_programs: Arc::new(AtomicUsize::new(0)),
+                cache,
             },
             _ => Self {
                 queue: None,
@@ -287,11 +346,15 @@ impl Preview {
                 gpu_gate,
                 resident,
                 active_programs: Arc::new(AtomicUsize::new(0)),
+                cache,
             },
         }
     }
     pub fn available(&self) -> bool {
         self.queue.is_some()
+    }
+    pub fn cached_frames(&self, query: &FrameQuery, inputs: &crate::program::Inputs) -> Vec<i64> {
+        self.cache.lock().unwrap().frames(query, inputs)
     }
     pub fn export_program(
         &self,

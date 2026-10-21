@@ -1,5 +1,5 @@
 import { HEADER, RULER, TRACK, frameToX, visibleRange } from "./geometry.js";
-export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint) {
+export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
   const colors = getComputedStyle(document.documentElement);
@@ -159,6 +159,21 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       ctx.fillStyle = marker.rgb ? `rgb(${marker.rgb.join(",")})` : color("--amber");
       ctx.globalAlpha = 0.35; ctx.fillRect(x, 0, Math.max(3,right-x),RULER); ctx.globalAlpha = 1;
       ctx.fillRect(x,0,2,RULER); ctx.fillText(marker.note.slice(0,32),x+4,6); ctx.restore();
+    }
+    const cached = getCache();
+    if (cached) {
+      ctx.save(); ctx.beginPath(); ctx.rect(HEADER, 0, width - HEADER, RULER); ctx.clip();
+      ctx.fillStyle = color("--violet");
+      for (const frame of cached.frames) {
+        const left = frameToX(frame, view, timeline.fps), right = frameToX(frame + 1, view, timeline.fps);
+        if (right >= HEADER && left <= width) ctx.fillRect(left, RULER - 6, Math.max(1, right - left), 3);
+      }
+      ctx.fillStyle = color("--success");
+      for (const range of cached.programs) {
+        const left = frameToX(range.start_frame, view, timeline.fps), right = frameToX(range.end_frame, view, timeline.fps);
+        if (right >= HEADER && left <= width) ctx.fillRect(left, RULER - 3, right - left, 3);
+      }
+      ctx.restore();
     }
     const x = frameToX(view.playhead, view, timeline.fps);
     if (x >= HEADER) {

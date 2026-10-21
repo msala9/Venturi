@@ -67,6 +67,7 @@ struct Job {
     inputs: Inputs,
     source_asset: Option<&'static str>,
     export_epoch: Option<String>,
+    program_query: Option<ProgramQuery>,
 }
 impl Job {
     fn value(&self) -> Value {
@@ -222,6 +223,7 @@ impl MediaJobs {
             bytes: 0,
             export: None,
             descriptor: None,
+            program_query: None,
             inputs: vec![],
             source_asset: Some(source_asset),
             export_epoch: None,
@@ -246,7 +248,13 @@ impl MediaJobs {
         let inputs = program::inputs(&task.snapshot)?;
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs.iter().find(|j| {
-            j.key == key && j.inputs == inputs && !matches!(j.state, "failed" | "canceled")
+            j.inputs == inputs
+                && ((j.key == key && !matches!(j.state, "failed" | "canceled"))
+                    || (task.export.is_none()
+                        && j.state == "ready"
+                        && j.program_query
+                            .as_ref()
+                            .is_some_and(|range| range.contains(&task.query))))
         }) {
             return Ok(job.value());
         }
@@ -274,6 +282,7 @@ impl MediaJobs {
             bytes: 0,
             export: Some(Arc::new(Mutex::new(progress))),
             descriptor: Some(descriptor),
+            program_query: task.export.is_none().then(|| task.query.clone()),
             inputs,
             source_asset: None,
             export_epoch: task
@@ -294,6 +303,17 @@ impl MediaJobs {
             ));
         }
         Ok(jobs.back().unwrap().value())
+    }
+    pub fn cached_programs(
+        &self,
+        query: &crate::preview::FrameQuery,
+        inputs: &Inputs,
+    ) -> Vec<Value> {
+        self.jobs.lock().unwrap().iter().filter_map(|job| {
+            let range = job.program_query.as_ref()?;
+            (job.state == "ready" && range.frame().same_composition(query) && job.inputs == *inputs)
+                .then(|| json!({"id":job.id,"start_frame":range.start_frame,"end_frame":range.end_frame}))
+        }).collect()
     }
     pub fn program_status(&self, id: &str, query: &ProgramQuery, cancel: bool) -> Result<Value> {
         let mut jobs = self.jobs.lock().unwrap();

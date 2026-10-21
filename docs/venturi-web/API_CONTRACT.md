@@ -1,5 +1,19 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+`GET /api/v1/preview/cache` accepts a normal `FrameQuery` and returns
+`{frames:[integer],programs:[{id,start_frame,end_frame}]}` with `no-store`.
+Only cached composed frames and ready composed movies matching the current
+epoch, generation, timeline, revision, requested width and input identities
+are included. Source proxies, scope images, analysis results and exports are
+excluded. This reads metadata without requesting a render or GPU ownership.
+
+Program preparation may reuse a ready movie that contains the requested range.
+Clients must use the actual `program.start_frame` and `program.end_frame` in
+the returned descriptor for status/asset requests and media clock conversion.
+Before resuming a retained movie, validate its status again; a stale or evicted
+entry must be prepared again. The browser retains one ready movie reference,
+seeks relative to its actual origin, and checks source validity before playback.
+
 Audio audition is implemented by `GET /api/v1/preview/audio.wav` with the normal
 `FrameQuery`, and `GET /api/v1/media/{id}/audio.wav?project_epoch=...&frame=...`
 for a source frame. Each returns exactly 80 ms of 48 kHz stereo PCM16 WAV with

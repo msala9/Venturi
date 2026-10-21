@@ -31,6 +31,12 @@ fn width() -> u32 {
     960
 }
 impl ProgramQuery {
+    pub fn contains(&self, other: &Self) -> bool {
+        self.frame().same_composition(&other.frame())
+            && self.start_frame <= other.start_frame
+            && other.start_frame < self.end_frame
+            && other.end_frame <= self.end_frame
+    }
     pub fn frame(&self) -> FrameQuery {
         FrameQuery {
             project_epoch: self.project_epoch.clone(),

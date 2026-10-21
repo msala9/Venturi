@@ -1,0 +1,127 @@
+{
+  "initial": {
+    "cache": {
+      "frames": [
+        0,
+        713
+      ],
+      "programs": [
+        {
+          "end_frame": 1440,
+          "id": "1792553856141551167",
+          "start_frame": 0
+        }
+      ]
+    },
+    "contained_request": {
+      "project_epoch": "1792553811889172788:1",
+      "if_generation": "0",
+      "timeline_id": "1",
+      "revision": "9de860071952789a",
+      "width": 960,
+      "start_frame": 360,
+      "end_frame": 1440
+    },
+    "reused_id": "1792553856141551167",
+    "actual_range": {
+      "end_frame": 1440,
+      "export_settings": null,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "0",
+      "height": 540,
+      "project_epoch": "1792553811889172788:1",
+      "revision": "9de860071952789a",
+      "start_frame": 0,
+      "width": 960
+    },
+    "movie_sha256": "4ffc42591a86b05662fa3ce0962f9f11a7124303afb37e93d96e19226779e960",
+    "native_project_sha256": "249bc8581e2d701746bf55b9a24fce477456a01e4aa5b6f7315e3344012f9e13",
+    "sixty_sources_unchanged": true,
+    "review_unchanged": true,
+    "session_unchanged": true,
+    "stale_cache_refused": true,
+    "width_isolated": true,
+    "software_only": true
+  },
+  "browser": {
+    "initial": {
+      "cache": "Cache \u00c2\u00b7 1 frames \u00c2\u00b7 1 movies",
+      "duration": 60.01,
+      "paused": false,
+      "src": "/api/v1/preview/program/1792553856141551167/program.mp4?project_epoch=1792553811889172788%3A1&if_generation=0&timeline_id=1&revision=9de860071952789a&start_frame=0&end_frame=1440&width=960",
+      "status": "COMPOSED PREVIEW \u00c2\u00b7 960\u00c3\u2014540 \u00c2\u00b7 revision 9de86007",
+      "time": 29.704205
+    },
+    "seek": {
+      "timecode": "00:00:15:08"
+    },
+    "seek_resumed": {
+      "cache": "Cache \u00c2\u00b7 3 frames \u00c2\u00b7 1 movies",
+      "paused": true,
+      "src": "http://127.0.0.1:8802/api/v1/preview/program/1792553856141551167/program.mp4?project_epoch=1792553811889172788%3A1&if_generation=0&timeline_id=1&revision=9de860071952789a&start_frame=0&end_frame=1440&width=960",
+      "status": "CACHED COMPOSED PREVIEW \u00c2\u00b7 inputs verified",
+      "time": 24.920642
+    },
+    "reload_seek": {
+      "timecode": "00:00:04:05"
+    },
+    "reload_resume": {
+      "paused": false,
+      "src": "/api/v1/preview/program/1792553856141551167/program.mp4?project_epoch=1792553811889172788%3A1&if_generation=0&timeline_id=1&revision=9de860071952789a&start_frame=0&end_frame=1440&width=960",
+      "status": "COMPOSED PREVIEW \u00c2\u00b7 960\u00c3\u2014540 \u00c2\u00b7 revision 9de86007",
+      "time": 4.503709
+    }
+  },
+  "final": {
+    "cache": {
+      "frames": [
+        0,
+        101,
+        368,
+        713
+      ],
+      "programs": [
+        {
+          "end_frame": 1440,
+          "id": "1792553856141551167",
+          "start_frame": 0
+        }
+      ]
+    },
+    "contained_request": {
+      "project_epoch": "1792553811889172788:1",
+      "if_generation": "0",
+      "timeline_id": "1",
+      "revision": "9de860071952789a",
+      "width": 960,
+      "start_frame": 360,
+      "end_frame": 1440
+    },
+    "reused_id": "1792553856141551167",
+    "actual_range": {
+      "end_frame": 1440,
+      "export_settings": null,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "0",
+      "height": 540,
+      "project_epoch": "1792553811889172788:1",
+      "revision": "9de860071952789a",
+      "start_frame": 0,
+      "width": 960
+    },
+    "movie_sha256": "4ffc42591a86b05662fa3ce0962f9f11a7124303afb37e93d96e19226779e960",
+    "native_project_sha256": "249bc8581e2d701746bf55b9a24fce477456a01e4aa5b6f7315e3344012f9e13",
+    "sixty_sources_unchanged": true,
+    "review_unchanged": true,
+    "session_unchanged": true,
+    "stale_cache_refused": true,
+    "width_isolated": true,
+    "software_only": true
+  }
+}

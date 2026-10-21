@@ -1680,3 +1680,32 @@ composed preview at 8x with both audio windows completed and clock drift below
 and Favorite remain intact. CPU/lavapipe, two workers, no DRI/KFD handles and no
 shared hardware-lock probe/acquisition are recorded in m5-halo2-fast-transport.json
 and m5-halo2-fast-transport-browser.png. No shared archive content was modified.
+
+## M3b/M5 — cache ruler and reusable composed movies
+
+The timeline ruler now displays actual cached composed frames in violet and
+ready composed movie ranges in green, with counts and a footer legend. Native
+telemetry filters epoch, generation, timeline, revision, requested width and
+input identities; scope/analysis images, source proxies and exports are excluded.
+It refreshes after completed seeks, preparation and Stop without rendering or
+acquiring GPU ownership. The existing eight-entry/16 MiB frame cache now also
+binds source identities on lookup and insertion.
+
+Stop/seek retains one movie reference. Play preflights its native status, then
+seeks relative to the prepared range. Backend preparation also reuses containing
+ready ranges, including after a browser reload. Replies expose their actual
+range, which binds subsequent URLs and clock conversion. Failed validation,
+eviction, source/composition changes and late canceled replies cannot resume
+obsolete output. Existing bounded media-job eviction remains authoritative.
+
+118 web Rust tests and 89 JavaScript tests pass; formatting, clippy with warnings
+denied and build pass. Actual CPU/lavapipe acceptance prepared a 60-second,
+20-shot movie once, stopped it, sought within it, resumed it, reloaded the browser
+and resumed another internal seek. Every path reused the same native job ID and
+movie SHA-256; after reload the media clock started within one second of the
+requested frame. Stale cache queries were refused and other widths were isolated.
+The saved project, all 60 source hashes, history and Review annotations remained
+unchanged. Evidence: m5-preview-cache.json, m5-preview-cache-ruler.png and
+m5-preview-cache-reuse.png. This closes cache_ruler_bar within the existing
+bounded preview strategy; longer-source/movie support and hardware codec
+qualification remain on their separate rows. No inference resource was touched.

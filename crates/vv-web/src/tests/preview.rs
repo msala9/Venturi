@@ -1,6 +1,67 @@
 use super::*;
 use vv_core::Id;
 #[test]
+fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
+    let query = FrameQuery {
+        timeline_id: "1".into(),
+        project_epoch: "p:1".into(),
+        if_generation: "0".into(),
+        revision: "r".into(),
+        frame: 0,
+        width: 960,
+    };
+    let inputs = vec![(PathBuf::from("source"), "version1".into())];
+    let mut cache = FrameCache::default();
+    for frame in 0..10 {
+        cache.insert(CachedFrame {
+            key: frame.to_string(),
+            query: FrameQuery {
+                frame,
+                ..query.clone()
+            },
+            inputs: inputs.clone(),
+            program: frame != 9,
+            data: vec![0; 16],
+        });
+    }
+    assert_eq!(cache.entries.len(), 8);
+    assert_eq!(cache.bytes, 128);
+    assert_eq!(cache.frames(&query, &inputs), vec![2, 3, 4, 5, 6, 7, 8]);
+    assert!(
+        cache
+            .frames(&query, &vec![(PathBuf::from("source"), "version2".into())])
+            .is_empty()
+    );
+    for field in ["epoch", "generation", "timeline", "revision", "width"] {
+        let mut changed = query.clone();
+        match field {
+            "epoch" => changed.project_epoch = "new".into(),
+            "generation" => changed.if_generation = "1".into(),
+            "timeline" => changed.timeline_id = "2".into(),
+            "revision" => changed.revision = "new".into(),
+            _ => changed.width = 640,
+        }
+        assert!(cache.frames(&changed, &inputs).is_empty(), "{field}");
+    }
+    cache.insert(CachedFrame {
+        key: "large".into(),
+        query: query.clone(),
+        inputs: inputs.clone(),
+        program: true,
+        data: vec![0; 16 * 1024 * 1024],
+    });
+    assert_eq!(cache.entries.len(), 1);
+    assert_eq!(cache.bytes, 16 * 1024 * 1024);
+    cache.insert(CachedFrame {
+        key: "too-large".into(),
+        query,
+        inputs,
+        program: true,
+        data: vec![0; 16 * 1024 * 1024 + 1],
+    });
+    assert_eq!(cache.entries.len(), 1);
+}
+#[test]
 fn frame_resolution_has_a_fixed_pixel_budget() {
     assert_eq!(frame_size((1920, 1080), 960).unwrap(), (960, 540));
     assert!(frame_size((1, 8192), 1920).is_err());

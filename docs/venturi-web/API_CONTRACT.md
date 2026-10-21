@@ -27,7 +27,7 @@ path with native Linear interpolation or removes an exact source-frame key.
 
 `retime_clip {clip_id,end_frame,overwrite?:false}` uses the ordinary timeline
 mutation envelope. Eligible media snapshots expose `retime` with native
-`source_span`, `min_length`, `max_length` and `pitch_correction`; unsupported
+`source_span`, `min_length`, `max_length`, `speed_percent` and `pitch_correction`; unsupported
 sources expose null. The endpoint computes an exact native rational speed and
 applies `SetClipSpeed` with `ResizeTo`, expanding the primary's linked group.
 It preserves the primary pitch flag and native source-frame mapping. A shared
@@ -39,6 +39,16 @@ Undo step. Foreign linked groups must be completely aligned and covered on
 every affected track; locked or incomplete groups refuse atomically. Validation
 runs on a cloned native project before planning against real ID allocators.
 This does not add speed ramps or reverse playback.
+
+`retime_preset {clip_id,percent,overwrite?:false}` accepts the native strip's
+10, 25, 50, 75, 100, 125, 150, 200, 400 and 1000 percent choices. It preserves
+the exact native `Rational::from_percent` speed, independently of frame-rounded
+duration. Linked clips use native `Resize` with the primary pitch flag; shortening
+leaves a gap and does not ripple neighbours. Growth shares the explicit overwrite,
+lock, linked-group and cloned-project validation above. A complete native no-op
+does not create history, while a frozen clip at the same speed can still unfreeze.
+The strip's displayed percentage comes from native `speed_percent`, never the
+ratio of rounded source span and timeline duration. Hide strip is client-only.
 
 `POST /api/v1/timelines/{id}/presets/capture` accepts
 `{query:FrameQuery,clip_ids,options:{name,attributes,anchor,append_filters}}`.

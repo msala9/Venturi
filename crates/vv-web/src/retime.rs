@@ -14,6 +14,7 @@ pub struct Metadata {
     pub min_length: FrameIdx,
     pub max_length: FrameIdx,
     pub pitch_correction: bool,
+    pub speed_percent: f64,
 }
 
 pub fn metadata(
@@ -70,6 +71,7 @@ pub fn metadata(
         min_length,
         max_length,
         pitch_correction: clip.pitch_correction,
+        speed_percent: clip.speed().as_percent(),
     })
 }
 
@@ -129,6 +131,90 @@ pub fn apply(
             ));
         }
     }
+    commit(
+        session,
+        id,
+        &selected,
+        speed,
+        pitch,
+        fit,
+        overwrite,
+        speed_trial,
+    )
+}
+
+pub fn apply_preset(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    percent: f64,
+    overwrite: bool,
+) -> Result<bool> {
+    const PRESETS: [f64; 10] = [
+        10.0, 25.0, 50.0, 75.0, 100.0, 125.0, 150.0, 200.0, 400.0, 1000.0,
+    ];
+    if !percent.is_finite() || !PRESETS.contains(&percent) {
+        return Err(ApiError::invalid("Choose a native speed strip preset"));
+    }
+    let (_, _, primary) = inspector::find(session, id, raw)?;
+    let timeline = &session.project.timelines[id];
+    let selected = media_refs(timeline, &[raw.to_owned()])?;
+    let pitch = primary.pitch_correction;
+    for &(track, clip_id) in &selected {
+        if metadata(
+            &session.project,
+            timeline,
+            timeline.clip(track, clip_id).unwrap(),
+        )
+        .is_none()
+        {
+            return Err(ApiError::invalid(
+                "A linked clip has unsupported source metadata",
+            ));
+        }
+    }
+    let speed = core::Rational::from_percent(percent);
+    let fit = core::SpeedFit::Resize;
+    let mut speed_trial = session.project.clone();
+    core::SetClipSpeed::new(id, selected.clone(), speed, pitch, fit).apply(&mut speed_trial);
+    let changed = &speed_trial.timelines[id];
+    for &(track, clip_id) in &selected {
+        if metadata(&speed_trial, changed, changed.clip(track, clip_id).unwrap()).is_none() {
+            return Err(ApiError::invalid(
+                "Speed preset exceeds a linked clip's representable source bounds",
+            ));
+        }
+    }
+    commit(
+        session,
+        id,
+        &selected,
+        speed,
+        pitch,
+        fit,
+        overwrite,
+        speed_trial,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn commit(
+    session: &mut Session,
+    id: TimelineId,
+    selected: &[ClipRef],
+    speed: core::Rational,
+    pitch: bool,
+    fit: core::SpeedFit,
+    overwrite: bool,
+    speed_trial: core::Project,
+) -> Result<bool> {
+    let timeline = &session.project.timelines[id];
+    let changed = &speed_trial.timelines[id];
+    if serde_json::to_value(changed).map_err(|_| ApiError::invalid("Invalid speed result"))?
+        == serde_json::to_value(timeline).map_err(|_| ApiError::invalid("Invalid speed source"))?
+    {
+        return Ok(false);
+    }
     let grown: Vec<_> = selected
         .iter()
         .filter_map(|&(track, clip_id)| {
@@ -142,11 +228,11 @@ pub fn apply(
         .collect();
     drop(speed_trial);
     if overwrite {
-        overwrite_allowed(timeline, &grown, &selected)?;
+        overwrite_allowed(timeline, &grown, selected)?;
     }
     let mut trial = session.project.clone();
     build(
-        &mut trial, id, &selected, &grown, speed, pitch, fit, overwrite,
+        &mut trial, id, selected, &grown, speed, pitch, fit, overwrite,
     )
     .apply(&mut trial);
     validate_trial(&session.project, &trial, id)?;
@@ -154,7 +240,7 @@ pub fn apply(
     let command = build(
         &mut session.project,
         id,
-        &selected,
+        selected,
         &grown,
         speed,
         pitch,

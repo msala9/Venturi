@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeHandles } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel } from "./geometry.js";
 export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
@@ -38,7 +38,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       ctx.beginPath();
       ctx.rect(HEADER, top, width - HEADER, TRACK);
       ctx.clip();
-      const speedHandles=retimeHandles(track,view,timeline.fps),speedIds=new Set(speedHandles.map(handle=>handle.clip_id));
+      const speedStrips=new Map(retimeStrips(track,view,timeline.fps,width).map(strip=>[strip.clip_id,strip])),speedIds=new Set(speedStrips.keys());
       for (const clip of track.clips) {
         if (
           clip.start_frame + clip.length_frames < first ||
@@ -94,11 +94,15 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           top + 41,
         );
         ctx.restore();
-        const speed=speedHandles.find(handle=>handle.clip_id===clip.id);
+        const speed=speedStrips.get(clip.id);
         if(speed){
           const active=view.draft?.kind==='retime' && view.draft.clip_id===clip.id,end=active?view.draft.right:speed.right;
           ctx.fillStyle=active && view.draft.error?color('--danger'):active?color('--primary'):color('--violet');ctx.save();ctx.globalAlpha=0.75;ctx.fillRect(speed.left+1,top+7,Math.max(1,end-speed.left-2),14);ctx.restore();
-          ctx.fillStyle=color('--text');if(end-speed.left>=70)ctx.fillText('Speed',speed.left+7,top+14);ctx.beginPath();ctx.arc(end-4,top+14,active?5:4,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle=color('--text');
+          const menuWidth=speed.menu.right-speed.menu.left;
+          if(menuWidth>=24){ctx.save();ctx.beginPath();ctx.rect(speed.menu.left,top+7,menuWidth,14);ctx.clip();ctx.textAlign='center';ctx.fillText(`${retimeSpeedLabel(clip.retime?.speed_percent)} ▾`,(speed.menu.left+speed.menu.right)/2,top+14,Math.max(1,menuWidth-4));ctx.restore();}
+          if(speed.close){ctx.save();ctx.textAlign='center';ctx.fillText('×',(speed.close.left+speed.close.right)/2,top+14);ctx.restore();}
+          ctx.beginPath();ctx.arc(end-4,top+14,active?5:4,0,Math.PI*2);ctx.fill();
         }
         const fading=view.draft?.kind==='fade' && view.draft.clip_id===clip.id;
         const shown=fading?{...clip,[`fade_${view.draft.edge}`]:view.draft.frames}:clip;

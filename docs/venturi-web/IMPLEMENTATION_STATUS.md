@@ -24,19 +24,20 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-215 Rust tests, 439 JavaScript tests,
+220 Rust tests, 455 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
 `evidence/m4-transition-duration-handles.json`, `evidence/m4-speed-handles.json`,
 `evidence/m4-mask-pen-path-keys.json`, `evidence/m4-transition-placement.json`
 `evidence/m3-preview-cache-safety.json`, `evidence/m3-program-rollover.json`
-`evidence/m3-source-windows.json` and `evidence/m3-source-assets.json`;
+`evidence/m3-source-windows.json`, `evidence/m3-source-assets.json`
+and `evidence/m4-speed-presets.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
 Remaining work includes mask/transition browser and rendered qualification,
-native speed strip preset menus, compound and
+native speed strip selection-only visibility, compound and
 import coverage, long-media preview qualification, full-source asset GUI acceptance
 and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
@@ -2765,3 +2766,40 @@ OOM scoring; build memory was capped at 4 GiB and finite API at 512 MiB. Browser
 and DPI interaction, large-media startup/pressure, all audio stream layouts,
 physical audio, GPU and soak qualification remain open. This increment does not
 change the count of fully accepted capability rows or establish full GUI parity.
+
+## M4 — exact native speed strip presets
+
+The speed strip now has separate percentage-menu, close and endpoint hit areas.
+The menu offers the native ten presets, an Advanced Inspector entry and per-clip
+local hiding. Labels use native speed_percent rather than dividing rounded
+durations. Keyboard access uses Shift+F10/Context Menu; arrows, Home/End and
+Escape navigate or close the modal, restoring focus. Stale dialog callbacks,
+epoch/revision/media/linked-lock/viewport/lease changes and duplicate pending
+actions cannot apply to another target. Advanced opens the exact primary clip,
+stops transport and initially selects the native Ripple duration policy.
+Clipped/narrow strips and restored fade hit regions use the same draw geometry.
+Evicting Blob thumbnails also removes their media-card images.
+
+The adapter accepts only the ten native preset values and calls exact native
+Rational::from_percent plus SetClipSpeed Resize. Linked media preserve the
+primary pitch flag; shrinking leaves a gap. Explicit overwrite uses the same
+native make-room composite and locked/foreign-linked guards as endpoint edits.
+Cloned native results validate before real mutation. Full-state no-ops preserve
+history and compound metadata; same-speed presets can still unfreeze a clip.
+
+220 vv-web tests and 455 JavaScript tests pass on halo2, with fmt, clippy with
+warnings denied and native build. The finite API fixture uses the existing tiny
+video and audio, fractional timeline FPS, nonzero source-in and linked unequal
+durations. It verifies exact 150/200/50 percent, no-op, explicit obstruction trim,
+atomic invalid/overlap refusal, native Inspector freeze-frame mapping, unfreeze,
+one Undo/Redo/retry, source/other timeline preservation and exact saved restart.
+An initial probe wrongly compared a timeline freeze position with a source frame;
+the corrected probe uses the native Inspector result and retains the failed
+attempt evidence. Evidence: `evidence/m4-speed-presets.json`.
+
+All workloads ran on halo2 with one CPU, low priority, no swap and sacrificial
+OOM scoring, 4 GiB build/512 MiB finite API limits. Own units stopped and port
+8811 closed; the main editor's five unsaved moves remain intact. Native Ctrl+R
+still differs: the web mode toggles all eligible strips, while desktop toggles
+selected media. Selection-only visibility, browser/DPI/rendered playback and
+hardware qualification remain open. No capability row is promoted to done.

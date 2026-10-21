@@ -620,3 +620,296 @@ fn bounds_nonmedia_bad_metadata_locked_links_and_no_motion_are_atomic() {
         .is_none()
     );
 }
+
+fn preset(
+    session: &mut Session,
+    id: TimelineId,
+    clip: ClipId,
+    percent: f64,
+    overwrite: bool,
+) -> Result<()> {
+    commands::apply(
+        session,
+        id,
+        &Operation::RetimePreset {
+            clip_id: clip.0.to_string(),
+            percent,
+            overwrite,
+        },
+    )
+}
+#[test]
+fn presets_preserve_exact_native_rationals_including_fractional_fps_and_rounded_lengths() {
+    for percent in [
+        10.0, 25.0, 50.0, 75.0, 100.0, 125.0, 150.0, 200.0, 400.0, 1000.0,
+    ] {
+        let (mut session, id, clip) = fixture(
+            core::Rational::new(30000, 1001),
+            core::Rational::new(24, 1),
+            8,
+            88,
+            11,
+        );
+        session.project.timelines[id]
+            .clip_mut(0, clip)
+            .unwrap()
+            .pitch_correction = false;
+        let mut native = session.project.clone();
+        let speed = core::Rational::from_percent(percent);
+        core::SetClipSpeed::new(id, vec![(0, clip)], speed, false, core::SpeedFit::Resize)
+            .apply(&mut native);
+        let before = timeline(&session, id);
+        let position = session.history.position();
+        preset(&mut session, id, clip, percent, false).unwrap();
+        let value = session.project.timelines[id].clip(0, clip).unwrap();
+        assert_eq!(value.speed(), speed);
+        assert!(!value.pitch_correction);
+        assert_eq!(
+            timeline(&session, id),
+            serde_json::to_value(&native.timelines[id]).unwrap()
+        );
+        assert_eq!(
+            metadata(&session.project, &session.project.timelines[id], value)
+                .unwrap()
+                .speed_percent,
+            speed.as_percent()
+        );
+        if percent == 150.0 {
+            assert_eq!(value.timeline_len, 66);
+            assert_eq!(value.speed(), core::Rational::new(3, 2));
+        }
+        if timeline(&session, id) != before {
+            assert_eq!(session.history.position(), position + 1);
+            let after = timeline(&session, id);
+            commands::apply(&mut session, id, &Operation::Undo).unwrap();
+            assert_eq!(timeline(&session, id), before);
+            commands::apply(&mut session, id, &Operation::Redo).unwrap();
+            assert_eq!(timeline(&session, id), after);
+        }
+    }
+}
+#[test]
+fn presets_expand_linked_clips_of_different_ends_and_preserve_primary_pitch_in_one_native_command()
+{
+    let (mut session, id, clip) = basic();
+    let follower = linked(&mut session, id, clip, 1, 10, 34, 3);
+    session.project.timelines[id]
+        .clip_mut(0, clip)
+        .unwrap()
+        .pitch_correction = false;
+    session.project.timelines[id]
+        .clip_mut(1, follower)
+        .unwrap()
+        .pitch_correction = true;
+    let before = timeline(&session, id);
+    let position = session.history.position();
+    let mut native = session.project.clone();
+    core::SetClipSpeed::new(
+        id,
+        vec![(0, clip), (1, follower)],
+        core::Rational::new(3, 4),
+        false,
+        core::SpeedFit::Resize,
+    )
+    .apply(&mut native);
+    preset(&mut session, id, clip, 75.0, false).unwrap();
+    assert_eq!(
+        timeline(&session, id),
+        serde_json::to_value(&native.timelines[id]).unwrap()
+    );
+    for (track, target) in [(0, clip), (1, follower)] {
+        let result = session.project.timelines[id].clip(track, target).unwrap();
+        assert_eq!(result.speed(), core::Rational::new(3, 4));
+        assert!(!result.pitch_correction);
+    }
+    assert_eq!(session.history.position(), position + 1);
+    let after = timeline(&session, id);
+    commands::apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(timeline(&session, id), before);
+    commands::apply(&mut session, id, &Operation::Redo).unwrap();
+    assert_eq!(timeline(&session, id), after);
+}
+#[test]
+fn same_speed_preset_unfreezes_natively_but_a_full_state_noop_preserves_history_and_project() {
+    let (mut session, id, clip) = basic();
+    session.project.timelines[id]
+        .clip_mut(0, clip)
+        .unwrap()
+        .freeze = Some(12);
+    let before = timeline(&session, id);
+    let position = session.history.position();
+    preset(&mut session, id, clip, 100.0, false).unwrap();
+    assert!(
+        session.project.timelines[id]
+            .clip(0, clip)
+            .unwrap()
+            .freeze
+            .is_none()
+    );
+    assert_eq!(session.history.position(), position + 1);
+    commands::apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(timeline(&session, id), before);
+    commands::apply(&mut session, id, &Operation::Redo).unwrap();
+    let before = project(&session);
+    let generation = session.history.generation();
+    let position = session.history.position();
+    preset(&mut session, id, clip, 100.0, true).unwrap();
+    assert_eq!(project(&session), before);
+    assert_eq!(session.history.generation(), generation);
+    assert_eq!(session.history.position(), position);
+    let snapshot = crate::snapshot::timeline(&session, id);
+    assert_eq!(
+        snapshot["tracks"][0]["clips"][0]["retime"]["speed_percent"],
+        100.0
+    );
+}
+#[test]
+fn preset_overwrite_is_explicit_native_and_atomic_with_undo_redo() {
+    for length in [24, 96] {
+        let (mut session, id, clip) = basic();
+        let neighbour = solid(&mut session, id, 0, 60, length, None);
+        let before = project(&session);
+        let original = timeline(&session, id);
+        let position = session.history.position();
+        assert_eq!(
+            preset(&mut session, id, clip, 50.0, false).unwrap_err().1,
+            "OVERLAP"
+        );
+        assert_eq!(project(&session), before);
+        assert_eq!(session.history.position(), position);
+        preset(&mut session, id, clip, 50.0, true).unwrap();
+        assert_eq!(
+            session.project.timelines[id].clip(0, clip).unwrap().speed(),
+            core::Rational::new(1, 2)
+        );
+        if length == 24 {
+            assert!(session.project.timelines[id].clip(0, neighbour).is_none());
+        } else {
+            assert_eq!(
+                session.project.timelines[id]
+                    .clip(0, neighbour)
+                    .unwrap()
+                    .timeline_start,
+                96
+            );
+        }
+        assert_eq!(session.history.position(), position + 1);
+        let after = timeline(&session, id);
+        commands::apply(&mut session, id, &Operation::Undo).unwrap();
+        assert_eq!(timeline(&session, id), original);
+        commands::apply(&mut session, id, &Operation::Redo).unwrap();
+        assert_eq!(timeline(&session, id), after);
+    }
+}
+#[test]
+fn preset_refuses_bad_values_metadata_locked_links_and_partial_linked_overwrite_without_mutation() {
+    for percent in [
+        f64::NAN,
+        f64::INFINITY,
+        -1.0,
+        0.0,
+        1.0,
+        99.0,
+        100.001,
+        10_000.0,
+    ] {
+        let (mut session, id, clip) = basic();
+        let before = project(&session);
+        let position = session.history.position();
+        assert!(preset(&mut session, id, clip, percent, true).is_err());
+        assert_eq!(project(&session), before);
+        assert_eq!(session.history.position(), position);
+    }
+    for scenario in 0..7 {
+        let (mut session, id, clip) = basic();
+        let follower = linked(&mut session, id, clip, 1, 0, 48, 0);
+        match scenario {
+            0 => session.project.timelines[id].tracks[1].locked = true,
+            1 => {
+                session.project.timelines[id]
+                    .clip_mut(1, follower)
+                    .unwrap()
+                    .source = core::ClipSource::SolidColor;
+            }
+            2 => {
+                let core::ClipSource::Media(media) = session.project.timelines[id]
+                    .clip(1, follower)
+                    .unwrap()
+                    .source
+                else {
+                    unreachable!()
+                };
+                session
+                    .project
+                    .media_pool
+                    .get_mut(media)
+                    .unwrap()
+                    .meta
+                    .fps
+                    .den = 0;
+            }
+            5 => {
+                let source = session.project.timelines[id]
+                    .clip(1, follower)
+                    .unwrap()
+                    .source
+                    .clone();
+                let mut replacement = core::Clip::from_source_range(
+                    follower,
+                    source,
+                    99,
+                    100,
+                    0,
+                    core::Rational::one(),
+                );
+                replacement.linked_group = Some(core::LinkGroupId(10));
+                *session.project.timelines[id].clip_mut(1, follower).unwrap() = replacement;
+                short_media(&mut session, id, 1, follower);
+            }
+            _ => {
+                solid(&mut session, id, 0, 60, 96, Some(20));
+                solid(
+                    &mut session,
+                    id,
+                    if scenario == 4 { 1 } else { 2 },
+                    60,
+                    96,
+                    Some(20),
+                );
+                if scenario == 4 {
+                    session.project.timelines[id].tracks[1].locked = true;
+                }
+                if scenario == 6 {
+                    session.project.timelines[id].tracks[2].locked = true;
+                }
+            }
+        }
+        let before = project(&session);
+        let position = session.history.position();
+        assert!(
+            preset(
+                &mut session,
+                id,
+                clip,
+                if scenario == 5 { 1000.0 } else { 50.0 },
+                true
+            )
+            .is_err(),
+            "scenario {scenario}"
+        );
+        assert_eq!(project(&session), before);
+        assert_eq!(session.history.position(), position);
+    }
+    let operation: Operation =
+        serde_json::from_value(json!({"kind":"retime_preset","clip_id":"1","percent":150}))
+            .unwrap();
+    assert!(
+        matches!(operation, Operation::RetimePreset { percent, overwrite: false, .. } if percent == 150.0)
+    );
+    for value in [
+        json!({"kind":"retime_preset","clip_id":"1","percent":"150"}),
+        json!({"kind":"retime_preset","clip_id":"1"}),
+    ] {
+        assert!(serde_json::from_value::<Operation>(value).is_err());
+    }
+}

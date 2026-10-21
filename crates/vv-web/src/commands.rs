@@ -237,6 +237,12 @@ pub enum Operation {
         #[serde(default)]
         overwrite: bool,
     },
+    RetimePreset {
+        clip_id: String,
+        percent: f64,
+        #[serde(default)]
+        overwrite: bool,
+    },
     SetFreeze {
         clip_ids: Vec<String>,
         frame: Option<FrameIdx>,
@@ -611,6 +617,15 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             overwrite,
         } => {
             if !crate::retime::apply(session, id, clip_id, *end_frame, *overwrite)? {
+                return Ok(());
+            }
+        }
+        Operation::RetimePreset {
+            clip_id,
+            percent,
+            overwrite,
+        } => {
+            if !crate::retime::apply_preset(session, id, clip_id, *percent, *overwrite)? {
                 return Ok(());
             }
         }

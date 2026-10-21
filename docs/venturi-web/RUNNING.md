@@ -94,6 +94,17 @@ preparation can interrupt analysis; use Refresh media assets when idle to retry.
 The visible status reports completion or failure. Partial window peaks are never
 presented as a whole-file waveform. Browser acceptance remains open.
 
+Enable Speed handles to show eligible clip strips. Click the percentage to open
+the ten native speed presets, drag the right endpoint for exact frame resizing,
+or use the strip's close control to hide that clip's strip. With a clip selected
+and the timeline focused, Shift+F10 or the Context Menu key opens the same menu.
+Preset edits include linked media and preserve the primary pitch flag. Shorter
+clips leave gaps; growing clips refuse overlaps unless Overwrite clips is
+explicitly checked. Change clip speed opens the Inspector with the native
+Ripple duration policy initially selected. Escape closes without editing.
+The current global mode/Ctrl+R visibility differs from the desktop's
+selection-only visibility toggle; that parity item remains open.
+
 Source jobs accept at most 8192 pixels per dimension,
 cap decoded audio samples at 256 MiB plus encoder overhead,
 and reject completed ephemeral jobs larger than 512 MiB. The private,

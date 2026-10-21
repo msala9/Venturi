@@ -2,6 +2,7 @@ import { isTextTarget, installSplitter } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
 import { linkedSelection, playheadSelection,selectedTransition } from "./timeline/geometry.js";
 import {isRetimeShortcut} from './timeline/input.js';
+import {createRetimeMenu} from './retime-menu.js';
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import { createViewer } from "./viewer.js";
 import { createSourcePlayer, sourceAssetURL, sourceSelection } from "./source.js";
@@ -48,6 +49,7 @@ let recoveryPanel = null;
 let audioScrub = null;
 let fastTransport = null;
 let presetPanel=null;
+let retimeMenu=null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));}
@@ -285,6 +287,7 @@ const view = {
   snap: true,
   retime: false,
   retimeOverwrite: false,
+  retimeHidden: new Set(),
   transitionSelection: null,
   transitionReplace: false,
   draft: null,
@@ -403,6 +406,7 @@ function syncSelectionActions(){
   $("delete").disabled=disabled || (target?target.locked:!view.selection.length);
 }
 function selected() {
+  retimeMenu?.invalidate();
   trackViewerSelection();
   transformDetail=null;transformOverlay?.cancel();transformOverlay?.invalidate();
   maskOverlay?.cancel();maskOverlay?.invalidate();syncViewerMasks();
@@ -585,6 +589,7 @@ const canvasTimeline = createTimeline({
   getCache: () => previewCache?.ranges(),
   onSelect: ()=>{view.transitionSelection=null;selected();},
   onTransitionSelect:selection=>{view.transitionSelection=selection;view.selection=[];view.markerId=null;revealInspector();selected();},
+  onRetimeMenu:target=>retimeMenu?.open(target),
   onSeek: (final) => {
     audioMeters?.invalidate();
     audioScrub?.stop();
@@ -599,6 +604,19 @@ const canvasTimeline = createTimeline({
   canEdit: () => writable && !busy && !unresolved,
   onMarkerEdit: id => { revealInspector();view.markerTarget=`${documentState?.project_epoch}:${timeline.id}`;view.markerId=id;visualState.set("markers",true);selected();document.querySelector('[data-visual-path="markers"] select')?.focus(); },
   onSlip: (event)=>{if(event.phase==="begin"){programPlayer?.stop();sourcePlayer?.pause();}slipView?.draft(event);},
+});
+function retimeContext(target){
+  const track=timeline?.tracks.find(track=>track.id===target.track_id),clip=track?.clips.find(clip=>clip.id===target.clip_id);
+  if(!clip?.retime || !documentState)return null;
+  const linked=timeline.tracks.flatMap(lane=>lane.clips.filter(item=>item.id===clip.id || (clip.linked_group!=null && item.linked_group===clip.linked_group)).map(item=>({track_id:lane.id,locked:lane.locked,clip:item})));
+  const rect=$("timeline").getBoundingClientRect();
+  return {project_epoch:documentState.project_epoch,generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,track_id:track.id,clip,linked,overwrite:view.retimeOverwrite===true,
+    editable:writable && !busy && !unresolved && timeline.id!=='fixture' && view.retime && view.tool!=='slip' && !view.retimeHidden.has(clip.id) && !linked.some(item=>item.locked),
+    viewIdentity:JSON.stringify([view.origin,view.scale,view.scrollY,view.tool,view.snap,view.retime,[...view.retimeHidden].sort(),view.selection,view.transitionSelection,rect.left,rect.top,rect.width,rect.height])};
+}
+retimeMenu=createRetimeMenu({getContext:retimeContext,commit:operation=>commit(operation),notice,
+  onHide:target=>{view.retimeHidden.add(target.clip_id);canvasTimeline.invalidate();notice('Speed strip hidden for this clip');},
+  onAdvanced:target=>{programPlayer?.stop();fastTransport?.stop();audioScrub?.stop();if(viewerMode!=='program')viewerModeSet('program');view.transitionSelection=null;view.selection=[target.clip_id];visualState.set('retime',true);visualState.set('retime-focus',target.clip_id);revealInspector();selected();canvasTimeline.invalidate();notice('Change clip speed · native Ripple is the initial duration policy; linked clips follow');},
 });
 function renderTransitionPresets(){
   const root=$("transition-presets");if(!root)return;root.replaceChildren();
@@ -631,6 +649,7 @@ function updateTime() {
   canvasTimeline.invalidate();
 }
 function installTimeline(next,{transitionSelection=null}={}) {
+  retimeMenu?.close();
   audioMeters?.invalidate();
   canvasTimeline.cancel();
   timeline = next;
@@ -666,11 +685,11 @@ $("snap").addEventListener("click", () => {
 });
 $("transition-replace").addEventListener('change',()=>{canvasTimeline.cancel();view.transitionReplace=$("transition-replace").checked;notice(view.transitionReplace?'Replacing existing transitions is enabled for drops; Undo restores the previous settings':'Transition drops refuse occupied slots');});
 function updateRetimeControls(){
-  $("retime-handles").setAttribute('aria-pressed',String(view.retime));$("retime-overwrite").disabled=!view.retime;$("retime-overwrite").checked=view.retimeOverwrite;canvasTimeline.invalidate();
+  retimeMenu?.invalidate();$("retime-handles").setAttribute('aria-pressed',String(view.retime));$("retime-overwrite").disabled=!view.retime;$("retime-overwrite").checked=view.retimeOverwrite;canvasTimeline.invalidate();
 }
 $("retime-handles").addEventListener('click',()=>{
-  canvasTimeline.cancel();view.retime=!view.retime;if(!view.retime)view.retimeOverwrite=false;updateRetimeControls();
-  notice(view.retime?'Speed handles · drag the upper-right endpoint; overlaps are refused unless Overwrite clips is checked':'Speed handles hidden');
+  canvasTimeline.cancel();view.retime=!view.retime;if(!view.retime){view.retimeOverwrite=false;view.retimeHidden.clear();}updateRetimeControls();
+  notice(view.retime?'Speed handles · click the speed strip for presets, or select a clip and press Shift+F10; drag its endpoint to resize · overlaps require Overwrite clips':'Speed handles hidden');
 });
 $("retime-handles").addEventListener('keydown',event=>{if(event.key===' ' || event.key==='Enter')event.stopPropagation();});
 $("retime-overwrite").addEventListener('change',()=>{
@@ -745,7 +764,7 @@ async function refresh() {
   for(const [id,asset] of mediaAssets)if(sourceChanged(id)){releaseMediaAsset(asset);mediaAssets.delete(id);}
   if(sourceOpenId && (!next.media.some((item)=>item.id===sourceOpenId) || sourceChanged(sourceOpenId))){sourcePlayer?.reset();sourceAssets?.cancel();sourceRanges.delete(sourceOpenId);sourceOpenId=null;}
   if (documentState?.project_epoch !== next.project_epoch) {
-    canvasTimeline.cancel();view.retime=false;view.retimeOverwrite=false;view.transitionSelection=null;view.transitionReplace=false;$("transition-replace").checked=false;updateRetimeControls();
+    canvasTimeline.cancel();view.retime=false;view.retimeOverwrite=false;view.retimeHidden.clear();view.transitionSelection=null;view.transitionReplace=false;$("transition-replace").checked=false;updateRetimeControls();
     sourcePlayer?.reset();
     sourceAssets?.cancel();
     sourceOpenId = null; sourceRanges.clear();
@@ -1320,6 +1339,7 @@ function installMediaAsset({item,epoch,thumbnail,waveform,bytes,thumbnailURL,sou
   }
   while(mediaAssets.size>16 || [...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0)>32*1024*1024){
     const oldest=mediaAssets.keys().next().value;releaseMediaAsset(mediaAssets.get(oldest));mediaAssets.delete(oldest);
+    for(const card of document.querySelectorAll('.media-item'))if(card.dataset.mediaId===oldest)card.querySelector('img')?.remove();
   }
   canvasTimeline.invalidate();return true;
 }

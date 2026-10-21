@@ -1,0 +1,62 @@
+{
+  "pid": 1204020,
+  "sha256": "fd87052ba494ae47c67e3e21dabffe50f4ee855b379f86633fb5cdcb8473a03f",
+  "binary_source_commit": "223c07de12bf5a9f290222731d97d19693dee698",
+  "command_epoch": "0",
+  "generation": "0",
+  "clipboard_count": 1,
+  "saved_project": "CPU_shared_library_UI_check.vvproj",
+  "history": {
+    "labels": [],
+    "position": 0
+  },
+  "project_and_review_hashes_preserved": true,
+  "original_source_hash_preserved": true,
+  "exact_seed": "9007199254740993",
+  "favorite_preserved": true,
+  "main_asset_sha256": "e4d520cbedbd70ab040fa498ec07e49fe1526265f49717e655522945b32aed6f",
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "before_restart": {
+    "pid": 1203768,
+    "receipt": {
+      "command_epoch": "0",
+      "command_id": "ea5cd443-5f30-4ca2-883c-50d44b6b7452",
+      "durability": {
+        "recovery_revision": null,
+        "state": "saved"
+      },
+      "generation": "0",
+      "project_epoch": "1792561054972965394:1",
+      "receipt_persisted": true,
+      "status": "applied"
+    },
+    "journal_sha256": "5423b6230c56262bfef2428d355eb200ccedada7f23d6e17c4560fdf0b9c3973",
+    "project_epoch": "1792561054972965394:1",
+    "clipboard_count": 1,
+    "saved_project_and_review_unchanged": true
+  },
+  "after_restart": {
+    "pid": 1204020,
+    "receipt": {
+      "command_epoch": "0",
+      "command_id": "ea5cd443-5f30-4ca2-883c-50d44b6b7452",
+      "durability": {
+        "recovery_revision": null,
+        "state": "saved"
+      },
+      "generation": "0",
+      "project_epoch": "1792561054972965394:1",
+      "receipt_persisted": true,
+      "server_restarted": true,
+      "status": "applied"
+    },
+    "journal_sha256": "5423b6230c56262bfef2428d355eb200ccedada7f23d6e17c4560fdf0b9c3973",
+    "project_epoch": "1792561108209503007:1",
+    "clipboard_count": 0,
+    "saved_project_and_review_unchanged": true
+  },
+  "persisted_lookup_after_restart": true,
+  "no_clipboard_replay": true
+}

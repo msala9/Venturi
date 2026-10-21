@@ -1887,3 +1887,14 @@ with a fresh history. Its native RON is byte-identical to the acknowledged
 checkpoint, and the original saved file hash is unchanged. Evidence:
 m7-durable-command-receipts.json and m7-durable-command-receipts-browser.png.
 No shared library mutation or hardware GPU work was performed.
+
+Halo2 acceptance for 223c07d uses binary SHA-256
+fd87052ba494ae47c67e3e21dabffe50f4ee855b379f86633fb5cdcb8473a03f.
+The real browser applied Copy on the Saved shared-library project, producing a
+saved-backed synced receipt. After an owned-service restart the same lookup
+returned the original ACK with server_restarted=true; the journal hash was
+unchanged and clipboard count correctly reset to zero without replay. Saved
+project and Review hashes were identical before/after. The UI reopened normally.
+Evidence: m7-halo2-durable-command-receipts.json and browser screenshot. Explicit
+software preview remains enabled; no GPU lock, AMD driver or inference work was
+involved.

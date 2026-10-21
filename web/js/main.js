@@ -837,7 +837,17 @@ $("delete").addEventListener("click", () =>
 $("undo").addEventListener("click", () => run({ kind: "undo" }));
 $("redo").addEventListener("click", () => run({ kind: "redo" }));
 $("save").addEventListener("click", () =>
-  mutate({ kind: "save" }, true).catch((error) => notice(error.message)),
+  mutate({ kind: "save" }, true).catch(async(error) => {
+    notice(error.message);
+    if(error.code==="SAVE_CONFLICT") {
+      await projects();
+      $("projects").showModal();
+      $("project-error").textContent=`${error.message}. Your edits remain in memory. Save a copy under a new name before reopening the external version.`;
+      const input=$("save-as-project").elements.name;
+      input.value=`${(documentState?.project_name || "Project").replace(/\.vvproj$/i,"").replace(/[^A-Za-z0-9_-]/g,"_").slice(0,59)}_copy`;
+      input.focus();
+    }
+  }),
 );
 $("timeline-select").addEventListener("change", () => {
   const next = documentState?.timelines.find(

@@ -34,6 +34,14 @@ that would separate linked clips refuse before any mutation. The complete
 result is validated on a native project clone and applies as one PasteAttributes
 Undo step; no editing algorithm runs in JavaScript.
 
+Project `save` also binds the current on-disk file identity and SHA-256 recorded
+by validated Open/last Save. Changed/replaced/missing files return 409
+`SAVE_CONFLICT` and retain dirty in-memory state/history. Repeating that command
+ID returns its original refusal. Use no-replace `save_as` to preserve current
+edits, or explicitly reopen the external file after preserving them. The normal
+Save path rechecks before backup/publication but does not provide an atomic lock
+against arbitrary external writers across the final check/rename interval.
+
 The implemented M2 subset and its deliberate schema deltas are documented in
 [RUNNING.md](RUNNING.md#actual-api-deltas-from-the-proposal). In particular,
 project epoch is now a string and every mutation also requires client ownership

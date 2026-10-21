@@ -316,6 +316,15 @@ that would separate a linked group refuse the whole operation. One Undo restores
 all properties and timing. Cross-timeline paste requires matching timeline FPS;
 saved custom attribute presets remain separate work.
 
+## Save conflicts
+
+Save refuses a project changed, replaced or removed by an external editor after
+Open/last Save. Your native edits and Undo history remain in memory. Projects
+opens with an explanation and a proposed Save As name; save your copy before
+reopening the external version. Neither a conflict nor Save As overwrites the
+external project. Close other editors while saving the same file: external
+filesystem tools do not share the web host's directory ownership lock.
+
 ## Checks
 
 ```bash

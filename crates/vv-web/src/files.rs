@@ -1,7 +1,9 @@
 use crate::error::{ApiError, Result};
 use rustix::fs::{AtFlags, Mode, OFlags, openat, renameat, unlinkat};
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
+    cell::RefCell,
     fs::File,
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -9,9 +11,15 @@ use std::{
 use vv_core::Project;
 
 const MAX_PROJECT: u64 = 8 * 1024 * 1024;
+#[derive(Clone, PartialEq, Eq)]
+struct ProjectVersion {
+    identity: String,
+    sha256: String,
+}
 pub struct Files {
     root: PathBuf,
     dir: File,
+    version: RefCell<Option<(String, ProjectVersion)>>,
 }
 impl Files {
     pub fn root_file(&self) -> Result<File> {
@@ -95,7 +103,11 @@ impl Files {
         let root = root.canonicalize()?;
         let dir = File::open(&root)?;
         dir.try_lock().map_err(|_| std::io::Error::other("Another Venturi Web process owns this project root, or directory locking is unavailable"))?;
-        Ok(Self { root, dir })
+        Ok(Self {
+            root,
+            dir,
+            version: RefCell::new(None),
+        })
     }
     fn name(name: &str) -> Result<()> {
         if name.is_empty()
@@ -112,6 +124,9 @@ impl Files {
         Ok(())
     }
     fn read(&self, name: &str) -> Result<Vec<u8>> {
+        self.read_versioned(name).map(|(bytes, _)| bytes)
+    }
+    fn read_versioned(&self, name: &str) -> Result<(Vec<u8>, ProjectVersion)> {
         Self::name(name)?;
         let fd = openat(
             &self.dir,
@@ -125,14 +140,26 @@ impl Files {
         if !meta.is_file() || meta.len() > MAX_PROJECT {
             return Err(ApiError::invalid("Project exceeds the 8 MiB file limit"));
         }
+        let identity = crate::source::file_identity(&file)?;
         let mut bytes = Vec::new();
-        file.take(MAX_PROJECT + 1)
+        (&file)
+            .take(MAX_PROJECT + 1)
             .read_to_end(&mut bytes)
             .map_err(|_| ApiError::io())?;
         if bytes.len() as u64 > MAX_PROJECT {
             return Err(ApiError::invalid("Project exceeds the 8 MiB file limit"));
         }
-        Ok(bytes)
+        if identity != crate::source::file_identity(&file)? {
+            return Err(ApiError::conflict(
+                "SAVE_CONFLICT",
+                "Project changed while being read; retry opening it",
+            ));
+        }
+        let version = ProjectVersion {
+            identity,
+            sha256: format!("{:x}", Sha256::digest(&bytes)),
+        };
+        Ok((bytes, version))
     }
     pub fn list(&self) -> Result<Value> {
         let mut projects = Vec::new();
@@ -247,12 +274,15 @@ impl Files {
         self.load_project_file(name)
     }
     fn load_project_file(&self, name: &str) -> Result<Project> {
-        let bytes = self.read(name)?;
+        let (bytes, version) = self.read_versioned(name)?;
         let mut project: Project = ron::de::from_bytes(&bytes)
             .map_err(|_| ApiError::invalid("The project is not valid Venturi RON"))?;
         self.validate_media(&mut project)?;
         validate_project(&project)?;
         project.refresh_clip_rates();
+        if name.ends_with(".vvproj") {
+            *self.version.borrow_mut() = Some((name.into(), version));
+        }
         Ok(project)
     }
     fn validate_media(&self, project: &mut Project) -> Result<()> {
@@ -307,6 +337,23 @@ impl Files {
                 .unwrap()
                 .as_nanos()
         );
+        let expected = if create {
+            None
+        } else {
+            Some(
+                self.version
+                    .borrow()
+                    .as_ref()
+                    .filter(|(token, _)| token == name)
+                    .map(|(_, version)| version.clone())
+                    .ok_or_else(|| {
+                        ApiError::conflict(
+                            "SAVE_CONFLICT",
+                            "Open the current on-disk project before saving, or use Save As",
+                        )
+                    })?,
+            )
+        };
         let result = (|| {
             let fd = openat(
                 &self.dir,
@@ -319,6 +366,10 @@ impl Files {
             file.write_all(data.as_bytes())
                 .map_err(|_| ApiError::io())?;
             file.sync_all().map_err(|_| ApiError::io())?;
+            let next = ProjectVersion {
+                identity: crate::source::file_identity(&file)?,
+                sha256: format!("{:x}", Sha256::digest(data.as_bytes())),
+            };
             if create {
                 rustix::fs::renameat_with(
                     &self.dir,
@@ -331,7 +382,21 @@ impl Files {
                     ApiError::conflict("FILE_EXISTS", "A project with that name already exists")
                 })?;
             } else {
-                let old = self.read(name)?;
+                let check = || {
+                    self.read_versioned(name).map_err(|_| {
+                        ApiError::conflict(
+                            "SAVE_CONFLICT",
+                            "The on-disk project is missing or changed; keep edits with Save As",
+                        )
+                    })
+                };
+                let (old, version) = check()?;
+                if Some(&version) != expected.as_ref() {
+                    return Err(ApiError::conflict(
+                        "SAVE_CONFLICT",
+                        "The on-disk project changed since opening or saving; preserve edits with Save As",
+                    ));
+                }
                 let backup = format!("{name}.bak");
                 let backup_temp = format!("{temp}.bak");
                 let fd = openat(
@@ -348,11 +413,25 @@ impl Files {
                 let mut file = File::from(fd);
                 file.write_all(&old).map_err(|_| ApiError::io())?;
                 file.sync_all().map_err(|_| ApiError::io())?;
+                if check()?.1 != version {
+                    let _ = unlinkat(&self.dir, backup_temp.as_str(), AtFlags::empty());
+                    return Err(ApiError::conflict(
+                        "SAVE_CONFLICT",
+                        "The on-disk project changed during Save; preserve edits with Save As",
+                    ));
+                }
                 renameat(&self.dir, backup_temp.as_str(), &self.dir, backup.as_str())
                     .map_err(|_| ApiError::io())?;
+                if check()?.1 != version {
+                    return Err(ApiError::conflict(
+                        "SAVE_CONFLICT",
+                        "The on-disk project changed during Save; preserve edits with Save As",
+                    ));
+                }
                 renameat(&self.dir, temp.as_str(), &self.dir, name).map_err(|_| ApiError::io())?;
             }
             self.dir.sync_all().map_err(|_| ApiError::io())?;
+            *self.version.borrow_mut() = Some((name.into(), next));
             Ok(())
         })();
         let _ = unlinkat(&self.dir, temp.as_str(), AtFlags::empty());

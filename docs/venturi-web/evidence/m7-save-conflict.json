@@ -1,0 +1,57 @@
+{
+  "fixture": "Own native montage copy; CPU only",
+  "project": "SaveConflict_UI_check.vvproj",
+  "original_sha256": "af150d656bf288e638a14a40b2612d5afdb51461f334673083a156b5700c31c0",
+  "external_sha256": "75599e3e29aaf64bb3e50dc94f55f6c34bb6b42e580552bb9c235f0ab4f30e8f",
+  "memory_before_refused_save": {
+    "unsaved": true,
+    "history": {
+      "labels": [
+        "MuteTrack"
+      ],
+      "position": 1
+    },
+    "video_muted": true
+  },
+  "backup_existed_before_conflict": false,
+  "external_change": "Appended a valid RON comment to this own test project; no source/shared files changed",
+  "refused_save": {
+    "native_memory_retained": true,
+    "dirty": true,
+    "history": {
+      "labels": [
+        "MuteTrack"
+      ],
+      "position": 1
+    },
+    "external_project_preserved": true,
+    "backup_not_created": true,
+    "browser_projects_dialog_visible": true,
+    "browser_save_as_name": "SaveConflict_UI_check_copy",
+    "browser_save_as_focused": true
+  },
+  "all_sixty_source_files_unchanged": true,
+  "tests": {
+    "vv_web": 103,
+    "javascript": 67,
+    "clippy": "vv-web all targets; warnings denied"
+  },
+  "copy_saved": {
+    "project": "SaveConflict_UI_preserved3.vvproj",
+    "saved": true,
+    "video_muted": true,
+    "project_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+    "annotations_copied_exactly": true,
+    "external_project_preserved": true,
+    "original_backup_not_created": true
+  },
+  "restart_verified": {
+    "project": "SaveConflict_UI_preserved3.vvproj",
+    "saved": true,
+    "video_muted": true,
+    "project_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+    "annotations_copied_exactly": true,
+    "external_project_preserved": true,
+    "original_backup_not_created": true
+  }
+}

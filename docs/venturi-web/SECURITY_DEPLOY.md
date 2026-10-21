@@ -56,8 +56,16 @@ epoch. The original file and backup are preserved. Save As can preserve dirty
 current edits first. No unsaved-edit autosave or durable render queue is claimed.
 
 These complement the loopback Host/Origin/JSON/CSP boundaries and bounded
-queues. Long soak, external-edit conflict detection and a complete public-host
-threat review remain open. No background service or public listener is enabled.
+queues. Save now compares the current file's descriptor identity and SHA-256
+against its validated Open/last Save baseline, including equal-size changes with
+restored mtime. Missing/replaced/changed files refuse with SAVE_CONFLICT before
+the normal backup/write, preserving in-memory edits for Save As. Rechecks before
+publication narrow concurrent-change windows; they cannot lock an uncooperative
+external writer between the final check and rename. An external desktop editor
+should still be closed while saving the same project from the web.
+
+Long soak, unsaved autosave, durable jobs and a complete public-host threat review
+remain open. No background service or public listener is enabled.
 
 ## License and brand
 

@@ -326,6 +326,7 @@
             placeholder="My_project" /></label
         ><button class="primary">Create project</button>
       </form>
+      <p id="project-error" role="alert"></p>
       <form id="save-as-project">
         <label class="field">Save copy as <input name="name" required maxlength="64" pattern="[A-Za-z0-9_-]+" placeholder="Project_copy"></label>
         <button>Save As</button>
@@ -348,7 +349,6 @@
         <button>Import OTIO as new project</button>
       </form>
       <p id="otio-warnings" role="status"></p>
-      <p id="project-error" role="alert"></p>
     </dialog>
     <dialog id="palette">
       <form method="dialog">

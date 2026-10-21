@@ -16,6 +16,80 @@ fn request(
 }
 
 #[test]
+fn external_save_conflicts_retain_dirty_native_edits_and_allow_a_retry_safe_save_as() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-save-conflict-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let new = request(
+        &editor,
+        Operation::NewProject {
+            name: "original".into(),
+        },
+        "conflict-new",
+        None,
+    );
+    editor.mutation(None, new).unwrap();
+    let timeline = editor.session.project.timelines.keys().next().unwrap();
+    let edit = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "conflict-edit",
+        Some(timeline),
+    );
+    editor
+        .mutation(Some(vv_core::Id::raw(timeline).to_string()), edit)
+        .unwrap();
+    let memory = serde_json::to_value(&editor.session.project).unwrap();
+    let steps = editor.session.history.position();
+    std::fs::write(root.join("original.vvproj"), b"external edit preserved").unwrap();
+    let save = request(&editor, Operation::Save, "conflict-save", None);
+    assert_eq!(
+        editor.mutation(None, save.clone()).unwrap_err().1,
+        "SAVE_CONFLICT"
+    );
+    assert_eq!(editor.mutation(None, save).unwrap_err().1, "SAVE_CONFLICT");
+    assert!(editor.session.has_unsaved_changes());
+    assert_eq!(editor.session.history.position(), steps);
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        memory
+    );
+    let copy = request(
+        &editor,
+        Operation::SaveAs {
+            name: "preserved".into(),
+        },
+        "conflict-copy",
+        None,
+    );
+    let reply = editor.mutation(None, copy.clone()).unwrap();
+    assert_eq!(editor.mutation(None, copy).unwrap(), reply);
+    assert!(!editor.session.has_unsaved_changes());
+    assert_eq!(
+        editor.files.load("preserved.vvproj").unwrap().timelines[timeline].tracks[0]
+            .clips
+            .len(),
+        1
+    );
+    assert_eq!(
+        std::fs::read(root.join("original.vvproj")).unwrap(),
+        b"external edit preserved"
+    );
+    assert!(!root.join("original.vvproj.bak").exists());
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn recovering_a_backup_creates_a_retry_safe_copy_and_never_overwrites_the_original() {
     let root = std::env::temp_dir().join(format!(
         "vv-web-recover-{}",

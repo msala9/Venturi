@@ -8,6 +8,76 @@ fn root() -> PathBuf {
             .as_nanos()
     ))
 }
+
+#[test]
+fn external_project_changes_preserve_the_file_and_backup_until_an_explicit_reopen() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    let project = Project::default();
+    files.save(&project, "current.vvproj", true).unwrap();
+    files.save(&project, "current.vvproj", false).unwrap();
+    let backup = std::fs::read(root.join("current.vvproj.bak")).unwrap();
+    let external = b"external file content";
+    std::fs::write(root.join("current.vvproj"), external).unwrap();
+    assert_eq!(
+        files.save(&project, "current.vvproj", false).unwrap_err().1,
+        "SAVE_CONFLICT"
+    );
+    assert_eq!(
+        std::fs::read(root.join("current.vvproj")).unwrap(),
+        external
+    );
+    assert_eq!(
+        std::fs::read(root.join("current.vvproj.bak")).unwrap(),
+        backup
+    );
+    files.save(&project, "memory_copy.vvproj", true).unwrap();
+    assert!(files.load("memory_copy.vvproj").is_ok());
+    let original = ron::ser::to_string(&project).unwrap();
+    std::fs::write(root.join("current.vvproj"), original).unwrap();
+    let reopened = files.load("current.vvproj").unwrap();
+    files.save(&reopened, "current.vvproj", false).unwrap();
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn save_detects_equal_size_writes_with_restored_mtime_and_missing_or_replaced_files() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    let project = Project::default();
+    files.save(&project, "current.vvproj", true).unwrap();
+    let path = root.join("current.vvproj");
+    let bytes = std::fs::read(&path).unwrap();
+    let timestamp = std::fs::metadata(&path).unwrap().modified().unwrap();
+    let mut changed = bytes.clone();
+    changed[0] = b'#';
+    std::fs::write(&path, &changed).unwrap();
+    File::options()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_times(std::fs::FileTimes::new().set_modified(timestamp))
+        .unwrap();
+    assert_eq!(
+        files.save(&project, "current.vvproj", false).unwrap_err().1,
+        "SAVE_CONFLICT"
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), changed);
+    std::fs::remove_file(&path).unwrap();
+    assert_eq!(
+        files.save(&project, "current.vvproj", false).unwrap_err().1,
+        "SAVE_CONFLICT"
+    );
+    std::fs::write(&path, &bytes).unwrap();
+    assert_eq!(
+        files.save(&project, "current.vvproj", false).unwrap_err().1,
+        "SAVE_CONFLICT"
+    );
+    assert!(!root.join("current.vvproj.bak").exists());
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
 #[test]
 fn a_project_root_has_one_nonblocking_process_owner_and_releases_on_drop() {
     let root = root();

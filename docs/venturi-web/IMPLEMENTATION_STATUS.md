@@ -1381,3 +1381,28 @@ m6-twenty-shot-montage.json, m6-twenty-shot-browser.png,
 m6-twenty-shot-timeline-browser.png and m6-twenty-shot-export-browser.png.
 This closes Shot/Take grouping acceptance; remaining native GUI and release
 work is still tracked in the parity ledger.
+
+## M7 — external project Save conflict protection
+
+The current native project file is bound to its descriptor identity and SHA-256
+after a validated Open or successful Save/Save As. Only one current baseline is
+retained. Save rechecks the bounded, NOFOLLOW file before writing the backup and
+again before publication. A changed/replaced/missing file returns SAVE_CONFLICT;
+dirty native state and history stay available. The browser opens Projects with
+the visible error beside Save As, proposes a bounded copy name and focuses it.
+Save As still uses a new no-replace destination and copies Review annotations.
+
+103 web tests and 67 JS tests pass, with web clippy (warnings denied), formatting
+and build. Regression tests cover stable external changes with unchanged backup,
+equal-size writes with restored mtime, deleted/replaced files, explicit reopen,
+dirty-state retention, repeat-safe refusal and repeat-safe Save As. Real browser
+acceptance appended a valid external RON comment to an own montage copy after
+muting V1 in memory. Save refused, kept dirty/history/V1 state and preserved the
+external SHA-256 without creating a backup. Save As and service restart retained
+the muted track and an exact annotation copy. All 60 source hashes stayed
+unchanged. Evidence: m7-save-conflict.json and m7-save-conflict-browser.png.
+
+This detects ordinary external edits; it does not lock arbitrary external
+writers across the final check/rename interval. Directory ownership only
+coordinates cooperating web hosts. Unsaved-edit autosave, durable jobs, saved
+session restoration and the rest of the release checks remain open.

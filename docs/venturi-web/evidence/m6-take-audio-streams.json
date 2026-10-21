@@ -1,0 +1,245 @@
+{
+  "project": "Take_Audio_API_check.vvproj",
+  "project_sha256": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+  "actual_multistream_fixture": {
+    "name": "take-audio-677fba04bbac.mkv",
+    "size_bytes": 97077,
+    "sha256": "8c048a997eb5c647aa25fd4086ddeea777c9a09c0d35a85d4b6e7211f85bab66",
+    "audio_stream_count": 2,
+    "generated_for_diagnostic_fixture_only": true
+  },
+  "checks": {
+    "native_import_two_linked_audio_streams": true,
+    "missing_preserved_stream_atomic_refusal": true,
+    "invalid_selected_stream_atomic_refusal": true,
+    "explicit_stream_zero_remaps_both": true,
+    "plan_reports_each_previous_and_next": true,
+    "one_undo_redo_and_retry": true,
+    "original_media_preserved": true,
+    "other_timelines_preserved": true
+  },
+  "save_restart_exact": true,
+  "parent_hashes_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "binary_sha256": "7155210622f28f201e75d581346eb503b47381f95d696f2f7e41c8b8a2181625",
+  "gui_acceptance": false,
+  "hardware_gpu_used": false,
+  "no_render_or_exports": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "limits": {
+    "cpu": "one CPU",
+    "memory": "512 MiB",
+    "swap": 0,
+    "oom_score": 1000,
+    "runtime_max_seconds": 60
+  },
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "checkpoint": "/home/marco/.cache/venturi-take-audio-check/acceptance.json",
+  "phase": "verified",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792604079.19685,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "7155210622f28f201e75d581346eb503b47381f95d696f2f7e41c8b8a2181625",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "parents_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Take_Audio_API_check.vvproj": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Retime_UI_Retained_677fba04bbac.vvproj": "d9c29a84906ea350ba2bbcb66261e2eb373d58e72e2e0df441f70981c314a63d",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "core_tests": 271,
+  "rust_tests": 224,
+  "javascript_tests": 472,
+  "main_editor_preserved": true,
+  "own_ui_test_unit_stopped": true,
+  "windows_ui_native_states": {
+    "after_apply": {
+      "stage": "after_apply",
+      "history": {
+        "labels": [
+          "ReplaceTake"
+        ],
+        "position": 1
+      },
+      "native_audio_stream_indices": {
+        "22": 1,
+        "23": 1
+      },
+      "project_epoch": "1792604113407411935:1",
+      "timeline_id": "11",
+      "plan": {
+        "audio_stream_count": 2,
+        "changes": [
+          {
+            "audio_stream_index": 1,
+            "clip_id": "22",
+            "length": 12,
+            "media_id": "14",
+            "previous_audio_stream_index": 1,
+            "previous_length": 12,
+            "previous_media_id": "14",
+            "source_in": 0,
+            "source_out": 15,
+            "start_frame": 0,
+            "track": "1"
+          },
+          {
+            "audio_stream_index": 1,
+            "clip_id": "23",
+            "length": 12,
+            "media_id": "14",
+            "previous_audio_stream_index": 1,
+            "previous_length": 12,
+            "previous_media_id": "14",
+            "source_in": 0,
+            "source_out": 15,
+            "start_frame": 0,
+            "track": "2"
+          }
+        ],
+        "merged_keys": 0,
+        "query": {
+          "frame": 0,
+          "if_generation": "1",
+          "project_epoch": "1792604113407411935:1",
+          "revision": "81025ea4966789b7",
+          "timeline_id": "11",
+          "width": 960
+        },
+        "removed_crossings": 0,
+        "source_version": "64512:8260929:97077:1792604104:190273404",
+        "version": 1
+      },
+      "parents_preserved": true
+    },
+    "after_undo": {
+      "stage": "after_undo",
+      "history": {
+        "labels": [
+          "ReplaceTake"
+        ],
+        "position": 0
+      },
+      "native_audio_stream_indices": {
+        "22": 0,
+        "23": 0
+      },
+      "project_epoch": "1792604113407411935:1",
+      "timeline_id": "11",
+      "plan": {
+        "audio_stream_count": 2,
+        "changes": [
+          {
+            "audio_stream_index": 0,
+            "clip_id": "22",
+            "length": 12,
+            "media_id": "14",
+            "previous_audio_stream_index": 0,
+            "previous_length": 12,
+            "previous_media_id": "10",
+            "source_in": 0,
+            "source_out": 15,
+            "start_frame": 0,
+            "track": "1"
+          },
+          {
+            "audio_stream_index": 0,
+            "clip_id": "23",
+            "length": 12,
+            "media_id": "14",
+            "previous_audio_stream_index": 0,
+            "previous_length": 12,
+            "previous_media_id": "10",
+            "source_in": 0,
+            "source_out": 15,
+            "start_frame": 0,
+            "track": "2"
+          }
+        ],
+        "merged_keys": 0,
+        "query": {
+          "frame": 0,
+          "if_generation": "2",
+          "project_epoch": "1792604113407411935:1",
+          "revision": "d28f06e9c6d33701",
+          "timeline_id": "11",
+          "width": 960
+        },
+        "removed_crossings": 0,
+        "source_version": "64512:8260929:97077:1792604104:190273404",
+        "version": 1
+      },
+      "parents_preserved": true
+    }
+  },
+  "ui_capture_method": "Read-only native stream plans and exact saved timeline equality captured while real Windows UI performed Confirm and Undo; captures retained after own finite server stopped",
+  "finalization_note": "An optional served-file check requested /index.html instead of the implemented / route and returned 404. Its finally block stopped the own test server. Final verification used the already captured native UI states, private source/build hashes, saved checkpoint, unchanged parents/media and stopped-unit checks; no GUI action was repeated.",
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-core/src/take.rs": "b7e597806a13f5b37580391cf4378aa9435e7ad5378d06e2ebfd5be6e17dade5",
+      "crates/vv-core/src/tests/take.rs": "262715810f61724644793df9aae2a74b06b9c27d65707bc212e1a4ca47ac5f33",
+      "crates/vv-web/src/snapshot.rs": "d3a53062ae9278173d08797d9c7c3508a24e1c403b8cd46a5260cd707d09d9d3",
+      "crates/vv-web/src/take.rs": "53f357e238ddd999aaaa85c9d20b9208d60b0760056ef1c5cde69947fb36bfc8",
+      "crates/vv-web/src/tests/snapshot.rs": "a463752956c56026f71c6f417cc9d97594a11dcf0b2156fed70400d1bb1571b4",
+      "crates/vv-web/src/tests/take.rs": "16a2f111f14302d66dfd096ac56c955178a50be1fb4fc2f0c28fdcdf4eeab841",
+      "web/index.html": "e877836593d396a2f5e6ebbc36f720302e1397cd5327a947eb31f9a557368a98",
+      "web/js/review.js": "b3d5c10dba693b57a0946a6b406c9102f5077767075c8ca8157673be18cd4c59",
+      "web/test/review.test.js": "10ee1888792322bd47cb165e3c45e93dd502dcde8a29c41ac06a4917f96b82d0"
+    },
+    "core_tests": 271,
+    "rust_tests": 224,
+    "javascript_tests": 472,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "hardware_gpu": false
+  },
+  "scope_note": "Explicit native replacement audio stream preservation or remapping, strict DTO parsing and legacy idempotency serialization. Native models cover unequal linked stream indices, valid preservation, missing streams, locked atomic refusal, explicit remapping and Undo/Redo. Actual tiny two-stream Matroska imported natively; replacement by one-stream WAV refuses default preservation and invalid selected stream, explicitly maps both to zero in one Undo/Redo/retry, and survives Save/restart. Existing Windows browser chooses two-stream B and explicit stream one, previews both mappings, confirms once, and one UI Undo restores exact native timeline and indices. No browser installation, GPU work, export, physical audio audition or long-duration A/B qualification.",
+  "screenshot_sha256": "3528aa8dfeed09e0592e5e005f6ae6a55c6bc0790a11388bddab05189393013e"
+}

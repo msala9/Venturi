@@ -26,6 +26,34 @@ pub enum AttributePolicy {
     Reset,
 }
 
+#[derive(Clone, Copy, Debug, Default, Serialize, PartialEq, Eq)]
+#[serde(tag = "policy", rename_all = "snake_case")]
+pub enum AudioStreamPolicy {
+    #[default]
+    Preserve,
+    Select {
+        index: usize,
+    },
+}
+
+impl<'de> Deserialize<'de> for AudioStreamPolicy {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        #[serde(tag = "policy", rename_all = "snake_case", deny_unknown_fields)]
+        enum Fields {
+            Preserve {},
+            Select { index: usize },
+        }
+        Ok(match Fields::deserialize(deserializer)? {
+            Fields::Preserve {} => Self::Preserve,
+            Fields::Select { index } => Self::Select { index },
+        })
+    }
+}
+
 pub struct Request {
     pub timeline: TimelineId,
     pub clip: ClipId,
@@ -34,6 +62,7 @@ pub struct Request {
     pub duration: DurationPolicy,
     pub links: LinkPolicy,
     pub attributes: AttributePolicy,
+    pub audio_streams: AudioStreamPolicy,
 }
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum Error {
@@ -43,6 +72,10 @@ pub enum Error {
     Locked,
     #[error("The take does not contain the required video or audio stream")]
     Stream,
+    #[error(
+        "The take lacks an affected audio stream; explicitly select an available source stream or keep other linked clips"
+    )]
+    AudioStream,
     #[error("Choose an ordinary source media clip; compound replacement is unsupported")]
     Compound,
     #[error("Unfreeze the selected or linked clip before replacing its take")]
@@ -69,12 +102,15 @@ pub struct Change {
     pub length: FrameIdx,
     pub source_in: FrameIdx,
     pub source_out: FrameIdx,
+    pub previous_audio_stream_index: Option<usize>,
+    pub audio_stream_index: Option<usize>,
 }
 #[derive(Debug)]
 pub struct Plan {
     pub changes: Vec<Change>,
     pub removed_crossings: usize,
     pub merged_keys: usize,
+    pub audio_stream_count: usize,
     command: CompositeCommand,
 }
 impl Plan {
@@ -153,6 +189,16 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
             }
             let mut replacement = clip.clone();
             replacement.source = ClipSource::Media(request.media);
+            if track.kind == TrackKind::Audio {
+                let stream = match request.audio_streams {
+                    AudioStreamPolicy::Preserve => clip.audio_stream_index,
+                    AudioStreamPolicy::Select { index } => index,
+                };
+                if stream >= media.meta.audio_stream_count() {
+                    return Err(Error::AudioStream);
+                }
+                replacement.audio_stream_index = stream;
+            }
             replacement.conform(conform);
             let anchor = replacement.rate().scale_round(request.source_in);
             replacement.source_offset = anchor
@@ -220,6 +266,16 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
             length: clip.timeline_len,
             source_in: clip.source_in(),
             source_out: clip.source_out(),
+            previous_audio_stream_index: (timeline.tracks[*track].kind == TrackKind::Audio).then(
+                || {
+                    timeline.tracks[*track]
+                        .clip(clip.id)
+                        .unwrap()
+                        .audio_stream_index
+                },
+            ),
+            audio_stream_index: (timeline.tracks[*track].kind == TrackKind::Audio)
+                .then_some(clip.audio_stream_index),
         })
         .collect();
     let mut commands: Vec<Box<dyn Command>> = Vec::new();
@@ -255,6 +311,7 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
         changes,
         removed_crossings,
         merged_keys,
+        audio_stream_count: media.meta.audio_stream_count(),
         command: CompositeCommand::new(CommandLabel::ReplaceTake, commands),
     })
 }

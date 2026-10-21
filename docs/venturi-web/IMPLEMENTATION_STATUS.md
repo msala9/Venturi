@@ -24,7 +24,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-220 Rust tests, 464 JavaScript tests,
+224 web Rust tests, 271 native core tests and 472 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -32,7 +32,8 @@ qualification remain open. Latest evidence:
 `evidence/m4-mask-pen-path-keys.json`, `evidence/m4-transition-placement.json`
 `evidence/m3-preview-cache-safety.json`, `evidence/m3-program-rollover.json`
 `evidence/m3-source-windows.json`, `evidence/m3-source-assets.json`
-`evidence/m4-speed-presets.json` and `evidence/m4-retime-selected-visibility.json`;
+`evidence/m4-speed-presets.json`, `evidence/m4-retime-selected-visibility.json`
+and `evidence/m6-take-audio-streams.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
@@ -2841,3 +2842,36 @@ no system packages or AMD/ROCm drivers were changed. The owner constraint is
 recorded in AGENTS.md. Browser pointer-drag, OS scaling, rendered playback,
 physical audio and hardware acceptance remain open; the full parity ledger is
 still 32 done, 56 partial and two not started.
+
+## M6 - explicit replacement audio stream policies
+
+Replace Take now preserves each affected Audio clip's stream index by default,
+or maps all affected Audio clips to an explicitly chosen B stream. Missing
+streams refuse the whole native plan before mutation; there is no silent stream
+zero fallback. Video clip stream fields stay unchanged. Native plans report
+before/after Audio indices and the replacement stream count. Source validation
+now includes sample rate, channels and stream count. Strict policy parsing
+retains legacy canonical receipt bytes for omitted or explicit Preserve.
+
+Review exposes the native B count, bounds explicit selection, shows each mapping
+before confirmation and invalidates obsolete plans on source/settings changes.
+B changes, swaps and refresh reset to Preserve. The replacement setting is
+separate from audition, which still uses the first source audio stream.
+
+One limited halo2 build passed 271 native core tests, 224 web Rust tests,
+472 JavaScript tests, formatting and clippy for both crates with warnings denied.
+A 97 KB diagnostic two-stream Matroska was imported by the native service;
+one-stream WAV replacement refused preservation and invalid selection, then
+explicitly remapped both linked clips to stream zero. One Undo/Redo, retry,
+Save and restart preserved exact state and all parent/source hashes.
+The existing Windows browser selected stream one of the two-stream source,
+previewed both mappings, applied one ReplaceTake and restored the exact timeline
+and both previous stream indices with one UI Undo. Only one temporary tab was
+used; no browser was installed on halo2. The own finite server and SSH tunnel
+were stopped. The primary editor's five unsaved MoveClips remain intact.
+
+Evidence: `evidence/m6-take-audio-streams.json` and
+`evidence/m6-take-audio-windows.jpg`. This closes the missing-stream replacement
+defect, not the whole Review milestone. Long-source A/B windows, shorter-A clock
+continuation, selected-stream audition, frozen/compound policies and physical
+audio/hardware acceptance remain open. The completion ledger is unchanged.

@@ -1,6 +1,42 @@
 use super::*;
 
 #[test]
+fn media_stream_counts_use_native_metadata_without_mutating_legacy_projects() {
+    let mut editor = Session::default();
+    for (has_audio, audio_streams) in [(true, 2), (true, 0), (false, 4)] {
+        editor.project.media_pool.insert(vv_core::MediaItem {
+            path: "offline.wav".into(),
+            meta: vv_core::MediaMeta {
+                duration_frames: 24,
+                fps: vv_core::Rational::new(24, 1),
+                width: 0,
+                height: 0,
+                has_video: false,
+                has_audio,
+                sample_rate: 48000,
+                channels: 1,
+                audio_streams,
+                file: Default::default(),
+            },
+            content_hash: 0,
+            compound: None,
+            folder: None,
+        });
+    }
+    let before = serde_json::to_value(&editor.project).unwrap();
+    let snapshot = session(&editor, "stream-count-test");
+    let counts: Vec<_> = snapshot["media"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|item| item["audio_stream_count"].as_u64().unwrap())
+        .collect();
+    assert_eq!(counts, [2, 1, 0]);
+    assert_eq!(serde_json::to_value(&editor.project).unwrap(), before);
+    assert_eq!(editor.history.position(), 0);
+}
+
+#[test]
 fn transition_creation_defaults_match_native_payloads_at_fractional_low_and_high_fps_without_mutation()
  {
     for (fps, standard, smooth) in [

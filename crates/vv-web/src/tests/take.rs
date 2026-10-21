@@ -67,6 +67,7 @@ fn setup() -> (
             duration: core::take::DurationPolicy::Preserve,
             links: core::take::LinkPolicy::ReplaceLinked,
             attributes: core::take::AttributePolicy::Preserve,
+            audio_streams: core::take::AudioStreamPolicy::Preserve,
             source_version: None,
         },
         root,
@@ -185,6 +186,167 @@ fn previewed_source_changes_locked_targets_and_shortening_policy_never_partially
     );
     assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
     std::fs::write(root.join("new.wav"), bytes).unwrap();
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn replacement_audio_policy_defaults_to_preserve_and_rejects_ambiguous_or_malformed_stream_choices()
+{
+    let legacy = json!({"clip_id":"1","media_id":"2","source_in":0,"duration":"preserve","links":"replace_linked","attributes":"preserve","source_version":null});
+    let parsed: Replacement = serde_json::from_value(legacy.clone()).unwrap();
+    assert_eq!(
+        parsed.audio_streams,
+        core::take::AudioStreamPolicy::Preserve
+    );
+    assert_eq!(serde_json::to_value(&parsed).unwrap(), legacy);
+    assert_eq!(
+        serde_json::to_string(&parsed).unwrap(),
+        r#"{"clip_id":"1","media_id":"2","source_in":0,"duration":"preserve","links":"replace_linked","attributes":"preserve","source_version":null}"#
+    );
+    let mut selected = legacy.clone();
+    selected["audio_streams"] = json!({"policy":"select","index":0});
+    assert_eq!(
+        serde_json::from_value::<Replacement>(selected)
+            .unwrap()
+            .audio_streams,
+        core::take::AudioStreamPolicy::Select { index: 0 }
+    );
+    for policy in [
+        json!(null),
+        json!("preserve"),
+        json!({"policy":"select","index":-1}),
+        json!({"policy":"select","index":0.5}),
+        json!({"policy":"select","index":"0"}),
+        json!({"policy":"select","index":0,"fallback":true}),
+    ] {
+        let mut invalid = legacy.clone();
+        invalid["audio_streams"] = policy;
+        assert!(serde_json::from_value::<Replacement>(invalid).is_err());
+    }
+}
+#[test]
+fn native_web_preview_reports_explicit_audio_remap_and_refuses_missing_streams_without_partial_edits()
+ {
+    let (files, mut session, id, mut replacement, root) = setup();
+    let clip = &mut session.project.timelines[id].tracks[1].clips[0];
+    clip.audio_stream_index = 1;
+    let core::ClipSource::Media(old) = clip.source else {
+        unreachable!()
+    };
+    session
+        .project
+        .media_pool
+        .get_mut(old)
+        .unwrap()
+        .meta
+        .audio_streams = 2;
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let position = session.history.position();
+    let original_old = std::fs::read(root.join("old.wav")).unwrap();
+    let original_new = std::fs::read(root.join("new.wav")).unwrap();
+    let preview_body = |session: &Session, replacement: &Replacement| Preview {
+        query: query(session, id),
+        replacement: replacement.clone(),
+    };
+    assert_eq!(
+        preview(&session, &files, id, &preview_body(&session, &replacement))
+            .unwrap_err()
+            .1,
+        "TAKE_AUDIO_STREAM"
+    );
+    replacement.audio_streams = core::take::AudioStreamPolicy::Select { index: 1 };
+    assert_eq!(
+        preview(&session, &files, id, &preview_body(&session, &replacement))
+            .unwrap_err()
+            .1,
+        "TAKE_AUDIO_STREAM"
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    assert_eq!(session.history.position(), position);
+    replacement.audio_streams = core::take::AudioStreamPolicy::Select { index: 0 };
+    let planned = preview(&session, &files, id, &preview_body(&session, &replacement)).unwrap();
+    assert_eq!(planned["audio_stream_count"], 1);
+    assert_eq!(planned["changes"][0]["previous_audio_stream_index"], 1);
+    assert_eq!(planned["changes"][0]["audio_stream_index"], 0);
+    replacement.source_version = Some(planned["source_version"].as_str().unwrap().into());
+    session.project.timelines[id].tracks[1].locked = true;
+    assert_eq!(
+        apply(&mut session, &files, id, &replacement).unwrap_err().1,
+        "TRACK_LOCKED"
+    );
+    session.project.timelines[id].tracks[1].locked = false;
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    assert_eq!(session.history.position(), position);
+    apply(&mut session, &files, id, &replacement).unwrap();
+    assert_eq!(
+        session.project.timelines[id].tracks[1].clips[0].audio_stream_index,
+        0
+    );
+    assert_eq!(session.history.position(), position + 1);
+    let after = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    crate::commands::history(&mut session, &crate::commands::Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    crate::commands::history(&mut session, &crate::commands::Operation::Redo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        after
+    );
+    assert_eq!(std::fs::read(root.join("old.wav")).unwrap(), original_old);
+    assert_eq!(std::fs::read(root.join("new.wav")).unwrap(), original_new);
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+#[test]
+fn take_probe_revalidates_audio_rate_channels_and_stream_count_before_plan_or_mutation() {
+    let (files, mut session, id, mut replacement, root) = setup();
+    let planned = preview(
+        &session,
+        &files,
+        id,
+        &Preview {
+            query: query(&session, id),
+            replacement: replacement.clone(),
+        },
+    )
+    .unwrap();
+    replacement.source_version = Some(planned["source_version"].as_str().unwrap().into());
+    let media = core::MediaId::from_raw(replacement.media_id.parse().unwrap());
+    let actual = session.project.media_pool[media].meta.clone();
+    let position = session.history.position();
+    for scenario in 0..3 {
+        let meta = &mut session.project.media_pool.get_mut(media).unwrap().meta;
+        *meta = actual.clone();
+        match scenario {
+            0 => meta.sample_rate += 1,
+            1 => meta.channels += 1,
+            _ => meta.audio_streams += 1,
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let body = Preview {
+            query: query(&session, id),
+            replacement: replacement.clone(),
+        };
+        assert_eq!(
+            preview(&session, &files, id, &body).unwrap_err().1,
+            "SOURCE_CHANGED"
+        );
+        assert_eq!(
+            apply(&mut session, &files, id, &replacement).unwrap_err().1,
+            "SOURCE_CHANGED"
+        );
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.position(), position);
+    }
     drop(files);
     std::fs::remove_dir_all(root).unwrap();
 }

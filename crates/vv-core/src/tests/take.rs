@@ -83,6 +83,7 @@ fn setup() -> (Project, Request, ClipId) {
             duration: DurationPolicy::Preserve,
             links: LinkPolicy::ReplaceLinked,
             attributes: AttributePolicy::Preserve,
+            audio_streams: AudioStreamPolicy::Preserve,
         },
         linked,
     )
@@ -391,4 +392,197 @@ fn source_start_remapping_and_attribute_reset_keep_existing_speed_and_clip_flags
     );
     history.undo(&mut project);
     assert_eq!(value(&project), before);
+}
+
+fn second_linked_audio(
+    project: &mut Project,
+    request: &Request,
+    linked: ClipId,
+    stream: usize,
+) -> ClipId {
+    let mut clip = project.timelines[request.timeline]
+        .clip(1, linked)
+        .unwrap()
+        .clone();
+    clip.id = project.alloc_clip_id();
+    clip.audio_stream_index = stream;
+    let id = clip.id;
+    let mut track = Track::new(TrackKind::Audio);
+    track.clips.push(clip);
+    project.timelines[request.timeline].tracks.push(track);
+    id
+}
+#[test]
+fn replacing_takes_preserves_each_valid_linked_audio_stream_and_reports_only_audio_track_indices() {
+    let (mut project, request, linked) = setup();
+    project.media_pool[request.media].meta.audio_streams = 2;
+    let old = match project.timelines[request.timeline]
+        .clip(0, request.clip)
+        .unwrap()
+        .source
+    {
+        ClipSource::Media(id) => id,
+        _ => unreachable!(),
+    };
+    project.media_pool[old].meta.audio_streams = 2;
+    project.timelines[request.timeline]
+        .clip_mut(0, request.clip)
+        .unwrap()
+        .audio_stream_index = 7;
+    project.timelines[request.timeline]
+        .clip_mut(1, linked)
+        .unwrap()
+        .audio_stream_index = 1;
+    let second = second_linked_audio(&mut project, &request, linked, 0);
+    let before = value(&project);
+    let planned = plan(&project, &request).unwrap();
+    assert_eq!(value(&project), before);
+    assert_eq!(planned.audio_stream_count, 2);
+    let changes: Vec<_> = planned
+        .changes
+        .iter()
+        .map(|change| {
+            (
+                change.clip,
+                change.previous_audio_stream_index,
+                change.audio_stream_index,
+            )
+        })
+        .collect();
+    assert_eq!(
+        changes,
+        [
+            (request.clip, None, None),
+            (linked, Some(1), Some(1)),
+            (second, Some(0), Some(0))
+        ]
+    );
+    let mut history = History::default();
+    history.do_command(&mut project, Box::new(planned.into_command()));
+    assert_eq!(
+        project.timelines[request.timeline]
+            .clip(0, request.clip)
+            .unwrap()
+            .audio_stream_index,
+        7
+    );
+    assert_eq!(
+        project.timelines[request.timeline]
+            .clip(1, linked)
+            .unwrap()
+            .audio_stream_index,
+        1
+    );
+    assert_eq!(
+        project.timelines[request.timeline]
+            .clip(2, second)
+            .unwrap()
+            .audio_stream_index,
+        0
+    );
+    history.undo(&mut project);
+    assert_eq!(value(&project), before);
+}
+#[test]
+fn a_missing_preserved_audio_stream_refuses_the_entire_take_and_explicit_remap_is_one_undo_redo() {
+    let (mut project, mut request, linked) = setup();
+    let old = match project.timelines[request.timeline]
+        .clip(0, request.clip)
+        .unwrap()
+        .source
+    {
+        ClipSource::Media(id) => id,
+        _ => unreachable!(),
+    };
+    project.media_pool[old].meta.audio_streams = 2;
+    project.timelines[request.timeline]
+        .clip_mut(1, linked)
+        .unwrap()
+        .audio_stream_index = 1;
+    let second = second_linked_audio(&mut project, &request, linked, 0);
+    let before = value(&project);
+    assert_eq!(plan(&project, &request).unwrap_err(), Error::AudioStream);
+    assert_eq!(value(&project), before);
+    request.audio_streams = AudioStreamPolicy::Select { index: 0 };
+    let planned = plan(&project, &request).unwrap();
+    assert_eq!(planned.audio_stream_count, 1);
+    let changes: Vec<_> = planned
+        .changes
+        .iter()
+        .filter_map(|change| {
+            change
+                .audio_stream_index
+                .map(|next| (change.clip, change.previous_audio_stream_index, next))
+        })
+        .collect();
+    assert_eq!(changes, [(linked, Some(1), 0), (second, Some(0), 0)]);
+    let mut history = History::default();
+    history.do_command(&mut project, Box::new(planned.into_command()));
+    assert_eq!(history.position(), 1);
+    assert_eq!(
+        history.labels().collect::<Vec<_>>(),
+        [CommandLabel::ReplaceTake]
+    );
+    for (track, id) in [(1, linked), (2, second)] {
+        let result = project.timelines[request.timeline].clip(track, id).unwrap();
+        assert_eq!(result.audio_stream_index, 0);
+        assert_eq!((result.timeline_start, result.timeline_len), (100, 50));
+        assert_eq!(result.fade_in, 8);
+        assert_eq!(result.speed(), Rational::one());
+    }
+    let after = value(&project);
+    history.undo(&mut project);
+    assert_eq!(value(&project), before);
+    history.redo(&mut project);
+    assert_eq!(value(&project), after);
+}
+#[test]
+fn bad_or_locked_audio_stream_remapping_never_partially_replaces_linked_clips() {
+    for index in [1, usize::MAX] {
+        let (project, mut request, _) = setup();
+        let before = value(&project);
+        request.audio_streams = AudioStreamPolicy::Select { index };
+        assert_eq!(plan(&project, &request).unwrap_err(), Error::AudioStream);
+        assert_eq!(value(&project), before);
+    }
+    let (mut project, mut request, _) = setup();
+    request.audio_streams = AudioStreamPolicy::Select { index: 0 };
+    project.timelines[request.timeline].tracks[1].locked = true;
+    let before = value(&project);
+    assert_eq!(plan(&project, &request).unwrap_err(), Error::Locked);
+    assert_eq!(value(&project), before);
+    request.links = LinkPolicy::SelectedOnly;
+    let planned = plan(&project, &request).unwrap();
+    assert_eq!(planned.changes.len(), 1);
+    assert_eq!(planned.changes[0].audio_stream_index, None);
+}
+#[test]
+fn default_legacy_audio_stream_count_and_strict_policy_serialization_use_native_semantics() {
+    let (mut project, request, _) = setup();
+    project.media_pool[request.media].meta.audio_streams = 0;
+    assert_eq!(plan(&project, &request).unwrap().audio_stream_count, 1);
+    assert_eq!(AudioStreamPolicy::default(), AudioStreamPolicy::Preserve);
+    assert_eq!(
+        serde_json::to_value(AudioStreamPolicy::Preserve).unwrap(),
+        serde_json::json!({"policy":"preserve"})
+    );
+    assert_eq!(
+        serde_json::from_value::<AudioStreamPolicy>(
+            serde_json::json!({"policy":"select","index":0})
+        )
+        .unwrap(),
+        AudioStreamPolicy::Select { index: 0 }
+    );
+    for value in [
+        serde_json::json!({"policy":"select","index":-1}),
+        serde_json::json!({"policy":"select","index":0.5}),
+        serde_json::json!({"policy":"select"}),
+        serde_json::json!({"policy":"preserve","index":0}),
+        serde_json::json!({"policy":"fallback"}),
+    ] {
+        assert!(
+            serde_json::from_value::<AudioStreamPolicy>(value.clone()).is_err(),
+            "{value}"
+        );
+    }
 }

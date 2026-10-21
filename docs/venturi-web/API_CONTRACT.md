@@ -601,10 +601,24 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 - POST `/review/replace/plan` takes `{query:FrameQuery,replacement}` and never
   edits the project. Replacement fields: canonical string `clip_id`/`media_id`,
   integer media `source_in`, `duration` (`preserve`/`shorten`), `links`
-  (`replace_linked`/`selected_only`), `attributes` (`preserve`/`reset`), nullable
-  `source_version`. The native plan returns canonical IDs, before/after lengths,
+  (`replace_linked`/`selected_only`), `attributes` (`preserve`/`reset`), optional
+  `audio_streams` (`{policy:"preserve"}` by default, or explicit
+  `{policy:"select",index:0}` with a zero-based integer), and nullable
+  `source_version`. Preserve retains each affected Audio clip's existing stream;
+  Select maps every affected Audio clip to that B stream. Video clip stream
+  fields are untouched. An unavailable resulting stream refuses the entire
+  plan/command with `TAKE_AUDIO_STREAM`; there is no automatic fallback to zero.
+  Omitted and explicit Preserve retain legacy command receipt fingerprints.
+  The native plan returns canonical IDs, before/after lengths,
   native source ranges, removed crossing count, merged animation-key count and
-  the current source version.
+  the current source version, plus `audio_stream_count` and per-change
+  `previous_audio_stream_index`/`audio_stream_index` (null for Video clips).
+  Session media snapshots expose native `audio_stream_count`, including native
+  legacy metadata semantics. Sample rate, channels and recorded stream count
+  are re-probed before preview and application. Review shows the B count and
+  each Audio mapping before confirmation; changing B resets to Preserve and
+  discards the plan. The replacement policy does not change A/B audition,
+  which currently uses the first source audio stream.
   Changed imported timing/streams/fingerprint require explicit relink/reimport.
 - Timeline `replace_take {replacement}` additionally requires that previewed
   source version. It revalidates epoch/generation/revision, source descriptor,

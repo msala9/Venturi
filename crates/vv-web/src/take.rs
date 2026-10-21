@@ -17,7 +17,12 @@ pub struct Replacement {
     pub duration: core::take::DurationPolicy,
     pub links: core::take::LinkPolicy,
     pub attributes: core::take::AttributePolicy,
+    #[serde(default, skip_serializing_if = "preserve_audio_streams")]
+    pub audio_streams: core::take::AudioStreamPolicy,
     pub source_version: Option<String>,
+}
+fn preserve_audio_streams(policy: &core::take::AudioStreamPolicy) -> bool {
+    matches!(policy, core::take::AudioStreamPolicy::Preserve)
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -36,6 +41,10 @@ fn error(error: core::take::Error) -> ApiError {
             "The take is too short; explicitly shorten the edit or cancel",
         ),
         Stream => ApiError::invalid("The take lacks a required audio or video stream"),
+        AudioStream => ApiError::conflict(
+            "TAKE_AUDIO_STREAM",
+            "The take lacks an affected audio stream; explicitly choose an available source stream or keep other linked clips",
+        ),
         Compound => {
             ApiError::invalid("Choose a source media clip; compound replacement is unsupported")
         }
@@ -103,6 +112,9 @@ fn request(
         || hash != source.content_hash
         || meta.fps != source.meta.fps
         || meta.duration_frames != source.meta.duration_frames
+        || meta.sample_rate != source.meta.sample_rate
+        || meta.channels != source.meta.channels
+        || meta.audio_streams != source.meta.audio_streams
         || (meta.width, meta.height, meta.has_video, meta.has_audio)
             != (
                 source.meta.width,
@@ -130,6 +142,7 @@ fn request(
             duration: replacement.duration,
             links: replacement.links,
             attributes: replacement.attributes,
+            audio_streams: replacement.audio_streams,
         },
         version,
     ))
@@ -143,7 +156,7 @@ pub fn preview(
     let (request, version) = request(session, files, id, &request_body.replacement, false)?;
     let plan = core::take::plan(&session.project, &request).map_err(error)?;
     Ok(
-        json!({"version":1,"query":request_body.query,"source_version":version,"removed_crossings":plan.removed_crossings,"merged_keys":plan.merged_keys,"changes":plan.changes.iter().map(|change|json!({"track":change.track.to_string(),"clip_id":change.clip.0.to_string(),"previous_media_id":change.previous_media.raw().to_string(),"media_id":change.media.raw().to_string(),"start_frame":change.start_frame,"previous_length":change.previous_length,"length":change.length,"source_in":change.source_in,"source_out":change.source_out})).collect::<Vec<_>>()}),
+        json!({"version":1,"query":request_body.query,"source_version":version,"removed_crossings":plan.removed_crossings,"merged_keys":plan.merged_keys,"audio_stream_count":plan.audio_stream_count,"changes":plan.changes.iter().map(|change|json!({"track":change.track.to_string(),"clip_id":change.clip.0.to_string(),"previous_media_id":change.previous_media.raw().to_string(),"media_id":change.media.raw().to_string(),"start_frame":change.start_frame,"previous_length":change.previous_length,"length":change.length,"source_in":change.source_in,"source_out":change.source_out,"previous_audio_stream_index":change.previous_audio_stream_index,"audio_stream_index":change.audio_stream_index})).collect::<Vec<_>>()}),
     )
 }
 pub fn apply(

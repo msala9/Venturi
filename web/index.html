@@ -79,6 +79,10 @@
           <label class="field">Duration policy <select name="duration"><option value="preserve">Preserve edit duration · refuse a short take</option><option value="shorten">Shorten explicitly · leave a gap</option></select></label>
           <label class="field">Linked video/audio policy <select name="links"><option value="replace_linked">Replace linked clips using the same source/speed</option><option value="selected_only">Keep other linked clips unchanged</option></select></label>
           <label class="field">Clip effects and fades <select name="attributes"><option value="preserve">Preserve · adapt native keyframes and crop</option><option value="reset">Reset clip effects and fades</option></select></label>
+          <label class="field">Replacement audio stream policy <select name="audio_streams"><option value="preserve">Preserve each affected audio clip’s stream index</option><option value="select" data-review-audio-select disabled>Select one B stream for all affected audio clips</option></select></label>
+          <label class="field">B audio stream index (zero-based) <input type="number" name="audio_stream_index" min="0" max="0" step="1" value="0" required disabled></label>
+          <p class="muted" data-review-audio-streams>Replacement audio streams · Choose take B first</p>
+          <p class="muted">This policy changes the replacement only. A/B audition uses each source’s first audio stream (index 0).</p>
           <p class="muted">Existing speed, clip ID and placement stay. Shortening removes affected cross-cut transitions. Recheck normalization for a new audio source. Frozen/compound clips require an explicit edit first.</p>
           <button type="submit" data-review-plan>Preview native replacement changes</button>
         </form>

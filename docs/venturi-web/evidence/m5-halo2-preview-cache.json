@@ -1,0 +1,64 @@
+{
+  "pid": 1196815,
+  "sha256": "0c929ef6cc9df3c3b4aeb61d72ee0516faff3aa82a6f64acaccd7e0b474bfb7e",
+  "binary_source_commit": "f5c76e055379d29f7f97e7d9949bc14a757474d5",
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "cache": {
+    "frames": [
+      0
+    ],
+    "programs": [
+      {
+        "end_frame": 120,
+        "id": "1792554227102719212",
+        "start_frame": 0
+      }
+    ]
+  },
+  "reused_id": "1792554227102719212",
+  "actual_range": {
+    "end_frame": 120,
+    "export_settings": null,
+    "fps": {
+      "den": 1,
+      "num": 24
+    },
+    "generation": "0",
+    "height": 540,
+    "project_epoch": "1792554223222797055:1",
+    "revision": "96294b37e34b389c",
+    "start_frame": 0,
+    "width": 960
+  },
+  "movie_sha256": "abe10d10903812040a8502e9113df375bd6d0fc6e03ec5bedfe6e4d1cd0e9cd8",
+  "assets_sha256": {
+    "index.html": "8007786d44eddd28579a6ec369b4792469b19e4cd144527cbd6af3fab8a136be",
+    "js/preview-cache.js": "4cf946204bf58f9723ece99e0add6da78bb2669bf5002e4d358f2aaf6577cb8b",
+    "js/program.js": "0bb9dd890f10f79f0b4b3532dd3dee1a9e6d3bdcd692f8ac51766c6020eca987",
+    "js/main.js": "a4c0fe1654ce2e5571647c990d691e0b31d8b80ea0d6a9424dcb2a64f3d614f5",
+    "js/timeline/draw.js": "48f0f01a848f6ef4d2f474bdb6e287986508b48699908781eb4988221b145267",
+    "js/timeline/index.js": "c182af33cdeeef55a4e422101090f8ac8f51a04cd443a22b8499f90469ee11f2"
+  },
+  "exact_seed": "9007199254740993",
+  "favorite_preserved": true,
+  "known_source_hash_preserved": true,
+  "session_unchanged": true,
+  "browser": {
+    "requested_timecode": "00:00:00:01",
+    "backend_resume": {
+      "paused": false,
+      "src": "/api/v1/preview/program/1792554227102719212/program.mp4?project_epoch=1792554223222797055%3A1&if_generation=0&timeline_id=1&revision=96294b37e34b389c&start_frame=0&end_frame=120&width=960",
+      "status": "CACHED COMPOSED PREVIEW · 960×540 · revision 96294b37",
+      "time": 0.411477
+    },
+    "local_requested_timecode": "00:00:00:10",
+    "retained_resume": {
+      "paused": false,
+      "src": "http://127.0.0.1:8790/api/v1/preview/program/1792554227102719212/program.mp4?project_epoch=1792554223222797055%3A1&if_generation=0&timeline_id=1&revision=96294b37e34b389c&start_frame=0&end_frame=120&width=960",
+      "status": "CACHED COMPOSED PREVIEW · inputs verified",
+      "time": 0.782205
+    }
+  }
+}

@@ -1709,3 +1709,12 @@ unchanged. Evidence: m5-preview-cache.json, m5-preview-cache-ruler.png and
 m5-preview-cache-reuse.png. This closes cache_ruler_bar within the existing
 bounded preview strategy; longer-source/movie support and hardware codec
 qualification remain on their separate rows. No inference resource was touched.
+
+The f5c76e0 build is deployed on halo2 with SHA-256
+0c929ef6cc9df3c3b4aeb61d72ee0516faff3aa82a6f64acaccd7e0b474bfb7e.
+Actual native and browser acceptance reused its shared-image movie after a seek
+and again through the retained-reference preflight. Stop refreshed exact-frame
+telemetry. The same job ID, embedded asset hashes, exact provenance seed,
+Favorite, source hash, saved session and CPU-only isolation are recorded in
+m5-halo2-preview-cache.json and m5-halo2-preview-cache-browser.png. No shared
+hardware-lock probe/acquisition or archive write occurred.

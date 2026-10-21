@@ -203,7 +203,7 @@ test('windowed Source opens paused at an absolute fractional-fps origin and seek
   const h=windowHarness();try{
     assert.equal(h.player.current(),null);await h.open(137);const span=Math.floor(60*30_000/1001);
     assert.deepEqual(h.requests[0],{project_epoch:'epoch',quality:'medium',window:{start_frame:137,end_frame:137+span}});
-    assert.deepEqual(h.player.current(),{epoch:'epoch',media_id:'m',job:'job1',fps:h.item.fps,start_frame:137,end_frame:137+span,frame:137,source_version:h.version});assert.equal(h.video.plays,0);
+    assert.deepEqual(h.player.current(),{epoch:'epoch',media_id:'m',job:'job1',fps:h.item.fps,start_frame:137,end_frame:137+span,frame:137,source_version:h.version,audio_stream_index:0});assert.equal(h.video.plays,0);
     await h.player.seekFrame(147);assert.equal(h.requests.length,1);assert.equal(h.player.current().frame,147);assert.equal(h.video.currentTime,10*1001/30_000);
     await h.player.seekFrame(137+span-1);await h.player.step(1,1,1);assert.equal(h.requests.length,2);assert.equal(h.player.current().frame,137+span);assert.equal(h.video.currentTime,0);assert.equal(h.video.paused,true);
     await assert.rejects(h.player.seekFrame(10_000));await assert.rejects(h.player.seekFrame(-1));assert.equal(h.requests.length,2);

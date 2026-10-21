@@ -1,0 +1,548 @@
+{
+  "project": "Audition_Stream_API_check.vvproj",
+  "project_sha256": "931997ccae0e8428979e62921a838cf9a3ff72195815327b90196b56396b7d50",
+  "fixture": {
+    "media": {
+      "audio_stream_count": 2,
+      "compound_timeline_id": null,
+      "content_hash": "12367254801982606902",
+      "duration_frames": 60,
+      "folder": null,
+      "fps": {
+        "den": 1,
+        "num": 30
+      },
+      "has_audio": true,
+      "has_video": false,
+      "id": "19",
+      "is_image": false,
+      "name": "audition-stream-42b3a970a7f9.mkv",
+      "offline": false
+    },
+    "sha256": "ff232edbe42d402c081587759deb56c4a2ab835e5d106728edd6ed2ca378e5a5",
+    "bytes": 578057
+  },
+  "source_hashes": {
+    "audition-stream-42b3a970a7f9.mkv": "ff232edbe42d402c081587759deb56c4a2ab835e5d106728edd6ed2ca378e5a5"
+  },
+  "jobs": {
+    "0": {
+      "id": "1792608459218671608",
+      "window": {
+        "audio_stream_index": 0,
+        "end_frame": 30,
+        "fps": {
+          "den": 1,
+          "num": 30
+        },
+        "source_version": "64512:8261083:578057:1792608421:706589624",
+        "start_frame": 0,
+        "total_frames": 60
+      },
+      "sha256": "5f07bf6a4b58b7c4acdafcb62268f0b1d1d939f317ca51f487aae7589260777a",
+      "asset_bytes": 20421
+    },
+    "1": {
+      "id": "1792608459327717535",
+      "window": {
+        "audio_stream_index": 1,
+        "end_frame": 30,
+        "fps": {
+          "den": 1,
+          "num": 30
+        },
+        "source_version": "64512:8261083:578057:1792608421:706589624",
+        "start_frame": 0,
+        "total_frames": 60
+      },
+      "sha256": "ab02743b4e431cb211ea5a8d9ccbcf56f67a8701df972992f7a729ff1e1a6170",
+      "asset_bytes": 25476
+    }
+  },
+  "measured_streams": {
+    "0": {
+      "channels": 1,
+      "sample_rate": 48000,
+      "decoded_samples": 48128,
+      "rms": 0.08833311743642208,
+      "dominant_test_frequency_hz": 440,
+      "power_ratio": 442711.3256818817
+    },
+    "1": {
+      "channels": 2,
+      "sample_rate": 48000,
+      "decoded_samples": 48128,
+      "rms": 0.08829624996202919,
+      "dominant_test_frequency_hz": 880,
+      "power_ratio": 439039.883263582
+    }
+  },
+  "invalid_selection_refused_without_session_mutation": {
+    "-1": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "2": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "1.5": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "True": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "'1'": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "4294967296": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    }
+  },
+  "default_and_explicit_zero_share_job": true,
+  "selected_jobs_distinct": true,
+  "project_history_unchanged_by_preparation": true,
+  "save_restart_exact": true,
+  "parent_hashes_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Take_Audio_API_check.vvproj": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Retime_UI_Retained_677fba04bbac.vvproj": "d9c29a84906ea350ba2bbcb66261e2eb373d58e72e2e0df441f70981c314a63d",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Take_Audio_UI_Retained_fdfc2e75b01e.vvproj": "399a2f41a8b84d767595472d871647585e466b4d6500adb8789b9bd4e562d6ee",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Review_Windows_API_check.vvproj": "3fbdcc97b82bd44623c3a5ce94549a5891be133c3f562672bb8daca3b3c06dee",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Review_Clock_API_check.vvproj": "19d1c44ae5fa08cd7e7741ea9ab8c95c8ad48cd9b7092048fb224e8c37a6571c",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "hardware_gpu_used": false,
+  "no_gpu_or_shared_lock_fds": true,
+  "diagnostic_units_stopped": true,
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "fixture_import_binary_sha256": "25bb2eec91a66badd03816636ce0185b28d4014b2969802c47c3aaf7d5882e65",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792608362.1057198,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "25bb2eec91a66badd03816636ce0185b28d4014b2969802c47c3aaf7d5882e65",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "binary_sha256": "25bb2eec91a66badd03816636ce0185b28d4014b2969802c47c3aaf7d5882e65",
+  "served_asset_hashes": {
+    "index.html": "6dbe86ae9a3833fea0b49fd5b48ad51de52284f933f6ce351f023a9e1c6ccd0c",
+    "js/review.js": "fa61c43743dc8a608b85e070ffe4443829d2a5f3d0c34acf1650bd30070cb00f",
+    "js/source.js": "762807ee3f9bb6e8a8fdfb90fa5f8af794ab848238d1346030fd1e27f44035ac"
+  },
+  "project_history_unchanged": true,
+  "parents_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Take_Audio_API_check.vvproj": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+    "Audition_Stream_API_check.vvproj": "931997ccae0e8428979e62921a838cf9a3ff72195815327b90196b56396b7d50",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Retime_UI_Retained_677fba04bbac.vvproj": "d9c29a84906ea350ba2bbcb66261e2eb373d58e72e2e0df441f70981c314a63d",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Take_Audio_UI_Retained_fdfc2e75b01e.vvproj": "399a2f41a8b84d767595472d871647585e466b4d6500adb8789b9bd4e562d6ee",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Review_Windows_API_check.vvproj": "3fbdcc97b82bd44623c3a5ce94549a5891be133c3f562672bb8daca3b3c06dee",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Review_Clock_API_check.vvproj": "19d1c44ae5fa08cd7e7741ea9ab8c95c8ad48cd9b7092048fb224e8c37a6571c",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "core_tests": 271,
+  "media_proxy_tests": 10,
+  "rust_tests": 227,
+  "javascript_tests": 521,
+  "main_editor_preserved": true,
+  "own_ui_test_unit_stopped": true,
+  "windows_ui_observations": {
+    "initial": {
+      "A": {
+        "audio_stream_index": 0,
+        "clock": "A \u00b7 frame 0 / 59 \u00b7 30/1 fps \u00b7 window [0, 60) \u00b7 audition audio stream 0",
+        "clock_audio_stream_index": 0,
+        "currentTime": 0,
+        "end_frame": 60,
+        "frame": 0,
+        "max_frame": 59,
+        "media": "19",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/19/jobs/1792608487455830444/source.mp4?project_epoch=1792608467181613771%3A1",
+        "start_frame": 0,
+        "status": "audition-stream-42b3a970a7f9.mkv \u00b7 SOURCE WINDOW \u00b7 0\u201360 / 60 frames \u00b7 low \u00b7 audio stream 0 (zero-based)"
+      },
+      "B": {
+        "audio_stream_index": 0,
+        "clock": "B \u00b7 frame 0 / 59 \u00b7 30/1 fps \u00b7 window [0, 60) \u00b7 audition audio stream 0",
+        "clock_audio_stream_index": 0,
+        "currentTime": 0,
+        "end_frame": 60,
+        "frame": 0,
+        "max_frame": 59,
+        "media": "19",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/19/jobs/1792608487455830444/source.mp4?project_epoch=1792608467181613771%3A1",
+        "start_frame": 0,
+        "status": "audition-stream-42b3a970a7f9.mkv \u00b7 SOURCE WINDOW \u00b7 0\u201360 / 60 frames \u00b7 low \u00b7 audio stream 0 (zero-based)"
+      }
+    },
+    "selected_b": {
+      "A": {
+        "audio_stream_index": 0,
+        "clock": "A \u00b7 frame 0 / 59 \u00b7 30/1 fps \u00b7 window [0, 60) \u00b7 audition audio stream 0",
+        "clock_audio_stream_index": 0,
+        "currentTime": 0,
+        "end_frame": 60,
+        "frame": 0,
+        "max_frame": 59,
+        "media": "19",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/19/jobs/1792608487455830444/source.mp4?project_epoch=1792608467181613771%3A1",
+        "start_frame": 0,
+        "status": "audition-stream-42b3a970a7f9.mkv \u00b7 SOURCE WINDOW \u00b7 0\u201360 / 60 frames \u00b7 low \u00b7 audio stream 0 (zero-based)"
+      },
+      "B": {
+        "audio_stream_index": 1,
+        "clock": "B \u00b7 frame 0 / 59 \u00b7 30/1 fps \u00b7 window [0, 60) \u00b7 audition audio stream 1",
+        "clock_audio_stream_index": 1,
+        "currentTime": 0,
+        "end_frame": 60,
+        "frame": 0,
+        "max_frame": 59,
+        "media": "19",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/19/jobs/1792608496604671577/source.mp4?project_epoch=1792608467181613771%3A1",
+        "start_frame": 0,
+        "status": "audition-stream-42b3a970a7f9.mkv \u00b7 SOURCE WINDOW \u00b7 0\u201360 / 60 frames \u00b7 low \u00b7 audio stream 1 (zero-based)"
+      }
+    },
+    "replacement_independence": {
+      "auditionA": "0",
+      "auditionB": "1",
+      "index": "0",
+      "policy": "select"
+    },
+    "seek_b": {
+      "A": {
+        "audio_stream_index": 0,
+        "clock": "A \u00b7 frame 30 / 59 \u00b7 30/1 fps \u00b7 window [0, 60) \u00b7 audition audio stream 0",
+        "clock_audio_stream_index": 0,
+        "currentTime": 1,
+        "end_frame": 60,
+        "frame": 30,
+        "max_frame": 59,
+        "media": "19",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/19/jobs/1792608487455830444/source.mp4?project_epoch=1792608467181613771%3A1",
+        "start_frame": 0,
+        "status": "audition-stream-42b3a970a7f9.mkv \u00b7 SOURCE WINDOW \u00b7 0\u201360 / 60 frames \u00b7 low \u00b7 audio stream 0 (zero-based)"
+      },
+      "B": {
+        "audio_stream_index": 1,
+        "clock": "B \u00b7 frame 30 / 59 \u00b7 30/1 fps \u00b7 window [0, 60) \u00b7 audition audio stream 1",
+        "clock_audio_stream_index": 1,
+        "currentTime": 1,
+        "end_frame": 60,
+        "frame": 30,
+        "max_frame": 59,
+        "media": "19",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/19/jobs/1792608496604671577/source.mp4?project_epoch=1792608467181613771%3A1",
+        "start_frame": 0,
+        "status": "audition-stream-42b3a970a7f9.mkv \u00b7 SOURCE WINDOW \u00b7 0\u201360 / 60 frames \u00b7 low \u00b7 audio stream 1 (zero-based)"
+      }
+    },
+    "reset_swap": {
+      "A": {
+        "audio_stream_index": 0,
+        "clock": "A \u00b7 frame 0 / 59 \u00b7 30/1 fps \u00b7 window [0, 60) \u00b7 audition audio stream 0",
+        "clock_audio_stream_index": 0,
+        "currentTime": 0,
+        "end_frame": 60,
+        "frame": 0,
+        "max_frame": 59,
+        "media": "19",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/19/jobs/1792608487455830444/source.mp4?project_epoch=1792608467181613771%3A1",
+        "start_frame": 0,
+        "status": "audition-stream-42b3a970a7f9.mkv \u00b7 SOURCE WINDOW \u00b7 0\u201360 / 60 frames \u00b7 low \u00b7 audio stream 0 (zero-based)"
+      },
+      "B": {
+        "audio_stream_index": 0,
+        "clock": "B \u00b7 frame 0 / 59 \u00b7 30/1 fps \u00b7 window [0, 60) \u00b7 audition audio stream 0",
+        "clock_audio_stream_index": 0,
+        "currentTime": 0,
+        "end_frame": 60,
+        "frame": 0,
+        "max_frame": 59,
+        "media": "19",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4,
+        "src": "http://127.0.0.1:8811/api/v1/media/19/jobs/1792608487455830444/source.mp4?project_epoch=1792608467181613771%3A1",
+        "start_frame": 0,
+        "status": "audition-stream-42b3a970a7f9.mkv \u00b7 SOURCE WINDOW \u00b7 0\u201360 / 60 frames \u00b7 low \u00b7 audio stream 0 (zero-based)"
+      }
+    }
+  },
+  "native_window_states": {
+    "initial": {
+      "stage": "initial",
+      "panes": {
+        "A": {
+          "frame": 0,
+          "window": {
+            "audio_stream_index": 0,
+            "end_frame": 60,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8261083:578057:1792608421:706589624",
+            "start_frame": 0,
+            "total_frames": 60
+          },
+          "job": "1792608487455830444",
+          "asset_bytes": 39632,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 0,
+          "window": {
+            "audio_stream_index": 0,
+            "end_frame": 60,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8261083:578057:1792608421:706589624",
+            "start_frame": 0,
+            "total_frames": 60
+          },
+          "job": "1792608487455830444",
+          "asset_bytes": 39632,
+          "paused": true,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    },
+    "selected_b": {
+      "stage": "selected_b",
+      "panes": {
+        "A": {
+          "frame": 0,
+          "window": {
+            "audio_stream_index": 0,
+            "end_frame": 60,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8261083:578057:1792608421:706589624",
+            "start_frame": 0,
+            "total_frames": 60
+          },
+          "job": "1792608487455830444",
+          "asset_bytes": 39632,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 0,
+          "window": {
+            "audio_stream_index": 1,
+            "end_frame": 60,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8261083:578057:1792608421:706589624",
+            "start_frame": 0,
+            "total_frames": 60
+          },
+          "job": "1792608496604671577",
+          "asset_bytes": 49727,
+          "paused": true,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    },
+    "seek_b": {
+      "stage": "seek_b",
+      "panes": {
+        "A": {
+          "frame": 30,
+          "window": {
+            "audio_stream_index": 0,
+            "end_frame": 60,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8261083:578057:1792608421:706589624",
+            "start_frame": 0,
+            "total_frames": 60
+          },
+          "job": "1792608487455830444",
+          "asset_bytes": 39632,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 30,
+          "window": {
+            "audio_stream_index": 1,
+            "end_frame": 60,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8261083:578057:1792608421:706589624",
+            "start_frame": 0,
+            "total_frames": 60
+          },
+          "job": "1792608496604671577",
+          "asset_bytes": 49727,
+          "paused": true,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    },
+    "reset_swap": {
+      "stage": "reset_swap",
+      "panes": {
+        "A": {
+          "frame": 0,
+          "window": {
+            "audio_stream_index": 0,
+            "end_frame": 60,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8261083:578057:1792608421:706589624",
+            "start_frame": 0,
+            "total_frames": 60
+          },
+          "job": "1792608487455830444",
+          "asset_bytes": 39632,
+          "paused": true,
+          "playback_rate": 1
+        },
+        "B": {
+          "frame": 0,
+          "window": {
+            "audio_stream_index": 0,
+            "end_frame": 60,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "source_version": "64512:8261083:578057:1792608421:706589624",
+            "start_frame": 0,
+            "total_frames": 60
+          },
+          "job": "1792608487455830444",
+          "asset_bytes": 39632,
+          "paused": true,
+          "playback_rate": 1
+        }
+      },
+      "project_history_unchanged": true,
+      "parents_preserved": true
+    }
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-media/src/browser_proxy.rs": "bd01a4cc2fd4c3cfd3d5c17ef8ddc6266b8450c0bfcac76ea4dfb8f9a2fc0aa9",
+      "crates/vv-media/src/tests/browser_proxy.rs": "8001a923505d222aa78dc1f9d7334d8d2016adafc7b7ec402b729f6ca9eed5a1",
+      "crates/vv-web/src/api.rs": "15f0771543f9452b5d3bcd848541b27b2a6ad300ed6f6a7145b4e607711399b9",
+      "crates/vv-web/src/source.rs": "1552b8499d5bc2d205094806cae5f33d0457facba43fc2c846c6af0606ede5a9",
+      "crates/vv-web/src/tests/api.rs": "25718305604c9415fe280e8e94426cfc901b3793ac7d39ecd49f14a005384e7b",
+      "crates/vv-web/src/tests/source.rs": "e18be83e5f613f6a6c2846a94da010dca05c8644bdf855b62ea2d48f59fb2d51",
+      "web/index.html": "6dbe86ae9a3833fea0b49fd5b48ad51de52284f933f6ce351f023a9e1c6ccd0c",
+      "web/js/review.js": "fa61c43743dc8a608b85e070ffe4443829d2a5f3d0c34acf1650bd30070cb00f",
+      "web/js/source.js": "762807ee3f9bb6e8a8fdfb90fa5f8af794ab848238d1346030fd1e27f44035ac",
+      "web/test/review.test.js": "a6333e5f38a4f7275223d40aba3b6821154d47f39213c2efffac29b05866cc42",
+      "web/test/source-streams.test.js": "2f90c3524580540fa1603689133f4ba6558540a3edcdac32f2c8a2b32418cadf",
+      "web/test/source.test.js": "4d79f13fba5285a8b7502f8ab3bbdf2730e91916acb953d2bdb0fac3cf43a277"
+    },
+    "core_tests": 271,
+    "media_proxy_tests": 10,
+    "rust_tests": 227,
+    "javascript_tests": 521,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "hardware_gpu": false
+  },
+  "scope_note": "Separate per-pane zero-based audition stream selection is preserved by Source preparation, absolute seek, EOF and ready-cache heartbeat, and remains independent of replacement policy. Native selection, admission validation and cache identity prevent a stream-zero result being reused for stream one. A tiny two-second Matroska has mono 440 Hz audio ordinal zero and stereo 880 Hz ordinal one; generated native proxies were decoded and measured under bounded CPU-only diagnostic units. Existing Windows browser verifies default zero, selecting B stream one, unchanged selection/cache through synchronized absolute seek, explicit replacement policy independence and swap reset. Project/history and saved/source hashes are preserved. No browser installation, hardware GPU, native desktop GUI changes or physical audio qualification. Sustained long playback, physical speakers/microphone and frozen/compound replacement remain separate acceptance.",
+  "screenshot_sha256": "7ff0596398a142529e50d577966f509b4fefadc0967ac35f20e1f7300a12b492"
+}

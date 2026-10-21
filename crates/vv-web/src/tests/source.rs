@@ -156,11 +156,14 @@ fn source_window_keys_preserve_legacy_v1_and_separate_range_quality_epoch_and_fu
         end_frame: 37,
     };
     assert_eq!(
-        source_key(&spec, ProxyQuality::Low, None, &identity),
-        format!("source:1:9007199254740993:{identity}:v1:low")
+        source_key(&spec, ProxyQuality::Low, None, &identity, 0),
+        format!("source:1:9007199254740993:{identity}:v1:low:audio:0")
     );
-    let key = source_key(&spec, ProxyQuality::Low, Some(window), &identity);
-    assert_ne!(key, source_key(&spec, ProxyQuality::Low, None, &identity));
+    let key = source_key(&spec, ProxyQuality::Low, Some(window), &identity, 0);
+    assert_ne!(
+        key,
+        source_key(&spec, ProxyQuality::Low, None, &identity, 0)
+    );
     assert_ne!(
         key,
         source_key(
@@ -170,17 +173,18 @@ fn source_window_keys_preserve_legacy_v1_and_separate_range_quality_epoch_and_fu
                 start_frame: 26,
                 end_frame: 38
             }),
-            &identity
+            &identity,
+            0
         )
     );
     assert_ne!(
         key,
-        source_key(&spec, ProxyQuality::High, Some(window), &identity)
+        source_key(&spec, ProxyQuality::High, Some(window), &identity, 0)
     );
     spec.epoch = "source:2".into();
     assert_ne!(
         key,
-        source_key(&spec, ProxyQuality::Low, Some(window), &identity)
+        source_key(&spec, ProxyQuality::Low, Some(window), &identity, 0)
     );
     spec.epoch = "source:1".into();
     std::fs::write(&path, b"different file identity").unwrap();
@@ -190,7 +194,8 @@ fn source_window_keys_preserve_legacy_v1_and_separate_range_quality_epoch_and_fu
             &spec,
             ProxyQuality::Low,
             Some(window),
-            &spec.identity().unwrap()
+            &spec.identity().unwrap(),
+            0
         )
     );
     std::fs::remove_file(path).unwrap();
@@ -218,8 +223,8 @@ fn cached_window_of_a_long_source_reuses_only_its_exact_version_and_keeps_progra
     std::fs::create_dir(&directory).unwrap();
     std::fs::write(directory.join("source.mp4"), b"window").unwrap();
     let mut job = cache_fixture_job(directory, "ready", 6);
-    job.key = source_key(&spec, ProxyQuality::Low, Some(window), &identity);
-    job.source_window = Some(window.descriptor(&spec, &identity));
+    job.key = source_key(&spec, ProxyQuality::Low, Some(window), &identity, 0);
+    job.source_window = Some(window.descriptor(&spec, &identity, 0));
     job.touched = Instant::now() - Duration::from_secs(90);
     service.jobs.lock().unwrap().push_back(job);
     let result = service
@@ -228,7 +233,7 @@ fn cached_window_of_a_long_source_reuses_only_its_exact_version_and_keeps_progra
     assert_eq!(result["id"], "cache-fixture");
     assert_eq!(
         result["source_window"],
-        json!({"start_frame":1000,"end_frame":1012,"total_frames":48_000,"fps":{"num":24,"den":1},"source_version":identity})
+        json!({"start_frame":1000,"end_frame":1012,"total_frames":48_000,"fps":{"num":24,"den":1},"source_version":identity,"audio_stream_index":0})
     );
     assert!(result["program"].is_null());
     assert!(
@@ -463,7 +468,13 @@ fn ready_source_status_cache_hits_and_assets_refresh_ttl_but_cancel_does_not_unp
     std::fs::create_dir(&directory).unwrap();
     std::fs::write(directory.join("source.mp4"), b"proxy").unwrap();
     let mut job = cache_fixture_job(directory, "ready", 5);
-    job.key = format!("cache:1:1:{}:v1:medium", spec.identity().unwrap());
+    job.key = source_key(
+        &spec,
+        ProxyQuality::Medium,
+        None,
+        &spec.identity().unwrap(),
+        0,
+    );
     let old = Instant::now() - Duration::from_secs(90);
     job.touched = old;
     source.jobs.lock().unwrap().push_back(job);
@@ -769,7 +780,13 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
     std::fs::write(directory.join("source.mp4"), b"proxy").unwrap();
     source.jobs.lock().unwrap().push_back(Job {
         id: "test".into(),
-        key: format!("p:1:1:{}:v1:medium", spec.identity().unwrap()),
+        key: source_key(
+            &spec,
+            ProxyQuality::Medium,
+            None,
+            &spec.identity().unwrap(),
+            0,
+        ),
         state: "ready",
         progress: 24,
         error: None,
@@ -1216,7 +1233,10 @@ fn source_assets_admit_long_metadata_and_separate_full_source_identity_without_m
     let identity = spec.identity().unwrap();
     let key = assets_key(&spec, &identity);
     assert!(key.ends_with(":v3-assets:full"));
-    assert_ne!(key, source_key(&spec, ProxyQuality::Low, None, &identity));
+    assert_ne!(
+        key,
+        source_key(&spec, ProxyQuality::Low, None, &identity, 0)
+    );
     let mut actual = spec.meta.clone();
     actual.channels = 1;
     assert!(!same_assets_meta(&spec.meta, &actual));
@@ -1484,7 +1504,7 @@ fn accepted_foreground_source_preempts_only_running_assets_after_validation_and_
     assert!(!foreign.load(Ordering::Relaxed));
     assert!(matches!(
         receiver.try_recv().unwrap().1,
-        Work::Source(_, _, _)
+        Work::Source(_, _, _, _)
     ));
     let root = (*service.root).clone();
     drop(service);
@@ -1544,7 +1564,7 @@ fn accepted_legacy_source_and_program_work_preempt_assets_without_canceling_fore
             service.prepare(spec, "low").unwrap();
             assert!(matches!(
                 receiver.try_recv().unwrap().1,
-                Work::Source(_, _, None)
+                Work::Source(_, _, None, 0)
             ));
         }
         assert!(analysis.load(Ordering::Relaxed));
@@ -1553,4 +1573,151 @@ fn accepted_legacy_source_and_program_work_preempt_assets_without_canceling_fore
         drop(service);
         std::fs::remove_dir_all(root).unwrap();
     }
+}
+
+#[test]
+fn selected_source_audio_validates_before_admission_and_cache_keys_separate_only_the_native_stream()
+{
+    let root = cache_fixture_root("selected-audio");
+    let path = root.join("input");
+    std::fs::write(&path, b"unchanged source").unwrap();
+    let mut spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "audio:1".into(),
+        media_id: "1".into(),
+        meta: window_fixture_meta(),
+    };
+    spec.meta.has_audio = true;
+    spec.meta.sample_rate = 48_000;
+    spec.meta.channels = 1;
+    spec.meta.audio_streams = 2;
+    let identity = spec.identity().unwrap();
+    let window = SourceWindow {
+        start_frame: 1000,
+        end_frame: 1012,
+    };
+    let first = source_key(&spec, ProxyQuality::Low, Some(window), &identity, 0);
+    let second = source_key(&spec, ProxyQuality::Low, Some(window), &identity, 1);
+    assert_ne!(first, second);
+    assert!(first.ends_with(":audio:0"));
+    assert!(second.ends_with(":audio:1"));
+    assert_eq!(spec.identity().unwrap(), identity);
+    let metadata = serde_json::to_value(&spec.meta).unwrap();
+    let (send, receiver) = mpsc::sync_channel(1);
+    let service = MediaJobs {
+        root: Arc::new(root.clone()),
+        jobs: Arc::new(Mutex::new(VecDeque::new())),
+        send,
+        exports: None,
+        exports_blocked: false,
+    };
+    assert!(
+        service
+            .prepare_selected(cloned_source(&spec), "low", Some(window), 2)
+            .is_err()
+    );
+    assert!(
+        service
+            .prepare_selected(cloned_source(&spec), "low", Some(window), u32::MAX)
+            .is_err()
+    );
+    assert!(service.jobs.lock().unwrap().is_empty());
+    assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+    let pending = service
+        .prepare_selected(cloned_source(&spec), "low", Some(window), 1)
+        .unwrap();
+    assert_eq!(pending["source_window"]["audio_stream_index"], 1);
+    assert!(matches!(
+        receiver.try_recv().unwrap().1,
+        Work::Source(_, _, Some(_), 1)
+    ));
+    {
+        let mut jobs = service.jobs.lock().unwrap();
+        jobs[0].state = "ready";
+    }
+    assert_eq!(
+        service
+            .prepare_selected(cloned_source(&spec), "low", Some(window), 1)
+            .unwrap()["id"],
+        pending["id"]
+    );
+    let zero = service
+        .prepare_window(cloned_source(&spec), "low", window)
+        .unwrap();
+    assert_ne!(zero["id"], pending["id"]);
+    assert_eq!(zero["source_window"]["audio_stream_index"], 0);
+    assert!(matches!(
+        receiver.try_recv().unwrap().1,
+        Work::Source(_, _, Some(_), 0)
+    ));
+    assert_eq!(
+        service
+            .prepare_selected(cloned_source(&spec), "low", Some(window), 0)
+            .unwrap()["id"],
+        zero["id"]
+    );
+    assert_eq!(serde_json::to_value(&spec.meta).unwrap(), metadata);
+    assert_eq!(spec.identity().unwrap(), identity);
+    spec.meta.has_audio = false;
+    spec.meta.audio_streams = 0;
+    assert!(validate_source_audio(&spec.meta, 0).is_ok());
+    assert!(validate_source_audio(&spec.meta, 1).is_err());
+    drop(service);
+    drop(receiver);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn selected_source_worker_refuses_changed_stream_metadata_before_creating_a_proxy() {
+    let root = cache_fixture_root("selected-audio-probe");
+    let input = root.join("input.wav");
+    let output = root.join("output");
+    std::fs::create_dir(&output).unwrap();
+    vv_media::audio_file::write_audio_file(
+        &input,
+        vv_media::audio_file::AudioFileFormat::Wav,
+        &vec![0.1; 4800],
+        48_000,
+        1,
+    )
+    .unwrap();
+    let mut spec = SourceSpec {
+        file: File::open(&input).unwrap(),
+        epoch: "audio:1".into(),
+        media_id: "1".into(),
+        meta: vv_media::probe_media(&input).unwrap(),
+    };
+    spec.meta.audio_streams = 2;
+    assert_eq!(
+        generate(
+            &spec,
+            &output,
+            ProxyQuality::Low,
+            None,
+            1,
+            &AtomicBool::new(false),
+            |_| {}
+        )
+        .unwrap_err()
+        .1,
+        "SOURCE_CHANGED"
+    );
+    assert_eq!(std::fs::read_dir(&output).unwrap().count(), 0);
+    spec.meta = vv_media::probe_media(&input).unwrap();
+    spec.meta.audio_streams = 0;
+    spec.meta.sample_rate = 0;
+    spec.meta.channels = 0;
+    assert!(validate_source_audio(&spec.meta, 1).is_err());
+    generate(
+        &spec,
+        &output,
+        ProxyQuality::Low,
+        None,
+        0,
+        &AtomicBool::new(false),
+        |_| {},
+    )
+    .unwrap();
+    assert!(output.join("source.mp4").is_file());
+    std::fs::remove_dir_all(root).unwrap();
 }

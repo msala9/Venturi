@@ -24,7 +24,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-224 web Rust tests, 271 native core tests and 504 JavaScript tests,
+227 web Rust tests, 271 native core tests and 521 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -33,8 +33,8 @@ qualification remain open. Latest evidence:
 `evidence/m3-preview-cache-safety.json`, `evidence/m3-program-rollover.json`
 `evidence/m3-source-windows.json`, `evidence/m3-source-assets.json`
 `evidence/m4-speed-presets.json`, `evidence/m4-retime-selected-visibility.json`
-`evidence/m6-take-audio-streams.json`, `evidence/m6-review-longest-clock.json`
-and `evidence/m6-review-source-windows.json`;
+`evidence/m6-take-audio-streams.json`, `evidence/m6-review-longest-clock.json`,
+`evidence/m6-review-source-windows.json` and `evidence/m6-review-audition-streams.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
@@ -2940,3 +2940,46 @@ Evidence: `evidence/m6-review-source-windows.json` and
 `evidence/m6-review-source-windows.jpg`. Selected-stream audition, frozen/compound
 replacement, physical audio, hardware and sustained/full-resolution acceptance
 remain open. The parity ledger and completion estimate remain unchanged.
+
+## M6 - independent A/B audition audio streams
+
+Each Review pane now has a separate zero-based native audio stream selector.
+Audition changes pause comparison and reload that pane without changing the
+timeline, replacement policy or existing replacement plan. Choices persist
+through absolute seeks, native EOF windows and retry; take changes, swap and
+refresh reset them to zero. Stills, silent sources and unknown native counts
+disable the selector. The menu bounds display to 1,024 native stream entries.
+
+Source preparation accepts an optional strict unsigned `audio_stream_index`,
+defaults to zero and validates it before cache admission. Default and explicit
+zero deduplicate; different indices have distinct keys while retaining the same
+file identity. Window descriptors, ready clocks and heartbeat verification bind
+the selected index. The existing native media decoder receives the audio ordinal,
+uses the returned stream's format and feeds full/ranged proxies and legacy
+waveforms consistently. Main Source's omitted-zero behavior remains compatible.
+Reentrant reset callbacks and obsolete stream notifications cannot overwrite a
+newer attachment or restart playback.
+
+The bounded halo2 aggregate passed 271 core tests, 227 web Rust tests, ten targeted
+native browser-proxy tests and 521 JavaScript tests, formatting, clippy with
+warnings denied and build. Native tests use video plus two audio ordinals with
+different sample rates/channels. A separate 578,057-byte, two-second Matroska
+was imported and saved/restarted. Its one-second native proxy outputs measured
+440 Hz mono for ordinal zero and 880 Hz stereo for ordinal one, both at 48 kHz;
+their bytes and job IDs differ. Negative, unavailable, fractional, boolean,
+string and overflowing selections return 422 without project/session mutation.
+
+The existing Windows browser selected the same source in both panes, then used
+stream zero for A and stream one for B. Native job descriptors and byte-range
+responses confirm separate cached windows; synchronized seek to frame 30 retains
+both choices. Replacement stream zero remains independent of B audition stream
+one. Swap resets both to zero. Project/history, parent projects and source bytes
+remain unchanged. The finite one-CPU, 512 MiB, no-swap service, single temporary
+Windows tab and hidden tunnel were stopped; the primary editor retains its five
+unsaved MoveClips. No browser installation, local build, GPU or physical playback
+was used.
+
+Evidence: `evidence/m6-review-audition-streams.json` and
+`evidence/m6-review-audition-streams.jpg`. Frozen/compound replacement policies,
+physical audio, hardware and sustained/full-resolution qualification remain
+open. The parity ledger and overall completion estimate are unchanged.

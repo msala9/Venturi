@@ -32,8 +32,8 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     stateContext={...context,state,reason,frame};
     onStateChange({...stateContext});
   }
-  function beginState(item,epoch,frame,reason){
-    stateContext={item,epoch,frame,sequence,reason,state:'preparing'};
+  function beginState(item,epoch,frame,reason,audioStreamIndex=0){
+    stateContext={item,epoch,frame,sequence,reason,state:'preparing',audio_stream_index:audioStreamIndex};
     notify('preparing');
   }
   const sourceAsset=job=>job.source_asset ?? 'source.mp4';
@@ -75,7 +75,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       const job=await response.json();
       if(!attached(value))return;
       if(job.state!=='ready' || job.id!==value.job || sourceAsset(job)!==value.asset || (job.project_epoch!=null && job.project_epoch!==value.epoch))throw Error('Source cache changed; reopen Source');
-      if(value.window && !sameWindow(value.window,job.source_window))throw Error('Source window changed; reopen Source');
+      if(value.window && !sameWindow(value.window,job.source_window,value.audioSelection.explicit))throw Error('Source window changed; reopen Source');
     }catch(error){
       if(attached(value) && !attempt.signal.aborted)detach(error.message?.includes('reopen Source')?error.message:'Source cache verification failed; reopen Source');
     }finally{
@@ -83,20 +83,21 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       if(attached(value))scheduleHeartbeat(value);
     }
   }
-  async function openLegacy(item, epoch, quality = "medium") {
+  async function openLegacy(item, epoch, quality = "medium",audioSelection={index:0,explicit:false}) {
     if(disposed)return;
+    const resetSequence=sequence+1;
     reset();
-    if(disposed)return;
+    if(disposed || sequence!==resetSequence)return;
     const seq = sequence;
     controller = new AbortController();
     const signal = controller.signal;
     preparing=true;
     status.textContent = `${item.name} · Preparing ${item.is_image ? "original image" : `${quality} source proxy`}`;
     try {
-      beginState(item,epoch,0,'open');
+      beginState(item,epoch,0,'open',audioSelection.index);
       if(seq!==sequence || signal.aborted)return;
       const prepareFetch=(path,options={})=>fetcher(path,{...options,signal:AbortSignal.any([signal,options.signal].filter(Boolean))});
-      let job = await api(`/media/${encodeURIComponent(item.id)}/prepare`, { project_epoch: epoch, quality },prepareFetch);
+      let job = await api(`/media/${encodeURIComponent(item.id)}/prepare`, { project_epoch: epoch, quality,...audioPayload(item,audioSelection) },prepareFetch);
       // Prepare deduplicates jobs across clients: obsolete ACKs must never cancel a shared job.
       if (seq !== sequence) return;
       if(typeof job.id!=='string' || !job.id)throw Error('Source preparation returned an invalid job; reopen Source');
@@ -126,25 +127,33 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       } else video.src=url;
       ready = !still;
       cancel.disabled = true;
-      status.textContent = still ? `${item.name} · ORIGINAL STILL · embedded color profile and transparency preserved` : `${item.name} · SOURCE PROXY · ${quality} · first audio stream`;
-      binding={sequence:seq,path:jobPath,signal,job:id,asset,epoch,url,element:still?image:video,item};preparing=false;scheduleHeartbeat(binding);
+      status.textContent = still ? `${item.name} · ORIGINAL STILL · embedded color profile and transparency preserved` : `${item.name} · SOURCE PROXY · ${quality} · ${audioSelection.explicit?`audio stream ${audioSelection.index} (zero-based)`:'first audio stream'}`;
+      binding={sequence:seq,path:jobPath,signal,job:id,asset,epoch,url,element:still?image:video,item,audioSelection};preparing=false;scheduleHeartbeat(binding);
       const completed=binding;notify('ready');
-      if(current(completed))onReady?.({ item, epoch, job:id });
+      if(current(completed))onReady?.({ item, epoch, job:id,audio_stream_index:audioSelection.index });
     } catch (error) {
       if(seq===sequence && !signal.aborted)detach(error.message?.includes('reopen Source')?error.message:`${error.message} · reopen Source`);
     }
   }
   const validFPS=fps=>Number.isSafeInteger(fps?.num) && fps.num>0 && Number.isSafeInteger(fps?.den) && fps.den>0;
-  const sameWindow=(a,b)=>!!a && !!b && ['start_frame','end_frame','total_frames','source_version'].every(key=>a[key]===b[key]) && a.fps.num===b.fps?.num && a.fps.den===b.fps?.den;
+  function selectedAudio(item,options){
+    const explicit=options?.audioStreamIndex!==undefined,index=explicit?options.audioStreamIndex:0,count=item.audio_stream_count;
+    if(!Number.isSafeInteger(index) || index<0 || index>0xffffffff || (index>0 && (item.is_image || item.has_audio===false || !Number.isSafeInteger(count) || count<=index)))throw Error('Choose an available native Source audio stream index (zero-based)');
+    return {index,explicit:explicit && !item.is_image};
+  }
+  const audioPayload=(item,audio)=>!item.is_image && audio.explicit?{audio_stream_index:audio.index}:{};
+  const descriptorAudio=(value,explicit)=>value?.audio_stream_index===undefined && !explicit?0:value?.audio_stream_index;
+  const sameWindow=(a,b,explicit=false)=>!!a && !!b && ['start_frame','end_frame','total_frames','source_version'].every(key=>a[key]===b[key]) && a.fps.num===b.fps?.num && a.fps.den===b.fps?.den && a.audio_stream_index===descriptorAudio(b,explicit);
   function requestedWindow(item,start){
     if(!validFPS(item.fps) || !Number.isSafeInteger(item.duration_frames) || item.duration_frames<=0 || !Number.isSafeInteger(start) || start<0 || start>=item.duration_frames)throw Error('Source frame must be inside the media');
     const span=Number(60n*BigInt(item.fps.num)/BigInt(item.fps.den));
     if(!Number.isSafeInteger(span) || span<1)throw Error('Source frame rate cannot form a bounded window');
     return {start_frame:start,end_frame:start+Math.min(span,item.duration_frames-start)};
   }
-  function checkedWindow(value,item,requested,version){
+  function checkedWindow(value,item,requested,version,audio){
     if(!value || !validFPS(value.fps) || value.fps.num!==item.fps.num || value.fps.den!==item.fps.den || value.total_frames!==item.duration_frames || !Number.isSafeInteger(value.start_frame) || !Number.isSafeInteger(value.end_frame) || value.start_frame<0 || value.start_frame>requested.start_frame || value.end_frame<requested.end_frame || value.end_frame>value.total_frames || value.end_frame<=value.start_frame || BigInt(value.end_frame-value.start_frame)*BigInt(value.fps.den)>60n*BigInt(value.fps.num) || typeof value.source_version!=='string' || !value.source_version.length || value.source_version.length>256 || (version!==undefined && value.source_version!==version))throw Error('Source window metadata changed or is invalid; reopen Source');
-    return {...value,fps:{...value.fps}};
+    if(descriptorAudio(value,audio.explicit)!==audio.index)throw Error('Source audio stream changed or is invalid; reopen Source');
+    return {...value,audio_stream_index:audio.index,fps:{...value.fps}};
   }
   function pauseVideo(){if(video.paused===false)ignoredPauses++;internalPause=true;try{video.pause();}finally{internalPause=false;}}
   function hold(){playbackIntent=false;pauseVideo();}
@@ -170,7 +179,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     const value=binding;
     if(!ready || !value?.window || !value.verified || !attached(value) || (video.seeking && !isInternalSeek()))return null;
     const frame=localFrame(value);if(frame===null)return null;
-    return {epoch:value.epoch,media_id:value.item.id,job:value.job,fps:{...value.window.fps},start_frame:value.window.start_frame,end_frame:value.window.end_frame,frame,source_version:value.window.source_version};
+    return {epoch:value.epoch,media_id:value.item.id,job:value.job,fps:{...value.window.fps},start_frame:value.window.start_frame,end_frame:value.window.end_frame,frame,source_version:value.window.source_version,audio_stream_index:value.window.audio_stream_index};
   }
   async function seekMedia(seconds,signal){
     const wait=(event,complete)=>{
@@ -190,24 +199,24 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     startingPlayback=true;queueMicrotask(()=>{if(binding===value)startingPlayback=false;});
     try{await video.play();}catch(error){if(attached(value) && error.name!=='AbortError'){playbackIntent=false;status.textContent+=' · press Play';}}
   }
-  async function prepareWindow(item,epoch,quality,startFrame,{continuation=false,autoplay=false,version,reason=continuation?'window':'open'}={}){
+  async function prepareWindow(item,epoch,quality,startFrame,{continuation=false,autoplay=false,version,audioSelection={index:0,explicit:false},reason=continuation?'window':'open'}={}){
     if(disposed)return;
     let requested;
     try{requested=requestedWindow(item,startFrame);}catch(error){status.textContent=error.message;return;}
     const previous=binding;
-    if(!continuation)reset();
+    if(!continuation){const resetSequence=sequence+1;reset();if(sequence!==resetSequence)return;}
     if(disposed)return;
     const seq=++sequence;controller?.abort();stopHeartbeat();controller=new AbortController();const signal=controller.signal;
     if(continuation && previous){binding={...previous,sequence:seq,signal};jobPath=previous.path;}
     preparing=true;playbackIntent=autoplay;pendingPath=null;seekingTarget=null;startingPlayback=false;cancel.disabled=false;
-    windowContext={item,epoch,quality,startFrame,version};
+    windowContext={item,epoch,quality,startFrame,version,audioSelection};
     const active=()=>!disposed && seq===sequence && !signal.aborted;
     try{
-      beginState(item,epoch,startFrame,reason);
+      beginState(item,epoch,startFrame,reason,audioSelection.index);
       if(!active())return;
       pauseVideo();status.textContent=continuation?`${item.name} · Paused · preparing next Source window…`:`${item.name} · Preparing ${quality} Source window…`;
       const prepareFetch=(path,options={})=>fetcher(path,{...options,signal:AbortSignal.any([signal,options.signal].filter(Boolean))});
-      let job=await api(`/media/${encodeURIComponent(item.id)}/prepare`,{project_epoch:epoch,quality,window:requested},prepareFetch);
+      let job=await api(`/media/${encodeURIComponent(item.id)}/prepare`,{project_epoch:epoch,quality,window:requested,...audioPayload(item,audioSelection)},prepareFetch);
       if(!active())return;
       if(typeof job.id!=='string' || !job.id || sourceAsset(job)!=='source.mp4')throw Error('Source preparation returned an invalid window job');
       const id=job.id,path=sourcePath(item.id,id,epoch);pendingPath=path;jobState=job.state;
@@ -221,37 +230,39 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       }
       if(job.state!=='ready')throw Error(job.error || `Source ${job.state}`);
       if(job.project_epoch!=null && job.project_epoch!==epoch)throw Error('Source epoch changed');
-      const range=checkedWindow(job.source_window,item,requested,version);
+      const range=checkedWindow(job.source_window,item,requested,version,audioSelection);
       if(continuation)await beforeWindowChange();
       if(!active())return;
       const url=sourceAssetURL(item.id,id,'source.mp4',epoch);ready=false;jobPath=path;video.src=url;
       if(image){image.hidden=true;image.removeAttribute('src');}video.hidden=false;
-      binding={sequence:seq,path,signal,job:id,asset:'source.mp4',epoch,url,element:video,item,quality,window:range,verified:false};
+      binding={sequence:seq,path,signal,job:id,asset:'source.mp4',epoch,url,element:video,item,quality,window:range,verified:false,audioSelection};
       await seekMedia((startFrame-range.start_frame)*range.fps.den/range.fps.num,signal);
       if(!active() || !attached(binding))return;
       if(localFrame(binding)!==startFrame)throw Error('Source seek did not reach the requested absolute frame');
       binding.verified=true;ready=true;preparing=false;pendingPath=null;seekingTarget=null;cancel.disabled=true;
-      windowContext={item,epoch,quality,startFrame,version:range.source_version};
-      status.textContent=`${item.name} · SOURCE WINDOW · ${range.start_frame}–${range.end_frame} / ${range.total_frames} frames · ${quality}`;
+      windowContext={item,epoch,quality,startFrame,version:range.source_version,audioSelection};
+      status.textContent=`${item.name} · SOURCE WINDOW · ${range.start_frame}–${range.end_frame} / ${range.total_frames} frames · ${quality}${item.has_audio?` · audio stream ${audioSelection.index} (zero-based)`:''}`;
       const completed=binding;scheduleHeartbeat(completed);notify('ready',stateContext?.reason,startFrame);
       if(!active() || binding!==completed)return;
-      onReady?.({item,epoch,job:id,source_window:{...range,fps:{...range.fps}}});
+      onReady?.({item,epoch,job:id,audio_stream_index:audioSelection.index,source_window:{...range,fps:{...range.fps}}});
       if(autoplay && active() && binding===completed)await play(completed);
     }catch(error){if(active() && error.name!=='AbortError'){const retry=windowContext;detach(`${error.message} · reopen Source`,'error',stateContext?.reason,retry);}}
   }
-  async function open(item,epoch,quality='medium',startFrame=0){
-    if(!windowed || item.is_image)return openLegacy(item,epoch,quality);
-    return prepareWindow(item,epoch,quality,startFrame);
+  async function open(item,epoch,quality='medium',startFrame=0,options){
+    if(disposed)return;
+    let audioSelection;try{audioSelection=selectedAudio(item,options);}catch(error){detach(error.message);return;}
+    if(!windowed || item.is_image)return openLegacy(item,epoch,quality,audioSelection);
+    return prepareWindow(item,epoch,quality,startFrame,{audioSelection});
   }
   async function seekFrame(frame,{retain=false}={}){
-    const value=binding,context=value?.window?{item:value.item,epoch:value.epoch,quality:value.quality,version:value.window.source_version}:windowContext;
+    const value=binding,context=value?.window?{item:value.item,epoch:value.epoch,quality:value.quality,version:value.window.source_version,audioSelection:value.audioSelection}:windowContext;
     if(!windowed || !context || disposed)return;
     requestedWindow(context.item,frame);playbackIntent=false;
-    if(!value?.window || !attached(value) || frame<value.window.start_frame || frame>=value.window.end_frame)return prepareWindow(context.item,context.epoch,context.quality,frame,{version:context.version,reason:'seek',continuation:retain===true && !!value?.window && attached(value)});
+    if(!value?.window || !attached(value) || frame<value.window.start_frame || frame>=value.window.end_frame)return prepareWindow(context.item,context.epoch,context.quality,frame,{version:context.version,audioSelection:context.audioSelection,reason:'seek',continuation:retain===true && !!value?.window && attached(value)});
     const seq=++sequence;controller?.abort();stopHeartbeat();controller=new AbortController();const signal=controller.signal;
     binding={...value,sequence:seq,signal,verified:false};ready=false;preparing=true;nativeSeeking=false;seekingTarget=null;startingPlayback=false;
     try{
-      beginState(context.item,context.epoch,frame,'seek');
+      beginState(context.item,context.epoch,frame,'seek',context.audioSelection.index);
       if(seq!==sequence || signal.aborted)return;
       pauseVideo();
       await seekMedia((frame-value.window.start_frame)*value.window.fps.den/value.window.fps.num,signal);
@@ -291,7 +302,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     playbackIntent=false;binding.verified=false;ready=false;nativeSeeking=true;
     const value=binding,frame=localFrame(value);
     if(frame!==null && windowContext)windowContext={...windowContext,startFrame:frame};
-    beginState(value.item,value.epoch,frame,'native_seek');
+    beginState(value.item,value.epoch,frame,'native_seek',value.audioSelection.index);
     if(binding===value && nativeSeeking)pauseVideo();
   };
   const seeked=()=>{
@@ -306,7 +317,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     const value=binding;
     if(!video.ended || !playbackIntent || preparing || !value?.window || !ready || !attached(value) || !value.verified)return;
     if(value.window.end_frame===value.window.total_frames){playbackIntent=false;status.textContent=`${value.item.name} · End of Source`;return;}
-    void prepareWindow(value.item,value.epoch,value.quality,value.window.end_frame,{continuation:true,autoplay:true,version:value.window.source_version});
+    void prepareWindow(value.item,value.epoch,value.quality,value.window.end_frame,{continuation:true,autoplay:true,version:value.window.source_version,audioSelection:value.audioSelection});
   };
   cancel.addEventListener('click',cancelPreparation);video.addEventListener('error',videoError);image?.addEventListener?.('error',imageError);
   for(const [name,callback] of [['play',played],['pause',paused],['seeking',seeking],['seeked',seeked],['ended',ended]])video.addEventListener(name,callback);
@@ -316,7 +327,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     async toggle() {
       if(windowed && preparing){pause();return;}
       if(windowed && binding?.window && playable()){if(video.paused){playbackIntent=true;await play(binding);}else pause();return;}
-      if(windowed && windowContext && !preparing){const c=windowContext;return prepareWindow(c.item,c.epoch,c.quality,c.startFrame,{autoplay:true,version:c.version});}
+      if(windowed && windowContext && !preparing){const c=windowContext;return prepareWindow(c.item,c.epoch,c.quality,c.startFrame,{autoplay:true,version:c.version,audioSelection:c.audioSelection});}
       if(playable()){if(video.paused){try{await video.play();}catch(error){if(error.name!=="AbortError")throw error;}}else video.pause();}
     },
     step(delta, fps, totalFrames) {

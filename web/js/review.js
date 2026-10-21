@@ -47,23 +47,27 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
   let transportEpoch=0,intent=null,barrier=null,preparation=Promise.resolve(),releaseQueue=Promise.resolve(),pausedAnchor=null,changingRates=false;
   const transportStatus=find('[data-review-transport-status]');
   const panes=["A","B"].map((name)=>{
-    const element=find(`[data-review-pane="${name}"]`),pane={name,select:element.querySelector("select"),video:element.querySelector("video"),image:element.querySelector("img"),status:element.querySelector('[data-review-source-status]'),cancel:element.querySelector('[data-review-cancel-source]'),metadata:element.querySelector("pre"),seekForm:element.querySelector('[data-review-seek]'),seekInput:element.querySelector('[data-review-frame]'),seekButton:element.querySelector('[data-review-seek-submit]'),clock:element.querySelector('[data-review-clock]'),ready:false,media:null,version:null,generation:0,sourceSequence:0,queued:false,seeking:null,resetting:false,internalPlays:0,rate:1};
+    const element=find(`[data-review-pane="${name}"]`),pane={name,select:element.querySelector(`[name="take${name}"]`),audition:element.querySelector('[data-review-audition-stream]'),audioStreamIndex:0,video:element.querySelector("video"),image:element.querySelector("img"),status:element.querySelector('[data-review-source-status]'),cancel:element.querySelector('[data-review-cancel-source]'),metadata:element.querySelector("pre"),seekForm:element.querySelector('[data-review-seek]'),seekInput:element.querySelector('[data-review-frame]'),seekButton:element.querySelector('[data-review-seek-submit]'),clock:element.querySelector('[data-review-clock]'),ready:false,media:null,version:null,generation:0,sourceSequence:0,queued:false,seeking:null,resetting:false,internalPlays:0,rate:1};
     pane.player=sourceFactory({video:pane.video,image:pane.image,status:pane.status,cancel:pane.cancel,windowed:true,onStateChange:value=>sourceState(pane,value),onReady:()=>sourceReady(pane)});return pane;
   });
   const audioPolicy=form.elements.audio_streams,audioIndex=form.elements.audio_stream_index,audioNote=find('[data-review-audio-streams]'),selectAudio=find('[data-review-audio-select]');
   const candidate=value=>value?.document?.media.find(media=>media.id===panes[1].select.value);
   const candidateIdentity=value=>{const media=candidate(value);return media?JSON.stringify([media.id,media.content_hash,media.audio_stream_count,media.has_audio]):null;};
-  const playbackIdentity=value=>JSON.stringify(panes.map(pane=>{const media=value?.document?.media.find(media=>media.id===pane.select.value);return media?[media.id,media.content_hash,media.duration_frames,media.fps?.num,media.fps?.den,media.has_video,media.has_audio,media.is_image]:null;}));
+  const playbackIdentity=value=>JSON.stringify(panes.map(pane=>{const media=value?.document?.media.find(media=>media.id===pane.select.value);return media?[media.id,media.content_hash,media.duration_frames,media.fps?.num,media.fps?.den,media.has_video,media.has_audio,media.is_image,media.audio_stream_count]:null;}));
   const streamCount=()=>{const count=candidate(context)?.audio_stream_count;return Number.isSafeInteger(count) && count>=0?count:null;};
   const identity=()=>reviewIdentity(context),current=()=>identity()===reviewIdentity(getContext()) && candidateIdentity(context)===candidateIdentity(getContext()) && playbackIdentity(context)===playbackIdentity(getContext());
   const settingsIdentity=()=>JSON.stringify([panes[1].select.value,...['source_in','duration','links','attributes','audio_streams','audio_stream_index'].map(name=>form.elements[name].value),candidateIdentity(context),candidateIdentity(getContext())]);
   function resetAudioPolicy(){audioPolicy.value='preserve';audioIndex.value='0';}
   function audioValid(){try{replacementAudioStreams(audioPolicy.value,audioIndex.value,streamCount());return true;}catch{return false;}}
+  function auditionCount(pane){const count=pane.media?.audio_stream_count;return !pane.media?.is_image && pane.media?.has_audio && Number.isSafeInteger(count) && count>0 && count<=1024?count:0;}
+  function renderAudition(pane){
+    const count=auditionCount(pane);pane.audition.replaceChildren(...(count?Array.from({length:count},(_,index)=>new Option(`${index}${index===0?' · first stream':''}`,String(index))):[new Option(pane.media?.has_audio && !pane.media?.is_image?'Native stream list unavailable':'No audition audio streams','0')]));pane.audition.value=String(pane.audioStreamIndex);
+  }
   function controls(){
     const count=streamCount(),available=count!==null && count>0;
     audioPolicy.disabled=applying || !candidate(context);audioIndex.disabled=applying || audioPolicy.value!=='select' || !available;audioIndex.max=available?String(count-1):'0';selectAudio.disabled=!available;
     audioNote.textContent=count===null?'Replacement audio streams · Native B stream count unavailable; refresh review before choosing a stream':`Replacement only · B has ${count} audio stream(s)${available?` · available zero-based indices 0–${count-1}`:''}`;
-    for(const pane of panes){if(pane.media && !pane.media.is_image && comparisonDuration(pane.media)===null)pane.status.textContent='Comparison unavailable · invalid native source timing; refresh review';pane.seekInput.disabled=applying || !current() || !playable(pane);pane.seekButton.disabled=pane.seekInput.disabled;pane.seekInput.max=String(Math.max(0,(pane.media?.duration_frames || 1)-1));updateClock(pane);}
+    for(const pane of panes){if(pane.media && !pane.media.is_image && comparisonDuration(pane.media)===null)pane.status.textContent='Comparison unavailable · invalid native source timing; refresh review';pane.audition.disabled=applying || !current() || !auditionCount(pane);pane.seekInput.disabled=applying || !current() || !playable(pane);pane.seekButton.disabled=pane.seekInput.disabled;pane.seekInput.max=String(Math.max(0,(pane.media?.duration_frames || 1)-1));updateClock(pane);}
     planButton.disabled=planning || applying || !context?.clip || !current() || !panes[1].select.value || !audioValid();apply.disabled=applying || !plan || !current() || plan.settings!==settingsIdentity() || !canCommit();refresh.disabled=applying;close.disabled=applying;play.disabled=applying || !current() || (!intent && (waiting() || !master()));play.textContent=intent?'Pause A/B':'Play A/B';swap.disabled=applying;for(const pane of panes)pane.select.disabled=applying;for(const name of ["source_in","duration","links","attributes"])form.elements[name].disabled=applying;
   }
   function clearPlan(message){sequence++;planning=false;plan=null;changes.replaceChildren();if(message)status.textContent=message;controls();}
@@ -74,14 +78,14 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
   function position(pane){
     if(pane.queued || pane.player.preparing() || !pane.media || pane.media.is_image)return null;
     const value=pane.player.current();
-    if(!value || value.epoch!==context?.query.project_epoch || value.media_id!==pane.media.id || value.fps?.num!==pane.media.fps?.num || value.fps?.den!==pane.media.fps?.den ||
+    if(!value || value.epoch!==context?.query.project_epoch || value.media_id!==pane.media.id || value.audio_stream_index!==pane.audioStreamIndex || value.fps?.num!==pane.media.fps?.num || value.fps?.den!==pane.media.fps?.den ||
       ![value.frame,value.start_frame,value.end_frame].every(Number.isSafeInteger) || value.start_frame<0 || value.end_frame>pane.media.duration_frames || value.start_frame>=value.end_frame || value.frame<value.start_frame || value.frame>=value.end_frame ||
       typeof value.source_version!=='string' || !value.source_version || (pane.version!==null && pane.version!==value.source_version))return null;
     pane.version??=value.source_version;return value;
   }
   function updateClock(pane){
     const value=position(pane);
-    pane.clock.textContent=value?`${pane.name} · frame ${value.frame} / ${pane.media.duration_frames-1} · ${value.fps.num}/${value.fps.den} fps · window [${value.start_frame}, ${value.end_frame})`:pane.media?.is_image?`${pane.name} · Original still`:pane.queued || pane.player.preparing()?`${pane.name} · Paused · preparing native Source window`:`${pane.name} · Absolute source clock unavailable`;
+    pane.clock.textContent=value?`${pane.name} · frame ${value.frame} / ${pane.media.duration_frames-1} · ${value.fps.num}/${value.fps.den} fps · window [${value.start_frame}, ${value.end_frame})${pane.media.has_audio?` · audition audio stream ${value.audio_stream_index}`:''}`:pane.media?.is_image?`${pane.name} · Original still`:pane.queued || pane.player.preparing()?`${pane.name} · Paused · preparing native Source window`:`${pane.name} · Absolute source clock unavailable`;
   }
   function hold(pane){pane.player.hold();}
   function stopTransport(message,{cancel=false}={}){
@@ -159,7 +163,7 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
     pane.ready=pane.media?.is_image || Boolean(position(pane));controls();
   }
   function sourceState(pane,value){
-    if(pane.resetting || value.item?.id!==pane.media?.id || value.epoch!==context?.query.project_epoch || (value.state==='canceled' && value.reason==='reset'))return;
+    if(pane.resetting || value.item?.id!==pane.media?.id || value.audio_stream_index!==pane.audioStreamIndex || value.epoch!==context?.query.project_epoch || (value.state==='canceled' && value.reason==='reset'))return;
     if(Number.isSafeInteger(value.sequence)){if(value.sequence<pane.sourceSequence)return;pane.sourceSequence=value.sequence;}
     if(value.state==='preparing'){
       pane.ready=false;
@@ -222,14 +226,19 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
     const take=annotations?.items.find(item=>item.media_id===pane.media?.id),label=take?[annotations.shots[take.shot_id],take.label,take.rating!=="unrated"?take.rating:null,take.stale_source?"SOURCE CHANGED · review captured annotations":null].filter(Boolean).join(" · "):"";
     const known=take?formatKnownMetadata(take.metadata):knownTakeMetadata(pane.media);pane.metadata.textContent=[source,label,known].filter(Boolean).join("\n");
   }
-  async function load(pane){
-    const generation=++pane.generation;pane.ready=false;pane.version=null;pane.nativeSeek=false;pane.exhausted=false;pane.media=context?.document.media.find(media=>media.id===pane.select.value) || null;pane.seekInput.value='0';describe(pane);controls();if(!pane.media){pane.resetting=true;try{pane.player.reset();}finally{pane.resetting=false;}return;}
+  async function load(pane,{audioStreamIndex=0}={}){
+    const generation=++pane.generation;pane.ready=false;pane.version=null;pane.nativeSeek=false;pane.exhausted=false;pane.audioStreamIndex=audioStreamIndex;pane.media=context?.document.media.find(media=>media.id===pane.select.value) || null;pane.seekInput.value='0';pane.resetting=true;try{pane.player.reset();}finally{pane.resetting=false;}renderAudition(pane);describe(pane);controls();if(!pane.media)return;
     const media=pane.media,epoch=context.query.project_epoch;pane.queued=true;controls();
-    await enqueue(()=>generation===pane.generation && root.open && current(),async()=>{pane.queued=false;pane.video.defaultPlaybackRate=pane.rate;await pane.player.open(media,epoch,"low");if(generation!==pane.generation)return;pane.ready=media.is_image || Boolean(position(pane));});
+    await enqueue(()=>generation===pane.generation && root.open && current(),async()=>{pane.queued=false;pane.video.defaultPlaybackRate=pane.rate;await pane.player.open(media,epoch,"low",0,{audioStreamIndex});if(generation!==pane.generation)return;pane.ready=media.is_image || Boolean(position(pane));});
     if(generation===pane.generation){pane.queued=false;controls();}
   }
   for(const pane of panes){
     pane.select.addEventListener("change",()=>{stopTransport('Comparison paused · take changed');if(pane.name==='B')resetAudioPolicy();clearPlan("Take choice changed · preview replacement before applying");void load(pane);});
+    pane.audition.addEventListener('change',()=>{
+      const raw=pane.audition.value,index=Number(raw),count=auditionCount(pane);
+      if(applying || !root.open || !current() || !/^(0|[1-9]\d*)$/.test(raw) || !Number.isSafeInteger(index) || index>=count){pane.audition.value=String(pane.audioStreamIndex);return;}
+      if(index===pane.audioStreamIndex)return;stopTransport(`Comparison paused · loading ${pane.name} audition audio stream ${index}`);void load(pane,{audioStreamIndex:index});
+    });
     for(const event of ["timeupdate","seeked","loadedmetadata"])pane.video.addEventListener(event,()=>{updateClock(pane);if(pane===master())align();});
     pane.video.addEventListener('ended',()=>ended(pane),{capture:true});
     pane.video.addEventListener("play",()=>{if(pane.internalPlays){pane.internalPlays--;return;}if(pane.video.paused || closing)return;hold(pane);if(intent && !intent.sync){intent.playing.add(pane);void coordinate(anchor(pane),{targets:[pane]});}else start(pane);});
@@ -263,7 +272,7 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
   function dismiss(){closing=true;stopTransport();for(const pane of panes){pane.generation++;pane.resetting=true;try{pane.player.reset();}finally{pane.resetting=false;}pane.ready=false;pane.queued=false;}clearPlan();root.close();closing=false;}
   close.addEventListener("click",()=>{if(!applying)dismiss();});root.addEventListener("cancel",(event)=>{event.preventDefault();if(!applying)dismiss();});
   async function open(options={}){
-    stopTransport();annotations=null;for(const pane of panes){pane.generation++;pane.resetting=true;try{pane.player.reset();}finally{pane.resetting=false;}pane.rate=1;pane.video.playbackRate=1;pane.ready=false;pane.queued=false;}const next=getContext();context=next?{...next,query:{...next.query},clip:next.clip?{...next.clip}:null,document:{...next.document,media:next.document.media.map(media=>({...media,fps:media.fps?{...media.fps}:undefined}))}}:null;resetAudioPolicy();clearPlan();if(!context){for(const pane of panes){pane.select.replaceChildren();pane.media=null;pane.metadata.textContent="";}status.textContent="Open a saved project first";root.showModal();controls();return;}
+    stopTransport();annotations=null;for(const pane of panes){pane.generation++;pane.resetting=true;try{pane.player.reset();}finally{pane.resetting=false;}pane.rate=1;pane.audioStreamIndex=0;pane.video.playbackRate=1;pane.ready=false;pane.queued=false;}const next=getContext();context=next?{...next,query:{...next.query},clip:next.clip?{...next.clip}:null,document:{...next.document,media:next.document.media.map(media=>({...media,fps:media.fps?{...media.fps}:undefined}))}}:null;resetAudioPolicy();clearPlan();if(!context){for(const pane of panes){pane.select.replaceChildren();pane.media=null;renderAudition(pane);pane.metadata.textContent="";}status.textContent="Open a saved project first";root.showModal();controls();return;}
     const media=context.document.media.filter(item=>!item.compound_timeline_id),a=context.clip?.media_id || context.selectedMedia || panes[0].select.value;
     for(const pane of panes){const old=pane.select.value;pane.select.replaceChildren(...media.map(item=>new Option(`${item.offline?"OFFLINE · ":""}${item.name}`,item.id)));pane.select.value=media.some(item=>item.id===old)?old:(media[0]?.id || "");}
     if(media.some(item=>item.id===a))panes[0].select.value=a;

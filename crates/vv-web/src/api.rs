@@ -821,6 +821,8 @@ struct PrepareSource {
     quality: String,
     #[serde(default)]
     window: Option<SourceWindow>,
+    #[serde(default)]
+    audio_stream_index: u32,
 }
 fn medium() -> String {
     "medium".into()
@@ -842,9 +844,12 @@ async fn prepare_source(
             },
         )
         .await?;
-    match payload.window {
-        Some(window) => state.source.prepare_window(spec, &payload.quality, window),
-        None => state.source.prepare(spec, &payload.quality),
+    match (payload.window, payload.audio_stream_index) {
+        (Some(window), 0) => state.source.prepare_window(spec, &payload.quality, window),
+        (None, 0) => state.source.prepare(spec, &payload.quality),
+        (window, index) => state
+            .source
+            .prepare_selected(spec, &payload.quality, window, index),
     }
     .map(Json)
 }

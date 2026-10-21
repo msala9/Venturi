@@ -303,3 +303,171 @@ fn browser_proxy_keeps_audio_video_timing_and_cancels_without_publishing() {
     assert!(!canceled.join("source.mp4").exists());
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+fn selected_audio_fixture(root: &Path) -> std::path::PathBuf {
+    let video = root.join("video-only.mp4");
+    let settings = crate::VideoSettings {
+        preset: "ultrafast".into(),
+        ..Default::default()
+    };
+    let mut encoder = crate::Encoder::new(
+        &video,
+        16,
+        16,
+        vv_core::Rational::new(24, 1),
+        &settings,
+        None,
+    )
+    .unwrap();
+    let mut frame = vec![64; 256];
+    frame.extend(vec![128; 128]);
+    for _ in 0..6 {
+        encoder.write_video_frame(&frame).unwrap();
+    }
+    encoder.finish().unwrap();
+    let mut paths = vec![video];
+    for (index, rate, channels, frequency) in [
+        (0, 44_100u32, 1u16, 440.0f32),
+        (1, 48_000u32, 2u16, 880.0f32),
+    ] {
+        let samples: Vec<_> = (0..rate / 4)
+            .flat_map(|sample| {
+                let value =
+                    (sample as f32 * frequency * std::f32::consts::TAU / rate as f32).sin() * 0.5;
+                std::iter::repeat_n(value, usize::from(channels))
+            })
+            .collect();
+        let path = root.join(format!("stream-{index}.wav"));
+        write_audio_file(&path, AudioFileFormat::Wav, &samples, rate, channels).unwrap();
+        paths.push(path);
+    }
+    let source = root.join("selected.mkv");
+    let mut inputs: Vec<_> = paths
+        .iter()
+        .map(|path| ffmpeg::format::input(path).unwrap())
+        .collect();
+    let mut output = ffmpeg::format::output(&source).unwrap();
+    for input in &inputs {
+        output
+            .add_stream(ffmpeg::encoder::find(ffmpeg::codec::Id::None))
+            .unwrap()
+            .set_parameters(input.stream(0).unwrap().parameters());
+    }
+    output.write_header().unwrap();
+    for (index, input) in inputs.iter_mut().enumerate() {
+        let from = input.stream(0).unwrap().time_base();
+        let to = output.stream(index).unwrap().time_base();
+        for (_, mut packet) in input.packets() {
+            packet.rescale_ts(from, to);
+            packet.set_stream(index);
+            packet.set_position(-1);
+            packet.write_interleaved(&mut output).unwrap();
+        }
+    }
+    output.write_trailer().unwrap();
+    source
+}
+
+#[test]
+fn selected_browser_audio_uses_audio_ordinal_and_its_own_format_for_full_and_ranged_proxies() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-selected-browser-audio-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    let source = selected_audio_fixture(&root);
+    let original = std::fs::read(&source).unwrap();
+    let metadata = crate::probe_media(&source).unwrap();
+    assert_eq!(metadata.audio_streams, 2);
+    assert!(metadata.has_video);
+    for ranged in [false, true] {
+        let directory = root.join(if ranged { "ranged" } else { "full" });
+        std::fs::create_dir(&directory).unwrap();
+        if ranged {
+            generate_range_selected(&source, &directory, ProxyQuality::Low, 1..5, 1, |_| true)
+                .unwrap();
+        } else {
+            generate_selected(&source, &directory, ProxyQuality::Low, 1, |_| true).unwrap();
+        }
+        let result = crate::decode_audio_track(&directory.join("source.mp4"), 0)
+            .unwrap()
+            .unwrap();
+        assert_eq!(result.channels, 2);
+        assert_eq!(result.sample_rate, 48_000);
+        let channel: Vec<_> = result
+            .samples
+            .as_chunks::<2>()
+            .0
+            .iter()
+            .map(|frame| frame[0])
+            .collect();
+        let from = channel.len() / 4;
+        let to = channel.len() * 3 / 4;
+        let middle = &channel[from..to];
+        let positive_crossings = middle
+            .windows(2)
+            .filter(|pair| pair[0] <= 0.0 && pair[1] > 0.0)
+            .count();
+        let frequency = positive_crossings as f64 * 48_000.0 / middle.len() as f64;
+        assert!(
+            (frequency - 880.0).abs() < 70.0,
+            "Unexpected selected tone: {frequency}"
+        );
+    }
+    let refused = root.join("refused");
+    std::fs::create_dir(&refused).unwrap();
+    assert!(generate_selected(&source, &refused, ProxyQuality::Low, 2, |_| true).is_err());
+    assert!(
+        generate_range_selected(&source, &refused, ProxyQuality::Low, 1..5, 2, |_| true).is_err()
+    );
+    assert_eq!(std::fs::read_dir(&refused).unwrap().count(), 0);
+    assert_eq!(std::fs::read(&source).unwrap(), original);
+    let after = crate::probe_media(&source).unwrap();
+    assert_eq!(
+        (
+            after.fps,
+            after.duration_frames,
+            after.audio_streams,
+            after.sample_rate,
+            after.channels
+        ),
+        (
+            metadata.fps,
+            metadata.duration_frames,
+            metadata.audio_streams,
+            metadata.sample_rate,
+            metadata.channels
+        )
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn selected_audio_validation_preserves_silent_video_zero_and_native_legacy_stream_count() {
+    let mut meta = vv_core::MediaMeta {
+        duration_frames: 24,
+        fps: vv_core::Rational::new(24, 1),
+        width: 16,
+        height: 16,
+        has_video: true,
+        has_audio: false,
+        sample_rate: 0,
+        channels: 0,
+        audio_streams: 0,
+        file: Default::default(),
+    };
+    assert!(validate_audio_stream(&meta, 0).is_ok());
+    assert!(validate_audio_stream(&meta, 1).is_err());
+    meta.has_audio = true;
+    meta.sample_rate = 48_000;
+    meta.channels = 1;
+    assert!(validate_audio_stream(&meta, 0).is_ok());
+    assert!(validate_audio_stream(&meta, 1).is_err());
+    meta.audio_streams = 2;
+    assert!(validate_audio_stream(&meta, 1).is_ok());
+    assert!(validate_audio_stream(&meta, usize::MAX).is_err());
+}

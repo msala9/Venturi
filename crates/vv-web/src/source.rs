@@ -66,8 +66,8 @@ impl SourceWindow {
         }
         Ok(())
     }
-    fn descriptor(&self, spec: &SourceSpec, identity: &str) -> Value {
-        json!({"start_frame":self.start_frame,"end_frame":self.end_frame,"total_frames":spec.meta.duration_frames,"fps":spec.meta.fps,"source_version":identity})
+    fn descriptor(&self, spec: &SourceSpec, identity: &str, audio_stream_index: u32) -> Value {
+        json!({"start_frame":self.start_frame,"end_frame":self.end_frame,"total_frames":spec.meta.duration_frames,"fps":spec.meta.fps,"source_version":identity,"audio_stream_index":audio_stream_index})
     }
 }
 pub struct SourceSpec {
@@ -175,7 +175,7 @@ pub struct MediaJobs {
     exports_blocked: bool,
 }
 enum Work {
-    Source(Box<SourceSpec>, ProxyQuality, Option<SourceWindow>),
+    Source(Box<SourceSpec>, ProxyQuality, Option<SourceWindow>, u32),
     Program(Box<ProgramTask>),
     Assets(Box<SourceSpec>),
 }
@@ -277,15 +277,21 @@ impl MediaJobs {
                 };
                 let result =
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match work {
-                        Work::Source(spec, quality, window) => {
-                            generate(&spec, &directory, quality, window, &cancel, |frames| {
+                        Work::Source(spec, quality, window, audio_stream_index) => generate(
+                            &spec,
+                            &directory,
+                            quality,
+                            window,
+                            audio_stream_index,
+                            &cancel,
+                            |frames| {
                                 if let Some(job) =
                                     owned.lock().unwrap().iter_mut().find(|j| j.id == id)
                                 {
                                     job.progress = frames;
                                 }
-                            })
-                        }
+                            },
+                        ),
                         Work::Assets(spec) => generate_assets(&spec, &directory, &cancel),
                         Work::Program(task) => task.generate(
                             &directory,
@@ -370,7 +376,7 @@ impl MediaJobs {
         })
     }
     pub fn prepare(&self, spec: SourceSpec, quality: &str) -> Result<Value> {
-        self.prepare_source(spec, quality, None)
+        self.prepare_selected(spec, quality, None, 0)
     }
     pub fn prepare_window(
         &self,
@@ -378,14 +384,16 @@ impl MediaJobs {
         quality: &str,
         window: SourceWindow,
     ) -> Result<Value> {
-        self.prepare_source(spec, quality, Some(window))
+        self.prepare_selected(spec, quality, Some(window), 0)
     }
-    fn prepare_source(
+    pub fn prepare_selected(
         &self,
         spec: SourceSpec,
         quality: &str,
         window: Option<SourceWindow>,
+        audio_stream_index: u32,
     ) -> Result<Value> {
+        validate_source_audio(&spec.meta, audio_stream_index)?;
         let quality = ProxyQuality::from_id(quality)
             .ok_or_else(|| ApiError::invalid("Choose low, medium or high proxy quality"))?;
         let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
@@ -408,8 +416,9 @@ impl MediaJobs {
             "source.mp4"
         };
         let identity = spec.identity()?;
-        let key = source_key(&spec, quality, window, &identity);
-        let source_window = window.map(|window| window.descriptor(&spec, &identity));
+        let key = source_key(&spec, quality, window, &identity, audio_stream_index);
+        let source_window =
+            window.map(|window| window.descriptor(&spec, &identity, audio_stream_index));
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs
             .iter_mut()
@@ -456,7 +465,10 @@ impl MediaJobs {
         });
         if self
             .send
-            .try_send((id.clone(), Work::Source(Box::new(spec), quality, window)))
+            .try_send((
+                id.clone(),
+                Work::Source(Box::new(spec), quality, window, audio_stream_index),
+            ))
             .is_err()
         {
             reject_ephemeral(&mut jobs);
@@ -985,13 +997,24 @@ fn generate_assets(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> 
     }
     Ok(())
 }
+fn validate_source_audio(meta: &vv_core::MediaMeta, index: u32) -> Result<()> {
+    let index = usize::try_from(index)
+        .map_err(|_| ApiError::invalid("Invalid source audio stream index"))?;
+    if (meta.has_audio && index >= meta.audio_stream_count()) || (!meta.has_audio && index != 0) {
+        return Err(ApiError::invalid(
+            "Choose an available native source audio stream",
+        ));
+    }
+    Ok(())
+}
 fn source_key(
     spec: &SourceSpec,
     quality: ProxyQuality,
     window: Option<SourceWindow>,
     identity: &str,
+    audio_stream_index: u32,
 ) -> String {
-    match window {
+    let key = match window {
         Some(window) => format!(
             "{}:{}:{}:v2-window:{}:{}:{}",
             spec.epoch,
@@ -1008,7 +1031,8 @@ fn source_key(
             identity,
             quality.id()
         ),
-    }
+    };
+    format!("{key}:audio:{audio_stream_index}")
 }
 fn trim(jobs: &mut VecDeque<Job>) {
     trim_for(jobs, 0, 24, Instant::now());
@@ -1226,9 +1250,11 @@ fn generate(
     directory: &Path,
     quality: ProxyQuality,
     window: Option<SourceWindow>,
+    audio_stream_index: u32,
     cancel: &AtomicBool,
     mut progress: impl FnMut(u64),
 ) -> Result<()> {
+    validate_source_audio(&spec.meta, audio_stream_index)?;
     if spec.meta.is_image() {
         if window.is_some() {
             return Err(ApiError::invalid(
@@ -1250,27 +1276,18 @@ fn generate(
         || actual.height > 8192
         || actual.duration_frames != spec.meta.duration_frames
         || actual.fps != spec.meta.fps
+        || ((window.is_some() || audio_stream_index != 0) && !same_assets_meta(&spec.meta, &actual))
     {
         return Err(ApiError::conflict(
             "SOURCE_CHANGED",
             "Reimport changed media before preparing a source preview",
         ));
     }
+    validate_source_audio(&actual, audio_stream_index)?;
+    let selected = usize::try_from(audio_stream_index)
+        .map_err(|_| ApiError::invalid("Invalid source audio stream index"))?;
     if let Some(window) = window {
         window.validate(&actual)?;
-        if actual.width != spec.meta.width
-            || actual.height != spec.meta.height
-            || actual.has_video != spec.meta.has_video
-            || actual.has_audio != spec.meta.has_audio
-            || actual.sample_rate != spec.meta.sample_rate
-            || actual.channels != spec.meta.channels
-            || actual.audio_streams != spec.meta.audio_streams
-        {
-            return Err(ApiError::conflict(
-                "SOURCE_CHANGED",
-                "Reimport changed media before preparing a source preview",
-            ));
-        }
     }
     let mut keep_running = |frames| {
         if frames > 0 {
@@ -1282,14 +1299,21 @@ fn generate(
             && disk_headroom(directory)
     };
     let generated = match window {
-        Some(window) => vv_media::browser_proxy::generate_range(
+        Some(window) => vv_media::browser_proxy::generate_range_selected(
             &path,
             directory,
             quality,
             window.start_frame..window.end_frame,
+            selected,
             &mut keep_running,
         ),
-        None => vv_media::browser_proxy::generate(&path, directory, quality, &mut keep_running),
+        None => vv_media::browser_proxy::generate_selected(
+            &path,
+            directory,
+            quality,
+            selected,
+            &mut keep_running,
+        ),
     };
     generated.map_err(|_| {
         ApiError::invalid("Source generation failed, canceled or exceeded its resource budget")
@@ -1311,7 +1335,7 @@ fn generate(
         let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
         let waveforms = vv_media::waveform::analyze_waveforms(
             &path,
-            &[0],
+            &[selected],
             vv_media::recommended_num_peaks(seconds),
             || {
                 !cancel.load(Ordering::Relaxed)

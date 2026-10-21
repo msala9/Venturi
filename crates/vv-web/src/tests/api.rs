@@ -422,3 +422,31 @@ async fn health_assets_snapshot_and_host_boundary() {
     }
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn source_prepare_audio_stream_is_an_optional_strict_unsigned_native_index() {
+    let legacy: PrepareSource = serde_json::from_value(json!({"project_epoch":"p:1"})).unwrap();
+    assert_eq!(legacy.audio_stream_index, 0);
+    let selected: PrepareSource = serde_json::from_value(json!({"project_epoch":"p:1","audio_stream_index":1,"window":{"start_frame":12,"end_frame":24}})).unwrap();
+    assert_eq!(selected.audio_stream_index, 1);
+    for value in [
+        json!(-1),
+        json!(0.5),
+        json!("1"),
+        json!(null),
+        json!(4_294_967_296u64),
+    ] {
+        assert!(
+            serde_json::from_value::<PrepareSource>(
+                json!({"project_epoch":"p:1","audio_stream_index":value})
+            )
+            .is_err()
+        );
+    }
+    assert!(
+        serde_json::from_value::<PrepareSource>(
+            json!({"project_epoch":"p:1","audio_stream_index":0,"fallback":true})
+        )
+        .is_err()
+    );
+}

@@ -454,18 +454,33 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 
 ## Implemented M3b source delivery
 
-- POST `/api/v1/media/{id}/prepare` with `{project_epoch, quality, window?}` creates or
+- POST `/api/v1/media/{id}/prepare` with `{project_epoch, quality, window?, audio_stream_index?}` creates or
   reuses an ephemeral source job. Quality is low/medium/high. This does not edit
-  the project or history. Duplicate identity/quality requests share one job.
+  the project or history. Duplicate identity/quality/range/stream requests share
+  one job. The optional audio index is a zero-based native audio ordinal, defaults
+  to zero and must fit an unsigned 32-bit integer and the native stream count.
+  Silent video and stills accept default zero; a nonzero index requires audio.
+  Invalid choices refuse admission before cache allocation. Full and ranged
+  proxies decode that stream using its own sample rate and channel format;
+  legacy proxy waveforms use the same selection. Separate full-source asset
+  analysis retains its documented first-stream scope below.
 - Optional `window:{start_frame,end_frame}` uses absolute, half-open source
   frames. It must be nonempty, inside the full source and at most 60 seconds
   using native rational FPS. The returned `source_window` contains those bounds,
-  full `total_frames`, rational `fps` and an opaque file-identity `source_version`.
-  The job key includes range, quality, epoch, media ID and full file identity.
+  full `total_frames`, rational `fps`, `audio_stream_index` and an opaque
+  file-identity `source_version`. Stream choice does not change file identity.
+  The job key includes range, quality, epoch, media ID, full file identity and
+  audio index; omitted and explicit zero share the same entry.
   Ranged jobs publish only the requested zero-based movie and skip whole-source
   thumbnail/waveform scans. Status and asset authorization still bind the full
   original. Omitting `window` retains legacy full-file behavior and its ten-minute
-  limit; existing Review/Slip callers and original still-image preparation remain.
+  limit; legacy callers and original still-image preparation remain supported.
+- Review opens bounded Source windows with absolute native-frame seeks. Its
+  per-pane audition audio selectors are independent of replacement policy and
+  default to zero after source changes, swap and refresh. Selection persists
+  through seeks and EOF windows; attachment and heartbeat must match the chosen
+  native index. Changing audition pauses playback and reloads the chosen stream
+  without editing the timeline or changing replacement settings.
 - Main Source opens explicit windows, with whole-file slider/numeric navigation,
   absolute In/Out, timecode, stepping, audition and native fast-audio sample
   bounds. Seeks must verify the requested frame before publishing a clock.

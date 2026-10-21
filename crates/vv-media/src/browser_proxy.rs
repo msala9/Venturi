@@ -16,26 +16,42 @@ pub fn generate(
     source: &Path,
     directory: &Path,
     quality: ProxyQuality,
+    keep_running: impl FnMut(u64) -> bool,
+) -> Result<(), MediaError> {
+    generate_selected(source, directory, quality, 0, keep_running)
+}
+
+pub fn generate_selected(
+    source: &Path,
+    directory: &Path,
+    quality: ProxyQuality,
+    audio_stream_index: usize,
     mut keep_running: impl FnMut(u64) -> bool,
 ) -> Result<(), MediaError> {
     let video = directory.join("video.mp4");
     let audio = directory.join("audio.m4a");
     let output = directory.join("source.mp4");
     let meta = crate::probe_media(source)?;
+    validate_audio_stream(&meta, audio_stream_index)?;
     if meta.has_video {
         crate::proxy::generate_proxy_at(source, &video, quality, &[], 2, &mut keep_running)?;
     }
     if meta.has_audio {
         let mut samples = Vec::new();
         let mut stopped = false;
-        let formats = crate::decode_audio_streams_streaming(source, &[0], None, |_, _, chunk| {
-            if samples.len() + chunk.len() > MAX_AUDIO_SAMPLES || !keep_running(0) {
-                stopped = true;
-                return ControlFlow::Break(());
-            }
-            samples.extend_from_slice(chunk);
-            ControlFlow::Continue(())
-        })?;
+        let formats = crate::decode_audio_streams_streaming(
+            source,
+            &[audio_stream_index],
+            None,
+            |_, _, chunk| {
+                if samples.len() + chunk.len() > MAX_AUDIO_SAMPLES || !keep_running(0) {
+                    stopped = true;
+                    return ControlFlow::Break(());
+                }
+                samples.extend_from_slice(chunk);
+                ControlFlow::Continue(())
+            },
+        )?;
         if stopped {
             return Err(MediaError::Cancelled);
         }
@@ -69,12 +85,24 @@ pub fn generate_range(
     directory: &Path,
     quality: ProxyQuality,
     range: Range<vv_core::FrameIdx>,
+    keep_running: impl FnMut(u64) -> bool,
+) -> Result<(), MediaError> {
+    generate_range_selected(source, directory, quality, range, 0, keep_running)
+}
+
+pub fn generate_range_selected(
+    source: &Path,
+    directory: &Path,
+    quality: ProxyQuality,
+    range: Range<vv_core::FrameIdx>,
+    audio_stream_index: usize,
     mut keep_running: impl FnMut(u64) -> bool,
 ) -> Result<(), MediaError> {
     if !keep_running(0) {
         return Err(MediaError::Cancelled);
     }
     let meta = crate::probe_media(source)?;
+    validate_audio_stream(&meta, audio_stream_index)?;
     crate::proxy::validate_range(&range, meta.fps, meta.duration_frames)?;
     let video = directory.join("video.mp4");
     let audio = directory.join("audio.m4a");
@@ -97,7 +125,7 @@ pub fn generate_range(
         let mut failure = None;
         let formats = crate::decode_audio_streams_from(
             source,
-            &[0],
+            &[audio_stream_index],
             48_000,
             bounds.start,
             |_, count, at, chunk| {
@@ -163,6 +191,15 @@ pub fn generate_range(
         let _ = std::fs::remove_file(&staging);
     }
     publish
+}
+
+fn validate_audio_stream(meta: &vv_core::MediaMeta, index: usize) -> Result<(), MediaError> {
+    if (meta.has_audio && index >= meta.audio_stream_count()) || (!meta.has_audio && index != 0) {
+        return Err(MediaError::NoStream(
+            "The selected source audio stream is unavailable".into(),
+        ));
+    }
+    Ok(())
 }
 
 fn audio_sample_range(

@@ -31,20 +31,20 @@ function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,res
   const selectors=["form","[data-review-status]","[data-review-apply]","[data-review-plan]","[data-review-changes]","[data-review-refresh]","[data-review-close]","[data-review-play]","[data-review-swap]",'[name="sync"]','[name="listen"]',"[data-review-target]",'[data-review-audio-streams]','[data-review-audio-select]','[data-review-transport-status]'];
   const nodes=Object.fromEntries(selectors.map(selector=>[selector,new Control()])),root=new Control(),panes=[];root.querySelector=selector=>nodes[selector];root.showModal=()=>{root.open=true;};root.close=()=>{root.open=false;};
   nodes['[data-review-replacement]']=nodes.form;
-  for(const name of ["A","B"]){const parts=Object.fromEntries(["select","video","img","output","button","pre",'[data-review-seek]','[data-review-frame]','[data-review-seek-submit]','[data-review-clock]'].map(selector=>[selector,new Control()]));parts['[data-review-source-status]']=parts.output;parts['[data-review-cancel-source]']=parts.button;const pane={querySelector:selector=>parts[selector]};nodes[`[data-review-pane="${name}"]`]=pane;panes.push(parts);}
+  for(const name of ["A","B"]){const parts=Object.fromEntries(["select","video","img","output","button","pre",'[data-review-seek]','[data-review-frame]','[data-review-seek-submit]','[data-review-clock]','[data-review-audition-stream]'].map(selector=>[selector,new Control()]));parts[`[name="take${name}"]`]=parts.select;parts['[data-review-source-status]']=parts.output;parts['[data-review-cancel-source]']=parts.button;const pane={querySelector:selector=>parts[selector]};nodes[`[data-review-pane="${name}"]`]=pane;panes.push(parts);}
   nodes.form.elements=Object.fromEntries(Object.entries({source_in:"0",duration:"preserve",links:"replace_linked",attributes:"preserve",audio_streams:"preserve",audio_stream_index:"0"}).map(([name,value])=>[name,new Control(value)]));nodes.form.reportValidity=()=>true;
   nodes['[name="listen"]'].value="A";
   const context={query:{project_epoch:"epoch",if_generation:"2",timeline_id:"1",revision:"rev",frame:12,width:640},clip:{id:"1",media_id:"2",name:"old.mp4",start_frame:12,length_frames:72},document:{media:[{id:"2",name:"old.mp4",has_video:true,has_audio:true,duration_frames:72,fps:{num:24,den:1},audio_stream_count:2,content_hash:'old-hash'},{id:"3",name:"new.mp4",has_video:true,has_audio:true,duration_frames:120,fps:{num:24,den:1},audio_stream_count:2,content_hash:'new-hash'}]}},commits=[],loaded=[],ready=new Map();let writable=true;
   const players=[],preparations=[];let active=0,peak=0;
   const sourceFactory=({onReady,onStateChange,cancel,video,windowed})=>{
-    assert.equal(windowed,true);const pane=players.length,internalEvents=new WeakSet();let item=null,epoch=null,range=null,preparing=false,sequence=0,job=0,internal=false;
+    assert.equal(windowed,true);const pane=players.length,internalEvents=new WeakSet();let item=null,epoch=null,range=null,preparing=false,sequence=0,job=0,internal=false,audioStreamIndex=0;
     video.addEventListener('pause',event=>{if(internal)internalEvents.add(event);});
-    const notify=(state,reason,frame)=>onStateChange({state,reason,frame,item,epoch,sequence});
+    const notify=(state,reason,frame)=>onStateChange({state,reason,frame,item,epoch,sequence,audio_stream_index:audioStreamIndex});
     const hold=()=>{internal=true;try{video.pause();}finally{internal=false;}};
     const publish=(frame,token,reason)=>{
       if(token!==sequence)return;
       const inside=range && frame>=range.start_frame && frame<range.end_frame;
-      if(!inside)range={start_frame:frame,end_frame:Math.min(item.duration_frames,frame+Math.max(1,Math.floor(windowSeconds*item.fps.num/item.fps.den))),source_version:`version-${item.id}`,job:`job-${pane}-${++job}`};
+      if(!inside)range={start_frame:frame,end_frame:Math.min(item.duration_frames,frame+Math.max(1,Math.floor(windowSeconds*item.fps.num/item.fps.den))),source_version:`version-${item.id}`,audio_stream_index:audioStreamIndex,job:`job-${pane}-${++job}`};
       video.duration=(range.end_frame-range.start_frame)*item.fps.den/item.fps.num;video.currentTime=(frame-range.start_frame)*item.fps.den/item.fps.num;video.ended=frame===range.end_frame-1 && endedAtWindowTail(pane,frame);
       if(resetRate){video.playbackRate=1;video.dispatchEvent(new Event('ratechange'));}
       preparing=false;notify('ready',reason,frame);if(reason==='open')onReady();
@@ -54,10 +54,10 @@ function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,res
       current(){if(!range || !item || item.is_image)return null;const local=video.ended?range.end_frame-range.start_frame-1:Math.max(0,Math.floor((video.currentTime+1e-6)*item.fps.num/item.fps.den));return {...range,epoch,media_id:item.id,fps:{...item.fps},frame:Math.min(range.end_frame-1,range.start_frame+local)};},
       reset(){sequence++;hold();preparing=false;range=null;if(item)notify('canceled','reset',0);},
       pause(){hold();if(preparing){sequence++;preparing=false;range=null;notify('canceled','pause',0);}},
-      async open(media,value){item=media;epoch=value;range=null;loaded.push(item.id);const token=++sequence;preparing=true;notify('preparing','open',0);hold();cancel.disabled=true;preparations.push({pane,type:'open',frame:0});active++;peak=Math.max(peak,active);
+      async open(media,value,quality,startFrame,options){assert.equal(startFrame,0);assert.equal(quality,'low');audioStreamIndex=options.audioStreamIndex;item=media;epoch=value;range=null;loaded.push(item.id);const token=++sequence;preparing=true;notify('preparing','open',0);hold();cancel.disabled=true;preparations.push({pane,type:'open',frame:0,audio_stream_index:audioStreamIndex});active++;peak=Math.max(peak,active);
         const finish=()=>{active--;if(item.is_image){if(token!==sequence)return;preparing=false;notify('ready','open',0);onReady();}else publish(0,token,'open');};if(deferSources)await new Promise(resolve=>{ready.set(video,()=>{finish();resolve();});});else{ready.set(video,finish);finish();}
       },
-      async seekFrame(frame,options){assert.equal(options?.retain,true);const token=++sequence;preparing=true;notify('preparing','seek',frame);hold();preparations.push({pane,type:'seek',frame});active++;peak=Math.max(peak,active);try{const wait=deferSeek(pane,frame);if(wait)await wait;if(token!==sequence)return;if(player.failNext){player.failNext=false;preparing=false;range=null;return;}publish(frame,token,'seek');}finally{active--;}}
+      async seekFrame(frame,options){assert.equal(options?.retain,true);const token=++sequence;preparing=true;notify('preparing','seek',frame);hold();preparations.push({pane,type:'seek',frame,audio_stream_index:audioStreamIndex});active++;peak=Math.max(peak,active);try{const wait=deferSeek(pane,frame);if(wait)await wait;if(token!==sequence)return;if(player.failNext){player.failNext=false;preparing=false;range=null;return;}publish(frame,token,'seek');}finally{active--;}}
       ,nativeSeek(frame){const token=++sequence;preparing=true;notify('preparing','native_seek',frame);hold();return ()=>publish(frame,token,'native_seek');}
     };players.push(player);return player;
   };
@@ -327,4 +327,52 @@ test('a still becoming ready does not block or restart its verified playable pee
   const h=harness(async()=>planned,{deferSources:true});h.context.document.media[1].is_image=true;
   const opening=h.review.open();await settle();h.ready.get(h.panes[0].video)();await settle();await h.panes[0].video.play();await settle();assert.equal(h.panes[0].video.paused,false);
   const plays=h.panes[0].video.playCount;h.ready.get(h.panes[1].video)();await opening;await settle();assert.equal(h.panes[0].video.paused,false);assert.equal(h.panes[0].video.playCount,plays);assert.equal(h.panes[1].video.playCount,0);assert.equal(h.panes[1]['[data-review-seek-submit]'].disabled,true);h.button('close').click();
+});
+
+function audition(h,pane,index){const select=h.panes[pane]['[data-review-audition-stream]'];select.value=String(index);select.dispatchEvent(new Event('change'));}
+
+test('A and B audition streams are independent native choices and preserve replacement policy and confirmation',async()=>{
+  const h=harness(async()=>planned);await h.review.open();
+  for(const pane of h.panes){const select=pane['[data-review-audition-stream]'];assert.equal(select.value,'0');assert.equal(select.disabled,false);assert.deepEqual(select.children.map(option=>option.value),['0','1']);}
+  h.submit();await settle();assert.equal(h.button('apply').disabled,false);audition(h,0,1);await settle();assert.equal(h.players[0].current().audio_stream_index,1);assert.equal(h.players[1].current().audio_stream_index,0);assert.equal(h.button('apply').disabled,false);
+  assert.equal(h.nodes.form.elements.audio_streams.value,'preserve');assert.equal(h.nodes.form.elements.audio_stream_index.value,'0');assert.match(h.panes[0]['[data-review-clock]'].textContent,/audition audio stream 1/);
+  audition(h,1,1);await settle();assert.equal(h.players[1].current().audio_stream_index,1);assert.equal(h.panes[0].video.muted,false);assert.equal(h.panes[1].video.muted,true);assert.equal(h.commits.length,0);assert.equal(h.peak(),1);h.button('close').click();
+});
+
+test('changing audition pauses both panes and persists the chosen stream through absolute source navigation',async()=>{
+  const h=harness(async()=>planned);await h.review.open();h.button('play').click();await settle();audition(h,1,1);assert(h.panes.every(pane=>pane.video.paused));await settle();assert.equal(h.players[1].current().audio_stream_index,1);
+  h.seek(1,24);await settle();assert.equal(h.players[1].current().audio_stream_index,1);assert.equal(h.players[0].current().audio_stream_index,0);assert.equal(h.preparations.at(-2).audio_stream_index,1);assert(h.panes.every(pane=>pane.video.paused));assert.equal(h.commits.length,0);h.button('close').click();
+});
+
+test('take changes, swaps and review refresh reset only the required audition selections to zero',async()=>{
+  const h=harness(async()=>planned);await h.review.open();audition(h,0,1);await settle();audition(h,1,1);await settle();
+  h.panes[0].select.value='3';h.panes[0].select.dispatchEvent(new Event('change'));await settle();assert.equal(h.panes[0]['[data-review-audition-stream]'].value,'0');assert.equal(h.panes[1]['[data-review-audition-stream]'].value,'1');
+  h.button('swap').click();await settle();assert(h.panes.every(pane=>pane['[data-review-audition-stream]'].value==='0'));audition(h,0,1);await settle();await h.review.open();assert(h.panes.every(pane=>pane['[data-review-audition-stream]'].value==='0'));assert(h.players.every(player=>player.current().audio_stream_index===0));h.button('close').click();
+});
+
+test('still, silent and unknown native audio metadata disable audition choices without guessing a nonzero stream',async()=>{
+  for(const metadata of [{is_image:true},{has_audio:false,audio_stream_count:0},{audio_stream_count:undefined},{audio_stream_count:'2'},{audio_stream_count:-1},{audio_stream_count:1025}]){
+    const h=harness(async()=>planned);Object.assign(h.context.document.media[0],metadata);await h.review.open();const select=h.panes[0]['[data-review-audition-stream]'],requests=h.preparations.length;assert.equal(select.disabled,true);assert.equal(select.value,'0');audition(h,0,1);await settle();assert.equal(h.preparations.length,requests);assert.equal(select.value,'0');assert.equal(h.commits.length,0);h.button('close').click();
+  }
+});
+
+test('changed native stream counts invalidate either pane audition and replacement confirmation',async()=>{
+  for(const pane of [0,1]){
+    const h=harness(async()=>planned);await h.review.open();audition(h,pane,1);await settle();h.submit();await settle();assert.equal(h.button('apply').disabled,false);h.context.document.media[pane].audio_stream_count=1;h.review.invalidate();
+    assert.equal(h.panes[pane]['[data-review-audition-stream]'].disabled,true);assert.equal(h.button('play').disabled,true);assert.equal(h.button('apply').disabled,true);assert(h.panes.every(value=>value.video.paused));h.button('close').click();
+  }
+});
+
+test('late old audition attachment cannot replace a newer selection or restart playback after close',async()=>{
+  for(const close of [false,true]){
+    const h=harness(async()=>planned,{deferSources:true}),opening=h.review.open();await settle();h.ready.get(h.panes[0].video)();await settle();h.ready.get(h.panes[1].video)();await opening;
+    audition(h,0,1);await settle();const obsolete=h.ready.get(h.panes[0].video);if(close)h.button('close').click();else audition(h,0,0);obsolete();await settle();
+    if(close){assert.equal(h.players[0].current(),null);assert.equal(h.root.open,false);}else{h.ready.get(h.panes[0].video)();await settle();assert.equal(h.players[0].current().audio_stream_index,0);assert.equal(h.panes[0]['[data-review-audition-stream]'].value,'0');}
+    assert(h.panes.every(pane=>pane.video.paused));assert(h.panes.every(pane=>pane.video.playCount===0));assert.equal(h.peak(),1);assert.equal(h.commits.length,0);if(!close)h.button('close').click();
+  }
+});
+
+test('a same-version cache clock for another audition stream cannot become a playable comparison source',async()=>{
+  const h=harness(async()=>planned);await h.review.open();audition(h,0,1);await settle();const current=h.players[0].current;h.players[0].current=()=>({...current(),audio_stream_index:0});h.panes[0].video.dispatchEvent(new Event('timeupdate'));h.button('play').click();await settle();
+  assert.match(h.panes[0]['[data-review-clock]'].textContent,/clock unavailable/);assert(h.panes.every(pane=>pane.video.paused));assert(h.panes.every(pane=>pane.video.playCount===0));h.button('close').click();
 });

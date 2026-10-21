@@ -1515,3 +1515,12 @@ Evidence: m7-unsaved-recovery.json and the snapshot/recovery/refusal/kept-curren
 browser screenshots. Capture timing depends on actor availability, and edits
 after the latest snapshot are not crash-durable. Durable command receipts/render
 jobs, deployment/service packaging, soak and remaining native parity stay open.
+
+The 9d59a90 binary is deployed on halo2, SHA-256
+a03229472396652d5549c74a0e41384b6dd76a483d1923c84e9cd0e367426764.
+The tested recovery module matches the embedded asset, the saved shared project
+reopened before browser Open, and recovery status is empty for that clean fixture.
+Known provenance, exact annotation seed and Favorite remain intact. CPU/lavapipe,
+two workers, no DRI/KFD handles and no hardware-lock probe/acquisition are
+verified in m7-halo2-unsaved-recovery.json. No other agent's process or GPU slot
+was used by this deployment.

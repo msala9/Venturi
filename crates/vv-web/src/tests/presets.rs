@@ -70,6 +70,7 @@ fn options(anchor: KeyframeAnchor) -> Options {
         ],
         anchor,
         append_filters: true,
+        shortcut: None,
     }
 }
 
@@ -297,4 +298,189 @@ fn shortcut_metadata_rejects_incompatible_wire_types_without_changing_native_str
     preset.validate().unwrap();
     let decoded: Preset = serde_json::from_slice(&serde_json::to_vec(&preset).unwrap()).unwrap();
     assert_eq!(decoded.shortcut, preset.shortcut);
+}
+
+#[test]
+fn shortcut_assignment_uses_native_aliases_modifier_order_and_complete_key_domain() {
+    for (input, expected) in [
+        ("Alt+Ctrl+Shift+KeyP", "Ctrl+Shift+Alt+P"),
+        ("Ctrl++", "Ctrl+Plus"),
+        ("Shift+Alt+Ctrl+NumpadAdd", "Ctrl+Shift+Alt+Plus"),
+        ("Plus", "Plus"),
+        ("Ctrl+⏷", "Ctrl+Down"),
+        ("Alt+ArrowLeft", "Alt+Left"),
+        ("Return", "Enter"),
+        ("Ctrl+Help", "Ctrl+Insert"),
+        (" ", "Space"),
+        ("Ctrl+−", "Ctrl+Minus"),
+        ("Ctrl+NumpadComma", "Ctrl+Comma"),
+        ("Ctrl+NumpadDecimal", "Ctrl+Period"),
+        ("Ctrl+NumpadDivide", "Ctrl+Slash"),
+        ("Ctrl+NumpadEqual", "Ctrl+Equals"),
+        ("BracketLeft", "OpenBracket"),
+        ("Grave", "Backtick"),
+        ("Ctrl+\\", "Ctrl+Backslash"),
+        ("'", "Quote"),
+        ("Ctrl+Digit7", "Ctrl+7"),
+        ("Numpad0", "0"),
+        ("p", "P"),
+        ("OSLeft", "SuperLeft"),
+        ("MetaRight", "SuperRight"),
+        ("ControlLeft", "ControlLeft"),
+        ("Shift+AltRight", "Shift+AltRight"),
+        ("F35", "F35"),
+        ("BrowserBack", "BrowserBack"),
+        ("IntlBackslash", "IntlBackslash"),
+    ] {
+        assert_eq!(canonical_shortcut(input).unwrap(), expected, "{input}");
+    }
+    let catalog = shortcut_catalog();
+    assert_eq!(catalog["version"], 1);
+    assert_eq!(
+        catalog["modifiers"],
+        serde_json::json!(["Ctrl", "Shift", "Alt"])
+    );
+    let keys = catalog["keys"].as_array().unwrap();
+    assert_eq!(keys.len(), 117);
+    let mut unique = std::collections::HashSet::new();
+    for key in keys {
+        let key = key.as_str().unwrap();
+        assert!(unique.insert(key));
+        assert_eq!(canonical_shortcut(key).unwrap(), key);
+        assert_eq!(
+            canonical_shortcut(&format!("Alt+Shift+Ctrl+{key}")).unwrap(),
+            format!("Ctrl+Shift+Alt+{key}")
+        );
+    }
+}
+
+#[test]
+fn shortcut_assignment_rejects_unknown_duplicate_and_malformed_native_strings() {
+    for value in [
+        "",
+        "+",
+        "++",
+        "Ctrl",
+        "Ctrl+",
+        "+P",
+        "Ctrl+++",
+        "Ctrl+Ctrl+P",
+        "Alt+Shift+Alt+P",
+        "ctrl+P",
+        "Control+P",
+        "Meta+P",
+        "Command+P",
+        "Ctrl+ P",
+        " Ctrl+P",
+        "Ctrl+P ",
+        "Ctrl+A+B",
+        "Num0",
+        "F0",
+        "F36",
+        "F01",
+        "Ctrl+\nP",
+        "Vendor+FutureKey",
+    ] {
+        assert!(canonical_shortcut(value).is_err(), "{value:?}");
+    }
+    assert!(canonical_shortcut(&"A".repeat(129)).is_err());
+}
+
+#[test]
+fn shortcut_options_have_explicit_strict_tristate_and_preserve_legacy_command_bytes() {
+    let legacy = r#"{"name":"Look","attributes":["zoom"],"anchor":"start","append_filters":false}"#;
+    let parsed: Options = serde_json::from_str(legacy).unwrap();
+    assert!(parsed.shortcut.is_none());
+    assert_eq!(serde_json::to_string(&parsed).unwrap(), legacy);
+    let imported = serde_json::json!("Vendor+FutureKey");
+    assert_eq!(
+        parsed.shortcut_value(Some(&imported)).unwrap(),
+        Some(imported)
+    );
+    assert_eq!(parsed.shortcut_value(None).unwrap(), None);
+    for (edit, expected) in [
+        (serde_json::json!({"action":"clear"}), None),
+        (
+            serde_json::json!({"action":"set","value":"Alt+Ctrl+Shift+KeyP"}),
+            Some(serde_json::json!("Ctrl+Shift+Alt+P")),
+        ),
+    ] {
+        let mut wire: Value = serde_json::from_str(legacy).unwrap();
+        wire["shortcut"] = edit;
+        let parsed: Options = serde_json::from_value(wire.clone()).unwrap();
+        assert_eq!(parsed.shortcut_value(None).unwrap(), expected);
+        assert_eq!(serde_json::to_value(parsed).unwrap(), wire);
+    }
+    for edit in [
+        serde_json::json!(null),
+        serde_json::json!("Ctrl+P"),
+        serde_json::json!(true),
+        serde_json::json!({"action":"set"}),
+        serde_json::json!({"action":"set","value":1}),
+        serde_json::json!({"action":"clear","value":"Ctrl+P"}),
+        serde_json::json!({"action":"set","value":"Ctrl+P","extra":true}),
+        serde_json::json!({"action":"keep"}),
+    ] {
+        let mut wire: Value = serde_json::from_str(legacy).unwrap();
+        wire["shortcut"] = edit;
+        assert!(
+            serde_json::from_value::<Options>(wire.clone()).is_err(),
+            "{wire}"
+        );
+    }
+    for edit in [
+        r#"{"action":"set","value":"P","value":"Q"}"#,
+        r#"{"action":"set","action":"clear","value":"P"}"#,
+    ] {
+        let wire = format!("{},\"shortcut\":{edit}}}", &legacy[..legacy.len() - 1]);
+        assert!(serde_json::from_str::<Options>(&wire).is_err(), "{wire}");
+    }
+}
+
+#[test]
+fn capture_sets_or_clears_shortcut_metadata_without_changing_project_or_history() {
+    let (session, source, source_clip, _, _) = fixture();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    let mut options = options(KeyframeAnchor::Start);
+    let plain = capture(
+        &session,
+        source,
+        std::slice::from_ref(&source_clip),
+        &options,
+    )
+    .unwrap();
+    assert_eq!(plain.shortcut, None);
+    options.shortcut = Some(ShortcutEdit::Set {
+        value: "Alt+Ctrl++".into(),
+    });
+    let assigned = capture(
+        &session,
+        source,
+        std::slice::from_ref(&source_clip),
+        &options,
+    )
+    .unwrap();
+    assert_eq!(assigned.shortcut, Some(serde_json::json!("Ctrl+Alt+Plus")));
+    let mut payload = serde_json::to_value(assigned).unwrap();
+    payload["shortcut"] = Value::Null;
+    assert_eq!(payload, serde_json::to_value(&plain).unwrap());
+    options.shortcut = Some(ShortcutEdit::Clear);
+    assert_eq!(
+        capture(
+            &session,
+            source,
+            std::slice::from_ref(&source_clip),
+            &options
+        )
+        .unwrap()
+        .shortcut,
+        None
+    );
+    options.shortcut = Some(ShortcutEdit::Set {
+        value: "Ctrl+Ctrl+P".into(),
+    });
+    assert!(capture(&session, source, &[source_clip], &options).is_err());
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.position(), position);
 }

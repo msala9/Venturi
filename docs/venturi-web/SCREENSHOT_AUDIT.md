@@ -33,3 +33,10 @@ remain. The animation clock [3, 79) is labeled separately. Existing Windows
 browser checks and independent API snapshots also verify Unfreeze refusal,
 explicit Shorten and one Undo per replacement. This is a CPU policy/interaction
 proof; rendered hardware playback is not claimed.
+
+`evidence/m4-preset-shortcut-settings.jpg` shows Assign with native F35,
+Ctrl/Shift modifiers and the proposed canonical shortcut. Its `-applied.jpg`
+shows the separate D binding enabled on the selected destination clip after
+one native application. The browser and native snapshots verify exact Undo,
+Remove/previous restore and input/modal/reload guards. This does not exercise
+the original desktop GUI or a shared NAS preset folder.

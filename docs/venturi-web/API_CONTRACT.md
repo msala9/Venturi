@@ -51,13 +51,23 @@ The strip's displayed percentage comes from native `speed_percent`, never the
 ratio of rounded source span and timeline duration. Hide strip is client-only.
 
 `POST /api/v1/timelines/{id}/presets/capture` accepts
-`{query:FrameQuery,clip_ids,options:{name,attributes,anchor,append_filters}}`.
+`{query:FrameQuery,clip_ids,options:{name,attributes,anchor,append_filters,shortcut?}}`.
 It validates snapshot identity and returns `{project_epoch,generation,revision,
 preset}` without changing history. Linked clips join the source selection;
 the earliest video and audio clips supply the native preset. The v1 JSON fields
 match the desktop attribute preset: version, name, attributes, anchor,
-append_filters, shortcut, fps, resolution, video and audio. Web capture leaves
-shortcut null; the DTO accepts native shortcut metadata without activating bindings.
+append_filters, shortcut, fps, resolution, video and audio. Capture leaves
+shortcut null when its option is omitted. The optional setting is explicitly
+`{action:"set",value:<native config string>}` or `{action:"clear"}`; unknown
+actions, extra fields and explicit null are rejected. Set validates native
+egui 0.36.2 key names/aliases and distinct Ctrl/Shift/Alt modifiers, then stores
+canonical Ctrl+Shift+Alt+Key order. `Ctrl++` becomes `Ctrl+Plus`. Omitted options
+retain legacy serialized command fingerprints and never activate a binding.
+
+`GET /api/v1/presets/shortcuts` returns a pure no-store
+`{version:1,keys:[<117 canonical key names>],modifiers:["Ctrl","Shift","Alt"]}`
+catalog, without a session lease, native probe or library access. Settings offer
+the complete native key domain; Keep and Remove do not require the catalog.
 
 `POST /api/v1/timelines/{id}/presets/apply` accepts the ordinary mutation envelope
 with `operation:{kind:"apply_attribute_preset",clip_ids,preset}` and a 4 MiB body
@@ -70,8 +80,8 @@ pixel scaling, append/replace filters and linked-target validation are retained.
 Source IDs do not suppress targets in another project. Invalid key ordering,
 unrepresentable coordinate conversion, nonfinite converted values or locked
 linked targets reject the complete operation before native session mutation.
-Saved library routes are implemented as described below; NAS sharing and GUI
-acceptance remain separate qualification work.
+Saved library routes are implemented as described below. Broader GUI lifecycle,
+native drag-to-clip parity and cross-project runtime remain separate qualification.
 
 `GET /api/v1/presets` and `/presets/pages/{page}` accept
 `{project_epoch,search?,archived?}`. Each zero-based source page opens at most 32
@@ -93,7 +103,14 @@ changed preset before editing. `POST /presets/commands` accepts only
 Edits are import `{action:"import",json:<raw string>}`, update
 `{action:"update",id,revision,options}`, or archive/restore/restore_previous
 `{action,id,revision}`. Import parses in Rust; no browser number conversion occurs.
-Update retains source clips/shortcut metadata and creates a previous copy;
+Update retains source clips and, when the shortcut option is omitted, its
+existing shortcut metadata exactly. Clear removes it; Set replaces it with a
+validated canonical string. Existing unknown imported strings can be kept but
+are not claimed readable by the current native desktop parser. The named
+preset is the only entry changed; no other preset loses a shortcut implicitly.
+Saving/editing disables its old browser binding and never enables a new one.
+Browser activation remains a separate session-local Enable action with the
+existing conflict-filtered Ctrl+Alt+Shift+letter subset. Update creates a previous copy;
 restore_previous atomically swaps active/previous files. Archive is recoverable.
 Library mutations preserve native timeline history and share ordinary lease,
 epoch, generation and durable receipt semantics. A changed response after a

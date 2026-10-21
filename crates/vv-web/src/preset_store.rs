@@ -346,6 +346,7 @@ impl Store {
                 preset.attributes = options.attributes.clone();
                 preset.anchor = options.anchor;
                 preset.append_filters = options.append_filters;
+                preset.shortcut = options.shortcut_value(preset.shortcut.as_ref())?;
                 preset.validate()?;
                 let backup_name = format!("{file_name}.bak");
                 let backup = self.raw(&backup_name)?;

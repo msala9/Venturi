@@ -12,11 +12,13 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
-The native capture/application API was pushed in 2f24a91. Saved native preset
-storage, its browser panel and explicit session shortcut activation now have
-150 Rust tests, 119 JavaScript tests, fmt, clippy and a native build passing on
-halo2, plus finite API/restart evidence. GUI acceptance, shortcut assignment
-and desktop import qualification remain open. A configurable preset
+Saved native preset storage, its browser panel, full native shortcut assignment
+and explicit session shortcut activation now pass 251 web Rust tests and 553
+JavaScript tests, fmt, clippy and native build on halo2, plus finite API/restart
+and existing Windows-browser checks. The actual exported v1 preset also passes
+the original desktop parser and Library::open, and all 936 key/modifier
+combinations roundtrip through native Shortcut. Broader preset lifecycle and
+sharing qualification remain open. A configurable preset
 folder does not establish sharing through the 14 TB archive; only the existing
 ds4 media-catalog integration has actual NAS evidence.
 
@@ -24,7 +26,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-244 web Rust tests, 277 native core tests and 542 JavaScript tests,
+251 web Rust tests, 277 native core tests and 553 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -35,7 +37,7 @@ qualification remain open. Latest evidence:
 `evidence/m4-speed-presets.json`, `evidence/m4-retime-selected-visibility.json`
 `evidence/m6-take-audio-streams.json`, `evidence/m6-review-longest-clock.json`,
 `evidence/m6-review-source-windows.json`, `evidence/m6-review-audition-streams.json`
-and `evidence/m6-frozen-take-policies.json`;
+`evidence/m6-frozen-take-policies.json` and `evidence/m4-preset-shortcut-settings.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
@@ -3115,3 +3117,58 @@ editor still retains its five unsaved MoveClips and Undo history.
 Evidence: `evidence/m6-frozen-take-policies.json` and its Windows screenshot.
 The broader Replace Take row stays partial pending rendered/hardware acceptance.
 Ledger totals and the uncertain 65–70% engineering estimate are unchanged.
+
+## M4 - native preset shortcut assignment and cold-open selection
+
+Save/Edit settings now offer explicit Keep, Assign and Remove choices. Assign
+uses the complete 117-key native catalog and canonical Ctrl/Shift/Alt order;
+native aliases and the special Ctrl++ form normalize to valid desktop strings.
+Omission preserves legacy Options/receipt bytes and imported shortcut metadata.
+Clear removes it. Invalid actions, fields, nulls, keys and duplicate modifiers
+are rejected before a library write. Only the named preset/revision is changed;
+other entries never lose shortcuts implicitly. Session-local browser activation
+remains a separate, conflict-filtered Enable action.
+
+The new controller regressions found a real cold-open bug: absent selected and
+preferred values compared equal before selected.archived was read. The panel
+could not select its first item and left Edit disabled. An explicit nonnull
+guard fixes that path; a dedicated first-open regression and the original new
+assertions now pass. Late catalogs after close/hide/reopen, failed catalog
+reads, changed selection/session/preset revision and acknowledged-write refresh
+failure preserve the draft and cannot submit a stale mutation.
+
+Bounded halo2 validation passed 277 core, 251 web, ten proxy, three bounded
+decoder, one cached-device and 553 JavaScript tests, formatting, build and
+all-target clippy including the original desktop. A second sequential CPU-only
+job tested a real web-exported preset through the original AttributePreset
+parser and Library::open, preserving the full JSON through roundtrip. Its
+actual HTTP key catalog matches egui::Key::ALL; every one of 936 key/modifier
+combinations passes native Shortcut serde. These two new native tests, desktop
+all-target clippy and cargo fmt --all -- --check pass. No GUI or native probes
+are invoked by those tests. Full workspace runtime remains unqualified under
+shared-host GPU ownership and resource constraints.
+
+Finite API checks cover capture/update retries, omitted Keep, F35 and Plus
+canonicalization, explicit removal/previous restore, stale/invalid refusals,
+unchanged unrelated legacy metadata, one ApplyPreset/Undo/Redo and saved-state
+restart. Library writes preserve project bytes and native timeline history.
+Existing unknown imported strings remain preservable but fail the actual
+desktop parser as expected; no native compatibility is claimed for them.
+
+The existing Windows browser verifies first-item selection and Edit, assignment
+of Ctrl+Shift+F35 disabling an enabled old chord, Remove and exact previous
+restore, reassignment to Ctrl+Shift+Alt+D without automatic activation, explicit
+Enable, one native ApplyPreset and exact Undo. Input and modal guards create no
+edits. Reload retains saved metadata and clears browser activation. Native API
+snapshots independently confirm all clip/history outcomes. All own jobs, the
+single temporary tab and its tunnel are stopped. The primary editor retains
+its five unsaved MoveClips. No browser installation, local build/test/render,
+GPU, driver or foreign inference change was used.
+
+Evidence: `evidence/m4-preset-shortcut-settings.json`, its settings/result
+screenshots and the two exact exported fixtures under vv-app/src/tests/fixtures.
+The broader shared-presets row stays partial: the original drag-to-clip workflow
+is still missing, and broader GUI lifecycle/cross-project runtime qualification
+is open. A preset folder on the NAS is not an original requirement and is not
+used by itself as a completion blocker; no such deployment is claimed. Ledger
+totals and the uncertain overall estimate are unchanged.

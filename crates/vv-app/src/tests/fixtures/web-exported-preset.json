@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "name": "Assigned native shortcut",
+  "attributes": [
+    "zoom"
+  ],
+  "anchor": "start",
+  "append_filters": false,
+  "shortcut": "Ctrl+Shift+Alt+B",
+  "fps": {
+    "num": 24,
+    "den": 1
+  },
+  "resolution": [
+    640,
+    360
+  ],
+  "video": {
+    "id": 0,
+    "source": "SolidColor",
+    "source_offset": 0,
+    "timeline_start": 0,
+    "timeline_len": 24,
+    "effects": {
+      "transform": {
+        "params": [
+          {
+            "keyframes": [],
+            "default": 1.5
+          },
+          {
+            "keyframes": [],
+            "default": 1.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 0.0
+          },
+          {
+            "keyframes": [],
+            "default": 100.0
+          }
+        ],
+        "flip": [
+          false,
+          false
+        ]
+      },
+      "gain_db": {
+        "keyframes": [],
+        "default": 0.0
+      },
+      "color": {
+        "keyframes": [],
+        "default": {
+          "r": 1.0,
+          "g": 1.0,
+          "b": 0.0,
+          "a": 1.0
+        }
+      },
+      "title": null,
+      "filters": [],
+      "transition_in": null,
+      "transition_out": null,
+      "blend_mode": "Normal",
+      "masks": [],
+      "matte": null
+    },
+    "linked_group": null,
+    "audio_stream_index": 0,
+    "rate": {
+      "num": 1,
+      "den": 1
+    },
+    "speed": {
+      "num": 1,
+      "den": 1
+    },
+    "pitch_correction": true,
+    "freeze": null,
+    "disabled": false,
+    "fade_in": 0,
+    "fade_out": 0,
+    "display_color": null
+  },
+  "audio": null
+}

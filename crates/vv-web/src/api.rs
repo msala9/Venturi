@@ -36,6 +36,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/session", get(session))
         .route("/api/v1/review", get(review_metadata))
         .route("/api/v1/presets", get(preset_list_first))
+        .route("/api/v1/presets/shortcuts", get(preset_shortcuts))
         .route("/api/v1/presets/pages/{page}", get(preset_list))
         .route("/api/v1/presets/items/{id}", get(preset_item))
         .route("/api/v1/presets/items/{id}/download", get(preset_download))
@@ -313,6 +314,13 @@ async fn review_metadata(
         .map_err(|_| ApiError::invalid("Invalid review metadata query"))?
         .0;
     state.host.call(Action::Review(query)).await.map(Json)
+}
+async fn preset_shortcuts() -> Response {
+    (
+        [(header::CACHE_CONTROL, "no-store")],
+        Json(crate::presets::shortcut_catalog()),
+    )
+        .into_response()
 }
 async fn preset_list_first(
     State(state): State<AppState>,

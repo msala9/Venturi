@@ -64,6 +64,7 @@ fn native_library_create_export_update_backup_archive_and_restore_preserve_sourc
         attributes: vec![Attribute::Zoom],
         anchor: KeyframeAnchor::End,
         append_filters: true,
+        shortcut: None,
     };
     store
         .edit(
@@ -261,6 +262,7 @@ fn restoring_previous_atomically_exchanges_both_native_versions_repeatedly() {
                     attributes: vec![Attribute::Zoom],
                     anchor: KeyframeAnchor::Stretch,
                     append_filters: true,
+                    shortcut: None,
                 },
             },
         )
@@ -335,4 +337,230 @@ fn restoring_missing_or_corrupt_previous_settings_preserves_all_existing_bytes()
     assert_eq!(store.export("preserve").unwrap(), original);
     assert_eq!(std::fs::read(&backup_path).unwrap(), corrupt);
     std::fs::remove_dir_all(root).unwrap();
+}
+
+fn shortcut_options(preset: &Preset, shortcut: Option<crate::presets::ShortcutEdit>) -> Options {
+    Options {
+        name: preset.name.clone(),
+        attributes: preset.attributes.clone(),
+        anchor: preset.anchor,
+        append_filters: preset.append_filters,
+        shortcut,
+    }
+}
+
+#[test]
+fn shortcut_update_clear_restore_and_restart_keep_native_payload_and_unrelated_bindings() {
+    use crate::presets::ShortcutEdit;
+    let (root, store, mut preset) = fixture();
+    preset.shortcut = Some(json!("Vendor+FutureKey"));
+    store.create("look", &preset).unwrap();
+    let mut peer = preset.clone();
+    peer.shortcut = Some(json!("Ctrl+Shift+Alt+P"));
+    store.create("peer", &peer).unwrap();
+    let peer_bytes = store.export("peer").unwrap();
+    let original = store.export("look").unwrap();
+    let mut keep = shortcut_options(&preset, None);
+    keep.name = "Renamed look".into();
+    store
+        .edit(
+            "keep",
+            &Edit::Update {
+                id: "look".into(),
+                revision: revision(&store, "look", false),
+                options: keep,
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        store.item("look", false).unwrap()["shortcut"],
+        "Vendor+FutureKey"
+    );
+    assert_eq!(std::fs::read(root.join("look.json.bak")).unwrap(), original);
+    let before_set = store.export("look").unwrap();
+    let current = store
+        .load("look", &revision(&store, "look", false))
+        .unwrap();
+    store
+        .edit(
+            "assign",
+            &Edit::Update {
+                id: "look".into(),
+                revision: revision(&store, "look", false),
+                options: shortcut_options(
+                    &current,
+                    Some(ShortcutEdit::Set {
+                        value: "Alt+Ctrl+Shift+KeyP".into(),
+                    }),
+                ),
+            },
+        )
+        .unwrap();
+    let assigned = store.export("look").unwrap();
+    assert_eq!(
+        store.item("look", false).unwrap()["shortcut"],
+        "Ctrl+Shift+Alt+P"
+    );
+    assert_eq!(
+        std::fs::read(root.join("look.json.bak")).unwrap(),
+        before_set
+    );
+    let mut expected: Value = serde_json::from_slice(&before_set).unwrap();
+    expected["shortcut"] = json!("Ctrl+Shift+Alt+P");
+    assert_eq!(
+        serde_json::from_slice::<Value>(&assigned).unwrap(),
+        expected
+    );
+    assert_eq!(
+        store.export("peer").unwrap(),
+        peer_bytes,
+        "Assignment must not steal another preset's shortcut"
+    );
+    let current = store
+        .load("look", &revision(&store, "look", false))
+        .unwrap();
+    store
+        .edit(
+            "clear",
+            &Edit::Update {
+                id: "look".into(),
+                revision: revision(&store, "look", false),
+                options: shortcut_options(&current, Some(ShortcutEdit::Clear)),
+            },
+        )
+        .unwrap();
+    let cleared = store.export("look").unwrap();
+    assert!(store.item("look", false).unwrap()["shortcut"].is_null());
+    assert_eq!(std::fs::read(root.join("look.json.bak")).unwrap(), assigned);
+    expected["shortcut"] = Value::Null;
+    assert_eq!(serde_json::from_slice::<Value>(&cleared).unwrap(), expected);
+    store
+        .edit(
+            "restore",
+            &Edit::RestorePrevious {
+                id: "look".into(),
+                revision: revision(&store, "look", false),
+            },
+        )
+        .unwrap();
+    assert_eq!(store.export("look").unwrap(), assigned);
+    assert_eq!(std::fs::read(root.join("look.json.bak")).unwrap(), cleared);
+    drop(store);
+    let store = Store::new(&root).unwrap();
+    assert_eq!(store.export("look").unwrap(), assigned);
+    assert_eq!(
+        store.item("look", false).unwrap()["shortcut"],
+        "Ctrl+Shift+Alt+P"
+    );
+    store
+        .edit(
+            "restore-clear",
+            &Edit::RestorePrevious {
+                id: "look".into(),
+                revision: revision(&store, "look", false),
+            },
+        )
+        .unwrap();
+    assert_eq!(store.export("look").unwrap(), cleared);
+    store
+        .edit(
+            "archive",
+            &Edit::Archive {
+                id: "look".into(),
+                revision: revision(&store, "look", false),
+            },
+        )
+        .unwrap();
+    assert!(store.item("look", true).unwrap()["shortcut"].is_null());
+    store
+        .edit(
+            "unarchive",
+            &Edit::Restore {
+                id: "look".into(),
+                revision: revision(&store, "look", true),
+            },
+        )
+        .unwrap();
+    assert_eq!(store.export("look").unwrap(), cleared);
+    assert_eq!(store.export("peer").unwrap(), peer_bytes);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn invalid_shortcut_or_stale_update_preserves_active_and_backup_bytes() {
+    use crate::presets::ShortcutEdit;
+    let (root, store, preset) = fixture();
+    store.create("look", &preset).unwrap();
+    let old_revision = revision(&store, "look", false);
+    store
+        .edit(
+            "assign",
+            &Edit::Update {
+                id: "look".into(),
+                revision: old_revision.clone(),
+                options: shortcut_options(
+                    &preset,
+                    Some(ShortcutEdit::Set {
+                        value: "Ctrl++".into(),
+                    }),
+                ),
+            },
+        )
+        .unwrap();
+    assert_eq!(store.item("look", false).unwrap()["shortcut"], "Ctrl+Plus");
+    let active = store.export("look").unwrap();
+    let backup = std::fs::read(root.join("look.json.bak")).unwrap();
+    for value in ["Ctrl+Ctrl+P", "UnknownKey", "Ctrl+P+Q", "Ctrl+", "Ctrl+\nP"] {
+        assert!(
+            store
+                .edit(
+                    "invalid",
+                    &Edit::Update {
+                        id: "look".into(),
+                        revision: revision(&store, "look", false),
+                        options: shortcut_options(
+                            &preset,
+                            Some(ShortcutEdit::Set {
+                                value: value.into()
+                            })
+                        )
+                    }
+                )
+                .is_err(),
+            "{value:?}"
+        );
+        assert_eq!(store.export("look").unwrap(), active);
+        assert_eq!(std::fs::read(root.join("look.json.bak")).unwrap(), backup);
+    }
+    assert_eq!(
+        store
+            .edit(
+                "stale-clear",
+                &Edit::Update {
+                    id: "look".into(),
+                    revision: old_revision,
+                    options: shortcut_options(&preset, Some(ShortcutEdit::Clear))
+                }
+            )
+            .unwrap_err()
+            .1,
+        "PRESET_CHANGED"
+    );
+    assert_eq!(store.export("look").unwrap(), active);
+    assert_eq!(std::fs::read(root.join("look.json.bak")).unwrap(), backup);
+    assert!(std::fs::read_dir(&root).unwrap().all(|entry| {
+        !entry
+            .unwrap()
+            .file_name()
+            .to_string_lossy()
+            .ends_with(".tmp")
+    }));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn omitted_shortcut_keeps_legacy_library_command_receipt_serialization() {
+    let legacy = r#"{"action":"update","id":"look","revision":"revision","options":{"name":"Look","attributes":["zoom"],"anchor":"start","append_filters":false}}"#;
+    let edit: Edit = serde_json::from_str(legacy).unwrap();
+    assert_eq!(serde_json::to_string(&edit).unwrap(), legacy);
 }

@@ -275,3 +275,82 @@ fn a_dropped_folder_becomes_library_folders_with_its_media() {
     assert_eq!(library.assets.len(), 2);
     assert_eq!(Library::open(root.join("library")).assets.len(), 2);
 }
+
+#[test]
+fn web_exported_preset_imports_through_native_library_and_round_trips() {
+    let text = include_str!("fixtures/web-exported-preset.json");
+    let exported: serde_json::Value = serde_json::from_str(text).unwrap();
+    let imported = parse::<AttributePreset>("web-exported", text).unwrap();
+    assert_eq!(imported.name, "Assigned native shortcut");
+    assert_eq!(imported.attributes, vec![Attribute::Zoom]);
+    assert!(imported.video.is_some());
+    assert!(imported.audio.is_none());
+    assert_eq!(serde_json::to_value(&imported).unwrap(), exported);
+    let roundtrip: AttributePreset = serde_json::from_value(exported.clone()).unwrap();
+    assert_eq!(serde_json::to_value(roundtrip).unwrap(), exported);
+
+    let root = std::env::temp_dir().join(format!(
+        "vv-app-web-preset-import-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    std::fs::create_dir(root.join("presets")).unwrap();
+    std::fs::write(root.join("presets/web-exported.json"), text).unwrap();
+    let library = Library::open(root.clone());
+    assert_eq!(library.presets.len(), 1);
+    assert_eq!(library.presets[0].0, "web-exported");
+    assert_eq!(
+        serde_json::to_value(&library.presets[0].1).unwrap(),
+        exported
+    );
+    let mut unknown = exported.clone();
+    unknown["shortcut"] = serde_json::json!("Ctrl+SomeFutureKey");
+    assert!(parse::<AttributePreset>("unknown-shortcut", &unknown.to_string()).is_none());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn web_exported_preset_shortcut_catalog_matches_every_native_key_and_modifier() {
+    let catalog: serde_json::Value =
+        serde_json::from_str(include_str!("fixtures/web-preset-shortcut-catalog.json")).unwrap();
+    assert_eq!(catalog["version"], 1);
+    assert_eq!(
+        catalog["modifiers"],
+        serde_json::json!(["Ctrl", "Shift", "Alt"])
+    );
+    let keys = catalog["keys"].as_array().unwrap();
+    let exported: std::collections::BTreeSet<_> =
+        keys.iter().map(|key| key.as_str().unwrap()).collect();
+    let native: std::collections::BTreeSet<_> =
+        egui::Key::ALL.iter().map(|key| key.name()).collect();
+    assert_eq!(exported.len(), keys.len());
+    assert_eq!(exported, native);
+    for key in exported {
+        for mask in 0..8 {
+            let shortcut = Shortcut {
+                key: egui::Key::from_name(key).unwrap(),
+                ctrl: mask & 1 != 0,
+                shift: mask & 2 != 0,
+                alt: mask & 4 != 0,
+            };
+            let mut expected = String::new();
+            for (enabled, modifier) in [
+                (shortcut.ctrl, "Ctrl+"),
+                (shortcut.shift, "Shift+"),
+                (shortcut.alt, "Alt+"),
+            ] {
+                if enabled {
+                    expected.push_str(modifier);
+                }
+            }
+            expected.push_str(key);
+            assert_eq!(serde_json::to_value(shortcut).unwrap(), expected);
+            let decoded: Shortcut = serde_json::from_value(serde_json::json!(expected)).unwrap();
+            assert_eq!(decoded, shortcut);
+        }
+    }
+}

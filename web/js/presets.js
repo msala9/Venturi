@@ -10,6 +10,18 @@ export function presetOptions(name,attributes,anchor,appendFilters){
   if(!['start','end','stretch'].includes(anchor))throw Error('Choose a native keyframe anchor');
   return {name,attributes,anchor,append_filters:Boolean(appendFilters)};
 }
+export function presetShortcutCatalog(value){
+  if(value?.version!==1 || !Array.isArray(value.keys) || !value.keys.length || value.keys.length>256 || new Set(value.keys).size!==value.keys.length || value.keys.some(key=>typeof key!=='string' || !key || key.length>64 || /[\u0000-\u001f\u007f]/.test(key)) || !Array.isArray(value.modifiers) || value.modifiers.length!==3 || !['Ctrl','Shift','Alt'].every((modifier,index)=>value.modifiers[index]===modifier))throw Error('Native shortcut catalog is unavailable or invalid');
+  return {version:1,keys:[...value.keys],modifiers:[...value.modifiers]};
+}
+export function presetShortcutEdit(action,key,modifiers=[],catalog=null){
+  if(action==='keep')return {};
+  if(action==='clear')return {shortcut:{action:'clear'}};
+  if(action!=='set')throw Error('Choose Keep, Assign or Remove for the desktop shortcut');
+  const native=presetShortcutCatalog(catalog);
+  if(!native.keys.includes(key) || !Array.isArray(modifiers) || new Set(modifiers).size!==modifiers.length || modifiers.some(modifier=>!native.modifiers.includes(modifier)))throw Error('Choose a listed native key and its modifiers before assigning a shortcut');
+  return {shortcut:{action:'set',value:[...native.modifiers.filter(modifier=>modifiers.includes(modifier)),key].join('+')}};
+}
 export function presetImportOperation(text){
   if(!text || new TextEncoder().encode(text).length>4*1024*1024)throw Error('Choose a native preset JSON file within 4 MiB');
   return {kind:'edit_preset_library',edit:{action:'import',json:text}};
@@ -20,7 +32,7 @@ export async function presetMutationResult(mutate,refresh){
   catch(refreshError){return {receipt,refreshError};}
 }
 export function createPresetPanel({root,getContext,canCommit,commit,libraryCommit,notice,shortcuts=null,api=(path,body,options)=>request(path,body,(url,init)=>fetch(url,{...init,signal:options?.signal?AbortSignal.any([init.signal,options.signal]):init.signal}))}){
-  let active=false,sequence=0,controller=null,page=0,pages=1,search='',archived=false,busy=false,selected=null,section=null,list=null,status=null,previous=null,next=null,caption=null,apply=null,edit=null,archive=null,download=null,restorePrevious=null,saveSelection=null,importFile=null,dialog=null,bound=null,dialogControls=null,navigation=[],shortcutToggle=null,shortcutStatus=null;
+  let active=false,sequence=0,controller=null,page=0,pages=1,search='',archived=false,busy=false,selected=null,section=null,list=null,status=null,previous=null,next=null,caption=null,apply=null,edit=null,archive=null,download=null,restorePrevious=null,saveSelection=null,importFile=null,dialog=null,bound=null,dialogControls=null,navigation=[],shortcutToggle=null,shortcutStatus=null,settingsSequence=0,shortcutController=null;
   const button=(text,action)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',action);return node;};
   const message=text=>{if(status?.isConnected)status.textContent=text;};
   function controls(){
@@ -55,7 +67,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
         message(`Searching preset page ${scan+1} of ${result.pages}…`);scan=following;
       }
       page=result.page;pages=result.pages;list.replaceChildren(...result.items.map((item,index)=>new Option(`${item.name}${item.error?` · ${item.error}`:''}`,String(index))));
-      const found=result.items.findIndex(item=>item.id===preferred),keepOutside=found<0 && selected?.id===preferred && selected.archived===archived,index=keepOutside?-1:Math.max(0,found);list.value=String(index);if(!keepOutside)selected=result.items[index] || null;
+      const found=result.items.findIndex(item=>item.id===preferred),keepOutside=selected && found<0 && selected.id===preferred && selected.archived===archived,index=keepOutside?-1:Math.max(0,found);list.value=String(index);if(!keepOutside)selected=result.items[index] || null;
       list.onchange=()=>{selected=result.items[Number(list.value)] || null;controls();};
       message(`Page ${page+1} of ${result.pages} · ${result.total} ${archived?'archived':'saved'} presets${search?` · ${result.items.length} matches on this page`:''}`);controls();return true;
     }catch(error){if(active && token===sequence && error.name!=='AbortError'){if(wanted && error.message.includes('beyond the last page'))return reload(0,preferred,direction,afterWrite);message(error.message);}return false;}
@@ -78,28 +90,44 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
     finally{busy=false;controls();}
   }
   function openSettings(item=null){
-    const context=getContext();if(!canCommit() || busy || !item && !context?.clip_ids.length)return;
-    dialog?.remove();dialog=document.createElement('dialog');dialog.className='preset-settings';const form=document.createElement('form'),heading=document.createElement('h2');heading.textContent=item?'Edit saved preset':'Save selected clips as preset';form.append(heading);
+    const context=getContext();if(!context || !canCommit() || busy || !item && !context.clip_ids.length)return;
+    shortcutController?.abort();const token=++settingsSequence;dialog?.remove();dialog=document.createElement('dialog');dialog.className='preset-settings';const ownedDialog=dialog,boundContext={...context,clip_ids:[...context.clip_ids]},identity=presetSelectionIdentity(context),itemID=item?.id,itemRevision=item?.revision;
+    const settingsCurrent=()=>active && dialog===ownedDialog && ownedDialog.open && identity===presetSelectionIdentity(getContext()) && (!item || selected?.id===itemID && selected?.revision===itemRevision && !selected.archived);
+    const form=document.createElement('form'),heading=document.createElement('h2');heading.textContent=item?'Edit saved preset':'Save selected clips as preset';form.append(heading);
     const label=document.createElement('label');label.className='field';label.textContent='Preset name';const name=document.createElement('input');name.required=true;name.maxLength=128;name.value=item?.name || context.name || 'Preset';label.append(name);form.append(label);
     const groups=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent='Preset properties';groups.append(legend);const roles=item?{video:item.video,audio:item.audio}:context.roles;
     const defaults=item?.attributes || attributeGroups.filter(([key])=>presetAttributeAllowed(key,roles) && ['zoom','position','rotation','opacity','filters','volume'].includes(key)).map(([key])=>key);
     const checks=attributeGroups.map(([key,text])=>{const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=key;input.checked=defaults.includes(key);input.disabled=!presetAttributeAllowed(key,roles);label.append(input,text);groups.append(label);return input;});form.append(groups);
     const anchorLabel=document.createElement('label');anchorLabel.className='field';anchorLabel.textContent='Preset keyframe anchor';const anchor=document.createElement('select');for(const [value,text] of [['start','Start'],['end','End'],['stretch','Stretch to fit']])anchor.append(new Option(text,value));anchor.value=item?.anchor || 'start';anchorLabel.append(anchor);form.append(anchorLabel);
     const appendLabel=document.createElement('label'),append=document.createElement('input');append.type='checkbox';append.checked=Boolean(item?.append_filters);appendLabel.append(append,' Append filters instead of replacing');form.append(appendLabel);
+    const currentShortcut=document.createElement('p');currentShortcut.setAttribute('data-preset-current-shortcut','');currentShortcut.textContent=`Current desktop shortcut: ${typeof item?.shortcut==='string'?item.shortcut || 'Empty imported shortcut string · preserved by Keep':item?.shortcut==null?'None':'Imported native metadata · preserved by Keep'}`;form.append(currentShortcut);
+    const modeLabel=document.createElement('label'),shortcutMode=document.createElement('select');modeLabel.className='field';modeLabel.textContent='Desktop shortcut action';shortcutMode.setAttribute('data-preset-shortcut-mode','');for(const [value,text] of [['keep','Keep current shortcut'],['set','Assign a shortcut'],['clear','Remove shortcut']])shortcutMode.append(new Option(text,value));shortcutMode.value='keep';modeLabel.append(shortcutMode);form.append(modeLabel);
+    const keyLabel=document.createElement('label'),shortcutKey=document.createElement('select');keyLabel.className='field';keyLabel.textContent='Native shortcut key';shortcutKey.setAttribute('data-preset-shortcut-key','');shortcutKey.append(new Option('Choose a native key',''));shortcutKey.value='';keyLabel.append(shortcutKey);form.append(keyLabel);
+    const modifierGroup=document.createElement('fieldset'),modifierLegend=document.createElement('legend');modifierLegend.textContent='Shortcut modifiers';modifierGroup.append(modifierLegend);const modifierChecks=['Ctrl','Shift','Alt'].map(value=>{const label=document.createElement('label'),input=document.createElement('input');input.type='checkbox';input.value=value;input.setAttribute('data-preset-shortcut-modifier',value);label.append(input,value);modifierGroup.append(label);return input;});form.append(modifierGroup);
+    const shortcutDetail=document.createElement('p');shortcutDetail.setAttribute('role','status');shortcutDetail.setAttribute('data-preset-shortcut-status','');form.append(shortcutDetail);
+    const activationNote=document.createElement('p');activationNote.className='muted';activationNote.textContent='Saving a desktop shortcut does not enable it in this browser. Browser activation uses the separate Enable action and supports Ctrl+Alt+Shift with allowed letters.';form.append(activationNote);
+    let shortcutCatalog=null,shortcutMessage='Reading native shortcut keys · Keep and Remove remain available';
     const note=document.createElement('p');note.className='muted';note.textContent='Keyframe timing, fps and pixel values are adapted to each destination clip. Applying a preset is one Undo. Saving or editing the library does not edit the timeline.';form.append(note);
     const detail=document.createElement('p');detail.setAttribute('role','status');form.append(detail);
-    const cancel=button('Cancel preset settings',()=>{if(!busy)dialog.close();}),save=document.createElement('button');save.textContent=item?'Save preset changes':'Save selection as new preset';form.append(save,cancel);dialog.append(form);document.body.append(dialog);bound=context;
-    dialogControls=()=>{const stale=!item && presetSelectionIdentity(bound)!==presetSelectionIdentity(getContext());save.disabled=busy || !canCommit() || stale;cancel.disabled=busy;if(stale)detail.textContent='The source selection changed. Cancel and reopen to capture the current clips; settings are retained here.';};
-    dialog.addEventListener('cancel',event=>{if(busy)event.preventDefault();});dialog.addEventListener('close',()=>{dialogControls=null;bound=null;});dialog.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});
+    const cancel=button('Cancel preset settings',()=>{if(!busy)ownedDialog.close();}),save=document.createElement('button');save.textContent=item?'Save preset changes':'Save selection as new preset';form.append(save,cancel);ownedDialog.append(form);document.body.append(ownedDialog);bound=boundContext;
+    const updateSettings=()=>{const stale=!settingsCurrent();let shortcutError=null,shortcutEdit=null;try{shortcutEdit=presetShortcutEdit(shortcutMode.value,shortcutKey.value,modifierChecks.filter(input=>input.checked).map(input=>input.value),shortcutCatalog);}catch(error){shortcutError=error;}
+      save.disabled=busy || !canCommit() || stale || Boolean(shortcutError);cancel.disabled=busy;shortcutMode.disabled=busy;shortcutKey.disabled=busy || shortcutMode.value!=='set' || !shortcutCatalog;for(const input of modifierChecks)input.disabled=shortcutKey.disabled;
+      shortcutDetail.textContent=shortcutError?`${shortcutError.message} · Keep or Remove remains available`:shortcutEdit.shortcut?.action==='set'?`Assign desktop shortcut: ${shortcutEdit.shortcut.value} · browser activation remains separate`:shortcutMode.value==='clear'?'The desktop shortcut will be removed when these settings are saved':shortcutMessage;if(stale)detail.textContent='The source selection, session or saved preset changed. Cancel and reopen; settings are retained here.';
+    };dialogControls=updateSettings;
+    for(const control of [shortcutMode,shortcutKey,...modifierChecks])control.addEventListener('change',updateSettings);
+    ownedDialog.addEventListener('cancel',event=>{if(busy)event.preventDefault();});ownedDialog.addEventListener('close',()=>{if(dialog!==ownedDialog)return;settingsSequence++;shortcutController?.abort();shortcutController=null;dialogControls=null;bound=null;});ownedDialog.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});
     form.addEventListener('submit',async event=>{
-      event.preventDefault();if(save.disabled || !form.reportValidity())return;
+      event.preventDefault();updateSettings();if(save.disabled || !settingsCurrent() || !form.reportValidity())return;
       try{
-        const options=presetOptions(name.value,checks.filter(input=>input.checked && !input.disabled).map(input=>input.value),anchor.value,append.checked);
-        const operation=item?{kind:'edit_preset_library',edit:{action:'update',id:item.id,revision:item.revision,options}}:{kind:'save_attribute_preset',clip_ids:[...bound.clip_ids],options};
-        await write(operation,Boolean(item));dialog.close();
+        const options={...presetOptions(name.value,checks.filter(input=>input.checked && !input.disabled).map(input=>input.value),anchor.value,append.checked),...presetShortcutEdit(shortcutMode.value,shortcutKey.value,modifierChecks.filter(input=>input.checked).map(input=>input.value),shortcutCatalog)};
+        const operation=item?{kind:'edit_preset_library',edit:{action:'update',id:itemID,revision:itemRevision,options}}:{kind:'save_attribute_preset',clip_ids:[...boundContext.clip_ids],options};
+        await write(operation,Boolean(item));ownedDialog.close();
       }catch(error){detail.textContent=`${error.message} · settings retained`;}
     });
-    dialog.showModal();dialogControls();name.focus();
+    ownedDialog.showModal();updateSettings();name.focus();shortcutController=new AbortController();const signal=shortcutController.signal;
+    void (async()=>{try{const result=await api('/presets/shortcuts',undefined,{signal});if(signal.aborted || token!==settingsSequence || !settingsCurrent())return;shortcutCatalog=presetShortcutCatalog(result);shortcutKey.replaceChildren(new Option('Choose a native key',''),...shortcutCatalog.keys.map(key=>new Option(key,key)));shortcutKey.value='';shortcutMessage='Choose a native key and modifiers to assign; Keep preserves all imported shortcut metadata';}
+      catch(error){if(signal.aborted || token!==settingsSequence || !settingsCurrent())return;shortcutMessage=`Native shortcut keys unavailable · ${error.message} · Keep and Remove remain available`;}
+      finally{if(!signal.aborted && token===settingsSequence && settingsCurrent())updateSettings();}})();
   }
   async function changeArchive(){if(!selected?.revision)return;const item=selected;try{await write({kind:'edit_preset_library',edit:{action:item.archived?'restore':'archive',id:item.id,revision:item.revision}});}catch{}}
   return {
@@ -126,6 +154,6 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
       section.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});root.append(section);controls();await reload(page);
     },
     invalidate(){shortcuts?.sync();controls();},
-    hide(){active=false;sequence++;controller?.abort();controller=null;if(!busy){dialog?.remove();dialog=null;dialogControls=null;}},
+    hide(){active=false;sequence++;controller?.abort();controller=null;settingsSequence++;shortcutController?.abort();shortcutController=null;if(!busy){dialog?.remove();dialog=null;dialogControls=null;bound=null;}},
   };
 }

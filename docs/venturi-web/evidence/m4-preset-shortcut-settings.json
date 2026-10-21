@@ -1,0 +1,2098 @@
+{
+  "status": "passed",
+  "project": "Preset_Shortcut_API_check.vvproj",
+  "root": "/home/marco/VenturiWeb-preset-shortcuts-20261021",
+  "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+  "initial_project_sha256": "94a9ef856896196e50def37207b90970bec01b7f320c70c46e3898eed67fe0df",
+  "preset_root": "/home/marco/VenturiWeb-preset-shortcuts-20261021/.presets",
+  "timeline_id": "2",
+  "source_clip_id": "0",
+  "target_clip_id": "1",
+  "preset_id": "245cd7d3-6b98-40a4-8ae3-78cbd9897127",
+  "legacy_preset_id": "eadfdd69-92ee-4cff-a8e5-68f304e685a0",
+  "catalog": {
+    "keys": [
+      "Down",
+      "Left",
+      "Right",
+      "Up",
+      "Escape",
+      "Tab",
+      "Backspace",
+      "Enter",
+      "Insert",
+      "Delete",
+      "Home",
+      "End",
+      "PageUp",
+      "PageDown",
+      "Copy",
+      "Cut",
+      "Paste",
+      "Space",
+      "Colon",
+      "Comma",
+      "Minus",
+      "Period",
+      "Plus",
+      "Equals",
+      "Semicolon",
+      "Backslash",
+      "Slash",
+      "Pipe",
+      "Questionmark",
+      "Exclamationmark",
+      "OpenBracket",
+      "CloseBracket",
+      "OpenCurlyBracket",
+      "CloseCurlyBracket",
+      "Backtick",
+      "Quote",
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "G",
+      "H",
+      "I",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "O",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "U",
+      "V",
+      "W",
+      "X",
+      "Y",
+      "Z",
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "F5",
+      "F6",
+      "F7",
+      "F8",
+      "F9",
+      "F10",
+      "F11",
+      "F12",
+      "F13",
+      "F14",
+      "F15",
+      "F16",
+      "F17",
+      "F18",
+      "F19",
+      "F20",
+      "F21",
+      "F22",
+      "F23",
+      "F24",
+      "F25",
+      "F26",
+      "F27",
+      "F28",
+      "F29",
+      "F30",
+      "F31",
+      "F32",
+      "F33",
+      "F34",
+      "F35",
+      "BrowserBack",
+      "ShiftLeft",
+      "ShiftRight",
+      "ControlLeft",
+      "ControlRight",
+      "AltLeft",
+      "AltRight",
+      "SuperLeft",
+      "SuperRight",
+      "IntlBackslash"
+    ],
+    "modifiers": [
+      "Ctrl",
+      "Shift",
+      "Alt"
+    ],
+    "version": 1
+  },
+  "native_preset": {
+    "version": 1,
+    "name": "Assigned native shortcut",
+    "attributes": [
+      "zoom"
+    ],
+    "anchor": "start",
+    "append_filters": false,
+    "shortcut": "Ctrl+Shift+Alt+B",
+    "fps": {
+      "num": 24,
+      "den": 1
+    },
+    "resolution": [
+      640,
+      360
+    ],
+    "video": {
+      "id": 0,
+      "source": "SolidColor",
+      "source_offset": 0,
+      "timeline_start": 0,
+      "timeline_len": 24,
+      "effects": {
+        "transform": {
+          "params": [
+            {
+              "keyframes": [],
+              "default": 1.5
+            },
+            {
+              "keyframes": [],
+              "default": 1.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 100.0
+            }
+          ],
+          "flip": [
+            false,
+            false
+          ]
+        },
+        "gain_db": {
+          "keyframes": [],
+          "default": 0.0
+        },
+        "color": {
+          "keyframes": [],
+          "default": {
+            "r": 1.0,
+            "g": 1.0,
+            "b": 0.0,
+            "a": 1.0
+          }
+        },
+        "title": null,
+        "filters": [],
+        "transition_in": null,
+        "transition_out": null,
+        "blend_mode": "Normal",
+        "masks": [],
+        "matte": null
+      },
+      "linked_group": null,
+      "audio_stream_index": 0,
+      "rate": {
+        "num": 1,
+        "den": 1
+      },
+      "speed": {
+        "num": 1,
+        "den": 1
+      },
+      "pitch_correction": true,
+      "freeze": null,
+      "disabled": false,
+      "fade_in": 0,
+      "fade_out": 0,
+      "display_color": null
+    },
+    "audio": null
+  },
+  "native_preset_sha256": "50601e383708d99501f83b715bfad72020559d8119808b0be137469a10647d93",
+  "legacy_native_preset": {
+    "version": 1,
+    "name": "Legacy shortcut retained",
+    "attributes": [
+      "zoom"
+    ],
+    "anchor": "start",
+    "append_filters": false,
+    "shortcut": "Ctrl+SomeFutureKey",
+    "fps": {
+      "num": 24,
+      "den": 1
+    },
+    "resolution": [
+      640,
+      360
+    ],
+    "video": {
+      "id": 0,
+      "source": "SolidColor",
+      "source_offset": 0,
+      "timeline_start": 0,
+      "timeline_len": 24,
+      "effects": {
+        "transform": {
+          "params": [
+            {
+              "keyframes": [],
+              "default": 1.5
+            },
+            {
+              "keyframes": [],
+              "default": 1.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 0.0
+            },
+            {
+              "keyframes": [],
+              "default": 100.0
+            }
+          ],
+          "flip": [
+            false,
+            false
+          ]
+        },
+        "gain_db": {
+          "keyframes": [],
+          "default": 0.0
+        },
+        "color": {
+          "keyframes": [],
+          "default": {
+            "r": 1.0,
+            "g": 1.0,
+            "b": 0.0,
+            "a": 1.0
+          }
+        },
+        "title": null,
+        "filters": [],
+        "transition_in": null,
+        "transition_out": null,
+        "blend_mode": "Normal",
+        "masks": [],
+        "matte": null
+      },
+      "linked_group": null,
+      "audio_stream_index": 0,
+      "rate": {
+        "num": 1,
+        "den": 1
+      },
+      "speed": {
+        "num": 1,
+        "den": 1
+      },
+      "pitch_correction": true,
+      "freeze": null,
+      "disabled": false,
+      "fade_in": 0,
+      "fade_out": 0,
+      "display_color": null
+    },
+    "audio": null
+  },
+  "legacy_native_preset_sha256": "d21712f94f5d1e4ddc205e1ea6ba58176f851623d4c3fea055c43c57e49bc146",
+  "invalid_refusals": {
+    "unknown": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "duplicate": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "blank": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "nonstring": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "clear_extra": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "unknown_action": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    }
+  },
+  "stale_refusal": {
+    "status": 409,
+    "error": "PRESET_CHANGED"
+  },
+  "default_keep_exact": true,
+  "legacy_unknown_preserved": true,
+  "clear_restore_exact": true,
+  "native_capture_update_retry_exact": true,
+  "library_edits_preserve_timeline": true,
+  "library_edits_preserve_saved_project_bytes": true,
+  "apply_one_undo_redo_retry": true,
+  "save_semantics_preserved_excluding_native_compound_cache": true,
+  "restart_preserved": true,
+  "binary_sha256": "e0c62e34095cd2574415c8aba5f6758351a1a891b50ef80ea024ded485cf0f53",
+  "hardware_gpu_used": false,
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "main_editor_preserved": true,
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792615255.953929,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "e0c62e34095cd2574415c8aba5f6758351a1a891b50ef80ea024ded485cf0f53",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "native_preset_qualification": true,
+    "native_preset_check_state": "preset-native-check-state.json"
+  },
+  "native_desktop_qualification": {
+    "phase": "passed",
+    "updated_unix": 1792615255.953739,
+    "web_binary_sha256": "e0c62e34095cd2574415c8aba5f6758351a1a891b50ef80ea024ded485cf0f53",
+    "native_tests": 2,
+    "native_key_modifier_combinations": 936,
+    "real_desktop_library_parser": true,
+    "clippy_all_targets": true,
+    "fmt_check": true,
+    "hardware_gpu": false
+  },
+  "native_desktop_validation_summary": [
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo fmt --all",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-app --bin vv-app web_exported_preset_ -- --test-threads=1",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 1m 01s",
+    "test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 544 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo clippy --locked -p vv-app --all-targets -- -D warnings",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 10.21s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo fmt --all -- --check"
+  ],
+  "served_asset_hashes": {
+    "js/presets.js": "d51657c0b172a9b55fe979be77749ee746fb39d392fd759e04be1173ddc062c7",
+    "js/preset-shortcuts.js": "05ac39cd15fd0006c76ac73770c4394fd35271f503d78e9a84105415c3356d11"
+  },
+  "project_and_peer_preset_preserved": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "core_tests": 277,
+  "media_proxy_tests": 10,
+  "bounded_decoder_tests": 3,
+  "cached_device_tests": 1,
+  "rust_tests": 251,
+  "javascript_tests": 553,
+  "own_ui_test_unit_stopped": true,
+  "windows_ui_observations": {
+    "cold_open": {
+      "binding_button": "Enable preset shortcut",
+      "binding_disabled": false,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+Alt+B \u00b7 Enable to use this shortcut in the current project and browser session",
+      "dialog_open": false,
+      "edit_disabled": false,
+      "key_count": null,
+      "selected": "0"
+    },
+    "enabled_initial": {
+      "binding_button": "Disable preset shortcut",
+      "binding_disabled": false,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+Alt+B \u00b7 Ctrl+Alt+Shift+B enabled for this browser session",
+      "dialog_open": false,
+      "edit_disabled": false,
+      "key_count": null,
+      "selected": "0"
+    },
+    "keep_default": {
+      "binding_button": "Disable preset shortcut",
+      "binding_disabled": false,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+Alt+B \u00b7 Ctrl+Alt+Shift+B enabled for this browser session",
+      "current": "Current desktop shortcut: Ctrl+Shift+Alt+B",
+      "dialog_open": true,
+      "edit_disabled": false,
+      "key": "",
+      "key_count": 117,
+      "mode": "keep",
+      "proposed": "Choose a native key and modifiers to assign; Keep preserves all imported shortcut metadata",
+      "selected": "0"
+    },
+    "function_draft": {
+      "binding_button": "Disable preset shortcut",
+      "binding_disabled": false,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+Alt+B \u00b7 Ctrl+Alt+Shift+B enabled for this browser session",
+      "current": "Current desktop shortcut: Ctrl+Shift+Alt+B",
+      "dialog_open": true,
+      "edit_disabled": false,
+      "key": "F35",
+      "key_count": 117,
+      "mode": "set",
+      "proposed": "Assign desktop shortcut: Ctrl+Shift+F35 \u00b7 browser activation remains separate",
+      "selected": "0"
+    },
+    "assigned_function": {
+      "binding_button": "Enable preset shortcut",
+      "binding_disabled": true,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+F35 \u00b7 Web activation supports Ctrl+Alt+Shift with a letter; the desktop shortcut is preserved",
+      "dialog_open": false,
+      "edit_disabled": false,
+      "key_count": null,
+      "selected": "0"
+    },
+    "remove_draft": {
+      "binding_button": "Enable preset shortcut",
+      "binding_disabled": true,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+F35 \u00b7 Web activation supports Ctrl+Alt+Shift with a letter; the desktop shortcut is preserved",
+      "current": "Current desktop shortcut: Ctrl+Shift+F35",
+      "dialog_open": true,
+      "edit_disabled": false,
+      "key": "",
+      "key_count": 117,
+      "mode": "clear",
+      "proposed": "The desktop shortcut will be removed when these settings are saved",
+      "selected": "0"
+    },
+    "assigned_letter": {
+      "binding_button": "Enable preset shortcut",
+      "binding_disabled": false,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+Alt+D \u00b7 Enable to use this shortcut in the current project and browser session",
+      "dialog_open": false,
+      "edit_disabled": false,
+      "key_count": null,
+      "selected": "0"
+    },
+    "enabled_letter": {
+      "binding_button": "Disable preset shortcut",
+      "binding_disabled": false,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+Alt+D \u00b7 Ctrl+Alt+Shift+D enabled for this browser session",
+      "dialog_open": false,
+      "edit_disabled": false,
+      "key_count": null,
+      "selected": "0"
+    },
+    "applied": {
+      "binding_button": "Disable preset shortcut",
+      "binding_disabled": false,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+Alt+D \u00b7 Ctrl+Alt+Shift+D enabled for this browser session",
+      "dialog_open": false,
+      "edit_disabled": false,
+      "key_count": null,
+      "selected": "0"
+    },
+    "dialog_guard": {
+      "binding_button": "Disable preset shortcut",
+      "binding_disabled": false,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+Alt+D \u00b7 Ctrl+Alt+Shift+D enabled for this browser session",
+      "current": "Current desktop shortcut: Ctrl+Shift+Alt+D",
+      "dialog_open": true,
+      "edit_disabled": false,
+      "key": "",
+      "key_count": 117,
+      "mode": "keep",
+      "proposed": "Choose a native key and modifiers to assign; Keep preserves all imported shortcut metadata",
+      "selected": "0"
+    },
+    "reloaded": {
+      "binding_button": "Enable preset shortcut",
+      "binding_disabled": false,
+      "binding_status": "Desktop shortcut: Ctrl+Shift+Alt+D \u00b7 Enable to use this shortcut in the current project and browser session",
+      "dialog_open": false,
+      "edit_disabled": false,
+      "key_count": null,
+      "selected": "0"
+    }
+  },
+  "native_ui_states": {
+    "initial": {
+      "preset_sha256": "50601e383708d99501f83b715bfad72020559d8119808b0be137469a10647d93",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "generation": "0",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "82dc6980592e8a31",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": "Ctrl+Shift+Alt+B",
+      "preset_revision": "50601e383708d99501f83b715bfad72020559d8119808b0be137469a10647d93",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.0
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    },
+    "assigned_function": {
+      "preset_sha256": "e4ecb3916a43aadbd2e85c805ebd34cbd96671de7a4250639ff77773bb3e135e",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "generation": "0",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "82dc6980592e8a31",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": "Ctrl+Shift+F35",
+      "preset_revision": "e4ecb3916a43aadbd2e85c805ebd34cbd96671de7a4250639ff77773bb3e135e",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.0
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    },
+    "cleared": {
+      "preset_sha256": "d404be30ce9bca7a07f7e4dcea84a263caa1458d6ca4a6989b0d2026531cdd55",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "generation": "0",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "82dc6980592e8a31",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": null,
+      "preset_revision": "d404be30ce9bca7a07f7e4dcea84a263caa1458d6ca4a6989b0d2026531cdd55",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.0
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    },
+    "restored": {
+      "preset_sha256": "e4ecb3916a43aadbd2e85c805ebd34cbd96671de7a4250639ff77773bb3e135e",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "generation": "0",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "82dc6980592e8a31",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": "Ctrl+Shift+F35",
+      "preset_revision": "e4ecb3916a43aadbd2e85c805ebd34cbd96671de7a4250639ff77773bb3e135e",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.0
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    },
+    "assigned_letter": {
+      "preset_sha256": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "generation": "0",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "82dc6980592e8a31",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": "Ctrl+Shift+Alt+D",
+      "preset_revision": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.0
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    },
+    "applied": {
+      "preset_sha256": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "history": {
+        "labels": [
+          "ApplyPreset"
+        ],
+        "position": 1
+      },
+      "unsaved": true,
+      "generation": "1",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "179a37369b8526c7",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": "Ctrl+Shift+Alt+D",
+      "preset_revision": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.5,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.5
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    },
+    "undo": {
+      "preset_sha256": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "history": {
+        "labels": [
+          "ApplyPreset"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "generation": "2",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "82dc6980592e8a31",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": "Ctrl+Shift+Alt+D",
+      "preset_revision": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.0
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    },
+    "input_guard": {
+      "preset_sha256": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "history": {
+        "labels": [
+          "ApplyPreset"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "generation": "2",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "82dc6980592e8a31",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": "Ctrl+Shift+Alt+D",
+      "preset_revision": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.0
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    },
+    "dialog_guard": {
+      "preset_sha256": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "history": {
+        "labels": [
+          "ApplyPreset"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "generation": "2",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "82dc6980592e8a31",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": "Ctrl+Shift+Alt+D",
+      "preset_revision": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.0
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    },
+    "reloaded": {
+      "preset_sha256": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "history": {
+        "labels": [
+          "ApplyPreset"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "generation": "2",
+      "project_epoch": "1792615275520541950:1",
+      "revision": "82dc6980592e8a31",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc",
+      "shortcut": "Ctrl+Shift+Alt+D",
+      "preset_revision": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "target": {
+        "clip_id": "1",
+        "length_frames": 24,
+        "transform": [
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomX",
+            "value": 1.0
+          },
+          {
+            "default": 1.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 20.0,
+            "min": 0.009999999776482582,
+            "param": "ZoomY",
+            "value": 1.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "PositionY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "Rotation",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorX",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropLeft",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropTop",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 640.0,
+            "min": 0.0,
+            "param": "CropRight",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 360.0,
+            "min": 0.0,
+            "param": "CropBottom",
+            "value": 0.0
+          },
+          {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 180.0,
+            "min": -180.0,
+            "param": "CropSoftness",
+            "value": 0.0
+          },
+          {
+            "default": 100.0,
+            "key_count": 0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          }
+        ],
+        "fade_in": 0,
+        "fade_out": 0,
+        "flip": [
+          false,
+          false
+        ],
+        "locked": false
+      },
+      "source_semantic_sha256": "87ebbe020cee850427f04a618fc6591ec1985b441cab9addf9db0e321ffd67cc"
+    }
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-app/src/tests/fixtures/web-exported-preset.json": "50601e383708d99501f83b715bfad72020559d8119808b0be137469a10647d93",
+      "crates/vv-app/src/tests/fixtures/web-preset-shortcut-catalog.json": "5525193e734e5ec0cefc014631c3e75481662e58fc549ad2c6979acc7e2c4877",
+      "crates/vv-app/src/tests/library.rs": "03010705b088c8a9ebf188e336f7f8e3ae059dfc33bb3c7fc850bc384241df12",
+      "crates/vv-web/src/api.rs": "3466ee1fa8e49c878d5698d3655c8ace4b8da8e6dde18f66a3936527e2ae2711",
+      "crates/vv-web/src/preset_store.rs": "4a9c6f3a48d38d009fb9ed2eec0e3e5720af14db4f82ec304a98bc7c44b03f4e",
+      "crates/vv-web/src/presets.rs": "e0f993bff1fb0e81c73d813a58abd92ae5638f987a72a2bd5644a96ac2dc235c",
+      "crates/vv-web/src/tests/api.rs": "05ced153cabaa6ab6b6d17a28db9213263e7ad008da5a97d482533e5d4b0b1a8",
+      "crates/vv-web/src/tests/preset_store.rs": "22f12371c4e00c7a7c10c30f36b0ba67cb8aef12e6f0a34c55cc6f3cc722f984",
+      "crates/vv-web/src/tests/presets.rs": "679bbedc5c3f12c475df080b4630693797057f60cb2deef765b6012318ad00d2",
+      "web/js/presets.js": "d51657c0b172a9b55fe979be77749ee746fb39d392fd759e04be1173ddc062c7",
+      "web/test/preset-panel.test.js": "a5d07073ceb0389bf52ec4129e53bf621908cc7a4f7221c34d478f528b6c02e0",
+      "web/test/presets.test.js": "33de61a9c7089d484d71ae5c3b46685df68254979f1d9570b5a5cff2ac19a96c"
+    },
+    "core_tests": 277,
+    "rust_tests": 251,
+    "javascript_tests": 553,
+    "fmt": true,
+    "fmt_check": true,
+    "clippy_warnings_denied": true,
+    "clippy_includes_native_desktop": true,
+    "native_build": true,
+    "browser_gui": true,
+    "desktop_application_import": true,
+    "native_shortcut_combinations": 936,
+    "hardware_gpu": false,
+    "nas_preset_sharing": false
+  },
+  "prior_failure": "Six new panel regressions exposed a real cold-open null selection bug. The first GET could dereference selected.archived when selected and preferred were both absent. The explicit nonnull guard and a dedicated cold-open regression were added; all original assertions retained. First failure remains in the append-only remote build log.",
+  "scope_note": "Complete native preset shortcut assignment, Keep and explicit Remove use the catalog from the same backend table as Set validation. Real exported JSON passes the original desktop AttributePreset parser and Library::open; all117 native keys and936 modifier combinations roundtrip through native Shortcut serde. Existing Windows browser verifies cold first selection, explicit enable, F35 assignment disabling the old browser binding, Remove/previous restore, safe D reassignment without auto-enable, one native ApplyPreset and exact Undo, input/dialog guards and reload reset while saved metadata persists. Library writes preserve project/clip history and the unchanged legacy peer file. Unknown legacy shortcut strings may be kept by web but are explicitly refused by the current native parser; no unsupported native import is claimed. Full desktop GUI, NAS preset sharing, hardware rendering and the full workspace runtime suite remain separate qualification. No local build/render/test, browser installation, GPU or foreign workload changes were used.",
+  "screenshots": {
+    "m4-preset-shortcut-settings.jpg": "cebbfb85bad0bc0be2552c0a224ae68addf34f9e32d6c277ec492210d6c2263c",
+    "m4-preset-shortcut-settings-applied.jpg": "cc850ff78f30141117c07763d42569b3a5e929d643ba9a2b7f22bac3c07a6667"
+  }
+}

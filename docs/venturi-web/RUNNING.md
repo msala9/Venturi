@@ -357,9 +357,10 @@ Selected project copies are persistent; the ordinary preview cache remains
 bounded independently. Canceling a transfer never removes shared originals or
 edits a project. An already completed copy can remain available in the picker.
 Native compound-library organization remains separate parity work. Saved native
-attribute presets have API/restart evidence, but desktop import and NAS preset
-sharing remain unqualified; the appliance media catalog does not configure the
-preset folder automatically.
+attribute presets have API/restart, Windows shortcut and real native-parser
+import evidence. Broader lifecycle/drag and cross-project runtime acceptance
+remain open. The appliance media catalog does not configure the preset folder;
+no NAS preset deployment is claimed or required by the original preset scope.
 
 ## Browser voiceover
 
@@ -496,7 +497,9 @@ The default folder is `<projects-root>/.presets`. Start the binary with
 `--presets-root /path/to/folder` to share a folder between cooperating web hosts.
 Do not use an active desktop library as a simultaneous shared writer: desktop
 does not take the web lock or reload external changes. Actual desktop application
-import and NAS preset sharing have not yet been qualified. The existing ds4 media
+import is verified for the recorded v1 export through the real native parser
+and Library::open; the original desktop import UI was not exercised. NAS preset
+sharing remains unqualified. The existing ds4 media
 archive integration does not configure this preset folder automatically.
 
 Imported desktop shortcut strings are preserved. Compatible
@@ -504,9 +507,23 @@ Ctrl+Alt+Shift+letter chords can be explicitly enabled for this project/browser
 session; C/K/Q/S/V/Z and unsupported chords display a conflict/compatibility
 reason. Editable fields/dialogs, repeats, busy/read-only sessions and empty
 selections do not apply presets. Project changes revoke activation; changed or
-archived preset metadata requires enabling again. Assignment of new desktop
-shortcuts is not available. Native JSON files are limited to 4 MiB and the web
-adapter's supported format/name/frame bounds. GUI qualification remains pending.
+archived preset metadata requires enabling again.
+
+Save/Edit preset settings offer Keep current shortcut, Assign a shortcut and
+Remove shortcut. Keep is the default and preserves existing imported metadata.
+Assign offers all 117 native key names with Ctrl/Shift/Alt checkboxes, including
+function keys and symbols that the browser cannot activate. Remove explicitly
+clears the saved shortcut. Saving changes disables its existing browser binding;
+use Enable separately for an eligible chord. A failed key-catalog read blocks
+Assign while Keep and Remove remain available. The panel never silently removes
+another preset's shortcut. Unknown legacy strings can be kept by the web host,
+but the current desktop parser cannot import those unknown shortcuts.
+
+The existing Windows browser verifies cold-open selection, assignment, removal,
+previous restore, explicit activation, single Undo and input/dialog/reload
+guards. Native JSON files are limited to 4 MiB and the web adapter's supported
+format/name/frame bounds. Broader preset lifecycle and sharing qualification
+remain separate from this recorded acceptance.
 
 ## Viewer and fade handles
 

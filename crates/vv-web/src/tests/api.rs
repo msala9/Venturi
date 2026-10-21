@@ -354,6 +354,7 @@ async fn health_assets_snapshot_and_host_boundary() {
     });
     for (path, status) in [
         ("/api/v1/health", 200),
+        ("/api/v1/presets/shortcuts", 200),
         ("/", 200),
         ("/js/timeline/input.js", 200),
         ("/js/export.js", 200),
@@ -398,30 +399,35 @@ async fn health_assets_snapshot_and_host_boundary() {
             .unwrap();
         assert_eq!(response.status().as_u16(), status, "{path}");
         assert_eq!(response.headers()["x-content-type-options"], "nosniff");
-        assert!(
-            !to_bytes(response.into_body(), 1024 * 1024)
-                .await
-                .unwrap()
-                .is_empty()
-        );
+        let bytes = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
+        assert!(!bytes.is_empty());
+        if path == "/api/v1/presets/shortcuts" {
+            let catalog: Value = serde_json::from_slice(&bytes).unwrap();
+            assert_eq!(catalog["version"], 1);
+            assert_eq!(catalog["modifiers"], json!(["Ctrl", "Shift", "Alt"]));
+            assert!(catalog["keys"].as_array().unwrap().contains(&json!("Plus")));
+            assert!(catalog["keys"].as_array().unwrap().contains(&json!("F35")));
+        }
     }
     for (host, origin) in [
         ("evil.example:8787", "http://evil.example:8787"),
         ("127.0.0.1:8787", "https://evil.example"),
     ] {
-        let response = app
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .uri("/api/v1/session")
-                    .header("host", host)
-                    .header("origin", origin)
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .unwrap();
-        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        for path in ["/api/v1/session", "/api/v1/presets/shortcuts"] {
+            let response = app
+                .clone()
+                .oneshot(
+                    Request::builder()
+                        .uri(path)
+                        .header("host", host)
+                        .header("origin", origin)
+                        .body(Body::empty())
+                        .unwrap(),
+                )
+                .await
+                .unwrap();
+            assert_eq!(response.status(), StatusCode::FORBIDDEN);
+        }
     }
     std::fs::remove_dir_all(root).unwrap();
 }

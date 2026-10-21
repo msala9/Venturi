@@ -50,6 +50,14 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/timelines/{id}/timeline.otio", get(export_otio))
         .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
         .route(
+            "/api/v1/timelines/{id}/presets/capture",
+            post(capture_preset),
+        )
+        .route(
+            "/api/v1/timelines/{id}/presets/apply",
+            post(apply_attribute_preset).layer(DefaultBodyLimit::max(4 * 1024 * 1024)),
+        )
+        .route(
             "/api/v1/timelines/{id}/clips/{clip}/keys/{page}",
             get(clip_key_page),
         )
@@ -876,6 +884,50 @@ async fn clip_key_page(
 }
 async fn recovery_status(State(state): State<AppState>) -> Result<Json<Value>> {
     state.host.call(Action::Recovery).await.map(Json)
+}
+async fn capture_preset(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<
+        Json<crate::presets::Capture>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid preset capture request"))?
+        .0;
+    if request.query.timeline_id != id {
+        return Err(ApiError::invalid(
+            "Timeline ID does not match the preset query",
+        ));
+    }
+    state
+        .host
+        .call(Action::CapturePreset(request))
+        .await
+        .map(Json)
+}
+async fn apply_attribute_preset(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<Json<Mutation>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid native preset mutation"))?
+        .0;
+    if !matches!(
+        request.operation,
+        crate::commands::Operation::ApplyAttributePreset { .. }
+    ) {
+        return Err(ApiError::invalid(
+            "This route accepts only native attribute preset application",
+        ));
+    }
+    state
+        .host
+        .call(Action::Mutation(Some(id), request))
+        .await
+        .map(Json)
 }
 async fn projects(State(state): State<AppState>) -> Result<Json<Value>> {
     state.host.call(Action::Projects).await.map(Json)

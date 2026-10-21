@@ -1,5 +1,27 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+`POST /api/v1/timelines/{id}/presets/capture` accepts
+`{query:FrameQuery,clip_ids,options:{name,attributes,anchor,append_filters}}`.
+It validates snapshot identity and returns `{project_epoch,generation,revision,
+preset}` without changing history. Linked clips join the source selection;
+the earliest video and audio clips supply the native preset. The v1 JSON fields
+match the desktop attribute preset: version, name, attributes, anchor,
+append_filters, shortcut, fps, resolution, video and audio. Web capture leaves
+shortcut null; the DTO accepts native shortcut metadata without activating bindings.
+
+`POST /api/v1/timelines/{id}/presets/apply` accepts the ordinary mutation envelope
+with `operation:{kind:"apply_attribute_preset",clip_ids,preset}` and a 4 MiB body
+limit. It refuses other operations. Small preset operations also fit the ordinary
+timeline command route, whose 256 KiB limit is unchanged. Lease, epoch,
+generation, revision and durable receipt checks remain in the session actor.
+Native `Conversion::preset`, attribute merge and speed ripple commands perform
+all changes as one ApplyPreset history step. Start/End/Stretch anchors, fps and
+pixel scaling, append/replace filters and linked-target validation are retained.
+Source IDs do not suppress targets in another project. Invalid key ordering,
+unrepresentable coordinate conversion, nonfinite converted values or locked
+linked targets reject the complete operation before native session mutation.
+Saved/shared preset library CRUD and its web panel are still pending.
+
 `GET /api/v1/timelines/{id}/clips/{clip}/keys/{page}` takes the existing
 FrameQuery and validates its epoch, generation, timeline and revision. Pages
 are zero-based and expose up to 256 native keys per parameter, with exact

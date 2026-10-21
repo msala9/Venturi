@@ -179,6 +179,10 @@ pub enum Operation {
         clip_id: String,
         preset: String,
     },
+    ApplyAttributePreset {
+        clip_ids: Vec<String>,
+        preset: Box<crate::presets::Preset>,
+    },
     ApplyAudioPreset {
         channel: String,
         index: usize,
@@ -552,6 +556,9 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         Operation::EditFilter { clip_id, edit } => crate::visual::edit(session, id, clip_id, edit)?,
         Operation::ApplyGradePreset { clip_id, preset } => {
             crate::visual::apply_preset(session, id, clip_id, preset)?
+        }
+        Operation::ApplyAttributePreset { clip_ids, preset } => {
+            crate::presets::apply(session, id, clip_ids, preset)?
         }
         Operation::ApplyAudioPreset {
             channel,

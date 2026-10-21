@@ -79,17 +79,12 @@ pub fn paste_attributes(
     attributes: &[core::attributes::Attribute],
     mode: core::attributes::KeyframeMode,
 ) -> Result<()> {
-    use core::attributes::{Attribute, Conversion, merge};
     if clipboard.revision(session) != Some(revision) {
         return Err(ApiError::conflict(
             "CLIPBOARD_STALE",
             "The copied properties changed; reopen Paste properties",
         ));
     }
-    if attributes.is_empty() || attributes.len() > Attribute::ALL.len() {
-        return Err(ApiError::invalid("Choose at least one property group"));
-    }
-    let selected: HashSet<_> = attributes.iter().copied().collect();
     let timeline = &session.project.timelines[id];
     if clipboard
         .entries
@@ -100,6 +95,63 @@ pub fn paste_attributes(
             "Property paste requires matching timeline FPS; use a native attribute preset for cross-format conversion",
         ));
     }
+    let source_for = |kind| {
+        clipboard
+            .entries
+            .iter()
+            .find(|entry| entry.track_kind == kind)
+            .map(|entry| &entry.clip)
+    };
+    let skip = clipboard
+        .entries
+        .iter()
+        .map(|entry| entry.clip.id)
+        .collect::<Vec<_>>();
+    apply_attributes(
+        session,
+        id,
+        clip_ids,
+        AttributeSource {
+            video: source_for(core::TrackKind::Video),
+            audio: source_for(core::TrackKind::Audio),
+            attributes,
+            skip: &skip,
+            mode: AttributeMode::Paste(mode),
+        },
+    )
+}
+
+#[derive(Clone, Copy)]
+pub enum AttributeMode {
+    Paste(core::attributes::KeyframeMode),
+    Preset {
+        format: core::attributes::TimelineFormat,
+        anchor: core::attributes::KeyframeAnchor,
+        append_filters: bool,
+    },
+}
+pub struct AttributeSource<'a> {
+    pub video: Option<&'a core::Clip>,
+    pub audio: Option<&'a core::Clip>,
+    pub attributes: &'a [core::attributes::Attribute],
+    pub skip: &'a [core::ClipId],
+    pub mode: AttributeMode,
+}
+pub fn apply_attributes(
+    session: &mut Session,
+    id: TimelineId,
+    clip_ids: &[String],
+    source: AttributeSource<'_>,
+) -> Result<()> {
+    use core::attributes::{Attribute, Conversion, TimelineFormat, merge};
+    if source.attributes.is_empty() || source.attributes.len() > Attribute::ALL.len() {
+        return Err(ApiError::invalid("Choose at least one property group"));
+    }
+    let selected: HashSet<_> = source.attributes.iter().copied().collect();
+    if selected.len() != source.attributes.len() {
+        return Err(ApiError::invalid("Choose distinct property groups"));
+    }
+    let timeline = &session.project.timelines[id];
     let targets = commands::copied_refs(timeline, clip_ids)?;
     if targets
         .iter()
@@ -111,11 +163,11 @@ pub fn paste_attributes(
         ));
     }
     let source_for = |kind| {
-        clipboard
-            .entries
-            .iter()
-            .find(|entry| entry.track_kind == kind)
-            .map(|entry| &entry.clip)
+        if kind == core::TrackKind::Video {
+            source.video
+        } else {
+            source.audio
+        }
     };
     let video = source_for(core::TrackKind::Video);
     let audio = source_for(core::TrackKind::Audio);
@@ -138,17 +190,13 @@ pub fn paste_attributes(
     }
     let mut commands: Vec<Box<dyn Command>> = vec![];
     let mut speeds: SpeedTargets = vec![];
-    for (track, clip_id) in targets {
+    for (track, clip_id) in targets.iter().copied() {
         let target = timeline.clip(track, clip_id).unwrap();
-        if clipboard
-            .entries
-            .iter()
-            .any(|entry| entry.clip.id == clip_id)
-        {
+        if source.skip.contains(&clip_id) {
             continue;
         }
         let kind = timeline.tracks[track].kind;
-        let Some(source) = source_for(kind) else {
+        let Some(source_clip) = source_for(kind) else {
             continue;
         };
         let applicable = selected
@@ -170,18 +218,35 @@ pub fn paste_attributes(
             track,
             clip_id,
             merge(
-                source,
+                source_clip,
                 target,
                 &applicable,
-                &Conversion::paste(source, target, mode),
+                &match source.mode {
+                    AttributeMode::Paste(mode) => Conversion::paste(source_clip, target, mode),
+                    AttributeMode::Preset {
+                        format,
+                        anchor,
+                        append_filters,
+                    } => Conversion::preset(
+                        source_clip,
+                        format,
+                        target,
+                        TimelineFormat {
+                            fps: timeline.fps,
+                            resolution: timeline.resolution,
+                        },
+                        anchor,
+                        append_filters,
+                    ),
+                },
             ),
         )));
         if applicable.contains(&Attribute::Speed)
             && matches!(target.source, core::ClipSource::Media(_))
             && (target.speed(), target.pitch_correction)
-                != (source.speed(), source.pitch_correction)
+                != (source_clip.speed(), source_clip.pitch_correction)
         {
-            let key = (source.speed(), source.pitch_correction);
+            let key = (source_clip.speed(), source_clip.pitch_correction);
             match speeds.iter_mut().find(|(k, _)| *k == key) {
                 Some((_, clips)) => clips.push((track, clip_id)),
                 None => speeds.push((key, vec![(track, clip_id)])),
@@ -203,12 +268,24 @@ pub fn paste_attributes(
         )));
     }
     let mut command = Box::new(core::CompositeCommand::new(
-        core::CommandLabel::PasteAttributes,
+        match source.mode {
+            AttributeMode::Paste(_) => core::CommandLabel::PasteAttributes,
+            AttributeMode::Preset { .. } => core::CommandLabel::ApplyPreset,
+        },
         commands,
     ));
     let mut trial = session.project.clone();
     command.apply(&mut trial);
     crate::files::validate_project(&trial)?;
+    if matches!(source.mode, AttributeMode::Preset { .. }) {
+        for (track, clip_id) in targets {
+            let value = serde_json::to_value(trial.timelines[id].clip(track, clip_id).unwrap())
+                .map_err(|_| ApiError::invalid("Converted preset values are invalid"))?;
+            serde_json::from_value::<core::Clip>(value).map_err(|_| {
+                ApiError::invalid("Converted preset values exceed the native numeric range")
+            })?;
+        }
+    }
     let mut group_deltas = HashMap::new();
     for (track, original) in session.project.timelines[id].tracks.iter().enumerate() {
         for clip in &original.clips {

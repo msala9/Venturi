@@ -2198,3 +2198,37 @@ RAM and OOMScoreAdjust=1000. Parent project/source/Review hashes and the primary
 editor's five unsaved moves were preserved. The temporary browser tab was closed.
 No hardware lock was acquired/probed and no long soak was resumed. Full hardware,
 browser-memory and duration qualification remain open.
+
+## M4 — native attribute preset capture/application API
+
+The web adapter now captures the earliest selected video/audio source clips,
+including linked members, using the desktop's native v1 preset JSON fields.
+Application reuses core Conversion::preset and the existing attribute planner,
+including native speed ripple, a trial project and linked-target lock/sync checks.
+It remains one ApplyPreset Undo step. Source clip IDs are not used to skip targets
+in another project. The desktop GUI and core project format are unchanged.
+
+Three native tests cover 24-to-48 fps conversion, doubled pixel resolution,
+Start/End/Stretch keyframe anchors, append filters, exact Undo, duplicate/source
+validation, locked targets and linked audio/earliest-video capture. Input guards
+reject timing that cannot fit native coordinates and nonfinite converted clip
+values before session mutation. An initial project-wide JSON check was replaced
+with clip-specific validation after it rejected a valid native project shape.
+
+143 Rust tests, 107 JavaScript tests, fmt, clippy with warnings denied and build
+pass on halo2. Actual HTTP acceptance captured a preset from the dense native
+fixture, submitted a 437234-byte mutation to a 48 fps/1280x720 target, and verified position
+20/40, fade 24, converted Bezier key timing, one ApplyPreset, exact retry receipt,
+Undo/Redo, Save and process restart. Stale capture and a non-preset operation on
+the 4 MiB apply route were rejected. Malformed timing, floating-point overflow
+and a missing audio source were rejected without history/timeline/file changes;
+the actor remained responsive. A normal apply/Undo/Save also passed with the
+numeric guards enabled. The final Saved file hash and native properties survive
+restart with fresh history. The finite test copies retain the original parent,
+shared source and Review hashes and the primary editor's five unsaved moves.
+
+Evidence: m4-native-attribute-presets-api.json. The isolated instance remains CPU
+only, limited to one CPU/2 GiB with OOMScoreAdjust=1000. No local heavy work,
+hardware lock use or long soak was started. This closes the native API adapter;
+saved/shared library CRUD, preset GUI, shortcut activation and desktop import
+acceptance remain open. Native JSON capture alone is not the completed library.

@@ -14,6 +14,7 @@ mod inspector;
 mod keyselection;
 mod library;
 mod masks;
+mod presets;
 mod preview;
 mod program;
 mod receipts;

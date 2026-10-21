@@ -34,6 +34,7 @@ pub enum Action {
     SlipDetail(String, i64, FrameQuery),
     TakePlan(crate::take::Preview),
     Review(SourceQuery),
+    CapturePreset(crate::presets::Capture),
     SpeechSnapshot(
         crate::silence::Request,
         oneshot::Sender<Result<crate::silence::Task>>,
@@ -600,6 +601,18 @@ impl Editor {
                 value["project_epoch"] = json!(query.project_epoch);
                 value["generation"] = json!(self.session.history.generation().to_string());
                 Ok(value)
+            }
+            Action::CapturePreset(request) => {
+                let (id, _) = self.validate_frame(&request.query)?;
+                let preset = crate::presets::capture(
+                    &self.session,
+                    id,
+                    &request.clip_ids,
+                    &request.options,
+                )?;
+                Ok(
+                    json!({"project_epoch":request.query.project_epoch,"generation":request.query.if_generation,"revision":request.query.revision,"preset":preset}),
+                )
             }
             Action::CheckFrame(query) => self.validate_frame(&query).map(|_| Value::Null),
             Action::SourceSnapshot(media_id, query, reply) => {

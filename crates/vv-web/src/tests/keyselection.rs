@@ -286,6 +286,7 @@ fn every_advertised_scalar_target_and_mixed_values_share_one_native_move() {
                 source_frame: 20,
                 value: Some(row["default"].as_f64().unwrap() as f32),
                 interpolation: Interpolation::EaseOut,
+                link_zoom: false,
             },
         )
         .unwrap();

@@ -12,7 +12,7 @@ export function retainedCrossKeys(stored,picks) {
   const ids=Array.isArray(stored)?stored:stored?.before?.length && stored.before.every(id=>available.has(id))?stored.before:stored?.after || [];
   return ids.filter(id=>available.has(id));
 }
-export function renderKeySelection(root,detail,{disabled,commit,notice,openState,scope=detail.clip_id}) {
+export function renderKeySelection(root,detail,{disabled,commit,notice,openState,scope=detail.clip_id,zoomLink}) {
   const rows=[...(detail.curves?.tracks || []),...(detail.event_keys || [])];
   const total=rows.reduce((sum,row)=>sum+row.keys.length,0),shown=[];
   if(!total)return null;
@@ -32,6 +32,7 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   shown.forEach((key,index)=>{const option=new Option(`${key.name} · source ${key.source_frame} · timeline ${key.timeline}`,String(index));option.selected=retained.has(identity(picks[index]));list.append(option);});form.append(list);
   const status=document.createElement("p");status.className="muted";status.setAttribute("aria-live","polite");form.append(status);
   const linkedLabel=document.createElement("label"),linked=document.createElement("input");linked.type="checkbox";linked.checked=Boolean(openState?.get("key-selection-zoom-link"));linked.disabled=disabled;linkedLabel.append(linked," Link Zoom X/Y key times and interpolation");form.append(linkedLabel);
+  zoomLink?.register(linked);
   const deltaLabel=document.createElement("label"),delta=document.createElement("input");deltaLabel.className="field";deltaLabel.textContent="Cross-parameter frame delta";delta.type="number";delta.step=1;delta.required=true;delta.value="0";delta.disabled=disabled;deltaLabel.append(delta);form.append(deltaLabel);
   const move=document.createElement("button");move.formNoValidate=true;move.textContent="Move keys across parameters";form.append(move);
   const mode=document.createElement("select");mode.setAttribute("aria-label","Cross-parameter interpolation");mode.disabled=disabled;
@@ -64,7 +65,7 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   }
   list.addEventListener("change",()=>{remember(selected().map(identity));update();});
   list.addEventListener("keydown",event=>{if(event.key==="Delete" || event.key==="Backspace"){event.preventDefault();event.stopPropagation();send({kind:"delete"});}});
-  linked.addEventListener("change",()=>openState?.set("key-selection-zoom-link",linked.checked));
+  if(!zoomLink)linked.addEventListener("change",()=>openState?.set("key-selection-zoom-link",linked.checked));
   mode.addEventListener("change",()=>{controls.hidden=mode.value!=="Bezier";controls.disabled=controls.hidden || disabled;});
   form.addEventListener("submit",event=>{event.preventDefault();send({kind:"move",delta_source_frames:Number(delta.value)});});
   interpolate.addEventListener("click",()=>{try{if(mode.value==="Bezier" && !values.every(input=>input.reportValidity()))return;send({kind:"interpolation",interpolation:curveInterpolation(mode.value,values.map(input=>Number(input.value)))});}catch(error){notice(error.message);}});

@@ -2107,3 +2107,55 @@ the list to the inspector width. The initial accidental test-copy clip deletion
 was undone; native timeline cache counters advanced, while the restored timeline
 revision and key values matched the baseline. No byte-identical Undo-save claim
 is made for those counters. Evidence: m4-cross-parameter-keys.json and browser PNG.
+
+### Remote backend soak interrupted by global OOM
+
+The eeba038 CPU backend soak on halo2 completed 20 samples, then the kernel
+terminated it during a verified global OOM (`CONSTRAINT_NONE`, `global_oom`).
+Two unrelated Python processes were also terminated. The private kernel journal
+is retained; the committed proof contains aggregate foreign-process counts only.
+The own unit reported 312.7M peak memory and 19.174 CPU seconds over 1206.735 wall
+seconds. It was limited to one CPU/2 GiB, and no GPU work or driver changes were
+used. The own process had about 214 MiB anonymous RSS in the kernel OOM record.
+
+The collected samples retain the source/export hashes and baseline history;
+FD count is 16 throughout, with 14 threads in 19 samples and 15 in one. This is
+failed qualification, not a passed two-hour test or proof of a backend leak.
+Evidence: m7-halo2-backend-soak-oom.json. No automatic restart was attempted.
+Further test/build launches require memory headroom and sacrificial OOM priority;
+the live editor's process/priority and its unsaved moves remain untouched.
+
+The owner subsequently relayed the ComfyUI agent's report: its persistent backend
+test completed one of three requests before global OOM, also losing a foreign
+vv-web process. That agent disabled the configuration and will not repeat that
+co-residency. This corroborates a shared-host incident; the attribution is a
+relayed report, not an independently correlated ComfyUI trace. Venturi's long
+soak remains stopped. No foreign service or configuration was changed here.
+
+## M4 — linked Zoom properties and scalar curve edits
+
+One browser view setting now links Zoom X/Y across property defaults, playhead
+keys, the scalar curve graph and cross-parameter selection. Defaults and paired
+playhead keys use existing native commands. Scalar key/group edits prevalidate
+both axes before one native composite command; existing missing twins are
+ignored, while new paired keys are created together. Time-only groups retain
+each axis's values and interpolation. Group value edits couple resulting values
+while retaining each axis's outgoing interpolation. Omitted/false link flags
+preserve old command receipt serialization.
+
+139 Rust tests, 105 JavaScript tests, fmt, clippy with warnings denied and the
+native build pass on halo2. Actual browser acceptance coupled defaults, moved
+and edited a Bezier pair, moved two pairs with value deltas, deleted selected
+pairs with graph-focused Delete, and added/removed paired playhead keys.
+Undo restored the baseline revision and asymmetric original values; Redo,
+Save and process restart retained exact native keys, interpolation and file
+hashes. An old request receipt also replayed unchanged after restart. Source,
+Review and parent project hashes and the live editor's five unsaved moves were
+preserved. The isolated process uses one CPU, 2 GiB, software Vulkan and
+OOMScoreAdjust=1000. No GPU lock was acquired or probed. Evidence:
+m4-linked-zoom.json and m4-linked-zoom-browser.png.
+
+The scalar curve retains keyboard focus after refresh/error so Delete remains
+scoped to its keys. Dense-key paging remains open; the bounded first-page key
+lists do not yet provide full native key access. This increment does not close
+full GUI parity or the failed duration qualification.

@@ -1,7 +1,12 @@
-export function curveKeyOperation(clip, target, previous, frame, value, mode, handles) {
+export function zoomParameters(param,linked=false){return linked && ["ZoomX","ZoomY"].includes(param)?[param,param==="ZoomX"?"ZoomY":"ZoomX"]:[param];}
+export function createZoomLink(openState){
+  let value=Boolean(openState?.get("zoom-link"));const inputs=new Set();
+  return {get:()=>value,register(input){input.checked=value;inputs.add(input);input.addEventListener("change",()=>{value=input.checked;openState?.set("zoom-link",value);for(const other of inputs)other.checked=value;});}};
+}
+export function curveKeyOperation(clip, target, previous, frame, value, mode, handles,linkZoom=false) {
   if (!Number.isSafeInteger(frame) || (value !== null && frame < 0)) throw new Error("Choose a nonnegative integer source frame for a new or moved key");
   if (value !== null && !Number.isFinite(value)) throw new Error("Choose a finite keyframe value");
-  return {kind: "edit_curve_key", clip_id: clip, edit: {target, previous_source_frame: previous, source_frame: frame, value, interpolation:curveInterpolation(mode,handles)}};
+  return {kind: "edit_curve_key", clip_id: clip, edit: {target, previous_source_frame: previous, source_frame: frame, value, interpolation:curveInterpolation(mode,handles),...(linkZoom && zoomParameters(target.param,true).length===2?{link_zoom:true}:{})}};
 }
 export function curveInterpolation(mode,handles) {
   let interpolation = mode;
@@ -17,9 +22,9 @@ export function retainedKeySelection(stored,frames,fallback=[]) {
   return [...new Set(selected.filter(frame=>available.has(frame)))];
 }
 
-export function curveGroupOperation(clip,target,frames,deltaFrame,deltaValue,deleting=false) {
+export function curveGroupOperation(clip,target,frames,deltaFrame,deltaValue,deleting=false,linkZoom=false) {
   if(!frames.length || frames.length>2048 || new Set(frames).size!==frames.length || frames.some(frame=>!Number.isSafeInteger(frame)) || !Number.isSafeInteger(deltaFrame) || !Number.isFinite(deltaValue))throw Error("Choose distinct native keys and finite frame/value deltas");
-  return {kind:"edit_curve_keys",clip_id:clip,edit:{target,source_frames:frames,delta_source_frames:deltaFrame,delta_value:deltaValue,delete:deleting}};
+  return {kind:"edit_curve_keys",clip_id:clip,edit:{target,source_frames:frames,delta_source_frames:deltaFrame,delta_value:deltaValue,delete:deleting,...(linkZoom && zoomParameters(target.param,true).length===2?{link_zoom:true}:{})}};
 }
 export function curveGroupDraft(curve,range,frames,deltaFrame,deltaValue) {
   const selected=new Set(frames),keys=curve.keys.filter(key=>selected.has(key.source_frame));
@@ -105,7 +110,7 @@ export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = ()
   return {cancel};
 }
 
-export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id}) {
+export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id,zoomLink=createZoomLink(openState)}) {
   const range = detail.curves;
   if (!range?.tracks.length) return null;
   const fullViewport=()=>({source_start:range.source_start,source_end:range.source_end});
@@ -126,6 +131,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   range.tracks.forEach((curve, index) => tracks.append(new Option(`${curve.name} (${curve.key_count} keys)`, String(index))));
   tracks.value = String(Math.max(0, range.tracks.findIndex((c) => JSON.stringify(c.target) === openState?.get("curves-target"))));
   section.append(tracks);
+  if(detail.video){const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.disabled=disabled;zoomLink.register(input);label.append(input," Link Zoom X/Y values and key times");section.append(label);}
   const viewportTools=document.createElement("div");viewportTools.className="tools";
   for(const [label,change] of [["Zoom curve time in",{zoomX:2}],["Zoom curve time out",{zoomX:0.5}],["Zoom curve values in",{zoomY:2}],["Zoom curve values out",{zoomY:0.5}],["Pan curve left",{direction:-1}],["Pan curve right",{direction:1}],["Pan curve values up",{valueDirection:1}],["Pan curve values down",{valueDirection:-1}],["Fit curve",null]]){
     const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{if(waiting || !geometry)return;drag.cancel();if(!change)viewRange=fullViewport();else viewRange=curveViewport(viewRange,range,current(),geometry,{...change,panX:(change.direction || 0)*(viewRange.source_end-viewRange.source_start)/4,panY:(change.valueDirection || 0)*(geometry.max-geometry.min)/4});rememberViewport();draw();});viewportTools.append(button);
@@ -175,7 +181,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   function updateGroup(){
     for(const option of groupKeys.options)option.selected=selectedFrames.has(Number(option.value));
     groupApply.disabled=groupRemove.disabled=disabled || waiting || !selectedFrames.size;
-    remember(selectionKey(),[...selectedFrames]);
+    const frames=[...selectedFrames];remember(selectionKey(),openState?.get(selectionKey())?.focus?{before:frames,after:frames,focus:true}:frames);
   }
   function draw() {
     if (disposed || !section.open) return;
@@ -245,28 +251,30 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
     selectedFrames=new Set(retainedKeySelection(stored,current().keys.map(key=>key.source_frame),previous()===null?[]:[previous()]));
     if(previous()===null && selectedFrames.size)select.value=String([...selectedFrames][0]);
     load();
+    if(openState?.get(selectionKey())?.focus && !disabled && section.open){remember(selectionKey(),[...selectedFrames]);queueMicrotask(()=>{if(!disposed && canvas.isConnected && document.activeElement===document.body)canvas.focus({preventScroll:true});});}
     if (current().key_count > current().keys.length) status.textContent += " · first 2048 keys shown";
   }
   async function save(deleting = false) {
     if (waiting || disabled || (!deleting && !form.reportValidity())) return;
+    const before=previous()===null?[]:[previous()];
     try {
-      const operation = curveKeyOperation(detail.clip_id, current().target, previous(), Number(frame.value), deleting ? null : Number(value.value), mode.value, ["c1x", "c1y", "c2x", "c2y"].map((key) => Number(fields[key].value)));
+      const operation = curveKeyOperation(detail.clip_id, current().target, previous(), Number(frame.value), deleting ? null : Number(value.value), mode.value, ["c1x", "c1y", "c2x", "c2y"].map((key) => Number(fields[key].value)),zoomLink.get());
       waiting = true; form.inert = true; tracks.disabled = select.disabled = true;
       openState?.set("curves-key", deleting ? "" : frame.value);
-      remember(selectionKey(),{before:previous()===null?[]:[previous()],after:deleting?[]:[Number(frame.value)]});
+      remember(selectionKey(),{before,after:deleting?[]:[Number(frame.value)],focus:true});
       await commit(operation);
-    } catch (error) { notice(error.message); load(); }
+    } catch (error) { notice(error.message);if(!disposed)load();remember(selectionKey(),{before,after:before,focus:true});if(!disposed && canvas.isConnected)canvas.focus({preventScroll:true}); }
     finally { waiting = false; form.inert = false; tracks.disabled = select.disabled = false; }
   }
   async function saveGroup(deleting=false,deltaFrame=Number(groupFields.frame.value),deltaValue=Number(groupFields.value.value)){
     if(waiting || disabled || !selectedFrames.size || (!deleting && !groupForm.reportValidity()))return;
     const before=[...selectedFrames];
     try{
-      const operation=curveGroupOperation(detail.clip_id,current().target,before,deleting?0:deltaFrame,deleting?0:deltaValue,deleting);
+      const operation=curveGroupOperation(detail.clip_id,current().target,before,deleting?0:deltaFrame,deleting?0:deltaValue,deleting,zoomLink.get());
       waiting=true;groupForm.inert=form.inert=true;tracks.disabled=select.disabled=true;
-      remember(selectionKey(),{before,after:deleting?[]:before.map(frame=>frame+deltaFrame)});
+      remember(selectionKey(),{before,after:deleting?[]:before.map(frame=>frame+deltaFrame),focus:true});
       await commit(operation);
-    }catch(error){remember(selectionKey(),before);notice(error.message);}
+    }catch(error){remember(selectionKey(),{before,after:before,focus:true});notice(error.message);if(!disposed && canvas.isConnected)canvas.focus({preventScroll:true});}
     finally{waiting=false;groupForm.inert=form.inert=false;tracks.disabled=select.disabled=false;}
   }
   const drag = bindCurveGesture(canvas, {
@@ -296,5 +304,5 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   window.addEventListener("blur", drag.cancel, {signal: events.signal});
   section.addEventListener("toggle", draw);
   const observer = new ResizeObserver(draw); observer.observe(canvas); chooseCurve();
-  return {cancel() { drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
+  return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
 }

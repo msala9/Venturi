@@ -1,6 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {bindCurveGesture, curveGeometry, curveHandles, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport} from "../js/curves.js";
+import {bindCurveGesture, curveGeometry, curveHandles, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport,createZoomLink,zoomParameters} from "../js/curves.js";
+
+test("zoom link synchronizes all visible toggles without a native mutation and leaves other parameters independent",()=>{
+  const state=new Map(),link=createZoomLink(state);
+  const input=()=>({checked:false,addEventListener(name,fn){this.change=fn;}}),a=input(),b=input();link.register(a);link.register(b);
+  a.checked=true;a.change();assert.equal(b.checked,true);assert.equal(link.get(),true);assert.equal(state.get("zoom-link"),true);
+  const c=input();link.register(c);assert.equal(c.checked,true);b.checked=false;b.change();assert.equal(a.checked,false);assert.equal(c.checked,false);
+  assert.deepEqual(zoomParameters("ZoomY",true),["ZoomY","ZoomX"]);assert.deepEqual(zoomParameters("PositionX",true),["PositionX"]);
+  const target={kind:"transform",param:"ZoomX"};assert.equal(curveKeyOperation("1",target,0,2,1.5,"Hold",[],true).edit.link_zoom,true);
+  assert.equal(curveGroupOperation("1",target,[0,10],2,0.5,false,true).edit.link_zoom,true);
+  assert.equal(curveGroupOperation("1",{kind:"gain"},[0],0,1,false,true).edit.link_zoom,undefined);
+});
 
 test("group curve drafts share one clamped delta and retain exact source identities without native evaluation",()=>{
   const curve={min:0,max:100,keys:[{source_frame:10,value:20,interpolation:"Hold"},{source_frame:20,value:80,interpolation:"EaseIn"},{source_frame:30,value:50}]};

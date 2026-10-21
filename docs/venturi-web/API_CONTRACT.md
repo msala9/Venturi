@@ -1,5 +1,21 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+Scalar `edit_curve_key` and `edit_curve_keys` edits accept optional
+`link_zoom:true`. Omitted or false preserves the original request serialization,
+including durable receipt fingerprints. For Zoom X/Y, creation adds both keys;
+edits of existing keys include only an existing twin at the original source
+frame. Both plans are validated before one native composite command is applied.
+Single-key edits couple value, time and interpolation. Group time-only edits
+preserve each axis's values and outgoing interpolation; group value edits copy
+the active axis's resulting values to existing twins while retaining each
+axis's outgoing interpolation. Group deletion removes selected existing twins.
+Any collision or invalid member rejects the complete edit. Zero group movement
+and value delta adds no history step. Other parameters retain their usual behavior.
+
+The inspector's shared Zoom link checkbox also couples default property values
+through SetProperties and paired playhead keys through SetKeyframes. Toggling
+the checkbox itself changes only browser view state.
+
 `edit_key_selection {clip_id,edit:{picks,link_zoom,action}}` groups keys from
 different parameter rows of one clip. Each pick is
 `{target,source_frame}` using the existing scalar or RGBA/text/direction target

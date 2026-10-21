@@ -1,6 +1,6 @@
 import {renderFilters} from "./visual.js";
 import {renderMasks} from "./masks.js";
-import {renderCurves} from "./curves.js";
+import {renderCurves,createZoomLink,zoomParameters} from "./curves.js";
 import {renderEventKeys} from "./eventkeys.js";
 import {renderKeySelection} from "./keyselection.js";
 
@@ -8,12 +8,16 @@ export function detailIdentity(state) {
   return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame].join(":") : null;
 }
 export function propertyOperation(clip, patch) { return { kind: "set_properties", clip_id: clip, patch }; }
-export function keyframeOperation(clip, target, frame, value, interpolation = "Linear") {
+export function transformPatch(param,value,linked=false){return {transform:zoomParameters(param,linked).map(param=>({param,value}))};}
+export function keyframeOperation(clip, target, frame, value, interpolation = "Linear",linked=false) {
   if (!Number.isSafeInteger(frame) || frame < 0) throw new Error("Choose an integer timeline frame");
-  return { kind: "set_keyframe", clip_id: clip, edit: { target, timeline_frame: frame, value, interpolation } };
+  const edit={target,timeline_frame:frame,value,interpolation};
+  const params=target.kind==="transform"?zoomParameters(target.param,linked):[];
+  return params.length===2?{kind:"set_keyframes",clip_id:clip,edits:params.map(param=>({...edit,target:{kind:"transform",param}}))}:{kind:"set_keyframe",clip_id:clip,edit};
 }
 export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope }) {
   const disabled = !writable || detail.locked;
+  const zoomLink=createZoomLink(visualState);
   const report = (operation) => commit(operation).catch((error) => notice(error.message));
   const section = document.createElement("details"); section.open = true;
   const heading = document.createElement("summary"); heading.textContent = "Properties and keyframes"; section.append(heading);
@@ -34,7 +38,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     if (target) for (const [text, remove] of [["◆", false], ["−◆", true]]) {
       const button = document.createElement("button"); button.type = "button"; button.textContent = text; button.disabled = disabled;
       button.setAttribute("aria-label", `${remove ? "Remove" : "Set"} ${label} keyframe at playhead`);
-      button.addEventListener("click", () => { if (form.reportValidity()) report(keyframeOperation(detail.clip_id, target, getFrame(), remove ? null : Number(input.value), interpolation.value)); });
+      button.addEventListener("click", () => { if (form.reportValidity()) report(keyframeOperation(detail.clip_id, target, getFrame(), remove ? null : Number(input.value), interpolation.value,zoomLink.get())); });
       form.append(button);
     }
     section.append(form);
@@ -45,7 +49,8 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     }
   }
   if (detail.video) {
-    for (const parameter of detail.transform) number(parameter.param, parameter.value, parameter.min, parameter.max, (value) => ({ transform: [{ param: parameter.param, value }] }), { kind: "transform", param: parameter.param }, parameter.keyframes);
+    const linkLabel=document.createElement("label"),linkInput=document.createElement("input");linkInput.type="checkbox";linkInput.disabled=disabled;zoomLink.register(linkInput);linkLabel.append(linkInput," Link Zoom X/Y");section.append(linkLabel);
+    for (const parameter of detail.transform) number(parameter.param, parameter.value, parameter.min, parameter.max, (value) => transformPatch(parameter.param,value,zoomLink.get()), { kind: "transform", param: parameter.param }, parameter.keyframes);
     function choice(label, value, values, patch) {
       const field = document.createElement("label"); field.className = "field"; field.textContent = label;
       const select = document.createElement("select"); select.disabled = disabled;
@@ -74,9 +79,9 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   root.append(section);
   renderRetime(root,detail,disabled,getFrame,report,visualState);
   const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
-  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope});if(curves)controls.push(curves);
+  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink});if(curves)controls.push(curves);
   const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope});if(eventKeys)controls.push(eventKeys);
-  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope});if(keySelection)controls.push(keySelection);
+  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink});if(keySelection)controls.push(keySelection);
   if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState});
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report);

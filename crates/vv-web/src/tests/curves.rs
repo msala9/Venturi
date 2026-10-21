@@ -39,6 +39,7 @@ fn change() -> Edit {
             c1: [0.2, -0.5],
             c2: [0.8, 1.5],
         },
+        link_zoom: false,
     }
 }
 
@@ -49,7 +50,242 @@ fn group() -> GroupEdit {
         delta_source_frames: 2,
         delta_value: 5.0,
         delete: false,
+        link_zoom: false,
     }
+}
+
+fn zoom_fixture() -> (Session, TimelineId, String) {
+    let (mut session, id, raw) = fixture();
+    let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+    for (param, values) in [
+        (TransformParam::ZoomX, [1.0, 2.0]),
+        (TransformParam::ZoomY, [2.0, 3.0]),
+    ] {
+        let track = clip.effects.transform.track_mut(param);
+        track.upsert(25, values[0], Interpolation::EaseIn);
+        track.upsert(40, values[1], Interpolation::Hold);
+    }
+    (session, id, raw)
+}
+
+#[test]
+fn linked_zoom_single_edits_create_move_remove_and_undo_as_one_native_command() {
+    let (mut session, id, raw) = zoom_fixture();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    let mut request = Edit {
+        target: Target::Transform {
+            param: TransformParam::ZoomX,
+        },
+        value: Some(1.5),
+        link_zoom: true,
+        ..change()
+    };
+    edit(&mut session, id, &raw, &request).unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    for param in [TransformParam::ZoomX, TransformParam::ZoomY] {
+        let keys = session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .track(param)
+            .keyframes();
+        assert_eq!(keys[0], (27, 1.5, request.interpolation));
+        assert_eq!(keys.len(), 2);
+    }
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    request.value = None;
+    edit(&mut session, id, &raw, &request).unwrap();
+    for param in [TransformParam::ZoomX, TransformParam::ZoomY] {
+        assert_eq!(
+            session.project.timelines[id].tracks[0].clips[0]
+                .effects
+                .transform
+                .track(param)
+                .keyframes()
+                .len(),
+            1
+        );
+    }
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    request.previous_source_frame = None;
+    request.source_frame = 30;
+    request.value = Some(1.7);
+    edit(&mut session, id, &raw, &request).unwrap();
+    for param in [TransformParam::ZoomX, TransformParam::ZoomY] {
+        assert!(
+            session.project.timelines[id].tracks[0].clips[0]
+                .effects
+                .transform
+                .track(param)
+                .keyframes()
+                .iter()
+                .any(|key| key.0 == 30 && key.1 == 1.7)
+        );
+    }
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+}
+
+#[test]
+fn linked_zoom_groups_preserve_time_only_values_and_copy_edited_values_to_existing_twins() {
+    for delta_value in [0.0, 0.5] {
+        let (mut session, id, raw) = zoom_fixture();
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let request = GroupEdit {
+            target: Target::Transform {
+                param: TransformParam::ZoomX,
+            },
+            delta_value,
+            link_zoom: true,
+            ..group()
+        };
+        edit_group(&mut session, id, &raw, &request).unwrap();
+        assert_eq!(session.history.position(), position + 1);
+        let clip = &session.project.timelines[id].tracks[0].clips[0];
+        assert_eq!(
+            clip.effects
+                .transform
+                .track(TransformParam::ZoomX)
+                .keyframes(),
+            &[
+                (27, 1.0 + delta_value, Interpolation::EaseIn),
+                (42, 2.0 + delta_value, Interpolation::Hold)
+            ]
+        );
+        let expected = if delta_value == 0.0 {
+            [2.0, 3.0]
+        } else {
+            [1.5, 2.5]
+        };
+        assert_eq!(
+            clip.effects
+                .transform
+                .track(TransformParam::ZoomY)
+                .keyframes(),
+            &[
+                (27, expected[0], Interpolation::EaseIn),
+                (42, expected[1], Interpolation::Hold)
+            ]
+        );
+        session.history.undo(&mut session.project);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        edit_group(
+            &mut session,
+            id,
+            &raw,
+            &GroupEdit {
+                delete: true,
+                ..request
+            },
+        )
+        .unwrap();
+        for param in [TransformParam::ZoomX, TransformParam::ZoomY] {
+            assert!(
+                session.project.timelines[id].tracks[0].clips[0]
+                    .effects
+                    .transform
+                    .track(param)
+                    .keyframes()
+                    .is_empty()
+            );
+        }
+        session.history.undo(&mut session.project);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    }
+}
+
+#[test]
+fn linked_zoom_missing_twins_are_ignored_and_twin_collisions_refuse_the_whole_edit() {
+    for group_edit in [false, true] {
+        let (mut session, id, raw) = zoom_fixture();
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .track_mut(TransformParam::ZoomY)
+            .upsert(27, 4.0, Interpolation::Hold);
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let result = if group_edit {
+            edit_group(
+                &mut session,
+                id,
+                &raw,
+                &GroupEdit {
+                    target: Target::Transform {
+                        param: TransformParam::ZoomX,
+                    },
+                    delta_value: 0.0,
+                    link_zoom: true,
+                    ..group()
+                },
+            )
+        } else {
+            edit(
+                &mut session,
+                id,
+                &raw,
+                &Edit {
+                    target: Target::Transform {
+                        param: TransformParam::ZoomX,
+                    },
+                    value: Some(1.5),
+                    link_zoom: true,
+                    ..change()
+                },
+            )
+        };
+        assert!(result.is_err());
+        assert_eq!(session.history.position(), position);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    }
+    let (mut session, id, raw) = zoom_fixture();
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(TransformParam::ZoomY)
+        .remove_at(25);
+    edit(
+        &mut session,
+        id,
+        &raw,
+        &Edit {
+            target: Target::Transform {
+                param: TransformParam::ZoomX,
+            },
+            value: Some(1.5),
+            link_zoom: true,
+            ..change()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .track(TransformParam::ZoomY)
+            .keyframes(),
+        &[(40, 3.0, Interpolation::Hold)]
+    );
+}
+
+#[test]
+fn omitted_zoom_link_keeps_legacy_receipt_fingerprints_unchanged() {
+    let mut single = change();
+    let old = serde_json::to_value(&single).unwrap();
+    assert!(old.get("link_zoom").is_none());
+    let decoded: Edit = serde_json::from_value(old.clone()).unwrap();
+    assert!(!decoded.link_zoom);
+    assert_eq!(serde_json::to_value(decoded).unwrap(), old);
+    single.link_zoom = true;
+    assert_eq!(serde_json::to_value(single).unwrap()["link_zoom"], true);
+    let old = serde_json::to_value(group()).unwrap();
+    assert!(old.get("link_zoom").is_none());
+    let decoded: GroupEdit = serde_json::from_value(old.clone()).unwrap();
+    assert!(!decoded.link_zoom);
+    assert_eq!(serde_json::to_value(decoded).unwrap(), old);
 }
 
 #[test]
@@ -389,6 +625,7 @@ fn every_advertised_filter_grade_mask_and_audio_curve_accepts_its_native_default
                 source_frame: 26,
                 value: Some(value),
                 interpolation: Interpolation::EaseOut,
+                link_zoom: false,
             },
         )
         .unwrap();
@@ -412,6 +649,7 @@ fn every_advertised_filter_grade_mask_and_audio_curve_accepts_its_native_default
             source_frame: 0,
             value: Some(-6.0),
             interpolation: Interpolation::Linear,
+            link_zoom: false,
         },
     )
     .unwrap();

@@ -4,7 +4,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use vv_core::{self as core, Clip, Keyframed, TimelineId};
 use vv_session::Session;
 
@@ -16,6 +16,8 @@ pub struct Edit {
     pub source_frame: i64,
     pub value: Option<f32>,
     pub interpolation: core::Interpolation,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub link_zoom: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -26,6 +28,24 @@ pub struct GroupEdit {
     pub delta_source_frames: i64,
     pub delta_value: f32,
     pub delete: bool,
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub link_zoom: bool,
+}
+
+fn zoom_twin(target: &Target) -> Option<Target> {
+    match target {
+        Target::Transform {
+            param: core::TransformParam::ZoomX,
+        } => Some(Target::Transform {
+            param: core::TransformParam::ZoomY,
+        }),
+        Target::Transform {
+            param: core::TransformParam::ZoomY,
+        } => Some(Target::Transform {
+            param: core::TransformParam::ZoomX,
+        }),
+        _ => None,
+    }
 }
 
 struct Curve<'a> {
@@ -170,6 +190,41 @@ pub(crate) fn key_frames(
 }
 
 pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &Edit) -> Result<()> {
+    let mut commands = edit_commands(session, id, raw, edit)?;
+    if edit.link_zoom
+        && let Some(target) = zoom_twin(&edit.target)
+    {
+        let (lane, _, clip) = inspector::find(session, id, raw)?;
+        let frames = key_frames(session, id, clip, lane, &target)?;
+        if edit
+            .previous_source_frame
+            .is_none_or(|frame| frames.contains(&frame))
+        {
+            commands.extend(edit_commands(
+                session,
+                id,
+                raw,
+                &Edit {
+                    target,
+                    link_zoom: false,
+                    ..edit.clone()
+                },
+            )?);
+        }
+    }
+    session.apply(Box::new(core::CompositeCommand::new(
+        core::CommandLabel::SetKeyframe,
+        commands,
+    )));
+    Ok(())
+}
+
+fn edit_commands(
+    session: &Session,
+    id: TimelineId,
+    raw: &str,
+    edit: &Edit,
+) -> Result<Vec<Box<dyn core::Command>>> {
     let (lane, _, clip) = inspector::find(session, id, raw)?;
     inspector::writable(session, id, lane)?;
     let entries = curves(session, id, clip, lane);
@@ -233,11 +288,7 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &Edit) -> Re
             Some(edit.source_frame),
         )?);
     }
-    session.apply(Box::new(core::CompositeCommand::new(
-        core::CommandLabel::SetKeyframe,
-        commands,
-    )));
-    Ok(())
+    Ok(commands)
 }
 
 pub fn edit_group(
@@ -246,6 +297,67 @@ pub fn edit_group(
     raw: &str,
     edit: &GroupEdit,
 ) -> Result<()> {
+    let mut commands = group_commands(session, id, raw, edit, None)?;
+    if edit.link_zoom
+        && let Some(target) = zoom_twin(&edit.target)
+    {
+        let (lane, _, clip) = inspector::find(session, id, raw)?;
+        let selected = edit.source_frames.iter().copied().collect::<BTreeSet<_>>();
+        let source_frames = key_frames(session, id, clip, lane, &target)?
+            .into_iter()
+            .filter(|frame| selected.contains(frame))
+            .collect::<Vec<_>>();
+        if !source_frames.is_empty() {
+            let values = if !edit.delete && edit.delta_value != 0.0 {
+                let entries = curves(session, id, clip, lane);
+                let curve = entries
+                    .iter()
+                    .find(|curve| curve.target == edit.target)
+                    .ok_or_else(ApiError::missing)?;
+                Some(
+                    curve
+                        .track
+                        .keyframes()
+                        .iter()
+                        .filter(|key| selected.contains(&key.0))
+                        .map(|key| (key.0, key.1 + edit.delta_value))
+                        .collect::<BTreeMap<_, _>>(),
+                )
+            } else {
+                None
+            };
+            commands.extend(group_commands(
+                session,
+                id,
+                raw,
+                &GroupEdit {
+                    target,
+                    source_frames,
+                    delta_value: 0.0,
+                    link_zoom: false,
+                    ..edit.clone()
+                },
+                values.as_ref(),
+            )?);
+        }
+    }
+    if !edit.delete && edit.delta_source_frames == 0 && edit.delta_value == 0.0 {
+        return Ok(());
+    }
+    session.apply(Box::new(core::CompositeCommand::new(
+        core::CommandLabel::SetKeyframe,
+        commands,
+    )));
+    Ok(())
+}
+
+fn group_commands(
+    session: &Session,
+    id: TimelineId,
+    raw: &str,
+    edit: &GroupEdit,
+    values: Option<&BTreeMap<i64, f32>>,
+) -> Result<Vec<Box<dyn core::Command>>> {
     let selected = edit.source_frames.iter().copied().collect::<BTreeSet<_>>();
     if selected.is_empty()
         || selected.len() > 2048
@@ -314,7 +426,10 @@ pub fn edit_group(
                 "Another keyframe occupies a group destination",
             ));
         }
-        let value = value + edit.delta_value;
+        let value = values
+            .and_then(|values| values.get(&frame))
+            .copied()
+            .unwrap_or(value + edit.delta_value);
         if !value.is_finite() || value < curve.bounds.0 || value > curve.bounds.1 {
             return Err(ApiError::invalid(
                 "Keep every moved value inside the native parameter range",
@@ -331,15 +446,8 @@ pub fn edit_group(
             Some(destination),
         )?);
     }
-    if !edit.delete && edit.delta_source_frames == 0 && edit.delta_value == 0.0 {
-        return Ok(());
-    }
     commands.extend(inserts);
-    session.apply(Box::new(core::CompositeCommand::new(
-        core::CommandLabel::SetKeyframe,
-        commands,
-    )));
-    Ok(())
+    Ok(commands)
 }
 
 #[cfg(test)]

@@ -1619,7 +1619,9 @@ a separate synthetic montage copy disabled both linked video/audio clips in one
 ToggleClipsDisabled Undo entry, returned a completely black native composed frame,
 and retained IDs/start/duration/media. Undo restored the exact original preview
 hash. Redo followed by explicit Enable restored that hash again. Save/Open retained
-enabled flags with fresh history; the restored native saved project was byte-equal
-to the source project. The core command is unchanged. Evidence:
+enabled flags with fresh history. The saved-file comparison found only the native
+compound content hash and next-compound-generation advancing from 119 to 123;
+all other saved lines match the source project. These invalidation counters are
+preserved by native Undo/Redo. The core command is unchanged. Evidence:
 m4-clip-disable.json and m4-clip-disable-browser.png. Rendering was CPU/lavapipe;
 no hardware acceptance is implied by this check.

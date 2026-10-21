@@ -153,5 +153,23 @@
       ],
       "preview_sha256": "4dbaaaccfe577962f6725d8e189d3d81366f1ddd99181e7a15cc784f7a259570"
     }
+  },
+  "saved_project_comparison": {
+    "source_sha256": "249bc8581e2d701746bf55b9a24fce477456a01e4aa5b6f7315e3344012f9e13",
+    "restored_sha256": "8b8e12ffc5d2ee905a840332584d8f0ade14b70e2c83d4d96fa84f44c1422c0d",
+    "byte_equal": false,
+    "differences": [
+      {
+        "field": "content_hash",
+        "before": 119,
+        "after": 123
+      },
+      {
+        "field": "next_compound_generation",
+        "before": 119,
+        "after": 123
+      }
+    ],
+    "all_other_lines_equal": true
   }
 }

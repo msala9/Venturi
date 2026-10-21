@@ -461,6 +461,15 @@ handle to set that clip's fade; lower edge trims and the Slip tool retain their
 hit targets. Linked audio/video fades are independent, matching the desktop.
 Release creates one Undo, while cancellation or no change creates none.
 
+Existing transitions expose duration handles in the bottom clip band. Drag an
+edge transition endpoint to resize it; drag either crossing endpoint to resize
+both halves symmetrically. The draft label reports integer frames and retains
+the transition's kind, direction, ease and curve. Release applies one Undo;
+Escape, lost capture, changed selection/session or viewport cancels. Slip and
+ordinary trims retain their targets, and Alt still pans. Locked, tiny or
+incomplete transition snapshots expose no editable handle; zoom in or use the
+Inspector. Transition selection and Alt duplication remain separate work.
+
 Multitrack compounds are available for normal video layers and unmuted gain-only
 audio with no solo/pan/inserts. Include intervening video and both sides of a
 crossing. Dependencies that cannot be preserved are explicitly rejected;

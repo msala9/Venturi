@@ -52,6 +52,48 @@ export function fadeDraft(clip,edge,delta){
   const original=clip[`fade_${edge}`],frames=Math.max(0,Math.min(clip.length_frames,original+(edge==='in'?delta:-delta)));
   return {kind:'fade',clip_id:clip.id,edge,frames,original};
 }
+const transitionClip=clip=>typeof clip?.id==='string' && clip.id.length>0 && clip.kind!=='adjustment' && Number.isSafeInteger(clip.start_frame) && clip.start_frame>=0 && Number.isSafeInteger(clip.length_frames) && clip.length_frames>0 && clip.start_frame+clip.length_frames<=MAX_FRAME;
+const nativeTransition=transition=>transition && !Array.isArray(transition) && ['Push','CrossDissolve','SmoothCut'].includes(transition.kind) && ['Left','Right','Up','Down'].includes(transition.direction) && ['None','In','Out','InOut'].includes(transition.ease) && Number.isSafeInteger(transition.duration) && transition.duration>=1 && Number.isFinite(transition.curve) && transition.curve>=0 && transition.curve<=1;
+function transitionGeometry(base,duration,view,fps){
+  const crossing=base.slot==='cut_after',clip=base.clip,cut=crossing?base.left.start_frame+base.left.length_frames:null;
+  const start_frame=crossing?cut-Math.ceil(duration/2):base.slot==='in'?clip.start_frame:clip.start_frame+clip.length_frames-duration;
+  const end_frame=crossing?cut+Math.floor(duration/2):base.slot==='in'?clip.start_frame+duration:clip.start_frame+clip.length_frames;
+  const shared={kind:'transition',slot:base.slot,clip_id:base.clip_id,left:base.left,right:base.right,duration,min:1,max:base.max,start_frame,end_frame,start_x:frameToX(start_frame,view,fps),end_x:frameToX(end_frame,view,fps),transition:{...structuredClone(base.transition),duration}};
+  const handle=(clip,edge,dragSide,frame)=>({...shared,clip,edge,dragSide,x:frameToX(frame,view,fps)});
+  return crossing?[handle(base.left,'out','left',start_frame),handle(base.right,'in','right',end_frame)]:[handle(clip,base.slot,base.slot==='in'?'right':'left',base.slot==='in'?end_frame:start_frame)];
+}
+export function transitionHandles(track,view,fps){
+  if(track?.kind!=='video' || track.locked || view.tool==='slip')return [];
+  const clips=track.clips || [],byId=new Map(clips.map(clip=>[clip.id,clip])),crossings=track.crossings || [],into=new Map(),from=new Map();
+  for(const crossing of crossings){from.set(crossing.left_clip,crossing);into.set(crossing.right_clip,crossing);}
+  const usable=clip=>transitionClip(clip) && clip.length_frames*pixelsPerFrame(view,fps)>=20;
+  const crossingHandles=new Map();
+  for(const crossing of crossings){
+    const left=byId.get(crossing.left_clip),right=byId.get(crossing.right_clip),transition=crossing.transition;
+    if(!transitionClip(left) || !transitionClip(right) || left===right || left.start_frame+left.length_frames!==right.start_frame || !nativeTransition(transition))continue;
+    const max=2*Math.min(left.length_frames,right.length_frames),cut=right.start_frame;
+    if(transition.duration>max || crossing.kind!==transition.kind || crossing.start_frame!==cut-Math.ceil(transition.duration/2) || crossing.end_frame!==cut+Math.floor(transition.duration/2))continue;
+    crossingHandles.set(crossing,transitionGeometry({slot:'cut_after',clip_id:left.id,clip:left,left,right,transition,max},transition.duration,view,fps));
+  }
+  return clips.flatMap(clip=>{
+    if(!usable(clip))return [];
+    return ['in','out'].flatMap(slot=>{
+      const crossing=(slot==='in'?into:from).get(clip.id);
+      if(crossing)return (crossingHandles.get(crossing) || []).filter(handle=>handle.clip.id===clip.id && handle.edge===slot);
+      const transition=clip[`transition_${slot}`];if(!nativeTransition(transition) || transition.duration>clip.length_frames)return [];
+      return transitionGeometry({slot,clip_id:clip.id,clip,left:null,right:null,transition,max:clip.length_frames},transition.duration,view,fps);
+    });
+  });
+}
+export function transitionDraft(handle,pixelDelta,view,fps){
+  if(handle?.kind!=='transition' || !['in','out','cut_after'].includes(handle.slot) || !nativeTransition(handle.transition) || !Number.isFinite(pixelDelta) || !Number.isSafeInteger(handle.max) || handle.max<1)throw Error('Choose a complete native transition handle');
+  const signed=Math.fround(handle.dragSide==='left'?-pixelDelta:pixelDelta),scale=Math.fround(pixelsPerFrame(view,fps));
+  const delta=Math.fround((handle.slot==='cut_after'?Math.fround(2*signed):signed)/scale),raw=Math.fround(Math.fround(handle.duration)+delta);
+  if(!Number.isFinite(raw))throw Error('Transition pointer exceeds its native frame budget');
+  const rounded=raw<0?-Math.round(-raw):Math.round(raw),duration=pixelDelta===0?handle.duration:Math.max(1,Math.min(handle.max,rounded));
+  const handles=transitionGeometry(handle,duration,view,fps),geometry=handles.find(candidate=>candidate.clip.id===handle.clip.id && candidate.edge===handle.edge);
+  return {...handle,...geometry,original:handle.duration,handles,operation:{kind:'set_transition',clip_id:handle.clip_id,slot:handle.slot,transition:structuredClone(geometry.transition)}};
+}
 export function hitTest(x, y, timeline, view) {
   if (x >= HEADER && y >= MARKER_TOP && y < MARKER_BOTTOM) {
     for (const marker of [...(timeline.markers || [])].reverse()) {
@@ -66,6 +108,11 @@ export function hitTest(x, y, timeline, view) {
   const track = Math.floor((y - RULER + view.scrollY) / TRACK);
   if (!timeline.tracks[track]) return { kind: "blank" };
   if (x < HEADER) return { kind: "header", track };
+  const top=RULER+track*TRACK-view.scrollY;
+  if(y>=top+TRACK-21 && y<=top+TRACK-7){
+    const transition=transitionHandles(timeline.tracks[track],view,timeline.fps).find(handle=>x>=frameToX(handle.clip.start_frame,view,timeline.fps) && x<=frameToX(handle.clip.start_frame+handle.clip.length_frames,view,timeline.fps) && Math.abs(x-handle.x)<=9);
+    if(transition)return {...transition,track};
+  }
   for (const clip of timeline.tracks[track].clips) {
     const left = frameToX(clip.start_frame, view, timeline.fps);
     const right = frameToX(

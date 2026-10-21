@@ -9,6 +9,7 @@ import {
   validateDraft,
   markerDraft,
   fadeDraft,
+  transitionDraft,
 } from "./geometry.js";
 
 export function createInput({
@@ -30,6 +31,11 @@ export function createInput({
     const rect = canvas.getBoundingClientRect();
     return [event.clientX - rect.left, event.clientY - rect.top];
   };
+  const transitionContext=timeline=>{
+    const rect=canvas.getBoundingClientRect();
+    return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,view.tool,[...view.selection].sort(),rect.left,rect.top,rect.width,rect.height]);
+  };
+  const transitionCurrent=g=>{const timeline=getTimeline();return timeline===g.timeline && !timeline.tracks[g.track]?.locked && transitionContext(timeline)===g.context && canEdit();};
   const cancel = () => {
     const slipping = gesture?.kind === "slip";
     const pointerId=gesture?.pointerId;
@@ -58,7 +64,10 @@ export function createInput({
         scrollY: view.scrollY,
       };
     } else if (event.button !== 0) return;
-    else if (hit.clip) {
+    else if(hit.kind==='transition'){
+      if(!canEdit()){onNotice('A writable idle session is required to edit a transition');return;}
+      gesture={...hit,x,y,moved:false,pointerId:event.pointerId,timeline,context:transitionContext(timeline)};
+    } else if (hit.clip) {
       if (event.ctrlKey && view.selection.includes(hit.clip.id)) {
         const group = linkedSelection(timeline, [hit.clip.id]);
         view.selection = view.selection.filter((id) => !group.includes(id));
@@ -110,15 +119,21 @@ export function createInput({
     if (!gesture) {
       const timeline = getTimeline(); if (!timeline) return;
       const [x,y] = point(event), hit = hitTest(x,y,timeline,view);
-      canvas.title = hit.marker ? `${hit.marker.note || "Marker"} · ${hit.marker.start_frame}f · drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : hit.kind==='fade' ? `Fade ${hit.edge} · ${hit.clip[`fade_${hit.edge}`]}f · drag to change this clip's fade` : '';
-      if(canvas.style)canvas.style.cursor = hit.kind==='fade' ? 'ew-resize' : hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
+      canvas.title = hit.marker ? `${hit.marker.note || "Marker"} · ${hit.marker.start_frame}f · drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : hit.kind==='transition' ? `${hit.slot==='cut_after'?'Cross transition':`Transition ${hit.slot}`} · ${hit.duration}f · drag to change duration` : hit.kind==='fade' ? `Fade ${hit.edge} · ${hit.clip[`fade_${hit.edge}`]}f · drag to change this clip's fade` : '';
+      if(canvas.style)canvas.style.cursor = ['fade','transition'].includes(hit.kind) ? 'ew-resize' : hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
       const hover=hit.clip?.id ?? null;if(view.hoverFadeClip!==hover){view.hoverFadeClip=hover;invalidate();}
       return;
     }
     const timeline = getTimeline(),
       [x, y] = point(event),
       g = gesture;
-    if(g.kind==='fade'){
+    if(g.kind==='transition'){
+      if(event.pointerId!==g.pointerId)return;
+      if(!transitionCurrent(g)){cancel();onNotice('Transition gesture cancelled because the editing session or viewport changed');return;}
+      if(event.buttons!==undefined && !(event.buttons&1)){cancel();return;}
+      if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
+      view.draft={...transitionDraft(g,x-g.x,view,timeline.fps),track_id:timeline.tracks[g.track].id};
+    } else if(g.kind==='fade'){
       if(event.pointerId!==g.pointerId)return;
       if(timeline!==g.timeline || !canEdit()){cancel();onNotice('Fade gesture cancelled because the editing session changed');return;}
       if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
@@ -220,8 +235,14 @@ export function createInput({
   const up = async (event) => {
     if (!gesture) return;
     const g = gesture,
-      timeline = getTimeline(),
-      draft = view.draft;
+      timeline = getTimeline();
+    if(g.kind==='transition'){
+      if(event.pointerId!==g.pointerId || event.button!==0)return;
+      if(!transitionCurrent(g)){cancel();onNotice('Transition gesture cancelled because the editing session or viewport changed');return;}
+      const [x,y]=point(event);
+      if(g.moved || Math.hypot(x-g.x,y-g.y)>=4){g.moved=true;view.draft={...transitionDraft(g,x-g.x,view,timeline.fps),track_id:timeline.tracks[g.track].id};}
+    }
+    const draft=view.draft;
     if(g.kind==='fade' && event.pointerId!==g.pointerId)return;
     if(g.kind==='fade' && (timeline!==g.timeline || !canEdit())){cancel();onNotice('Fade gesture cancelled because the editing session changed');return;}
     if (g.kind === "lasso" && view.lasso) {
@@ -249,13 +270,13 @@ export function createInput({
     if (g.kind === "scrub") onSeek(true);
     if (g.kind === "marker" && !g.moved) { view.playhead=g.marker.start_frame;onSeek(true); }
     const markerChanged = g.kind !== "marker" || (draft && (draft.marker.start_frame!==g.marker.start_frame || draft.marker.duration_frames!==g.marker.duration_frames));
-    if (draft && g.moved && markerChanged && !(g.kind === "slip" && draft.target === 0) && !(g.kind==='fade' && draft.frames===draft.original)) {
+    if (draft && g.moved && markerChanged && !(g.kind === "slip" && draft.target === 0) && !(g.kind==='fade' && draft.frames===draft.original) && !(g.kind==='transition' && draft.duration===g.duration)) {
       if (draft.error) onNotice(draft.error);
       else {
         waiting = true;
         try {
           const operation =
-            g.kind==='fade' ? {kind:'set_properties',clip_id:g.clip.id,patch:{[`fade_${g.edge}`]:draft.frames}} : g.kind === "marker" ? {kind:"move_marker",marker_id:g.marker.id,start_frame:draft.marker.start_frame,duration_frames:draft.marker.duration_frames} : g.kind === "move"
+            g.kind==='transition' ? draft.operation : g.kind==='fade' ? {kind:'set_properties',clip_id:g.clip.id,patch:{[`fade_${g.edge}`]:draft.frames}} : g.kind === "marker" ? {kind:"move_marker",marker_id:g.marker.id,start_frame:draft.marker.start_frame,duration_frames:draft.marker.duration_frames} : g.kind === "move"
               ? {
                   kind: "safe_move",
                   moves: draft.changes.map(
@@ -285,7 +306,7 @@ export function createInput({
     invalidate();
   };
   const wheel = (event) => {
-    if(gesture?.kind==='fade')cancel();
+    if(['fade','transition'].includes(gesture?.kind))cancel();
     const timeline = getTimeline();
     if (!timeline) return;
     event.preventDefault();
@@ -316,8 +337,12 @@ export function createInput({
     invalidate();
   };
   const key = (event) => {
-    if (event.key === "Escape") cancel();
+    if (event.key === "Escape") {if(gesture?.kind==='transition'){event.preventDefault?.();event.stopPropagation?.();}cancel();}
   };
+  const pointerAbort=event=>{if(gesture?.kind==='transition' && event?.pointerId!==undefined && event.pointerId!==gesture.pointerId)return;cancel();};
+  const viewportChanged=()=>{if(gesture?.kind==='transition')cancel();};
+  const documentRef=canvas.ownerDocument ?? window.document;
+  const visibilityChanged=()=>{if(documentRef?.hidden)viewportChanged();};
   const doubleClick = event => {
     const timeline = getTimeline(); if (!timeline || waiting) return;
     const hit = hitTest(...point(event),timeline,view);
@@ -326,27 +351,34 @@ export function createInput({
   canvas.addEventListener("pointerdown", down);
   canvas.addEventListener("pointermove", move);
   canvas.addEventListener("pointerup", up);
-  canvas.addEventListener("pointercancel", cancel);
-  canvas.addEventListener("lostpointercapture", cancel);
+  canvas.addEventListener("pointercancel", pointerAbort);
+  canvas.addEventListener("lostpointercapture", pointerAbort);
   canvas.addEventListener("wheel", wheel, { passive: false });
   canvas.addEventListener("keydown", key);
   canvas.addEventListener("dblclick", doubleClick);
   window.addEventListener("blur", cancel);
+  window.addEventListener('resize',viewportChanged);
+  window.addEventListener('scroll',viewportChanged,true);
+  documentRef?.addEventListener('visibilitychange',visibilityChanged);
   return {
     cancel,
     destroy() {
+      cancel();
       for (const [event, fn] of [
         ["pointerdown", down],
         ["pointermove", move],
         ["pointerup", up],
-        ["pointercancel", cancel],
-        ["lostpointercapture", cancel],
+        ["pointercancel", pointerAbort],
+        ["lostpointercapture", pointerAbort],
         ["wheel", wheel],
         ["keydown", key],
         ["dblclick", doubleClick],
       ])
         canvas.removeEventListener(event, fn);
       window.removeEventListener("blur", cancel);
+      window.removeEventListener('resize',viewportChanged);
+      window.removeEventListener('scroll',viewportChanged,true);
+      documentRef?.removeEventListener('visibilitychange',visibilityChanged);
     },
   };
 }

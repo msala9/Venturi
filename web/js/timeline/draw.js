@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles } from "./geometry.js";
 export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
@@ -108,6 +108,22 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         const left=frameToX(crossing.start_frame,view,timeline.fps),right=frameToX(crossing.end_frame,view,timeline.fps);
         if (right<HEADER || left>width) continue;
         ctx.fillStyle=color("--violet");ctx.globalAlpha=0.6;ctx.fillRect(left,top+TRACK-12,right-left,5);ctx.globalAlpha=1;
+      }
+      if(!track.locked && view.tool!=='slip'){
+        const draft=view.draft?.kind==='transition' && view.draft.track_id===track.id?view.draft:null;
+        let handles=transitionHandles(track,view,timeline.fps);
+        if(draft)handles=handles.filter(handle=>handle.clip_id!==draft.clip_id || handle.slot!==draft.slot).concat(draft.handles);
+        const windows=new Set();
+        for(const handle of handles){
+          if(handle.end_x<HEADER || handle.start_x>width)continue;
+          const active=Boolean(draft && draft.clip_id===handle.clip_id && draft.slot===handle.slot),key=`${handle.clip_id}:${handle.slot}`;
+          ctx.strokeStyle=active?color('--primary'):color('--violet');ctx.fillStyle=ctx.strokeStyle;
+          if(!windows.has(key)){
+            windows.add(key);ctx.save();ctx.globalAlpha=active?0.8:0.55;ctx.fillRect(handle.start_x,top+TRACK-15,Math.max(1,handle.end_x-handle.start_x),3);ctx.restore();
+            if(active){const label=`${handle.slot==='cut_after'?'Cross transition':`Transition ${handle.slot}`} ${handle.duration}f`,labelX=Math.max(HEADER+4,handle.start_x+5);ctx.fillStyle=color('--raised');ctx.fillRect(labelX-3,top+TRACK-34,190,15);ctx.fillStyle=color('--text');ctx.fillText(label,labelX,top+TRACK-26);}
+          }
+          ctx.fillStyle=active?color('--primary'):color('--text');ctx.beginPath();ctx.arc(handle.x,top+TRACK-14,active?5:4,0,Math.PI*2);ctx.fill();
+        }
       }
       for (const draft of view.draft?.changes || [])
         if (draft.to_track === track.id) {

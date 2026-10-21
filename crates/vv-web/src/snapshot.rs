@@ -25,7 +25,7 @@ pub fn timeline(session: &Session, id: TimelineId) -> Value {
         "id":index.to_string(),"label":tl.track_label(index),"kind":match track.kind {vv_core::TrackKind::Video=>"video",vv_core::TrackKind::Audio=>"audio"},
         "locked":track.locked,"muted":track.muted,"solo":track.solo,"armed":track.armed,
         "mix":track.mix,
-        "crossings":track.crossings.iter().filter_map(|c|{let left=track.clip(c.left_clip)?;let right=track.clip(c.right_clip)?;let window=c.window(left,right);Some(json!({"left_clip":left.id.0.to_string(),"right_clip":right.id.0.to_string(),"start_frame":window.start,"end_frame":window.end,"kind":c.transition.kind}))}).collect::<Vec<_>>(),
+        "crossings":track.crossings.iter().filter_map(|c|{let left=track.clip(c.left_clip)?;let right=track.clip(c.right_clip)?;let window=c.window(left,right);Some(json!({"left_clip":left.id.0.to_string(),"right_clip":right.id.0.to_string(),"start_frame":window.start,"end_frame":window.end,"kind":c.transition.kind,"transition":c.transition}))}).collect::<Vec<_>>(),
         "clips":track.clips.iter().map(|clip|clip_snapshot(session,clip)).collect::<Vec<_>>()
       })).collect::<Vec<_>>()})
 }

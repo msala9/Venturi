@@ -641,6 +641,17 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   Cut-after requires adjacent clips; duration is at most twice their minimum
   length. Edge duration is at most the selected clip length. Single-edge
   SmoothCut follows the native dissolve fallback.
+  Timeline crossing snapshots include the full native `transition` object as
+  well as existing kind, clip IDs and window bounds. Duration handles preserve
+  kind/direction/ease/curve and change only duration through this route. Crossing
+  ends grow symmetrically; odd durations put the extra frame on the left, matching
+  the native window. Pointer drafts use native rounding and limits, send no HTTP
+  during motion and commit once on an owned release. Stale timeline/viewport,
+  selection, lock or writer state cancels; unchanged durations add no command.
+  Native/API/Save/restart evidence is in
+  `evidence/m4-transition-duration-handles.json` (182 Rust/195 JavaScript tests,
+  fmt/clippy/build). Transition selection and Alt-drag duplication, GUI/DPI,
+  rendered and hardware acceptance remain open.
 - Project commands accept undo, redo and `history_jump {position}`. Native
   history positions run from zero through the current label count. All standard
   writer/epoch/generation/idempotency preconditions apply; timeline preconditions

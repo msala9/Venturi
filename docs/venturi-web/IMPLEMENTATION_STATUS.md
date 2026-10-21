@@ -21,14 +21,16 @@ folder does not establish sharing through the 14 TB archive; only the existing
 ds4 media-catalog integration has actual NAS evidence.
 
 Animated viewer transforms, mask/path handles, persistent export history and
-explicit terminal-export discard now pass 182 Rust tests, 177 JavaScript tests,
+explicit terminal-export discard and transition duration handles now pass
+182 Rust tests, 195 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
-qualification remain open. Latest mask evidence:
-`evidence/m4-viewer-mask-handles.json`; prior transform/export proofs remain valid
+qualification remain open. Latest evidence:
+`evidence/m4-viewer-mask-handles.json` and
+`evidence/m4-transition-duration-handles.json`; prior transform/export proofs remain valid
 for their recorded scope.
 
-Remaining work includes pen drawing, full path-key navigation, transition/speed
-timeline interaction, compound and
+Remaining work includes pen drawing, full path-key navigation, transition
+selection/duplication, exact speed handles, compound and
 import coverage, long-media preview and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
 and final deployment, DPI, duration and resource qualification. Historical
@@ -2468,3 +2470,26 @@ moves remained intact. API checks used one CPU, 512 MiB, no swap,
 OOMScoreAdjust=1000 and 60-second runtime caps. No GPU, render, export, local
 browser/build or soak was started. Browser/DPI/rendered/hardware acceptance stays
 open and affected ledger rows remain partial.
+
+## M4 — transition duration pointer handles
+
+Existing edge/crossing transitions expose bottom-band duration handles. The full
+native crossing payload is included in snapshots; drafts retain kind, direction,
+ease and curve. Crossings resize symmetrically with the native odd-frame split,
+f32 duration rounding and native limits. Pointer motion stays local; owned
+release computes its final position and sends one existing set_transition.
+Timeline/viewport/selection/writer changes, Escape and capture/visibility loss
+cancel. No-op durations send no command. Fade, Slip, ordinary trim and Alt pan
+retain their targets. Transition creation/selection and Alt duplication remain
+separate work; tiny/incomplete snapshots use the Inspector fallback.
+
+182 Rust and 195 JavaScript tests, fmt, clippy and native build pass on halo2.
+Finite no-GPU API checks verified nondefault edge In/Out and crossing settings,
+duration-only changes, unchanged source fields/other timelines, single exact
+Undo/Redo/retry, atomic invalid rejection and Save/restart. Served timeline assets
+match validated source hashes. Evidence:
+`evidence/m4-transition-duration-handles.json`. Both own instances stopped and
+port 8811 closed; project hashes and the primary editor's five unsaved moves
+remained intact. CPU1/512 MiB/no swap/OOMScoreAdjust=1000/60-second API caps were
+used; no render/export/GPU/local browser/build/soak was started. GUI/DPI/rendered
+and hardware acceptance remain open; affected ledger rows remain partial.

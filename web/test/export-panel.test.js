@@ -1,30 +1,38 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createExportPanel} from '../js/export.js';
+import {ApiFailure} from '../js/api.js';
 
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 const job=(id,state='ready')=>({id,project_epoch:`stored:${id}`,state,program:{start_frame:12,end_frame:72,width:960,height:540,audio_present:true,export_settings:{quality:23,preset:'medium'}}});
+const terminalJob=(state='ready',extra={})=>({...job('9007199254740993',state),durable:true,export_revision:'a'.repeat(64),...extra});
+const discardCommand='123e4567-e89b-42d3-a456-426614174000';
 function harness(){
   const original={Option:globalThis.Option,fetch:globalThis.fetch,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout};
-  const timers=new Map(),requests=[],cancellations=[];let sequence=0;
+  const timers=new Map(),requests=[],cancellations=[];let sequence=0,focused=null;
   globalThis.setTimeout=(callback)=>{const id=++sequence;timers.set(id,callback);return id;};globalThis.clearTimeout=id=>timers.delete(id);
   globalThis.Option=class{constructor(text,value){this.text=text;this.value=value;}};
   globalThis.fetch=(path,options)=>{const response=deferred();cancellations.push({path,options,...response});return response.promise;};
   class Element extends EventTarget{
-    constructor(){super();this.disabled=false;this.hidden=true;this.textContent='';this.value='';this.children=[];this.href='';}
+    constructor(){super();this.disabled=false;this.hidden=true;this.textContent='';this.value='';this.children=[];this.href='';this.open=false;}
     replaceChildren(...children){this.children=children;}
     dispatchEvent(event){const result=super.dispatchEvent(event);this[`on${event.type}`]?.(event);return result;}
     click(){this.dispatchEvent(new Event('click'));}
+    focus(){if(!this.disabled)focused=this;}
+    showModal(){this.open=true;}close(){this.open=false;this.dispatchEvent(new Event('close'));}
   }
   const start=new Element(),form=new Element(),status=new Element(),cancel=new Element(),refresh=new Element(),download=new Element(),history={select:new Element(),refresh:new Element(),status:new Element()};
+  const discard={button:new Element(),dialog:new Element(),summary:new Element(),status:new Element(),confirm:new Element(),keep:new Element()};
   form.querySelector=()=>start;form.elements={start:new Element(),end:new Element()};
   const saved=new Map(),storage={getItem:key=>saved.get(key) ?? null,setItem:(key,value)=>saved.set(key,value)};
-  const panel=createExportPanel({form,status,cancel,refresh,download,history,getState:()=>({end_frame:100}),storage,api:(path,body)=>{const response=deferred();requests.push({path,body,...response});return response.promise;}});
+  const panel=createExportPanel({form,status,cancel,refresh,download,history,discard,uuid:()=>discardCommand,getState:()=>({end_frame:100}),storage,api:(path,body)=>{const response=deferred();requests.push({path,body,...response});return response.promise;}});
   function respond(path,value){const request=requests.find(request=>request.path===path && !request.responded);assert.ok(request,`Expected pending ${path}`);request.responded=true;request.resolve(value);return request;}
-  return {panel,form,status,cancel,refresh,download,history,start,requests,cancellations,saved,timers,respond,
+  return {panel,form,status,cancel,refresh,download,history,discard,start,requests,cancellations,saved,timers,respond,focused:()=>focused,
     async load(jobs){panel.open();respond('/exports',{jobs});await settle();},
     select(index){history.select.value=String(index);history.select.dispatchEvent(new Event('change'));},
+    async prepareDiscard(value){discard.button.click();const request=requests.at(-1);assert.match(request.path,/\/exports\/[^/]+\?/);request.resolve(value);await settle();},
+    escapeDiscard(){const event=new Event('cancel',{cancelable:true});if(discard.dialog.dispatchEvent(event))discard.dialog.close();return event;},
     flushTimers(){const callbacks=[...timers.values()];timers.clear();for(const callback of callbacks)callback();},
     destroy(){for(const [key,value] of Object.entries(original)){if(value===undefined)delete globalThis[key];else globalThis[key]=value;}}};
 }
@@ -38,6 +46,68 @@ test('an older status response cannot replace the selected saved export or its d
     h.select(1);const selected=selectedState(h);assert.match(selected.href,/export-b/);assert.match(selected.status,/READY/);
     pending.resolve({...a,state:'failed',error:'Late old failure'});await settle();assert.deepEqual(selectedState(h),selected);assert.equal(h.timers.size,0);
   }finally{h.destroy();}
+});
+
+test('discard is limited to durable terminal jobs and confirmation initially focuses Keep',async()=>{
+  const h=harness();
+  try{
+    const jobs=[terminalJob('running'),terminalJob('queued'),terminalJob('discarding'),terminalJob('ready',{durability_error:true}),terminalJob('ready',{durable:false}),terminalJob()];
+    await h.load(jobs);
+    for(let index=0;index<jobs.length-1;index++){h.select(index);assert.equal(h.discard.button.disabled,true);const before=h.requests.length;h.discard.button.click();assert.equal(h.requests.length,before);}
+    h.select(5);assert.equal(h.discard.button.disabled,false);await h.prepareDiscard(jobs[5]);
+    assert.equal(h.discard.dialog.open,true);assert.equal(h.focused(),h.discard.keep);assert.match(h.discard.summary.textContent,/9007199254740993/);assert.equal(h.discard.confirm.disabled,false);
+    h.escapeDiscard();assert.equal(h.discard.dialog.open,false);h.discard.confirm.click();assert.equal(h.requests.filter(request=>request.body).length,0);
+  }finally{h.destroy();}
+});
+
+test('selection changes during fresh discard verification or confirmation never retarget a write',async()=>{
+  const h=harness();
+  try{
+    const a=terminalJob(),b=terminalJob('ready',{id:'9007199254740995',project_epoch:'other:epoch'});await h.load([a,b]);h.select(0);
+    h.discard.button.click();const pending=h.requests.at(-1);h.select(1);pending.resolve(a);await settle();assert.equal(h.discard.dialog.open,false);assert.equal(h.requests.filter(request=>request.body).length,0);
+    h.select(0);await h.prepareDiscard(a);h.select(1);h.discard.confirm.click();assert.equal(h.discard.dialog.open,false);assert.equal(h.requests.filter(request=>request.body).length,0);assert.match(h.download.href,/9007199254740995/);
+  }finally{h.destroy();}
+});
+
+test('discard success stays completed when the subsequent history refresh fails',async()=>{
+  const h=harness();
+  try{
+    const a=terminalJob();await h.load([a]);h.select(0);await h.prepareDiscard(a);h.discard.confirm.click();
+    const mutation=h.requests.at(-1);assert.equal(mutation.path,`/exports/${a.id}/discard`);assert.deepEqual(mutation.body,{project_epoch:a.project_epoch,revision:a.export_revision,command_id:discardCommand});
+    assert.equal(h.discard.confirm.disabled,true);assert.equal(h.escapeDiscard().defaultPrevented,true);assert.equal(h.discard.dialog.open,true);h.discard.confirm.click();assert.equal(h.requests.filter(request=>request.body).length,1);
+    mutation.resolve({id:a.id,status:'discarded',project_epoch:a.project_epoch});await settle();
+    assert.equal(h.discard.dialog.open,false);assert.match(h.status.textContent,/discarded/);assert.equal(h.download.hidden,true);assert.equal(h.saved.get('venturi-export-job'),'null');assert.equal(h.focused(),h.history.select);
+    h.requests.at(-1).reject(Error('Metadata unavailable'));await settle();assert.match(h.history.status.textContent,/Metadata unavailable/);assert.match(h.status.textContent,/discarded/);assert.equal(h.discard.confirm.disabled,true);
+    h.discard.confirm.click();h.discard.button.click();assert.equal(h.requests.filter(request=>request.body).length,1);
+  }finally{h.destroy();}
+});
+
+test('failed fresh metadata cannot open a confirmation or submit a discard',async()=>{
+  const h=harness();
+  try{
+    const a=terminalJob();await h.load([a]);h.select(0);h.discard.button.click();h.requests.at(-1).reject(new ApiFailure('Export changed','EXPORT_CHANGED',409));await settle();
+    assert.equal(h.discard.dialog.open,false);h.discard.confirm.click();assert.equal(h.requests.filter(request=>request.body).length,0);assert.match(h.status.textContent,/Export changed/);
+  }finally{h.destroy();}
+});
+
+test('unknown discard outcomes cannot resubmit and leave an explicit status refresh available',async()=>{
+  const h=harness();
+  try{
+    const a=terminalJob();await h.load([a]);h.select(0);await h.prepareDiscard(a);h.discard.confirm.click();h.requests.at(-1).reject(Error('Connection lost'));await settle();
+    assert.match(h.discard.status.textContent,/outcome unknown/);assert.equal(h.discard.confirm.disabled,true);assert.equal(h.discard.keep.disabled,false);h.discard.confirm.click();assert.equal(h.requests.filter(request=>request.body).length,1);
+    h.discard.keep.click();assert.equal(h.refresh.disabled,false);h.refresh.click();assert.equal(h.requests.at(-1).body,undefined);assert.match(h.requests.at(-1).path,new RegExp(`/exports/${a.id}\\?`));
+  }finally{h.destroy();}
+});
+
+test('explicit HTTP discard errors preserve the server explanation and disable the old confirmation',async()=>{
+  for(const code of [401,404,409]){
+    const h=harness();
+    try{
+      const a=terminalJob();await h.load([a]);h.select(0);await h.prepareDiscard(a);h.discard.confirm.click();h.requests.at(-1).reject(new ApiFailure(`Server explanation ${code}`,'EXPORT_CHANGED',code));await settle();
+      assert.match(h.discard.status.textContent,new RegExp(`Server explanation ${code}`));assert.equal(h.discard.confirm.disabled,true);assert.equal(h.discard.keep.disabled,false);h.discard.confirm.click();assert.equal(h.requests.filter(request=>request.body).length,1);
+      h.discard.keep.click();assert.equal(h.refresh.disabled,false);
+    }finally{h.destroy();}
+  }
 });
 
 test('overlapping status refreshes keep the newest completed view within one selection',async()=>{

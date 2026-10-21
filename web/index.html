@@ -457,6 +457,15 @@
       <button id="export-cancel" disabled>Cancel export</button>
       <button id="export-refresh" disabled>Refresh export status</button>
       <a id="export-download" hidden download="venturi-export.mp4">Download MP4</a>
+      <button id="export-discard" type="button" disabled>Discard saved export…</button>
     </aside>
+    <dialog id="export-discard-dialog" aria-labelledby="export-discard-heading" aria-describedby="export-discard-description">
+      <h2 id="export-discard-heading">Discard saved export</h2>
+      <p id="export-discard-summary"></p>
+      <p id="export-discard-description">This permanently removes the generated MP4 and its saved history entry to free export capacity. It cannot be undone. Project files and source media are preserved.</p>
+      <p id="export-discard-status" role="status" aria-live="polite"></p>
+      <button id="export-discard-confirm" type="button">Discard output and history</button>
+      <button id="export-discard-keep" type="button" autofocus>Keep export</button>
+    </dialog>
   </body>
 </html>

@@ -1,0 +1,109 @@
+{
+  "project": "Viewer_Animated_Export_API_check.vvproj",
+  "project_sha256": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+  "discarded_owned_ids": {
+    "short": "1792586202877204850",
+    "a": "1792586203304536924",
+    "b": "1792586203621738099"
+  },
+  "old_epochs_used": true,
+  "wrong_epoch_atomic": true,
+  "stale_revision_atomic": true,
+  "repeat_missing_404": true,
+  "quota_before": {
+    "charged_bytes": 2423,
+    "max_bytes": 2147483648,
+    "max_jobs": 64,
+    "reservation_bytes": 536870912,
+    "used_jobs": 3
+  },
+  "quota_after": {
+    "charged_bytes": 0,
+    "max_bytes": 2147483648,
+    "max_jobs": 64,
+    "reservation_bytes": 536870912,
+    "used_jobs": 0
+  },
+  "released_jobs": 3,
+  "released_charged_bytes": 2423,
+  "other_history_preserved": true,
+  "parent_hashes_preserved": {
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3"
+  },
+  "primary_editor_preserved": true,
+  "removed_not_recovered": true,
+  "no_queued_or_running": true,
+  "no_new_exports_or_project_mutations": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "binary_sha256": "ce599395db3605c72b2cef27bdea8918c8fe372ffba2def453aca4587e47deff",
+  "gui_acceptance": false,
+  "hardware_gpu_used": false,
+  "limits": {
+    "cpu": "one CPU",
+    "memory": "512 MiB",
+    "swap": 0,
+    "oom_score": 1000,
+    "runtime_max_seconds": 60
+  },
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "checkpoint": "/home/marco/.cache/venturi-export-discard-check/acceptance.json",
+  "phase": "verified",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792587213.0334082,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "ce599395db3605c72b2cef27bdea8918c8fe372ffba2def453aca4587e47deff",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "main_editor_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    },
+    "unsaved": true
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "dcf0af7e722ac98fec5cbd74d0e0dd867f5f8f4cc4a7df3c95025e46bd83bd13",
+      "crates/vv-web/src/source.rs": "b70a2bfc8495e1cb6dbdaccc0cd84248e7a876c9f012ca0e0692de10b9c29457",
+      "crates/vv-web/src/export_store.rs": "2acf21e231c51135a3b98db1ad0182e29b00c9203594bff02cbd9cb6b43e7645",
+      "crates/vv-web/src/tests/api.rs": "ca21d7fb9fa50d359152d081b236ec933963ad77f7253798cbc41bf8e49ee54e",
+      "crates/vv-web/src/tests/source.rs": "88fe540acd2aa5f4031f7ca7c77621cf83dff6ccf2a40099a2a7d93a72f1a86b",
+      "crates/vv-web/src/tests/export_store.rs": "b3bf1d9089707fd6949863328eb4b169d09cb79b7047e1a6fa000adf65c384ca",
+      "web/index.html": "0266c66fe1e4de63cd8c5ccf7fa1436dbbb889a0fb668e5bc0ac792c1173e0dc",
+      "web/js/main.js": "17364fb927ac91cf9934085c768c3e6b468844613986718399fcc32293d640f5",
+      "web/js/export.js": "f4acf5eb58901e37a6a5e7dbbc1fff67f335b9eed267b0cd13310a36c22d959c",
+      "web/test/export.test.js": "1f2d945630cc92b4b65052d058ddc7a9e784741507c8abe4ccd5b6fbb3078c29",
+      "web/test/export-panel.test.js": "fd33738ce0e5d2ed026bb35f29c1992d3a3c392a60dd7a673c9ec483ccf03848"
+    },
+    "rust_tests": 175,
+    "javascript_tests": 158,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": false,
+    "hardware_gpu": false
+  },
+  "scope_note": "Only the three exports owned by the preceding finite viewer/export fixture were discarded. Invalid revision/epoch and repeated discard preserve files/quota. Completed and partial export removal releases exact charged capacity; restart does not recover removed jobs. No new rendering, project mutation, GPU initialization or foreign history changes. Browser discard controls, blocked-discard recovery under real filesystem failure, hardware codecs and full GUI parity remain unqualified."
+}

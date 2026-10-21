@@ -403,6 +403,7 @@ fn durable_export_history_restores_old_epoch_downloads_without_restarting_jobs_o
         progress: None,
         bytes: 0,
         output: None,
+        discard: None,
     };
     let queued = store.admit(make("1")).unwrap();
     let mut completed = store.admit(make("2")).unwrap();
@@ -573,6 +574,113 @@ fn corrupt_export_history_blocks_exports_without_preventing_media_service_startu
     assert!(jobs.jobs.lock().unwrap().is_empty());
     assert!(jobs.software_lock_path().parent().unwrap().is_dir());
     assert_eq!(std::fs::read(path.join(".exports/1.json")).unwrap(), bytes);
+    drop(jobs);
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
+fn saved_export_discard_checks_old_epoch_state_revision_and_download_lifetime_then_reclaims_history()
+ {
+    let path = std::env::temp_dir().join(format!(
+        "venturi-discard-source-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&path).unwrap();
+    let root = File::open(&path).unwrap();
+    let store = ExportStore::open(&root).unwrap();
+    for (index, state) in ["ready", "failed", "canceled", "interrupted"]
+        .into_iter()
+        .enumerate()
+    {
+        let mut stored = store
+            .admit(ExportRecord {
+                version: 1,
+                id: (index + 1).to_string(),
+                key: format!("export:old:{index}"),
+                epoch: "old:7".into(),
+                state: "queued".into(),
+                previous_state: None,
+                cancel_requested: false,
+                error: None,
+                program: json!({}),
+                progress: None,
+                bytes: 0,
+                output: None,
+                discard: None,
+            })
+            .unwrap();
+        std::fs::write(stored.directory().join("rendering.mp4"), b"owned export").unwrap();
+        let mut record = stored.record.clone();
+        record.state = state.into();
+        if state == "ready" {
+            record.output = Some(store.publish_output(&stored).unwrap());
+        }
+        record.bytes = ExportStore::bytes(&stored);
+        store.save(&mut stored, record).unwrap();
+    }
+    drop(store);
+    let jobs = MediaJobs::start_with_exports(root).unwrap();
+    let request = |id: &str| export_store::DiscardRequest {
+        project_epoch: "old:7".into(),
+        revision: jobs.export_status(id, "old:7", false).unwrap()["export_revision"]
+            .as_str()
+            .unwrap()
+            .into(),
+        command_id: "c78523aa-f779-4f6b-8881-21c2072b88ab".into(),
+    };
+    let mut wrong = request("1");
+    wrong.project_epoch = "new:1".into();
+    assert_eq!(jobs.export_discard("1", wrong).unwrap_err().1, "NOT_FOUND");
+    let mut stale = request("1");
+    stale.revision = "0".repeat(64);
+    assert_eq!(
+        jobs.export_discard("1", stale).unwrap_err().1,
+        "EXPORT_CHANGED"
+    );
+    let download = jobs.export_asset("1", "old:7").unwrap();
+    assert_eq!(
+        jobs.export_discard("1", request("1")).unwrap_err().1,
+        "EXPORT_DOWNLOAD_ACTIVE"
+    );
+    assert_eq!(
+        jobs.export_status("1", "old:7", false).unwrap()["state"],
+        "ready"
+    );
+    drop(download);
+    let repeat = request("1");
+    jobs.export_discard("1", repeat.clone()).unwrap();
+    assert_eq!(jobs.export_discard("1", repeat).unwrap_err().1, "NOT_FOUND");
+    assert!(jobs.export_asset("1", "old:7").is_err());
+    {
+        let store = jobs.exports.as_ref().unwrap();
+        let mut owned = jobs.jobs.lock().unwrap();
+        owned[0].state = "running";
+        owned[0].persist(store).unwrap();
+    }
+    assert_eq!(
+        jobs.export_discard("2", request("2")).unwrap_err().1,
+        "EXPORT_ACTIVE"
+    );
+    {
+        let store = jobs.exports.as_ref().unwrap();
+        let mut owned = jobs.jobs.lock().unwrap();
+        owned[0].state = "failed";
+        owned[0].persist(store).unwrap();
+    }
+    for id in ["2", "3", "4"] {
+        jobs.export_discard(id, request(id)).unwrap();
+    }
+    let history = jobs.export_history().unwrap();
+    assert!(history["jobs"].as_array().unwrap().is_empty());
+    assert_eq!(history["capacity"]["used_jobs"], 0);
+    assert_eq!(history["capacity"]["charged_bytes"], 0);
+    for id in ["1", "2", "3", "4"] {
+        assert!(!path.join(".exports").join(id).exists());
+    }
     drop(jobs);
     std::fs::remove_dir_all(path).unwrap();
 }

@@ -122,13 +122,23 @@ Changed or missing completed files are refused. Source/Program caches remain
 ephemeral and separate.
 
 History retains at most 64 jobs and 2 GiB of output/partial files, with 512 MiB
-reserved per pending job. New jobs are refused when capacity is full; there is
-no automatic eviction or deletion UI. An unreadable history preserves files and
+reserved per pending job. New jobs are refused when capacity is full. Select a
+terminal saved export and use **Discard saved export…** to remove its generated
+MP4/partial output and history after confirming the exact job. This permanently
+frees its capacity; source media and projects remain. Finish active downloads
+before discarding. Active jobs must finish or be canceled first. The server never
+automatically evicts history. A restart completes only previously confirmed
+discard intents; changed or unknown files block cleanup and remain preserved.
+Blocked `discarding` entries conservatively consume the full output budget.
+An unreadable history preserves files and
 blocks exports while editing/previews remain available. Hardware encoding and
 automatic job resume are unavailable. Finite API acceptance verified software
 H.264 output and download identity across a forced restart, interrupted running
 work and persisted cancellation. GUI/hardware qualification remains open; see
 `evidence/m4-animated-viewer-durable-exports.json`.
+Explicit terminal removal and exact quota recovery across restart have separate
+no-GPU API evidence in `evidence/m3-export-discard.json`. Browser confirmation
+qualification remains open.
 
 Projects also downloads the current nonempty timeline as OTIO. To import,
 place .otio directly in the server root, reopen Projects, choose it and supply

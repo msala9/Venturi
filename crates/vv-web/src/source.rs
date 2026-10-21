@@ -89,7 +89,8 @@ impl Job {
             .durable
             .as_ref()
             .and_then(|stored| stored.record.previous_state.as_ref());
-        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"progress":self.progress_value(),"source_asset":self.source_asset,"project_epoch":self.export_epoch,"durable":self.durable.is_some(),"durability_error":self.durability_error,"cancel_requested":self.explicit_cancel,"previous_state":previous})
+        let revision = self.durable.as_ref().map(StoredExport::revision);
+        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"progress":self.progress_value(),"source_asset":self.source_asset,"project_epoch":self.export_epoch,"durable":self.durable.is_some(),"durability_error":self.durability_error,"cancel_requested":self.explicit_cancel,"previous_state":previous,"export_revision":revision})
     }
     fn persist(&mut self, store: &ExportStore) -> Result<()> {
         let progress = self.progress_value();
@@ -433,6 +434,7 @@ impl MediaJobs {
                 progress: Some(program::progress_value(&progress)),
                 bytes: 0,
                 output: None,
+                discard: None,
             })?;
             directory = stored.directory();
             Some(stored)
@@ -546,6 +548,47 @@ impl MediaJobs {
         Ok(
             json!({"jobs":exports.iter().rev().map(|job| job.value()).collect::<Vec<_>>(),"capacity":{"max_jobs":export_store::MAX_JOBS,"max_bytes":export_store::MAX_TOTAL,"reservation_bytes":export_store::MAX_OUTPUT,"used_jobs":exports.len(),"charged_bytes":charged}}),
         )
+    }
+    pub fn export_discard(&self, id: &str, request: export_store::DiscardRequest) -> Result<Value> {
+        self.check_exports()?;
+        request.validate()?;
+        let mut jobs = self.jobs.lock().unwrap();
+        let index = jobs
+            .iter()
+            .position(|job| {
+                job.id == id && job.export_epoch.as_deref() == Some(request.project_epoch.as_str())
+            })
+            .ok_or_else(ApiError::missing)?;
+        let job = &mut jobs[index];
+        if job.durability_error
+            || !matches!(
+                job.state,
+                "ready" | "failed" | "canceled" | "interrupted" | "discarding"
+            )
+        {
+            return Err(ApiError::conflict(
+                "EXPORT_ACTIVE",
+                "Only terminal saved exports with durable metadata may be discarded",
+            ));
+        }
+        let stored = job.durable.as_mut().ok_or_else(|| {
+            ApiError::conflict("EXPORT_NOT_DURABLE", "Only saved exports may be discarded")
+        })?;
+        let store = self.exports.as_ref().ok_or_else(ApiError::io)?;
+        if let Err(error) = store.discard(stored, &request) {
+            if stored.record.state == "discarding" {
+                job.state = "discarding";
+                job.bytes = stored.record.charge();
+                job.error = Some(error.1.into());
+            } else if error.1 == "IO_ERROR" {
+                job.state = "failed";
+                job.durability_error = true;
+                job.error = Some(error.1.into());
+            }
+            return Err(error);
+        }
+        jobs.remove(index);
+        Ok(json!({"id":id,"status":"discarded","project_epoch":request.project_epoch}))
     }
     pub fn export_asset(&self, id: &str, epoch: &str) -> Result<File> {
         self.check_exports()?;

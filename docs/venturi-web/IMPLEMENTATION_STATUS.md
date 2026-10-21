@@ -20,10 +20,12 @@ and desktop import qualification remain open. A configurable preset
 folder does not establish sharing through the 14 TB archive; only the existing
 ds4 media-catalog integration has actual NAS evidence.
 
-Animated viewer move/scale/rotation/anchor/crop and persistent export history now
-pass 169 Rust tests, 151 JavaScript tests, fmt, clippy and build, plus finite
-software API/forced-restart qualification. GUI, DPI and hardware qualification
-remain open. The latest evidence is `evidence/m4-animated-viewer-durable-exports.json`.
+Animated viewer move/scale/rotation/anchor/crop, persistent export history and
+explicit terminal-export discard now pass 175 Rust tests, 158 JavaScript tests,
+fmt, clippy and build, plus finite software API/restart qualification. GUI, DPI
+and hardware qualification remain open. Latest evidence:
+`evidence/m4-animated-viewer-durable-exports.json` and
+`evidence/m3-export-discard.json`.
 
 Remaining work includes mask/path and transition/speed timeline handles, compound and
 import coverage, long-media preview and export lifecycle/codec selection,
@@ -2402,3 +2404,30 @@ CPU, 768 MiB, no swap, OOMScoreAdjust=1000 and 120-second runtime caps, with
 software Vulkan and no hardware GPU/shared-lock descriptors. No local browser,
 build or long soak was started. GUI/hardware acceptance and broader release
 qualification remain open; affected capability rows remain partial.
+
+## M3 — explicit saved-export discard
+
+Saved terminal exports can be removed through an exact-job confirmation. Fresh
+epoch/revision/UUID checks prevent stale targeting. Active jobs, uncertain
+metadata and active downloads refuse removal. A durable discard intent precedes
+known-file unlinking; directory sync and manifest-last cleanup allow restart to
+finish committed removal without replaying renders. Unknown/changed/linked files
+are preserved and blocked intents conservatively retain the full output charge.
+A bounded high-water scalar prevents discarded IDs from being reused. There is
+no recursive cleanup or automatic eviction. A completed discard stays acknowledged
+if the subsequent history refresh fails; uncertain outcomes are never reposted
+automatically.
+
+175 Rust and 158 JavaScript tests, fmt, clippy with warnings denied and native
+build pass on halo2. Tests cover download file/HTTP-body lifetime, stale requests,
+all cleanup boundaries, foreign-file preservation, quota and ID reuse. A finite
+no-GPU API/restart check removed only the preceding fixture's three terminal jobs,
+releasing exactly three slots and 2,423 charged bytes. Invalid epoch/revision and
+repeated requests preserved remaining files and quota; removed jobs did not
+return after restart. All project hashes and the primary editor's five unsaved
+moves remained unchanged. Both disposable processes stopped and port 8811 closed.
+
+Evidence: `evidence/m3-export-discard.json`. API checks used one CPU, 512 MiB,
+no swap, OOMScoreAdjust=1000 and 60-second runtime caps. Browser confirmation,
+real filesystem failure recovery, hardware codecs and full GUI parity remain
+unqualified. No local build/browser/render/soak or new export render was started.

@@ -111,6 +111,10 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/exports/{job}/export.mp4", get(export_asset))
         .route(
+            "/api/v1/exports/{job}/discard",
+            post(discard_export).layer(DefaultBodyLimit::max(2048)),
+        )
+        .route(
             "/api/v1/preview/program/{job}",
             get(program_status).delete(cancel_program),
         )
@@ -727,6 +731,24 @@ async fn cancel_export(
     state
         .source
         .export_status(&job, &query.project_epoch, true)
+        .map(Json)
+}
+async fn discard_export(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    payload: std::result::Result<
+        Json<crate::export_store::DiscardRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    state
+        .source
+        .export_discard(
+            &job,
+            payload
+                .map_err(|_| ApiError::invalid("Invalid saved export discard request"))?
+                .0,
+        )
         .map(Json)
 }
 async fn export_asset(

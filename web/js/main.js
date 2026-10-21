@@ -1189,7 +1189,7 @@ async function diagnostics() {
       : "GPU preview unavailable";
   } catch {}
 }
-const exportPanel = createExportPanel({ form: $("export-form"), status: $("export-status"), cancel: $("export-cancel"), refresh: $("export-refresh"), download: $("export-download"), history:{select:$("export-history"),refresh:$("export-history-refresh"),status:$("export-history-status")}, getState: () => {
+const exportPanel = createExportPanel({ form: $("export-form"), status: $("export-status"), cancel: $("export-cancel"), refresh: $("export-refresh"), download: $("export-download"), history:{select:$("export-history"),refresh:$("export-history-refresh"),status:$("export-history-status")}, discard:{button:$("export-discard"),dialog:$("export-discard-dialog"),summary:$("export-discard-summary"),status:$("export-discard-status"),confirm:$("export-discard-confirm"),keep:$("export-discard-keep")}, getState: () => {
   if (!timeline || !documentState) return null;
   const end = Math.max(0, ...timeline.tracks.flatMap((track) => track.clips.map((clip) => clip.start_frame + clip.length_frames)));
   return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: 0, end_frame: end, width: 1920, fps: timeline.fps } : null;

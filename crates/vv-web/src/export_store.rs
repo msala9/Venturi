@@ -12,6 +12,7 @@ use std::{
     fs::File,
     io::{Read, Write},
     os::fd::AsRawFd,
+    os::unix::fs::MetadataExt,
     path::PathBuf,
 };
 
@@ -19,6 +20,57 @@ pub const MAX_JOBS: usize = 64;
 pub const MAX_OUTPUT: u64 = 512 * 1024 * 1024;
 pub const MAX_TOTAL: u64 = 2 * 1024 * 1024 * 1024;
 const MAX_MANIFEST: u64 = 64 * 1024;
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct DiscardRequest {
+    pub project_epoch: String,
+    pub revision: String,
+    pub command_id: String,
+}
+impl DiscardRequest {
+    pub fn validate(&self) -> Result<()> {
+        if self.project_epoch.is_empty()
+            || self.project_epoch.len() > 256
+            || self.project_epoch.chars().any(char::is_control)
+            || self.revision.len() != 64
+            || !self
+                .revision
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+            || !valid_command_id(&self.command_id)
+        {
+            return Err(ApiError::invalid(
+                "Choose an export epoch, revision and canonical UUID command ID",
+            ));
+        }
+        Ok(())
+    }
+}
+fn valid_command_id(id: &str) -> bool {
+    id.len() == 36
+        && id.bytes().enumerate().all(|(index, byte)| {
+            if [8, 13, 18, 23].contains(&index) {
+                byte == b'-'
+            } else {
+                byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte)
+            }
+        })
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DiscardFile {
+    name: String,
+    identity: String,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct DiscardIntent {
+    command_id: String,
+    revision: String,
+    directory_identity: String,
+    files: Vec<DiscardFile>,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -41,6 +93,8 @@ pub struct Record {
     pub progress: Option<Value>,
     pub bytes: u64,
     pub output: Option<Output>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub discard: Option<DiscardIntent>,
 }
 impl Record {
     pub fn state_name(&self) -> &'static str {
@@ -50,11 +104,14 @@ impl Record {
             "ready" => "ready",
             "failed" => "failed",
             "canceled" => "canceled",
+            "discarding" => "discarding",
             _ => "interrupted",
         }
     }
     pub fn charge(&self) -> u64 {
-        if matches!(self.state_name(), "queued" | "running") {
+        if self.state_name() == "discarding" {
+            MAX_TOTAL
+        } else if matches!(self.state_name(), "queued" | "running") {
             MAX_OUTPUT
         } else {
             self.bytes
@@ -67,9 +124,29 @@ pub struct Stored {
     pub dir: File,
 }
 impl Stored {
+    pub fn revision(&self) -> &str {
+        &self.revision
+    }
     pub fn directory(&self) -> PathBuf {
         PathBuf::from(format!("/proc/self/fd/{}", self.dir.as_raw_fd()))
     }
+}
+fn directory_identity(dir: &File) -> Result<String> {
+    let metadata = dir.metadata().map_err(|_| ApiError::io())?;
+    Ok(format!("{}:{}", metadata.dev(), metadata.ino()))
+}
+fn discard_changed() -> ApiError {
+    ApiError::conflict(
+        "EXPORT_DISCARD_BLOCKED",
+        "Export files changed or contain unknown entries; existing files were preserved",
+    )
+}
+fn id_after(id: &str, floor: &str) -> bool {
+    id.len() > floor.len() || id.len() == floor.len() && id > floor
+}
+struct DiscardGuard {
+    snapshot: DiscardFile,
+    file: File,
 }
 pub struct Store {
     root: File,
@@ -157,15 +234,40 @@ impl Store {
             || record.epoch.len() > 256
             || !matches!(
                 record.state.as_str(),
-                "queued" | "running" | "ready" | "failed" | "canceled" | "interrupted"
+                "queued"
+                    | "running"
+                    | "ready"
+                    | "failed"
+                    | "canceled"
+                    | "interrupted"
+                    | "discarding"
             )
             || record.output.as_ref().is_some_and(|output| {
                 output.bytes == 0 || output.bytes > MAX_OUTPUT || output.identity.len() > 256
             })
+            || (record.state == "discarding") != record.discard.is_some()
         {
             return Err(ApiError::invalid(
                 "Invalid export history; existing files were preserved",
             ));
+        }
+        if let Some(intent) = &record.discard {
+            DiscardRequest {
+                project_epoch: record.epoch.clone(),
+                revision: intent.revision.clone(),
+                command_id: intent.command_id.clone(),
+            }
+            .validate()?;
+            if intent.directory_identity.len() > 128
+                || intent.files.len() > 2
+                || intent.files.iter().any(|file| {
+                    !matches!(file.name.as_str(), "program.mp4" | "rendering.mp4")
+                        || file.identity.len() > 256
+                })
+                || intent.files.len() == 2 && intent.files[0].name == intent.files[1].name
+            {
+                return Err(discard_changed());
+            }
         }
         Ok((record, format!("{:x}", Sha256::digest(&bytes))))
     }
@@ -260,6 +362,16 @@ impl Store {
         Ok(ids)
     }
     pub fn admit(&self, record: Record) -> Result<Stored> {
+        valid_id(&record.id)?;
+        if self
+            .discard_watermark()?
+            .is_some_and(|watermark| !id_after(&record.id, &watermark))
+        {
+            return Err(ApiError::conflict(
+                "EXPORT_ID_EXPIRED",
+                "Export ID predates an explicit discard; request a fresh export",
+            ));
+        }
         let ids = self.ids()?;
         let mut charged = 0u64;
         for id in &ids {
@@ -288,6 +400,261 @@ impl Store {
             dir,
         })
     }
+    fn discard_watermark(&self) -> Result<Option<String>> {
+        let fd = match openat(
+            &self.root,
+            ".discarded-through",
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        ) {
+            Ok(fd) => fd,
+            Err(rustix::io::Errno::NOENT) => return Ok(None),
+            Err(_) => return Err(ApiError::io()),
+        };
+        let file = File::from(fd);
+        let metadata = file.metadata().map_err(|_| ApiError::io())?;
+        if !metadata.is_file() || metadata.len() > 40 {
+            return Err(discard_changed());
+        }
+        let before = file_identity(&file)?;
+        let mut value = String::new();
+        (&file)
+            .take(41)
+            .read_to_string(&mut value)
+            .map_err(|_| ApiError::io())?;
+        valid_id(&value)?;
+        if value.len() > 1 && value.starts_with('0') || file_identity(&file)? != before {
+            return Err(discard_changed());
+        }
+        Ok(Some(value))
+    }
+    fn advance_discard_watermark(&self, id: &str) -> Result<()> {
+        let old = self.discard_watermark()?;
+        if old.as_ref().is_some_and(|floor| !id_after(id, floor)) {
+            return Ok(());
+        }
+        let temp = format!(
+            ".discard-floor-{}-{}.tmp",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_nanos()
+        );
+        let result = (|| {
+            let mut file = File::from(
+                openat(
+                    &self.root,
+                    temp.as_str(),
+                    OFlags::WRONLY
+                        | OFlags::CREATE
+                        | OFlags::EXCL
+                        | OFlags::NOFOLLOW
+                        | OFlags::CLOEXEC,
+                    Mode::RUSR | Mode::WUSR,
+                )
+                .map_err(|_| ApiError::io())?,
+            );
+            file.write_all(id.as_bytes()).map_err(|_| ApiError::io())?;
+            file.sync_all().map_err(|_| ApiError::io())?;
+            if self.discard_watermark()? != old {
+                return Err(discard_changed());
+            }
+            if old.is_some() {
+                renameat(&self.root, temp.as_str(), &self.root, ".discarded-through")
+                    .map_err(|_| ApiError::io())?;
+            } else {
+                renameat_with(
+                    &self.root,
+                    temp.as_str(),
+                    &self.root,
+                    ".discarded-through",
+                    RenameFlags::NOREPLACE,
+                )
+                .map_err(|_| ApiError::io())?;
+            }
+            self.root.sync_all().map_err(|_| ApiError::io())
+        })();
+        let _ = unlinkat(&self.root, temp.as_str(), AtFlags::empty());
+        result
+    }
+    fn discard_guards(dir: &File, expected: Option<&[DiscardFile]>) -> Result<Vec<DiscardGuard>> {
+        let mut guards = vec![];
+        for (index, entry) in std::fs::read_dir(format!("/proc/self/fd/{}", dir.as_raw_fd()))
+            .map_err(|_| ApiError::io())?
+            .enumerate()
+        {
+            if index >= 2 {
+                return Err(discard_changed());
+            }
+            let name = entry.map_err(|_| ApiError::io())?.file_name();
+            let name = name.to_str().ok_or_else(discard_changed)?;
+            if !matches!(name, "program.mp4" | "rendering.mp4") {
+                return Err(discard_changed());
+            }
+            let file = open_file(dir, name).map_err(|_| discard_changed())?;
+            rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockExclusive)
+                .map_err(|error| {
+                    if error == rustix::io::Errno::AGAIN {
+                        ApiError::conflict(
+                            "EXPORT_DOWNLOAD_ACTIVE",
+                            "A download is active; wait for it to finish before discarding",
+                        )
+                    } else {
+                        ApiError::io()
+                    }
+                })?;
+            let snapshot = DiscardFile {
+                name: name.into(),
+                identity: file_identity(&file)?,
+            };
+            if expected.is_some_and(|files| {
+                !files
+                    .iter()
+                    .any(|old| old.name == snapshot.name && old.identity == snapshot.identity)
+            }) {
+                return Err(discard_changed());
+            }
+            guards.push(DiscardGuard { snapshot, file });
+        }
+        Ok(guards)
+    }
+    fn begin_discard(
+        &self,
+        stored: &mut Stored,
+        request: &DiscardRequest,
+    ) -> Result<Vec<DiscardGuard>> {
+        request.validate()?;
+        if request.project_epoch != stored.record.epoch {
+            return Err(ApiError::missing());
+        }
+        if self.read(&stored.record.id)?.1 != stored.revision {
+            return Err(ApiError::conflict(
+                "EXPORT_CHANGED",
+                "Export history changed; refresh before discarding",
+            ));
+        }
+        if let Some(intent) = &stored.record.discard {
+            if intent.command_id != request.command_id || intent.revision != request.revision {
+                return Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Discard already has another committed request",
+                ));
+            }
+            if directory_identity(&stored.dir)? != intent.directory_identity {
+                return Err(discard_changed());
+            }
+            return Self::discard_guards(&stored.dir, Some(&intent.files));
+        }
+        if !matches!(
+            stored.record.state.as_str(),
+            "ready" | "failed" | "canceled" | "interrupted"
+        ) {
+            return Err(ApiError::conflict(
+                "EXPORT_ACTIVE",
+                "Only terminal saved exports may be discarded",
+            ));
+        }
+        if request.revision != stored.revision {
+            return Err(ApiError::conflict(
+                "EXPORT_CHANGED",
+                "Export history changed; refresh before discarding",
+            ));
+        }
+        let current = self.open_dir(&stored.record.id)?;
+        if directory_identity(&current)? != directory_identity(&stored.dir)? {
+            return Err(discard_changed());
+        }
+        let guards = Self::discard_guards(&stored.dir, None)?;
+        if stored.record.state == "ready"
+            && !guards.iter().any(|guard| {
+                guard.snapshot.name == "program.mp4"
+                    && stored
+                        .record
+                        .output
+                        .as_ref()
+                        .is_some_and(|output| output.identity == guard.snapshot.identity)
+            })
+        {
+            return Err(discard_changed());
+        }
+        let mut record = stored.record.clone();
+        record.discard = Some(DiscardIntent {
+            command_id: request.command_id.clone(),
+            revision: request.revision.clone(),
+            directory_identity: directory_identity(&stored.dir)?,
+            files: guards.iter().map(|guard| guard.snapshot.clone()).collect(),
+        });
+        record.previous_state = Some(record.state.clone());
+        record.state = "discarding".into();
+        record.error = None;
+        self.save(stored, record)?;
+        Ok(guards)
+    }
+    fn finish_discard(
+        &self,
+        record: &Record,
+        revision: &str,
+        dir: Option<&File>,
+        guards: &[DiscardGuard],
+    ) -> Result<()> {
+        let intent = record
+            .discard
+            .as_ref()
+            .filter(|_| record.state == "discarding")
+            .ok_or_else(discard_changed)?;
+        if self.read(&record.id)?.1 != revision {
+            return Err(discard_changed());
+        }
+        if let Some(dir) = dir {
+            if directory_identity(dir)? != intent.directory_identity
+                || directory_identity(&self.open_dir(&record.id)?)? != intent.directory_identity
+            {
+                return Err(discard_changed());
+            }
+        } else {
+            match openat(
+                &self.root,
+                record.id.as_str(),
+                OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                Mode::empty(),
+            ) {
+                Err(rustix::io::Errno::NOENT) => (),
+                _ => return Err(discard_changed()),
+            }
+        }
+        self.advance_discard_watermark(&record.id)?;
+        if let Some(dir) = dir {
+            for guard in guards {
+                if file_identity(&guard.file)? != guard.snapshot.identity
+                    || file_identity(&open_file(dir, &guard.snapshot.name)?)?
+                        != guard.snapshot.identity
+                {
+                    return Err(discard_changed());
+                }
+                unlinkat(dir, guard.snapshot.name.as_str(), AtFlags::empty())
+                    .map_err(|_| ApiError::io())?;
+            }
+            dir.sync_all().map_err(|_| ApiError::io())?;
+            unlinkat(&self.root, record.id.as_str(), AtFlags::REMOVEDIR)
+                .map_err(|_| discard_changed())?;
+        }
+        self.root.sync_all().map_err(|_| ApiError::io())?;
+        if self.read(&record.id)?.1 != revision {
+            return Err(discard_changed());
+        }
+        unlinkat(
+            &self.root,
+            format!("{}.json", record.id).as_str(),
+            AtFlags::empty(),
+        )
+        .map_err(|_| ApiError::io())?;
+        self.root.sync_all().map_err(|_| ApiError::io())
+    }
+    pub fn discard(&self, stored: &mut Stored, request: &DiscardRequest) -> Result<()> {
+        let guards = self.begin_discard(stored, request)?;
+        self.finish_discard(&stored.record, &stored.revision, Some(&stored.dir), &guards)
+    }
     fn open_dir(&self, id: &str) -> Result<File> {
         valid_id(id)?;
         Ok(File::from(
@@ -309,9 +676,47 @@ impl Store {
             .fold(0, u64::saturating_add)
     }
     pub fn recover(&self) -> Result<Vec<Stored>> {
+        self.discard_watermark()?;
         let mut recovered = vec![];
         for id in self.ids()? {
             let (record, revision) = self.read(&id)?;
+            if record.state == "discarding" {
+                let fd = match openat(
+                    &self.root,
+                    id.as_str(),
+                    OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                    Mode::empty(),
+                ) {
+                    Ok(fd) => Some(File::from(fd)),
+                    Err(rustix::io::Errno::NOENT) => None,
+                    Err(_) => return Err(discard_changed()),
+                };
+                if let Some(dir) = fd {
+                    let intent = record.discard.as_ref().ok_or_else(discard_changed)?;
+                    let result = if directory_identity(&dir)? != intent.directory_identity {
+                        Err(discard_changed())
+                    } else {
+                        Self::discard_guards(&dir, Some(&intent.files)).and_then(|guards| {
+                            self.finish_discard(&record, &revision, Some(&dir), &guards)
+                        })
+                    };
+                    if let Err(error) = result {
+                        let mut stored = Stored {
+                            dir,
+                            record,
+                            revision,
+                        };
+                        let mut record = stored.record.clone();
+                        record.error = Some(error.1.into());
+                        record.bytes = Self::bytes(&stored);
+                        self.save(&mut stored, record)?;
+                        recovered.push(stored);
+                    }
+                } else {
+                    self.finish_discard(&record, &revision, None, &[])?;
+                }
+                continue;
+            }
             let mut stored = Stored {
                 dir: self.open_dir(&id)?,
                 record,
@@ -372,6 +777,8 @@ impl Store {
             .filter(|_| stored.record.state == "ready")
             .ok_or_else(ApiError::missing)?;
         let file = open_file(&stored.dir, "program.mp4")?;
+        rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockShared)
+            .map_err(|_| ApiError::conflict("EXPORT_DISCARD_BUSY", "Export is being discarded"))?;
         if file.metadata().map_err(|_| ApiError::io())?.len() != expected.bytes
             || file_identity(&file)? != expected.identity
         {

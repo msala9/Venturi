@@ -780,7 +780,8 @@ user-selected server output path and no overwrite of source/project files.
 `GET /exports` lists retained jobs, their original `project_epoch`, saved progress
 and capacity. Status/download references use that saved epoch even after server
 restart or opening another project. State includes `interrupted`,
-`previous_state`, `cancel_requested`, `durable` and `durability_error`.
+`previous_state`, `cancel_requested`, `durable`, `durability_error` and the saved
+manifest SHA `export_revision`.
 Manifests are atomically published with file/directory sync; completed output
 is finalized before READY is persisted and its file identity is checked on
 download/recovery. Queued/running records recovered after restart become
@@ -793,10 +794,31 @@ UI download; unreadable history blocks export endpoints with
 Retention is bounded to 64 records and 2 GiB of charged output, including failed
 or interrupted partials. Each pending job reserves 512 MiB. Admission refuses
 `EXPORT_CAPACITY` when either limit would be exceeded; there is no automatic
-eviction or deletion UI. Source/Program jobs remain ephemeral and cannot read
+eviction. Source/Program jobs remain ephemeral and cannot read
 export records. The drawer lists saved exports and retains the latest selection
 in session storage. Hardware codec selection, arbitrary output formats, automatic
-resume and retention-management controls remain open.
+resume and automatic retention policies remain open.
+
+`POST /exports/{job}/discard` accepts
+`{project_epoch,revision,command_id}` with the original export epoch, current
+`export_revision` and a canonical lowercase UUID. The bounded request must target
+a durable ready/failed/canceled/interrupted export. Success returns
+`{id,status:"discarded",project_epoch}`. Wrong/missing references return 404,
+including repeated requests after completed removal; stale revisions return
+`EXPORT_CHANGED` (409). Active jobs and uncertain metadata cannot be discarded.
+An active download holds a shared file lock; discard requires a nonblocking
+exclusive lock and otherwise returns `EXPORT_DOWNLOAD_ACTIVE` (409).
+
+The store commits a CAS-protected `discarding` intent before unlinking only
+recorded regular output files. It syncs the directory, removes the empty job
+directory and removes the manifest last. Restart completes committed discard
+intents only. Unknown, linked or changed files are preserved; blocked intents
+remain visible and conservatively charge 2 GiB until cleanup succeeds. A bounded
+durable ID watermark prevents discarded IDs from being reused. The browser reads
+fresh metadata before an exact-job confirmation, binds its immutable receipt and
+does not automatically repeat an uncertain request. Successful removal remains
+acknowledged if the subsequent history refresh fails. This removes generated
+output/history only and cannot be undone; project files and source media remain.
 
 169 Rust and 151 JavaScript tests, fmt, clippy and build pass. Finite software
 API acceptance verified mixed animated/static edits, exact Undo/Redo/retry,
@@ -806,6 +828,13 @@ cancellation recovered as canceled, without automatic rerender.
 See `evidence/m4-animated-viewer-durable-exports.json`; GUI/hardware acceptance
 remains open. Earlier six-minute export/browser-download proof remains in
 `m3-six-minute-export.json`.
+
+Terminal-discard qualification passes 175 Rust and 158 JavaScript tests plus
+fmt/clippy/build. Finite no-GPU API/restart proof removed three owned jobs and
+released exactly their three slots/2,423 charged bytes; stale/wrong-epoch/repeated
+requests did not change remaining files or quota. See
+`evidence/m3-export-discard.json`. Browser confirmation and real filesystem
+failure qualification remain open.
 
 - Timeline `set_speed {clip_ids,percent,pitch_correction,fit}` uses native
   SetClipSpeed with percent 1–10000, whole linked groups and fit keep_length,

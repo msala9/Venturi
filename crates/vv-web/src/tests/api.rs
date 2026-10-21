@@ -6,6 +6,145 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn saved_export_discard_http_checks_payload_epoch_cas_and_open_download_body() {
+    let root = std::env::temp_dir().join(format!(
+        "venturi-discard-http-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    let directory = std::fs::File::open(&root).unwrap();
+    let store = crate::export_store::Store::open(&directory).unwrap();
+    let mut stored = store
+        .admit(crate::export_store::Record {
+            version: 1,
+            id: "1".into(),
+            key: "export:old".into(),
+            epoch: "old:7".into(),
+            state: "queued".into(),
+            previous_state: None,
+            cancel_requested: false,
+            error: None,
+            program: json!({}),
+            progress: None,
+            bytes: 0,
+            output: None,
+            discard: None,
+        })
+        .unwrap();
+    std::fs::write(
+        stored.directory().join("rendering.mp4"),
+        b"completed export",
+    )
+    .unwrap();
+    let output = store.publish_output(&stored).unwrap();
+    let mut ready = stored.record.clone();
+    ready.state = "ready".into();
+    ready.bytes = output.bytes;
+    ready.output = Some(output);
+    store.save(&mut stored, ready).unwrap();
+    let revision = stored.revision().to_owned();
+    drop(stored);
+    drop(store);
+    let app = router(AppState {
+        preview: Preview::disabled(),
+        source: MediaJobs::start_with_exports(directory).unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        host: Host::start(&root).unwrap(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+        port: 8787,
+    });
+    let make = |method: &str, path: &str, body: Value| {
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("content-type", "application/json")
+            .body(if body.is_null() {
+                Body::empty()
+            } else {
+                Body::from(body.to_string())
+            })
+            .unwrap()
+    };
+    let payload = json!({"project_epoch":"old:7","revision":revision,"command_id":"ca27058c-768e-4d82-a11d-95b29b5a1d71"});
+    for (field, value, expected) in [
+        ("project_epoch", json!("new:1"), StatusCode::NOT_FOUND),
+        ("revision", json!("0".repeat(64)), StatusCode::CONFLICT),
+        (
+            "command_id",
+            json!("invalid"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        let mut invalid = payload.clone();
+        invalid[field] = value;
+        let response = app
+            .clone()
+            .oneshot(make("POST", "/api/v1/exports/1/discard", invalid))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), expected);
+    }
+    let response = app
+        .clone()
+        .oneshot(make(
+            "GET",
+            "/api/v1/exports/1/export.mp4?project_epoch=old:7",
+            Value::Null,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body();
+    let refusal = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/exports/1/discard", payload.clone()))
+        .await
+        .unwrap();
+    assert_eq!(refusal.status(), StatusCode::CONFLICT);
+    let refusal: Value =
+        serde_json::from_slice(&to_bytes(refusal.into_body(), 4096).await.unwrap()).unwrap();
+    assert_eq!(refusal["error"]["code"], "EXPORT_DOWNLOAD_ACTIVE");
+    drop(body);
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/exports/1/discard", payload.clone()))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let ack: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+    assert_eq!(
+        ack,
+        json!({"id":"1","status":"discarded","project_epoch":"old:7"})
+    );
+    let repeated = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/exports/1/discard", payload))
+        .await
+        .unwrap();
+    assert_eq!(repeated.status(), StatusCode::NOT_FOUND);
+    let history = app
+        .clone()
+        .oneshot(make("GET", "/api/v1/exports", Value::Null))
+        .await
+        .unwrap();
+    let history: Value =
+        serde_json::from_slice(&to_bytes(history.into_body(), 4096).await.unwrap()).unwrap();
+    assert!(history["jobs"].as_array().unwrap().is_empty());
+    assert_eq!(history["capacity"]["charged_bytes"], 0);
+    assert!(!root.join(".exports/1").exists());
+    assert!(!root.join(".exports/1.json").exists());
+    drop(app);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn http_command_roundtrip_and_malformed_requests() {
     let root = std::env::temp_dir().join(format!(
         "vv-web-http-{}",

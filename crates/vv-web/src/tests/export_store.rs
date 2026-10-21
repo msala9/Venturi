@@ -29,6 +29,7 @@ fn record(id: &str) -> Record {
         progress: Some(json!({"current_frame":0,"total_frames":48})),
         bytes: 0,
         output: None,
+        discard: None,
     }
 }
 fn terminal(store: &Store, stored: &mut Stored, state: &str) {
@@ -36,6 +37,28 @@ fn terminal(store: &Store, stored: &mut Stored, state: &str) {
     changed.state = state.into();
     changed.bytes = Store::bytes(stored);
     store.save(stored, changed).unwrap();
+}
+fn discard_request(stored: &Stored) -> DiscardRequest {
+    DiscardRequest {
+        project_epoch: stored.record.epoch.clone(),
+        revision: stored.revision.clone(),
+        command_id: "5c9f22b0-3b24-4f11-85d7-77ad9a164b13".into(),
+    }
+}
+fn ready(store: &Store, id: &str) -> Stored {
+    let mut stored = store.admit(record(id)).unwrap();
+    std::fs::write(
+        stored.directory().join("rendering.mp4"),
+        b"completed export",
+    )
+    .unwrap();
+    let output = store.publish_output(&stored).unwrap();
+    let mut record = stored.record.clone();
+    record.state = "ready".into();
+    record.bytes = output.bytes;
+    record.output = Some(output);
+    store.save(&mut stored, record).unwrap();
+    stored
 }
 
 #[test]
@@ -156,6 +179,206 @@ fn admission_reserves_output_budget_and_refuses_full_history_without_evicting() 
         "EXPORT_CAPACITY"
     );
     assert!(path.join(".exports/1.json").is_file());
+    let request = discard_request(&pending[0]);
+    store.discard(&mut pending[0], &request).unwrap();
+    assert_eq!(store.ids().unwrap().len(), MAX_JOBS - 1);
+    assert!(!path.join(".exports/1.json").exists());
+    assert_eq!(
+        store.admit(record("1")).err().unwrap().1,
+        "EXPORT_ID_EXPIRED"
+    );
+    store.admit(record("65")).unwrap();
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
+fn discard_refuses_active_downloads_stale_revisions_and_active_jobs_before_any_write() {
+    let (path, _, store) = fixture();
+    let mut stored = ready(&store, "1");
+    let request = discard_request(&stored);
+    let manifest = std::fs::read(path.join(".exports/1.json")).unwrap();
+    let download = store.output(&stored).unwrap();
+    assert_eq!(
+        store.discard(&mut stored, &request).unwrap_err().1,
+        "EXPORT_DOWNLOAD_ACTIVE"
+    );
+    assert_eq!(
+        std::fs::read(path.join(".exports/1.json")).unwrap(),
+        manifest
+    );
+    assert_eq!(
+        std::fs::read(stored.directory().join("program.mp4")).unwrap(),
+        b"completed export"
+    );
+    drop(download);
+    let mut stale = request.clone();
+    stale.revision = "0".repeat(64);
+    assert_eq!(
+        store.discard(&mut stored, &stale).unwrap_err().1,
+        "EXPORT_CHANGED"
+    );
+    let mut invalid = request.clone();
+    invalid.command_id = "not-a-uuid".into();
+    assert!(store.discard(&mut stored, &invalid).is_err());
+    let mut active = store.admit(record("2")).unwrap();
+    let active_request = discard_request(&active);
+    assert_eq!(
+        store.discard(&mut active, &active_request).unwrap_err().1,
+        "EXPORT_ACTIVE"
+    );
+    assert_eq!(
+        std::fs::read(path.join(".exports/1.json")).unwrap(),
+        manifest
+    );
+    store.discard(&mut stored, &request).unwrap();
+    assert!(!path.join(".exports/1").exists());
+    assert!(!path.join(".exports/1.json").exists());
+    assert!(path.join(".exports/2.json").is_file());
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
+fn restart_finishes_committed_discard_at_each_unlink_boundary_and_preserves_unrequested_jobs() {
+    for phase in 0..4 {
+        let (path, root, store) = fixture();
+        let mut stored = store.admit(record("1")).unwrap();
+        for name in ["program.mp4", "rendering.mp4"] {
+            std::fs::write(stored.directory().join(name), b"owned").unwrap();
+        }
+        terminal(&store, &mut stored, "failed");
+        let mut other = store.admit(record("2")).unwrap();
+        std::fs::write(other.directory().join("rendering.mp4"), b"unrequested").unwrap();
+        terminal(&store, &mut other, "failed");
+        let request = discard_request(&stored);
+        let guards = store.begin_discard(&mut stored, &request).unwrap();
+        assert_eq!(stored.record.state, "discarding");
+        let count = if phase == 0 {
+            0
+        } else if phase == 1 {
+            1
+        } else {
+            2
+        };
+        for guard in guards.iter().take(count) {
+            unlinkat(&stored.dir, guard.snapshot.name.as_str(), AtFlags::empty()).unwrap();
+        }
+        stored.dir.sync_all().unwrap();
+        if phase == 3 {
+            unlinkat(&store.root, "1", AtFlags::REMOVEDIR).unwrap();
+            store.root.sync_all().unwrap();
+        }
+        drop((guards, stored, other));
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        let remaining = store.recover().unwrap();
+        assert_eq!(remaining.len(), 1, "Crash phase {phase}");
+        assert_eq!(remaining[0].record.id, "2");
+        assert_eq!(
+            std::fs::read(remaining[0].directory().join("rendering.mp4")).unwrap(),
+            b"unrequested"
+        );
+        assert!(!path.join(".exports/1").exists());
+        assert!(!path.join(".exports/1.json").exists());
+        assert_eq!(
+            store.admit(record("1")).err().unwrap().1,
+            "EXPORT_ID_EXPIRED"
+        );
+        std::fs::remove_dir_all(path).unwrap();
+    }
+}
+
+#[test]
+fn committed_discard_preserves_new_changed_and_linked_files_and_keeps_capacity_charged() {
+    for case in 0..3 {
+        let (path, root, store) = fixture();
+        let mut stored = store.admit(record("1")).unwrap();
+        std::fs::write(stored.directory().join("rendering.mp4"), b"owned").unwrap();
+        terminal(&store, &mut stored, "failed");
+        let request = discard_request(&stored);
+        drop(store.begin_discard(&mut stored, &request).unwrap());
+        let outside = path.join("outside");
+        std::fs::write(&outside, b"foreign outside").unwrap();
+        match case {
+            0 => std::fs::write(stored.directory().join("foreign.txt"), b"foreign entry").unwrap(),
+            1 => std::fs::write(
+                stored.directory().join("rendering.mp4"),
+                b"changed foreign entry",
+            )
+            .unwrap(),
+            _ => {
+                std::fs::remove_file(stored.directory().join("rendering.mp4")).unwrap();
+                std::os::unix::fs::symlink(&outside, stored.directory().join("rendering.mp4"))
+                    .unwrap();
+            }
+        }
+        drop(stored);
+        drop(store);
+        let store = Store::open(&root).unwrap();
+        let preserved = store.recover().unwrap();
+        assert_eq!(preserved.len(), 1);
+        assert_eq!(preserved[0].record.state, "discarding");
+        assert_eq!(
+            preserved[0].record.error.as_deref(),
+            Some("EXPORT_DISCARD_BLOCKED")
+        );
+        assert_eq!(preserved[0].record.charge(), MAX_TOTAL);
+        assert_eq!(store.admit(record("2")).err().unwrap().1, "EXPORT_CAPACITY");
+        assert_eq!(std::fs::read(&outside).unwrap(), b"foreign outside");
+        if case == 0 {
+            assert_eq!(
+                std::fs::read(preserved[0].directory().join("foreign.txt")).unwrap(),
+                b"foreign entry"
+            );
+        }
+        if case == 1 {
+            assert_eq!(
+                std::fs::read(preserved[0].directory().join("rendering.mp4")).unwrap(),
+                b"changed foreign entry"
+            );
+        }
+        if case == 2 {
+            assert!(
+                std::fs::symlink_metadata(preserved[0].directory().join("rendering.mp4"))
+                    .unwrap()
+                    .file_type()
+                    .is_symlink()
+            );
+        }
+        std::fs::remove_dir_all(path).unwrap();
+    }
+}
+
+#[test]
+fn discard_replay_requires_original_uuid_and_revision_and_malformed_floor_is_preserved() {
+    let (path, root, store) = fixture();
+    let mut stored = ready(&store, "1");
+    let request = discard_request(&stored);
+    drop(store.begin_discard(&mut stored, &request).unwrap());
+    let mut another = request.clone();
+    another.command_id = "5c9f22b0-3b24-4f11-85d7-77ad9a164b14".into();
+    assert_eq!(
+        store.discard(&mut stored, &another).unwrap_err().1,
+        "COMMAND_ID_REUSED"
+    );
+    store.discard(&mut stored, &request).unwrap();
+    assert_eq!(
+        std::fs::read(path.join(".exports/.discarded-through")).unwrap(),
+        b"1"
+    );
+    std::fs::write(
+        path.join(".exports/.discarded-through"),
+        b"preserve invalid floor",
+    )
+    .unwrap();
+    drop(stored);
+    drop(store);
+    let store = Store::open(&root).unwrap();
+    assert!(store.recover().is_err());
+    assert!(store.admit(record("2")).is_err());
+    assert_eq!(
+        std::fs::read(path.join(".exports/.discarded-through")).unwrap(),
+        b"preserve invalid floor"
+    );
     std::fs::remove_dir_all(path).unwrap();
 }
 

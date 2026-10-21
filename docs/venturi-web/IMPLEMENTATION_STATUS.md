@@ -1577,3 +1577,14 @@ This keeps the Source video visible at the normal narrow layout.
 Evidence: m5-audio-scrub.json, m5-audio-scrub-program.png and
 m5-audio-scrub-source.png. halo2 deployment follows after this local acceptance;
 no GPU slot or inference process has been used.
+
+The accepted audio build plus narrow-transport wrapping is deployed on halo2
+from 4fc96b6, SHA-256
+3f3c1d925f2480cb7264cc42c4c34d439be7d5774b122f4adf13131f316d442e.
+Embedded audition/Source/CSS hashes match local sources. The saved shared-library
+fixture reopened with its exact seed and Favorite annotation, native silent
+Program audio returned 15,404 bytes and the still source correctly refused audio.
+The browser reached the audio output path while the project stayed Saved.
+CPU/lavapipe, two workers, no DRI/KFD handles and no lock probe/acquisition are
+verified in m5-halo2-audio-scrub.json/browser.png. Transport wrapping was visually
+checked in the narrower main editor panel as well as the local editing layout.

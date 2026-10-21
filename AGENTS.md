@@ -3,6 +3,16 @@
 The project rules for agents are in [CLAUDE.md](CLAUDE.md) and apply to
 every agent, not just Claude: read it before making changes.
 
+## Owner workstation resources
+
+The owner reported that local builds, preview servers and concurrent tests made
+the Windows PC unusable. Keep heavy compilation, rendering and soak tests off
+this workstation. Use halo2 with explicit resource limits, one build job and low
+priority. Local file edits, Git and short SSH orchestration remain appropriate.
+Do not restart local test fleets or reopen multiple browser test tabs. Preserve
+unsaved sessions when stopping test processes. On halo2, preserve the live editor
+and all foreign inference workloads; GPU use still requires its shared lock.
+
 The one most likely to be missed:
 
 ## Tests

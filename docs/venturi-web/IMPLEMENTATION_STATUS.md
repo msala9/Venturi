@@ -2048,3 +2048,24 @@ and five unsaved moves remain unchanged. Assets match d4e23f8. No hardware GPU
 handles or shared lock were used. Evidence: m4-halo2-value-keys.json and browser
 PNG. Port 8790 remains on 84ef827 until its live edits can be preserved through
 the editor; staging the newer binary does not mean the main service was upgraded.
+
+## M7 — interrupted local CPU soak and remote build limits
+
+The owner reported an unresponsive workstation while local build/test processes
+and preview instances were running. Local compilation and the finite backend
+soak were stopped. Saved test servers on 8802/8805 were stopped; the dirty 8804
+session was preserved. Agent-created halo2 verification tabs were closed.
+Further heavy work belongs on halo2 under explicit CPU/memory limits.
+
+The backend soak stopped after 80 samples and 4741 seconds, short of its two-hour
+target. Every sampled source hash and native export hash remained consistent;
+FD count stayed 16 and thread count 14. RSS grew from 267931648 to 330891264 bytes.
+This is interrupted evidence, not a passed two-hour qualification or a browser
+memory test. The retained JSON is marked `interrupted`; no local soak was resumed.
+
+A private halo2 build workspace now holds the Rust toolchain, Node runtime and
+unpacked multimedia development packages. No system packages were installed or
+upgraded. The finite systemd user build unit is constrained to CPUQuota=100%,
+MemoryMax=4G, MemorySwapMax=0, one Cargo job, Nice=19 and IOWeight=10. Software
+Vulkan is forced for tests. It does not take the hardware GPU lock or modify
+the running editor. A running build is not a passed validation result.

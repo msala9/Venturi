@@ -42,6 +42,15 @@ edits, or explicitly reopen the external file after preserving them. The normal
 Save path rechecks before backup/publication but does not provide an atomic lock
 against arbitrary external writers across the final check/rename interval.
 
+The session snapshot also exposes nullable `persistence_notice`. Successful
+project lifecycle operations remember the current token and saved-file SHA-256
+in private, version-1 `.venturi-last-project.json` metadata (4 KiB cap). Startup
+reopens matching saved content through normal native validation and establishes
+a fresh Save baseline. Changed/missing/unsupported files are preserved and
+require explicit Open. Auxiliary cursor failures leave successful native project
+acknowledgments successful and report the notice separately. This is saved-state
+restoration; no unsaved autosave or durable render-job claim is implied.
+
 The implemented M2 subset and its deliberate schema deltas are documented in
 [RUNNING.md](RUNNING.md#actual-api-deltas-from-the-proposal). In particular,
 project epoch is now a string and every mutation also requires client ownership

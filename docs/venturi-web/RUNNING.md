@@ -316,7 +316,7 @@ that would separate a linked group refuse the whole operation. One Undo restores
 all properties and timing. Cross-timeline paste requires matching timeline FPS;
 saved custom attribute presets remain separate work.
 
-## Save conflicts
+## Following the playhead
 
 Commands (Ctrl+K) → Selection follows playhead toggles the local preference,
 enabled by default like the desktop. Seek, frame steps, marker jumps and composed
@@ -324,6 +324,22 @@ playback select the top visible video clip and its linked group; locked tracks
 are excluded and gaps clear selection. Disable it to retain a manual selection
 while moving the playhead. The preference persists in this browser and never
 writes native project state or Undo history.
+
+## Reopening saved projects
+
+After a validated Open or successful project save, the service remembers the
+root-scoped project token and saved-file SHA-256 in `.venturi-last-project.json`.
+The next service start reopens that saved project automatically when its bytes
+still match, after the normal native project/media/depth checks. A changed,
+missing or unsupported previous file stays untouched; Projects explains that
+an explicit Open is needed. Open the external version explicitly to update the
+automatic reopen baseline. Unsupported or linked reopen metadata is preserved
+and does not turn a successful project save into a failed command.
+
+This restores saved composition, media and separately saved Review annotations.
+Unsaved-edit autosave and render-job restoration remain separate pending work.
+
+## Save conflicts
 
 Save refuses a project changed, replaced or removed by an external editor after
 Open/last Save. Your native edits and Undo history remain in memory. Projects

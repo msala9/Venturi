@@ -1,4 +1,108 @@
 use super::*;
+
+#[test]
+fn unsupported_reopen_metadata_does_not_turn_a_successful_native_save_into_a_failed_command() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-resume-metadata-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    let future = b"{\"version\":2,\"future\":true}";
+    std::fs::write(root.join(".venturi-last-project.json"), future).unwrap();
+    let mut editor = Editor::new(&root).unwrap();
+    assert!(editor.persistence_notice.is_some());
+    let new = request(
+        &editor,
+        Operation::NewProject {
+            name: "preserved".into(),
+        },
+        "resume-future-new",
+        None,
+    );
+    assert_eq!(editor.mutation(None, new).unwrap()["status"], "applied");
+    let save = request(&editor, Operation::Save, "resume-future-save", None);
+    assert_eq!(editor.mutation(None, save).unwrap()["status"], "applied");
+    assert!(!editor.session.has_unsaved_changes());
+    assert!(editor.persistence_notice.is_some());
+    assert!(root.join("preserved.vvproj").is_file());
+    assert_eq!(
+        std::fs::read(root.join(".venturi-last-project.json")).unwrap(),
+        future
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn reopening_a_host_restores_only_the_last_saved_native_project_and_preserves_metadata_failures() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-host-resume-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let new = request(
+        &editor,
+        Operation::NewProject {
+            name: "last_saved".into(),
+        },
+        "resume-new",
+        None,
+    );
+    editor.mutation(None, new).unwrap();
+    let timeline = editor.session.project.timelines.keys().next().unwrap();
+    let edit = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "resume-edit",
+        Some(timeline),
+    );
+    editor
+        .mutation(Some(vv_core::Id::raw(timeline).to_string()), edit)
+        .unwrap();
+    let save = request(&editor, Operation::Save, "resume-save", None);
+    editor.mutation(None, save).unwrap();
+    let expected = serde_json::to_value(&editor.session.project).unwrap();
+    drop(editor);
+    let editor = Editor::new(&root).unwrap();
+    assert!(!editor.session.has_unsaved_changes());
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        expected
+    );
+    assert_eq!(editor.snapshot()["project_name"], "last_saved.vvproj");
+    assert!(editor.persistence_notice.is_none());
+    drop(editor);
+    std::fs::write(root.join("last_saved.vvproj"), b"external edit").unwrap();
+    let mut editor = Editor::new(&root).unwrap();
+    assert!(editor.session.path().is_none());
+    assert!(editor.persistence_notice.is_some());
+    let new = request(
+        &editor,
+        Operation::NewProject {
+            name: "new_project".into(),
+        },
+        "resume-new-after-change",
+        None,
+    );
+    editor.mutation(None, new).unwrap();
+    assert!(editor.persistence_notice.is_none());
+    assert_eq!(
+        std::fs::read(root.join("last_saved.vvproj")).unwrap(),
+        b"external edit"
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
 fn request(
     editor: &Editor,
     operation: Operation,

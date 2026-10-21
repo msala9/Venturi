@@ -49,12 +49,32 @@ pub struct Editor {
     completed: HashMap<String, (String, Result<Value>)>,
     import_warnings: Vec<String>,
     clipboard: Option<crate::clipboard::Clipboard>,
+    persistence_notice: Option<&'static str>,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
+        let files = Files::new(root)?;
+        let mut session = Session::default();
+        let persistence_notice = match crate::resume::restore(&files) {
+            Ok(Some((project, name))) => {
+                session.install_project(
+                    project,
+                    Some(
+                        files.path(&name).map_err(|_| {
+                            std::io::Error::other("Invalid automatic reopen project")
+                        })?,
+                    ),
+                );
+                None
+            }
+            Ok(None) => None,
+            Err(_) => Some(
+                "The previous saved project could not be reopened automatically. Open a project explicitly; existing files were preserved.",
+            ),
+        };
         Ok(Self {
-            session: Session::default(),
-            files: Files::new(root)?,
+            session,
+            files,
             epoch: std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
@@ -64,6 +84,7 @@ impl Editor {
             completed: HashMap::new(),
             import_warnings: vec![],
             clipboard: None,
+            persistence_notice,
         })
     }
     fn snapshot(&self) -> Value {
@@ -85,6 +106,7 @@ impl Editor {
             }
         }
         snapshot["import_warnings"] = json!(self.import_warnings);
+        snapshot["persistence_notice"] = json!(self.persistence_notice);
         snapshot["clipboard_count"] = json!(
             self.clipboard
                 .as_ref()
@@ -145,7 +167,13 @@ impl Editor {
                 "Save and restart the host before further commands",
             ));
         }
-        let result=self.perform(timeline,&request).map(|_|json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string()}));
+        let result=self.perform(timeline,&request).map(|_|{
+            if matches!(request.operation,Operation::NewProject{..}|Operation::OpenProject{..}|Operation::Save|Operation::SaveAs{..}|Operation::RecoverBackup{..}|Operation::ImportOtio{..})
+                && let Some(name)=self.session.path().and_then(|path|path.file_name()).and_then(|name|name.to_str()) {
+                self.persistence_notice=crate::resume::remember(&self.files,name).err().map(|_|"The project operation succeeded, but automatic reopen could not be updated. Existing recovery metadata was preserved.");
+            }
+            json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string()})
+        });
         self.completed
             .insert(request.command_id.clone(), (fingerprint, result.clone()));
         result

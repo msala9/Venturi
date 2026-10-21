@@ -1434,3 +1434,35 @@ snapshot and history were byte-for-byte equivalent before/after these view-only
 checks. Evidence: m4-selection-follows-playhead.json and the associated
 playhead/gap/playback browser screenshots. No HTTP editing or DSP runs in this
 view preference.
+
+The 67b8df2 binary is deployed on halo2, SHA-256
+7155e73a3237261cbd5f742eadcf3caf21e7e7f28395932144fa5ac16f5cb37f.
+The tested main module, saved library project and exact provenance/annotation
+seed match. CPU/lavapipe and two workers remain isolated from hardware; no
+DRI/KFD handles or GPU-lock probe/acquisition occurred. Evidence:
+m4-halo2-selection-follow.json.
+
+## M7 — validated last-saved project reopen
+
+Successful project Open/New/Import/Save/Save As/recovery records a bounded,
+versioned root-scoped project token and saved-file SHA-256. The private cursor
+uses NOFOLLOW reads, a 4 KiB limit, exclusive temporary writes, fsync and atomic
+publication. Startup reopens matching saved bytes through the same bounded
+native parser, media-root/depth/range validation and rate refresh as explicit
+Open. The Save-conflict baseline is refreshed from the actual file. Missing,
+changed, unknown or linked metadata/files are preserved; the empty session and
+Projects notice permit explicit Open. Auxiliary cursor failures cannot turn a
+successful native project Save into a failed mutation acknowledgment.
+
+108 web tests and 68 JS tests pass; web clippy with warnings denied, formatting
+and build pass. Native host restart reopened the saved 20-shot/60-take/40-clip
+fixture before any browser Open command. Reload showed its saved composition.
+Save worked against the refreshed baseline. A separate saved copy changed
+externally was refused at startup with a visible Projects notice. Explicit Open
+updated its hash baseline; the following restart reopened it automatically.
+Source hashes and native project/annotation contents stayed intact. Tests also
+cover repeated metadata writes, missing files, future schemas, symlinks and
+successful project acknowledgments despite unsupported cursor metadata.
+Evidence: m7-saved-project-resume.json, m7-saved-project-resume-browser.png and
+m7-saved-project-changed-browser.png. Unsaved autosave and durable render jobs
+remain open; this increment restores only saved project state.

@@ -637,6 +637,7 @@ async function refresh() {
     canvasTimeline.invalidate();
   }
   $("project-name").textContent = next.project_name || "Untitled project";
+  $("project-persistence-notice").textContent=next.persistence_notice || "";
   $("save-state").textContent = next.unsaved ? "Unsaved changes" : "Saved";
   $("revision").textContent = active
     ? `Revision ${active.revision.slice(0, 8)}`

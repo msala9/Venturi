@@ -1,0 +1,116 @@
+{
+  "fixture": "Own 20-shot montage and saved copy; CPU only",
+  "phases": {
+    "before_restart": {
+      "project_name": "Montage_review_check.vvproj",
+      "saved": true,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "persistence_notice": null,
+      "cursor": {
+        "version": 1,
+        "project_token": "Montage_review_check.vvproj",
+        "sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331"
+      },
+      "project_file_sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40
+    },
+    "after_restart": {
+      "project_name": "Montage_review_check.vvproj",
+      "saved": true,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "persistence_notice": null,
+      "cursor": {
+        "version": 1,
+        "project_token": "Montage_review_check.vvproj",
+        "sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331"
+      },
+      "project_file_sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40
+    },
+    "copy_before_change": {
+      "project_name": "Resume_UI_check.vvproj",
+      "saved": true,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "persistence_notice": null,
+      "cursor": {
+        "version": 1,
+        "project_token": "Resume_UI_check.vvproj",
+        "sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331"
+      },
+      "project_file_sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40
+    },
+    "changed_file_fallback": {
+      "project_name": null,
+      "saved": true,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "persistence_notice": "The previous saved project could not be reopened automatically. Open a project explicitly; existing files were preserved.",
+      "cursor": {
+        "version": 1,
+        "project_token": "Resume_UI_check.vvproj",
+        "sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331"
+      },
+      "project_file_sha256": "37ede05dadc33e793d558365c28ef825cdd6fe7f15558da8f9c35b3a92a3359c"
+    },
+    "explicit_open": {
+      "project_name": "Resume_UI_check.vvproj",
+      "saved": true,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "persistence_notice": null,
+      "cursor": {
+        "version": 1,
+        "project_token": "Resume_UI_check.vvproj",
+        "sha256": "37ede05dadc33e793d558365c28ef825cdd6fe7f15558da8f9c35b3a92a3359c"
+      },
+      "project_file_sha256": "37ede05dadc33e793d558365c28ef825cdd6fe7f15558da8f9c35b3a92a3359c",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40
+    },
+    "final_restart": {
+      "project_name": "Resume_UI_check.vvproj",
+      "saved": true,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "persistence_notice": null,
+      "cursor": {
+        "version": 1,
+        "project_token": "Resume_UI_check.vvproj",
+        "sha256": "37ede05dadc33e793d558365c28ef825cdd6fe7f15558da8f9c35b3a92a3359c"
+      },
+      "project_file_sha256": "37ede05dadc33e793d558365c28ef825cdd6fe7f15558da8f9c35b3a92a3359c",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40
+    }
+  },
+  "source_hashes_unchanged": true,
+  "tests": {
+    "vv_web": 108,
+    "javascript": 68,
+    "clippy": "vv-web all targets; warnings denied"
+  }
+}

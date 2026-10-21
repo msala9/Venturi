@@ -265,16 +265,35 @@ impl Files {
         if !name.ends_with(".vvproj") {
             return Err(ApiError::invalid("Choose a .vvproj file"));
         }
-        self.load_project_file(name)
+        self.load_project_file(name, None)
+    }
+    pub fn load_matching(&self, name: &str, sha256: &str) -> Result<Project> {
+        if !name.ends_with(".vvproj") {
+            return Err(ApiError::invalid("Choose a native project"));
+        }
+        self.load_project_file(name, Some(sha256))
+    }
+    pub fn saved_fingerprint(&self, name: &str) -> Option<String> {
+        self.version
+            .borrow()
+            .as_ref()
+            .filter(|(token, _)| token == name)
+            .map(|(_, version)| version.sha256.clone())
     }
     pub fn load_backup(&self, name: &str) -> Result<Project> {
         if !name.ends_with(".vvproj.bak") {
             return Err(ApiError::invalid("Choose a listed .vvproj.bak backup"));
         }
-        self.load_project_file(name)
+        self.load_project_file(name, None)
     }
-    fn load_project_file(&self, name: &str) -> Result<Project> {
+    fn load_project_file(&self, name: &str, expected: Option<&str>) -> Result<Project> {
         let (bytes, version) = self.read_versioned(name)?;
+        if expected.is_some_and(|sha256| sha256 != version.sha256) {
+            return Err(ApiError::conflict(
+                "SAVE_CONFLICT",
+                "The previous project changed; open it explicitly",
+            ));
+        }
         let mut project: Project = ron::de::from_bytes(&bytes)
             .map_err(|_| ApiError::invalid("The project is not valid Venturi RON"))?;
         self.validate_media(&mut project)?;

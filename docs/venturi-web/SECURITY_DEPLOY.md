@@ -67,6 +67,14 @@ should still be closed while saving the same project from the web.
 Long soak, unsaved autosave, durable jobs and a complete public-host threat review
 remain open. No background service or public listener is enabled.
 
+Last-saved project reopening uses a private, bounded version-1 cursor containing
+only the root token and SHA-256. Atomic writes and NOFOLLOW reads preserve
+unsupported/linked metadata. Startup requires matching project bytes and runs
+the existing native project/media validation; otherwise it leaves files intact
+and offers explicit Open. This restores saved state and never implicitly applies
+an unsaved edit journal. Cursor persistence errors are reported separately from
+the outcome of the native project operation.
+
 ## License and brand
 
 Venturi is GPL-3.0-or-later. Preserve copyright/license notices and review distribution/network implications with proper legal guidance as relevant. Do not automatically copy the MadRock mark into a project intended for distribution without rights confirmation.

@@ -478,6 +478,10 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   `set_disabled {clip_ids,disabled}` expand whole linked groups and validate all
   involved tracks before native atomic commands.
 - `set_marker {marker:{id,delete,start_frame,duration_frames,note,color}}`
+- `move_marker {marker_id,start_frame,duration_frames}` preserves the native ID,
+  note and color, validates the integer range and applies one `SetMarker::moved`
+  Undo step. An unchanged range creates no history entry. Marker moves use the
+  normal project/generation/timeline revision guards.
   creates with null id, edits with an existing ID, or removes with delete=true.
   Palette names use native capitalization; snapshot includes palette RGB.
 - `add_generator {track,start_frame,length_frames,generator}` adds title or

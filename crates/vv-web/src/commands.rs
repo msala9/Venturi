@@ -214,6 +214,11 @@ pub enum Operation {
     SetMarker {
         marker: MarkerEdit,
     },
+    MoveMarker {
+        marker_id: String,
+        start_frame: FrameIdx,
+        duration_frames: FrameIdx,
+    },
     SetTransition {
         clip_id: String,
         slot: crate::inspector::TransitionSlot,
@@ -632,6 +637,29 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                     core::SetMarker::add(id, value)
                 }));
             }
+        }
+        Operation::MoveMarker {
+            marker_id,
+            start_frame,
+            duration_frames,
+        } => {
+            if *start_frame < 0
+                || *duration_frames < 0
+                || *duration_frames > MAX_FRAME
+                || *start_frame > MAX_FRAME - *duration_frames
+            {
+                return Err(ApiError::invalid(
+                    "Marker range exceeds the supported limit",
+                ));
+            }
+            let key = core::MarkerId(marker_id.parse().map_err(|_| ApiError::missing())?);
+            let mut marker = tl.marker(key).ok_or_else(ApiError::missing)?.clone();
+            if marker.start == *start_frame && marker.duration == *duration_frames {
+                return Ok(());
+            }
+            marker.start = *start_frame;
+            marker.duration = *duration_frames;
+            session.apply(Box::new(core::SetMarker::moved(id, marker)));
         }
         Operation::SetDisabled { clip_ids, disabled } => {
             let selected = refs(tl, clip_ids)?;

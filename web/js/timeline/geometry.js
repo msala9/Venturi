@@ -1,5 +1,7 @@
 export const HEADER = 150,
-  RULER = 30,
+  RULER = 48,
+  MARKER_TOP = 24,
+  MARKER_BOTTOM = 42,
   TRACK = 62,
   MAX_FRAME = 1_000_000_000;
 export function playheadSelection(timeline, frame) {
@@ -41,6 +43,15 @@ export function snapFrame(frame, candidates, view, fps, threshold = 8) {
   return Math.max(0, best);
 }
 export function hitTest(x, y, timeline, view) {
+  if (x >= HEADER && y >= MARKER_TOP && y < MARKER_BOTTOM) {
+    for (const marker of [...(timeline.markers || [])].reverse()) {
+      const left = frameToX(marker.start_frame, view, timeline.fps);
+      const right = frameToX(marker.start_frame + marker.duration_frames, view, timeline.fps);
+      if (x < left - 7 || x > right + 7) continue;
+      const edge = right - left < 15 ? null : Math.abs(x - left) <= 5 ? "start" : Math.abs(x - right) <= 5 ? "end" : null;
+      return {kind:"marker",marker,edge};
+    }
+  }
   if (y < RULER) return { kind: "scrub" };
   const track = Math.floor((y - RULER + view.scrollY) / TRACK);
   if (!timeline.tracks[track]) return { kind: "blank" };
@@ -60,6 +71,23 @@ export function hitTest(x, y, timeline, view) {
       };
   }
   return { kind: "blank", track };
+}
+export function markerDraft(marker, mode, pointer, grab, candidates, view, fps) {
+  const snap = frame => view.snap ? snapFrame(frame,candidates,view,fps) : frame;
+  const end = marker.start_frame + marker.duration_frames;
+  let start = marker.start_frame, stop = end;
+  if (mode === "move") {
+    const target = marker.start_frame+pointer-grab;
+    const snapped = view.snap ? snapFrame(target,candidates.flatMap(frame=>[frame,frame-marker.duration_frames]).filter(frame=>frame>=0 && frame<=MAX_FRAME-marker.duration_frames),view,fps) : target;
+    start = Math.max(0,Math.min(MAX_FRAME-marker.duration_frames,snapped));
+    stop = start+marker.duration_frames;
+  } else if (mode === "start") start = Math.max(0,Math.min(end,snap(pointer)));
+  else if (mode === "end") stop = Math.min(MAX_FRAME,Math.max(start,snap(pointer)));
+  else {
+    const other = Math.max(0,Math.min(MAX_FRAME,snap(pointer)));
+    start = Math.min(marker.start_frame,other); stop = Math.max(marker.start_frame,other);
+  }
+  return {...marker,start_frame:start,duration_frames:stop-start};
 }
 export function linkedSelection(timeline, ids) {
   const clips = timeline.tracks.flatMap((track) => track.clips);

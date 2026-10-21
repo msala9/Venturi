@@ -1,0 +1,349 @@
+{
+  "url": "http://127.0.0.1:8805",
+  "software_only": true,
+  "gpu_initialized": false,
+  "parent_project_sha256": "2c88cbfea9362f9cb45d038209fc9af43aef73dc94ef252f7babd8c0c0fe8c70",
+  "tracks_sha256": "7e3dad5aba781a1b897521d5d7854043e49b4befe4117b55701aed9349c6d7ce",
+  "phases": {
+    "before": {
+      "generation": "2",
+      "history": {
+        "labels": [
+          "AddMarker",
+          "AddMarker"
+        ],
+        "position": 2
+      },
+      "markers": [
+        {
+          "color": "Blue",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "Point cue <literal>",
+          "rgb": [
+            90,
+            163,
+            236
+          ],
+          "start_frame": 6
+        },
+        {
+          "color": "Purple",
+          "duration_frames": 12,
+          "id": "1",
+          "note": "Range cue",
+          "rgb": [
+            177,
+            136,
+            223
+          ],
+          "start_frame": 24
+        }
+      ],
+      "revision": "0722edcfaf6a683a",
+      "unsaved": false
+    },
+    "point_moved": {
+      "generation": "3",
+      "history": {
+        "labels": [
+          "AddMarker",
+          "AddMarker",
+          "MoveMarker"
+        ],
+        "position": 3
+      },
+      "markers": [
+        {
+          "color": "Blue",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "Point cue <literal>",
+          "rgb": [
+            90,
+            163,
+            236
+          ],
+          "start_frame": 12
+        },
+        {
+          "color": "Purple",
+          "duration_frames": 12,
+          "id": "1",
+          "note": "Range cue",
+          "rgb": [
+            177,
+            136,
+            223
+          ],
+          "start_frame": 24
+        }
+      ],
+      "revision": "8a4f3f2055feebff",
+      "unsaved": true
+    },
+    "range_moved_snapped": {
+      "generation": "4",
+      "history": {
+        "labels": [
+          "AddMarker",
+          "AddMarker",
+          "MoveMarker",
+          "MoveMarker"
+        ],
+        "position": 4
+      },
+      "markers": [
+        {
+          "color": "Blue",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "Point cue <literal>",
+          "rgb": [
+            90,
+            163,
+            236
+          ],
+          "start_frame": 12
+        },
+        {
+          "color": "Purple",
+          "duration_frames": 12,
+          "id": "1",
+          "note": "Range cue",
+          "rgb": [
+            177,
+            136,
+            223
+          ],
+          "start_frame": 36
+        }
+      ],
+      "revision": "cb323bd391ccc295",
+      "unsaved": true
+    },
+    "range_end_resized": {
+      "generation": "5",
+      "history": {
+        "labels": [
+          "AddMarker",
+          "AddMarker",
+          "MoveMarker",
+          "MoveMarker",
+          "MoveMarker"
+        ],
+        "position": 5
+      },
+      "markers": [
+        {
+          "color": "Blue",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "Point cue <literal>",
+          "rgb": [
+            90,
+            163,
+            236
+          ],
+          "start_frame": 12
+        },
+        {
+          "color": "Purple",
+          "duration_frames": 8,
+          "id": "1",
+          "note": "Range cue",
+          "rgb": [
+            177,
+            136,
+            223
+          ],
+          "start_frame": 36
+        }
+      ],
+      "revision": "41fe546754758d52",
+      "unsaved": true
+    },
+    "range_start_resized": {
+      "generation": "6",
+      "history": {
+        "labels": [
+          "AddMarker",
+          "AddMarker",
+          "MoveMarker",
+          "MoveMarker",
+          "MoveMarker",
+          "MoveMarker"
+        ],
+        "position": 6
+      },
+      "markers": [
+        {
+          "color": "Blue",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "Point cue <literal>",
+          "rgb": [
+            90,
+            163,
+            236
+          ],
+          "start_frame": 12
+        },
+        {
+          "color": "Purple",
+          "duration_frames": 12,
+          "id": "1",
+          "note": "Range cue",
+          "rgb": [
+            177,
+            136,
+            223
+          ],
+          "start_frame": 32
+        }
+      ],
+      "revision": "1ddd32787cfedee3",
+      "unsaved": true
+    },
+    "undo_all": {
+      "generation": "10",
+      "history": {
+        "labels": [
+          "AddMarker",
+          "AddMarker",
+          "MoveMarker",
+          "MoveMarker",
+          "MoveMarker",
+          "MoveMarker"
+        ],
+        "position": 2
+      },
+      "markers": [
+        {
+          "color": "Blue",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "Point cue <literal>",
+          "rgb": [
+            90,
+            163,
+            236
+          ],
+          "start_frame": 6
+        },
+        {
+          "color": "Purple",
+          "duration_frames": 12,
+          "id": "1",
+          "note": "Range cue",
+          "rgb": [
+            177,
+            136,
+            223
+          ],
+          "start_frame": 24
+        }
+      ],
+      "revision": "0722edcfaf6a683a",
+      "unsaved": true
+    },
+    "redo_saved": {
+      "generation": "14",
+      "history": {
+        "labels": [
+          "AddMarker",
+          "AddMarker",
+          "MoveMarker",
+          "MoveMarker",
+          "MoveMarker",
+          "MoveMarker"
+        ],
+        "position": 6
+      },
+      "markers": [
+        {
+          "color": "Blue",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "Point cue <literal>",
+          "rgb": [
+            90,
+            163,
+            236
+          ],
+          "start_frame": 12
+        },
+        {
+          "color": "Purple",
+          "duration_frames": 12,
+          "id": "1",
+          "note": "Range cue",
+          "rgb": [
+            177,
+            136,
+            223
+          ],
+          "start_frame": 32
+        }
+      ],
+      "revision": "1ddd32787cfedee3",
+      "unsaved": false
+    },
+    "reopened": {
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "markers": [
+        {
+          "color": "Blue",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "Point cue <literal>",
+          "rgb": [
+            90,
+            163,
+            236
+          ],
+          "start_frame": 12
+        },
+        {
+          "color": "Purple",
+          "duration_frames": 12,
+          "id": "1",
+          "note": "Range cue",
+          "rgb": [
+            177,
+            136,
+            223
+          ],
+          "start_frame": 32
+        }
+      ],
+      "revision": "1ddd32787cfedee3",
+      "unsaved": false
+    }
+  },
+  "four_real_pointer_gestures_four_native_undo_steps": true,
+  "range_far_end_snapped_to_clip_end": 48,
+  "undo_restored_original_timeline_revision": true,
+  "redo_and_process_restart_preserved_revision": true,
+  "parent_project_and_clip_tracks_unchanged": true,
+  "double_click_editor": {
+    "marker_id": "1",
+    "start_frame": 32,
+    "duration_frames": 12,
+    "note": "Range cue",
+    "color": "Purple"
+  },
+  "saved_project_sha256": "22fa3416edc8126cd65be3f04099fdb5486646c603a18f511066edf58915b008",
+  "served_asset_sha256": {
+    "main.js": "33b77c7db4a68211101c7e6b5059a48d5a18a6bca2c84a7b205682c5821563f0",
+    "inspector.js": "9691ba7efc505556b244e8bfbb1c568fd5836050f1dae6af90cdda721d5dd0f7",
+    "timeline/geometry.js": "34fe26fc2bb2bce52d5e7ec2134d40e7185996168dfdd7ec155dafb5906b3086",
+    "timeline/input.js": "04b16ccd8d7f139d979e402c58325a48ba423798ca95ecd7e73c8eb9fac877ae",
+    "timeline/draw.js": "5dc2fd1dce5ec545dda0726b0f3dbdbd97d91bbcfd66e11520d98dba43df07e1"
+  },
+  "alt_extend_escape_capture_loss_pointer_cancel_read_only_verified_by_unit_tests": true
+}

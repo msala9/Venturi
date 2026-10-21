@@ -1898,3 +1898,34 @@ project and Review hashes were identical before/after. The UI reopened normally.
 Evidence: m7-halo2-durable-command-receipts.json and browser screenshot. Explicit
 software preview remains enabled; no GPU lock, AMD driver or inference work was
 involved.
+
+## M4 — marker lane gestures and native MoveMarker history
+
+The Canvas now separates ruler ticks, markers and the two native-cache stripes.
+Point/range markers can be moved directly, range edges resized, and Alt+drag can
+extend a point in either direction. Native-style eight-CSS-pixel snapping checks
+both ends of a moving range against clip edges/playhead. Drafts remain local,
+with no HTTP during pointer movement. Escape, capture loss and cancellation
+remove the ghost without edits. Read-only gestures can seek but cannot commit.
+Click seeks to the marker; double-click opens its existing accessible numeric
+editor with the matching selection. Editor selection/open state survives the
+normal inspector refresh and is scoped to the project/timeline.
+
+The new thin move_marker DTO preserves stored note/color/ID and invokes native
+SetMarker::moved, with the existing epoch/generation/revision checks. Invalid or
+missing marker ranges are refused; an unchanged range has no history effect.
+126 Rust web tests and 96 JavaScript tests pass, with fmt, clippy and build. Tests
+include exact u64 marker identity, native metadata/clip preservation, one MoveMarker
+Undo, bounds, local drafts, both range edges, Alt extension, cancellation and
+read-only behavior.
+
+Actual browser acceptance on the isolated GPU-disabled host moved a point from
+6 to 12, moved a 24–36 range so its far end snapped to the clip end at 48, resized
+the end to 44 and the start to 32. Each release advanced history once, using the
+native MoveMarker label. Four Undo restored the original timeline revision;
+four Redo restored the final one. Double-click selected marker 1 with start 32,
+duration 12, Purple and its original note. Save/process restart preserved the
+final revision and both markers with a fresh history. Clip tracks and parent
+project hashes are unchanged. Evidence: m4-marker-gestures.json and browser PNG.
+The markers parity row is now done. This interaction check needed no renderer,
+shared archive mutation or shared hardware GPU.

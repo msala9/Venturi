@@ -38,7 +38,18 @@ Special **Slip viewer**: when using Slip tool, split viewer into clip's new In a
 
 ## 5. Timeline spec
 
-Geometry in CSS pixels: track header 150; ruler 30 high; video track 64; audio track 56; collapsed track 28; trim hit zone 8; snap threshold 8 screen px, not time units; playhead 2px; grab handles have larger input hit area than visible geometry.
+Implemented Canvas geometry in CSS pixels: track header 150; ruler 48 high
+(24 tick band, 18 marker lane, 6 cache stripes); track height 62; trim hit zone 8;
+snap threshold 8 screen px, not time units; playhead 2px. Variable video/audio and
+collapsed track heights remain a separate layout requirement.
+
+Marker lane: click seeks to the marker, drag moves it, range ends resize, and
+Alt+drag extends a point into a range in either direction. Moving a range can
+snap either end to clip edges/playhead. The local ghost preserves note/color/ID;
+only pointerup sends one guarded native command. Escape, capture loss and pointer
+cancellation discard the draft. Double-click opens the matching numeric marker
+editor; this remains the keyboard-accessible path for position, duration, note,
+color and deletion. Tick-band clicks continue scrubbing under range markers.
 
 Canvas layers drawn in order: background/grid, track lanes, clips/fills, thumbnails/waveforms, transitions/speed/fades/markers, selection borders/ghost, playhead and snap guides. Separate static grid/ruler from frequently updated playhead where beneficial, but do not multiply canvases gratuitously. Redraw with requestAnimationFrame only when dirty. Cull time range and tracks outside viewport. Cache scaled thumbnails/waveform sampled arrays with memory cap.
 

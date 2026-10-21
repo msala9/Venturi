@@ -1,4 +1,4 @@
-import { HEADER, RULER, TRACK, frameToX, visibleRange } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange } from "./geometry.js";
 export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
@@ -149,16 +149,22 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
     ) {
       const x = frameToX(frame, view, timeline.fps);
       ctx.fillText(`${frame}f`, x + 4, 14);
-      ctx.fillRect(x, 24, 1, 6);
+      ctx.fillRect(x, 18, 1, 6);
     }
-    for (const marker of timeline.markers || []) {
+    for (const original of timeline.markers || []) {
+      const drafting = view.draft?.kind === "marker" && view.draft.marker.id === original.id;
+      const marker = drafting ? view.draft.marker : original;
       const x = frameToX(marker.start_frame, view, timeline.fps);
       const right = frameToX(marker.start_frame + marker.duration_frames, view, timeline.fps);
       if (right < HEADER || x > width) continue;
-      ctx.save(); ctx.beginPath(); ctx.rect(HEADER,0,width-HEADER,RULER); ctx.clip();
+      ctx.save(); ctx.beginPath(); ctx.rect(HEADER,MARKER_TOP,width-HEADER,MARKER_BOTTOM-MARKER_TOP); ctx.clip();
       ctx.fillStyle = marker.rgb ? `rgb(${marker.rgb.join(",")})` : color("--amber");
-      ctx.globalAlpha = 0.35; ctx.fillRect(x, 0, Math.max(3,right-x),RULER); ctx.globalAlpha = 1;
-      ctx.fillRect(x,0,2,RULER); ctx.fillText(marker.note.slice(0,32),x+4,6); ctx.restore();
+      ctx.globalAlpha = 0.35; ctx.fillRect(x, MARKER_TOP+2, Math.max(3,right-x),MARKER_BOTTOM-MARKER_TOP-3); ctx.globalAlpha = 1;
+      ctx.fillRect(x,MARKER_TOP+2,2,MARKER_BOTTOM-MARKER_TOP-3);
+      if(marker.duration_frames)ctx.fillRect(right-1,MARKER_TOP+2,2,MARKER_BOTTOM-MARKER_TOP-3);
+      ctx.fillText(`${marker.note.slice(0,24)}${drafting ? ` · ${marker.start_frame}f / ${marker.duration_frames}f` : ""}`,x+5,MARKER_TOP+12);
+      if(drafting){ctx.strokeStyle=color("--text");ctx.strokeRect(x-2,MARKER_TOP+1,Math.max(6,right-x+4),MARKER_BOTTOM-MARKER_TOP-2);}
+      ctx.restore();
     }
     const cached = getCache();
     if (cached) {

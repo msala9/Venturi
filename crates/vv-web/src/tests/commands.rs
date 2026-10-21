@@ -710,6 +710,61 @@ fn markers_add_edit_remove_and_undo_without_changing_clip_positions() {
 }
 
 #[test]
+fn marker_drag_preserves_native_identity_note_color_and_clips_with_one_move_undo() {
+    let (mut session, id, _) = fixture();
+    let marker = core::Marker {
+        id: core::MarkerId(9_007_199_254_740_993),
+        start: 12,
+        duration: 6,
+        note: "Cue <literal>".into(),
+        color: core::ClipColor::Orange,
+    };
+    session.project.timelines[id].markers.push(marker.clone());
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let steps = session.history.position();
+    let operation = |start, duration| Operation::MoveMarker {
+        marker_id: marker.id.0.to_string(),
+        start_frame: start,
+        duration_frames: duration,
+    };
+    for (start, duration) in [(-1, 6), (12, -1), (MAX_FRAME, 1), (1, i64::MAX)] {
+        assert!(apply(&mut session, id, &operation(start, duration)).is_err());
+        assert_eq!(session.history.position(), steps);
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            before
+        );
+    }
+    apply(&mut session, id, &operation(12, 6)).unwrap();
+    assert_eq!(
+        session.history.position(),
+        steps,
+        "Unchanged release is not an Undo step"
+    );
+    apply(&mut session, id, &operation(20, 10)).unwrap();
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(
+        session.history.labels().last(),
+        Some(CommandLabel::MoveMarker)
+    );
+    let moved = &session.project.timelines[id].markers[0];
+    assert_eq!(
+        (moved.id, moved.start, moved.duration, moved.color),
+        (marker.id, 20, 10, marker.color)
+    );
+    assert_eq!(moved.note, marker.note);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id].tracks).unwrap(),
+        before["tracks"]
+    );
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+}
+
+#[test]
 fn title_and_adjustment_generators_keep_safe_insert_and_native_defaults() {
     let (mut s, id, _) = fixture();
     let before = s.timeline_revision(id);

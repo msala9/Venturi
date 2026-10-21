@@ -153,11 +153,13 @@ function renderTransitions(root, detail, disabled, report) {
   root.append(section);
 }
 
-export function renderMarkers(root, timeline, { writable, getFrame, commit, seek, notice }) {
+export function renderMarkers(root, timeline, { writable, getFrame, commit, seek, notice, selectedId = null, onSelect = () => {}, openState }) {
   const section = document.createElement("details"), summary = document.createElement("summary"); summary.textContent = `Timeline markers (${timeline.markers.length})`; section.append(summary);
+  section.dataset.visualPath="markers"; section.open=openState?.get("markers") || false;
   const form = document.createElement("form");
   const select = document.createElement("select"); select.setAttribute("aria-label","Marker to edit"); select.append(new Option("New marker at playhead", ""));
   for (const marker of timeline.markers) select.append(new Option(`${marker.start_frame} · ${marker.note.slice(0,60) || marker.id}`,marker.id));
+  if(timeline.markers.some(marker=>marker.id===selectedId))select.value=selectedId;
   form.append(select);
   function field(name, type, value) {
     const label = document.createElement("label"); label.className = "field"; label.textContent = name;
@@ -171,11 +173,12 @@ export function renderMarkers(root, timeline, { writable, getFrame, commit, seek
   const submit = document.createElement("button"); submit.textContent = "Apply marker"; submit.disabled = !writable; form.append(submit);
   const remove = document.createElement("button"); remove.type = "button"; remove.textContent = "Remove marker"; remove.disabled = !writable || !select.value; form.append(remove);
   const jump = document.createElement("button"); jump.type = "button"; jump.textContent = "Go to marker"; jump.disabled = !select.value; form.append(jump);
-  select.addEventListener("change", () => {
+  const load = () => {
     const marker = timeline.markers.find((m) => m.id === select.value);
     start.value = marker?.start_frame ?? getFrame(); duration.value = marker?.duration_frames ?? 0; note.value = marker?.note ?? ""; color.value = marker?.color ?? "Orange";
     remove.disabled = !writable || !marker; jump.disabled = !marker;
-  });
+  };
+  select.addEventListener("change",()=>{onSelect(select.value);load();}); load();
   const apply = (deleting) => commit({kind:"set_marker",marker:{id:select.value || null,delete:deleting,start_frame:Number(start.value),duration_frames:Number(duration.value),note:note.value,color:color.value}}).catch((error)=>notice(error.message));
   form.addEventListener("submit",(event)=>{event.preventDefault(); if (form.reportValidity()) apply(false);}); remove.addEventListener("click",()=>apply(true));
   jump.addEventListener("click",()=>seek(Number(start.value)));

@@ -489,7 +489,8 @@ function selected() {
       const button=document.createElement("button");button.textContent=label;button.disabled=disabled;button.addEventListener("click",()=>commit(operation()).catch((error)=>notice(error.message)));fieldset.append(button);
     }
     const properties=document.createElement("button");properties.textContent="Paste selected properties";properties.disabled=!view.selection.length || !documentState.clipboard_revision || !writable || busy || !!unresolved;properties.addEventListener("click",()=>pasteAttributes?.open());fieldset.append(properties);
-    renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,seek:(frame)=>{view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();}});
+    const markerTarget=`${documentState.project_epoch}:${timeline.id}`;
+    renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,selectedId:view.markerTarget===markerTarget?view.markerId:null,onSelect:id=>{view.markerTarget=markerTarget;view.markerId=id;},openState:visualState,seek:(frame)=>{view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();}});
     const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
     mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open()});
   }
@@ -519,6 +520,8 @@ const canvasTimeline = createTimeline({
   },
   onCommand: (operation) => commit(operation),
   onNotice: notice,
+  canEdit: () => writable && !busy && !unresolved,
+  onMarkerEdit: id => { view.markerTarget=`${documentState?.project_epoch}:${timeline.id}`;view.markerId=id;visualState.set("markers",true);selected();document.querySelector('[data-visual-path="markers"] select')?.focus(); },
   onSlip: (event)=>{if(event.phase==="begin"){programPlayer?.stop();sourcePlayer?.pause();}slipView?.draft(event);},
 });
 window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});

@@ -7,6 +7,7 @@ import {
   hitTest,
   linkedSelection,
   validateDraft,
+  markerDraft,
 } from "./geometry.js";
 
 export function createInput({
@@ -19,6 +20,8 @@ export function createInput({
   onCommand,
   onNotice,
   onSlip = () => {},
+  canEdit = () => true,
+  onMarkerEdit = () => {},
 }) {
   let gesture = null,
     waiting = false;
@@ -41,7 +44,9 @@ export function createInput({
     canvas.focus();
     const [x, y] = point(event);
     const hit = hitTest(x, y, timeline, view);
-    if (event.button === 1 || event.altKey) {
+    if (event.button === 0 && hit.kind === "marker") {
+      gesture = {kind:"marker",marker:hit.marker,mode:hit.edge || (event.altKey && !hit.marker.duration_frames ? "extend" : "move"),frame:xToFrame(x,view,timeline.fps),x,y,moved:false,editable:canEdit()};
+    } else if (event.button === 1 || event.altKey) {
       gesture = {
         kind: "pan",
         x,
@@ -94,7 +99,13 @@ export function createInput({
     invalidate();
   };
   const move = (event) => {
-    if (!gesture) return;
+    if (!gesture) {
+      const timeline = getTimeline(); if (!timeline) return;
+      const [x,y] = point(event), hit = hitTest(x,y,timeline,view);
+      canvas.title = hit.marker ? `${hit.marker.note || "Marker"} · ${hit.marker.start_frame}f · drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : "";
+      if(canvas.style)canvas.style.cursor = hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
+      return;
+    }
     const timeline = getTimeline(),
       [x, y] = point(event),
       g = gesture;
@@ -111,6 +122,11 @@ export function createInput({
     } else if (g.kind === "scrub") {
       view.playhead = xToFrame(x, view, timeline.fps);
       onSeek(false);
+    } else if (g.kind === "marker") {
+      if (!g.editable || (Math.hypot(x-g.x,y-g.y)<4 && !g.moved)) return;
+      g.moved = true;
+      const candidates = [view.playhead,...timeline.tracks.flatMap(track=>track.clips.flatMap(clip=>[clip.start_frame,clip.start_frame+clip.length_frames]))];
+      view.draft = {kind:"marker",marker:markerDraft(g.marker,g.mode,xToFrame(x,view,timeline.fps),g.frame,candidates,view,timeline.fps)};
     } else if (g.kind === "lasso") {
       view.lasso = {
         x: Math.min(g.x, x),
@@ -215,13 +231,15 @@ export function createInput({
     if (canvas.hasPointerCapture(event.pointerId))
       canvas.releasePointerCapture(event.pointerId);
     if (g.kind === "scrub") onSeek(true);
-    if (draft && g.moved && !(g.kind === "slip" && draft.target === 0)) {
+    if (g.kind === "marker" && !g.moved) { view.playhead=g.marker.start_frame;onSeek(true); }
+    const markerChanged = g.kind !== "marker" || (draft && (draft.marker.start_frame!==g.marker.start_frame || draft.marker.duration_frames!==g.marker.duration_frames));
+    if (draft && g.moved && markerChanged && !(g.kind === "slip" && draft.target === 0)) {
       if (draft.error) onNotice(draft.error);
       else {
         waiting = true;
         try {
           const operation =
-            g.kind === "move"
+            g.kind === "marker" ? {kind:"move_marker",marker_id:g.marker.id,start_frame:draft.marker.start_frame,duration_frames:draft.marker.duration_frames} : g.kind === "move"
               ? {
                   kind: "safe_move",
                   moves: draft.changes.map(
@@ -283,6 +301,11 @@ export function createInput({
   const key = (event) => {
     if (event.key === "Escape") cancel();
   };
+  const doubleClick = event => {
+    const timeline = getTimeline(); if (!timeline || waiting) return;
+    const hit = hitTest(...point(event),timeline,view);
+    if(hit.marker)onMarkerEdit(hit.marker.id);
+  };
   canvas.addEventListener("pointerdown", down);
   canvas.addEventListener("pointermove", move);
   canvas.addEventListener("pointerup", up);
@@ -290,6 +313,7 @@ export function createInput({
   canvas.addEventListener("lostpointercapture", cancel);
   canvas.addEventListener("wheel", wheel, { passive: false });
   canvas.addEventListener("keydown", key);
+  canvas.addEventListener("dblclick", doubleClick);
   window.addEventListener("blur", cancel);
   return {
     cancel,
@@ -302,6 +326,7 @@ export function createInput({
         ["lostpointercapture", cancel],
         ["wheel", wheel],
         ["keydown", key],
+        ["dblclick", doubleClick],
       ])
         canvas.removeEventListener(event, fn);
       window.removeEventListener("blur", cancel);

@@ -19,7 +19,12 @@ pub struct Replacement {
     pub attributes: core::take::AttributePolicy,
     #[serde(default, skip_serializing_if = "preserve_audio_streams")]
     pub audio_streams: core::take::AudioStreamPolicy,
+    #[serde(default, skip_serializing_if = "reject_frozen")]
+    pub frozen: core::take::FrozenPolicy,
     pub source_version: Option<String>,
+}
+fn reject_frozen(policy: &core::take::FrozenPolicy) -> bool {
+    matches!(policy, core::take::FrozenPolicy::Reject)
 }
 fn preserve_audio_streams(policy: &core::take::AudioStreamPolicy) -> bool {
     matches!(policy, core::take::AudioStreamPolicy::Preserve)
@@ -49,7 +54,7 @@ fn error(error: core::take::Error) -> ApiError {
             ApiError::invalid("Choose a source media clip; compound replacement is unsupported")
         }
         Frozen => {
-            ApiError::invalid("Unfreeze the selected and linked clips before replacing the take")
+            ApiError::invalid("Choose Hold B Source In or Unfreeze for affected frozen clips")
         }
         LinkedSource => ApiError::invalid(
             "Linked clips use different media or speeds; explicitly keep the other linked clips",
@@ -143,6 +148,7 @@ fn request(
             links: replacement.links,
             attributes: replacement.attributes,
             audio_streams: replacement.audio_streams,
+            frozen: replacement.frozen,
         },
         version,
     ))
@@ -156,7 +162,7 @@ pub fn preview(
     let (request, version) = request(session, files, id, &request_body.replacement, false)?;
     let plan = core::take::plan(&session.project, &request).map_err(error)?;
     Ok(
-        json!({"version":1,"query":request_body.query,"source_version":version,"removed_crossings":plan.removed_crossings,"merged_keys":plan.merged_keys,"audio_stream_count":plan.audio_stream_count,"changes":plan.changes.iter().map(|change|json!({"track":change.track.to_string(),"clip_id":change.clip.0.to_string(),"previous_media_id":change.previous_media.raw().to_string(),"media_id":change.media.raw().to_string(),"start_frame":change.start_frame,"previous_length":change.previous_length,"length":change.length,"source_in":change.source_in,"source_out":change.source_out,"previous_audio_stream_index":change.previous_audio_stream_index,"audio_stream_index":change.audio_stream_index})).collect::<Vec<_>>()}),
+        json!({"version":1,"query":request_body.query,"source_version":version,"removed_crossings":plan.removed_crossings,"merged_keys":plan.merged_keys,"audio_stream_count":plan.audio_stream_count,"changes":plan.changes.iter().map(|change|json!({"track":change.track.to_string(),"clip_id":change.clip.0.to_string(),"previous_media_id":change.previous_media.raw().to_string(),"media_id":change.media.raw().to_string(),"start_frame":change.start_frame,"previous_length":change.previous_length,"length":change.length,"source_in":change.source_in,"source_out":change.source_out,"previous_audio_stream_index":change.previous_audio_stream_index,"audio_stream_index":change.audio_stream_index,"previous_freeze_source_frame":change.previous_freeze_source_frame,"freeze_source_frame":change.freeze_source_frame})).collect::<Vec<_>>()}),
     )
 }
 pub fn apply(

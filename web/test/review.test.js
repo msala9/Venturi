@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {comparisonDuration,comparisonLeader,comparisonFrame,createReview,knownTakeMetadata,reviewIdentity,replacementAudioStreams,replacementAudioChange} from "../js/review.js";
+import {comparisonDuration,comparisonLeader,comparisonFrame,createReview,knownTakeMetadata,reviewIdentity,replacementAudioStreams,replacementAudioChange,replacementFrozenPolicy,replacementFrozenChange} from "../js/review.js";
 
 test("review replacement identity ignores transport time but binds the selected native document and clip",()=>{
   const context={query:{project_epoch:"epoch",if_generation:"2",timeline_id:"1",revision:"rev",frame:12,width:640},clip:{id:"9007199254740993"}};
@@ -28,11 +28,11 @@ class Control extends EventTarget {
 }
 function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,resetRate=false,endedAtWindowTail=()=>false}={}){
   globalThis.Option=class{constructor(label,value){this.label=label;this.value=value;}};globalThis.document={createElement:()=>new Control()};
-  const selectors=["form","[data-review-status]","[data-review-apply]","[data-review-plan]","[data-review-changes]","[data-review-refresh]","[data-review-close]","[data-review-play]","[data-review-swap]",'[name="sync"]','[name="listen"]',"[data-review-target]",'[data-review-audio-streams]','[data-review-audio-select]','[data-review-transport-status]'];
+  const selectors=["form","[data-review-status]","[data-review-apply]","[data-review-plan]","[data-review-changes]","[data-review-refresh]","[data-review-close]","[data-review-play]","[data-review-swap]",'[name="sync"]','[name="listen"]',"[data-review-target]",'[data-review-audio-streams]','[data-review-audio-select]','[data-review-transport-status]','[data-review-frozen-policy]','[data-review-source-in-label]'];
   const nodes=Object.fromEntries(selectors.map(selector=>[selector,new Control()])),root=new Control(),panes=[];root.querySelector=selector=>nodes[selector];root.showModal=()=>{root.open=true;};root.close=()=>{root.open=false;};
   nodes['[data-review-replacement]']=nodes.form;
   for(const name of ["A","B"]){const parts=Object.fromEntries(["select","video","img","output","button","pre",'[data-review-seek]','[data-review-frame]','[data-review-seek-submit]','[data-review-clock]','[data-review-audition-stream]'].map(selector=>[selector,new Control()]));parts[`[name="take${name}"]`]=parts.select;parts['[data-review-source-status]']=parts.output;parts['[data-review-cancel-source]']=parts.button;const pane={querySelector:selector=>parts[selector]};nodes[`[data-review-pane="${name}"]`]=pane;panes.push(parts);}
-  nodes.form.elements=Object.fromEntries(Object.entries({source_in:"0",duration:"preserve",links:"replace_linked",attributes:"preserve",audio_streams:"preserve",audio_stream_index:"0"}).map(([name,value])=>[name,new Control(value)]));nodes.form.reportValidity=()=>true;
+  nodes.form.elements=Object.fromEntries(Object.entries({source_in:"0",duration:"preserve",links:"replace_linked",attributes:"preserve",audio_streams:"preserve",audio_stream_index:"0",frozen:'reject'}).map(([name,value])=>[name,new Control(value)]));nodes.form.reportValidity=()=>true;
   nodes['[name="listen"]'].value="A";
   const context={query:{project_epoch:"epoch",if_generation:"2",timeline_id:"1",revision:"rev",frame:12,width:640},clip:{id:"1",media_id:"2",name:"old.mp4",start_frame:12,length_frames:72},document:{media:[{id:"2",name:"old.mp4",has_video:true,has_audio:true,duration_frames:72,fps:{num:24,den:1},audio_stream_count:2,content_hash:'old-hash'},{id:"3",name:"new.mp4",has_video:true,has_audio:true,duration_frames:120,fps:{num:24,den:1},audio_stream_count:2,content_hash:'new-hash'}]}},commits=[],loaded=[],ready=new Map();let writable=true;
   const players=[],preparations=[];let active=0,peak=0;
@@ -375,4 +375,51 @@ test('late old audition attachment cannot replace a newer selection or restart p
 test('a same-version cache clock for another audition stream cannot become a playable comparison source',async()=>{
   const h=harness(async()=>planned);await h.review.open();audition(h,0,1);await settle();const current=h.players[0].current;h.players[0].current=()=>({...current(),audio_stream_index:0});h.panes[0].video.dispatchEvent(new Event('timeupdate'));h.button('play').click();await settle();
   assert.match(h.panes[0]['[data-review-clock]'].textContent,/clock unavailable/);assert(h.panes.every(pane=>pane.video.paused));assert(h.panes.every(pane=>pane.video.playCount===0));h.button('close').click();
+});
+
+function frozenChoice(h,value){h.nodes.form.elements.frozen.value=value;h.nodes.form.dispatchEvent(new Event('change'));}
+const freezeRow=(before,after,extra={})=>({...planned.changes[0],previous_freeze_source_frame:before,freeze_source_frame:after,...extra});
+
+test('frozen policy defaults omit legacy request bytes and exact native plan labels distinguish held frames from animation source clocks',()=>{
+  assert.deepEqual(replacementFrozenPolicy('reject'),{});assert.deepEqual(replacementFrozenPolicy('hold_source_in'),{frozen:'hold_source_in'});assert.deepEqual(replacementFrozenPolicy('unfreeze'),{frozen:'unfreeze'});assert.throws(()=>replacementFrozenPolicy('preserve_old_frame'));
+  assert.equal(replacementFrozenChange(planned.changes[0],'reject',0),'');assert.match(replacementFrozenChange(freezeRow(0,3,{length:72,source_out:5000}),'hold_source_in',3),/held frame 0 \(silent\) → held B frame 3 \(silent, full timeline duration preserved\)/);
+  assert.match(replacementFrozenChange(freezeRow(7,null),'unfreeze',3),/held frame 7 \(silent\) → moving/);assert.match(replacementFrozenChange(freezeRow(null,null),'hold_source_in',3),/moving → moving/);
+  for(const [row,policy] of [[freezeRow(7,8,{length:72}),'hold_source_in'],[freezeRow(7,3),'hold_source_in'],[freezeRow(7,null,{length:72}),'hold_source_in'],[freezeRow(null,3),'hold_source_in'],[freezeRow(7,7),'unfreeze'],[freezeRow(7,7),'reject'],[freezeRow('7',3),'hold_source_in'],[planned.changes[0],'unfreeze']])assert.throws(()=>replacementFrozenChange(row,policy,3));
+});
+
+test('a frozen target requires explicit choice and Hold Source In confirms every held frame, full duration and silence',async()=>{
+  const calls=[],rows=[freezeRow(0,3,{length:72,source_in:3,source_out:5000}),freezeRow(11,3,{clip_id:'linked-audio',track:'audio',previous_length:100,length:100,source_in:900,source_out:5900,previous_audio_stream_index:1,audio_stream_index:1})];
+  const h=harness(async(_path,body)=>{calls.push(body);return {...planned,changes:rows};});h.context.clip.freeze_source_frame=0;await h.review.open();assert.equal(h.nodes.form.elements.frozen.value,'reject');assert.equal(h.button('plan').disabled,true);h.submit();await settle();assert.equal(calls.length,0);assert.match(h.nodes['[data-review-frozen-policy]'].textContent,/frame 0 \(silent\)/);
+  frozenChoice(h,'hold_source_in');h.nodes.form.elements.source_in.value='3';h.nodes.form.dispatchEvent(new Event('input'));assert.equal(h.button('plan').disabled,false);assert.match(h.nodes['[data-review-source-in-label]'].textContent,/held frame for every frozen clip/);h.submit();await settle();assert.equal(calls[0].replacement.frozen,'hold_source_in');assert.equal(calls[0].replacement.source_in,3);assert.equal(h.button('apply').disabled,false);
+  const labels=h.nodes['[data-review-changes]'].children.map(row=>row.textContent);assert.match(labels[0],/animation source clock \[3, 5000\).*held B frame 3/);assert.match(labels[1],/held frame 11 \(silent\) → held B frame 3/);assert.match(labels[1],/100 → 100 timeline frames/);assert.equal(h.commits.length,0);
+  h.button('apply').click();await settle();assert.equal(h.commits.length,1);assert.equal(h.commits[0].replacement.frozen,'hold_source_in');assert.equal(h.commits[0].replacement.source_in,3);assert.equal(h.commits[0].replacement.source_version,'verified-file');
+});
+
+test('Unfreeze preserves explicit short-take refusal until Shorten is chosen and confirms the native moving result',async()=>{
+  const calls=[],h=harness(async(_path,body)=>{calls.push(body);if(body.replacement.duration==='preserve')throw Error('TAKE_TOO_SHORT · choose Shorten explicitly');return {...planned,changes:[freezeRow(12,null)]};});h.context.clip.freeze_source_frame=12;await h.review.open();frozenChoice(h,'unfreeze');h.submit();await settle();assert.equal(h.button('apply').disabled,true);assert.match(h.nodes['[data-review-status]'].textContent,/TAKE_TOO_SHORT/);assert.equal(h.commits.length,0);
+  h.nodes.form.elements.duration.value='shorten';h.nodes.form.dispatchEvent(new Event('change'));h.submit();await settle();assert.equal(calls[1].replacement.frozen,'unfreeze');assert.equal(calls[1].replacement.duration,'shorten');assert.match(h.nodes['[data-review-changes]'].children[0].textContent,/held frame 12 \(silent\) → moving/);assert.equal(h.button('apply').disabled,false);h.button('apply').click();await settle();assert.equal(h.commits[0].replacement.frozen,'unfreeze');assert.equal(h.commits[0].replacement.duration,'shorten');
+});
+
+test('frozen policy edits invalidate late or already-confirmable plans and malformed native freeze mappings cannot apply',async()=>{
+  let finish;const h=harness(()=>new Promise(resolve=>{finish=resolve;}));h.context.clip.freeze_source_frame=7;await h.review.open();frozenChoice(h,'hold_source_in');h.submit();await settle();frozenChoice(h,'unfreeze');finish({...planned,changes:[freezeRow(7,0,{length:72})]});await settle();assert.equal(h.button('apply').disabled,true);assert.equal(h.nodes['[data-review-changes]'].children.length,0);h.button('close').click();
+  const confirmed=harness(async()=>({...planned,changes:[freezeRow(7,0,{length:72})]}));confirmed.context.clip.freeze_source_frame=7;await confirmed.review.open();frozenChoice(confirmed,'hold_source_in');confirmed.submit();await settle();assert.equal(confirmed.button('apply').disabled,false);confirmed.nodes.form.elements.frozen.value='unfreeze';confirmed.button('apply').click();await settle();assert.equal(confirmed.commits.length,0);assert.equal(confirmed.button('apply').disabled,true);confirmed.button('close').click();
+  for(const change of [freezeRow(7,1,{length:72}),freezeRow(7,0),freezeRow(null,0,{length:72})]){
+    const invalid=harness(async()=>({...planned,changes:[change]}));invalid.context.clip.freeze_source_frame=7;await invalid.review.open();frozenChoice(invalid,'hold_source_in');invalid.submit();await settle();assert.equal(invalid.button('apply').disabled,true);assert.match(invalid.nodes['[data-review-status]'].textContent,/freeze plan is inconsistent/);assert.equal(invalid.commits.length,0);invalid.button('close').click();
+  }
+});
+
+test('take changes, swap, refresh and changed target freeze reset the explicit frozen policy safely',async()=>{
+  const h=harness(async()=>({...planned,changes:[freezeRow(null,null)]}));await h.review.open();frozenChoice(h,'hold_source_in');h.panes[1].select.value='2';h.panes[1].select.dispatchEvent(new Event('change'));await settle();assert.equal(h.nodes.form.elements.frozen.value,'reject');
+  frozenChoice(h,'unfreeze');h.button('swap').click();await settle();assert.equal(h.nodes.form.elements.frozen.value,'reject');frozenChoice(h,'hold_source_in');await h.review.open();assert.equal(h.nodes.form.elements.frozen.value,'reject');h.submit();await settle();assert.equal(h.button('apply').disabled,false);
+  h.context.clip.freeze_source_frame=0;h.review.invalidate();assert.equal(h.nodes.form.elements.frozen.value,'reject');assert.equal(h.button('apply').disabled,true);assert.equal(h.commits.length,0);h.button('close').click();
+});
+
+test('compound targets show an explicit empty A choice and cannot replace an unrelated ordinary source',async()=>{
+  let calls=0;const h=harness(async()=>{calls++;return planned;});h.context.document.media.push({id:'compound',name:'Nested timeline',compound_timeline_id:'nested'});h.context.clip={...h.context.clip,kind:'media',media_id:'compound',name:'Nested timeline'};
+  await h.review.open();assert.equal(h.panes[0].select.value,'');assert.deepEqual(h.loaded,['2']);assert.match(h.nodes['[data-review-target]'].textContent,/Unsupported replacement target.*Compound targets/);assert.match(h.panes[0].output.textContent,/Compound targets.*choose a comparison source explicitly/);assert.equal(h.button('plan').disabled,true);h.submit();await settle();assert.equal(calls,0);
+  h.panes[0].select.value='3';h.panes[0].select.dispatchEvent(new Event('change'));await settle();assert.equal(h.players[0].current().media_id,'3');assert.equal(h.button('plan').disabled,true);assert.equal(h.button('apply').disabled,true);h.submit();await settle();assert.equal(calls,0);assert.equal(h.commits.length,0);h.button('close').click();
+});
+
+test('an unannounced compound conversion invalidates confirmation even when the target ID and revision stay unchanged',async()=>{
+  const h=harness(async()=>planned);await h.review.open();h.submit();await settle();assert.equal(h.button('apply').disabled,false);h.context.document.media[0].compound_timeline_id='nested';h.button('apply').click();await settle();assert.equal(h.commits.length,0);assert.equal(h.button('apply').disabled,true);h.button('close').click();
 });

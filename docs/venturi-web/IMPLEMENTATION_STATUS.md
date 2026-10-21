@@ -24,7 +24,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-241 web Rust tests, 271 native core tests and 535 JavaScript tests,
+244 web Rust tests, 277 native core tests and 542 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -34,7 +34,8 @@ qualification remain open. Latest evidence:
 `evidence/m3-source-windows.json`, `evidence/m3-source-assets.json`
 `evidence/m4-speed-presets.json`, `evidence/m4-retime-selected-visibility.json`
 `evidence/m6-take-audio-streams.json`, `evidence/m6-review-longest-clock.json`,
-`evidence/m6-review-source-windows.json` and `evidence/m6-review-audition-streams.json`;
+`evidence/m6-review-source-windows.json`, `evidence/m6-review-audition-streams.json`
+and `evidence/m6-frozen-take-policies.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
@@ -3064,3 +3065,53 @@ from c4afce9; its Rust/clippy and R9700 results are inherited, not rerun.
 Evidence: `evidence/m4-modal-duration-capture.json`. Actual pointer/DPI and
 rendered mask/transition qualification remain open. The ledger counts and
 overall engineering estimate are unchanged.
+
+## M6 - explicit frozen-take policies and compound target identity
+
+Replace Take now requires an explicit choice for affected frozen clips. Hold B
+Source In preserves their complete timeline duration and silence while holding
+exactly that native B frame. Animation source clocks, existing speed and selected
+attribute policies remain independent of the held picture. Moving linked clips
+retain normal duration checks. Unfreeze checks Preserve/Shorten against the
+original duration; it never silently trims before making that decision. Omitted
+and explicit Reject preserve legacy request fingerprints.
+
+The native plan reports nullable previous/new held frames, and the browser
+distinguishes those pictures from animation source ranges. Policy changes and
+stale target/source identities invalidate confirmation. A compound wrapper is
+explicitly identified and refused without loading an unrelated A source. Its
+ordinary child clip can use the existing Replace Take command after opening the
+nested timeline; no automatic recursive selection or wrapper replacement is added.
+
+Bounded halo2 validation passed 277 core, 244 web, ten proxy, three bounded
+decoder, one cached-device and 542 JavaScript tests, formatting, native build
+and clippy with warnings denied for core/media/web/desktop all targets. Before
+these edits, the original desktop passed all-target compilation and 26 selected
+pure CPU tests: eight decoder policy, twelve settings and six export-dialog
+tests. Tests that initialize the app or poll native GPU availability were
+excluded. Full workspace runtime, native desktop GUI and GPU qualification are
+not claimed: their automatic native probes cannot safely share this host's
+inference ownership and resource constraints. Final all-target desktop clippy
+does include the new shared core edits.
+
+Finite native API checks verified strict policy/frame/lock refusals, both
+policies with one Undo/Redo/retry, source preservation and save/restart. Compound
+A/B wrappers are refused atomically; a child replacement restores its original
+clip through Undo and leaves the parent intact. The first diagnostic incorrectly
+required byte-identical project files after native compound cache invalidation.
+Only compound content hashes and next_compound_generation differed. The final
+comparison excludes exactly those native cache fields, retains original raw
+bytes in the native backup and verifies the reopened saved state and media hashes.
+
+The existing Windows browser verified default refusal, Hold at B frame 3 with
+76 frames preserved, changed-policy invalidation, Unfreeze Preserve refusal,
+explicit Shorten to nine frames and exact original clip restoration with one
+Undo each. Native snapshots independently confirm both results. Compound targets
+show an empty A selector and keep replacement disabled after explicitly choosing
+ordinary comparison media. No browser installation, local build/test/render or
+GPU was used. The sole temporary tab, CPU API and tunnel are stopped; the main
+editor still retains its five unsaved MoveClips and Undo history.
+
+Evidence: `evidence/m6-frozen-take-policies.json` and its Windows screenshot.
+The broader Replace Take row stays partial pending rendered/hardware acceptance.
+Ledger totals and the uncertain 65–70% engineering estimate are unchanged.

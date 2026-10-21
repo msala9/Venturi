@@ -68,6 +68,7 @@ fn setup() -> (
             links: core::take::LinkPolicy::ReplaceLinked,
             attributes: core::take::AttributePolicy::Preserve,
             audio_streams: core::take::AudioStreamPolicy::Preserve,
+            frozen: core::take::FrozenPolicy::Reject,
             source_version: None,
         },
         root,
@@ -347,6 +348,252 @@ fn take_probe_revalidates_audio_rate_channels_and_stream_count_before_plan_or_mu
         assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
         assert_eq!(session.history.position(), position);
     }
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn frozen_replacement_defaults_preserve_legacy_bytes_and_only_accept_explicit_string_policies() {
+    let legacy = r#"{"clip_id":"1","media_id":"2","source_in":0,"duration":"preserve","links":"replace_linked","attributes":"preserve","source_version":null}"#;
+    let parsed: Replacement = serde_json::from_str(legacy).unwrap();
+    assert_eq!(parsed.frozen, core::take::FrozenPolicy::Reject);
+    assert_eq!(serde_json::to_string(&parsed).unwrap(), legacy);
+    let mut explicit = serde_json::from_str::<Value>(legacy).unwrap();
+    explicit["frozen"] = json!("reject");
+    assert_eq!(
+        serde_json::to_string(&serde_json::from_value::<Replacement>(explicit).unwrap()).unwrap(),
+        legacy
+    );
+    for policy in ["hold_source_in", "unfreeze"] {
+        let mut value = serde_json::from_str::<Value>(legacy).unwrap();
+        value["frozen"] = json!(policy);
+        let parsed: Replacement = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(serde_json::to_value(parsed).unwrap(), value);
+    }
+    for policy in [
+        json!(null),
+        json!(false),
+        json!(0),
+        json!("preserve"),
+        json!({"hold_source_in":null}),
+        json!({"policy":"unfreeze"}),
+        json!([]),
+    ] {
+        let mut value = serde_json::from_str::<Value>(legacy).unwrap();
+        value["frozen"] = policy;
+        assert!(
+            serde_json::from_value::<Replacement>(value.clone()).is_err(),
+            "{value}"
+        );
+    }
+}
+
+#[test]
+fn frozen_native_preview_keeps_long_linked_holds_and_binds_one_undo_to_unchanged_b_file() {
+    let (files, mut session, id, mut replacement, root) = setup();
+    let first = &mut session.project.timelines[id].tracks[1].clips[0];
+    first.freeze = Some(0);
+    first.timeline_len = 240;
+    first.fade_in = 48;
+    first.linked_group = Some(core::LinkGroupId(77));
+    let mut peer = first.clone();
+    peer.id = session.project.alloc_clip_id();
+    peer.timeline_start = 300;
+    peer.source_offset = 100;
+    peer.freeze = Some(20);
+    session.project.timelines[id].tracks[1].clips.push(peer);
+    session.sync_timeline_media(id);
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let position = session.history.position();
+    let old_bytes = std::fs::read(root.join("old.wav")).unwrap();
+    let new_bytes = std::fs::read(root.join("new.wav")).unwrap();
+    assert!(
+        preview(
+            &session,
+            &files,
+            id,
+            &Preview {
+                query: query(&session, id),
+                replacement: replacement.clone()
+            }
+        )
+        .is_err()
+    );
+    replacement.frozen = core::take::FrozenPolicy::HoldSourceIn;
+    replacement.source_in = 1;
+    let planned = preview(
+        &session,
+        &files,
+        id,
+        &Preview {
+            query: query(&session, id),
+            replacement: replacement.clone(),
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), position);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    let changes = planned["changes"].as_array().unwrap();
+    assert_eq!(changes.len(), 2);
+    assert_eq!(changes[0]["previous_freeze_source_frame"], 0);
+    assert_eq!(changes[1]["previous_freeze_source_frame"], 20);
+    for change in changes {
+        assert_eq!(change["freeze_source_frame"], 1);
+        assert_eq!(change["length"], 240);
+        assert_eq!(change["previous_length"], 240);
+    }
+    replacement.source_version = Some(planned["source_version"].as_str().unwrap().into());
+    session.project.timelines[id].tracks[1].locked = true;
+    let locked = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(
+        apply(&mut session, &files, id, &replacement).unwrap_err().1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), locked);
+    session.project.timelines[id].tracks[1].locked = false;
+    use std::io::Write;
+    std::fs::OpenOptions::new()
+        .append(true)
+        .open(root.join("new.wav"))
+        .unwrap()
+        .write_all(&[0])
+        .unwrap();
+    assert_eq!(
+        apply(&mut session, &files, id, &replacement).unwrap_err().1,
+        "SOURCE_CHANGED"
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    assert_eq!(session.history.position(), position);
+    std::fs::write(root.join("new.wav"), &new_bytes).unwrap();
+    // Restoring bytes also changes the descriptor; obtain a fresh explicit plan.
+    let planned = preview(
+        &session,
+        &files,
+        id,
+        &Preview {
+            query: query(&session, id),
+            replacement: Replacement {
+                source_version: None,
+                ..replacement.clone()
+            },
+        },
+    )
+    .unwrap();
+    replacement.source_version = Some(planned["source_version"].as_str().unwrap().into());
+    apply(&mut session, &files, id, &replacement).unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    for clip in &session.project.timelines[id].tracks[1].clips {
+        assert_eq!(clip.freeze, Some(1));
+        assert_eq!(clip.timeline_len, 240);
+        assert_eq!(clip.fade_in, 48);
+        assert_eq!(clip.picture_frame_at(clip.timeline_start + 100), 1);
+    }
+    let after = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    crate::commands::history(&mut session, &crate::commands::Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    crate::commands::history(&mut session, &crate::commands::Operation::Redo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        after
+    );
+    assert_eq!(std::fs::read(root.join("old.wav")).unwrap(), old_bytes);
+    assert_eq!(std::fs::read(root.join("new.wav")).unwrap(), new_bytes);
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn web_unfreeze_requires_explicit_shortening_and_reports_nullable_moving_frames() {
+    let (files, mut session, id, mut replacement, root) = setup();
+    session.project.timelines[id].tracks[1].clips[0].freeze = Some(0);
+    session.project.timelines[id].tracks[1].clips[0].timeline_len = 240;
+    session.sync_timeline_media(id);
+    replacement.frozen = core::take::FrozenPolicy::Unfreeze;
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    assert_eq!(
+        preview(
+            &session,
+            &files,
+            id,
+            &Preview {
+                query: query(&session, id),
+                replacement: replacement.clone()
+            }
+        )
+        .unwrap_err()
+        .1,
+        "TAKE_TOO_SHORT"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.position(), position);
+    replacement.duration = core::take::DurationPolicy::Shorten;
+    let planned = preview(
+        &session,
+        &files,
+        id,
+        &Preview {
+            query: query(&session, id),
+            replacement: replacement.clone(),
+        },
+    )
+    .unwrap();
+    assert_eq!(planned["changes"][0]["previous_freeze_source_frame"], 0);
+    assert!(planned["changes"][0]["freeze_source_frame"].is_null());
+    assert!(planned["changes"][0]["length"].as_i64().unwrap() < 240);
+    replacement.source_version = Some(planned["source_version"].as_str().unwrap().into());
+    apply(&mut session, &files, id, &replacement).unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(
+        session.project.timelines[id].tracks[1].clips[0].freeze,
+        None
+    );
+    let after = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let moving = preview(
+        &session,
+        &files,
+        id,
+        &Preview {
+            query: query(&session, id),
+            replacement: replacement.clone(),
+        },
+    )
+    .unwrap();
+    assert!(
+        moving["changes"][0]
+            .get("previous_freeze_source_frame")
+            .unwrap()
+            .is_null()
+    );
+    assert!(
+        moving["changes"][0]
+            .get("freeze_source_frame")
+            .unwrap()
+            .is_null()
+    );
+    crate::commands::history(&mut session, &crate::commands::Operation::Undo).unwrap();
+    assert_eq!(
+        session.project.timelines[id].tracks[1].clips[0].freeze,
+        Some(0)
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[1].clips[0].timeline_len,
+        240
+    );
+    crate::commands::history(&mut session, &crate::commands::Operation::Redo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        after
+    );
     drop(files);
     std::fs::remove_dir_all(root).unwrap();
 }

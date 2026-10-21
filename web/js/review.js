@@ -41,6 +41,27 @@ export function replacementAudioChange(change,count,policy){
     (policy.policy==='preserve' && before!==after) || (policy.policy==='select' && after!==policy.index))throw Error('Native replacement audio stream plan is inconsistent · refresh review');
   return ` · Audio stream ${before} → ${after} (zero-based)`;
 }
+export function replacementFrozenPolicy(value){
+  if(value==='reject')return {};
+  if(!['hold_source_in','unfreeze'].includes(value))throw Error('Choose an explicit native frozen-clip policy');
+  return {frozen:value};
+}
+export function replacementFrozenChange(change,policy,sourceIn){
+  replacementFrozenPolicy(policy);
+  const before=change.previous_freeze_source_frame,after=change.freeze_source_frame;
+  if(before===undefined && after===undefined && policy==='reject')return '';
+  const valid=value=>value===null || Number.isSafeInteger(value) && value>=0;
+  if(!valid(before) || !valid(after) || (before===null && after!==null) || (policy==='reject' && (before!==null || after!==null)) ||
+    (policy==='hold_source_in' && before!==null && (after===null || after!==sourceIn || !Number.isSafeInteger(change.previous_length) || change.previous_length<=0 || change.length!==change.previous_length)) || (policy==='unfreeze' && after!==null))throw Error('Native replacement freeze plan is inconsistent · refresh review');
+  return ` · Freeze ${before===null?'moving':`held frame ${before} (silent)`} → ${after===null?'moving':`held B frame ${after} (silent, full timeline duration preserved)`}`;
+}
+function replacementTargetProblem(value){
+  const clip=value?.clip;if(!clip)return null;
+  const media=value.document.media.find(item=>item.id===clip.media_id);
+  if(media?.compound_timeline_id!=null)return 'Compound targets are unsupported by Replace Take and source comparison';
+  if(!media || clip.kind!==undefined && clip.kind!=='media')return 'Choose an ordinary source-media target before replacement';
+  return null;
+}
 export function createReview({root,getContext,canCommit,commit,notice,api=request,sourceFactory=createSourcePlayer}) {
   const find=(selector)=>root.querySelector(selector),form=find('[data-review-replacement]'),status=find("[data-review-status]"),apply=find("[data-review-apply]"),planButton=find("[data-review-plan]"),changes=find("[data-review-changes]"),refresh=find("[data-review-refresh]"),close=find("[data-review-close]"),play=find("[data-review-play]"),swap=find("[data-review-swap]"),sync=find('[name="sync"]'),listen=find('[name="listen"]');
   let context=null,plan=null,annotations=null,sequence=0,planning=false,applying=false,frameTicket=null,closing=false;
@@ -50,14 +71,16 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
     const element=find(`[data-review-pane="${name}"]`),pane={name,select:element.querySelector(`[name="take${name}"]`),audition:element.querySelector('[data-review-audition-stream]'),audioStreamIndex:0,video:element.querySelector("video"),image:element.querySelector("img"),status:element.querySelector('[data-review-source-status]'),cancel:element.querySelector('[data-review-cancel-source]'),metadata:element.querySelector("pre"),seekForm:element.querySelector('[data-review-seek]'),seekInput:element.querySelector('[data-review-frame]'),seekButton:element.querySelector('[data-review-seek-submit]'),clock:element.querySelector('[data-review-clock]'),ready:false,media:null,version:null,generation:0,sourceSequence:0,queued:false,seeking:null,resetting:false,internalPlays:0,rate:1};
     pane.player=sourceFactory({video:pane.video,image:pane.image,status:pane.status,cancel:pane.cancel,windowed:true,onStateChange:value=>sourceState(pane,value),onReady:()=>sourceReady(pane)});return pane;
   });
-  const audioPolicy=form.elements.audio_streams,audioIndex=form.elements.audio_stream_index,audioNote=find('[data-review-audio-streams]'),selectAudio=find('[data-review-audio-select]');
+  const audioPolicy=form.elements.audio_streams,audioIndex=form.elements.audio_stream_index,audioNote=find('[data-review-audio-streams]'),selectAudio=find('[data-review-audio-select]'),frozenPolicy=form.elements.frozen,frozenNote=find('[data-review-frozen-policy]'),sourceInLabel=find('[data-review-source-in-label]');
   const candidate=value=>value?.document?.media.find(media=>media.id===panes[1].select.value);
-  const candidateIdentity=value=>{const media=candidate(value);return media?JSON.stringify([media.id,media.content_hash,media.audio_stream_count,media.has_audio]):null;};
+  const candidateIdentity=value=>{const media=candidate(value);return media?JSON.stringify([media.id,media.content_hash,media.audio_stream_count,media.has_audio,media.compound_timeline_id]):null;};
+  const targetIdentity=value=>JSON.stringify([value?.clip?.media_id,value?.clip?.kind,value?.clip?.freeze_source_frame,replacementTargetProblem(value)]);
   const playbackIdentity=value=>JSON.stringify(panes.map(pane=>{const media=value?.document?.media.find(media=>media.id===pane.select.value);return media?[media.id,media.content_hash,media.duration_frames,media.fps?.num,media.fps?.den,media.has_video,media.has_audio,media.is_image,media.audio_stream_count]:null;}));
   const streamCount=()=>{const count=candidate(context)?.audio_stream_count;return Number.isSafeInteger(count) && count>=0?count:null;};
-  const identity=()=>reviewIdentity(context),current=()=>identity()===reviewIdentity(getContext()) && candidateIdentity(context)===candidateIdentity(getContext()) && playbackIdentity(context)===playbackIdentity(getContext());
-  const settingsIdentity=()=>JSON.stringify([panes[1].select.value,...['source_in','duration','links','attributes','audio_streams','audio_stream_index'].map(name=>form.elements[name].value),candidateIdentity(context),candidateIdentity(getContext())]);
-  function resetAudioPolicy(){audioPolicy.value='preserve';audioIndex.value='0';}
+  const identity=()=>reviewIdentity(context),current=()=>identity()===reviewIdentity(getContext()) && targetIdentity(context)===targetIdentity(getContext()) && candidateIdentity(context)===candidateIdentity(getContext()) && playbackIdentity(context)===playbackIdentity(getContext());
+  const settingsIdentity=()=>JSON.stringify([panes[1].select.value,...['source_in','duration','links','attributes','audio_streams','audio_stream_index','frozen'].map(name=>form.elements[name].value),candidateIdentity(context),candidateIdentity(getContext())]);
+  function resetAudioPolicy(){audioPolicy.value='preserve';audioIndex.value='0';frozenPolicy.value='reject';}
+  function frozenValid(){try{replacementFrozenPolicy(frozenPolicy.value);return context?.clip?.freeze_source_frame==null || frozenPolicy.value!=='reject';}catch{return false;}}
   function audioValid(){try{replacementAudioStreams(audioPolicy.value,audioIndex.value,streamCount());return true;}catch{return false;}}
   function auditionCount(pane){const count=pane.media?.audio_stream_count;return !pane.media?.is_image && pane.media?.has_audio && Number.isSafeInteger(count) && count>0 && count<=1024?count:0;}
   function renderAudition(pane){
@@ -67,8 +90,10 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
     const count=streamCount(),available=count!==null && count>0;
     audioPolicy.disabled=applying || !candidate(context);audioIndex.disabled=applying || audioPolicy.value!=='select' || !available;audioIndex.max=available?String(count-1):'0';selectAudio.disabled=!available;
     audioNote.textContent=count===null?'Replacement audio streams · Native B stream count unavailable; refresh review before choosing a stream':`Replacement only · B has ${count} audio stream(s)${available?` · available zero-based indices 0–${count-1}`:''}`;
+    frozenPolicy.disabled=applying;sourceInLabel.textContent=frozenPolicy.value==='hold_source_in'?'B source In / held frame for every frozen clip':'B source In frame';
+    frozenNote.textContent=[context?.clip?.freeze_source_frame!=null?`Current target holds source frame ${context.clip.freeze_source_frame} (silent).`:'',frozenPolicy.value==='hold_source_in'?'Already-frozen clips hold B Source In, keep their full timeline duration and stay silent. Moving clips use the Duration policy.':frozenPolicy.value==='unfreeze'?'Remove each affected freeze, then apply the explicit Preserve/Shorten duration policy and normal audio.':'Frozen clips require an explicit Hold or Unfreeze choice; moving clips retain normal playback.','A/B audition previews source media independently of timeline freeze.'].filter(Boolean).join(' ');
     for(const pane of panes){if(pane.media && !pane.media.is_image && comparisonDuration(pane.media)===null)pane.status.textContent='Comparison unavailable · invalid native source timing; refresh review';pane.audition.disabled=applying || !current() || !auditionCount(pane);pane.seekInput.disabled=applying || !current() || !playable(pane);pane.seekButton.disabled=pane.seekInput.disabled;pane.seekInput.max=String(Math.max(0,(pane.media?.duration_frames || 1)-1));updateClock(pane);}
-    planButton.disabled=planning || applying || !context?.clip || !current() || !panes[1].select.value || !audioValid();apply.disabled=applying || !plan || !current() || plan.settings!==settingsIdentity() || !canCommit();refresh.disabled=applying;close.disabled=applying;play.disabled=applying || !current() || (!intent && (waiting() || !master()));play.textContent=intent?'Pause A/B':'Play A/B';swap.disabled=applying;for(const pane of panes)pane.select.disabled=applying;for(const name of ["source_in","duration","links","attributes"])form.elements[name].disabled=applying;
+    planButton.disabled=planning || applying || !context?.clip || Boolean(replacementTargetProblem(context)) || !current() || !panes[1].select.value || !audioValid() || !frozenValid();apply.disabled=applying || !plan || Boolean(replacementTargetProblem(context)) || !current() || plan.settings!==settingsIdentity() || !canCommit();refresh.disabled=applying;close.disabled=applying;play.disabled=applying || !current() || (!intent && (waiting() || !master()));play.textContent=intent?'Pause A/B':'Play A/B';swap.disabled=applying;for(const pane of panes)pane.select.disabled=applying;for(const name of ["source_in","duration","links","attributes"])form.elements[name].disabled=applying;
   }
   function clearPlan(message){sequence++;planning=false;plan=null;changes.replaceChildren();if(message)status.textContent=message;controls();}
   function audioChoice(){for(const pane of panes)pane.video.muted=listen.value!==pane.name;}
@@ -227,7 +252,7 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
     const known=take?formatKnownMetadata(take.metadata):knownTakeMetadata(pane.media);pane.metadata.textContent=[source,label,known].filter(Boolean).join("\n");
   }
   async function load(pane,{audioStreamIndex=0}={}){
-    const generation=++pane.generation;pane.ready=false;pane.version=null;pane.nativeSeek=false;pane.exhausted=false;pane.audioStreamIndex=audioStreamIndex;pane.media=context?.document.media.find(media=>media.id===pane.select.value) || null;pane.seekInput.value='0';pane.resetting=true;try{pane.player.reset();}finally{pane.resetting=false;}renderAudition(pane);describe(pane);controls();if(!pane.media)return;
+    const generation=++pane.generation;pane.ready=false;pane.version=null;pane.nativeSeek=false;pane.exhausted=false;pane.audioStreamIndex=audioStreamIndex;pane.media=context?.document.media.find(media=>media.id===pane.select.value && media.compound_timeline_id==null) || null;pane.seekInput.value='0';pane.resetting=true;try{pane.player.reset();}finally{pane.resetting=false;}renderAudition(pane);describe(pane);controls();if(!pane.media){if(pane.name==='A' && replacementTargetProblem(context))pane.status.textContent=`${replacementTargetProblem(context)} · choose a comparison source explicitly`;return;}
     const media=pane.media,epoch=context.query.project_epoch;pane.queued=true;controls();
     await enqueue(()=>generation===pane.generation && root.open && current(),async()=>{pane.queued=false;pane.video.defaultPlaybackRate=pane.rate;await pane.player.open(media,epoch,"low",0,{audioStreamIndex});if(generation!==pane.generation)return;pane.ready=media.is_image || Boolean(position(pane));});
     if(generation===pane.generation){pane.queued=false;controls();}
@@ -256,13 +281,13 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
   swap.addEventListener("click",()=>{stopTransport('Comparison paused · A/B swapped');const old=panes[0].select.value;panes[0].select.value=panes[1].select.value;panes[1].select.value=old;resetAudioPolicy();clearPlan("A/B swapped · preview replacement before applying");panes.forEach(pane=>{pane.generation++;pane.ready=false;pane.resetting=true;try{pane.player.reset();}finally{pane.resetting=false;}});panes.forEach(pane=>void load(pane));});
   form.addEventListener("input",()=>clearPlan("Replacement settings changed · preview before applying"));form.addEventListener("change",()=>clearPlan("Replacement settings changed · preview before applying"));
   form.addEventListener("submit",async(event)=>{
-    event.preventDefault();if(planButton.disabled || !form.reportValidity())return;
+    event.preventDefault();if(planButton.disabled || !current() || replacementTargetProblem(context) || !frozenValid() || !form.reportValidity())return;
     let streams;try{streams=replacementAudioStreams(audioPolicy.value,audioIndex.value,streamCount());}catch(error){clearPlan(error.message);notice(error.message);return;}
-    const replacement={clip_id:context.clip.id,media_id:panes[1].select.value,source_in:Number(form.elements.source_in.value),duration:form.elements.duration.value,links:form.elements.links.value,attributes:form.elements.attributes.value,audio_streams:streams,source_version:null};
+    const replacement={clip_id:context.clip.id,media_id:panes[1].select.value,source_in:Number(form.elements.source_in.value),duration:form.elements.duration.value,links:form.elements.links.value,attributes:form.elements.attributes.value,audio_streams:streams,...replacementFrozenPolicy(frozenPolicy.value),source_version:null};
     clearPlan();const seq=sequence,bound=identity(),settings=settingsIdentity(),count=streamCount(),query={...context.query};planning=true;controls();status.textContent="Reading native replacement ranges and source identity…";
     try{const result=await api("/review/replace/plan",{query,replacement});if(seq!==sequence)return;if(!current() || identity()!==bound || settings!==settingsIdentity()){clearPlan('Project, B source or replacement settings changed · refresh review before applying');return;}
       if(!Number.isSafeInteger(result.audio_stream_count) || result.audio_stream_count<0 || (count!==null && count!==result.audio_stream_count) || !Array.isArray(result.changes) || !result.changes.length || typeof result.source_version!=='string' || !result.source_version)throw Error('Native B stream metadata changed or is unavailable · refresh review');
-      const rows=result.changes.map(change=>{const row=document.createElement("li");row.textContent=`Track ${change.track} · clip ${change.clip_id} · start ${change.start_frame} · ${change.previous_length} → ${change.length} timeline frames · source [${change.source_in}, ${change.source_out})${replacementAudioChange(change,result.audio_stream_count,streams)}`;return row;});changes.replaceChildren(...rows);
+      const rows=result.changes.map(change=>{const row=document.createElement("li");row.textContent=`Track ${change.track} · clip ${change.clip_id} · start ${change.start_frame} · ${change.previous_length} → ${change.length} timeline frames · animation source clock [${change.source_in}, ${change.source_out})${replacementAudioChange(change,result.audio_stream_count,streams)}${replacementFrozenChange(change,replacement.frozen??'reject',replacement.source_in)}`;return row;});changes.replaceChildren(...rows);
       if(result.merged_keys){const warning=document.createElement("li");warning.textContent=`${result.merged_keys} animation key(s) share a frame in the new take and will merge; the first key is kept. Choose Reset effects or cancel if this is unwanted.`;changes.append(warning);}
       plan={replacement:{...replacement,source_version:result.source_version},identity:bound,settings};
       status.textContent=`Native preview · ${result.changes.length} clip(s) · ${result.removed_crossings} crossing transition(s) removed · ${streams.policy==='preserve'?'preserve each affected audio stream':`select B audio stream ${streams.index} (zero-based)`}. Confirm to apply one Undo step.`;
@@ -273,13 +298,13 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
   close.addEventListener("click",()=>{if(!applying)dismiss();});root.addEventListener("cancel",(event)=>{event.preventDefault();if(!applying)dismiss();});
   async function open(options={}){
     stopTransport();annotations=null;for(const pane of panes){pane.generation++;pane.resetting=true;try{pane.player.reset();}finally{pane.resetting=false;}pane.rate=1;pane.audioStreamIndex=0;pane.video.playbackRate=1;pane.ready=false;pane.queued=false;}const next=getContext();context=next?{...next,query:{...next.query},clip:next.clip?{...next.clip}:null,document:{...next.document,media:next.document.media.map(media=>({...media,fps:media.fps?{...media.fps}:undefined}))}}:null;resetAudioPolicy();clearPlan();if(!context){for(const pane of panes){pane.select.replaceChildren();pane.media=null;renderAudition(pane);pane.metadata.textContent="";}status.textContent="Open a saved project first";root.showModal();controls();return;}
-    const media=context.document.media.filter(item=>!item.compound_timeline_id),a=context.clip?.media_id || context.selectedMedia || panes[0].select.value;
-    for(const pane of panes){const old=pane.select.value;pane.select.replaceChildren(...media.map(item=>new Option(`${item.offline?"OFFLINE · ":""}${item.name}`,item.id)));pane.select.value=media.some(item=>item.id===old)?old:(media[0]?.id || "");}
+    const media=context.document.media.filter(item=>item.compound_timeline_id==null),problem=replacementTargetProblem(context),a=problem?null:context.clip?.media_id || context.selectedMedia || panes[0].select.value;
+    for(const pane of panes){const old=pane.select.value;pane.select.replaceChildren(...(problem && pane.name==='A'?[new Option('Unsupported target · choose a comparison source','')]:[]),...media.map(item=>new Option(`${item.offline?"OFFLINE · ":""}${item.name}`,item.id)));pane.select.value=problem && pane.name==='A'?'':media.some(item=>item.id===old)?old:(media[0]?.id || "");}
     if(media.some(item=>item.id===a))panes[0].select.value=a;
     if(panes[1].select.value===panes[0].select.value)panes[1].select.value=media.find(item=>item.id!==panes[0].select.value)?.id || panes[0].select.value;
     if(options.media_id && media.some(item=>item.id===options.media_id))panes[1].select.value=options.media_id;
-    find("[data-review-target]").textContent=context.clip?`Replacement target: clip ${context.clip.id} · ${context.clip.name} · start ${context.clip.start_frame} · ${context.clip.length_frames} frames` : "Select a source clip in the timeline to replace it with B; comparison is available without a selection.";
-    status.textContent="Compare sources, choose explicit replacement policies, then preview native changes";audioChoice();root.showModal();controls();const wanted=identity();
+    find("[data-review-target]").textContent=problem?`Unsupported replacement target: clip ${context.clip.id} · ${context.clip.name} · ${problem}. Choose ordinary media explicitly for A/B comparison.`:context.clip?`Replacement target: clip ${context.clip.id} · ${context.clip.name} · start ${context.clip.start_frame} · ${context.clip.length_frames} frames` : "Select a source clip in the timeline to replace it with B; comparison is available without a selection.";
+    status.textContent=problem || "Compare sources, choose explicit replacement policies, then preview native changes";audioChoice();root.showModal();controls();const wanted=identity();
     const metadata=api(`/review?${new URLSearchParams({project_epoch:context.query.project_epoch})}`).then(value=>{if(root.open && current() && identity()===wanted && value.project_epoch===context.query.project_epoch && value.generation===context.query.if_generation && Array.isArray(value.items)){annotations=value;panes.forEach(describe);}}).catch(()=>{});
     await Promise.all([...panes.map(load),metadata]);
   }

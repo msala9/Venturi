@@ -84,6 +84,7 @@ fn setup() -> (Project, Request, ClipId) {
             links: LinkPolicy::ReplaceLinked,
             attributes: AttributePolicy::Preserve,
             audio_streams: AudioStreamPolicy::Preserve,
+            frozen: FrozenPolicy::Reject,
         },
         linked,
     )
@@ -585,4 +586,306 @@ fn default_legacy_audio_stream_count_and_strict_policy_serialization_use_native_
             "{value}"
         );
     }
+}
+
+#[test]
+fn held_take_uses_exact_b_frame_and_keeps_long_linked_animation_clocks_with_one_undo() {
+    let (mut project, mut request, linked) = setup();
+    request.source_in = 1;
+    request.frozen = FrozenPolicy::HoldSourceIn;
+    project.media_pool[request.media].meta.duration_frames = 6;
+    let timeline = &mut project.timelines[request.timeline];
+    timeline.tracks[0].clips[0].freeze = Some(20);
+    timeline.tracks[1].clips[0].freeze = Some(131);
+    timeline.tracks[1].clips[0].source_offset = 110;
+    for track in &mut timeline.tracks {
+        track.clips[0].timeline_len = 500;
+        track.clips[0].pitch_correction = false;
+    }
+    let originals = [
+        timeline.tracks[0].clips[0].clone(),
+        timeline.tracks[1].clips[0].clone(),
+    ];
+    let mut unrelated = originals[0].clone();
+    unrelated.id = project.alloc_clip_id();
+    unrelated.linked_group = None;
+    unrelated.timeline_start = 700;
+    let unrelated_value = serde_json::to_value(&unrelated).unwrap();
+    project.timelines[request.timeline].tracks[0]
+        .clips
+        .push(unrelated);
+    let before = value(&project);
+    let planned = plan(&project, &request).unwrap();
+    assert_eq!(value(&project), before);
+    assert_eq!(planned.changes.len(), 2);
+    assert_eq!(planned.removed_crossings, 0);
+    assert_eq!(planned.changes[0].previous_freeze_source_frame, Some(20));
+    assert_eq!(planned.changes[1].previous_freeze_source_frame, Some(131));
+    assert!(
+        planned
+            .changes
+            .iter()
+            .all(|change| change.freeze_source_frame == Some(1) && change.length == 500)
+    );
+    let mut history = History::default();
+    history.do_command(&mut project, Box::new(planned.into_command()));
+    assert_eq!(history.position(), 1);
+    assert_eq!(
+        history.labels().collect::<Vec<_>>(),
+        [CommandLabel::ReplaceTake]
+    );
+    for (track, id) in [(0, request.clip), (1, linked)] {
+        let clip = project.timelines[request.timeline].clip(track, id).unwrap();
+        assert_eq!(clip.timeline_len, 500);
+        assert_eq!(clip.freeze, Some(1));
+        assert_eq!(clip.speed(), originals[track].speed());
+        assert_eq!(clip.linked_group, originals[track].linked_group);
+        assert_eq!(clip.audio_stream_index, originals[track].audio_stream_index);
+        assert!(!clip.pitch_correction);
+        for frame in [100, 110, 120, 149, 599] {
+            assert_eq!(clip.picture_frame_at(frame), 1);
+            assert_eq!(
+                clip.effects
+                    .transform
+                    .value_at(clip.source_frame_at(frame))
+                    .opacity,
+                originals[track]
+                    .effects
+                    .transform
+                    .value_at(originals[track].source_frame_at(frame))
+                    .opacity
+            );
+        }
+        assert_eq!(
+            clip.effects
+                .transform
+                .track(TransformParam::CropLeft)
+                .default,
+            40.0
+        );
+        assert_eq!(clip.fade_in, 8);
+    }
+    let video = project.timelines[request.timeline]
+        .clip(0, request.clip)
+        .unwrap();
+    assert_ne!(
+        video.source_in(),
+        1,
+        "The rounded animation clock must not replace the exact held frame"
+    );
+    let audio = project.timelines[request.timeline].clip(1, linked).unwrap();
+    assert!(audio.source_in() > project.media_pool[request.media].meta.duration_frames);
+    assert_eq!(
+        serde_json::to_value(&project.timelines[request.timeline].tracks[0].clips[1]).unwrap(),
+        unrelated_value
+    );
+    let after = value(&project);
+    history.undo(&mut project);
+    assert_eq!(value(&project), before);
+    history.redo(&mut project);
+    assert_eq!(value(&project), after);
+}
+
+#[test]
+fn held_policy_never_freezes_or_silently_shortens_moving_linked_clips() {
+    let (mut project, mut request, linked) = setup();
+    request.frozen = FrozenPolicy::HoldSourceIn;
+    project.timelines[request.timeline].tracks[0].clips[0].freeze = Some(20);
+    project.media_pool[request.media].meta.duration_frames = 30;
+    let before = value(&project);
+    assert_eq!(plan(&project, &request).unwrap_err(), Error::TooShort);
+    assert_eq!(value(&project), before);
+    request.duration = DurationPolicy::Shorten;
+    let planned = plan(&project, &request).unwrap();
+    assert_eq!(planned.changes[0].length, 50);
+    assert_eq!(planned.changes[0].freeze_source_frame, Some(20));
+    assert_eq!(planned.changes[1].length, 5);
+    assert_eq!(planned.changes[1].previous_freeze_source_frame, None);
+    assert_eq!(planned.changes[1].freeze_source_frame, None);
+    let mut history = History::default();
+    history.do_command(&mut project, Box::new(planned.into_command()));
+    assert_eq!(
+        project.timelines[request.timeline]
+            .clip(1, linked)
+            .unwrap()
+            .freeze,
+        None
+    );
+    assert_eq!(
+        project.timelines[request.timeline]
+            .clip(1, linked)
+            .unwrap()
+            .timeline_len,
+        5
+    );
+    let after = value(&project);
+    history.undo(&mut project);
+    assert_eq!(value(&project), before);
+    history.redo(&mut project);
+    assert_eq!(value(&project), after);
+}
+
+#[test]
+fn unfreezing_a_take_requires_explicit_shortening_and_restores_crossings_on_undo() {
+    let (mut project, mut request, _) = setup();
+    request.frozen = FrozenPolicy::Unfreeze;
+    project.media_pool[request.media].meta.duration_frames = 30;
+    for track in &mut project.timelines[request.timeline].tracks {
+        track.clips[0].freeze = Some(20);
+    }
+    let mut next = project.timelines[request.timeline].tracks[0].clips[0].clone();
+    next.id = project.alloc_clip_id();
+    next.linked_group = None;
+    next.timeline_start = 150;
+    let next_id = next.id;
+    project.timelines[request.timeline].tracks[0]
+        .clips
+        .push(next);
+    project.timelines[request.timeline].tracks[0]
+        .crossings
+        .push(crate::CrossTransition {
+            left_clip: request.clip,
+            right_clip: next_id,
+            transition: crate::Transition {
+                kind: crate::TransitionKind::CrossDissolve,
+                duration: 10,
+                direction: crate::PushDirection::Left,
+                ease: crate::Ease::None,
+                curve: 0.5,
+            },
+        });
+    let before = value(&project);
+    assert_eq!(plan(&project, &request).unwrap_err(), Error::TooShort);
+    assert_eq!(value(&project), before);
+    request.duration = DurationPolicy::Shorten;
+    let planned = plan(&project, &request).unwrap();
+    assert_eq!(planned.removed_crossings, 1);
+    assert!(
+        planned
+            .changes
+            .iter()
+            .all(|change| change.previous_freeze_source_frame == Some(20)
+                && change.freeze_source_frame.is_none()
+                && change.length == 5)
+    );
+    let mut history = History::default();
+    history.do_command(&mut project, Box::new(planned.into_command()));
+    let track = &project.timelines[request.timeline].tracks[0];
+    assert!(track.crossings.is_empty());
+    assert_eq!(track.clip(next_id).unwrap().timeline_start, 150);
+    let clip = track.clip(request.clip).unwrap();
+    assert_eq!(clip.freeze, None);
+    assert_eq!(clip.fade_in, 5);
+    assert_eq!(clip.timeline_len, 5);
+    let after = value(&project);
+    history.undo(&mut project);
+    assert_eq!(value(&project), before);
+    history.redo(&mut project);
+    assert_eq!(value(&project), after);
+}
+
+#[test]
+fn frozen_policies_validate_frames_locks_and_ranges_before_any_replacement() {
+    let (mut project, mut request, _) = setup();
+    for track in &mut project.timelines[request.timeline].tracks {
+        track.clips[0].freeze = Some(20);
+    }
+    let before = value(&project);
+    assert_eq!(plan(&project, &request).unwrap_err(), Error::Frozen);
+    for policy in [FrozenPolicy::HoldSourceIn, FrozenPolicy::Unfreeze] {
+        request.frozen = policy;
+        for source_in in [
+            -1,
+            project.media_pool[request.media].meta.duration_frames,
+            i64::MAX,
+        ] {
+            request.source_in = source_in;
+            assert_eq!(plan(&project, &request).unwrap_err(), Error::SourceStart);
+            assert_eq!(value(&project), before);
+        }
+        request.source_in = 0;
+        project.timelines[request.timeline].tracks[1].locked = true;
+        let locked = value(&project);
+        assert_eq!(plan(&project, &request).unwrap_err(), Error::Locked);
+        assert_eq!(value(&project), locked);
+        project.timelines[request.timeline].tracks[1].locked = false;
+    }
+    request.frozen = FrozenPolicy::HoldSourceIn;
+    project.timelines[request.timeline].tracks[1].clips[0].timeline_len = i64::MAX;
+    let invalid = value(&project);
+    assert_eq!(plan(&project, &request).unwrap_err(), Error::Timing);
+    assert_eq!(value(&project), invalid);
+}
+
+#[test]
+fn frozen_policy_is_an_explicit_strict_string_enum() {
+    assert_eq!(FrozenPolicy::default(), FrozenPolicy::Reject);
+    for (name, expected) in [
+        ("reject", FrozenPolicy::Reject),
+        ("hold_source_in", FrozenPolicy::HoldSourceIn),
+        ("unfreeze", FrozenPolicy::Unfreeze),
+    ] {
+        assert_eq!(
+            serde_json::from_value::<FrozenPolicy>(serde_json::json!(name)).unwrap(),
+            expected
+        );
+        assert_eq!(
+            serde_json::to_value(expected).unwrap(),
+            serde_json::json!(name)
+        );
+    }
+    for value in [
+        serde_json::json!(null),
+        serde_json::json!(false),
+        serde_json::json!(1),
+        serde_json::json!("preserve"),
+        serde_json::json!({"hold_source_in":null}),
+        serde_json::json!([]),
+    ] {
+        assert!(
+            serde_json::from_value::<FrozenPolicy>(value.clone()).is_err(),
+            "{value}"
+        );
+    }
+}
+
+#[test]
+fn holding_with_reset_keeps_nondefault_speed_pitch_and_flags_without_touching_linked_audio() {
+    let (mut project, mut request, _) = setup();
+    request.frozen = FrozenPolicy::HoldSourceIn;
+    request.links = LinkPolicy::SelectedOnly;
+    request.attributes = AttributePolicy::Reset;
+    request.source_in = 1;
+    project.media_pool[request.media].meta.duration_frames = 2;
+    let clip = &mut project.timelines[request.timeline].tracks[0].clips[0];
+    clip.set_speed(Rational::new(3, 2), Rational::one());
+    clip.freeze = Some(16);
+    clip.timeline_len = 100;
+    clip.pitch_correction = false;
+    clip.disabled = true;
+    let before = value(&project);
+    let linked = serde_json::to_value(&project.timelines[request.timeline].tracks[1]).unwrap();
+    let command = plan(&project, &request).unwrap().into_command();
+    let mut history = History::default();
+    history.do_command(&mut project, Box::new(command));
+    let clip = &project.timelines[request.timeline].tracks[0].clips[0];
+    assert_eq!(clip.speed(), Rational::new(3, 2));
+    assert_eq!(clip.freeze, Some(1));
+    assert_eq!(clip.timeline_len, 100);
+    assert!(!clip.pitch_correction);
+    assert!(clip.disabled);
+    assert_eq!(clip.fade_in, 0);
+    assert_eq!(
+        serde_json::to_value(&clip.effects).unwrap(),
+        serde_json::to_value(EffectStack::default()).unwrap()
+    );
+    assert_eq!(
+        serde_json::to_value(&project.timelines[request.timeline].tracks[1]).unwrap(),
+        linked
+    );
+    let after = value(&project);
+    history.undo(&mut project);
+    assert_eq!(value(&project), before);
+    history.redo(&mut project);
+    assert_eq!(value(&project), after);
 }

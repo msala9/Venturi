@@ -26,3 +26,10 @@ generation metadata; `m6-review-duration-browser.png` shows explicit policies
 and short-take refusal. `m6-review-preserved-key-browser.png` shows the saved
 linked replacement after restart, CURRENT timeline frame 31 and opacity 65.
 All are CPU/browser proofs, not hardware or completed Shot/Take-sidecar proof.
+
+`evidence/m6-frozen-take-policies.jpg` (2026-10-21) shows the explicit native
+Hold plan: old held frame 24 becomes B frame 3 while all 76 timeline frames
+remain. The animation clock [3, 79) is labeled separately. Existing Windows
+browser checks and independent API snapshots also verify Unfreeze refusal,
+explicit Shorten and one Undo per replacement. This is a CPU policy/interaction
+proof; rendered hardware playback is not claimed.

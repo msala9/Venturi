@@ -390,8 +390,19 @@ effect/fade policy. Preview native replacement changes is read-only. Inspect
 all affected clip ranges, removed crossings and key merges, then Confirm for one
 Undo. Shorten leaves a gap; it never ripples or changes speed. Native frame
 quantization may merge keys, with first-key retention shown in the preview.
-Frozen/compound replacements require an explicit edit first. Recheck source-
-dependent audio normalization.
+Frozen clips require an explicit Frozen clip policy. Hold B Source In uses
+that exact native B frame for every affected frozen clip, preserving its full
+timeline duration and silence even when B is shorter. Moving linked clips
+still follow the selected duration policy. Unfreeze removes the hold and
+checks Preserve/Shorten against the original edit duration; it never silently
+shortens first. The plan distinguishes the held picture from the animation
+source clock, which can extend beyond B for a frozen clip. A/B audition plays
+the sources independently of timeline freeze. Compound targets remain
+unsupported and require an ordinary source-media target before replacement.
+To replace an ordinary take inside a compound, open its nested timeline and
+select that clip. The wrapper is not replaced and no internal clip is chosen
+automatically. Native cache counters may advance during Undo/Redo.
+Recheck source-dependent audio normalization.
 
 Review → Shot / Take grouping (or Prompt / Seed / Model metadata) organizes
 imported sources in shots, with Favorite/Rejected flags and searchable labels,

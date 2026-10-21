@@ -1,0 +1,1018 @@
+{
+  "project": "Frozen_Take_API_check.vvproj",
+  "project_sha256": "e01923181c29a39b8651c49cc30f51719e62509d46805e4932d1159c69087e33",
+  "initial_project_sha256": "f99f1a622df42ec3ec07f0510f9afa1903a4f446167512462c9da0c2feca2db5",
+  "semantic_project_sha256": "d0fc3b881fee239f321b52dadddf0840a30517a9960dd85c5b398d355a65f7ec",
+  "native_compound_cache_generation_only_difference": true,
+  "initial_project_retained_in_native_backup": true,
+  "root": "/home/marco/VenturiWeb-frozen-take-20261021-v2",
+  "timeline_id": "2",
+  "clip_id": "0",
+  "original_media": {
+    "audio_stream_count": 0,
+    "compound_timeline_id": null,
+    "content_hash": "8115387286544290056",
+    "duration_frames": 14424,
+    "folder": null,
+    "fps": {
+      "den": 1,
+      "num": 24
+    },
+    "has_audio": false,
+    "has_video": true,
+    "id": "2",
+    "is_image": false,
+    "name": "frozen-A.mp4",
+    "offline": false
+  },
+  "replacement_media": {
+    "audio_stream_count": 0,
+    "compound_timeline_id": null,
+    "content_hash": "8329748678065742431",
+    "duration_frames": 12,
+    "folder": null,
+    "fps": {
+      "den": 1,
+      "num": 24
+    },
+    "has_audio": false,
+    "has_video": true,
+    "id": "3",
+    "is_image": false,
+    "name": "frozen-B.mp4",
+    "offline": false
+  },
+  "media_hashes": {
+    "frozen-A.mp4": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+    "frozen-B.mp4": "047831d4494ac1caa4597b2de72fcd2bbc44adb41f3c4c9017e033ae2c7cd4f5"
+  },
+  "original_clip": {
+    "disabled": false,
+    "display_color": null,
+    "display_rgb": null,
+    "fade_in": 0,
+    "fade_out": 0,
+    "freeze_source_frame": 24,
+    "id": "0",
+    "kind": "media",
+    "length_frames": 76,
+    "linked_group": null,
+    "media_id": "2",
+    "name": "frozen-A.mp4",
+    "retime": {
+      "max_length": 7600,
+      "min_length": 1,
+      "pitch_correction": true,
+      "source_span": 76,
+      "speed_percent": 100.0
+    },
+    "slip_range": [
+      -4,
+      14344
+    ],
+    "source_in_frames": 4,
+    "source_out_frames": 80,
+    "speed_percent": 100.0,
+    "start_frame": 0,
+    "transition_in": null,
+    "transition_out": null
+  },
+  "held_clip": {
+    "disabled": false,
+    "display_color": null,
+    "display_rgb": null,
+    "fade_in": 0,
+    "fade_out": 0,
+    "freeze_source_frame": 3,
+    "id": "0",
+    "kind": "media",
+    "length_frames": 76,
+    "linked_group": null,
+    "media_id": "3",
+    "name": "frozen-B.mp4",
+    "retime": {
+      "max_length": 7600,
+      "min_length": 1,
+      "pitch_correction": true,
+      "source_span": 76,
+      "speed_percent": 100.0
+    },
+    "slip_range": [
+      -3,
+      0
+    ],
+    "source_in_frames": 3,
+    "source_out_frames": 79,
+    "speed_percent": 100.0,
+    "start_frame": 0,
+    "transition_in": null,
+    "transition_out": null
+  },
+  "unfrozen_clip": {
+    "disabled": false,
+    "display_color": null,
+    "display_rgb": null,
+    "fade_in": 0,
+    "fade_out": 0,
+    "freeze_source_frame": null,
+    "id": "0",
+    "kind": "media",
+    "length_frames": 9,
+    "linked_group": null,
+    "media_id": "3",
+    "name": "frozen-B.mp4",
+    "retime": {
+      "max_length": 900,
+      "min_length": 1,
+      "pitch_correction": true,
+      "source_span": 9,
+      "speed_percent": 100.0
+    },
+    "slip_range": [
+      -3,
+      0
+    ],
+    "source_in_frames": 3,
+    "source_out_frames": 12,
+    "speed_percent": 100.0,
+    "start_frame": 0,
+    "transition_in": null,
+    "transition_out": null
+  },
+  "hold_plans": {
+    "0": {
+      "audio_stream_count": 0,
+      "changes": [
+        {
+          "audio_stream_index": null,
+          "clip_id": "0",
+          "freeze_source_frame": 0,
+          "length": 76,
+          "media_id": "3",
+          "previous_audio_stream_index": null,
+          "previous_freeze_source_frame": 24,
+          "previous_length": 76,
+          "previous_media_id": "2",
+          "source_in": 0,
+          "source_out": 76,
+          "start_frame": 0,
+          "track": "0"
+        }
+      ],
+      "merged_keys": 0,
+      "query": {
+        "frame": 0,
+        "if_generation": "10",
+        "project_epoch": "1792613845990106959:1",
+        "revision": "bcf3c4bd5e7c219d",
+        "timeline_id": "2",
+        "width": 640
+      },
+      "removed_crossings": 0,
+      "source_version": "64512:8261259:2375:1792613845:713498651",
+      "version": 1
+    },
+    "3": {
+      "audio_stream_count": 0,
+      "changes": [
+        {
+          "audio_stream_index": null,
+          "clip_id": "0",
+          "freeze_source_frame": 3,
+          "length": 76,
+          "media_id": "3",
+          "previous_audio_stream_index": null,
+          "previous_freeze_source_frame": 24,
+          "previous_length": 76,
+          "previous_media_id": "2",
+          "source_in": 3,
+          "source_out": 79,
+          "start_frame": 0,
+          "track": "0"
+        }
+      ],
+      "merged_keys": 0,
+      "query": {
+        "frame": 0,
+        "if_generation": "10",
+        "project_epoch": "1792613845990106959:1",
+        "revision": "bcf3c4bd5e7c219d",
+        "timeline_id": "2",
+        "width": 640
+      },
+      "removed_crossings": 0,
+      "source_version": "64512:8261259:2375:1792613845:713498651",
+      "version": 1
+    },
+    "11": {
+      "audio_stream_count": 0,
+      "changes": [
+        {
+          "audio_stream_index": null,
+          "clip_id": "0",
+          "freeze_source_frame": 11,
+          "length": 76,
+          "media_id": "3",
+          "previous_audio_stream_index": null,
+          "previous_freeze_source_frame": 24,
+          "previous_length": 76,
+          "previous_media_id": "2",
+          "source_in": 11,
+          "source_out": 87,
+          "start_frame": 0,
+          "track": "0"
+        }
+      ],
+      "merged_keys": 0,
+      "query": {
+        "frame": 0,
+        "if_generation": "10",
+        "project_epoch": "1792613845990106959:1",
+        "revision": "bcf3c4bd5e7c219d",
+        "timeline_id": "2",
+        "width": 640
+      },
+      "removed_crossings": 0,
+      "source_version": "64512:8261259:2375:1792613845:713498651",
+      "version": 1
+    }
+  },
+  "shortened_plan": {
+    "audio_stream_count": 0,
+    "changes": [
+      {
+        "audio_stream_index": null,
+        "clip_id": "0",
+        "freeze_source_frame": null,
+        "length": 9,
+        "media_id": "3",
+        "previous_audio_stream_index": null,
+        "previous_freeze_source_frame": 24,
+        "previous_length": 76,
+        "previous_media_id": "2",
+        "source_in": 3,
+        "source_out": 12,
+        "start_frame": 0,
+        "track": "0"
+      }
+    ],
+    "merged_keys": 0,
+    "query": {
+      "frame": 0,
+      "if_generation": "18",
+      "project_epoch": "1792613845990106959:1",
+      "revision": "bcf3c4bd5e7c219d",
+      "timeline_id": "2",
+      "width": 640
+    },
+    "removed_crossings": 0,
+    "source_version": "64512:8261259:2375:1792613845:713498651",
+    "version": 1
+  },
+  "unfreeze_preserve_refused": {
+    "status": 409,
+    "error": "TAKE_TOO_SHORT"
+  },
+  "invalid_policy_and_frame_refusals": {
+    "omitted": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "explicit_reject": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "unknown": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "object": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "boolean": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "frame_at_eof": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    }
+  },
+  "locked_refusal": {
+    "status": 409,
+    "error": "TRACK_LOCKED"
+  },
+  "compound": {
+    "timeline_id": "3",
+    "clip_id": "2",
+    "media_id": "6",
+    "child_timeline_id": "4",
+    "child_clip_id": "1",
+    "target_refusal": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "replacement_refusal": {
+      "status": 422,
+      "error": "INVALID_OPERATION"
+    },
+    "child_plan": {
+      "audio_stream_count": 0,
+      "changes": [
+        {
+          "audio_stream_index": null,
+          "clip_id": "1",
+          "freeze_source_frame": null,
+          "length": 12,
+          "media_id": "3",
+          "previous_audio_stream_index": null,
+          "previous_freeze_source_frame": null,
+          "previous_length": 12,
+          "previous_media_id": "2",
+          "source_in": 0,
+          "source_out": 12,
+          "start_frame": 0,
+          "track": "0"
+        }
+      ],
+      "merged_keys": 0,
+      "query": {
+        "frame": 0,
+        "if_generation": "10",
+        "project_epoch": "1792613845990106959:1",
+        "revision": "4b88ea0df1277f21",
+        "timeline_id": "4",
+        "width": 640
+      },
+      "removed_crossings": 0,
+      "source_version": "64512:8261259:2375:1792613845:713498651",
+      "version": 1
+    },
+    "child_before": {
+      "api_version": 1,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "id": "4",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Nested review take",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "4",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "media",
+              "length_frames": 12,
+              "linked_group": null,
+              "media_id": "2",
+              "name": "frozen-A.mp4",
+              "retime": {
+                "max_length": 1200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 12,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                14412
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 12,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "child_after": {
+      "api_version": 1,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "id": "4",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Nested review take",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "4",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "media",
+              "length_frames": 12,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "frozen-B.mp4",
+              "retime": {
+                "max_length": 1200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 12,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                0
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 12,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "ordinary_child_replace_undo_redo_retry": true,
+    "parent_unchanged": true,
+    "save_restart_exact": true
+  },
+  "one_undo_redo_retry_each_policy": true,
+  "source_hashes_preserved": true,
+  "saved_project_semantics_preserved": true,
+  "save_restart_exact": true,
+  "primary_editor_preserved": true,
+  "binary_sha256": "73fe58c5d0305da2ba1fee30639c94f98e8f30b13884b89c0066da5769ffab58",
+  "hardware_gpu_used": false,
+  "no_gpu_or_shared_lock_fds": true,
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792613702.0217273,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "73fe58c5d0305da2ba1fee30639c94f98e8f30b13884b89c0066da5769ffab58",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "served_asset_hashes": {
+    "index.html": "b345b6727fba17de25a8f08fafcd427d25916063c94c1e8446eda1a62e26f68c",
+    "js/review.js": "5a5e71a1ed89248ad88763ad0ea871aee48c914dfbbdd531ec53861c08e12556"
+  },
+  "saved_project_and_sources_unchanged": true,
+  "parents_preserved": {
+    "Frozen_Take_API_check.vvproj": "e01923181c29a39b8651c49cc30f51719e62509d46805e4932d1159c69087e33"
+  },
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "core_tests": 277,
+  "media_proxy_tests": 10,
+  "bounded_decoder_tests": 3,
+  "cached_device_tests": 1,
+  "rust_tests": 244,
+  "javascript_tests": 542,
+  "main_editor_preserved": true,
+  "own_ui_test_unit_stopped": true,
+  "windows_ui_observations": {
+    "compound_target": {
+      "apply_disabled": true,
+      "changes": "",
+      "plan_disabled": true,
+      "policy": "reject",
+      "source_in": "0",
+      "status": "Compound targets are unsupported by Replace Take and source comparison",
+      "takeA": "",
+      "takeB": "2",
+      "target": "Unsupported replacement target: clip 2 \u00b7 Nested review take \u00b7 Compound targets are unsupported by Replace Take and source comparison. Choose ordinary media explicitly for A/B comparison."
+    },
+    "compound_explicit_comparison": {
+      "apply_disabled": true,
+      "changes": "",
+      "plan_disabled": true,
+      "policy": "reject",
+      "source_in": "0",
+      "status": "Take choice changed \u00b7 preview replacement before applying",
+      "takeA": "2",
+      "takeB": "3",
+      "target": "Unsupported replacement target: clip 2 \u00b7 Nested review take \u00b7 Compound targets are unsupported by Replace Take and source comparison. Choose ordinary media explicitly for A/B comparison."
+    },
+    "default_reject": {
+      "apply_disabled": true,
+      "changes": "",
+      "plan_disabled": true,
+      "policy": "reject",
+      "source_in": "0",
+      "status": "Compare sources, choose explicit replacement policies, then preview native changes",
+      "takeA": "2",
+      "takeB": "3",
+      "target": "Replacement target: clip 0 \u00b7 frozen-A.mp4 \u00b7 start 0 \u00b7 76 frames"
+    },
+    "hold_plan": {
+      "apply_disabled": false,
+      "changes": "Track 0 \u00b7 clip 0 \u00b7 start 0 \u00b7 76 \u2192 76 timeline frames \u00b7 animation source clock [3, 79) \u00b7 Freeze held frame 24 (silent) \u2192 held B frame 3 (silent, full timeline duration preserved)",
+      "plan_disabled": false,
+      "policy": "hold_source_in",
+      "source_in": "3",
+      "status": "Native preview \u00b7 1 clip(s) \u00b7 0 crossing transition(s) removed \u00b7 preserve each affected audio stream. Confirm to apply one Undo step.",
+      "takeA": "2",
+      "takeB": "3",
+      "target": "Replacement target: clip 0 \u00b7 frozen-A.mp4 \u00b7 start 0 \u00b7 76 frames"
+    },
+    "settings_invalidated": {
+      "apply_disabled": true,
+      "changes": "",
+      "plan_disabled": false,
+      "policy": "unfreeze",
+      "source_in": "3",
+      "status": "Replacement settings changed \u00b7 preview before applying",
+      "takeA": "2",
+      "takeB": "3",
+      "target": "Replacement target: clip 0 \u00b7 frozen-A.mp4 \u00b7 start 0 \u00b7 76 frames"
+    },
+    "preserve_refusal": {
+      "apply_disabled": true,
+      "changes": "",
+      "plan_disabled": false,
+      "policy": "unfreeze",
+      "source_in": "3",
+      "status": "The take is too short; explicitly shorten the edit or cancel",
+      "takeA": "2",
+      "takeB": "3",
+      "target": "Replacement target: clip 0 \u00b7 frozen-A.mp4 \u00b7 start 0 \u00b7 76 frames"
+    },
+    "shorten_plan": {
+      "apply_disabled": false,
+      "changes": "Track 0 \u00b7 clip 0 \u00b7 start 0 \u00b7 76 \u2192 9 timeline frames \u00b7 animation source clock [3, 12) \u00b7 Freeze held frame 24 (silent) \u2192 moving",
+      "plan_disabled": false,
+      "policy": "unfreeze",
+      "source_in": "3",
+      "status": "Native preview \u00b7 1 clip(s) \u00b7 0 crossing transition(s) removed \u00b7 preserve each affected audio stream. Confirm to apply one Undo step.",
+      "takeA": "2",
+      "takeB": "3",
+      "target": "Replacement target: clip 0 \u00b7 frozen-A.mp4 \u00b7 start 0 \u00b7 76 frames"
+    }
+  },
+  "native_ui_states": {
+    "initial": {
+      "clip": {
+        "disabled": false,
+        "display_color": null,
+        "display_rgb": null,
+        "fade_in": 0,
+        "fade_out": 0,
+        "freeze_source_frame": 24,
+        "id": "0",
+        "kind": "media",
+        "length_frames": 76,
+        "linked_group": null,
+        "media_id": "2",
+        "name": "frozen-A.mp4",
+        "retime": {
+          "max_length": 7600,
+          "min_length": 1,
+          "pitch_correction": true,
+          "source_span": 76,
+          "speed_percent": 100.0
+        },
+        "slip_range": [
+          -4,
+          14344
+        ],
+        "source_in_frames": 4,
+        "source_out_frames": 80,
+        "speed_percent": 100.0,
+        "start_frame": 0,
+        "transition_in": null,
+        "transition_out": null
+      },
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "generation": "0",
+      "project_epoch": "1792613857333948309:1",
+      "revision": "bcf3c4bd5e7c219d"
+    },
+    "held": {
+      "clip": {
+        "disabled": false,
+        "display_color": null,
+        "display_rgb": null,
+        "fade_in": 0,
+        "fade_out": 0,
+        "freeze_source_frame": 3,
+        "id": "0",
+        "kind": "media",
+        "length_frames": 76,
+        "linked_group": null,
+        "media_id": "3",
+        "name": "frozen-B.mp4",
+        "retime": {
+          "max_length": 7600,
+          "min_length": 1,
+          "pitch_correction": true,
+          "source_span": 76,
+          "speed_percent": 100.0
+        },
+        "slip_range": [
+          -3,
+          0
+        ],
+        "source_in_frames": 3,
+        "source_out_frames": 79,
+        "speed_percent": 100.0,
+        "start_frame": 0,
+        "transition_in": null,
+        "transition_out": null
+      },
+      "history": {
+        "labels": [
+          "ReplaceTake"
+        ],
+        "position": 1
+      },
+      "unsaved": true,
+      "generation": "1",
+      "project_epoch": "1792613857333948309:1",
+      "revision": "f75970b50eebf8dd"
+    },
+    "undo_hold": {
+      "clip": {
+        "disabled": false,
+        "display_color": null,
+        "display_rgb": null,
+        "fade_in": 0,
+        "fade_out": 0,
+        "freeze_source_frame": 24,
+        "id": "0",
+        "kind": "media",
+        "length_frames": 76,
+        "linked_group": null,
+        "media_id": "2",
+        "name": "frozen-A.mp4",
+        "retime": {
+          "max_length": 7600,
+          "min_length": 1,
+          "pitch_correction": true,
+          "source_span": 76,
+          "speed_percent": 100.0
+        },
+        "slip_range": [
+          -4,
+          14344
+        ],
+        "source_in_frames": 4,
+        "source_out_frames": 80,
+        "speed_percent": 100.0,
+        "start_frame": 0,
+        "transition_in": null,
+        "transition_out": null
+      },
+      "history": {
+        "labels": [
+          "ReplaceTake"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "generation": "2",
+      "project_epoch": "1792613857333948309:1",
+      "revision": "bcf3c4bd5e7c219d"
+    },
+    "preserve_refusal": {
+      "clip": {
+        "disabled": false,
+        "display_color": null,
+        "display_rgb": null,
+        "fade_in": 0,
+        "fade_out": 0,
+        "freeze_source_frame": 24,
+        "id": "0",
+        "kind": "media",
+        "length_frames": 76,
+        "linked_group": null,
+        "media_id": "2",
+        "name": "frozen-A.mp4",
+        "retime": {
+          "max_length": 7600,
+          "min_length": 1,
+          "pitch_correction": true,
+          "source_span": 76,
+          "speed_percent": 100.0
+        },
+        "slip_range": [
+          -4,
+          14344
+        ],
+        "source_in_frames": 4,
+        "source_out_frames": 80,
+        "speed_percent": 100.0,
+        "start_frame": 0,
+        "transition_in": null,
+        "transition_out": null
+      },
+      "history": {
+        "labels": [
+          "ReplaceTake"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "generation": "2",
+      "project_epoch": "1792613857333948309:1",
+      "revision": "bcf3c4bd5e7c219d"
+    },
+    "shortened": {
+      "clip": {
+        "disabled": false,
+        "display_color": null,
+        "display_rgb": null,
+        "fade_in": 0,
+        "fade_out": 0,
+        "freeze_source_frame": null,
+        "id": "0",
+        "kind": "media",
+        "length_frames": 9,
+        "linked_group": null,
+        "media_id": "3",
+        "name": "frozen-B.mp4",
+        "retime": {
+          "max_length": 900,
+          "min_length": 1,
+          "pitch_correction": true,
+          "source_span": 9,
+          "speed_percent": 100.0
+        },
+        "slip_range": [
+          -3,
+          0
+        ],
+        "source_in_frames": 3,
+        "source_out_frames": 12,
+        "speed_percent": 100.0,
+        "start_frame": 0,
+        "transition_in": null,
+        "transition_out": null
+      },
+      "history": {
+        "labels": [
+          "ReplaceTake"
+        ],
+        "position": 1
+      },
+      "unsaved": true,
+      "generation": "3",
+      "project_epoch": "1792613857333948309:1",
+      "revision": "cb3c87e6e2dbcf0a"
+    },
+    "undo_shorten": {
+      "clip": {
+        "disabled": false,
+        "display_color": null,
+        "display_rgb": null,
+        "fade_in": 0,
+        "fade_out": 0,
+        "freeze_source_frame": 24,
+        "id": "0",
+        "kind": "media",
+        "length_frames": 76,
+        "linked_group": null,
+        "media_id": "2",
+        "name": "frozen-A.mp4",
+        "retime": {
+          "max_length": 7600,
+          "min_length": 1,
+          "pitch_correction": true,
+          "source_span": 76,
+          "speed_percent": 100.0
+        },
+        "slip_range": [
+          -4,
+          14344
+        ],
+        "source_in_frames": 4,
+        "source_out_frames": 80,
+        "speed_percent": 100.0,
+        "start_frame": 0,
+        "transition_in": null,
+        "transition_out": null
+      },
+      "history": {
+        "labels": [
+          "ReplaceTake"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "generation": "4",
+      "project_epoch": "1792613857333948309:1",
+      "revision": "bcf3c4bd5e7c219d"
+    }
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-core/src/take.rs": "1d907498226206856554fff9f593e19da706b079c683af4d22b117c0c79813e6",
+      "crates/vv-core/src/tests/take.rs": "b24c57a705dc5b05a7ef768d6dcec07d608ade051c97908a4841c207b3339609",
+      "crates/vv-web/src/take.rs": "ea22340f8062951f05e84bae0546f8123e443cee233b3336c8b0ffce63488a1b",
+      "crates/vv-web/src/tests/take.rs": "0cdd44ceff4ac5fcd6c8e48cd8f5f060022d994b7b57cc630fd846ad5db50160",
+      "web/index.html": "b345b6727fba17de25a8f08fafcd427d25916063c94c1e8446eda1a62e26f68c",
+      "web/js/review.js": "5a5e71a1ed89248ad88763ad0ea871aee48c914dfbbdd531ec53861c08e12556",
+      "web/test/review.test.js": "057713495a0119e13ffff7c38dada57ed8ec3808354c10233b7bed8c8b3a1fe8"
+    },
+    "core_tests": 277,
+    "rust_tests": 244,
+    "javascript_tests": 542,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "clippy_includes_native_desktop": true,
+    "native_build": true,
+    "browser_gui": true,
+    "hardware_gpu": false,
+    "fmt_check": true
+  },
+  "desktop_baseline_regression": {
+    "state": {
+      "phase": "passed",
+      "updated_unix": 1792613387.8326397,
+      "source_commit": "0fdfd0e0ab5dd5448c9f4ee8afcec445815dd07c",
+      "check_all_targets": true,
+      "runtime_tests": true,
+      "hardware_gpu": false,
+      "excluded_probe_or_app_initialization_tests": true
+    },
+    "unit": "venturi-desktop-check-20261021.service",
+    "unit_terminal": {
+      "ActiveState": "inactive",
+      "MainPID": "0",
+      "Result": "success"
+    },
+    "validation_summary": [
+      "+ /home/marco/.cache/venturi-build/cargo/bin/cargo check --locked -p vv-app --all-targets",
+      "Finished `dev` profile [optimized + debuginfo] target(s) in 6m 09s",
+      "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-app --bin vv-app hw_decode::tests:: -- --test-threads=1",
+      "Finished `test` profile [optimized + debuginfo] target(s) in 18m 07s",
+      "test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 536 filtered out; finished in 0.00s",
+      "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-app --bin vv-app settings::tests:: -- --test-threads=1",
+      "Finished `test` profile [optimized + debuginfo] target(s) in 0.51s",
+      "test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 532 filtered out; finished in 0.00s",
+      "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-app --bin vv-app export_dialog::tests:: -- --test-threads=1 --skip dialog_renders_without_starting_an_export_on_its_own --skip preferred_dialog_switches_to_nvenc_only_once_it_passed_its_check",
+      "Finished `test` profile [optimized + debuginfo] target(s) in 0.11s",
+      "test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 538 filtered out; finished in 0.00s"
+    ],
+    "primary_editor_preserved": true,
+    "hardware_gpu_qualification": false,
+    "scope_note": "Native vv-app all-target compilation and explicitly selected pure CPU tests only. App initialization and tests polling native codec availability are excluded; no GUI, window, audio device, or GPU qualification is claimed. Baseline commit precedes frozen-take edits; final aggregate clippy separately checks vv-app after those core edits."
+  },
+  "scope_note": "Explicit frozen Replace Take policies: Hold uses exact B source In for every already-frozen affected clip and preserves full duration, silence, source animation clocks, speed and preserved attributes; Unfreeze evaluates original duration before explicit Preserve/Shorten feasibility. Linked moving clips retain normal duration checks. Strict defaults preserve legacy canonical receipts. Finite native API checks cover refusals, locks, one Undo/Redo/retry, save/restart and source preservation. The existing Windows browser qualifies default refusal, Hold confirmation, changed-policy invalidation, Unfreeze Preserve refusal, explicit Shorten and exact single Undo restoration through native snapshots. Compound wrappers are explicitly refused as either target or replacement; an ordinary clip inside the child timeline passes native Replace/Undo/Redo/retry and save/restart with its parent unchanged. The Windows compound-target UI shows an empty A choice and blocks replacement even after explicitly selecting an ordinary comparison source. Automatic wrapper replacement or recursive take selection is not implemented or required by M6. No GPU, render, physical audio, sustained playback, local build/test or new browser installation was used.",
+  "screenshot_sha256": "3b10f6c05fd3cee0bfc0aaf09b8ff85a66bfbdfb588a9451af6b4846411bb357",
+  "prior_diagnostic_attempt": {
+    "status": "failed",
+    "cause": "The diagnostic required byte-identical project saves after Undo. Native compound content_hash values and next_compound_generation correctly advanced for cache invalidation; no edit fields or source bytes differed.",
+    "retained_root": "/home/marco/VenturiWeb-frozen-take-20261021",
+    "own_service_stopped": true,
+    "primary_editor_independently_verified_preserved": true,
+    "final_attempt": "Uses a distinct v2 root, compares all project text except exactly the native compound cache counters, retains the initial raw file in its native .bak, and verifies exact saved state after restart. GUI verification makes no save and preserves that final project hash."
+  },
+  "format_check": {
+    "fmt_check": true,
+    "command": "cargo fmt --all -- --check",
+    "passed": true
+  }
+}

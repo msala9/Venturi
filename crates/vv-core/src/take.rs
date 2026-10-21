@@ -27,6 +27,31 @@ pub enum AttributePolicy {
 }
 
 #[derive(Clone, Copy, Debug, Default, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum FrozenPolicy {
+    #[default]
+    Reject,
+    HoldSourceIn,
+    Unfreeze,
+}
+impl<'de> Deserialize<'de> for FrozenPolicy {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        match String::deserialize(deserializer)?.as_str() {
+            "reject" => Ok(Self::Reject),
+            "hold_source_in" => Ok(Self::HoldSourceIn),
+            "unfreeze" => Ok(Self::Unfreeze),
+            value => Err(serde::de::Error::unknown_variant(
+                value,
+                &["reject", "hold_source_in", "unfreeze"],
+            )),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, Serialize, PartialEq, Eq)]
 #[serde(tag = "policy", rename_all = "snake_case")]
 pub enum AudioStreamPolicy {
     #[default]
@@ -63,6 +88,7 @@ pub struct Request {
     pub links: LinkPolicy,
     pub attributes: AttributePolicy,
     pub audio_streams: AudioStreamPolicy,
+    pub frozen: FrozenPolicy,
 }
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum Error {
@@ -78,7 +104,7 @@ pub enum Error {
     AudioStream,
     #[error("Choose an ordinary source media clip; compound replacement is unsupported")]
     Compound,
-    #[error("Unfreeze the selected or linked clip before replacing its take")]
+    #[error("Choose an explicit held-frame or unfreeze policy for frozen clips")]
     Frozen,
     #[error("Linked clips use different media or speeds; explicitly keep the other linked clips")]
     LinkedSource,
@@ -104,6 +130,8 @@ pub struct Change {
     pub source_out: FrameIdx,
     pub previous_audio_stream_index: Option<usize>,
     pub audio_stream_index: Option<usize>,
+    pub previous_freeze_source_frame: Option<FrameIdx>,
+    pub freeze_source_frame: Option<FrameIdx>,
 }
 #[derive(Debug)]
 pub struct Plan {
@@ -173,13 +201,21 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
             if track.locked {
                 return Err(Error::Locked);
             }
-            if clip.freeze.is_some() {
+            if clip.freeze.is_some() && request.frozen == FrozenPolicy::Reject {
                 return Err(Error::Frozen);
             }
             if !matches!(clip.source, ClipSource::Media(id) if id == previous_media)
                 || clip.speed() != selected.speed()
             {
                 return Err(Error::LinkedSource);
+            }
+            if clip.timeline_len <= 0
+                || clip.source_offset < 0
+                || clip.source_offset.checked_add(clip.timeline_len).is_none()
+                || clip.rate().num <= 0
+                || clip.rate().den <= 0
+            {
+                return Err(Error::Timing);
             }
             if match track.kind {
                 TrackKind::Video => !media.meta.has_video,
@@ -189,6 +225,13 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
             }
             let mut replacement = clip.clone();
             replacement.source = ClipSource::Media(request.media);
+            if clip.freeze.is_some() {
+                replacement.freeze = match request.frozen {
+                    FrozenPolicy::HoldSourceIn => Some(request.source_in),
+                    FrozenPolicy::Unfreeze => None,
+                    FrozenPolicy::Reject => return Err(Error::Frozen),
+                };
+            }
             if track.kind == TrackKind::Audio {
                 let stream = match request.audio_streams {
                     AudioStreamPolicy::Preserve => clip.audio_stream_index,
@@ -201,21 +244,32 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
             }
             replacement.conform(conform);
             let anchor = replacement.rate().scale_round(request.source_in);
-            replacement.source_offset = anchor
-                .checked_add(clip.source_offset - selected.source_offset)
+            let relative = clip
+                .source_offset
+                .checked_sub(selected.source_offset)
                 .ok_or(Error::SourceStart)?;
+            replacement.source_offset = anchor.checked_add(relative).ok_or(Error::SourceStart)?;
             if replacement.source_offset < 0 {
                 return Err(Error::SourceStart);
             }
-            let available = replacement.rate().scale_round(media.meta.duration_frames)
-                - replacement.source_offset;
-            if available <= 0 {
-                return Err(Error::Empty);
+            if replacement
+                .source_offset
+                .checked_add(replacement.timeline_len)
+                .is_none()
+            {
+                return Err(Error::Timing);
             }
-            if available < clip.timeline_len && request.duration == DurationPolicy::Preserve {
-                return Err(Error::TooShort);
+            if replacement.freeze.is_none() {
+                let available = replacement.rate().scale_round(media.meta.duration_frames)
+                    - replacement.source_offset;
+                if available <= 0 {
+                    return Err(Error::Empty);
+                }
+                if available < clip.timeline_len && request.duration == DurationPolicy::Preserve {
+                    return Err(Error::TooShort);
+                }
+                replacement.timeline_len = available.min(clip.timeline_len);
             }
-            replacement.timeline_len = available.min(clip.timeline_len);
             if request.attributes == AttributePolicy::Preserve {
                 // FPS-only scaling can move keys by one edit frame after conforming.
                 let old_rate = clip.rate();
@@ -276,6 +330,8 @@ pub fn plan(project: &Project, request: &Request) -> Result<Plan, Error> {
             ),
             audio_stream_index: (timeline.tracks[*track].kind == TrackKind::Audio)
                 .then_some(clip.audio_stream_index),
+            previous_freeze_source_frame: timeline.tracks[*track].clip(clip.id).unwrap().freeze,
+            freeze_source_frame: clip.freeze,
         })
         .collect();
     let mut commands: Vec<Box<dyn Command>> = Vec::new();

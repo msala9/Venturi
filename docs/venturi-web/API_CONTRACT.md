@@ -618,7 +618,8 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   integer media `source_in`, `duration` (`preserve`/`shorten`), `links`
   (`replace_linked`/`selected_only`), `attributes` (`preserve`/`reset`), optional
   `audio_streams` (`{policy:"preserve"}` by default, or explicit
-  `{policy:"select",index:0}` with a zero-based integer), and nullable
+  `{policy:"select",index:0}` with a zero-based integer), optional `frozen`
+  (`reject` by default, `hold_source_in` or `unfreeze`), and nullable
   `source_version`. Preserve retains each affected Audio clip's existing stream;
   Select maps every affected Audio clip to that B stream. Video clip stream
   fields are untouched. An unavailable resulting stream refuses the entire
@@ -633,8 +634,18 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   are re-probed before preview and application. Review shows the B count and
   each Audio mapping before confirmation; changing B resets to Preserve and
   discards the plan. The replacement policy does not change A/B audition,
-  which currently uses the first source audio stream.
+  which has separate explicit zero-based stream choices for each pane.
   Changed imported timing/streams/fingerprint require explicit relink/reimport.
+  Frozen clips require an explicit policy. `hold_source_in` uses exactly B's
+  native `source_in` frame for every already-frozen affected clip, preserves
+  its complete timeline duration and keeps it silent. Its independent animation
+  clock can extend beyond the moving source range. Moving clips retain normal
+  duration checks. `unfreeze` clears each affected freeze, then checks Preserve
+  or explicit Shorten against the original edit length; it never trims first.
+  `reject` refuses an affected freeze without editing anything. Omitted and
+  explicit Reject retain legacy command receipt fingerprints. Each plan change
+  adds nullable `previous_freeze_source_frame`/`freeze_source_frame`; native
+  keyframe/rate/offset mapping remains independent of the held picture.
 - Timeline `replace_take {replacement}` additionally requires that previewed
   source version. It revalidates epoch/generation/revision, source descriptor,
   locks, streams, linked media/speeds and the complete trial project. Native
@@ -644,8 +655,12 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   transitions within the same Undo. Preserved keyframes follow source FPS/In;
   crop follows the native relink resolution convention. Reset affects clip
   effects/fades, keeping labels/disabled/link/speed state. Media entries and
-  source files remain unchanged. Frozen clips and compounds must be handled
-  explicitly before take replacement. Review offers two independent bounded
+  source files remain unchanged. Native compound cache generations can advance
+  during Undo/Redo; they are invalidation metadata, not an edit to source files.
+  Compound wrapper replacement remains unsupported;
+  Review marks a compound target explicitly and does not substitute an unrelated
+  A source. Open the child timeline and select its ordinary media clip to replace
+  a take inside a compound through the same guarded command. Review offers two independent bounded
   source players with equal-elapsed-time comparison and exclusive audio
   audition. The longest ready playable native duration leads comparison, with
   A winning equal-duration ties; a shorter pane cannot stop the longer one at

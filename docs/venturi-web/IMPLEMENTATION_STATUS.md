@@ -1669,3 +1669,14 @@ m5-fast-transport-browser.json and the fast Source/Program screenshots. This is
 CPU/lavapipe acceptance; existing longer-source/program bounds and full hardware
 qualification remain on their separate parity rows. No inference process, shared
 GPU slot, AMD kernel driver or ROCm configuration was touched.
+
+The aa44bfa transport build is deployed on halo2, SHA-256
+e564688e0bbfe96d22992e62fb4102c28bcf2168680033764dc56af66992bd82.
+The native runtime returned the expected silent 2x/4x/8x windows on its saved
+shared-image fixture, bound the input version, refused still-source audio and
+served matching client asset hashes. The browser completed the five-second
+composed preview at 8x with both audio windows completed and clock drift below
+26 ms, then displayed live 2x playback. Native project/source hash, exact seed
+and Favorite remain intact. CPU/lavapipe, two workers, no DRI/KFD handles and no
+shared hardware-lock probe/acquisition are recorded in m5-halo2-fast-transport.json
+and m5-halo2-fast-transport-browser.png. No shared archive content was modified.

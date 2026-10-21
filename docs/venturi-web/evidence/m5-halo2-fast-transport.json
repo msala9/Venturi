@@ -1,0 +1,55 @@
+{
+  "pid": 1195202,
+  "sha256": "e564688e0bbfe96d22992e62fb4102c28bcf2168680033764dc56af66992bd82",
+  "source_commit": "aa44bfa9d552029e6470730ac63921f949610c9e",
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "saved_project": "CPU_shared_library_UI_check.vvproj",
+  "known_source_hash_preserved": true,
+  "exact_seed": "9007199254740993",
+  "annotation_rating": "favorite",
+  "windows": [
+    {
+      "tempo": 2,
+      "bytes": 192044,
+      "silent": true
+    },
+    {
+      "tempo": 4,
+      "bytes": 96044,
+      "silent": true
+    },
+    {
+      "tempo": 8,
+      "bytes": 48044,
+      "silent": true
+    }
+  ],
+  "source_version": "6547309d76e635f7499a1ce55abe64622cd54b20916f84d5a13bd2d6b95525a3",
+  "still_audio_refused": true,
+  "assets_sha256": {
+    "js/fast-transport.js": "68f28b9df1ca97890d21360ad0e616b0b17763a2ed51ca69d83e0a46a8e7b78a",
+    "js/program.js": "34af94c8c7afc82c889becc83c99fd019c3dc8ec0b455cb1c619746c0a310a72",
+    "js/source.js": "0e1aafb5c5a814c4341ec744df0e586bd7f5ad282490d0595e89be0bddd6f088",
+    "js/main.js": "50485fc88f2ac71dd2b42084d96bba30862a1bf8815ddb3c6b519da5c1d0e8f1",
+    "style/app.css": "2e30187fbaa0f945bcb438c841498f678940f80ee7381c4d8a8f183dc3a39f0a"
+  },
+  "session_unchanged": true,
+  "browser_8x": {
+    "duration": 5,
+    "ended": true,
+    "metrics": {
+      "audio_complete": true,
+      "audio_time": 0.6006666666666666,
+      "drift_seconds": 0.01884033333333346,
+      "max_drift_seconds": 0.025561999999999977,
+      "queued_buffers": 1,
+      "stop_reason": "ended",
+      "stopped": true,
+      "tempo": 8,
+      "video_time": 5,
+      "windows": 2
+    }
+  }
+}

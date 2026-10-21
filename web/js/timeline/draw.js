@@ -146,6 +146,11 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         const draft=view.draft;ctx.save();ctx.fillStyle=draft.error?color('--danger'):color('--primary');ctx.globalAlpha=0.45;ctx.fillRect(draft.start_x,top+TRACK-21,Math.max(1,draft.end_x-draft.start_x),14);ctx.globalAlpha=1;ctx.strokeStyle=ctx.fillStyle;ctx.setLineDash([4,3]);ctx.strokeRect(draft.start_x,top+TRACK-21,Math.max(1,draft.end_x-draft.start_x),14);ctx.setLineDash([]);
         for(const handle of draft.handles){ctx.beginPath();ctx.arc(handle.x,top+TRACK-14,5,0,Math.PI*2);ctx.fill();}ctx.restore();
       }
+      if(view.draft?.kind==='preset_application'){
+        ctx.save();ctx.strokeStyle=view.draft.error?color('--danger'):color('--primary');ctx.lineWidth=3;
+        for(const outline of view.draft.outlines)if(outline.track_id===track.id)ctx.strokeRect(outline.left+1.5,outline.top+1.5,Math.max(0,outline.right-outline.left-3),Math.max(0,outline.bottom-outline.top-3));
+        ctx.restore();
+      }
       for (const draft of view.draft?.changes || [])
         if (draft.to_track === track.id) {
           const x = frameToX(draft.to_start_frame, view, timeline.fps),
@@ -246,6 +251,10 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
     }
     if(view.draft?.kind==='transition_placement'){
       const draft=view.draft,label=draft.error?`Transition blocked · ${draft.error}`:draft.noop?'Transition already identical · no edit':`${draft.transition.kind} · ${draft.duration}f · ${draft.slot==='cut_after'?'crossing':'single edge'}${draft.replacement?' · REPLACE enabled · Undo restores':''} · release to apply`;
+      const x=HEADER+8,y=Math.max(RULER+16,height-16);ctx.fillStyle=color('--raised');ctx.fillRect(x-4,y-8,Math.max(1,width-x),17);ctx.fillStyle=draft.error?color('--danger'):color('--text');ctx.fillText(label,x,y,Math.max(1,width-x-4));
+    }
+    if(view.draft?.kind==='preset_application'){
+      const draft=view.draft,label=`Preset ${draft.name} · ${draft.count} clip(s)${draft.error?` · blocked: ${draft.error}`:' · release to apply with one Undo'}`;
       const x=HEADER+8,y=Math.max(RULER+16,height-16);ctx.fillStyle=color('--raised');ctx.fillRect(x-4,y-8,Math.max(1,width-x),17);ctx.fillStyle=draft.error?color('--danger'):color('--text');ctx.fillText(label,x,y,Math.max(1,width-x-4));
     }
     onPaint?.(performance.now() - started);

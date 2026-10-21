@@ -1,0 +1,144 @@
+{
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792616769.1723573,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "b0e7f6fd7fd69d4744a1b1ec2b97e9bf4b96ceb27bf5c865d44016b869eb2065",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "served_asset_hashes": {
+    "js/main.js": "014dd84d7d39aca09395fb31512f9bc1e5df74c2bb83c6424627d3fac3d03c4d",
+    "js/presets.js": "051179dffa471013068f6a06b1aa38f95e3361448b53ddc877db97ef18c4e6da",
+    "js/timeline/input.js": "1585d515aa2deaa6e4fc7604610f2212cabb394df2de6284ea949c4ee3714a18",
+    "js/timeline/index.js": "114acf2da6d473914467515c761230895e81528ae58e38dd3483ec1791dffc49",
+    "js/timeline/draw.js": "a5ff22e4aba47cab877bdfb50d4ddae8218b83039b695caacca1e119b088f437",
+    "js/timeline/preset-drop.js": "2e36362b9b455cc0b72f037a0fe9080097e34c9a840d2bccfd662d66acf1fcb6"
+  },
+  "core_tests": 277,
+  "media_proxy_tests": 10,
+  "bounded_decoder_tests": 3,
+  "cached_device_tests": 1,
+  "rust_tests": 251,
+  "javascript_tests": 575,
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "validation_summary": [
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-core",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.10s",
+    "test result: ok. 277 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+    "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media browser_proxy::tests::",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.06s",
+    "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out; finished in 0.45s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_software_thread_bound",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.05s",
+    "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 0.25s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_cached_device_release",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.06s",
+    "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 126 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-web",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 8.77s",
+    "test result: ok. 251 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.09s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo clippy --locked -p vv-core -p vv-media -p vv-web -p vv-app --all-targets -- -D warnings",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 4.78s",
+    "+ /home/marco/.cache/venturi-build/node/bin/node --test --test-concurrency=1 web/test/api.test.js web/test/attributes.test.js web/test/audio-meters.test.js web/test/audition.test.js web/test/balance.test.js web/test/capture.test.js web/test/catalog.test.js web/test/curves.test.js web/test/eventkeys.test.js web/test/export-codecs.test.js web/test/export-panel.test.js web/test/export.test.js web/test/fast-transport.test.js web/test/inspector.test.js web/test/keyselection.test.js web/test/library.test.js web/test/masks.test.js web/test/mixer.test.js web/test/preset-panel.test.js web/test/preset-shortcuts.test.js web/test/presets.test.js web/test/preview-cache.test.js web/test/program-range.test.js web/test/program.test.js web/test/recovery.test.js web/test/retime-inspector.test.js web/test/retime-menu.test.js web/test/retime-visibility.test.js web/test/review.test.js web/test/reviewmeta.test.js web/test/scopes.test.js web/test/silence.test.js web/test/slip.test.js web/test/source-assets.test.js web/test/source-clock.test.js web/test/source-seek.test.js web/test/source-streams.test.js web/test/source-windows.test.js web/test/source.test.js web/test/timeline-fades.test.js web/test/timeline-preset-drop.test.js web/test/timeline-retime-input.test.js web/test/timeline-retime.test.js web/test/timeline-transition-input.test.js web/test/timeline-transition-placement-input.test.js web/test/timeline-transition-placement.test.js web/test/timeline-transitions.test.js web/test/timeline.test.js web/test/transition-selection.test.js web/test/ui.test.js web/test/viewer-mask-overlay.test.js web/test/viewer-mask-pen.test.js web/test/viewer-mask.test.js web/test/viewer-transform-overlay.test.js web/test/viewer-transform.test.js web/test/viewer.test.js web/test/visual.test.js web/test/voiceover.test.js",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo build --locked -p vv-web",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 6.60s"
+  ],
+  "main_editor_preserved": true,
+  "own_ui_test_unit_stopped": true,
+  "port8811_closed": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "status": "passed",
+  "scope": "Preset drag controller and source qualification; existing Windows panel and Apply/Undo regression",
+  "windows_ui_observations": {
+    "no_selection": {
+      "applyDisabled": true,
+      "drag": "Drag preset: Assigned native shortcut",
+      "enabled": true
+    },
+    "selected": {
+      "applyEnabled": true,
+      "dragAttribute": "true",
+      "dragEnabled": true
+    },
+    "appliedZoom": "1.5",
+    "undoZoom": "1",
+    "undoDisabled": true,
+    "dragAttribute": "true",
+    "physical_pointer_drag_exercised": false,
+    "browser": "Existing Windows Codex In-app Browser",
+    "consoleErrors": []
+  },
+  "native_ui_states": {
+    "initial": {
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "generation": "0",
+      "unsaved": false,
+      "preset_sha256": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc"
+    },
+    "applied": {
+      "history": {
+        "labels": [
+          "ApplyPreset"
+        ],
+        "position": 1
+      },
+      "generation": "1",
+      "unsaved": true,
+      "preset_sha256": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc"
+    },
+    "undo": {
+      "history": {
+        "labels": [
+          "ApplyPreset"
+        ],
+        "position": 0
+      },
+      "generation": "2",
+      "unsaved": true,
+      "preset_sha256": "ee161a59d1d056e931fc34cb06b5f90145633570a368f8c7060a64fc0773ea3e",
+      "project_sha256": "d798852ee1ea11a738cee5450e8ced97109d7109d561e303bd7a155785eb30fc"
+    }
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "db03d730654503fd84bb3d64b64987f3a2a75d1008395399ef087588ed52f31e",
+      "crates/vv-web/src/tests/api.rs": "556e76e83c6edeb8ecb9910c213fdb80be08b3a8ab6a8c8ca6cbbbe3e9179376",
+      "web/js/main.js": "014dd84d7d39aca09395fb31512f9bc1e5df74c2bb83c6424627d3fac3d03c4d",
+      "web/js/presets.js": "051179dffa471013068f6a06b1aa38f95e3361448b53ddc877db97ef18c4e6da",
+      "web/js/timeline/draw.js": "a5ff22e4aba47cab877bdfb50d4ddae8218b83039b695caacca1e119b088f437",
+      "web/js/timeline/index.js": "114acf2da6d473914467515c761230895e81528ae58e38dd3483ec1791dffc49",
+      "web/js/timeline/input.js": "1585d515aa2deaa6e4fc7604610f2212cabb394df2de6284ea949c4ee3714a18",
+      "web/test/preset-panel.test.js": "de7b91ae361bab777367e34b15c25e34577e1b714d34366494fa9b18322272ac",
+      "web/js/timeline/preset-drop.js": "2e36362b9b455cc0b72f037a0fe9080097e34c9a840d2bccfd662d66acf1fcb6",
+      "web/test/timeline-preset-drop.test.js": "c23dc56c81e900203742fc61fb0fdf635116a3d8a12733fda0f38767dc0de11a"
+    },
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "physical_pointer_drag": false,
+    "dpi_pointer_drag": false,
+    "hardware_gpu": false,
+    "core_tests": 277,
+    "rust_tests": 251,
+    "javascript_tests": 575
+  },
+  "limits": [
+    "The Windows CUA browser exposes DOM-only input, without native pointer drag; real drag/release acceptance remains open.",
+    "No browser, toolchain or environment was installed for this increment. Existing halo2 cache and Windows browser were reused.",
+    "No rendering, GPU probing, soak or primary-editor restart. Broader preset lifecycle and cross-project runtime remain open."
+  ]
+}

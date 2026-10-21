@@ -13,12 +13,14 @@ with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
 Saved native preset storage, its browser panel, full native shortcut assignment
-and explicit session shortcut activation now pass 251 web Rust tests and 553
+and explicit session shortcut activation now pass 251 web Rust tests and 575
 JavaScript tests, fmt, clippy and native build on halo2, plus finite API/restart
 and existing Windows-browser checks. The actual exported v1 preset also passes
 the original desktop parser and Library::open, and all 936 key/modifier
-combinations roundtrip through native Shortcut. Broader preset lifecycle and
-sharing qualification remain open. A configurable preset
+combinations roundtrip through native Shortcut. Preset drag uses the same native
+application command, with source, geometry and lifecycle tests. Physical pointer
+drag/release remains unqualified in the available DOM-only Windows browser.
+Broader preset lifecycle and sharing qualification remain open. A configurable preset
 folder does not establish sharing through the 14 TB archive; only the existing
 ds4 media-catalog integration has actual NAS evidence.
 
@@ -3172,3 +3174,40 @@ is still missing, and broader GUI lifecycle/cross-project runtime qualification
 is open. A preset folder on the NAS is not an original requirement and is not
 used by itself as a completion blocker; no such deployment is claimed. Ledger
 totals and the uncertain overall estimate are unchanged.
+
+## M4 - saved preset drag source and timeline drop
+
+The Presets panel now provides an explicit draggable selected-preset button;
+the select list and Apply button retain their keyboard workflow. Starting a
+drag needs a current writable native timeline but no clip selection. Dropping
+on an already selected clip targets the whole selection; otherwise it targets
+only that clip, retaining selection. The existing `apply_saved_preset` command
+owns linked expansion, native conversion, attribute roles, validation and Undo.
+
+The Canvas resolves actual inset clip bodies beneath trim/fade/speed/transition
+handles in CSS coordinates, including transformed bounds and rational FPS.
+Headers, ruler, gaps and clipped areas cannot become targets. Local outlines
+and literal preset names/counts show linked targets and lock/role errors. Hover
+reads only DataTransfer types and never performs HTTP. Release verifies the
+owned payload, source revision, epoch/generation, timeline object/revision,
+selection, viewport, modal and writer state before one native command. Async
+commit blocks a second drop. Escape, cancellation, source changes, hidden
+panels, blur, resize, scroll and visibility changes discard the draft. Preset
+and transition drag starts cancel each other.
+
+Bounded halo2 validation passes 277 core, 251 web, 10 media-proxy, three decoder,
+one cached-device and 575 JavaScript tests, plus fmt, clippy warnings denied
+(including native desktop all-targets) and native build. The 22 new JavaScript
+cases cover the source controls and timeline controller. One existing Windows
+browser tab verified the enabled draggable control without selection, retained
+Apply, ZoomX 1 to 1.5 and one Undo restoring every original target field; the
+source clip, saved project and preset bytes remained unchanged. Served module
+hashes match the tested source. No new environment or browser was installed.
+
+Evidence: `evidence/m4-preset-drag.json` and `evidence/m4-preset-drag.jpg`.
+The connected Windows browser exposes DOM-only input and cannot perform native
+pointer drag/release; that acceptance and DPI interaction remain open. This
+increment does not claim rendered, GPU or cross-project GUI acceptance. The
+single temporary tab, tunnel and CPU-only backend were stopped; the primary
+editor retains all five unsaved MoveClips. Ledger totals and the uncertain
+65-70% engineering estimate are unchanged.

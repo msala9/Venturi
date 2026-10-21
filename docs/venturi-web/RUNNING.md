@@ -493,6 +493,14 @@ saving and managing the library does not change the timeline. If the command
 succeeds but its list refresh fails, use Refresh presets; the acknowledged
 operation has already happened.
 
+Use **Drag preset** to drag the selected saved preset onto a timeline clip.
+Dropping on a selected clip applies to the whole selection; dropping on another
+clip applies only there and retains the current selection. Linked clips remain
+part of the native operation. The outline is local feedback; release commits
+one ApplyPreset command. Escape, leaving the editor or a changed source/session
+cancels the draft. Locked targets and empty timeline gaps cannot accept a drop.
+The existing **Apply preset to selected clips** button remains the keyboard path.
+
 The default folder is `<projects-root>/.presets`. Start the binary with
 `--presets-root /path/to/folder` to share a folder between cooperating web hosts.
 Do not use an active desktop library as a simultaneous shared writer: desktop

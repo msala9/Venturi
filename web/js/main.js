@@ -587,6 +587,7 @@ function syncPlayheadSelection(render) {
 const canvasTimeline = createTimeline({
   canvas: $("timeline"),
   getTimeline: () => timeline,
+  getPresetContext:presetContext,
   view,
   getAssets: () => mediaAssets,
   getCache: () => previewCache?.ranges(),
@@ -666,7 +667,7 @@ function installTimeline(next,{transitionSelection=null}={}) {
   for (const track of next.tracks)
     for (const clip of track.clips) {
       const button = document.createElement("button");
-      button.textContent = `${track.id} · ${clip.name || clip.id}`;
+      button.textContent = `${track.label || track.id} · ${clip.name || clip.id}`;
       button.addEventListener("click", () => {
         view.transitionSelection=null;
         view.selection = [clip.id];
@@ -1415,7 +1416,7 @@ function presetContext(){
   return {epoch:documentState.project_epoch,generation:documentState.generation,timeline:timeline?.id,revision:timeline?.revision,clip_ids:ids,name:clips[0]?.clip.name,roles:{video:clips.some(item=>item.kind==='video'),audio:clips.some(item=>item.kind==='audio')}};
 }
 const presetShortcuts=createPresetShortcuts({getContext:presetContext,canCommit:()=>writable && !busy && !unresolved,commit,notice});
-presetPanel=createPresetPanel({root:$("panel-content"),getContext:presetContext,shortcuts:presetShortcuts,canCommit:()=>writable && !busy && !unresolved,commit,libraryCommit:operation=>mutate(operation,true,'/presets/commands'),notice});
+presetPanel=createPresetPanel({root:$("panel-content"),getContext:presetContext,shortcuts:presetShortcuts,presetDnd:canvasTimeline.presetDnd,canCommit:()=>writable && !busy && !unresolved,commit,libraryCommit:operation=>mutate(operation,true,'/presets/commands'),notice});
 recoveryPanel=createRecoveryPanel({root:$("recovery-panel"),status:$("recovery-status"),button:$("recovery-button"),canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),openProjects:async()=>{$("projects").showModal();await projects();if(!$("recovery-panel").hidden){$("recovery-panel").scrollIntoView({block:"start"});$("recovery-panel").querySelector("input").focus();}},onOpened:()=>$("projects").close(),notice});
 setInterval(()=>{if(documentState)recoveryPanel.refresh();},3000);
 voiceover=createVoiceover({root:$("voiceover-dialog"),getClientId:()=>clientId,canCommit:()=>writable && !busy && !unresolved,commit,notice,playback:{video:$("program-video"),start:async()=>{fastTransport.normal();await programPlayer.toggle();if(programPlayer.state()!=="ready")throw new Error("Composed playback is unavailable; try recording without playback");},pause:()=>programPlayer.stop()},onProgress:(progress)=>{

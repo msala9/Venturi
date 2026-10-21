@@ -5,8 +5,10 @@ export function createTimeline(options) {
   const input = createInput({ ...options, invalidate: draw.invalidate });
   return {
     ...draw,
+    invalidate(){input.checkPresetDrop();draw.invalidate();},
     cancel: input.cancel,
     transitionDnd: input.transitionDnd,
+    presetDnd: input.presetDnd,
     destroy() {
       input.destroy();
       draw.destroy();

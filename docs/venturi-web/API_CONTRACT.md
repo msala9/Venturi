@@ -80,8 +80,14 @@ pixel scaling, append/replace filters and linked-target validation are retained.
 Source IDs do not suppress targets in another project. Invalid key ordering,
 unrepresentable coordinate conversion, nonfinite converted values or locked
 linked targets reject the complete operation before native session mutation.
-Saved library routes are implemented as described below. Broader GUI lifecycle,
-native drag-to-clip parity and cross-project runtime remain separate qualification.
+Saved library routes are implemented as described below. Browser preset drops
+reuse `apply_saved_preset`: dropping on a selected clip applies the selection;
+dropping on any other clip applies only that clip, without changing selection.
+Linked targets, conversion, role matching and one Undo remain server-owned.
+Hover is a local draft with no HTTP requests. Drop validates the captured source,
+session, timeline revision, selection and viewport before sending one command.
+Broader GUI lifecycle, physical drag acceptance and cross-project runtime remain
+separate qualification.
 
 `GET /api/v1/presets` and `/presets/pages/{page}` accept
 `{project_epoch,search?,archived?}`. Each zero-based source page opens at most 32

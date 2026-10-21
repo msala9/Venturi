@@ -94,6 +94,73 @@ export function transitionDraft(handle,pixelDelta,view,fps){
   const handles=transitionGeometry(handle,duration,view,fps),geometry=handles.find(candidate=>candidate.clip.id===handle.clip.id && candidate.edge===handle.edge);
   return {...handle,...geometry,original:handle.duration,handles,operation:{kind:'set_transition',clip_id:handle.clip_id,slot:handle.slot,transition:structuredClone(geometry.transition)}};
 }
+const transitionEligible=clip=>transitionClip(clip) && ['media','solid_color','title'].includes(clip.kind);
+const sameTransition=(a,b)=>nativeTransition(a) && nativeTransition(b) && ['kind','duration','direction','ease','curve'].every(key=>a[key]===b[key]);
+export function selectedTransition(timeline,selection){
+  if(!selection || !['in','out','cut_after'].includes(selection.slot))return null;
+  const track=timeline?.tracks?.find(track=>track.id===selection.track_id),clip=track?.clips?.find(clip=>clip.id===selection.clip_id);
+  if(track?.kind!=='video' || !transitionEligible(clip))return null;
+  const crossings=track.crossings || [];
+  let left=null,right=null,transition,max=clip.length_frames;
+  if(selection.slot==='cut_after'){
+    const matches=crossings.filter(crossing=>crossing.left_clip===clip.id);if(matches.length!==1)return null;
+    const crossing=matches[0];left=clip;right=track.clips.find(candidate=>candidate.id===crossing.right_clip);transition=crossing.transition;
+    if(!transitionEligible(right) || left===right || left.start_frame+left.length_frames!==right.start_frame || !nativeTransition(transition))return null;
+    max=2*Math.min(left.length_frames,right.length_frames);
+    if(transition.duration>max || crossing.kind!==transition.kind || crossing.start_frame!==right.start_frame-Math.ceil(transition.duration/2) || crossing.end_frame!==right.start_frame+Math.floor(transition.duration/2) || crossings.some(other=>other!==crossing && (other.left_clip===left.id || other.right_clip===right.id)))return null;
+  }else{
+    if(crossings.some(crossing=>(selection.slot==='in'?crossing.right_clip:crossing.left_clip)===clip.id))return null;
+    transition=clip[`transition_${selection.slot}`];
+    if(!nativeTransition(transition) || transition.duration>max)return null;
+  }
+  const canonical={track_id:track.id,clip_id:clip.id,slot:selection.slot};
+  return {...canonical,selection:canonical,transition:structuredClone(transition),max,locked:!!track.locked,clip,left,right,involved_clips:left?[left,right]:[clip]};
+}
+export function transitionBodies(track,view,fps){
+  if(track?.kind!=='video' || track.locked || view.tool==='slip')return [];
+  const timeline={tracks:[track]},crossings=track.crossings || [];
+  return (track.clips || []).flatMap(clip=>['in','out'].flatMap(edge=>{
+    const crossing=crossings.find(crossing=>(edge==='in'?crossing.right_clip:crossing.left_clip)===clip.id);
+    const selection={track_id:track.id,clip_id:crossing?crossing.left_clip:clip.id,slot:crossing?'cut_after':edge},descriptor=selectedTransition(timeline,selection);
+    if(!descriptor)return [];
+    const handles=transitionGeometry(descriptor,descriptor.transition.duration,view,fps),handle=handles.find(handle=>handle.clip.id===clip.id && handle.edge===edge);
+    if(!handle)return [];
+    const left=frameToX(clip.start_frame,view,fps),right=frameToX(clip.start_frame+clip.length_frames,view,fps);
+    return [{...handle,kind:'transition_body',track_id:track.id,selection:descriptor.selection,left_x:edge==='in'?left:handle.x,right_x:edge==='in'?handle.x:right}];
+  }));
+}
+export function transitionPlacement(timeline,view,point,transition,{replace=false,source=null}={}){
+  const blocked=error=>({kind:'transition_placement',error,noop:false,replacement:false,operation:null,handles:[]});
+  const [x,y]=Array.isArray(point)?point:[point?.x,point?.y];
+  if(!Number.isFinite(x) || !Number.isFinite(y) || x<HEADER || y<RULER || view.tool==='slip')return blocked('Drop a transition near a video clip edge');
+  const trackIndex=Math.floor((y-RULER+view.scrollY)/TRACK),track=timeline?.tracks?.[trackIndex],top=RULER+trackIndex*TRACK-view.scrollY;
+  if(track?.kind!=='video' || track.locked || y<top+7 || y>top+TRACK-7)return blocked('Choose an unlocked video clip');
+  const payload=typeof transition==='string'?(timeline.transition_defaults || []).find(candidate=>candidate.kind===transition):transition;
+  if(!nativeTransition(payload))return blocked('A complete native transition is required');
+  if(source){
+    const original=selectedTransition(timeline,source);
+    if(!original || original.locked || !sameTransition(original.transition,payload))return blocked('The source transition changed or is locked');
+  }
+  const clip=(track.clips || []).find(clip=>transitionClip(clip) && x>=frameToX(clip.start_frame,view,timeline.fps) && x<=frameToX(clip.start_frame+clip.length_frames,view,timeline.fps));
+  if(!transitionEligible(clip))return blocked('Choose a media, solid or title clip edge');
+  const clipLeft=frameToX(clip.start_frame,view,timeline.fps),clipRight=frameToX(clip.start_frame+clip.length_frames,view,timeline.fps),zone=Math.min(40,(clipRight-clipLeft)/2);
+  const edge=x-clipLeft<=zone?'in':clipRight-x<=zone?'out':null;
+  if(!edge)return blocked('Drop within 40 pixels of the nearest clip edge');
+  const neighbors=track.clips.filter(candidate=>candidate.id!==clip.id && (edge==='in'?candidate.start_frame+candidate.length_frames===clip.start_frame:candidate.start_frame===clip.start_frame+clip.length_frames));
+  if(neighbors.length>1 || neighbors.some(candidate=>!transitionEligible(candidate)))return blocked('The adjacent clip cannot accept a transition');
+  const neighbor=neighbors[0],left=neighbor?(edge==='in'?neighbor:clip):null,right=neighbor?(edge==='in'?clip:neighbor):null,slot=neighbor?'cut_after':edge,anchor=left || clip;
+  const selection={track_id:track.id,clip_id:anchor.id,slot},max=neighbor?2*Math.min(left.length_frames,right.length_frames):clip.length_frames;
+  const occupied=(track.crossings || []).filter(crossing=>neighbor?(crossing.left_clip===left.id || crossing.right_clip===right.id):(edge==='in'?crossing.right_clip:crossing.left_clip)===clip.id);
+  const existing=selectedTransition(timeline,selection);
+  if(occupied.length && !existing)return blocked('The destination crossing snapshot is incomplete');
+  const singles=neighbor?[left.transition_out,right.transition_in]:[clip[`transition_${edge}`]];
+  const singleClips=neighbor?[left,right]:[clip];
+  if(!occupied.length && singles.some((value,index)=>value!=null && (!nativeTransition(value) || value.duration>singleClips[index].length_frames)))return blocked('The destination transition snapshot is incomplete');
+  const next={...structuredClone(payload),duration:Math.max(1,Math.min(max,payload.duration))},noop=!!existing && sameTransition(existing.transition,next),replacement=!!existing || (!occupied.length && singles.some(value=>value!=null));
+  const handles=transitionGeometry({slot,clip_id:anchor.id,clip:anchor,left,right,transition:next,max},next.duration,view,timeline.fps),geometry=handles[0];
+  const error=replacement && !noop && replace!==true?'A destination transition exists; enable Replace explicitly':null;
+  return {...geometry,kind:'transition_placement',track:trackIndex,track_id:track.id,clip:anchor,left,right,selection,handles,transition:structuredClone(next),replacement,error,noop,operation:error || noop?null:{kind:'set_transition',clip_id:anchor.id,slot,transition:structuredClone(next)}};
+}
 function retimeMetadata(clip){
   const metadata=clip?.retime;
   return transitionClip(clip) && clip.kind==='media' && Number.isSafeInteger(metadata?.source_span) && metadata.source_span>0 && Number.isSafeInteger(metadata.min_length) && metadata.min_length>=1 && Number.isSafeInteger(metadata.max_length) && metadata.max_length>=metadata.min_length && metadata.max_length<=MAX_FRAME-clip.start_frame && typeof metadata.pitch_correction==='boolean';
@@ -141,6 +208,8 @@ export function hitTest(x, y, timeline, view) {
   if(y>=top+TRACK-21 && y<=top+TRACK-7){
     const transition=transitionHandles(timeline.tracks[track],view,timeline.fps).find(handle=>x>=frameToX(handle.clip.start_frame,view,timeline.fps) && x<=frameToX(handle.clip.start_frame+handle.clip.length_frames,view,timeline.fps) && Math.abs(x-handle.x)<=9);
     if(transition)return {...transition,track};
+    const body=transitionBodies(timeline.tracks[track],view,timeline.fps).find(body=>x>=body.left_x && x<=body.right_x);
+    if(body)return {...body,track};
   }
   for (const clip of timeline.tracks[track].clips) {
     const left = frameToX(clip.start_frame, view, timeline.fps);

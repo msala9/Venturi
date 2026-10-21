@@ -20,7 +20,7 @@ export function keyPageIndex(value,total) {
   if(!Number.isSafeInteger(page) || page<1 || page>total)throw Error(`Choose a key page from 1 to ${total}`);
   return page-1;
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract,transitionDefaults }) {
   const disabled = !writable || detail.locked;
   if(detail.key_page){
     const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
@@ -97,7 +97,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload});if(keySelection)controls.push(keySelection);
   if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState,seek,canInteract});
   if (detail.title) renderTitle(root,detail,disabled,report);
-  if (detail.video) renderTransitions(root,detail,disabled,report);
+  if (detail.video) renderTransitions(root,detail,disabled,report,transitionDefaults,notice);
   return controls;
 }
 
@@ -157,19 +157,47 @@ function renderTitle(root, detail, disabled, report) {
   });
   section.append(form);root.append(section);
 }
-function renderTransitions(root, detail, disabled, report) {
-  const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Transitions";section.append(summary);
+export function transitionSelectionOperation(target,patch){
+  if(!target || !['in','out','cut_after'].includes(target.slot) || typeof target.clip_id!=='string' || !target.transition)throw Error('Choose a current native transition');
+  if(patch===null)return {kind:'set_transition',clip_id:target.clip_id,slot:target.slot,transition:null};
+  if(!patch || Object.keys(patch).some(name=>!['duration','direction','ease','curve'].includes(name)))throw Error('Choose transition duration, direction, ease or curve');
+  const value={...structuredClone(target.transition),...patch};
+  if(!Number.isSafeInteger(value.duration) || value.duration<1 || value.duration>target.max || !['Left','Right','Up','Down'].includes(value.direction) || !['None','In','Out','InOut'].includes(value.ease) || !Number.isFinite(value.curve) || value.curve<0 || value.curve>1)throw Error('Choose transition values within the native limits');
+  return Object.keys(value).every(key=>value[key]===target.transition[key])?null:{kind:'set_transition',clip_id:target.clip_id,slot:target.slot,transition:value};
+}
+export function renderTransitionSelection(root,target,{disabled,getTarget,canInteract,commit,notice}){
+  const heading=document.createElement('strong');heading.textContent=`${target.transition.kind} · ${target.slot==='cut_after'?'Cross transition':`Transition ${target.slot}`}`;root.append(heading);
+  const form=document.createElement('form');form.className='property-row';const fields={};
+  for(const [name,label,choices] of [['duration','Duration frames',null],['direction','Push direction',['Left','Right','Up','Down']],['ease','Ease',['None','In','Out','InOut']],['curve','Curve',null]]){
+    if(name==='direction' && target.transition.kind!=='Push')continue;
+    const row=document.createElement('label');row.className='field';row.textContent=label;const input=document.createElement(choices?'select':'input');
+    if(choices)for(const value of choices)input.append(new Option(value,value));
+    else{input.type='number';input.required=true;input.min=name==='duration'?1:0;input.max=name==='duration'?target.max:1;input.step=name==='duration'?1:'any';}
+    input.value=target.transition[name];input.disabled=disabled;row.append(input);form.append(row);fields[name]=input;
+  }
+  const apply=document.createElement('button'),remove=document.createElement('button');apply.textContent='Apply transition';remove.textContent='Remove transition';remove.type='button';apply.disabled=remove.disabled=disabled;form.append(apply,remove);root.append(form);
+  const identity=JSON.stringify(target);let waiting=false;
+  const send=patch=>{if(disabled || waiting || !canInteract() || JSON.stringify(getTarget())!==identity){notice('Transition changed; read its current properties before editing');return;}
+    try{const operation=transitionSelectionOperation(target,patch);if(!operation)return;waiting=true;apply.disabled=remove.disabled=true;Promise.resolve().then(()=>commit(operation)).catch(error=>{waiting=false;apply.disabled=remove.disabled=disabled || !canInteract() || JSON.stringify(getTarget())!==identity;notice(error.message);});}catch(error){notice(error.message);}};
+  form.addEventListener('submit',event=>{event.preventDefault();if(form.reportValidity())send(Object.fromEntries(Object.entries(fields).map(([name,input])=>[name,['duration','curve'].includes(name)?Number(input.value):input.value])));});
+  remove.addEventListener('click',()=>send(null));
+  for(const node of [...Object.values(fields),apply,remove])node.addEventListener('keydown',event=>{if([' ','Enter','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))event.stopPropagation();});
+}
+function renderTransitions(root, detail, disabled, report,defaults=[],notice) {
+  const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.visualPath='transitions';summary.textContent="Transitions";section.append(summary);
   for (const [slot,label] of [["in","Transition in"],["out","Transition out"],["cut_after","Crossing to next clip"]]) {
     if (slot === "cut_after" && !detail.transitions.cut_max_frames) continue;
     const form=document.createElement("form"),legend=document.createElement("strong");legend.textContent=label;form.append(legend);
     const value=detail.transitions[slot],kind=document.createElement("select");kind.setAttribute("aria-label",`${label} kind`);kind.disabled=disabled;
     for (const name of ["None","Push","CrossDissolve","SmoothCut"])kind.append(new Option(name,name));kind.value=value?.kind || "None";form.append(kind);
-    const duration=document.createElement("input");duration.type="number";duration.min=1;duration.max=slot === "cut_after" ? detail.transitions.cut_max_frames : detail.length_frames;duration.step=1;duration.value=value?.duration || Math.min(12,Number(duration.max));duration.setAttribute("aria-label",`${label} duration frames`);duration.disabled=disabled;form.append(duration);
-    const direction=document.createElement("select");direction.setAttribute("aria-label",`${label} direction`);direction.disabled=disabled;for(const name of ["Left","Right","Up","Down"])direction.append(new Option(name,name));direction.value=value?.direction || "Left";form.append(direction);
-    const ease=document.createElement("select");ease.setAttribute("aria-label",`${label} ease`);ease.disabled=disabled;for(const name of ["None","In","Out","InOut"])ease.append(new Option(name,name));ease.value=value?.ease || "None";form.append(ease);
+    const initial=value || defaults.find(item=>item.kind==='Push');
+    const duration=document.createElement("input");duration.type="number";duration.min=1;duration.max=slot === "cut_after" ? detail.transitions.cut_max_frames : detail.length_frames;duration.step=1;duration.value=initial?Math.min(initial.duration,Number(duration.max)):'';duration.setAttribute("aria-label",`${label} duration frames`);duration.disabled=disabled;form.append(duration);
+    const direction=document.createElement("select");direction.setAttribute("aria-label",`${label} direction`);direction.disabled=disabled;for(const name of ["Left","Right","Up","Down"])direction.append(new Option(name,name));direction.value=initial?.direction || "Right";direction.hidden=kind.value!=='Push';form.append(direction);
+    const ease=document.createElement("select");ease.setAttribute("aria-label",`${label} ease`);ease.disabled=disabled;for(const name of ["None","In","Out","InOut"])ease.append(new Option(name,name));ease.value=initial?.ease || "None";form.append(ease);
     const curve=document.createElement("input");curve.type="number";curve.min=0;curve.max=1;curve.step="any";curve.value=value?.curve ?? 0.5;curve.setAttribute("aria-label",`${label} curve`);curve.disabled=disabled;form.append(curve);
     const apply=document.createElement("button");apply.textContent=`Apply ${label.toLowerCase()}`;apply.disabled=disabled;form.append(apply);
-    form.addEventListener("submit",(event)=>{event.preventDefault();if(form.reportValidity())report({kind:"set_transition",clip_id:detail.clip_id,slot,transition:kind.value === "None" ? null : {kind:kind.value,duration:Number(duration.value),direction:direction.value,ease:ease.value,curve:Number(curve.value)}});});
+    kind.addEventListener('change',()=>{direction.hidden=kind.value!=='Push';if(!value){const preset=defaults.find(item=>item.kind===kind.value);if(preset){duration.value=Math.min(preset.duration,Number(duration.max));direction.value=preset.direction;ease.value=preset.ease;curve.value=preset.curve;}}});
+    form.addEventListener("submit",(event)=>{event.preventDefault();if(kind.value!=='None' && !value && !defaults.some(item=>item.kind===kind.value)){notice('Read native transition defaults before creating a transition');return;}if(form.reportValidity())report({kind:"set_transition",clip_id:detail.clip_id,slot,transition:kind.value === "None" ? null : {kind:kind.value,duration:Number(duration.value),direction:direction.value,ease:ease.value,curve:Number(curve.value)}});});
     section.append(form);
   }
   root.append(section);

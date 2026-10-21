@@ -719,7 +719,13 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             clip_id,
             slot,
             transition,
-        } => crate::inspector::transition(session, id, clip_id, *slot, transition)?,
+        } => {
+            let generation = session.history.generation();
+            crate::inspector::transition(session, id, clip_id, *slot, transition)?;
+            if session.history.generation() == generation {
+                return Ok(());
+            }
+        }
         Operation::AddGenerator {
             track,
             start_frame,

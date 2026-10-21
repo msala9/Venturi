@@ -22,18 +22,19 @@ ds4 media-catalog integration has actual NAS evidence.
 
 Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
-handles, completed-path pen drawing and full path-key navigation now pass
-198 Rust tests, 243 JavaScript tests,
+handles, completed-path pen drawing, full path-key navigation and transition
+selection/placement now pass
+201 Rust tests, 275 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
-`evidence/m4-viewer-mask-handles.json` and
-`evidence/m4-transition-duration-handles.json`, `evidence/m4-speed-handles.json`
-and `evidence/m4-mask-pen-path-keys.json`;
+`evidence/m4-viewer-mask-handles.json`,
+`evidence/m4-transition-duration-handles.json`, `evidence/m4-speed-handles.json`,
+`evidence/m4-mask-pen-path-keys.json` and `evidence/m4-transition-placement.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
-Remaining work includes mask browser/rendered qualification, transition
-selection/duplication, native speed strip preset menus, compound and
+Remaining work includes mask/transition browser and rendered qualification,
+native speed strip preset menus, compound and
 import coverage, long-media preview and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
 and final deployment, DPI, duration and resource qualification. Historical
@@ -2572,3 +2573,47 @@ and the primary editor's five unsaved moves are preserved. The same one-CPU,
 512 MiB, no-swap, OOMScoreAdjust=1000 and 60-second API caps apply. No local
 browser/build, render/export, GPU or soak is used. Browser/DPI/rendered/hardware
 acceptance remains open; ledger rows stay partial.
+
+## M4 — native transition selection, placement and duplication
+
+Clicking the lower marker body selects a canonical edge or left-anchored crossing
+and clears clip selection. Both crossing halves identify the same transition.
+A dedicated Inspector edits duration, Push direction, ease and curve, or removes
+the transition; Delete uses the same native operation. Read-only selection is
+supported. Clip selection, playhead-following and timeline/project changes keep
+selection intent separate. Idle Escape deselects; active Escape cancels a draft.
+
+Effects offers native Push, CrossDissolve and SmoothCut drags. Rust supplies
+complete desktop defaults using timeline FPS, Right direction, native easing and
+curve. Destination geometry chooses the nearest eligible video edge within the
+native 40-pixel/half-clip zone, creates a crossing at exact adjacency and clamps
+only to the native slot duration limit. Alt-drag copies the complete payload;
+duration handles retain priority with Alt. Ordinary marker-body drags fall
+through to existing move/trim behavior, with safe overlap refusal. Drafts stay
+local, recompute at owner release and send one set_transition. Unknown drag
+payloads, stale context, invalid targets and writer/capture/viewport changes
+refuse or cancel. Replacing an occupied destination requires an unchecked,
+explicit option that resets on project change. Identical placements send no RPC.
+Numeric Inspector creation remains available as a keyboard alternative and uses
+the same native creation defaults.
+
+The native adapter now treats identical payloads and absent removals as no-ops
+after eligibility, lock, adjacency and payload validation. No-op calls preserve
+redo, generation, revision and compound media hashes, including after Undo/Redo.
+No new editing command, dependency or desktop change is introduced.
+
+201 Rust and 275 JavaScript tests, fmt, clippy with warnings denied and native
+build pass on halo2. Finite API acceptance verifies fractional-FPS defaults,
+short crossing clamp, isolated edge creation, complete payload copy/replacement,
+source preservation, one exact Undo/Redo/retry, no-op/absent removal after
+Undo/Redo, locked no-op refusal and atomic invalid duration/curve rejection.
+Save/restart retains exact transitions, other source fields and timelines.
+Evidence: `evidence/m4-transition-placement.json`. Geometry, pointer lifecycle,
+trusted Effects drag, local selection and Inspector command/DOM behavior were
+tested without a browser. Browser/DPI/rendered/optical-flow/hardware acceptance
+remains open; transition ledger rows remain partial.
+
+Both own API instances stop and port 8811 closes. Parent file hashes and the
+primary editor's five unsaved moves are preserved. API uses one CPU, 512 MiB,
+no swap, OOMScoreAdjust=1000 and 60-second instance caps. No local browser/build,
+render/export, GPU or soak is started.

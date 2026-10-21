@@ -123,6 +123,20 @@ pub fn transition(
         }
         bounded(value.curve, (0.0, 1.0))?;
     }
+    let unchanged = match slot {
+        TransitionSlot::In => clip.effects.transition_in.as_ref() == value.as_ref(),
+        TransitionSlot::Out => clip.effects.transition_out.as_ref() == value.as_ref(),
+        TransitionSlot::CutAfter => match (lane.crossing_from(clip_id), value) {
+            (None, None) => true,
+            (Some(current), Some(value)) => {
+                current.right_clip == right.unwrap().id && &current.transition == value
+            }
+            _ => false,
+        },
+    };
+    if unchanged {
+        return Ok(());
+    }
     let command: Box<dyn Command> = match slot {
         TransitionSlot::In | TransitionSlot::Out => Box::new(core::set_clip_transition(
             id,

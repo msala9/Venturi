@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles,retimeHandles } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeHandles } from "./geometry.js";
 export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
@@ -117,6 +117,11 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         ctx.fillStyle=color("--violet");ctx.globalAlpha=0.6;ctx.fillRect(left,top+TRACK-12,right-left,5);ctx.globalAlpha=1;
       }
       if(!track.locked && view.tool!=='slip'){
+        for(const body of transitionBodies(track,view,timeline.fps)){
+          if(body.right_x<HEADER || body.left_x>width)continue;
+          const selection=view.transitionSelection,selected=selection?.track_id===track.id && selection.clip_id===body.clip_id && selection.slot===body.slot;
+          ctx.save();ctx.fillStyle=selected?color('--primary'):color('--violet');ctx.globalAlpha=selected?0.45:0.18;ctx.fillRect(body.left_x,top+TRACK-21,Math.max(1,body.right_x-body.left_x),14);ctx.restore();
+        }
         const draft=view.draft?.kind==='transition' && view.draft.track_id===track.id?view.draft:null;
         let handles=transitionHandles(track,view,timeline.fps);
         if(draft)handles=handles.filter(handle=>handle.clip_id!==draft.clip_id || handle.slot!==draft.slot).concat(draft.handles);
@@ -124,13 +129,18 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         for(const handle of handles){
           if(handle.end_x<HEADER || handle.start_x>width)continue;
           const active=Boolean(draft && draft.clip_id===handle.clip_id && draft.slot===handle.slot),key=`${handle.clip_id}:${handle.slot}`;
-          ctx.strokeStyle=active?color('--primary'):color('--violet');ctx.fillStyle=ctx.strokeStyle;
+          const selection=view.transitionSelection,selected=selection?.track_id===track.id && selection.clip_id===handle.clip_id && selection.slot===handle.slot;
+          ctx.strokeStyle=active || selected?color('--primary'):color('--violet');ctx.fillStyle=ctx.strokeStyle;
           if(!windows.has(key)){
             windows.add(key);ctx.save();ctx.globalAlpha=active?0.8:0.55;ctx.fillRect(handle.start_x,top+TRACK-15,Math.max(1,handle.end_x-handle.start_x),3);ctx.restore();
             if(active){const label=`${handle.slot==='cut_after'?'Cross transition':`Transition ${handle.slot}`} ${handle.duration}f`,labelX=Math.max(HEADER+4,handle.start_x+5);ctx.fillStyle=color('--raised');ctx.fillRect(labelX-3,top+TRACK-34,190,15);ctx.fillStyle=color('--text');ctx.fillText(label,labelX,top+TRACK-26);}
           }
-          ctx.fillStyle=active?color('--primary'):color('--text');ctx.beginPath();ctx.arc(handle.x,top+TRACK-14,active?5:4,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle=active || selected?color('--primary'):color('--text');ctx.beginPath();ctx.arc(handle.x,top+TRACK-14,active || selected?5:4,0,Math.PI*2);ctx.fill();
         }
+      }
+      if(view.draft?.kind==='transition_placement' && view.draft.track_id===track.id){
+        const draft=view.draft;ctx.save();ctx.fillStyle=draft.error?color('--danger'):color('--primary');ctx.globalAlpha=0.45;ctx.fillRect(draft.start_x,top+TRACK-21,Math.max(1,draft.end_x-draft.start_x),14);ctx.globalAlpha=1;ctx.strokeStyle=ctx.fillStyle;ctx.setLineDash([4,3]);ctx.strokeRect(draft.start_x,top+TRACK-21,Math.max(1,draft.end_x-draft.start_x),14);ctx.setLineDash([]);
+        for(const handle of draft.handles){ctx.beginPath();ctx.arc(handle.x,top+TRACK-14,5,0,Math.PI*2);ctx.fill();}ctx.restore();
       }
       for (const draft of view.draft?.changes || [])
         if (draft.to_track === track.id) {
@@ -229,6 +239,10 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       ctx.fillRect(b.x, b.y, b.width, b.height);
       ctx.strokeStyle = color("--violet");
       ctx.strokeRect(b.x, b.y, b.width, b.height);
+    }
+    if(view.draft?.kind==='transition_placement'){
+      const draft=view.draft,label=draft.error?`Transition blocked · ${draft.error}`:draft.noop?'Transition already identical · no edit':`${draft.transition.kind} · ${draft.duration}f · ${draft.slot==='cut_after'?'crossing':'single edge'}${draft.replacement?' · REPLACE enabled · Undo restores':''} · release to apply`;
+      const x=HEADER+8,y=Math.max(RULER+16,height-16);ctx.fillStyle=color('--raised');ctx.fillRect(x-4,y-8,Math.max(1,width-x),17);ctx.fillStyle=draft.error?color('--danger'):color('--text');ctx.fillText(label,x,y,Math.max(1,width-x-4));
     }
     onPaint?.(performance.now() - started);
   };

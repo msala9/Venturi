@@ -94,12 +94,13 @@ test('transition drafts cancel on owner loss, stale timeline/view/tool and editi
   }
 });
 
-test('Alt pan, fade upper band, Slip and bottom trim remain independent of transition handles',async()=>{
+test('Alt keeps transition handle priority and pans outside markers; fade, Slip and bottom trim remain independent',async()=>{
   const h=harness();
   try{
-    h.send('pointerdown',30,{altKey:true});h.send('pointermove',37,{altKey:true});await h.send('pointerup',37,{altKey:true,buttons:0});assert.deepEqual(h.commands,[]);
-    h.view.origin=0;h.send('pointerdown',30,{clientY:8+RULER+14});h.send('pointermove',35,{clientY:8+RULER+14});await h.send('pointerup',35,{clientY:8+RULER+14,buttons:0});assert.equal(h.commands[0].kind,'set_properties');assert.equal(h.commands[0].patch.fade_in,15);
+    h.send('pointerdown',30,{altKey:true});h.send('pointermove',37,{altKey:true});await h.send('pointerup',37,{altKey:true,buttons:0});assert.equal(h.commands[0].kind,'set_transition');assert.equal(h.commands[0].transition.duration,17);
+    h.send('pointerdown',60,{altKey:true});h.send('pointermove',67,{altKey:true});await h.send('pointerup',67,{altKey:true,buttons:0});assert.equal(h.commands.length,1);
+    h.view.origin=0;h.send('pointerdown',30,{clientY:8+RULER+14});h.send('pointermove',35,{clientY:8+RULER+14});await h.send('pointerup',35,{clientY:8+RULER+14,buttons:0});assert.equal(h.commands[1].kind,'set_properties');assert.equal(h.commands[1].patch.fade_in,15);
     h.view.tool='slip';assert.deepEqual(transitionHandles(h.timeline.tracks[0],h.view,h.timeline.fps),[]);
-    h.view.tool='select';h.send('pointerdown',20,{clientY:8+RULER+TRACK-3});h.send('pointermove',21,{clientY:8+RULER+TRACK-3});await h.send('pointerup',21,{clientY:8+RULER+TRACK-3,buttons:0});assert.equal(h.commands[1].kind,'trim');
+    h.view.tool='select';h.send('pointerdown',20,{clientY:8+RULER+TRACK-3});h.send('pointermove',21,{clientY:8+RULER+TRACK-3});await h.send('pointerup',21,{clientY:8+RULER+TRACK-3,buttons:0});assert.equal(h.commands[2].kind,'trim');
   }finally{h.destroy();}
 });

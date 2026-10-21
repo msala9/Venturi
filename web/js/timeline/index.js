@@ -6,6 +6,7 @@ export function createTimeline(options) {
   return {
     ...draw,
     cancel: input.cancel,
+    transitionDnd: input.transitionDnd,
     destroy() {
       input.destroy();
       draw.destroy();

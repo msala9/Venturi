@@ -1,5 +1,17 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+Each timeline snapshot includes full native `transition_defaults` for Push,
+CrossDissolve and SmoothCut. Desktop FPS rounding, direction, default easing and
+curve are computed in Rust; durations are not yet clamped to a destination slot.
+Canvas creation and Alt-copy resolve the canonical edge or adjacent left-clip
+crossing, then submit the existing `set_transition`. The browser requires an
+explicit Replace existing transition option for occupied destinations; the
+ordinary mutation revision/generation guards protect that decision. Inspector
+updates remain explicit edits of their selected transition. Identical payloads
+and absent removals create no command, redo invalidation or compound media
+refresh, including after Undo/Redo. Lock, eligibility, adjacency and payload
+validation still run before no-op detection.
+
 `edit_mask {clip_id,edit:{action:"add",shape:"Path",path?:MaskPath}}` can add
 a complete pen-drawn path through one native Masks command. Omitted path keeps
 the existing native shape defaults. Supplied geometry is Path-only and must

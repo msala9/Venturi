@@ -18,6 +18,7 @@ pub fn timeline(session: &Session, id: TimelineId) -> Value {
     let tl = &session.project.timelines[id];
     json!({"api_version":1,"timeline_id":id.raw().to_string(),"id":id.raw().to_string(),"revision":session.timeline_revision(id),"name":tl.name,
       "fps":{"num":tl.fps.num,"den":tl.fps.den},"resolution":{"width":tl.resolution.0,"height":tl.resolution.1},
+      "transition_defaults":transition_defaults(tl.fps),
       "master":tl.master,
       "marker_colors":vv_core::ClipColor::ALL,
       "markers":tl.markers.iter().map(|m|{let (r,g,b)=m.color.rgb();json!({"id":m.id.0.to_string(),"start_frame":m.start,"duration_frames":m.duration,"note":m.note,"color":m.color,"rgb":[r,g,b]})}).collect::<Vec<_>>(),
@@ -28,6 +29,29 @@ pub fn timeline(session: &Session, id: TimelineId) -> Value {
         "crossings":track.crossings.iter().filter_map(|c|{let left=track.clip(c.left_clip)?;let right=track.clip(c.right_clip)?;let window=c.window(left,right);Some(json!({"left_clip":left.id.0.to_string(),"right_clip":right.id.0.to_string(),"start_frame":window.start,"end_frame":window.end,"kind":c.transition.kind,"transition":c.transition}))}).collect::<Vec<_>>(),
         "clips":track.clips.iter().map(|clip|clip_snapshot(session,tl,clip)).collect::<Vec<_>>()
       })).collect::<Vec<_>>()})
+}
+
+fn transition_defaults(fps: vv_core::Rational) -> [vv_core::Transition; 3] {
+    use vv_core::{PushDirection, Transition, TransitionKind};
+    // Match desktop ApplyTransition before its per-slot duration clamp.
+    [
+        TransitionKind::Push,
+        TransitionKind::CrossDissolve,
+        TransitionKind::SmoothCut,
+    ]
+    .map(|kind| {
+        let seconds = match kind {
+            TransitionKind::SmoothCut => 0.16,
+            _ => 0.45,
+        };
+        Transition {
+            kind,
+            duration: ((fps.as_f64() * seconds).round() as vv_core::FrameIdx).max(1),
+            direction: PushDirection::Right,
+            ease: Transition::default_ease(kind),
+            curve: 0.5,
+        }
+    })
 }
 
 fn clip_snapshot(session: &Session, timeline: &vv_core::Timeline, clip: &vv_core::Clip) -> Value {
@@ -62,3 +86,7 @@ pub fn session(session: &Session, epoch: &str) -> Value {
       "media":session.project.media_pool.iter().map(|(id,m)|json!({"id":id.raw().to_string(),"name":vv_session::file_label(&m.path),"folder":m.folder.map(|id|id.raw().to_string()),"content_hash":m.content_hash.to_string(),"duration_frames":m.meta.duration_frames,"fps":{"num":m.meta.fps.num,"den":m.meta.fps.den},"is_image":m.meta.is_image(),"has_video":m.meta.has_video,"has_audio":m.meta.has_audio,"compound_timeline_id":m.compound.map(|id|id.raw().to_string()),"offline":m.compound.is_none()&&!m.path.exists()})).collect::<Vec<_>>(),
       "capabilities":{"preview":false,"playback":false,"export":false,"editing":true}})
 }
+
+#[cfg(test)]
+#[path = "tests/snapshot.rs"]
+mod tests;

@@ -1,12 +1,12 @@
 import { isTextTarget, installSplitter } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
-import { linkedSelection, playheadSelection } from "./timeline/geometry.js";
+import { linkedSelection, playheadSelection,selectedTransition } from "./timeline/geometry.js";
 import {isRetimeShortcut} from './timeline/input.js';
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import { createViewer } from "./viewer.js";
 import { createSourcePlayer, sourceAssetURL, sourceSelection, sourceFrameAtTime } from "./source.js";
 import { createProgramPlayer } from "./program.js";
-import { detailIdentity, renderProperties, renderMarkers } from "./inspector.js";
+import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection } from "./inspector.js";
 import { renderMixer } from "./mixer.js";
 import { createExportPanel } from "./export.js";
 import { createScopes, scopeTarget } from "./scopes.js";
@@ -181,6 +181,7 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
       const action=document.createElement("button");action.textContent=label;
       action.addEventListener("click",()=>addGenerator(generator));$("panel-content").append(action);
     }
+    if(name==='Effects'){const transitions=document.createElement('div');transitions.id='transition-presets';$("panel-content").append(transitions);renderTransitionPresets();}
     for (const label of panels[name] || []) {
       const item = document.createElement("p");
       item.textContent = label;
@@ -280,6 +281,8 @@ const view = {
   snap: true,
   retime: false,
   retimeOverwrite: false,
+  transitionSelection: null,
+  transitionReplace: false,
   draft: null,
 };
 let commit = async () => {
@@ -367,6 +370,11 @@ let visualControls=[];
 function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead,key_page:visualState.get(`key-page:${documentState.project_epoch}:${timeline.id}:${clip}`) || 0 } : null;
 }
+function syncSelectionActions(){
+  const target=selectedTransition(timeline,view.transitionSelection),disabled=!writable || busy || Boolean(unresolved) || !timeline || timeline.id==='fixture';
+  $("split").disabled=disabled || Boolean(target) || !view.selection.length;
+  $("delete").disabled=disabled || (target?target.locked:!view.selection.length);
+}
 function selected() {
   trackViewerSelection();
   transformDetail=null;transformOverlay?.cancel();transformOverlay?.invalidate();
@@ -391,6 +399,14 @@ function selected() {
     .flatMap((track) => track.clips)
     .find((item) => view.selection.includes(item.id));
   $("inspector-content").replaceChildren();
+  const transition=selectedTransition(timeline,view.transitionSelection);
+  syncSelectionActions();
+  if(transition){
+    view.selection=[];
+    const identity=JSON.stringify([documentState?.project_epoch,timeline.id]);
+    renderTransitionSelection($("inspector-content"),transition,{disabled:!writable || busy || Boolean(unresolved) || transition.locked,getTarget:()=>selectedTransition(timeline,view.transitionSelection),canInteract:()=>identity===JSON.stringify([documentState?.project_epoch,timeline?.id]) && writable && !busy && !unresolved && !selectedTransition(timeline,view.transitionSelection)?.locked && !document.querySelector('dialog[open]'),commit,notice});return;
+  }
+  view.transitionSelection=null;
   const title = document.createElement("strong");
   title.textContent = clip?.name || "No clip selected";
   $("inspector-content").append(title);
@@ -418,7 +434,7 @@ function selected() {
       if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
       target.replaceChildren();
       transformDetail={identity,detail};transformOverlay?.invalidate();syncViewerMasks();maskOverlay?.invalidate();
-      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,
+      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,transitionDefaults:timeline.transition_defaults,
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();},
         canInteract:()=>identity===detailIdentity(inspectorState(clip.id)) && writable && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]') });
     }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else target.textContent = error.message;} });
@@ -528,7 +544,7 @@ function selected() {
   }
 }
 function syncPlayheadSelection(render) {
-  if(!selectionFollowsPlayhead || viewerMode!=="program" || !timeline || view.draft || view.lasso)return;
+  if(!selectionFollowsPlayhead || viewerMode!=="program" || !timeline || view.draft || view.lasso || view.transitionSelection)return;
   const next=playheadSelection(timeline,view.playhead);
   if(next.length===view.selection.length && next.every(id=>view.selection.includes(id)))return;
   view.selection=next;
@@ -540,7 +556,8 @@ const canvasTimeline = createTimeline({
   view,
   getAssets: () => mediaAssets,
   getCache: () => previewCache?.ranges(),
-  onSelect: selected,
+  onSelect: ()=>{view.transitionSelection=null;selected();},
+  onTransitionSelect:selection=>{view.transitionSelection=selection;view.selection=[];view.markerId=null;revealInspector();selected();},
   onSeek: (final) => {
     audioMeters?.invalidate();
     audioScrub?.stop();
@@ -556,6 +573,18 @@ const canvasTimeline = createTimeline({
   onMarkerEdit: id => { revealInspector();view.markerTarget=`${documentState?.project_epoch}:${timeline.id}`;view.markerId=id;visualState.set("markers",true);selected();document.querySelector('[data-visual-path="markers"] select')?.focus(); },
   onSlip: (event)=>{if(event.phase==="begin"){programPlayer?.stop();sourcePlayer?.pause();}slipView?.draft(event);},
 });
+function renderTransitionPresets(){
+  const root=$("transition-presets");if(!root)return;root.replaceChildren();
+  const note=document.createElement('p');note.className='muted';note.textContent='Drag a transition near a video clip edge. A touching neighbour creates a crossing. For keyboard editing, select a clip and open Inspector Transitions.';root.append(note);
+  const defaults=Array.isArray(timeline?.transition_defaults)?timeline.transition_defaults:[];
+  for(const preset of defaults){
+    const button=document.createElement('button');button.type='button';button.textContent=`Drag ${preset.kind} · ${preset.duration}f`;button.draggable=true;button.disabled=!writable || busy || Boolean(unresolved);button.title='Drag onto an eligible video edge, or use the Inspector Transitions controls';
+    button.addEventListener('dragstart',event=>{if(!event.dataTransfer || !canvasTimeline.transitionDnd?.start(preset.kind)){event.preventDefault();return;}event.dataTransfer.setData(canvasTimeline.transitionDnd.type,preset.kind);event.dataTransfer.effectAllowed='copy';});
+    button.addEventListener('dragend',()=>canvasTimeline.transitionDnd?.end());
+    button.addEventListener('click',()=>{revealInspector();const section=document.querySelector('[data-visual-path="transitions"]');if(section){section.open=true;section.scrollIntoView({block:'nearest'});}else notice('Select a video clip to create a transition with the Inspector');});root.append(button);
+  }
+  if(!defaults.length){const pending=document.createElement('p');pending.textContent='Open a native timeline to read transition defaults';root.append(pending);}
+}
 window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});
 function updateTime() {
   trackViewerSelection();
@@ -574,10 +603,11 @@ function updateTime() {
     .join(":");
   canvasTimeline.invalidate();
 }
-function installTimeline(next) {
+function installTimeline(next,{transitionSelection=null}={}) {
   audioMeters?.invalidate();
   canvasTimeline.cancel();
   timeline = next;
+  view.transitionSelection=selectedTransition(next,transitionSelection)?transitionSelection:null;
   updatePlayAvailability();
   view.selection = [];
   selected();
@@ -588,6 +618,7 @@ function installTimeline(next) {
       const button = document.createElement("button");
       button.textContent = `${track.id} · ${clip.name || clip.id}`;
       button.addEventListener("click", () => {
+        view.transitionSelection=null;
         view.selection = [clip.id];
         selected();
         canvasTimeline.invalidate();
@@ -606,6 +637,7 @@ $("snap").addEventListener("click", () => {
   view.snap = !view.snap;
   $("snap").setAttribute("aria-pressed", view.snap);
 });
+$("transition-replace").addEventListener('change',()=>{canvasTimeline.cancel();view.transitionReplace=$("transition-replace").checked;notice(view.transitionReplace?'Replacing existing transitions is enabled for drops; Undo restores the previous settings':'Transition drops refuse occupied slots');});
 function updateRetimeControls(){
   $("retime-handles").setAttribute('aria-pressed',String(view.retime));$("retime-overwrite").disabled=!view.retime;$("retime-overwrite").checked=view.retimeOverwrite;canvasTimeline.invalidate();
 }
@@ -686,7 +718,7 @@ async function refresh() {
   for(const [id,asset] of mediaAssets)if(sourceChanged(id)){asset.thumbnail?.close();mediaAssets.delete(id);}
   if(sourceOpenId && (!next.media.some((item)=>item.id===sourceOpenId) || sourceChanged(sourceOpenId))){sourcePlayer?.reset();sourceRanges.delete(sourceOpenId);sourceOpenId=null;}
   if (documentState?.project_epoch !== next.project_epoch) {
-    canvasTimeline.cancel();view.retime=false;view.retimeOverwrite=false;updateRetimeControls();
+    canvasTimeline.cancel();view.retime=false;view.retimeOverwrite=false;view.transitionSelection=null;view.transitionReplace=false;$("transition-replace").checked=false;updateRetimeControls();
     sourcePlayer?.reset();
     sourceOpenId = null; sourceRanges.clear();
     view.playhead=0;view.origin=0;view.scrollY=0;view.selection=[];
@@ -697,7 +729,7 @@ async function refresh() {
     viewerModeSet("program");
   }
   const previousId = timeline?.id,
-    selection = view.selection;
+    selection = view.selection,transitionSelection=view.transitionSelection;
   documentState = next;
   $("play").disabled = viewerMode === "program" && !next.capabilities.playback;
   $("timeline-select").replaceChildren(
@@ -707,7 +739,7 @@ async function refresh() {
     next.timelines.find((t) => t.id === previousId) || next.timelines[0];
   if (active) {
     $("timeline-select").value = active.id;
-    installTimeline(active);
+    installTimeline(active,{transitionSelection:previousId===active.id?transitionSelection:null});
     view.selection = selection.filter((id) =>
       active.tracks.some((t) => t.clips.some((c) => c.id === id)),
     );
@@ -728,6 +760,7 @@ async function refresh() {
   $("connection").textContent = writable
     ? "Connected · writer"
     : "Connected · read only";
+  renderTransitionPresets();
   for (const id of [
     "save",
     "undo",
@@ -741,6 +774,7 @@ async function refresh() {
     $(id).disabled = !writable || busy || (!active && !["save","undo","redo"].includes(id)) || !!unresolved;
   $("undo").disabled ||= next.history.position === 0;
   $("redo").disabled ||= next.history.position === next.history.labels.length;
+  syncSelectionActions();
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
   catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;},onOpen:(id)=>{selectedMedia=id;openSource();},notice});
@@ -939,9 +973,11 @@ $("import-button").addEventListener("click", async () => {
     $("import-error").textContent = error.message;
   }
 });
-$("delete").addEventListener("click", () =>
-  run({ kind: "delete", clip_ids: view.selection, ripple: false }),
-);
+$("delete").addEventListener("click", () => {
+  const target=selectedTransition(timeline,view.transitionSelection);
+  if(target){if(!target.locked)run({kind:'set_transition',clip_id:target.clip_id,slot:target.slot,transition:null});return;}
+  run({ kind: "delete", clip_ids: view.selection, ripple: false });
+});
 $("undo").addEventListener("click", () => run({ kind: "undo" }));
 $("redo").addEventListener("click", () => run({ kind: "redo" }));
 $("save").addEventListener("click", () =>

@@ -1,0 +1,117 @@
+{
+  "project": "Transition_Placement_API_check.vvproj",
+  "project_sha256": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+  "checks": {
+    "native_fractional_fps_creation_defaults": true,
+    "short_crossing_native_duration_clamp": true,
+    "edge_creation": true,
+    "copy_full_native_payload": true,
+    "copy_source_unchanged": true,
+    "explicit_replacement_native_operation": true,
+    "one_undo_redo_retry_exact": true,
+    "identical_after_undo_redo_no_op": true,
+    "absent_removal_after_undo_redo_no_op": true,
+    "locked_no_op_still_rejects_atomically": true,
+    "invalid_duration_curve_atomic": true,
+    "other_clips_source_fields_and_timelines_preserved": true
+  },
+  "served_asset_hashes": {
+    "main.js": "a88655d4d799335404498fba7979d368aee805e244f46c23dedd5b504a5bc06b",
+    "inspector.js": "8142ce1c6a733ea1420caf49ac0a4518fdcf15a05279b97fe33cf789b3182648",
+    "timeline/index.js": "b0e1ccd001e10b7bf185ea92c3a99d19cf9c637fb6baa00b0f806f0f4f3e3ab0",
+    "timeline/draw.js": "d519f481ab0e2efa0d9942b5cc009f9b8f142ec5f242e5c0fada2b3a11b3ccd2",
+    "timeline/input.js": "c38b1d221a4c7e261eef1b5d393d37dbfc030e3a981189651e0861c5bb02aa28",
+    "timeline/geometry.js": "9332673c0c4c3257df6f2aae3405cfe08060f3e65b00827f980dc1d149968651"
+  },
+  "save_restart_exact": true,
+  "parent_hashes_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "binary_sha256": "d19772f494d51cbc7a3aa0728c5c306cf1f5799c987841b1e9198b83c96e0ac4",
+  "gui_acceptance": false,
+  "hardware_gpu_used": false,
+  "no_render_or_exports": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "limits": {
+    "cpu": "one CPU",
+    "memory": "512 MiB",
+    "swap": 0,
+    "oom_score": 1000,
+    "runtime_max_seconds": 60
+  },
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "checkpoint": "/home/marco/.cache/venturi-transition-placement-check/acceptance.json",
+  "phase": "verified",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792594738.4290843,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "d19772f494d51cbc7a3aa0728c5c306cf1f5799c987841b1e9198b83c96e0ac4",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "main_editor_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    },
+    "unsaved": true
+  },
+  "syntax_checks": true,
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/commands.rs": "0177db71d8277ddffcd7d42ecb0fe55fb89840ea7b960986e60382b3d349cff5",
+      "crates/vv-web/src/inspector.rs": "6f9a3fb72201b43a741096693ef8b0ac3b37bb128767689a0bb5d6ba6bcadd9c",
+      "crates/vv-web/src/snapshot.rs": "f0de5331e7a4b5707da8652b9c1230b3e8b7a1345b2cee9b847c03a446fe36de",
+      "crates/vv-web/src/tests/inspector.rs": "9da29b64d2b425ce667d71275b50e809e5f7090f6f3b5ba0bba66b1e3f365cd9",
+      "crates/vv-web/src/tests/snapshot.rs": "da2f3c1053b24bd6001d59da7299dae1433c6467ad42a7ebbd966937a0122346",
+      "web/index.html": "66afc7d0b73ca1ee12e3e1ba8afd63a71b645b52c670d526715639061e66b78d",
+      "web/js/main.js": "a88655d4d799335404498fba7979d368aee805e244f46c23dedd5b504a5bc06b",
+      "web/js/inspector.js": "8142ce1c6a733ea1420caf49ac0a4518fdcf15a05279b97fe33cf789b3182648",
+      "web/js/timeline/index.js": "b0e1ccd001e10b7bf185ea92c3a99d19cf9c637fb6baa00b0f806f0f4f3e3ab0",
+      "web/js/timeline/geometry.js": "9332673c0c4c3257df6f2aae3405cfe08060f3e65b00827f980dc1d149968651",
+      "web/js/timeline/input.js": "c38b1d221a4c7e261eef1b5d393d37dbfc030e3a981189651e0861c5bb02aa28",
+      "web/js/timeline/draw.js": "d519f481ab0e2efa0d9942b5cc009f9b8f142ec5f242e5c0fada2b3a11b3ccd2",
+      "web/test/inspector.test.js": "5d905296a410ee9837529b1b6e15869d3e9c07e820a9cc898ce952618370a88a",
+      "web/test/timeline-transition-placement.test.js": "9036866d51fabd5336ef243d6d5eb6382965b734fdfb89cb9fd565c17ce3ef0a",
+      "web/test/timeline-transition-placement-input.test.js": "f023ccda0d68beea7528e4de8fa8184de69dd6e11fe4e9cf055fbadf7d52691d",
+      "web/test/timeline-transition-input.test.js": "2247e8d85c4eb05381677de9f4bb88990e2b83ae0946a54cf63a10644ee5efdc",
+      "web/test/transition-selection.test.js": "eaf6e46f2980ccd27b5c27e5d4a8dddf58a1842136520b78051060bac1db31ec"
+    },
+    "rust_tests": 201,
+    "javascript_tests": 275,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": false,
+    "hardware_gpu": false
+  },
+  "scope_note": "Native transition defaults, short crossing and isolated edge creation, full payload copy/replacement, exact single Undo/Redo/retry, no-op after Undo/Redo, absent removal, lock and invalid atomic rejection and Save/restart accepted through API. Canvas selection, Alt duplication, trusted Effects drag lifecycle, explicit replacement opt-in and Inspector operations are tested without a browser. Browser/DPI/rendered/hardware acceptance remains open."
+}

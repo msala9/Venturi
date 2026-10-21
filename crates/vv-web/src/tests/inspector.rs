@@ -661,6 +661,124 @@ fn transitions_validate_adjacency_duration_and_restore_native_crossings() {
     assert!(detail(&s, id, &clip, 108).unwrap()["transitions"]["in"].is_null());
 }
 
+fn transition_noop_state(session: &Session, id: TimelineId) -> Value {
+    use sha2::{Digest, Sha256};
+    json!({"project_sha256":format!("{:x}",Sha256::digest(serde_json::to_vec(&session.project).unwrap())),
+        "generation":session.history.generation(),"revision":session.timeline_revision(id),"unsaved":session.has_unsaved_changes(),
+        "position":session.history.position(),"labels":session.history.labels().map(|label|format!("{label:?}")).collect::<Vec<_>>()})
+}
+
+#[test]
+fn identical_or_absent_transitions_preserve_project_hash_history_and_redo_after_native_undo_redo() {
+    use crate::commands::{Operation, apply};
+    for slot in [
+        TransitionSlot::In,
+        TransitionSlot::Out,
+        TransitionSlot::CutAfter,
+    ] {
+        let (mut session, id, raw) = fixture();
+        let right = session.project.alloc_clip_id();
+        session.project.timelines[id].tracks[0].insert_sorted(Clip::from_source_range(
+            right,
+            ClipSource::SolidColor,
+            0,
+            24,
+            148,
+            Rational::one(),
+        ));
+        session.sync_timeline_media(id);
+        let value = core::Transition {
+            kind: core::TransitionKind::Push,
+            duration: 13,
+            direction: core::PushDirection::Up,
+            ease: core::Ease::Out,
+            curve: 0.75,
+        };
+        let operation = |transition| Operation::SetTransition {
+            clip_id: raw.clone(),
+            slot,
+            transition,
+        };
+        let before = transition_noop_state(&session, id);
+        apply(&mut session, id, &operation(None)).unwrap();
+        assert_eq!(transition_noop_state(&session, id), before);
+        let steps = session.history.position();
+        apply(&mut session, id, &operation(Some(value.clone()))).unwrap();
+        assert_eq!(session.history.position(), steps + 1);
+        let installed = transition_noop_state(&session, id);
+        apply(&mut session, id, &operation(Some(value.clone()))).unwrap();
+        assert_eq!(transition_noop_state(&session, id), installed);
+        apply(&mut session, id, &Operation::Undo).unwrap();
+        let undone = transition_noop_state(&session, id);
+        apply(&mut session, id, &operation(None)).unwrap();
+        assert_eq!(transition_noop_state(&session, id), undone);
+        apply(&mut session, id, &Operation::Redo).unwrap();
+        let redone = transition_noop_state(&session, id);
+        apply(&mut session, id, &operation(Some(value.clone()))).unwrap();
+        assert_eq!(transition_noop_state(&session, id), redone);
+        apply(&mut session, id, &operation(None)).unwrap();
+        apply(&mut session, id, &Operation::Undo).unwrap();
+        let removal_undone = transition_noop_state(&session, id);
+        apply(&mut session, id, &operation(Some(value))).unwrap();
+        assert_eq!(transition_noop_state(&session, id), removal_undone);
+        apply(&mut session, id, &Operation::Redo).unwrap();
+        let removal_redone = transition_noop_state(&session, id);
+        apply(&mut session, id, &operation(None)).unwrap();
+        assert_eq!(transition_noop_state(&session, id), removal_redone);
+    }
+}
+
+#[test]
+fn transition_noop_does_not_bypass_slot_lock_shape_duration_or_curve_validation() {
+    use crate::commands::{Operation, apply};
+    for scenario in 0..7 {
+        let (mut session, id, raw) = fixture();
+        let mut value = core::Transition {
+            kind: core::TransitionKind::CrossDissolve,
+            duration: 12,
+            direction: core::PushDirection::Right,
+            ease: core::Ease::None,
+            curve: 0.5,
+        };
+        match scenario {
+            0 => {}
+            1 => session.project.timelines[id].tracks[0].locked = true,
+            2 => session.project.timelines[id].tracks[0].kind = TrackKind::Audio,
+            3 => session.project.timelines[id].tracks[0].clips[0].source = ClipSource::Adjustment,
+            4 => value.duration = 49,
+            5 => value.curve = 1.1,
+            _ => session.project.timelines[id].tracks[0].locked = true,
+        }
+        let transition = (scenario >= 4).then_some(value);
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transition_in = transition.clone();
+        let before = transition_noop_state(&session, id);
+        assert!(
+            apply(
+                &mut session,
+                id,
+                &Operation::SetTransition {
+                    clip_id: raw,
+                    slot: if scenario == 0 {
+                        TransitionSlot::CutAfter
+                    } else {
+                        TransitionSlot::In
+                    },
+                    transition
+                }
+            )
+            .is_err(),
+            "scenario {scenario}"
+        );
+        assert_eq!(
+            transition_noop_state(&session, id),
+            before,
+            "scenario {scenario}"
+        );
+    }
+}
+
 #[test]
 fn title_edits_preserve_animation_and_validate_before_atomic_apply() {
     let (mut s, id, raw) = fixture();

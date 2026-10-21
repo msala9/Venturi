@@ -35,6 +35,9 @@ pub enum Action {
     TakePlan(crate::take::Preview),
     Review(SourceQuery),
     CapturePreset(crate::presets::Capture),
+    PresetList(usize, crate::preset_store::Query),
+    PresetItem(String, SourceQuery),
+    PresetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
     SpeechSnapshot(
         crate::silence::Request,
         oneshot::Sender<Result<crate::silence::Task>>,
@@ -58,10 +61,15 @@ pub struct Editor {
     persistence_notice: Option<&'static str>,
     autosave: crate::autosave::Store,
     receipts: Option<crate::receipts::Store>,
+    presets: crate::preset_store::Store,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
+        Self::with_presets(root, &root.join(".presets"))
+    }
+    fn with_presets(root: &Path, preset_root: &Path) -> std::io::Result<Self> {
         let files = Files::new(root)?;
+        let presets = crate::preset_store::Store::new(preset_root)?;
         let mut session = Session::default();
         let mut persistence_notice = match crate::resume::restore(&files) {
             Ok(Some((project, name))) => {
@@ -92,6 +100,7 @@ impl Editor {
             }
         };
         Ok(Self {
+            presets,
             session,
             files,
             epoch: std::time::SystemTime::now()
@@ -263,6 +272,20 @@ impl Editor {
                 ));
             }
             return match &request.operation {
+                Operation::SaveAttributePreset { clip_ids, options } => self.presets.create(
+                    &request.command_id,
+                    &crate::presets::capture(&self.session, id, clip_ids, options)?,
+                ),
+                Operation::ApplySavedPreset {
+                    clip_ids,
+                    preset_id,
+                    revision,
+                } => crate::presets::apply(
+                    &mut self.session,
+                    id,
+                    clip_ids,
+                    &self.presets.load(preset_id, revision)?,
+                ),
                 Operation::PlaceRecording { placement } => {
                     crate::recording::place(&mut self.session, &self.files, id, placement)
                 }
@@ -301,6 +324,9 @@ impl Editor {
             };
         }
         match &request.operation {
+            Operation::EditPresetLibrary { edit } => {
+                self.presets.edit(&request.command_id, edit)?
+            }
             Operation::RecoverAutosave {
                 revision,
                 name,
@@ -615,6 +641,37 @@ impl Editor {
                 )
             }
             Action::CheckFrame(query) => self.validate_frame(&query).map(|_| Value::Null),
+            Action::PresetList(page, query) => {
+                if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
+                    return Err(ApiError::conflict(
+                        "REVISION_CONFLICT",
+                        "Project changed before reading presets",
+                    ));
+                }
+                self.presets.list(page, &query)
+            }
+            Action::PresetItem(id, query) => {
+                if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
+                    return Err(ApiError::conflict(
+                        "REVISION_CONFLICT",
+                        "Project changed before reading the preset",
+                    ));
+                }
+                self.presets.item(&id, false)
+            }
+            Action::PresetExport(id, query, reply) => {
+                let result =
+                    if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
+                        Err(ApiError::conflict(
+                            "REVISION_CONFLICT",
+                            "Project changed before exporting the preset",
+                        ))
+                    } else {
+                        self.presets.export(&id)
+                    };
+                let _ = reply.send(result);
+                Ok(Value::Null)
+            }
             Action::SourceSnapshot(media_id, query, reply) => {
                 let result = (|| {
                     if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
@@ -739,7 +796,12 @@ impl Host {
         rx.await.map_err(|_| ApiError::io())?
     }
     pub fn start(root: &Path) -> std::io::Result<Self> {
-        let mut editor = Editor::new(root)?;
+        Self::run(Editor::new(root)?)
+    }
+    pub fn start_with_presets(root: &Path, preset_root: &Path) -> std::io::Result<Self> {
+        Self::run(Editor::with_presets(root, preset_root)?)
+    }
+    fn run(mut editor: Editor) -> std::io::Result<Self> {
         let (tx, rx) = mpsc::sync_channel::<Message>(16);
         std::thread::spawn(move || {
             loop {
@@ -764,6 +826,11 @@ impl Host {
                 "The session queue is full or unavailable",
             )
         })?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
+    pub async fn preset_export(&self, id: String, query: SourceQuery) -> Result<Vec<u8>> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::PresetExport(id, query, tx)).await?;
         rx.await.map_err(|_| ApiError::io())?
     }
 }

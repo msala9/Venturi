@@ -1,0 +1,106 @@
+{
+  "project": "Saved_Preset_Library_API_check.vvproj",
+  "root": "/home/marco/VenturiWeb-value-keys-20261021",
+  "project_sha256": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+  "preset_root": "/home/marco/.cache/venturi-preset-acceptance/presets",
+  "preset_id": "955496d8-d67c-4e0d-9534-ddf35c0d337d",
+  "imported_id": "97b39d70-50ec-4b36-8500-fb3f108d81d1",
+  "native_preset_sha256": "2e807c5a147e5cc2e20c1119e57264ad7414ca817a602df1ce05b89319735191",
+  "native_preset_bytes": 1179270,
+  "capture_retry_exact": true,
+  "apply_retry_exact": true,
+  "import_retry_exact": true,
+  "library_writes_preserve_timeline": true,
+  "apply_one_native_undo": true,
+  "undo_redo": true,
+  "archive_restore_exact": true,
+  "previous_restore_exact": true,
+  "rejected_stale_revision": {
+    "status": 409,
+    "error": "PRESET_CHANGED"
+  },
+  "rejected_archived_apply": {
+    "status": 404,
+    "error": "NOT_FOUND"
+  },
+  "rejected_nonstring_shortcut": {
+    "status": 422,
+    "error": "INVALID_OPERATION"
+  },
+  "restart_preserved": true,
+  "exact_large_native_id": true,
+  "shortcut_metadata_preserved": true,
+  "parent_hashes_preserved": {
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "software_preview": false,
+  "gpu_initialized": false,
+  "gui_acceptance": false,
+  "resource_limits": {
+    "cpu": "one CPU",
+    "memory": "512 MiB",
+    "swap": "0",
+    "oom_score": 1000,
+    "runtime_max_seconds": 90
+  },
+  "own_test_units_stopped": true,
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792583380.6192498,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "5f46eb464742229a1723e10e60ad01218bf65770b47dfc9dca4ab7b6fdba8a58",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "main_editor_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    },
+    "unsaved": true
+  },
+  "syntax_checks": true,
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/main.rs": "0188f7b52bc6e96147318a8aca19621a22d3eebd999c76accf972fb6fe18acdf",
+      "crates/vv-web/src/api.rs": "e47e8473cbedbfb5dae777f299327e296a6c1a3e92538ae8923115d8775beb8d",
+      "crates/vv-web/src/commands.rs": "2c01b4d87f59c24013e58d8fdf9c188a50da0c5781f2bb15cd9607e8139a0f10",
+      "crates/vv-web/src/host.rs": "ddf57f741af0fdc38f830f62625f64c2721544bc26f0c9c2c9e103cdbf34c06d",
+      "crates/vv-web/src/presets.rs": "d49a0b2cc8ea3674c950c59a5a4ae486e2870fe50fbf39f7c7e0bf594a35cede",
+      "crates/vv-web/src/preset_store.rs": "a64e443f87c4549fc300a0c78504b361775fc87c23c1854d599cf29d5185335a",
+      "crates/vv-web/src/tests/presets.rs": "18c65dd4dd5f1b8187468d5a37e96d7961b0e76cae748732b31677a0e3695e9b",
+      "crates/vv-web/src/tests/preset_store.rs": "9e9adbe46a98606e62181f641160b0fe1b8e7b7b1950f954f68f2a6834248eec",
+      "web/js/main.js": "0f8172a24f70ec8c5b8fd67561d9c80c2e8611eff8a8d22bad34ad5bde8303cd",
+      "web/js/presets.js": "dc0999a1f8607817896601426af7f7bb9ec75ea0e10683b7c0d544d5d87cc98d",
+      "web/js/preset-shortcuts.js": "05ac39cd15fd0006c76ac73770c4394fd35271f503d78e9a84105415c3356d11",
+      "web/test/presets.test.js": "504430fca0e0740d2e3b8161920d52211bb88dcd874304b4dedfe0a730251dc6",
+      "web/test/preset-panel.test.js": "148864f5f8cab7d40423d820dd57cdfe93883bb6f99228f7f9754df16a627a18",
+      "web/test/preset-shortcuts.test.js": "08942b4fa77784753a9df7fc37ec46e84370a6199891ba19e6c7de89d04c71a0",
+      "web/style/app.css": "1811fef1ce7d2cf1732c2040f0307a8bbd9dfc06b1a1d1f413f128df34ab33a7"
+    },
+    "rust_tests": 150,
+    "javascript_tests": 119,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": false,
+    "desktop_application_import": false,
+    "nas_preset_sharing": false
+  },
+  "scope_note": "Saved native v1 preset subset and API persistence accepted; GUI, desktop application import and NAS sharing remain open. Shortcut activation is explicit, session-local and limited to conflict-filtered Ctrl+Alt+Shift+letter chords."
+}

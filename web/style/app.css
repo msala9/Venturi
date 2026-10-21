@@ -375,6 +375,12 @@ dialog {
 dialog::backdrop {
   background: #0009;
 }
+.preset-settings { width: min(600px, calc(100vw - 24px)); overflow: auto; }
+.preset-settings form:not([method="dialog"]) { display: grid; align-items: stretch; gap: 10px; margin: 0; }
+.preset-settings fieldset { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.preset-settings fieldset label { display: flex; align-items: center; gap: 6px; }
+.saved-presets { min-width: 0; }
+.saved-presets select, .saved-presets input { max-width: 100%; min-width: 0; }
 dialog form:not([method="dialog"]) {
   display: flex;
   gap: 10px;

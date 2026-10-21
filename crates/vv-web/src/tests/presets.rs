@@ -272,3 +272,29 @@ fn capture_includes_linked_audio_and_chooses_earliest_video_without_history() {
     assert_eq!(session.timeline_revision(source), before);
     assert_eq!(session.history.position(), position);
 }
+
+#[test]
+fn shortcut_metadata_rejects_incompatible_wire_types_without_changing_native_strings() {
+    let (session, source, source_clip, _, _) = fixture();
+    let mut preset = capture(
+        &session,
+        source,
+        &[source_clip],
+        &options(KeyframeAnchor::Start),
+    )
+    .unwrap();
+    for value in [
+        serde_json::json!({"ctrl":true}),
+        serde_json::json!(true),
+        serde_json::json!(12),
+        serde_json::json!(""),
+        serde_json::json!("Ctrl+\nS"),
+    ] {
+        preset.shortcut = Some(value);
+        assert!(preset.validate().is_err());
+    }
+    preset.shortcut = Some(serde_json::json!("Ctrl+Alt+Shift+P"));
+    preset.validate().unwrap();
+    let decoded: Preset = serde_json::from_slice(&serde_json::to_vec(&preset).unwrap()).unwrap();
+    assert_eq!(decoded.shortcut, preset.shortcut);
+}

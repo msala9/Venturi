@@ -34,6 +34,14 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/session", get(session))
         .route("/api/v1/review", get(review_metadata))
+        .route("/api/v1/presets", get(preset_list_first))
+        .route("/api/v1/presets/pages/{page}", get(preset_list))
+        .route("/api/v1/presets/items/{id}", get(preset_item))
+        .route("/api/v1/presets/items/{id}/download", get(preset_download))
+        .route(
+            "/api/v1/presets/commands",
+            post(preset_library_command).layer(DefaultBodyLimit::max(8 * 1024 * 1024)),
+        )
         .route("/api/v1/review/replace/plan", post(take_plan))
         .route(
             "/api/v1/recordings/{id}",
@@ -291,6 +299,109 @@ async fn review_metadata(
         .map_err(|_| ApiError::invalid("Invalid review metadata query"))?
         .0;
     state.host.call(Action::Review(query)).await.map(Json)
+}
+async fn preset_list_first(
+    State(state): State<AppState>,
+    query: std::result::Result<
+        Query<crate::preset_store::Query>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Json<Value>> {
+    state
+        .host
+        .call(Action::PresetList(
+            0,
+            query
+                .map_err(|_| ApiError::invalid("Invalid preset library query"))?
+                .0,
+        ))
+        .await
+        .map(Json)
+}
+async fn preset_list(
+    State(state): State<AppState>,
+    Path(page): Path<usize>,
+    query: std::result::Result<
+        Query<crate::preset_store::Query>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Json<Value>> {
+    state
+        .host
+        .call(Action::PresetList(
+            page,
+            query
+                .map_err(|_| ApiError::invalid("Invalid preset library query"))?
+                .0,
+        ))
+        .await
+        .map(Json)
+}
+async fn preset_download(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<impl IntoResponse> {
+    let bytes = state
+        .host
+        .preset_export(
+            id.clone(),
+            query
+                .map_err(|_| ApiError::invalid("Invalid preset download query"))?
+                .0,
+        )
+        .await?;
+    Ok((
+        [
+            (
+                header::CONTENT_TYPE,
+                "application/json; charset=utf-8".to_owned(),
+            ),
+            (
+                header::CONTENT_DISPOSITION,
+                format!("attachment; filename=\"{id}.json\""),
+            ),
+            (header::CACHE_CONTROL, "no-store".into()),
+        ],
+        bytes,
+    ))
+}
+async fn preset_item(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    state
+        .host
+        .call(Action::PresetItem(
+            id,
+            query
+                .map_err(|_| ApiError::invalid("Invalid preset query"))?
+                .0,
+        ))
+        .await
+        .map(Json)
+}
+async fn preset_library_command(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<Mutation>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid preset library mutation"))?
+        .0;
+    if !matches!(
+        request.operation,
+        crate::commands::Operation::EditPresetLibrary { .. }
+    ) {
+        return Err(ApiError::invalid(
+            "This route accepts only preset library edits",
+        ));
+    }
+    state
+        .host
+        .call(Action::Mutation(None, request))
+        .await
+        .map(Json)
 }
 async fn take_plan(
     State(state): State<AppState>,
@@ -1066,6 +1177,8 @@ async fn assets(request: Request) -> Response {
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
         "/js/eventkeys.js" => asset!("/web/js/eventkeys.js", "text/javascript"),
         "/js/keyselection.js" => asset!("/web/js/keyselection.js", "text/javascript"),
+        "/js/presets.js" => asset!("/web/js/presets.js", "text/javascript"),
+        "/js/preset-shortcuts.js" => asset!("/web/js/preset-shortcuts.js", "text/javascript"),
         "/js/catalog.js" => asset!("/web/js/catalog.js", "text/javascript"),
         "/js/slip.js" => asset!("/web/js/slip.js", "text/javascript"),
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),

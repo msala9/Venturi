@@ -23,6 +23,8 @@ import { createAudioScrub, bindSourceScrub } from "./audition.js";
 import { createFastTransport } from "./fast-transport.js";
 import { createPreviewCache } from "./preview-cache.js";
 import { createAudioMeters } from "./audio-meters.js";
+import {createPresetPanel} from './presets.js';
+import {createPresetShortcuts} from './preset-shortcuts.js';
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -38,6 +40,7 @@ let pasteAttributes = null;
 let recoveryPanel = null;
 let audioScrub = null;
 let fastTransport = null;
+let presetPanel=null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));}
@@ -156,6 +159,7 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
       .querySelectorAll("[data-panel]")
       .forEach((tab) => tab.setAttribute("aria-selected", tab === button));
     const name = button.dataset.panel;
+    presetPanel?.hide();
     $("media-list").hidden = name !== "Media";
     $("search").parentElement.hidden = name !== "Media";
     $("panel-content").hidden = name === "Media";
@@ -169,6 +173,7 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
         else {if(!mixerDetail)return notice("Open a native timeline first");mixerDetail.open=true;mixerDetail.scrollIntoView({block:"start"});}
       });$("panel-content").append(action);
     }
+    if(name==='Presets'){presetPanel?.open();return;}
     if (name === "Effects") for (const [label,generator] of [["Add title","title"],["Add adjustment clip","adjustment"]]) {
       const action=document.createElement("button");action.textContent=label;
       action.addEventListener("click",()=>addGenerator(generator));$("panel-content").append(action);
@@ -354,6 +359,7 @@ function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead,key_page:visualState.get(`key-page:${documentState.project_epoch}:${timeline.id}:${clip}`) || 0 } : null;
 }
 function selected() {
+  presetPanel?.invalidate();
   recoveryPanel?.invalidate();
   pasteAttributes?.invalidate();
   reviewMetadata?.invalidate();
@@ -721,7 +727,7 @@ function commandNotice(receipt) {
       ? "Command applied. Save current edits before restarting the server."
       : "Command applied";
 }
-async function mutate(operation, project = false) {
+async function mutate(operation, project = false,route=null) {
   fastTransport?.stop();
   audioScrub?.stop();
   if (!writable || busy || unresolved)
@@ -743,12 +749,13 @@ async function mutate(operation, project = false) {
   notice("Applying command…");
   try {
     const receipt = await sendMutation(
-      project
+      route || (project
         ? "/projects/commands"
-        : `/timelines/${encodeURIComponent(timeline.id)}/commands`,
+        : `/timelines/${encodeURIComponent(timeline.id)}/commands`),
       body,
     );
     notice(commandNotice(receipt));
+    return receipt;
   } catch (error) {
     if (error.code === "OUTCOME_UNKNOWN") {
       unresolved = body.command_id;
@@ -1194,6 +1201,13 @@ const reviewContext=()=>{
 review=createReview({root:$("review-dialog"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:reviewContext});
 reviewMetadata=createReviewMetadata({root:$("review-metadata-dialog"),getContext:reviewContext,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),notice,onCompare:media_id=>review.open({media_id}).catch(error=>notice(error.message))});
 pasteAttributes=createPasteAttributes({root:$("paste-attributes-dialog"),getContext:()=>documentState && timeline?{epoch:documentState.project_epoch,generation:documentState.generation,timeline:timeline.id,revision:timeline.revision,clipboard:documentState.clipboard_revision,clip_ids:[...view.selection]}:null,canCommit:()=>writable && !busy && !unresolved,commit,notice});
+function presetContext(){
+  if(!documentState)return null;
+  const ids=timeline?linkedSelection(timeline,view.selection):[],clips=timeline?.tracks.flatMap(track=>track.clips.filter(clip=>ids.includes(clip.id)).map(clip=>({clip,kind:track.kind}))) || [];
+  return {epoch:documentState.project_epoch,generation:documentState.generation,timeline:timeline?.id,revision:timeline?.revision,clip_ids:ids,name:clips[0]?.clip.name,roles:{video:clips.some(item=>item.kind==='video'),audio:clips.some(item=>item.kind==='audio')}};
+}
+const presetShortcuts=createPresetShortcuts({getContext:presetContext,canCommit:()=>writable && !busy && !unresolved,commit,notice});
+presetPanel=createPresetPanel({root:$("panel-content"),getContext:presetContext,shortcuts:presetShortcuts,canCommit:()=>writable && !busy && !unresolved,commit,libraryCommit:operation=>mutate(operation,true,'/presets/commands'),notice});
 recoveryPanel=createRecoveryPanel({root:$("recovery-panel"),status:$("recovery-status"),button:$("recovery-button"),canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),openProjects:async()=>{$("projects").showModal();await projects();if(!$("recovery-panel").hidden){$("recovery-panel").scrollIntoView({block:"start"});$("recovery-panel").querySelector("input").focus();}},onOpened:()=>$("projects").close(),notice});
 setInterval(()=>{if(documentState)recoveryPanel.refresh();},3000);
 voiceover=createVoiceover({root:$("voiceover-dialog"),getClientId:()=>clientId,canCommit:()=>writable && !busy && !unresolved,commit,notice,playback:{video:$("program-video"),start:async()=>{fastTransport.normal();await programPlayer.toggle();if(programPlayer.state()!=="ready")throw new Error("Composed playback is unavailable; try recording without playback");},pause:()=>programPlayer.stop()},onProgress:(progress)=>{

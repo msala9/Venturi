@@ -183,6 +183,18 @@ pub enum Operation {
         clip_ids: Vec<String>,
         preset: Box<crate::presets::Preset>,
     },
+    SaveAttributePreset {
+        clip_ids: Vec<String>,
+        options: crate::presets::Options,
+    },
+    ApplySavedPreset {
+        clip_ids: Vec<String>,
+        preset_id: String,
+        revision: String,
+    },
+    EditPresetLibrary {
+        edit: crate::preset_store::Edit,
+    },
     ApplyAudioPreset {
         channel: String,
         index: usize,

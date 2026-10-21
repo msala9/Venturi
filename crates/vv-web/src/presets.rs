@@ -28,7 +28,7 @@ pub struct Preset {
     pub video: Option<Box<core::Clip>>,
     pub audio: Option<Box<core::Clip>>,
 }
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Options {
     pub name: String,
@@ -91,6 +91,15 @@ fn validate_keys(value: &Value) -> Result<()> {
 }
 impl Preset {
     pub fn validate(&self) -> Result<()> {
+        if self.shortcut.as_ref().is_some_and(|value| {
+            value.as_str().is_none_or(|text| {
+                text.is_empty() || text.len() > 128 || text.chars().any(char::is_control)
+            })
+        }) {
+            return Err(ApiError::invalid(
+                "Native shortcut metadata must be a nonempty string within 128 UTF-8 bytes",
+            ));
+        }
         if self.version != 1
             || self.name.trim().is_empty()
             || self.name.len() > 128

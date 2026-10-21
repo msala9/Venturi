@@ -1,6 +1,40 @@
 # Implementation status
 
-2026-10-20 — development branch feat/venturi-web.
+2026-10-21 — development branch feat/venturi-web.
+
+## Current completion assessment
+
+The ledger contains 90 in-scope capabilities: 32 done, 56 partial and two not
+started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus
+35.6% of capability rows have full acceptance; this is not an estimate of
+implementation effort. Many partial rows already have native adapters and
+working browser controls. Overall engineering progress is estimated at 65–70%,
+with substantial uncertainty in remaining interaction and release qualification.
+No completion date is supported by the current evidence.
+
+The native capture/application API was pushed in 2f24a91. Saved native preset
+storage, its browser panel and explicit session shortcut activation now have
+150 Rust tests, 119 JavaScript tests, fmt, clippy and a native build passing on
+halo2, plus finite API/restart evidence. GUI acceptance, shortcut assignment
+and desktop import qualification remain open. A configurable preset
+folder does not establish sharing through the 14 TB archive; only the existing
+ds4 media-catalog integration has actual NAS evidence.
+
+Remaining work includes viewer/mask/path and timeline handles, compound and
+import coverage, long-media preview and export lifecycle/codec selection,
+continuous audio behavior and physical recording, remaining AI Review cases,
+and final deployment, DPI, duration and resource qualification. Historical
+sections below describe individual increments and their then-current limits;
+later evidence supersedes those limits only where explicitly recorded.
+
+The owner reported renewed workstation blocking and identified SSD saturation
+as the observed symptom. The disposable browser tab, isolated halo2 preview and
+its local tunnel were stopped; the build unit was already inactive. Dirty
+sessions and foreign inference were preserved. Development may continue with
+small local edits and remote orchestration, without restarting local GUI or
+heavy qualification. The specific source of workstation I/O has not been
+measured. Code inspection confirms unchanged autosave generations skip snapshot
+publication; this does not identify or rule out other sources of SSD pressure.
 
 ## G0
 
@@ -2232,3 +2266,44 @@ only, limited to one CPU/2 GiB with OOMScoreAdjust=1000. No local heavy work,
 hardware lock use or long soak was started. This closes the native API adapter;
 saved/shared library CRUD, preset GUI, shortcut activation and desktop import
 acceptance remain open. Native JSON capture alone is not the completed library.
+
+## M4 — saved native presets and explicit shortcut activation
+
+The Presets panel now exposes native attribute preset capture, page/search,
+import/export, application, settings changes, previous-settings restore and
+recoverable archive/restore. A revision hash protects application and edits.
+Import carries raw JSON text to Rust, retaining native IDs above JavaScript's
+safe integer range. Library changes do not edit timeline history; application
+uses the existing native preset planner and one ApplyPreset Undo step.
+
+The default store is `.presets` under the project root. `--presets-root` selects
+an explicit folder shared by cooperating web instances. Regular root-relative
+file opens, bounded reads, nonblocking writer locking, atomic publication and
+backups preserve existing files on rejected operations. Previous-settings restore
+atomically exchanges both versions, so interruption cannot lose the previous
+copy between two publications. A successful command ACK remains successful if
+the subsequent list/item read fails; the UI asks for Refresh without resubmitting
+the acknowledged save/import. Pending list reads are invalidated before writes.
+
+Imported shortcut strings are retained. The user can explicitly activate a
+conflict-filtered Ctrl+Alt+Shift+letter subset for the current project/browser
+session. Editable controls, open dialogs, repeats, composition, read-only/busy
+sessions and empty selections exclude activation. Bindings retain the preset
+hash, reject duplicate chords and revoke on project changes or rejected applies.
+Unsupported native chords stay visible; shortcut assignment is not implemented.
+
+150 Rust tests and 119 JavaScript tests, fmt, clippy with warnings denied,
+native build and changed JavaScript syntax checks pass on halo2. A finite API
+fixture verified capture/apply/import retry receipts, native 24-to-48 fps/pixel
+conversion, Undo/Redo, library edits without timeline changes, stale rejection,
+exact previous/archive restore, native JSON import/export and restart. The
+1,179,270-byte stored preset and imported ID 9007199254740993 survive unchanged.
+Native shortcut metadata is returned without parsing source IDs in JavaScript.
+
+The two temporary API servers had preview disabled, one CPU, 512 MiB, no swap,
+OOMScoreAdjust=1000 and a 90-second runtime cap. Both are stopped. No local build,
+browser, GPU initialization/lock or long soak was used. Parent project hashes
+and the main editor's generation 5/five unsaved moves were preserved. Evidence:
+`evidence/m4-saved-native-presets.json`. Browser acceptance, actual desktop
+application import, NAS preset sharing and concurrent desktop/web writes remain
+unqualified. The ds4 media-catalog NAS evidence does not qualify preset sharing.

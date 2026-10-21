@@ -11,8 +11,9 @@ audio inserts and built-in color/EQ/compressor presets are available within
 the documented bounds. Recovery copies a previous saved backup into a new
 project. Browser voiceover and the ds4 shared media catalog are available.
 Review offers A/B comparison and explicit native take replacement. Advanced
-curves, live scopes/meters, native saved/shared libraries and Shot/Take metadata
-remain open. WSL exposes
+curve interaction, continuous scopes/meters and shared-library qualification
+remain partial; Shot/Take metadata and saved attribute preset controls are
+implemented. WSL exposes
 only llvmpipe (CPU).
 The separate halo2 deployment has verified R9700 Vulkan rendering; see
 evidence/m3-r9700-validation.json for the measured path.
@@ -378,6 +379,31 @@ opens with an explanation and a proposed Save As name; save your copy before
 reopening the external version. Neither a conflict nor Save As overwrites the
 external project. Close other editors while saving the same file: external
 filesystem tools do not share the web host's directory ownership lock.
+
+## Saved attribute presets
+
+Open Presets to save the selected native video/audio attribute groups, apply a
+saved preset, change its name/groups/anchor/filter mode, restore previous
+settings, archive/restore, or import/export native v1 JSON. Applying is one Undo;
+saving and managing the library does not change the timeline. If the command
+succeeds but its list refresh fails, use Refresh presets; the acknowledged
+operation has already happened.
+
+The default folder is `<projects-root>/.presets`. Start the binary with
+`--presets-root /path/to/folder` to share a folder between cooperating web hosts.
+Do not use an active desktop library as a simultaneous shared writer: desktop
+does not take the web lock or reload external changes. Actual desktop application
+import and NAS preset sharing have not yet been qualified. The existing ds4 media
+archive integration does not configure this preset folder automatically.
+
+Imported desktop shortcut strings are preserved. Compatible
+Ctrl+Alt+Shift+letter chords can be explicitly enabled for this project/browser
+session; C/K/Q/S/V/Z and unsupported chords display a conflict/compatibility
+reason. Editable fields/dialogs, repeats, busy/read-only sessions and empty
+selections do not apply presets. Project changes revoke activation; changed or
+archived preset metadata requires enabling again. Assignment of new desktop
+shortcuts is not available. Native JSON files are limited to 4 MiB and the web
+adapter's supported format/name/frame bounds. GUI qualification remains pending.
 
 ## Checks
 

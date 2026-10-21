@@ -14,6 +14,7 @@ mod inspector;
 mod keyselection;
 mod library;
 mod masks;
+mod preset_store;
 mod presets;
 mod preview;
 mod program;
@@ -35,11 +36,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut gpu = None;
     let mut software = false;
     let mut library_url = None;
+    let mut presets_root: Option<std::path::PathBuf> = None;
     let mut gpu_lock = std::path::PathBuf::from("/tmp/HALO_BENCHMARK.lock");
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
             "--software-preview" => software = true,
+            "--presets-root" => {
+                presets_root = Some(
+                    args.next()
+                        .ok_or("--presets-root requires a directory")?
+                        .into(),
+                )
+            }
             "--library-url" => {
                 library_url = Some(
                     args.next()
@@ -62,7 +71,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
             "--help" => {
                 println!(
-                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE] [--library-url HTTP_ORIGIN]\nOnly loopback addresses are supported. Use the launcher for isolated software preview."
+                    "vv-web [--listen 127.0.0.1:8787] [--projects-root DIRECTORY] [--gpu-device 0x7551 | --software-preview] [--gpu-lock FILE] [--library-url HTTP_ORIGIN] [--presets-root DIRECTORY]\nOnly loopback addresses are supported. Use the launcher for isolated software preview."
                 );
                 return Ok(());
             }
@@ -80,7 +89,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let listener = tokio::net::TcpListener::bind(listen).await?;
     let listen = listener.local_addr()?;
-    let host = host::Host::start(&root)?;
+    let host = if let Some(presets_root) = presets_root {
+        host::Host::start_with_presets(&root, &presets_root)?
+    } else {
+        host::Host::start(&root)?
+    };
     let library = library::Library::start(
         library_url.as_deref(),
         host.media_root().await.map_err(|error| error.2)?,

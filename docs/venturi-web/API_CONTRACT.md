@@ -20,7 +20,34 @@ pixel scaling, append/replace filters and linked-target validation are retained.
 Source IDs do not suppress targets in another project. Invalid key ordering,
 unrepresentable coordinate conversion, nonfinite converted values or locked
 linked targets reject the complete operation before native session mutation.
-Saved/shared preset library CRUD and its web panel are still pending.
+Saved library routes are implemented as described below; NAS sharing and GUI
+acceptance remain separate qualification work.
+
+`GET /api/v1/presets` and `/presets/pages/{page}` accept
+`{project_epoch,search?,archived?}`. Each zero-based source page opens at most 32
+preset files, with a 4 MiB per-file limit and 10000-name browsing budget. Search
+filters that source page; `pages` and `total` describe source files. The panel
+advances through empty search pages with cancellation between reads. Items carry
+ID, SHA-256 revision, native options/format, source video/audio presence and
+shortcut metadata, without full source clips or numeric native IDs.
+
+`GET /presets/items/{id}?project_epoch=...` reads active metadata;
+`GET /presets/items/{id}/download?project_epoch=...` returns native JSON bytes as a
+no-store attachment. IDs are bounded ASCII filename tokens, not filesystem paths.
+
+Timeline operations `save_attribute_preset{clip_ids,options}` and
+`apply_saved_preset{clip_ids,preset_id,revision}` use ordinary guarded mutation
+envelopes. Save uses the command ID as an immutable library ID; apply rejects a
+changed preset before editing. `POST /presets/commands` accepts only
+`edit_preset_library{edit}` with an 8 MiB envelope budget for escaped native JSON.
+Edits are import `{action:"import",json:<raw string>}`, update
+`{action:"update",id,revision,options}`, or archive/restore/restore_previous
+`{action,id,revision}`. Import parses in Rust; no browser number conversion occurs.
+Update retains source clips/shortcut metadata and creates a previous copy;
+restore_previous atomically swaps active/previous files. Archive is recoverable.
+Library mutations preserve native timeline history and share ordinary lease,
+epoch, generation and durable receipt semantics. A changed response after a
+successful ACK requires a read refresh, not a new save/import command.
 
 `GET /api/v1/timelines/{id}/clips/{clip}/keys/{page}` takes the existing
 FrameQuery and validates its epoch, generation, timeline and revision. Pages

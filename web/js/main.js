@@ -4,9 +4,11 @@ import { linkedSelection, playheadSelection,selectedTransition } from "./timelin
 import {isRetimeShortcut} from './timeline/input.js';
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import { createViewer } from "./viewer.js";
-import { createSourcePlayer, sourceAssetURL, sourceSelection, sourceFrameAtTime } from "./source.js";
+import { createSourcePlayer, sourceAssetURL, sourceSelection } from "./source.js";
 import { createProgramPlayer } from "./program.js";
 import { buildProgramWindow } from "./program-range.js";
+import { sourceSampleAtFrame } from "./source-clock.js";
+import { createSourceSeek } from "./source-seek.js";
 import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection } from "./inspector.js";
 import { renderMixer } from "./mixer.js";
 import { createExportPanel } from "./export.js";
@@ -293,6 +295,7 @@ let seek = () => {};
 let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = null, slipView = null;
 let transformOverlay=null,transformDetail=null,maskOverlay=null,maskChoice=null,maskPickerIdentity=null,maskSelectionSequence=0,maskSelectionIdentity=null;
 let sourceOpenId = null;
+let sourceSeek=null;
 const sourceRanges = new Map();
 const mediaAssets = new Map();
 const mediaState = {selected: [], anchor: null, folder: "*", kind: "all", open: false};
@@ -329,6 +332,19 @@ function viewerModeSet(mode) {
   $("viewer-caption").textContent = mode === "source" ? "Source proxy · independent of timeline edits" : "Exact timeline frame";
   if (mode === "program") { sourcePlayer?.pause(); updateTime(); seek(); }
 }
+function sourcePosition(allowPreparing=false) {
+  const position=sourcePlayer?.current();
+  return position && (allowPreparing || !sourcePlayer.preparing()) && position.epoch===documentState?.project_epoch && position.media_id===sourceOpenId ? position : null;
+}
+function syncSourcePosition() {
+  sourceSeek?.sync();
+  const valid=Boolean(sourcePosition());
+  $("source-mark-in").disabled=!valid;$("source-mark-out").disabled=!valid;
+  const position=sourcePosition(true);
+  if(viewerMode!=="source" || !position)return;
+  const fps=position.fps.num/position.fps.den,seconds=Math.floor(position.frame/fps);
+  $("timecode").textContent=`Source ${[Math.floor(seconds/3600),Math.floor(seconds/60)%60,seconds%60,position.frame%Math.max(1,Math.round(fps))].map(value=>String(value).padStart(2,"0")).join(":")}`;
+}
 function openSource() {
   const item = documentState?.media.find((m) => m.id === selectedMedia);
   if (!item) return notice("Select a media file first");
@@ -337,12 +353,15 @@ function openSource() {
     if (next) {view.playhead=0;$("timeline-select").value=next.id;installTimeline(next);viewerModeSet("program");}
     return;
   }
+  const startFrame=sourceOpenId===item.id ? sourcePosition(true)?.frame ?? 0 : 0;
   sourceOpenId = item.id;
   const range = sourceRanges.get(item.id) || { source_in:0, source_out:item.is_image ? Math.round(5*item.fps.num/item.fps.den) : item.duration_frames };
   $("source-in").value = range.source_in; $("source-out").value = range.source_out;
   $("source-mark-in").disabled = !!item.is_image; $("source-mark-out").disabled = !!item.is_image;
   viewerModeSet("source");
-  sourcePlayer.open(item, documentState.project_epoch, $("source-quality").value);
+  sourceSeek?.reset(startFrame);
+  sourcePlayer.open(item, documentState.project_epoch, $("source-quality").value,startFrame);
+  syncSourcePosition();
 }
 $("source-mode").addEventListener("click", openSource);
 $("program-mode").addEventListener("click", () => viewerModeSet("program"));
@@ -352,7 +371,9 @@ for (const id of ["source-in","source-out"]) $(id).addEventListener("input",reme
 for (const [id,out] of [["source-mark-in",false],["source-mark-out",true]]) $(id).addEventListener("click",()=>{
   const item = documentState?.media.find((m)=>m.id===sourceOpenId);
   if (!item || item.is_image) return;
-  const frame = sourceFrameAtTime($("source-video").currentTime,item.fps.num/item.fps.den);
+  const position=sourcePosition();
+  if(!position)return notice("Wait for the Source window before setting In or Out");
+  const frame = position.frame;
   $(out ? "source-out" : "source-in").value = Math.min(item.duration_frames - (out ? 0 : 1),frame+(out ? 1 : 0)); rememberSourceRange();
 });
 function togglePlayback() {
@@ -679,8 +700,8 @@ function step(delta) {
   if (viewerMode === "source") {
     const media = documentState?.media.find((m) => m.id === sourceOpenId);
     const fps = media?.fps;
-    sourcePlayer.step(delta, fps ? fps.num / fps.den : 24, media?.duration_frames || 1);
-    audioScrub?.request();
+    fastTransport?.stop();audioScrub?.stop();
+    Promise.resolve(sourcePlayer.step(delta, fps ? fps.num / fps.den : 24, media?.duration_frames || 1)).then(()=>{syncSourcePosition();audioScrub?.request();}).catch(error=>notice(error.message));
     return;
   }
   view.playhead = Math.max(0, view.playhead + delta);
@@ -1203,15 +1224,14 @@ seek = async () => { if (viewerMode === "program") { programPlayer?.stop(); scop
 audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-status"),getState:()=>{
   if(!documentState || fastTransport?.active())return null;
   if(viewerMode==="source") {
-    const media=documentState.media.find(m=>m.id===sourceOpenId),video=$("source-video");
-    return media?.has_audio && video.readyState>=1 ? {project_epoch:documentState.project_epoch,media_id:media.id,frame:Math.min(media.duration_frames-1,sourceFrameAtTime(video.currentTime,media.fps.num/media.fps.den))} : null;
+    const media=documentState.media.find(m=>m.id===sourceOpenId),position=sourcePosition();
+    return media?.has_audio && position ? {project_epoch:documentState.project_epoch,media_id:media.id,frame:position.frame} : null;
   }
   return timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,width:960} : null;
 },getURL:query=>query.media_id ? `/api/v1/media/${encodeURIComponent(query.media_id)}/audio.wav?${new URLSearchParams({project_epoch:query.project_epoch,frame:query.frame})}` : `/api/v1/preview/audio.wav?${new URLSearchParams(query)}`});
 $("play").addEventListener("click",()=>audioScrub?.stop());
 $("program-video").addEventListener("play",()=>audioScrub?.stop());
 $("source-video").addEventListener("play",()=>audioScrub?.stop());
-bindSourceScrub($("source-video"),audioScrub,()=>viewerMode==="source" && !fastTransport?.active());
 programPlayer = createProgramPlayer({
   video: $("program-video"), status: $("program-status"), cancel: $("program-cancel"),
   getState: (startFrame) => {
@@ -1222,6 +1242,7 @@ programPlayer = createProgramPlayer({
     if(fastTransport && !await fastTransport.finishWindow($("program-video")))throw new Error("Fast audio did not finish its preview window · press Play to retry");
   },
   isInternalSeek: () => Boolean(fastTransport?.correcting($("program-video"))),
+  isInternalPause: event => Boolean(fastTransport?.pausing($("program-video"),event)),
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); } },
   onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
   onStop:async()=>{await viewer?.seek();scopes?.refresh();previewCache.refresh();},
@@ -1236,8 +1257,9 @@ fastTransport=createFastTransport({videos:[$("program-video"),$("source-video")]
   if(!documentState)return null;
   if(video===$("source-video") && viewerMode==="source") {
     const media=documentState.media.find(item=>item.id===sourceOpenId);
-    if(!media || media.is_image || !video.getAttribute("src"))return null;
-    return {identity:JSON.stringify([documentState.project_epoch,media.id,video.getAttribute("src")]),audio:media.has_audio,fps:media.fps,origin:0,end:Math.round(media.duration_frames/(media.fps.num/media.fps.den)*48000),url:`/api/v1/media/${encodeURIComponent(media.id)}/audio/window`,query:{project_epoch:documentState.project_epoch}};
+    const position=sourcePosition(true);
+    if(!media || media.is_image || !position || !video.getAttribute("src"))return null;
+    return {identity:JSON.stringify([documentState.project_epoch,media.id,video.getAttribute("src")]),audio:media.has_audio,fps:position.fps,origin:sourceSampleAtFrame(position.start_frame,position.fps),end:sourceSampleAtFrame(position.end_frame,position.fps),url:`/api/v1/media/${encodeURIComponent(media.id)}/audio/window`,query:{project_epoch:documentState.project_epoch}};
   }
   const range=programPlayer?.range();
   if(video!==$("program-video") || viewerMode!=="program" || !range || !video.getAttribute("src"))return null;
@@ -1245,7 +1267,15 @@ fastTransport=createFastTransport({videos:[$("program-video"),$("source-video")]
 }});
 sourcePlayer = createSourcePlayer({
   video: $("source-video"), image: $("source-image"), status: $("source-status"), cancel: $("source-cancel"),
-  onReady: async ({ item, epoch, job }) => {
+  windowed:true,
+  beforeWindowChange: async () => {
+    if(fastTransport && !await fastTransport.finishWindow($("source-video")))throw new Error("Fast audio did not finish its Source window · press Play to retry");
+  },
+  isInternalSeek: () => Boolean(fastTransport?.correcting($("source-video"))),
+  isInternalPause: event => Boolean(fastTransport?.pausing($("source-video"),event)),
+  onReady: async ({ item, epoch, job, source_window }) => {
+    syncSourcePosition();
+    if(source_window)return;
     const urls = (name) => sourceAssetURL(item.id, job, name, epoch);
     const [thumb, wave] = await Promise.allSettled([
       fetch(urls("thumb.png")).then((r) => { if (!r.ok) throw new Error("No thumbnail"); return r.blob(); }).then(createImageBitmap),
@@ -1271,13 +1301,18 @@ sourcePlayer = createSourcePlayer({
     canvasTimeline.invalidate();
   },
 });
+sourceSeek=createSourceSeek({range:$("source-position"),frame:$("source-seek-frame"),seek:$("source-seek"),status:$("source-position-status"),getMedia:()=>{
+  const item=viewerMode==="source" ? documentState?.media.find(media=>media.id===sourceOpenId) : null;
+  return item ? {...item,epoch:documentState.project_epoch} : null;
+},getPosition:()=>sourcePosition(true),onSeek:async frame=>{
+  fastTransport?.stop();audioScrub?.stop();
+  await sourcePlayer.seekFrame(frame);syncSourcePosition();audioScrub?.request();
+},onError:notice});
+bindSourceScrub($("source-video"),audioScrub,()=>viewerMode==="source" && !fastTransport?.active());
+for(const event of ["loadstart","emptied","error","seeked"])$("source-video").addEventListener(event,syncSourcePosition);
 $("source-video").addEventListener("timeupdate", () => {
   if (viewerMode !== "source") return;
-  const rate = documentState?.media.find((m) => m.id === sourceOpenId)?.fps;
-  const fps = rate ? rate.num / rate.den : 24;
-  const frames = sourceFrameAtTime($("source-video").currentTime, fps);
-  const seconds = Math.floor(frames / fps);
-  $("timecode").textContent = `Source ${[Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60, frames % Math.round(fps)].map((n) => String(n).padStart(2, "0")).join(":")}`;
+  syncSourcePosition();
 });
 for (const event of ["play", "pause", "ended"]) $("source-video").addEventListener(event, () => {
   $("play").textContent = $("source-video").paused ? "▶ Play" : "❚❚ Pause";

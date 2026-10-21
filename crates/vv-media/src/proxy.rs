@@ -13,7 +13,10 @@ use ffmpeg::format::{self, Pixel};
 use ffmpeg::software::scaling::{context::Context as Scaler, flag::Flags};
 use ffmpeg::util::color;
 use ffmpeg_next as ffmpeg;
-use std::path::{Path, PathBuf};
+use std::{
+    ops::Range,
+    path::{Path, PathBuf},
+};
 
 /// Trade-off between decoding speed and sharpness of the preview. Each
 /// quality has its own file, so switching back does not regenerate.
@@ -170,6 +173,99 @@ pub fn generate_proxy_at(
         return Err(e);
     }
 
+    std::fs::rename(&tmp_path, final_path)?;
+    Ok(final_path.to_owned())
+}
+
+pub(crate) fn validate_range(
+    range: &Range<vv_core::FrameIdx>,
+    fps: vv_core::Rational,
+    duration: vv_core::FrameIdx,
+) -> Result<(), crate::MediaError> {
+    if fps.num <= 0
+        || fps.den <= 0
+        || range.start < 0
+        || range.end <= range.start
+        || range.end > duration
+        || i128::from(range.end - range.start) * i128::from(fps.den) > 60 * i128::from(fps.num)
+    {
+        return Err(range_error(
+            "Source range must be nonempty, within the source and at most 60 seconds",
+        ));
+    }
+    Ok(())
+}
+
+pub(crate) fn range_error(message: &str) -> crate::MediaError {
+    std::io::Error::new(std::io::ErrorKind::InvalidInput, message).into()
+}
+
+/// A bounded CPU proxy whose source-frame range becomes a zero-based movie.
+pub fn generate_proxy_range_at(
+    source_path: &Path,
+    final_path: &Path,
+    quality: ProxyQuality,
+    range: Range<vv_core::FrameIdx>,
+    software_threads: usize,
+    mut on_frame: impl FnMut(u64) -> bool,
+) -> Result<PathBuf, crate::MediaError> {
+    if !on_frame(0) {
+        return Err(crate::MediaError::Cancelled);
+    }
+    let meta = crate::probe_media(source_path)?;
+    validate_range(&range, meta.fps, meta.duration_frames)?;
+    let threads = software_threads.clamp(1, 4);
+    let mut decoder = Decoder::open_software_bounded(source_path, threads)?;
+    decoder.seek_to_time(range.start as f64 * f64::from(meta.fps.den) / f64::from(meta.fps.num))?;
+    let tmp_path = final_path.with_extension(format!("tmp-{}.mp4", std::process::id()));
+    let written = (|| {
+        let mut encoder = None;
+        let mut frames = 0u64;
+        while range.start + (frames as i64) < range.end {
+            if !on_frame(frames) {
+                return Err(crate::MediaError::Cancelled);
+            }
+            let Some((index, frame)) = decoder.next_frame()? else {
+                return Err(range_error("Source ended before the requested range"));
+            };
+            let expected = range.start + frames as i64;
+            if index < expected {
+                continue;
+            }
+            if index != expected {
+                return Err(range_error(
+                    "Source range has no frame at its requested position",
+                ));
+            }
+            if encoder.is_none() {
+                let (width, height) =
+                    scaled_dimensions(frame.width, frame.height, quality.max_width());
+                encoder = Some(ProxyEncoder::new(
+                    &tmp_path,
+                    width,
+                    height,
+                    quality,
+                    decoder.fps(),
+                    frame.matrix,
+                    frame.full_range,
+                    threads,
+                )?);
+            }
+            encoder.as_mut().unwrap().write_frame(&frame)?;
+            frames += 1;
+        }
+        encoder
+            .ok_or_else(|| range_error("Source range contains no video frames"))?
+            .finish()?;
+        if !on_frame(frames) {
+            return Err(crate::MediaError::Cancelled);
+        }
+        Ok(())
+    })();
+    if let Err(error) = written {
+        let _ = std::fs::remove_file(&tmp_path);
+        return Err(error);
+    }
     std::fs::rename(&tmp_path, final_path)?;
     Ok(final_path.to_owned())
 }

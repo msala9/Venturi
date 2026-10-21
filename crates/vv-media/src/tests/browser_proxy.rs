@@ -1,6 +1,230 @@
 use super::*;
 
 #[test]
+fn audio_range_boundaries_use_checked_absolute_rational_samples() {
+    let fps = vv_core::Rational::new(30_000, 1001);
+    assert_eq!(audio_sample_range(&(1..2), fps).unwrap(), 1602..3203);
+    assert_eq!(audio_sample_range(&(2..3), fps).unwrap(), 3203..4805);
+    assert_eq!(
+        audio_sample_range(&(100..101), vv_core::Rational::new(24_000, 1001)).unwrap(),
+        200_200..202_202
+    );
+    assert!(audio_sample_range(&(0..1801), vv_core::Rational::new(30, 1)).is_err());
+    assert!(audio_sample_range(&(0..1), vv_core::Rational::new(0, 1)).is_err());
+    assert!(
+        audio_sample_range(
+            &(i64::MAX - 1..i64::MAX),
+            vv_core::Rational::new(1, i32::MAX)
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn audio_range_places_interleaved_chunks_by_position_and_retains_silence_in_gaps() {
+    let mut samples = Vec::new();
+    let range = 10..15;
+    copy_audio_window(
+        &mut samples,
+        2,
+        &range,
+        8,
+        &[1., 2., 3., 4., 5., 6., 7., 8.],
+    )
+    .unwrap();
+    copy_audio_window(&mut samples, 2, &range, 14, &[9., 10., 11., 12.]).unwrap();
+    assert_eq!(samples, [5., 6., 7., 8., 0., 0., 0., 0., 9., 10.]);
+    copy_audio_window(&mut samples, 2, &range, 11, &[13., 14.]).unwrap();
+    assert_eq!(samples, [5., 6., 13., 14., 0., 0., 0., 0., 9., 10.]);
+    let before = samples.clone();
+    copy_audio_window(&mut samples, 2, &range, 100, &[1., 2.]).unwrap();
+    assert_eq!(samples, before);
+}
+
+#[test]
+fn audio_range_refuses_invalid_shapes_and_sample_budgets_before_allocating() {
+    for (channels, range, at, chunk) in [
+        (0, 0..1, 0, vec![]),
+        (2, 0..1, 0, vec![1.]),
+        (u16::MAX, 0..48_000, 0, vec![]),
+        (1, 0..2_880_001, 0, vec![]),
+        (1, 0..1, u64::MAX, vec![1.]),
+    ] {
+        let mut samples = Vec::new();
+        assert!(copy_audio_window(&mut samples, channels, &range, at, &chunk).is_err());
+    }
+}
+
+fn ranged_audio_samples() -> Vec<f32> {
+    (0..96_000)
+        .map(|sample| {
+            let frequency = if sample < 48_000 { 440. } else { 880. };
+            (sample as f32 / 48_000. * frequency * std::f32::consts::TAU).sin() * 0.4
+        })
+        .collect()
+}
+
+#[test]
+fn ranged_browser_proxy_crops_video_and_audio_to_the_same_nonzero_source_window() {
+    let directory =
+        std::env::temp_dir().join(format!("vv-browser-range-av-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let source = directory.join("input.mp4");
+    let settings = crate::VideoSettings {
+        preset: "ultrafast".into(),
+        ..Default::default()
+    };
+    let mut encoder = crate::Encoder::new(
+        &source,
+        16,
+        16,
+        vv_core::Rational::new(25, 1),
+        &settings,
+        Some((48_000, 1, &crate::AudioSettings::default())),
+    )
+    .unwrap();
+    for index in 0..50 {
+        encoder
+            .write_video_frame(&crate::encode::solid_i420(
+                16,
+                16,
+                [40 + index * 2, 128, 128],
+            ))
+            .unwrap();
+    }
+    encoder
+        .write_audio_samples(&ranged_audio_samples())
+        .unwrap();
+    encoder.finish().unwrap();
+    let ready = directory.join("ready");
+    std::fs::create_dir_all(&ready).unwrap();
+    generate_range(&source, &ready, ProxyQuality::Low, 25..40, |_| true).unwrap();
+    let output = ready.join("source.mp4");
+    let mut decoder = crate::Decoder::open_software_bounded(&output, 1).unwrap();
+    let (index, first) = decoder.next_frame().unwrap().unwrap();
+    assert_eq!(index, 0);
+    assert!(first.y[0].abs_diff(90) <= 5);
+    let mut frames = 1;
+    while decoder.next_frame().unwrap().is_some() {
+        frames += 1;
+    }
+    assert_eq!(frames, 15);
+    let audio = crate::decode_audio_track(&output, 0).unwrap().unwrap();
+    assert_eq!((audio.sample_rate, audio.channels), (48_000, 1));
+    assert!((audio.samples.len() as f64 / 48_000. - 0.6).abs() < 0.05);
+    let interior = &audio.samples[4800..19_200];
+    let rising = interior
+        .windows(2)
+        .filter(|samples| samples[0] <= 0. && samples[1] > 0.)
+        .count();
+    assert!(
+        (rising as f64 / 0.3 - 880.).abs() < 50.,
+        "The cropped audio must come from the second source second"
+    );
+    let cancelled = directory.join("cancelled");
+    std::fs::create_dir_all(&cancelled).unwrap();
+    let staging = cancelled.join(format!("source.tmp-{}.mp4", std::process::id()));
+    assert!(matches!(
+        generate_range(&source, &cancelled, ProxyQuality::Low, 25..40, |_| !staging
+            .exists()),
+        Err(MediaError::Cancelled)
+    ));
+    assert!(!cancelled.join("source.mp4").exists());
+    assert!(!staging.exists());
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn ranged_audio_only_proxy_has_a_bounded_window_and_distinct_cancellation() {
+    let directory =
+        std::env::temp_dir().join(format!("vv-browser-range-audio-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let source = directory.join("input.wav");
+    write_audio_file(
+        &source,
+        AudioFileFormat::Wav,
+        &ranged_audio_samples(),
+        48_000,
+        1,
+    )
+    .unwrap();
+    let ready = directory.join("ready");
+    std::fs::create_dir_all(&ready).unwrap();
+    generate_range(&source, &ready, ProxyQuality::Low, 30..45, |_| true).unwrap();
+    let meta = crate::probe_media(&ready.join("source.mp4")).unwrap();
+    assert!(!meta.has_video && meta.has_audio);
+    let audio = crate::decode_audio_track(&ready.join("source.mp4"), 0)
+        .unwrap()
+        .unwrap();
+    assert!((audio.samples.len() as f64 / 48_000. - 0.5).abs() < 0.05);
+    let cancelled = directory.join("cancelled");
+    std::fs::create_dir_all(&cancelled).unwrap();
+    let mut checks = 0;
+    assert!(matches!(
+        generate_range(&source, &cancelled, ProxyQuality::Low, 30..45, |_| {
+            checks += 1;
+            checks < 2
+        }),
+        Err(MediaError::Cancelled)
+    ));
+    assert!(!cancelled.join("source.mp4").exists());
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn a_real_source_over_ten_minutes_produces_only_its_twelve_frame_late_window_without_changing_the_original()
+ {
+    let directory =
+        std::env::temp_dir().join(format!("vv-browser-long-range-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let source = directory.join("input.mp4");
+    let settings = crate::VideoSettings {
+        preset: "ultrafast".into(),
+        ..Default::default()
+    };
+    let mut encoder = crate::Encoder::new(
+        &source,
+        16,
+        16,
+        vv_core::Rational::new(1, 1),
+        &settings,
+        None,
+    )
+    .unwrap();
+    let early = crate::encode::solid_i420(16, 16, [40, 128, 128]);
+    let late = crate::encode::solid_i420(16, 16, [160, 128, 128]);
+    for index in 0..601 {
+        encoder
+            .write_video_frame(if index < 589 { &early } else { &late })
+            .unwrap();
+    }
+    encoder.finish().unwrap();
+    assert!(std::fs::metadata(&source).unwrap().len() <= 512 * 1024);
+    let before = std::fs::read(&source).unwrap();
+    let fingerprint = crate::content_fingerprint(&source).unwrap();
+    let meta = crate::probe_media(&source).unwrap();
+    assert_eq!(meta.fps, vv_core::Rational::new(1, 1));
+    assert!(meta.duration_frames as f64 / meta.fps.as_f64() > 600.);
+    let ready = directory.join("ready");
+    std::fs::create_dir(&ready).unwrap();
+    generate_range(&source, &ready, ProxyQuality::Low, 589..601, |_| true).unwrap();
+    let mut decoder = crate::Decoder::open_software_bounded(&ready.join("source.mp4"), 1).unwrap();
+    let mut indices = Vec::new();
+    while let Some((index, frame)) = decoder.next_frame().unwrap() {
+        indices.push(index);
+        assert!(
+            frame.y[0].abs_diff(160) <= 5,
+            "The output must contain the late source frames"
+        );
+    }
+    assert_eq!(indices, (0..12).collect::<Vec<_>>());
+    assert_eq!(std::fs::read(&source).unwrap(), before);
+    assert_eq!(crate::content_fingerprint(&source).unwrap(), fingerprint);
+    assert!(!ready.join("audio.m4a").exists());
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn audio_only_source_becomes_a_browser_audio_container() {
     let dir = std::env::temp_dir().join(format!("vv-browser-audio-{}", std::process::id()));
     std::fs::create_dir(&dir).unwrap();

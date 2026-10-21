@@ -53,7 +53,7 @@ test("obsolete source preparations cannot select another project's media or auto
 
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
-function sourceHarness({asset='source.mp4',api,fetcher}={}){
+function sourceHarness({asset='source.mp4',api,fetcher,windowed=false}={}){
   let now=0,sequence=0;const timers=new Map(),requests=[],prepared=[],ready=[];
   const setTimer=(callback,delay)=>{assert.ok(delay>0);const id=++sequence;timers.set(id,{callback,delay,at:now+delay});return id;};
   const clearTimer=id=>timers.delete(id);
@@ -65,7 +65,7 @@ function sourceHarness({asset='source.mp4',api,fetcher}={}){
   }
   const video=new Media(),image=new Media(),status={textContent:''},cancel=new EventTarget();cancel.disabled=true;
   const response=(body={id:'job',state:'ready',source_asset:asset},status=200)=>({ok:status>=200 && status<300,status,json:async()=>body});
-  const player=createSourcePlayer({video,image,status,cancel,onReady:value=>ready.push(value),setTimer,clearTimer,api:async(path,body,requestFetch)=>{prepared.push({path,body});return api?api(path,body,requestFetch):{id:'job',state:'ready',source_asset:asset};},fetcher:async(path,options)=>{requests.push({path,options});return fetcher?fetcher(path,options):response();}});
+  const player=createSourcePlayer({video,image,status,cancel,windowed,onReady:value=>ready.push(value),setTimer,clearTimer,api:async(path,body,requestFetch)=>{prepared.push({path,body});return api?api(path,body,requestFetch):{id:'job',state:'ready',source_asset:asset};},fetcher:async(path,options)=>{requests.push({path,options});return fetcher?fetcher(path,options):response();}});
   return {player,video,image,status,cancel,requests,prepared,ready,timers,response,
     open:(item={id:'1',name:'Source'},epoch='epoch:1')=>player.open(item,epoch),
     async advance(milliseconds){now+=milliseconds;const due=[...timers.entries()].filter(([,timer])=>timer.at<=now);for(const [id,timer] of due){if(timers.delete(id))timer.callback();}await settle();},
@@ -76,6 +76,7 @@ test('paused ready Source pins only its authorized cache job every ten seconds w
   const h=sourceHarness();
   try{
     assert.equal(h.timers.size,0);await h.open();const text=h.status.textContent,url=h.video.src,prepared=structuredClone(h.prepared);
+    assert.deepEqual(h.prepared[0].body,{project_epoch:'epoch:1',quality:'medium'});assert.equal(h.player.current(),null,'legacy Review players retain their original unwindowed request and clock');
     assert.equal(h.timers.size,1);assert.equal([...h.timers.values()][0].delay,10_000);assert.equal(h.video.paused,true);
     await h.advance(9999);assert.equal(h.requests.length,0);await h.advance(1);assert.equal(h.requests.length,1);
     assert.equal(h.requests[0].path,'/api/v1/media/1/jobs/job?project_epoch=epoch%3A1');assert.equal(h.requests[0].options.method,undefined);assert.equal(h.requests[0].options.cache,'no-store');assert.equal(h.requests[0].options.signal.aborted,false);
@@ -178,4 +179,154 @@ test('decode failure, reset and disposal abort the active heartbeat and ignore i
       if(action==='dispose'){await h.open();h.cancel.dispatchEvent(new Event('click'));assert.equal(h.prepared.length,1);assert.equal(h.requests.length,1);}
     }finally{h.player.dispose();}
   });
+});
+
+function windowHarness({fps={num:30_000,den:1001},total=10_000,api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause}={}){
+  class Video extends EventTarget{
+    url='';position=0;paused=true;ended=false;readyState=1;seeking=false;plays=0;error=null;waitMetadata=false;waitSeek=false;fastPause=false;deferPauses=false;pauseEvents=[];clampTime=Infinity;
+    get src(){return this.url;}set src(value){this.url=value;this.ended=false;this.position=0;this.readyState=this.waitMetadata?0:1;}
+    get currentTime(){return this.position;}set currentTime(value){this.position=Math.min(value,this.clampTime);this.seeking=this.waitSeek;this.dispatchEvent(new Event('seeking'));}
+    userSeek(value){this.position=value;this.ended=false;this.seeking=true;this.dispatchEvent(new Event('seeking'));}
+    getAttribute(){return this.url;}removeAttribute(){this.url='';this.ended=false;}load(){}
+    pause(){const wasPlaying=!this.paused;this.paused=true;if(!wasPlaying)return;const fire=()=>this.dispatchEvent(new Event('pause'));if(this.deferPauses)this.pauseEvents.push(fire);else fire();}
+    async play(){this.paused=false;this.ended=false;this.plays++;this.dispatchEvent(new Event('play'));if(this.fastPause)this.pause();}
+  }
+  const video=new Video(),status={textContent:''},requests=[],fetches=[],notifications=[],timers=new Map();let timerID=0;
+  const item={id:'m',name:'Long source',duration_frames:total,fps},version='1:2:300:4:5';
+  const ready=(body,id=`job${requests.length}`)=>({id,state:'ready',source_asset:'source.mp4',project_epoch:body.project_epoch,source_window:{...body.window,total_frames:total,fps:{...fps},source_version:version}});
+  const player=createSourcePlayer({video,status,windowed:true,cancel:new EventTarget(),beforeWindowChange,isInternalSeek,isInternalPause,onReady:value=>notifications.push(value),setTimer:(callback,delay)=>{const id=++timerID;timers.set(id,{callback,delay});return id;},clearTimer:id=>timers.delete(id),api:async(path,body)=>{requests.push(body);return api?api(body,ready):ready(body);},fetcher:async(path,options)=>{fetches.push({path,options});if(fetcher)return fetcher(path,options);return Response.json({...ready({project_epoch:'epoch',window:notifications.at(-1)?.source_window}),id:notifications.at(-1)?.job});}});
+  const finish=()=>{const c=player.current(),range=notifications.at(-1).source_window;video.position=(range.end_frame-range.start_frame)*fps.den/fps.num;video.ended=true;video.pause();video.dispatchEvent(new Event('ended'));return c;};
+  return {player,video,status,item,version,requests,fetches,notifications,timers,ready,finish,open:(start=0)=>player.open(item,'epoch','medium',start)};
+}
+
+test('windowed Source opens paused at an absolute fractional-fps origin and seeks/steps across exclusive boundaries',async()=>{
+  const h=windowHarness();try{
+    assert.equal(h.player.current(),null);await h.open(137);const span=Math.floor(60*30_000/1001);
+    assert.deepEqual(h.requests[0],{project_epoch:'epoch',quality:'medium',window:{start_frame:137,end_frame:137+span}});
+    assert.deepEqual(h.player.current(),{epoch:'epoch',media_id:'m',job:'job1',fps:h.item.fps,start_frame:137,end_frame:137+span,frame:137,source_version:h.version});assert.equal(h.video.plays,0);
+    await h.player.seekFrame(147);assert.equal(h.requests.length,1);assert.equal(h.player.current().frame,147);assert.equal(h.video.currentTime,10*1001/30_000);
+    await h.player.seekFrame(137+span-1);await h.player.step(1,1,1);assert.equal(h.requests.length,2);assert.equal(h.player.current().frame,137+span);assert.equal(h.video.currentTime,0);assert.equal(h.video.paused,true);
+    await assert.rejects(h.player.seekFrame(10_000));await assert.rejects(h.player.seekFrame(-1));assert.equal(h.requests.length,2);
+    await h.player.seekFrame(9999);assert.equal(h.requests.at(-1).window.end_frame,10_000);await h.player.step(1);assert.equal(h.player.current().frame,9999);assert.equal(h.requests.length,3);
+    assert.equal(h.notifications[0].source_window.source_version,h.version);
+  }finally{h.player.dispose();}
+});
+
+test('Source EOF continues three bounded foreground windows with a final short tail and no prefetch',async()=>{
+  const span=Math.floor(60*30_000/1001),h=windowHarness({total:2*span+17});try{
+    await h.open();assert.equal(h.requests.length,1);await h.player.toggle();
+    for(const start of [span,2*span]){
+      h.finish();assert.match(h.status.textContent,/Paused.*next/);h.video.dispatchEvent(new Event('ended'));await settle();
+      assert.equal(h.player.current().frame,start);assert.equal(h.requests.at(-1).window.start_frame,start);assert.equal(h.video.paused,false);
+      h.video.dispatchEvent(new Event('ended'));await settle();assert.equal(h.requests.length,start===span?2:3);
+    }
+    h.finish();await settle();assert.equal(h.requests.length,3);assert.equal(h.player.current().frame,2*span+16);assert.match(h.status.textContent,/End of Source/);
+    h.video.dispatchEvent(new Event('ended'));await settle();assert.equal(h.requests.length,3);
+  }finally{h.player.dispose();}
+});
+
+test('Source keeps the old absolute clock through fast-tail drain then waits for metadata and verified seek',async()=>{
+  const tail=deferred(),h=windowHarness({beforeWindowChange:()=>tail.promise});try{
+    await h.open(137);await h.player.toggle();const url=h.video.src,old=h.player.current();h.video.waitMetadata=true;h.video.waitSeek=true;h.finish();await settle();
+    assert.equal(h.video.src,url);assert.equal(h.player.current().end_frame,old.end_frame);
+    tail.resolve();await settle();assert.notEqual(h.video.src,url);assert.equal(h.player.current(),null);assert.equal(h.video.plays,1);
+    h.video.dispatchEvent(new Event('error'));assert.notEqual(h.video.src,'','queued old MediaError-null event cannot reject the new metadata wait');
+    h.video.readyState=1;h.video.dispatchEvent(new Event('loadedmetadata'));await settle();assert.equal(h.player.current(),null);assert.equal(h.video.plays,1);
+    h.video.seeking=false;h.video.dispatchEvent(new Event('seeked'));await settle();assert.equal(h.player.current().frame,old.end_frame);assert.equal(h.video.plays,2);
+  }finally{h.player.dispose();}
+});
+
+test('windowed Source rejects malformed or changed authoritative metadata instead of deriving a proxy origin',async t=>{
+  for(const key of ['missing','start','end','total','fps','version','long'])await t.test(key,async()=>{
+    const h=windowHarness({api:(body,ready)=>{const job=ready(body),w=job.source_window;if(key==='missing')delete job.source_window;if(key==='start')w.start_frame++;if(key==='end')w.end_frame--;if(key==='total')w.total_frames++;if(key==='fps')w.fps.den=0;if(key==='version')w.source_version='';if(key==='long')w.end_frame+=100;return job;}});
+    try{await h.open(137);assert.equal(h.player.current(),null);assert.equal(h.video.src,'');assert.equal(h.video.plays,0);assert.match(h.status.textContent,/invalid|changed/);}finally{h.player.dispose();}
+  });
+  let count=0;const h=windowHarness({api:(body,ready)=>{const job=ready(body);if(++count>1)job.source_window.source_version='different';return job;}});
+  try{await h.open();await h.player.toggle();h.finish();await settle();assert.equal(h.player.current(),null);assert.equal(h.video.plays,1);assert.match(h.status.textContent,/changed/);}finally{h.player.dispose();}
+});
+
+test('pause, native seek, reset and replacement open invalidate Source continuation ACKs without DELETE',async t=>{
+  for(const action of ['pause','native-pause','seek','reset','replace'])await t.test(action,async()=>{
+    const ack=deferred();let count=0;const h=windowHarness({api:(body,ready)=>++count===2?ack.promise:ready(body)});
+    try{
+      await h.open();await h.player.toggle();h.finish();await settle();const pending=h.requests[1];
+      if(action==='pause')h.player.pause();if(action==='native-pause'){h.video.ended=false;h.video.dispatchEvent(new Event('pause'));}if(action==='seek')h.video.userSeek(1);if(action==='reset')h.player.reset();if(action==='replace')await h.player.open({...h.item,id:'other'},'new-epoch');
+      const src=h.video.src;ack.resolve(h.ready(pending,'obsolete-shared'));await settle();assert.equal(h.video.src,src);assert.equal(h.video.plays,1);assert.ok(h.fetches.every(call=>call.options.method!=='DELETE'));
+      if(action==='pause' || action==='native-pause' || action==='seek'){assert.match(h.status.textContent,/press Play/);await h.player.toggle();assert.equal(h.video.plays,2,'one user Play retries canceled preparation');}
+    }finally{h.player.dispose();}
+  });
+});
+
+test('Source window heartbeat verifies exact range/version and obsolete heartbeat cannot detach a later window',async()=>{
+  const response=deferred(),h=windowHarness({fetcher:()=>response.promise});try{
+    await h.open();const timer=[...h.timers.entries()].find(([,v])=>v.delay===10_000);h.timers.delete(timer[0]);timer[1].callback();await settle();
+    await h.player.seekFrame(3000);const url=h.video.src;response.resolve(Response.json({id:'wrong',state:'failed'}));await settle();assert.equal(h.video.src,url);assert.equal(h.player.current().frame,3000);assert.equal(h.timers.size,1);
+  }finally{h.player.dispose();}
+  const changed=windowHarness({fetcher:()=>Response.json({id:'job1',state:'ready',source_asset:'source.mp4',source_window:{start_frame:0,end_frame:1798,total_frames:10_000,fps:{num:30_000,den:1001},source_version:'changed'}})});
+  try{await changed.open();const timer=[...changed.timers.entries()][0];changed.timers.delete(timer[0]);timer[1].callback();await settle();assert.equal(changed.player.current(),null);assert.match(changed.status.textContent,/changed/);}finally{changed.player.dispose();}
+});
+
+test('Source fast startup pauses and internal seek corrections retain intent; user seeks and pauses revoke it',async()=>{
+  let correcting=false;const h=windowHarness({isInternalSeek:()=>correcting,beforeWindowChange:()=>h.video.pause()});try{
+    await h.open();h.video.fastPause=true;await h.player.toggle();correcting=true;h.video.userSeek(1);assert.equal(h.player.current().frame,29);h.video.seeking=false;correcting=false;h.finish();await settle();assert.equal(h.requests.length,2);assert.equal(h.video.plays,2);
+  }finally{h.player.dispose();}
+  for(const action of ['pause','seek']){
+    const f=windowHarness();try{await f.open();await f.player.toggle();if(action==='pause')f.video.pause();else{f.video.userSeek(1);f.video.seeking=false;f.video.dispatchEvent(new Event('seeked'));}f.finish();await settle();assert.equal(f.requests.length,1);}finally{f.player.dispose();}
+  }
+});
+
+test('a delayed own pause from replacing a playing Source cannot cancel the next metadata wait',async()=>{
+  const h=windowHarness();try{
+    await h.open();await h.player.toggle();h.video.deferPauses=true;h.video.waitMetadata=true;
+    const next=h.player.open({...h.item,id:'replacement'},'next-epoch','high',137);await settle();assert.equal(h.player.preparing(),true);assert.equal(h.player.current(),null);
+    assert.equal(h.video.pauseEvents.length,1);h.video.pauseEvents.shift()();assert.equal(h.player.preparing(),true);
+    h.video.readyState=1;h.video.dispatchEvent(new Event('loadedmetadata'));await next;assert.equal(h.player.current().epoch,'next-epoch');assert.equal(h.player.current().frame,137);assert.equal(h.video.plays,1);
+  }finally{h.player.dispose();}
+});
+
+test('native pause or seek during Source metadata/seek preparation cancels truthfully and one Play retries',async t=>{
+  for(const phase of ['metadata','seek'])for(const action of ['pause','seek'])await t.test(`${phase}-${action}`,async()=>{
+    const h=windowHarness();try{
+      h.video.waitMetadata=phase==='metadata';h.video.waitSeek=phase==='seek';const opening=h.open();await settle();assert.equal(h.player.preparing(),true);
+      if(action==='pause')h.video.dispatchEvent(new Event('pause'));else h.video.userSeek(1);
+      await opening;assert.equal(h.player.preparing(),false);assert.equal(h.player.current(),null);assert.match(h.status.textContent,/press Play/);
+      h.video.readyState=1;h.video.seeking=false;h.video.dispatchEvent(new Event('loadedmetadata'));h.video.dispatchEvent(new Event('seeked'));await settle();assert.equal(h.video.plays,0);
+      h.video.waitMetadata=false;h.video.waitSeek=false;await h.player.toggle();assert.equal(h.video.plays,1);assert.equal(h.player.current().frame,0);
+    }finally{h.player.dispose();}
+  });
+});
+
+test('windowed main Source still opens original images through the unchanged legacy payload and has no range clock',async()=>{
+  const h=sourceHarness({asset:'source.png',windowed:true});try{
+    await h.open({id:'1',name:'Original',is_image:true});assert.deepEqual(h.prepared[0].body,{project_epoch:'epoch:1',quality:'medium'});
+    assert.equal(h.player.current(),null);await h.player.toggle();h.player.step(1,24,48);assert.equal(h.video.plays,0);assert.equal(h.image.hidden,false);
+  }finally{h.player.dispose();}
+});
+
+test('a queued fast-transport-owned pause retains Source intent after the play microtask has completed',async()=>{
+  let owned=false;const h=windowHarness({isInternalPause:()=>owned});try{
+    await h.open();await h.player.toggle();h.video.deferPauses=true;owned=true;h.video.pause();await settle();
+    h.video.pauseEvents.shift()();owned=false;h.finish();await settle();assert.equal(h.requests.length,2);assert.equal(h.video.plays,2);
+  }finally{h.player.dispose();}
+});
+
+test('Source refuses a browser-clamped seek rather than publishing a verified wrong absolute frame',async()=>{
+  const h=windowHarness({total:1000,api:(body,ready)=>{const job=ready(body);job.source_window.start_frame=0;return job;}});try{
+    h.video.clampTime=0;await h.open(137);assert.equal(h.player.current(),null);assert.match(h.status.textContent,/requested absolute frame/);assert.equal(h.video.plays,0);
+    h.video.clampTime=Infinity;await h.open();h.video.clampTime=0;await h.player.seekFrame(37);assert.equal(h.player.current(),null);assert.match(h.status.textContent,/requested absolute frame/);
+  }finally{h.player.dispose();}
+});
+
+
+test('AAC container padding at Source EOF retains the final native frame and continues at its exclusive boundary',async()=>{
+  const h=windowHarness({fps:{num:120,den:1}});try{
+    await h.open(137);await h.player.toggle();const first=h.player.current();
+    h.video.position=(first.end_frame-first.start_frame)/120+0.02;h.video.ended=true;h.video.pause();
+    assert.equal(h.player.current().frame,first.end_frame-1);
+    h.video.dispatchEvent(new Event('ended'));await settle();
+    assert.equal(h.requests.length,2);assert.equal(h.player.current().frame,first.end_frame);assert.equal(h.video.plays,2);
+    h.video.position=(h.player.current().end_frame-h.player.current().start_frame)/120+0.02;h.video.ended=true;h.video.pause();
+    assert.equal(h.player.current().frame,h.item.duration_frames-1);
+    h.video.dispatchEvent(new Event('ended'));await settle();assert.equal(h.requests.length,2);assert.match(h.status.textContent,/End of Source/);
+  }finally{h.player.dispose();}
 });

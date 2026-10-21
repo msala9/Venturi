@@ -82,8 +82,18 @@ Windows browser. Native-generated thumbnails and waveforms are loaded on
 demand. Cancel preparation stops its background job. Program returns to exact
 composed stills; source playback does not display timeline effects.
 
-Source jobs currently accept regular media up to ten minutes and 8192 pixels
-per dimension, cap decoded audio samples at 256 MiB plus encoder overhead,
+Main Source prepares at most 60 seconds at a time from regular media, including
+files longer than ten minutes. Use the full-file position slider, absolute
+frame field or frame steps to reach another window; natural playback EOF
+prepares the following window with a visible pause. In/Out remains absolute
+within the original file, independent of the current preview window. Existing
+legacy full-file Review/Slip preparation still has a ten-minute limit.
+Ranged previews currently omit whole-source thumbnails and waveforms; restoring
+these through a bounded media-assets path remains open. Partial waveform peaks
+are never presented as a whole-file waveform.
+
+Source jobs accept at most 8192 pixels per dimension,
+cap decoded audio samples at 256 MiB plus encoder overhead,
 and reject completed ephemeral jobs larger than 512 MiB. The private,
 process-local cache reserves 512 MiB for every queued/running job before
 admission against a 2 GiB budget and at most 32 jobs. Admission also reserves

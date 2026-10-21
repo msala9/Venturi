@@ -21,7 +21,7 @@ async function seekMedia(video, seconds, signal, beforeSeek = () => {}) {
   signal.throwIfAborted();beforeSeek(seconds);video.currentTime=seconds;
   await wait("seeked",()=>!video.seeking);
 }
-export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onCache, beforeWindowChange = () => {}, isInternalSeek = () => false, api = request, fetcher = fetch, timers = globalThis }) {
+export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onCache, beforeWindowChange = () => {}, isInternalSeek = () => false, isInternalPause = () => false, api = request, fetcher = fetch, timers = globalThis }) {
   let sequence = 0, controller = null, query = null, jobURL = null, state = "stopped", monitor = null, frameCallback = null, suspended = true, presented = 0, cached = null;
   let playbackIntent = false, attached = null, startingPlayback = false, seekingTarget = null, ignoredPauses=0, handoffPause=false;
   const setState = (next) => { if(next!=="ready")stopMonitor(); state = next; cancel.disabled = next === "stopped"; cancel.textContent = next === "preparing" ? "Cancel preparation" : "Stop playback"; onState(next); };
@@ -104,13 +104,14 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     queueMicrotask(()=>{if(attached===owner)startingPlayback=false;});
     playbackIntent=true;suspended=false;scheduleFrame();
   });
-  video.addEventListener("pause", () => {
-    const internal=ignoredPauses>0;if(internal)ignoredPauses--;
+  video.addEventListener("pause", event => {
+    const ownPause=ignoredPauses>0;if(ownPause)ignoredPauses--;
+    const internal=ownPause || isInternalPause(event);
     if(video.paused===false)return;
     if (frameCallback !== null && video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(frameCallback);
     frameCallback = null;
-    // A movie naturally pauses before its ended event. The fast transport also
-    // pauses synchronously inside play() while it prepares the selected tempo.
+    // A movie naturally pauses before its ended event. Fast transport pauses
+    // inside play(), but the browser can deliver that owned pause event later.
     const atEnd=video.ended || (Number.isFinite(video.duration) && video.duration>0 && video.currentTime>=video.duration-1e-6);
     if(!internal && !handoffPause && state==='preparing')pauseLocal();
     else if(!internal && state==="ready" && !startingPlayback && !atEnd){playbackIntent=false;suspended=true;}

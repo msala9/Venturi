@@ -24,19 +24,21 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-206 Rust tests, 345 JavaScript tests,
+210 Rust tests, 390 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
 `evidence/m4-transition-duration-handles.json`, `evidence/m4-speed-handles.json`,
 `evidence/m4-mask-pen-path-keys.json`, `evidence/m4-transition-placement.json`
-`evidence/m3-preview-cache-safety.json` and `evidence/m3-program-rollover.json`;
+`evidence/m3-preview-cache-safety.json`, `evidence/m3-program-rollover.json`
+and `evidence/m3-source-windows.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
 Remaining work includes mask/transition browser and rendered qualification,
 native speed strip preset menus, compound and
-import coverage, long-media preview and export lifecycle/codec selection,
+import coverage, long-media preview qualification, whole-source asset restoration
+and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
 and final deployment, DPI, duration and resource qualification. Historical
 sections below describe individual increments and their then-current limits;
@@ -2682,3 +2684,50 @@ restart and preservation of parent files and the primary dirty editor. It does
 not render a long timeline or qualify browser, physical audio, continuous filter
 state, GPU or gapless behavior. Source segmentation remains open. Evidence:
 `evidence/m3-program-rollover.json`.
+
+
+## M3 — bounded native Source windows and absolute navigation
+
+Main Source prepares explicit windows of at most 60 seconds rather than an
+entire long file. Native proxy APIs preserve their legacy full-file entry
+points, reuse bounded CPU decoding/encoding, retain CFR held frames across VFR
+timestamp holes, rebase output PTS to zero and reject missing requested frames.
+Audio crops positioned native chunks with checked rational 48 kHz bounds and
+zero-filled gaps. Publication follows final cancellation checks. File probes
+can still scan VFR timestamps; general delayed-stream offset parity is open.
+
+The HTTP adapter validates absolute nonempty bounds against full native media
+metadata and includes range/quality/epoch/file identity in cache keys. Jobs
+expose source_window bounds, total frames, rational FPS and opaque file version.
+Main Source verifies metadata and the actual post-seek frame before publishing
+its absolute clock. Whole-file slider/numeric seeking, steps, In/Out, timecode,
+audition and fast audio use original source coordinates. Natural EOF prepares
+one following window with visible waiting; no prefetch or gapless claim. Native
+fast-audio pause ownership works with either event-listener order. Late events,
+changed metadata, cancellation and AAC padding cannot shift the new window.
+
+Ranged jobs skip whole-source thumbnail and waveform scans. Main does not put
+segment peaks into the whole-media timeline asset cache. This leaves full-source
+thumbnails/waveforms unavailable through windowed Source until a bounded assets
+path is added; it is required remaining work, not full parity. Original stills
+and existing legacy Review/Slip callers retain their earlier behavior; those
+legacy full-file callers remain limited to ten minutes.
+
+210 vv-web tests, ten filtered native range tests and 390 JavaScript tests pass
+on halo2, plus fmt, clippy for vv-web/vv-media with warnings denied and native
+build. Both native and web-worker tests encode a real 601-second 16x16 CPU
+fixture and produce only its late twelve-frame window, preserving original
+bytes. Tests cover sample boundaries, gap/overlap placement, VFR hold, exact
+frame counts, cancellation, absolute clocks, whole-file controls, cache/timer
+ownership and late events. Finite API acceptance verifies two qualities and a
+following nonzero range on the existing tiny source, distinct/reused keys,
+authorized status/byte ranges, invalid bounds/DTO rejection, absent whole-source
+assets, unchanged source/session/parent files and exact saved restart. Evidence:
+`evidence/m3-source-windows.json`.
+
+All compilation/tests/API work ran on halo2 with one CPU, low priority, no swap
+and sacrificial OOM scoring; build memory is capped at 4 GiB and finite API at
+512 MiB. No local build, test server, browser qualification, GPU, export or soak
+was started. Own API units stopped and port 8811 closed; the main editor's five
+unsaved moves remain intact. Browser/DPI, large-file pressure/startup performance,
+physical/continuous audio and hardware qualification remain open.

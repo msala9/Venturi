@@ -4,7 +4,7 @@ use crate::{
     host::{Action, Host},
     preview::{FrameQuery, Preview},
     program::{ExportRequest, ProgramQuery, ProgramTask},
-    source::{MediaJobs, SourceQuery},
+    source::{MediaJobs, SourceQuery, SourceWindow},
 };
 use axum::{
     Json, Router,
@@ -815,6 +815,8 @@ struct PrepareSource {
     project_epoch: String,
     #[serde(default = "medium")]
     quality: String,
+    #[serde(default)]
+    window: Option<SourceWindow>,
 }
 fn medium() -> String {
     "medium".into()
@@ -836,7 +838,11 @@ async fn prepare_source(
             },
         )
         .await?;
-    state.source.prepare(spec, &payload.quality).map(Json)
+    match payload.window {
+        Some(window) => state.source.prepare_window(spec, &payload.quality, window),
+        None => state.source.prepare(spec, &payload.quality),
+    }
+    .map(Json)
 }
 async fn source_status(
     State(state): State<AppState>,
@@ -1196,6 +1202,8 @@ async fn assets(request: Request) -> Response {
         "/js/scopes.js" => asset!("/web/js/scopes.js", "text/javascript"),
         "/js/balance.js" => asset!("/web/js/balance.js", "text/javascript"),
         "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),
+        "/js/source-clock.js" => asset!("/web/js/source-clock.js", "text/javascript"),
+        "/js/source-seek.js" => asset!("/web/js/source-seek.js", "text/javascript"),
         "/js/program.js" => asset!("/web/js/program.js", "text/javascript"),
         "/js/program-range.js" => asset!("/web/js/program-range.js", "text/javascript"),
         "/js/export.js" => asset!("/web/js/export.js", "text/javascript"),

@@ -1,5 +1,149 @@
 use super::*;
 
+fn range_fixture(name: &str) -> (PathBuf, PathBuf) {
+    let directory =
+        std::env::temp_dir().join(format!("vv-proxy-range-{name}-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let source = directory.join("input.mp4");
+    let settings = crate::VideoSettings {
+        preset: "ultrafast".into(),
+        ..Default::default()
+    };
+    let mut encoder = crate::Encoder::new(
+        &source,
+        16,
+        16,
+        vv_core::Rational::new(25, 1),
+        &settings,
+        None,
+    )
+    .unwrap();
+    for index in 0..50 {
+        encoder
+            .write_video_frame(&crate::encode::solid_i420(
+                16,
+                16,
+                [40 + index * 2, 128, 128],
+            ))
+            .unwrap();
+    }
+    encoder.finish().unwrap();
+    (directory, source)
+}
+
+#[test]
+fn range_validation_rejects_invalid_bounds_and_caps_exact_rational_duration() {
+    let fps = vv_core::Rational::new(24_000, 1001);
+    assert!(validate_range(&(100..1538), fps, 2000).is_ok());
+    assert!(validate_range(&(100..1539), fps, 2000).is_err());
+    for range in [-1..2, 3..3, std::ops::Range { start: 4, end: 3 }, 0..2001] {
+        assert!(validate_range(&range, fps, 2000).is_err());
+    }
+    assert!(validate_range(&(0..1), vv_core::Rational::new(0, 1), 1).is_err());
+}
+
+#[test]
+fn ranged_proxy_has_zero_based_pts_exact_exclusive_end_and_requested_first_frame() {
+    let (directory, source) = range_fixture("exact");
+    let output = directory.join("range.mp4");
+    generate_proxy_range_at(&source, &output, ProxyQuality::Low, 25..40, 2, |_| true).unwrap();
+    let mut decoder = Decoder::open_software_bounded(&output, 1).unwrap();
+    let mut frames = Vec::new();
+    while let Some((index, frame)) = decoder.next_frame().unwrap() {
+        frames.push((index, frame.y[0]));
+    }
+    assert_eq!(frames.len(), 15);
+    assert_eq!(frames.first().unwrap().0, 0);
+    assert_eq!(frames.last().unwrap().0, 14);
+    assert!(
+        frames[0].1.abs_diff(90) <= 5,
+        "The first output frame must be source frame 25"
+    );
+    assert!(frames[14].1.abs_diff(118) <= 5, "The end is exclusive");
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn ranged_proxy_checks_cancellation_during_preroll_and_before_publication() {
+    let (directory, source) = range_fixture("cancel");
+    let output = directory.join("range.mp4");
+    let mut zero_checks = 0;
+    let result =
+        generate_proxy_range_at(&source, &output, ProxyQuality::Low, 25..40, 1, |written| {
+            if written == 0 {
+                zero_checks += 1;
+            }
+            zero_checks < 4
+        });
+    assert!(matches!(result, Err(crate::MediaError::Cancelled)));
+    assert!(!output.exists());
+    assert!(zero_checks >= 4);
+    let result =
+        generate_proxy_range_at(&source, &output, ProxyQuality::Low, 25..28, 1, |written| {
+            written < 3
+        });
+    assert!(matches!(result, Err(crate::MediaError::Cancelled)));
+    assert!(!output.exists());
+    assert!(
+        !output
+            .with_extension(format!("tmp-{}.mp4", std::process::id()))
+            .exists()
+    );
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn ranged_proxy_keeps_the_native_held_frame_when_the_start_falls_inside_a_timestamp_hole() {
+    let directory =
+        std::env::temp_dir().join(format!("vv-proxy-range-hole-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let source = directory.join("input.mp4");
+    crate::probe::ensure_init();
+    let mut encoder = ProxyEncoder::new(
+        &source,
+        16,
+        16,
+        ProxyQuality::Low,
+        vv_core::Rational::new(25, 1),
+        ColorMatrix::Bt709,
+        false,
+        1,
+    )
+    .unwrap();
+    for (index, luma) in [(0, 40), (1, 60), (4, 140), (5, 160), (6, 180), (7, 200)] {
+        encoder.next_pts = index;
+        encoder
+            .write_frame(&crate::FrameYuv420 {
+                width: 16,
+                height: 16,
+                y: vec![luma; 256],
+                chroma: Chroma::Planar {
+                    u: vec![128; 64],
+                    v: vec![128; 64],
+                },
+                chroma_width: 8,
+                chroma_height: 8,
+                matrix: ColorMatrix::Bt709,
+                full_range: false,
+                alpha: None,
+            })
+            .unwrap();
+    }
+    encoder.finish().unwrap();
+    let output = directory.join("range.mp4");
+    generate_proxy_range_at(&source, &output, ProxyQuality::Low, 2..6, 1, |_| true).unwrap();
+    let mut decoder = Decoder::open_software_bounded(&output, 1).unwrap();
+    let mut lumas = Vec::new();
+    while let Some((_, frame)) = decoder.next_frame().unwrap() {
+        lumas.push(frame.y[0]);
+    }
+    assert_eq!(lumas.len(), 4);
+    for (got, expected) in lumas.into_iter().zip([60, 60, 140, 160]) {
+        assert!(got.abs_diff(expected) <= 6);
+    }
+    std::fs::remove_dir_all(directory).unwrap();
+}
+
 fn make_test_clip(file_name: &str, size: &str, duration_secs: u32) -> PathBuf {
     let dir = std::env::temp_dir().join("vv-media-proxy-test");
     std::fs::create_dir_all(&dir).unwrap();

@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import {createFastTransport,windowPayload} from "../js/fast-transport.js";
 const turn=()=>new Promise(resolve=>setTimeout(resolve,10));
 const version="a".repeat(64);
-function fixture({timers,frame=()=>1,cancelFrame=()=>{}}={}) {
+function fixture({timers,frame=()=>1,cancelFrame=()=>{},queuePause=queueMicrotask}={}) {
   const events={},pending=[],buffers=[],gains=[];
   let target={identity:"p:r:movie",fps:{num:24,den:1},origin:0,url:"/native",query:{project_epoch:"p"}};
-  const video={currentTime:0,duration:10,readyState:4,paused:false,volume:1,muted:false,playbackRate:1,dataset:{},addEventListener:(name,fn)=>(events[name]??=[]).push(fn),removeEventListener(){},pause(){if(this.paused)return;this.paused=true;queueMicrotask(()=>{for(const fn of events.pause || [])fn();});},async play(){this.paused=false;for(const fn of events.play || [])fn();}};
+  const video={currentTime:0,duration:10,readyState:4,paused:false,volume:1,muted:false,playbackRate:1,dataset:{},addEventListener:(name,fn)=>(events[name]??=[]).push(fn),removeEventListener(){},pause(){if(this.paused)return;this.paused=true;queuePause(()=>{const event=new Event('pause');for(const fn of events.pause || [])fn(event);});},async play(){this.paused=false;for(const fn of events.play || [])fn();}};
   const select={value:"8",addEventListener(){}},status={textContent:""};
   const context={state:"running",currentTime:0,destination:{},async resume(){},createGain(){const node={gain:{value:1,setValueAtTime(value){this.value=value;}},connect(){},disconnect(){}};gains.push(node);return node;},createMediaElementSource(){return {connect(){}};},async decodeAudioData(bytes){return {duration:bytes.byteLength/48000/4};},createBufferSource(){const node={connect(){},disconnect(){},start(when){this.when=when;},stop(){this.stopped=true;}};buffers.push(node);return node;}};
   const transport=createFastTransport({videos:[video],select,status,getTarget:()=>target,getVideo:()=>video,contextFactory:()=>context,frame,cancelFrame,timers,fetcher:(url,options)=>new Promise(resolve=>pending.push({resolve,url,body:JSON.parse(options.body)}))});
@@ -126,5 +126,15 @@ test('correcting reports only its active video during an actual drift seek and c
     assert.equal(f.transport.correcting(f.video),false);await f.play();await settle();f.reply(0,0,96_000,true);await settle();timers.fire(50);await settle();
     assert.equal(f.transport.correcting(f.video),false);f.context.currentTime=.3;const [key,callback]=frames.entries().next().value;frames.delete(key);callback();assert.equal(f.transport.correcting(f.video),true);assert.equal(f.transport.correcting({}),false);assert.ok(Math.abs(f.video.currentTime-2)<1e-9);
     for(const seeked of f.events.seeked)seeked();assert.equal(f.transport.correcting(f.video),false);f.transport.stop();assert.equal(f.transport.correcting(f.video),false);assert.equal(frames.size,0);assert.equal(timers.jobs.size,0);
+  }finally{f.transport.stop();}
+});
+
+test('late internal pause tasks are recognizable before and after the fast listener consumes its pending count',async()=>{
+  const tasks=[],f=fixture({queuePause:callback=>tasks.push(callback)}),before=[],after=[];let ownedEvent;
+  f.events.pause.unshift(event=>{ownedEvent ??=event;before.push(f.transport.pausing(f.video,event));});f.events.pause.push(event=>after.push(f.transport.pausing(f.video,event)));
+  try{
+    await f.play();await settle();assert.equal(tasks.length,1);assert.equal(f.transport.pausing(f.video),true);
+    tasks.shift()();assert.deepEqual(before,[true]);assert.deepEqual(after,[true]);assert.equal(f.transport.pausing(f.video),false);assert.equal(f.transport.pausing(f.video,ownedEvent),true);assert.equal(f.transport.pausing(f.video,new Event('pause')),false);
+    f.video.paused=false;f.video.pause();await settle();tasks.shift()();assert.deepEqual(before,[true,false]);assert.deepEqual(after,[true,false]);assert.equal(f.transport.active(),false);assert.equal(f.transport.pausing(f.video,new Event('pause')),false);
   }finally{f.transport.stop();}
 });

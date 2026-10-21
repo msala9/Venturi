@@ -444,9 +444,26 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 
 ## Implemented M3b source delivery
 
-- POST `/api/v1/media/{id}/prepare` with `{project_epoch, quality}` creates or
+- POST `/api/v1/media/{id}/prepare` with `{project_epoch, quality, window?}` creates or
   reuses an ephemeral source job. Quality is low/medium/high. This does not edit
   the project or history. Duplicate identity/quality requests share one job.
+- Optional `window:{start_frame,end_frame}` uses absolute, half-open source
+  frames. It must be nonempty, inside the full source and at most 60 seconds
+  using native rational FPS. The returned `source_window` contains those bounds,
+  full `total_frames`, rational `fps` and an opaque file-identity `source_version`.
+  The job key includes range, quality, epoch, media ID and full file identity.
+  Ranged jobs publish only the requested zero-based movie and skip whole-source
+  thumbnail/waveform scans. Status and asset authorization still bind the full
+  original. Omitting `window` retains legacy full-file behavior and its ten-minute
+  limit; existing Review/Slip callers and original still-image preparation remain.
+- Main Source opens explicit windows, with whole-file slider/numeric navigation,
+  absolute In/Out, timecode, stepping, audition and native fast-audio sample
+  bounds. Seeks must verify the requested frame before publishing a clock.
+  Natural EOF prepares only the following window; paused/manual seeks do not
+  autoplay. Cached attachment, metadata, file version, audio-tail and event
+  ownership guards refuse obsolete or changed media. AAC padding at natural EOF
+  retains the final valid native frame. This does not establish gapless playback
+  or arbitrary delayed-stream timestamp parity.
 - GET `/api/v1/media/{id}/jobs/{job}?project_epoch=...` returns id, state, frames
   and optional error. States: queued, running, ready, failed, canceled.
 - DELETE the same job URL requests cancellation; it never deletes source media.

@@ -36,6 +36,40 @@ const MAX_CACHE_FILES: usize = 16;
 pub struct SourceQuery {
     pub project_epoch: String,
 }
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct SourceWindow {
+    pub start_frame: i64,
+    pub end_frame: i64,
+}
+impl SourceWindow {
+    fn validate(&self, meta: &vv_core::MediaMeta) -> Result<()> {
+        if meta.is_image()
+            || meta.fps.num <= 0
+            || meta.fps.den <= 0
+            || meta.duration_frames <= 0
+            || (!meta.has_video && !meta.has_audio)
+            || (meta.has_video && (meta.width == 0 || meta.height == 0))
+            || (meta.has_audio
+                && (meta.sample_rate == 0 || meta.channels == 0 || meta.audio_streams == 0))
+            || meta.width > 8192
+            || meta.height > 8192
+            || self.start_frame < 0
+            || self.end_frame <= self.start_frame
+            || self.end_frame > meta.duration_frames
+            || i128::from(self.end_frame - self.start_frame) * i128::from(meta.fps.den)
+                > 60 * i128::from(meta.fps.num)
+        {
+            return Err(ApiError::invalid(
+                "Source window must be nonempty, within regular media, at most 60 seconds and 8192 pixels per dimension",
+            ));
+        }
+        Ok(())
+    }
+    fn descriptor(&self, spec: &SourceSpec, identity: &str) -> Value {
+        json!({"start_frame":self.start_frame,"end_frame":self.end_frame,"total_frames":spec.meta.duration_frames,"fps":spec.meta.fps,"source_version":identity})
+    }
+}
 pub struct SourceSpec {
     pub file: File,
     pub epoch: String,
@@ -70,6 +104,7 @@ struct Job {
     touched: Instant,
     export: Option<Arc<Mutex<vv_session::export::ExportProgress>>>,
     descriptor: Option<Value>,
+    source_window: Option<Value>,
     inputs: Inputs,
     source_asset: Option<&'static str>,
     export_epoch: Option<String>,
@@ -109,7 +144,7 @@ impl Job {
             .as_ref()
             .and_then(|stored| stored.record.previous_state.as_ref());
         let revision = self.durable.as_ref().map(StoredExport::revision);
-        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"progress":self.progress_value(),"source_asset":self.source_asset,"project_epoch":self.export_epoch,"durable":self.durable.is_some(),"durability_error":self.durability_error,"cancel_requested":self.explicit_cancel,"previous_state":previous,"export_revision":revision})
+        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"source_window":self.source_window,"progress":self.progress_value(),"source_asset":self.source_asset,"project_epoch":self.export_epoch,"durable":self.durable.is_some(),"durability_error":self.durability_error,"cancel_requested":self.explicit_cancel,"previous_state":previous,"export_revision":revision})
     }
     fn persist(&mut self, store: &ExportStore) -> Result<()> {
         let progress = self.progress_value();
@@ -139,7 +174,7 @@ pub struct MediaJobs {
     exports_blocked: bool,
 }
 enum Work {
-    Source(Box<SourceSpec>, ProxyQuality),
+    Source(Box<SourceSpec>, ProxyQuality, Option<SourceWindow>),
     Program(Box<ProgramTask>),
 }
 impl MediaJobs {
@@ -192,6 +227,7 @@ impl MediaJobs {
                     touched: Instant::now(),
                     export: None,
                     descriptor: Some(stored.record.program.clone()),
+                    source_window: None,
                     inputs: vec![],
                     source_asset: None,
                     export_epoch: Some(stored.record.epoch.clone()),
@@ -238,8 +274,8 @@ impl MediaJobs {
                 };
                 let result =
                     std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match work {
-                        Work::Source(spec, quality) => {
-                            generate(&spec, &directory, quality, &cancel, |frames| {
+                        Work::Source(spec, quality, window) => {
+                            generate(&spec, &directory, quality, window, &cancel, |frames| {
                                 if let Some(job) =
                                     owned.lock().unwrap().iter_mut().find(|j| j.id == id)
                                 {
@@ -328,10 +364,29 @@ impl MediaJobs {
         })
     }
     pub fn prepare(&self, spec: SourceSpec, quality: &str) -> Result<Value> {
+        self.prepare_source(spec, quality, None)
+    }
+    pub fn prepare_window(
+        &self,
+        spec: SourceSpec,
+        quality: &str,
+        window: SourceWindow,
+    ) -> Result<Value> {
+        self.prepare_source(spec, quality, Some(window))
+    }
+    fn prepare_source(
+        &self,
+        spec: SourceSpec,
+        quality: &str,
+        window: Option<SourceWindow>,
+    ) -> Result<Value> {
         let quality = ProxyQuality::from_id(quality)
             .ok_or_else(|| ApiError::invalid("Choose low, medium or high proxy quality"))?;
         let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
-        if (!spec.meta.is_image() && (!seconds.is_finite() || seconds <= 0.0 || seconds > 600.0))
+        if let Some(window) = window {
+            window.validate(&spec.meta)?;
+        } else if (!spec.meta.is_image()
+            && (!seconds.is_finite() || seconds <= 0.0 || seconds > 600.0))
             || spec.meta.width == 0 && spec.meta.has_video
             || spec.meta.height == 0 && spec.meta.has_video
             || spec.meta.width > 8192
@@ -346,13 +401,9 @@ impl MediaJobs {
         } else {
             "source.mp4"
         };
-        let key = format!(
-            "{}:{}:{}:v1:{}",
-            spec.epoch,
-            spec.media_id,
-            spec.identity()?,
-            quality.id()
-        );
+        let identity = spec.identity()?;
+        let key = source_key(&spec, quality, window, &identity);
+        let source_window = window.map(|window| window.descriptor(&spec, &identity));
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs
             .iter_mut()
@@ -387,6 +438,7 @@ impl MediaJobs {
             touched: Instant::now(),
             export: None,
             descriptor: None,
+            source_window,
             program_query: None,
             inputs: vec![],
             source_asset: Some(source_asset),
@@ -397,7 +449,7 @@ impl MediaJobs {
         });
         if self
             .send
-            .try_send((id.clone(), Work::Source(Box::new(spec), quality)))
+            .try_send((id.clone(), Work::Source(Box::new(spec), quality, window)))
             .is_err()
         {
             reject_ephemeral(&mut jobs);
@@ -486,6 +538,7 @@ impl MediaJobs {
             touched: Instant::now(),
             export: Some(Arc::new(Mutex::new(progress))),
             descriptor: Some(descriptor),
+            source_window: None,
             program_query: task.export.is_none().then(|| task.query.clone()),
             inputs,
             source_asset: None,
@@ -688,9 +741,13 @@ impl MediaJobs {
         id: &str,
         spec: &SourceSpec,
     ) -> Result<&'a mut Job> {
-        let prefix = format!("{}:{}:{}:v1:", spec.epoch, spec.media_id, spec.identity()?);
+        let identity = spec.identity()?;
+        let prefix = format!("{}:{}:{}:v1:", spec.epoch, spec.media_id, identity);
+        let ranged_prefix = format!("{}:{}:{}:v2-window:", spec.epoch, spec.media_id, identity);
         jobs.iter_mut()
-            .find(|j| j.id == id && j.key.starts_with(&prefix))
+            .find(|j| {
+                j.id == id && (j.key.starts_with(&prefix) || j.key.starts_with(&ranged_prefix))
+            })
             .ok_or_else(ApiError::missing)
     }
     pub fn status(&self, id: &str, spec: &SourceSpec, cancel: bool) -> Result<Value> {
@@ -728,6 +785,31 @@ impl MediaJobs {
         let file = open_cache_asset(&job.directory.join(name))?;
         job.touch();
         Ok(file)
+    }
+}
+fn source_key(
+    spec: &SourceSpec,
+    quality: ProxyQuality,
+    window: Option<SourceWindow>,
+    identity: &str,
+) -> String {
+    match window {
+        Some(window) => format!(
+            "{}:{}:{}:v2-window:{}:{}:{}",
+            spec.epoch,
+            spec.media_id,
+            identity,
+            quality.id(),
+            window.start_frame,
+            window.end_frame
+        ),
+        None => format!(
+            "{}:{}:{}:v1:{}",
+            spec.epoch,
+            spec.media_id,
+            identity,
+            quality.id()
+        ),
     }
 }
 fn trim(jobs: &mut VecDeque<Job>) {
@@ -945,10 +1027,16 @@ fn generate(
     spec: &SourceSpec,
     directory: &Path,
     quality: ProxyQuality,
+    window: Option<SourceWindow>,
     cancel: &AtomicBool,
     mut progress: impl FnMut(u64),
 ) -> Result<()> {
     if spec.meta.is_image() {
+        if window.is_some() {
+            return Err(ApiError::invalid(
+                "Still sources do not have playback windows",
+            ));
+        }
         return generate_image(spec, directory, cancel);
     }
     let identity = spec.identity()?;
@@ -959,7 +1047,7 @@ fn generate(
     let seconds = actual.duration_frames as f64 / actual.fps.as_f64();
     if !seconds.is_finite()
         || seconds <= 0.0
-        || seconds > 600.0
+        || (window.is_none() && seconds > 600.0)
         || actual.width > 8192
         || actual.height > 8192
         || actual.duration_frames != spec.meta.duration_frames
@@ -970,7 +1058,23 @@ fn generate(
             "Reimport changed media before preparing a source preview",
         ));
     }
-    vv_media::browser_proxy::generate(&path, directory, quality, |frames| {
+    if let Some(window) = window {
+        window.validate(&actual)?;
+        if actual.width != spec.meta.width
+            || actual.height != spec.meta.height
+            || actual.has_video != spec.meta.has_video
+            || actual.has_audio != spec.meta.has_audio
+            || actual.sample_rate != spec.meta.sample_rate
+            || actual.channels != spec.meta.channels
+            || actual.audio_streams != spec.meta.audio_streams
+        {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Reimport changed media before preparing a source preview",
+            ));
+        }
+    }
+    let mut keep_running = |frames| {
         if frames > 0 {
             progress(frames);
         }
@@ -978,11 +1082,21 @@ fn generate(
             && started.elapsed() < Duration::from_secs(600)
             && directory_bytes(directory) < MAX_JOB_BYTES
             && disk_headroom(directory)
-    })
-    .map_err(|_| {
+    };
+    let generated = match window {
+        Some(window) => vv_media::browser_proxy::generate_range(
+            &path,
+            directory,
+            quality,
+            window.start_frame..window.end_frame,
+            &mut keep_running,
+        ),
+        None => vv_media::browser_proxy::generate(&path, directory, quality, &mut keep_running),
+    };
+    generated.map_err(|_| {
         ApiError::invalid("Source generation failed, canceled or exceeded its resource budget")
     })?;
-    if spec.meta.has_video {
+    if window.is_none() && spec.meta.has_video {
         let thumb = vv_media::thumbnail::generate_thumbnail_bounded(
             &path,
             spec.meta.duration_frames as f64 / spec.meta.fps.as_f64(),
@@ -995,7 +1109,7 @@ fn generate(
         )
         .map_err(|_| ApiError::io())?;
     }
-    if spec.meta.has_audio {
+    if window.is_none() && spec.meta.has_audio {
         let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
         let waveforms = vv_media::waveform::analyze_waveforms(
             &path,

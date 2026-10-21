@@ -222,6 +222,10 @@
               <span id="source-status" role="status">Select media and open Source</span>
               <label>Proxy quality <select id="source-quality" aria-label="Source proxy quality"><option value="low">Low · 640</option><option value="medium" selected>Medium · 960</option><option value="high">High · 1920</option></select></label>
               <button id="source-cancel" disabled>Cancel preparation</button>
+              <label>Source position (full file) <input id="source-position" type="range" min="0" max="0" step="1" value="0" disabled></label>
+              <label>Go to source frame <input id="source-seek-frame" type="number" min="0" step="1" value="0" disabled></label>
+              <button id="source-seek" disabled>Seek source</button>
+              <output id="source-position-status" aria-live="polite"></output>
               <label>Source in frame <input id="source-in" type="number" min="0" step="1" value="0"></label>
               <label>Source out frame (exclusive) <input id="source-out" type="number" min="1" step="1" value="1"></label>
               <button id="source-mark-in" title="I · current source frame">Set In</button>

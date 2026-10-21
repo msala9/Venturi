@@ -13,6 +13,7 @@ fn cache_fixture_job(directory: PathBuf, state: &'static str, bytes: u64) -> Job
         touched: Instant::now(),
         export: None,
         descriptor: None,
+        source_window: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
         export_epoch: None,
@@ -33,6 +34,284 @@ fn cache_fixture_root(label: &str) -> PathBuf {
     ));
     std::fs::create_dir(&path).unwrap();
     path
+}
+
+fn window_fixture_meta() -> vv_core::MediaMeta {
+    vv_core::MediaMeta {
+        duration_frames: 48_000,
+        fps: vv_core::Rational::new(24, 1),
+        width: 16,
+        height: 16,
+        has_video: true,
+        has_audio: false,
+        sample_rate: 0,
+        channels: 0,
+        audio_streams: 0,
+        file: Default::default(),
+    }
+}
+fn cloned_source(spec: &SourceSpec) -> SourceSpec {
+    SourceSpec {
+        file: spec.file.try_clone().unwrap(),
+        epoch: spec.epoch.clone(),
+        media_id: spec.media_id.clone(),
+        meta: spec.meta.clone(),
+    }
+}
+
+#[test]
+fn source_window_dto_and_rational_validation_admit_short_windows_of_long_sources_only() {
+    let window: SourceWindow =
+        serde_json::from_value(json!({"start_frame":25,"end_frame":37})).unwrap();
+    let mut meta = window_fixture_meta();
+    assert!(window.validate(&meta).is_ok());
+    assert!(meta.duration_frames as f64 / meta.fps.as_f64() > 600.);
+    for value in [
+        json!({"start_frame":1,"end_frame":2,"extra":true}),
+        json!({"start_frame":0.5,"end_frame":2}),
+        json!({"start_frame":1}),
+    ] {
+        assert!(serde_json::from_value::<SourceWindow>(value).is_err());
+    }
+    for (start_frame, end_frame) in [(-1, 1), (1, 1), (2, 1), (0, 48_001), (0, 1441)] {
+        assert!(
+            SourceWindow {
+                start_frame,
+                end_frame
+            }
+            .validate(&meta)
+            .is_err()
+        );
+    }
+    meta.fps = vv_core::Rational::new(24_000, 1001);
+    assert!(
+        SourceWindow {
+            start_frame: 10,
+            end_frame: 1448
+        }
+        .validate(&meta)
+        .is_ok()
+    );
+    assert!(
+        SourceWindow {
+            start_frame: 10,
+            end_frame: 1449
+        }
+        .validate(&meta)
+        .is_err()
+    );
+    for invalid in [
+        vv_core::MediaMeta {
+            width: 0,
+            ..window_fixture_meta()
+        },
+        vv_core::MediaMeta {
+            height: 8193,
+            ..window_fixture_meta()
+        },
+        vv_core::MediaMeta {
+            fps: vv_core::Rational::new(0, 1),
+            ..window_fixture_meta()
+        },
+        vv_core::MediaMeta {
+            duration_frames: 0,
+            ..window_fixture_meta()
+        },
+        vv_core::MediaMeta {
+            duration_frames: vv_core::IMAGE_DURATION_FRAMES,
+            ..window_fixture_meta()
+        },
+        vv_core::MediaMeta {
+            has_video: false,
+            has_audio: false,
+            ..window_fixture_meta()
+        },
+        vv_core::MediaMeta {
+            has_audio: true,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            ..window_fixture_meta()
+        },
+    ] {
+        assert!(window.validate(&invalid).is_err());
+    }
+}
+
+#[test]
+fn source_window_keys_preserve_legacy_v1_and_separate_range_quality_epoch_and_full_file_identity() {
+    let root = cache_fixture_root("window-keys");
+    let path = root.join("input");
+    std::fs::write(&path, b"small").unwrap();
+    let mut spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "source:1".into(),
+        media_id: "9007199254740993".into(),
+        meta: window_fixture_meta(),
+    };
+    let identity = spec.identity().unwrap();
+    let window = SourceWindow {
+        start_frame: 25,
+        end_frame: 37,
+    };
+    assert_eq!(
+        source_key(&spec, ProxyQuality::Low, None, &identity),
+        format!("source:1:9007199254740993:{identity}:v1:low")
+    );
+    let key = source_key(&spec, ProxyQuality::Low, Some(window), &identity);
+    assert_ne!(key, source_key(&spec, ProxyQuality::Low, None, &identity));
+    assert_ne!(
+        key,
+        source_key(
+            &spec,
+            ProxyQuality::Low,
+            Some(SourceWindow {
+                start_frame: 26,
+                end_frame: 38
+            }),
+            &identity
+        )
+    );
+    assert_ne!(
+        key,
+        source_key(&spec, ProxyQuality::High, Some(window), &identity)
+    );
+    spec.epoch = "source:2".into();
+    assert_ne!(
+        key,
+        source_key(&spec, ProxyQuality::Low, Some(window), &identity)
+    );
+    spec.epoch = "source:1".into();
+    std::fs::write(&path, b"different file identity").unwrap();
+    assert_ne!(
+        key,
+        source_key(
+            &spec,
+            ProxyQuality::Low,
+            Some(window),
+            &spec.identity().unwrap()
+        )
+    );
+    std::fs::remove_file(path).unwrap();
+    std::fs::remove_dir(root).unwrap();
+}
+
+#[test]
+fn cached_window_of_a_long_source_reuses_only_its_exact_version_and_keeps_program_descriptor_empty()
+{
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("input");
+    std::fs::write(&path, b"original").unwrap();
+    let mut spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "window:1".into(),
+        media_id: "9007199254740993".into(),
+        meta: window_fixture_meta(),
+    };
+    let identity = spec.identity().unwrap();
+    let window = SourceWindow {
+        start_frame: 1000,
+        end_frame: 1012,
+    };
+    let directory = service.root.join("cached-window");
+    std::fs::create_dir(&directory).unwrap();
+    std::fs::write(directory.join("source.mp4"), b"window").unwrap();
+    let mut job = cache_fixture_job(directory, "ready", 6);
+    job.key = source_key(&spec, ProxyQuality::Low, Some(window), &identity);
+    job.source_window = Some(window.descriptor(&spec, &identity));
+    job.touched = Instant::now() - Duration::from_secs(90);
+    service.jobs.lock().unwrap().push_back(job);
+    let result = service
+        .prepare_window(cloned_source(&spec), "low", window)
+        .unwrap();
+    assert_eq!(result["id"], "cache-fixture");
+    assert_eq!(
+        result["source_window"],
+        json!({"start_frame":1000,"end_frame":1012,"total_frames":48_000,"fps":{"num":24,"den":1},"source_version":identity})
+    );
+    assert!(result["program"].is_null());
+    assert!(
+        service.prepare(cloned_source(&spec), "low").is_err(),
+        "Legacy full-file preparation keeps its ten-minute cap"
+    );
+    assert!(service.status("cache-fixture", &spec, false).is_ok());
+    assert!(service.asset("cache-fixture", &spec, "source.mp4").is_ok());
+    spec.epoch = "window:2".into();
+    assert!(service.status("cache-fixture", &spec, false).is_err());
+    spec.epoch = "window:1".into();
+    spec.media_id = "other".into();
+    assert!(service.asset("cache-fixture", &spec, "source.mp4").is_err());
+    spec.media_id = "9007199254740993".into();
+    std::fs::write(path, b"updated original source").unwrap();
+    assert!(service.status("cache-fixture", &spec, false).is_err());
+    assert!(service.asset("cache-fixture", &spec, "source.mp4").is_err());
+}
+
+#[test]
+fn twelve_frame_source_window_job_publishes_only_its_ranged_movie_and_reuses_the_ready_job() {
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("input.mp4");
+    let settings = vv_media::VideoSettings {
+        preset: "ultrafast".into(),
+        ..Default::default()
+    };
+    let mut encoder =
+        vv_media::Encoder::new(&path, 16, 16, vv_core::Rational::new(1, 1), &settings, None)
+            .unwrap();
+    let mut frame = vec![64; 256];
+    frame.extend(vec![128; 128]);
+    for _ in 0..601 {
+        encoder.write_video_frame(&frame).unwrap();
+    }
+    encoder.finish().unwrap();
+    let original = std::fs::read(&path).unwrap();
+    assert!(original.len() <= 512 * 1024);
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "window:1".into(),
+        media_id: "1".into(),
+        meta: vv_media::probe_media(&path).unwrap(),
+    };
+    let window = SourceWindow {
+        start_frame: 589,
+        end_frame: 601,
+    };
+    let pending = service
+        .prepare_window(cloned_source(&spec), "low", window)
+        .unwrap();
+    let id = pending["id"].as_str().unwrap();
+    assert!(pending["program"].is_null());
+    assert_eq!(pending["source_window"]["total_frames"], 601);
+    let started = Instant::now();
+    loop {
+        let status = service.status(id, &spec, false).unwrap();
+        if status["state"] == "ready" {
+            break;
+        }
+        assert!(
+            !matches!(status["state"].as_str(), Some("failed" | "canceled")),
+            "{status}"
+        );
+        assert!(started.elapsed() < Duration::from_secs(10));
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let asset = service.asset(id, &spec, "source.mp4").unwrap();
+    let anchored = PathBuf::from(format!("/proc/self/fd/{}", asset.as_raw_fd()));
+    let mut decoder = vv_media::Decoder::open_software_bounded(&anchored, 1).unwrap();
+    let mut count = 0;
+    while decoder.next_frame().unwrap().is_some() {
+        count += 1;
+    }
+    assert_eq!(count, 12);
+    assert!(service.asset(id, &spec, "thumb.png").is_err());
+    assert!(service.asset(id, &spec, "waveform.json").is_err());
+    assert_eq!(
+        service
+            .prepare_window(cloned_source(&spec), "low", window)
+            .unwrap()["id"],
+        pending["id"]
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), original);
 }
 
 #[test]
@@ -487,6 +766,7 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         touched: Instant::now(),
         export: None,
         descriptor: None,
+        source_window: None,
         program_query: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
@@ -526,6 +806,7 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
         touched: Instant::now(),
         export: None,
         descriptor: None,
+        source_window: None,
         program_query: None,
         inputs: vec![(
             jobs.root.join("source-no-longer-present"),
@@ -685,6 +966,7 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
         touched: Instant::now(),
         export: None,
         descriptor: None,
+        source_window: None,
         inputs: vec![],
         source_asset: None,
         export_epoch: None,

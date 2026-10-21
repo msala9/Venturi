@@ -6,7 +6,7 @@ export function windowPayload(target,start,seconds,tempo,version) {
 }
 export function createFastTransport({videos,select,status,getTarget,getVideo,notice,onState=()=>{},fetcher=fetch,contextFactory=()=>new AudioContext(),frame=requestAnimationFrame,cancelFrame=cancelAnimationFrame,timers=globalThis}) {
   let context=null,active=null,sequence=0;
-  const routes=new Map(),blocked=new Map(),ignoredPauses=new WeakMap(),windowOutcomes=new WeakMap();
+  const routes=new Map(),blocked=new Map(),ignoredPauses=new WeakMap(),windowOutcomes=new WeakMap(),pauseEvents=new WeakSet();
   const rate=()=>Number(select.value);
   function pauseInternal(video) {
     if(video.paused)return;
@@ -171,9 +171,9 @@ export function createFastTransport({videos,select,status,getTarget,getVideo,not
       if(active?.video===video && active.starting){active.starting=false;active.started=true;onState("playing");return;}
       if(rate()!==1)start(video);else context?.resume().catch(()=>{});
     });
-    video.addEventListener("pause",()=>{
+    video.addEventListener("pause",event=>{
       const ignored=ignoredPauses.get(video) || 0;
-      if(ignored){ignoredPauses.set(video,ignored-1);return;}
+      if(ignored){if(event && typeof event==='object')pauseEvents.add(event);ignoredPauses.set(video,ignored-1);return;}
       if(active?.video===video){if(video.ended || (Number.isFinite(video.duration) && video.currentTime>=video.duration-.00001))ended(active);else stop("pause");}
     });
     video.addEventListener("seeking",()=>{
@@ -187,5 +187,5 @@ export function createFastTransport({videos,select,status,getTarget,getVideo,not
     video.addEventListener("volumechange",()=>{if(active?.video===video)volume(active);});
     video.addEventListener("ratechange",()=>{if(active?.video===video && video.playbackRate!==active.tempo)stop();});
   }
-  return {stop,normal,finishWindow,correcting:video=>Boolean(active?.video===video && active.correcting),active:()=>!!active,cancelPreparation(){if(active && !active.started){stop();return true;}return false;}};
+  return {stop,normal,finishWindow,correcting:video=>Boolean(active?.video===video && active.correcting),pausing:(video,event)=>Boolean(ignoredPauses.get(video) || (event && pauseEvents.has(event))),active:()=>!!active,cancelPreparation(){if(active && !active.started){stop();return true;}return false;}};
 }

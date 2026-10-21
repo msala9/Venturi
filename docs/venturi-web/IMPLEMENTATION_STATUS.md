@@ -1599,3 +1599,27 @@ acceptance dragged the paused Source bar from zero to 1.37181 seconds, showed
 Source 00:00:01:11 and reached Native audio · 80 ms with the native project Saved.
 The audio scrub parity row is now complete for the required release-based web
 interaction. Evidence: m5-source-pointer-scrub.png and m5-audio-scrub.json.
+
+The 5586798 Source-pointer build is deployed on halo2, SHA-256
+11aab00407571166ab7494e074bf47d4be4cdbde6d7a4642f17aa18143eae666.
+The embedded module hash, saved shared project, exact provenance seed, Favorite,
+native silent fragment and CPU-only isolation were checked again in
+m5-halo2-audio-scrub.json. No hardware lock was probed or acquired.
+
+## M4 — close stale Source range and clip-disable ledger entries
+
+The Source In/Out row still referred to a missing dual-frame Slip viewer despite
+the later native-slip acceptance. The ledger now links that evidence together
+with native exclusive-bound insertion tests and the corrected Source frame/mark
+acceptance. Long-media proxy limits remain tracked under Source viewer/Slip.
+The marker entry now names its actual outstanding pointer-move interaction.
+
+Clip Disable/Enable also had the unrelated old Slip note. Actual acceptance on
+a separate synthetic montage copy disabled both linked video/audio clips in one
+ToggleClipsDisabled Undo entry, returned a completely black native composed frame,
+and retained IDs/start/duration/media. Undo restored the exact original preview
+hash. Redo followed by explicit Enable restored that hash again. Save/Open retained
+enabled flags with fresh history; the restored native saved project was byte-equal
+to the source project. The core command is unchanged. Evidence:
+m4-clip-disable.json and m4-clip-disable-browser.png. Rendering was CPU/lavapipe;
+no hardware acceptance is implied by this check.

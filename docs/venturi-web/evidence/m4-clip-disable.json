@@ -1,0 +1,157 @@
+{
+  "fixture": "Own CPU synthetic montage copy; both linked clip kinds, frame 0",
+  "phases": {
+    "before": {
+      "clips": [
+        {
+          "id": "1",
+          "disabled": false,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        },
+        {
+          "id": "0",
+          "disabled": false,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        }
+      ],
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "preview_rgb_mean": [
+        128.11063368055557,
+        127.069296875,
+        133.69293836805556
+      ],
+      "preview_sha256": "4dbaaaccfe577962f6725d8e189d3d81366f1ddd99181e7a15cc784f7a259570"
+    },
+    "disabled": {
+      "clips": [
+        {
+          "id": "1",
+          "disabled": true,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        },
+        {
+          "id": "0",
+          "disabled": true,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        }
+      ],
+      "history": {
+        "labels": [
+          "ToggleClipsDisabled"
+        ],
+        "position": 1
+      },
+      "unsaved": true,
+      "preview_rgb_mean": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "preview_sha256": "8dc12735410c690f70249f841a2bb9b6ad0926a17ed7c678d149b8a9f5f0e285"
+    },
+    "undo": {
+      "clips": [
+        {
+          "id": "1",
+          "disabled": false,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        },
+        {
+          "id": "0",
+          "disabled": false,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        }
+      ],
+      "history": {
+        "labels": [
+          "ToggleClipsDisabled"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "preview_rgb_mean": [
+        128.11063368055557,
+        127.069296875,
+        133.69293836805556
+      ],
+      "preview_sha256": "4dbaaaccfe577962f6725d8e189d3d81366f1ddd99181e7a15cc784f7a259570"
+    },
+    "enabled_saved": {
+      "clips": [
+        {
+          "id": "1",
+          "disabled": false,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        },
+        {
+          "id": "0",
+          "disabled": false,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        }
+      ],
+      "history": {
+        "labels": [
+          "ToggleClipsDisabled",
+          "ToggleClipsDisabled"
+        ],
+        "position": 2
+      },
+      "unsaved": false,
+      "preview_rgb_mean": [
+        128.11063368055557,
+        127.069296875,
+        133.69293836805556
+      ],
+      "preview_sha256": "4dbaaaccfe577962f6725d8e189d3d81366f1ddd99181e7a15cc784f7a259570"
+    },
+    "reopened": {
+      "clips": [
+        {
+          "id": "1",
+          "disabled": false,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        },
+        {
+          "id": "0",
+          "disabled": false,
+          "start": 0,
+          "length": 60,
+          "media": "3"
+        }
+      ],
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "preview_rgb_mean": [
+        128.11063368055557,
+        127.069296875,
+        133.69293836805556
+      ],
+      "preview_sha256": "4dbaaaccfe577962f6725d8e189d3d81366f1ddd99181e7a15cc784f7a259570"
+    }
+  }
+}

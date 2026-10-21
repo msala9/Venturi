@@ -1,5 +1,36 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+`POST /api/v1/media/imports/prepare` accepts strict
+`{project_epoch,if_generation,path_tokens}` for 1–256 unique project-root files.
+First occurrence order is retained; up to 4096 raw selections may contain
+duplicates. The file list uses native `vv_media::is_media_path`, including native
+AVI/M4V/AAC/BMP/TIF/TIFF extensions. Preparation does not change the project.
+The existing single asset worker probes one pinned regular file at a time in
+the native subprocess, with 512 MiB address space, ten CPU seconds and at most
+20 wall seconds per file. A batch has a 600-second processing budget; exhausted
+files become explicit errors, while prepared successes remain available.
+Root media bytes are not copied or limited to the asset store's 512 MiB input
+limit. At most 256 source witnesses are retained across import jobs.
+
+`GET`/`DELETE /api/v1/media/imports/{job}?project_epoch=...` return no-store jobs
+with `kind:"media_import"`, `progress:{completed,total}` and, when ready,
+`result:{items:[{path_token,name,state:"ready"}],errors:[{path_token,name,code,
+message,status}]}`. Each partition preserves selection order. Cancel and obsolete
+epochs prevent later application; a cancellation after acceptance returns applied.
+The ordinary project mutation `import_prepared_media{job_id}` rechecks the writer
+lease, epoch, generation and source identities, validates the complete native
+project, then applies one `AddEntities(ImportMedia)` command for new media.
+Existing paths are reused without a new history step. Receipts include ordered
+`media_ids` for every success and the per-file `errors`; ordinary autosave,
+idempotency and command lookup apply. Legacy `import_media{path_token}` keeps
+its serialized shape and follows the same off-actor preparation before commit.
+The receipt journal remains limited to 8 MiB/4096 entries; individual records
+allow up to 1 MiB for a batch's IDs and errors. The in-memory receipt window
+also retires by bytes before native preparation or another large import result;
+expired command epochs require refresh and never authorize blind replay.
+The browser's single Import selected files action prepares then commits its
+still-current selection, selects all successes and opens the last in Source.
+
 Each timeline snapshot includes full native `transition_defaults` for Push,
 CrossDissolve and SmoothCut. Desktop FPS rounding, direction, default easing and
 curve are computed in Rust; durations are not yet clamped to a destination slot.

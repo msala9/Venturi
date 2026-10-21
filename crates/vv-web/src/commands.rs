@@ -72,6 +72,9 @@ pub enum Operation {
     ImportMedia {
         path_token: String,
     },
+    ImportPreparedMedia {
+        job_id: String,
+    },
     PublishNativeAsset {
         job_id: String,
     },
@@ -476,6 +479,11 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         Operation::ImportNativeAsset { .. } => {
             return Err(ApiError::invalid(
                 "Native asset imports require the project command endpoint",
+            ));
+        }
+        Operation::ImportPreparedMedia { .. } => {
+            return Err(ApiError::invalid(
+                "Media imports require the project command endpoint",
             ));
         }
         Operation::RenameTimeline { name } | Operation::DuplicateTimeline { name } => {

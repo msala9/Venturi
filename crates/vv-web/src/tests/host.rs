@@ -1,5 +1,310 @@
 use super::*;
 
+#[test]
+fn large_import_receipts_retire_the_cache_by_bytes_before_new_preparation() {
+    let (root, mut editor, _) = native_asset_fixture("receipt-byte-budget");
+    let epoch = editor.command_epoch;
+    for index in 0..16 {
+        editor.completed.insert(
+            format!("large-{index}"),
+            (
+                [0; 32],
+                Ok(json!({"status":"applied","errors":"x".repeat(1024*1024-1024)})),
+            ),
+        );
+    }
+    assert!(editor.completed.len() < MAX_RECEIPTS);
+    assert_eq!(
+        editor.native_command_capacity().unwrap_err().1,
+        "COMMAND_EPOCH_EXPIRED"
+    );
+    assert!(editor.completed.is_empty());
+    assert_eq!(editor.command_epoch, epoch + 1);
+    editor.native_command_capacity().unwrap();
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn concurrent_legacy_import_owners_return_the_same_applied_or_failed_actor_outcome() {
+    for succeeds in [true, false] {
+        let (root, mut editor, _) = native_asset_fixture(if succeeds {
+            "replay-applied"
+        } else {
+            "replay-failed"
+        });
+        if succeeds {
+            std::fs::copy(root.join("capture.wav"), root.join("replay.wav")).unwrap();
+        } else {
+            std::fs::write(root.join("replay.wav"), b"invalid media").unwrap();
+        }
+        let command = request(
+            &editor,
+            Operation::ImportMedia {
+                path_token: "replay.wav".into(),
+            },
+            "concurrent-import",
+            None,
+        );
+        let NativeEditPreparation::Pending(mut first) =
+            editor.prepare_legacy_media_import(command.clone()).unwrap()
+        else {
+            panic!("Expected the first preparation");
+        };
+        let status = first.jobs.status(&first.job, &first.epoch, false).unwrap();
+        native_wait(&mut editor, &status);
+        let NativeEditPreparation::Pending(second) =
+            editor.prepare_legacy_media_import(command.clone()).unwrap()
+        else {
+            panic!("Expected a shared second preparation");
+        };
+        assert_eq!(first.job, second.job);
+        // Both requests own the job before the first actor commit; the second polls later.
+        let original = editor.mutation(None, command.clone());
+        if succeeds {
+            first.armed = false;
+            assert_eq!(
+                first.jobs.status(&first.job, &first.epoch, false).unwrap()["state"],
+                "applied"
+            );
+        }
+        drop(first);
+        let expected = editor.snapshot();
+        let host = Host::run(editor).unwrap();
+        let replay = host.finish_media_import(command.clone(), second).await;
+        match (&original, replay) {
+            (Ok(receipt), Ok(replayed)) => assert_eq!(&replayed, receipt),
+            (Err(error), Err(replayed)) => {
+                assert_eq!(replayed.0, error.0);
+                assert_eq!(replayed.1, error.1);
+                assert_eq!(replayed.2, error.2);
+                assert_eq!(replayed.0, axum::http::StatusCode::UNPROCESSABLE_ENTITY);
+            }
+            (original, replayed) => {
+                panic!("Concurrent import outcome changed: {original:?} -> {replayed:?}")
+            }
+        }
+        let retry = host.project_mutation(command).await;
+        match (original, retry) {
+            (Ok(receipt), Ok(replayed)) => assert_eq!(replayed, receipt),
+            (Err(error), Err(replayed)) => {
+                assert_eq!(replayed.0, error.0);
+                assert_eq!(replayed.1, error.1);
+                assert_eq!(replayed.2, error.2);
+            }
+            (original, replayed) => {
+                panic!("Known import outcome changed: {original:?} -> {replayed:?}")
+            }
+        }
+        let after = host.call(Action::Session).await.unwrap();
+        assert_eq!(after["history"], expected["history"]);
+        assert_eq!(after["media"], expected["media"]);
+        assert_eq!(after["generation"], expected["generation"]);
+        drop(host);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+fn prepare_import_batch(editor: &mut Editor, tokens: &[&str]) -> Value {
+    let job = editor
+        .handle(Action::PrepareMediaImport(MediaImportRequest {
+            project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+            if_generation: editor.session.history.generation().to_string(),
+            path_tokens: tokens.iter().map(|token| (*token).to_owned()).collect(),
+        }))
+        .unwrap();
+    native_wait(editor, &job)
+}
+#[test]
+fn prepared_media_import_preserves_order_partial_errors_native_hashes_and_one_undo() {
+    use vv_core::Id;
+    let (root, mut editor, existing) = native_asset_fixture("batch");
+    let wav = std::fs::read(root.join("capture.wav")).unwrap();
+    std::fs::write(root.join("first.wav"), &wav).unwrap();
+    std::fs::write(root.join("second.wav"), &wav).unwrap();
+    std::fs::write(root.join("bad.wav"), b"not media").unwrap();
+    let position = editor.session.history.position();
+    let generation = editor.session.history.generation();
+    let ready = prepare_import_batch(
+        &mut editor,
+        &[
+            "second.wav",
+            "bad.wav",
+            "capture.wav",
+            "first.wav",
+            "second.wav",
+        ],
+    );
+    assert_eq!(ready["kind"], "media_import");
+    assert_eq!(ready["progress"], json!({"completed":4,"total":4}));
+    assert_eq!(
+        ready["result"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| item["path_token"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        ["second.wav", "capture.wav", "first.wav"]
+    );
+    assert_eq!(ready["result"]["errors"][0]["path_token"], "bad.wav");
+    assert_eq!(editor.session.history.generation(), generation);
+    let command = request(
+        &editor,
+        Operation::ImportPreparedMedia {
+            job_id: ready["id"].as_str().unwrap().into(),
+        },
+        "batch-import",
+        None,
+    );
+    let receipt = editor.mutation(None, command.clone()).unwrap();
+    let ids = receipt["media_ids"].as_array().unwrap();
+    assert_eq!(ids.len(), 3);
+    assert_eq!(ids[1], existing.raw().to_string());
+    assert_eq!(receipt["errors"], ready["result"]["errors"]);
+    assert_eq!(editor.session.history.position(), position + 1);
+    let imported = ids
+        .iter()
+        .map(|id| vv_core::MediaId::from_raw(id.as_str().unwrap().parse().unwrap()))
+        .collect::<Vec<_>>();
+    for (id, name) in [(imported[0], "second.wav"), (imported[2], "first.wav")] {
+        let item = &editor.session.project.media_pool[id];
+        assert_eq!(item.path, root.join(name));
+        assert_eq!(
+            item.content_hash,
+            vv_media::content_fingerprint(&root.join(name)).unwrap()
+        );
+    }
+    assert_eq!(editor.mutation(None, command).unwrap(), receipt);
+    assert_eq!(editor.session.history.position(), position + 1);
+    let undo = request(&editor, Operation::Undo, "undo-batch", None);
+    editor.mutation(None, undo).unwrap();
+    assert!(editor.session.project.media_pool.contains_key(existing));
+    assert!(!editor.session.project.media_pool.contains_key(imported[0]));
+    assert!(!editor.session.project.media_pool.contains_key(imported[2]));
+    let redo = request(&editor, Operation::Redo, "redo-batch", None);
+    editor.mutation(None, redo).unwrap();
+    assert!(
+        imported
+            .iter()
+            .all(|id| editor.session.project.media_pool.contains_key(*id))
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn prepared_media_import_refuses_canceled_changed_and_stale_batches_before_native_allocation() {
+    let (root, mut editor, _) = native_asset_fixture("batch-guards");
+    let wav = std::fs::read(root.join("capture.wav")).unwrap();
+    std::fs::write(root.join("guard.wav"), &wav).unwrap();
+    let ready = prepare_import_batch(&mut editor, &["guard.wav"]);
+    let command = request(
+        &editor,
+        Operation::ImportPreparedMedia {
+            job_id: ready["id"].as_str().unwrap().into(),
+        },
+        "canceled-batch",
+        None,
+    );
+    let before = ron::to_string(&editor.session.project).unwrap();
+    let position = editor.session.history.position();
+    editor.lease = Some(("another-browser".into(), Instant::now()));
+    assert_eq!(
+        editor.mutation(None, command.clone()).unwrap_err().1,
+        "READ_ONLY"
+    );
+    editor.lease = None;
+    editor
+        .handle(Action::MediaImportStatus(
+            ready["id"].as_str().unwrap().into(),
+            SourceQuery {
+                project_epoch: command.project_epoch.clone(),
+            },
+            true,
+        ))
+        .unwrap();
+    assert!(editor.mutation(None, command).is_err());
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), before);
+    assert_eq!(editor.session.history.position(), position);
+    let ready = prepare_import_batch(&mut editor, &["guard.wav"]);
+    let command = request(
+        &editor,
+        Operation::ImportPreparedMedia {
+            job_id: ready["id"].as_str().unwrap().into(),
+        },
+        "changed-batch",
+        None,
+    );
+    let mut changed = wav.clone();
+    changed.push(0);
+    std::fs::write(root.join("guard.wav"), changed).unwrap();
+    assert_eq!(
+        editor.mutation(None, command).unwrap_err().1,
+        "SOURCE_CHANGED"
+    );
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), before);
+    std::fs::write(root.join("guard.wav"), &wav).unwrap();
+    let ready = prepare_import_batch(&mut editor, &["guard.wav"]);
+    let stale = request(
+        &editor,
+        Operation::ImportPreparedMedia {
+            job_id: ready["id"].as_str().unwrap().into(),
+        },
+        "stale-batch",
+        None,
+    );
+    let create = request(
+        &editor,
+        Operation::NewTimeline {
+            name: "Changed".into(),
+            fps: Rational::new(24, 1),
+            resolution: [640, 360],
+        },
+        "timeline-before-batch",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let changed = ron::to_string(&editor.session.project).unwrap();
+    assert_eq!(
+        editor.mutation(None, stale).unwrap_err().1,
+        "REVISION_CONFLICT"
+    );
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), changed);
+    let save = request(&editor, Operation::Save, "save-before-batch-switch", None);
+    editor.mutation(None, save).unwrap();
+    let ready = prepare_import_batch(&mut editor, &["guard.wav"]);
+    let old_epoch = ready["project_epoch"].as_str().unwrap().to_owned();
+    let switch = request(
+        &editor,
+        Operation::NewProject {
+            name: "new-batch-project".into(),
+        },
+        "switch-batch-project",
+        None,
+    );
+    editor.mutation(None, switch).unwrap();
+    let canceled = editor
+        .handle(Action::MediaImportStatus(
+            ready["id"].as_str().unwrap().into(),
+            SourceQuery {
+                project_epoch: old_epoch,
+            },
+            true,
+        ))
+        .unwrap();
+    assert_eq!(canceled["state"], "canceled");
+    assert!(
+        editor
+            .session
+            .project
+            .media_pool
+            .values()
+            .all(|item| item.compound.is_some())
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn folder_editor() -> (std::path::PathBuf, Editor) {
     let root = std::env::temp_dir().join(format!(
         "vv-folder-command-{}-{}",

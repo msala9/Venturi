@@ -6,6 +6,312 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn media_import_http_batch_is_explicit_native_single_undo_and_legacy_import_uses_worker() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-import-http-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let host = Host::start(&root).unwrap();
+    let session = host.call(Action::Session).await.unwrap();
+    let mutation = |state: &Value, id: &str, operation: Value| json!({"command_id":id,"client_id":"import-browser","command_epoch":state["command_epoch"],"project_epoch":state["project_epoch"],"if_generation":state["generation"],"if_revision":null,"operation":operation});
+    host.project_mutation(
+        serde_json::from_value(mutation(
+            &session,
+            "new-import-project",
+            json!({"kind":"new_project","name":"imports"}),
+        ))
+        .unwrap(),
+    )
+    .await
+    .unwrap();
+    let session = host.call(Action::Session).await.unwrap();
+    let epoch = session["project_epoch"].as_str().unwrap();
+    let mut wav = Vec::new();
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&1636u32.to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    wav.extend_from_slice(&16u32.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&1u16.to_le_bytes());
+    wav.extend_from_slice(&8000u32.to_le_bytes());
+    wav.extend_from_slice(&16000u32.to_le_bytes());
+    wav.extend_from_slice(&2u16.to_le_bytes());
+    wav.extend_from_slice(&16u16.to_le_bytes());
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&1600u32.to_le_bytes());
+    wav.resize(1644, 0);
+    std::fs::write(root.join("first.wav"), &wav).unwrap();
+    std::fs::write(root.join("second.wav"), &wav).unwrap();
+    std::fs::write(root.join("bad.wav"), b"not media").unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let make = |method: &str, path: &str, body: Value| {
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("content-type", "application/json")
+            .body(if body.is_null() {
+                Body::empty()
+            } else {
+                Body::from(body.to_string())
+            })
+            .unwrap()
+    };
+    for body in [
+        json!({"project_epoch":epoch,"if_generation":session["generation"],"path_tokens":[],"force":true}),
+        json!({"project_epoch":epoch,"if_generation":session["generation"],"path_tokens":["../escape.wav"]}),
+        json!({"project_epoch":epoch,"if_generation":session["generation"],"path_tokens":(0..257).map(|n|format!("file-{n}.wav")).collect::<Vec<_>>()}),
+    ] {
+        assert_eq!(
+            app.clone()
+                .oneshot(make("POST", "/api/v1/media/imports/prepare", body))
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::UNPROCESSABLE_ENTITY
+        );
+    }
+    let prepare = json!({"project_epoch":epoch,"if_generation":session["generation"],"path_tokens":["second.wav","bad.wav","first.wav","second.wav"]});
+    let mut foreign = make("POST", "/api/v1/media/imports/prepare", prepare.clone());
+    foreign
+        .headers_mut()
+        .insert(header::ORIGIN, "https://evil.example".parse().unwrap());
+    assert_eq!(
+        app.clone().oneshot(foreign).await.unwrap().status(),
+        StatusCode::FORBIDDEN
+    );
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/media/imports/prepare", prepare))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let job: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    let job_id = job["id"].as_str().unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    let ready = loop {
+        let response = app
+            .clone()
+            .oneshot(make(
+                "GET",
+                &format!("/api/v1/media/imports/{job_id}?project_epoch={epoch}"),
+                Value::Null,
+            ))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+        if value["state"] == "ready" {
+            break value;
+        }
+        assert_ne!(value["state"], "failed", "{value}");
+        assert!(std::time::Instant::now() < deadline);
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    };
+    assert_eq!(ready["progress"], json!({"completed":3,"total":3}));
+    assert_eq!(
+        host.call(Action::Session).await.unwrap()["media"],
+        session["media"]
+    );
+    for (path, status) in [
+        (
+            format!("/api/v1/media/imports/missing?project_epoch={epoch}"),
+            StatusCode::NOT_FOUND,
+        ),
+        (
+            format!("/api/v1/media/imports/{job_id}?project_epoch=stale"),
+            StatusCode::CONFLICT,
+        ),
+        (
+            format!("/api/v1/media/imports/{job_id}?project_epoch={epoch}&force=true"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        assert_eq!(
+            app.clone()
+                .oneshot(make("GET", &path, Value::Null))
+                .await
+                .unwrap()
+                .status(),
+            status
+        );
+    }
+    let mut foreign = make(
+        "DELETE",
+        &format!("/api/v1/media/imports/{job_id}?project_epoch={epoch}"),
+        Value::Null,
+    );
+    foreign
+        .headers_mut()
+        .insert(header::ORIGIN, "https://evil.example".parse().unwrap());
+    assert_eq!(
+        app.clone().oneshot(foreign).await.unwrap().status(),
+        StatusCode::FORBIDDEN
+    );
+    let command = mutation(
+        &session,
+        "commit-import-batch",
+        json!({"kind":"import_prepared_media","job_id":job_id}),
+    );
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/projects/commands", command.clone()))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let receipt: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    assert_eq!(receipt["media_ids"].as_array().unwrap().len(), 2);
+    assert_eq!(receipt["errors"], ready["result"]["errors"]);
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/projects/commands", command))
+        .await
+        .unwrap();
+    assert_eq!(
+        serde_json::from_slice::<Value>(&to_bytes(response.into_body(), 65536).await.unwrap())
+            .unwrap(),
+        receipt
+    );
+    let imported = host.call(Action::Session).await.unwrap();
+    assert_eq!(
+        imported["history"]["position"].as_u64().unwrap(),
+        session["history"]["position"].as_u64().unwrap() + 1
+    );
+    let response = app
+        .clone()
+        .oneshot(make(
+            "DELETE",
+            &format!("/api/v1/media/imports/{job_id}?project_epoch={epoch}"),
+            Value::Null,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&to_bytes(response.into_body(), 65536).await.unwrap())
+            .unwrap()["state"],
+        "applied"
+    );
+    let legacy = mutation(
+        &imported,
+        "legacy-existing-import",
+        json!({"kind":"import_media","path_token":"first.wav"}),
+    );
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/projects/commands", legacy))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let reused: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    assert_eq!(reused["media_ids"], json!([receipt["media_ids"][1]]));
+    assert_eq!(
+        host.call(Action::Session).await.unwrap()["history"]["position"],
+        imported["history"]["position"]
+    );
+    let legacy = mutation(
+        &imported,
+        "legacy-bad-import",
+        json!({"kind":"import_media","path_token":"bad.wav"}),
+    );
+    let mut original = None;
+    for _ in 0..2 {
+        let response = app
+            .clone()
+            .oneshot(make("POST", "/api/v1/projects/commands", legacy.clone()))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+        assert_eq!(value["error"]["code"], "INVALID_OPERATION");
+        if let Some(previous) = &original {
+            assert_eq!(&value, previous);
+        } else {
+            original = Some(value);
+        }
+    }
+    let response = app
+        .clone()
+        .oneshot(make(
+            "GET",
+            "/api/v1/commands/legacy-bad-import",
+            Value::Null,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&to_bytes(response.into_body(), 65536).await.unwrap())
+            .unwrap(),
+        original.unwrap()
+    );
+    let files = |snapshot: &Value| {
+        snapshot["media"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|media| media["compound_timeline_id"].is_null())
+            .cloned()
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        files(&host.call(Action::Session).await.unwrap()),
+        files(&imported)
+    );
+    let undo = mutation(&imported, "undo-import-batch", json!({"kind":"undo"}));
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", "/api/v1/projects/commands", undo))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK
+    );
+    let empty = host.call(Action::Session).await.unwrap();
+    assert!(empty["media"].as_array().unwrap().iter().all(|media| {
+        !receipt["media_ids"]
+            .as_array()
+            .unwrap()
+            .contains(&media["id"])
+    }));
+    let redo = mutation(&empty, "redo-import-batch", json!({"kind":"redo"}));
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", "/api/v1/projects/commands", redo))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK
+    );
+    assert_eq!(
+        files(&host.call(Action::Session).await.unwrap()),
+        files(&imported)
+    );
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn saved_export_discard_http_checks_payload_epoch_cas_and_open_download_body() {
     let root = std::env::temp_dir().join(format!(
         "venturi-discard-http-{}-{}",
@@ -419,6 +725,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/library.js", 200),
         ("/js/native-assets.js", 200),
         ("/js/native-asset-folders.js", 200),
+        ("/js/media-import.js", 200),
         ("/api/v1/library", 200),
         ("/js/slip.js", 200),
         ("/js/catalog.js", 200),

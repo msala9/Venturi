@@ -35,6 +35,11 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/session", get(session))
         .route("/api/v1/review", get(review_metadata))
+        .route("/api/v1/media/imports/prepare", post(prepare_media_import))
+        .route(
+            "/api/v1/media/imports/{job}",
+            get(media_import_status).delete(cancel_media_import),
+        )
         .route("/api/v1/native-assets/prepare", post(prepare_native_asset))
         .route("/api/v1/native-assets/folders", get(native_asset_folders))
         .route("/api/v1/native-assets/pages/{page}", get(native_asset_list))
@@ -355,6 +360,57 @@ async fn prepare_native_asset(
             payload
                 .map_err(|_| ApiError::invalid("Invalid native asset preparation"))?
                 .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn prepare_media_import(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::host::MediaImportRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::PrepareMediaImport(
+            payload
+                .map_err(|_| ApiError::invalid("Invalid media import preparation"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn media_import_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::MediaImportStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid media import job query"))?
+                .0,
+            false,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn cancel_media_import(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::MediaImportStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid media import cancellation query"))?
+                .0,
+            true,
         ))
         .await
         .map(native_asset_json)
@@ -1357,11 +1413,7 @@ async fn project_command(
             "Native asset library writes require the native asset command endpoint",
         ));
     }
-    state
-        .host
-        .call(Action::Mutation(None, request))
-        .await
-        .map(Json)
+    state.host.project_mutation(request).await.map(Json)
 }
 async fn timeline_command(
     State(state): State<AppState>,
@@ -1382,7 +1434,7 @@ async fn timeline_command(
 async fn lookup(State(state): State<AppState>, Path(id): Path<String>) -> Result<Response> {
     let value = state.host.call(Action::Lookup(id)).await?;
     if matches!(value["status"].as_str(), Some("pending" | "preparing")) {
-        return Ok((StatusCode::CONFLICT,[(header::CACHE_CONTROL,"no-store")],Json(json!({"error":{"code":"OUTCOME_UNKNOWN","message":"Native library command is preparing or requires recovery; resolve this command before retrying","details":value,"recoverable":true}}))).into_response());
+        return Ok((StatusCode::CONFLICT,[(header::CACHE_CONTROL,"no-store")],Json(json!({"error":{"code":"OUTCOME_UNKNOWN","message":"The command is preparing or requires recovery; resolve this command before retrying","details":value,"recoverable":true}}))).into_response());
     }
     Ok(Json(value).into_response())
 }
@@ -1492,6 +1544,7 @@ async fn assets(request: Request) -> Response {
         "/js/native-asset-folders.js" => {
             asset!("/web/js/native-asset-folders.js", "text/javascript")
         }
+        "/js/media-import.js" => asset!("/web/js/media-import.js", "text/javascript"),
         "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
         "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),
         "/js/reviewmeta.js" => asset!("/web/js/reviewmeta.js", "text/javascript"),

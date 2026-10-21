@@ -22,6 +22,7 @@ import { createSlipView } from "./slip.js";
 import { createSilencePanel } from "./silence.js";
 import { createLibraryPanel } from "./library.js";
 import {createNativeAssetPanel} from './native-assets.js';
+import {createMediaImportPanel} from './media-import.js';
 import { createVoiceover } from "./voiceover.js";
 import { createReview } from "./review.js";
 import { createReviewMetadata } from "./reviewmeta.js";
@@ -44,7 +45,7 @@ let slipScopesState = null;
 let catalog = null;
 let silencePanel = null;
 let sharedLibrary = null;
-let nativeAssets=null,libraryMode='shared';
+let nativeAssets=null,mediaImport=null,libraryMode='shared';
 const sharedLibraryRoot=document.createElement('div'),nativeAssetsRoot=document.createElement('div');
 function openLibraryPanel(mode=libraryMode){
   libraryMode=mode;void sharedLibrary?.cancel();nativeAssets?.hide();
@@ -883,6 +884,7 @@ async function refresh() {
   $("media-note").textContent = "Project media · authoritative Rust session";
   catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;nativeAssets?.invalidate();},onOpen:(id)=>{selectedMedia=id;openSource();},notice});
   nativeAssets?.invalidate();
+  mediaImport?.invalidate();
   if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
   $("viewer-message").textContent = next.capabilities.preview
     ? "Seek a timeline frame"
@@ -921,6 +923,7 @@ async function mutate(operation, project = false,route=null) {
   busy = true;
   compoundNavigation?.invalidate();
   nativeAssets?.invalidate();
+  mediaImport?.invalidate();
   notice("Applying command…");
   try {
     const receipt = await sendMutation(
@@ -1054,35 +1057,11 @@ $("insert-media").addEventListener("click", () => {
   }
   else notice("Select an imported media first");
 });
-$("import-button").addEventListener("click", async () => {
-  $("imports").showModal();
-  $("import-list").replaceChildren();
-  $("import-error").textContent = "";
-  try {
-    const data = await request("/projects");
-    for (const item of data.importable_media) {
-      const button = document.createElement("button");
-      button.textContent = item.name;
-      button.addEventListener("click", async () => {
-        try {
-          await mutate(
-            { kind: "import_media", path_token: item.path_token },
-            true,
-          );
-          $("imports").close();
-        } catch (error) {
-          $("import-error").textContent = error.message;
-        }
-      });
-      $("import-list").append(button);
-    }
-    if (!data.importable_media.length)
-      $("import-error").textContent =
-        "No importable media in the configured root.";
-  } catch (error) {
-    $("import-error").textContent = error.message;
-  }
-});
+mediaImport=createMediaImportPanel({dialog:$("imports"),root:$("import-list"),status:$("import-error"),getContext:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),onImported:ids=>{
+  if(ids.some(id=>!documentState?.media.some(item=>item.id===id)))throw Error('The imported media are not yet visible in the refreshed project');
+  mediaState.selected=[...ids];selectedMedia=ids.at(-1) || null;catalog?.search(mediaState.query || '');if(selectedMedia)openSource();
+}});
+$("import-button").addEventListener("click",()=>void mediaImport.open());
 $("delete").addEventListener("click", () => {
   const target=selectedTransition(timeline,view.transitionSelection);
   if(target){if(!target.locked)run({kind:'set_transition',clip_id:target.clip_id,slot:target.slot,transition:null});return;}
@@ -1214,6 +1193,7 @@ setInterval(() => {
     request("/lease", { client_id: clientId }).catch(() => {
       writable = false;
       nativeAssets?.invalidate();
+      mediaImport?.invalidate();
       $("connection").textContent = "Disconnected · read only";
     });
 }, 30_000);

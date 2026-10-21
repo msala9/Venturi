@@ -15,6 +15,7 @@ use std::{
 
 const NAME: &str = ".venturi-command-receipts.jsonl";
 const MAX_BYTES: u64 = 8 * 1024 * 1024;
+const MAX_ENTRY_BYTES: usize = 1024 * 1024;
 const MAX_ENTRIES: usize = 4096;
 pub type Entries = HashMap<String, ([u8; 32], Value)>;
 #[derive(Serialize, Deserialize)]
@@ -146,7 +147,7 @@ impl Store {
         );
         let identity = self.file.metadata().map_err(|_| ApiError::io())?;
         let current = current.metadata().map_err(|_| ApiError::io())?;
-        if bytes.len() > 4096
+        if bytes.len() > MAX_ENTRY_BYTES
             || identity.len() != self.length
             || current.ino() != identity.ino()
             || current.dev() != identity.dev()

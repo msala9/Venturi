@@ -25,27 +25,49 @@ fn failure() -> ApiError {
         "The isolated native media probe failed; no asset was applied",
     )
 }
-fn parse_mode(args: &[String]) -> std::result::Result<bool, &'static str> {
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+struct Mode {
+    image: bool,
+    root_import: bool,
+}
+fn parse_mode(args: &[String]) -> std::result::Result<Mode, &'static str> {
     match args {
-        [flag, mode] if flag == "--asset-probe" && mode == "image" => Ok(true),
-        [flag, mode] if flag == "--asset-probe" && mode == "media" => Ok(false),
+        [flag, mode] if flag == "--asset-probe" && mode == "image" => Ok(Mode {
+            image: true,
+            root_import: false,
+        }),
+        [flag, mode] if flag == "--asset-probe" && mode == "media" => Ok(Mode {
+            image: false,
+            root_import: false,
+        }),
+        [flag, mode] if flag == "--asset-probe" && mode == "root-image" => Ok(Mode {
+            image: true,
+            root_import: true,
+        }),
+        [flag, mode] if flag == "--asset-probe" && mode == "root-media" => Ok(Mode {
+            image: false,
+            root_import: true,
+        }),
         _ => Err("Expected --asset-probe image|media"),
     }
 }
-fn input(file: &File) -> Result<()> {
+fn bounded_input(file: &File, root_import: bool) -> Result<()> {
     let metadata = file.metadata().map_err(|_| failure())?;
-    if !metadata.is_file() || metadata.len() > MAX_BYTES {
+    if !metadata.is_file() || (!root_import && metadata.len() > MAX_BYTES) {
         return Err(ApiError::invalid(
             "Native asset probes require a regular file within 512 MiB",
         ));
     }
     Ok(())
 }
-fn native(file: &File, image: bool) -> Result<vv_core::MediaMeta> {
+fn native(file: &File, mode: Mode) -> Result<vv_core::MediaMeta> {
     use std::os::fd::AsRawFd;
-    input(file)?;
+    bounded_input(file, mode.root_import)?;
+    if mode.root_import {
+        reject_indirect(file)?;
+    }
     let path = std::path::PathBuf::from(format!("/proc/self/fd/{}", file.as_raw_fd()));
-    let metadata = if image {
+    let metadata = if mode.image {
         vv_media::probe_image(&path)
     } else {
         vv_media::probe_media(&path)
@@ -85,11 +107,19 @@ impl Drop for ProbeChild {
         }
     }
 }
-fn command(executable: &Path, file: &File, image: bool) -> Result<Command> {
-    input(file)?;
+fn command(executable: &Path, file: &File, mode: Mode) -> Result<Command> {
+    bounded_input(file, mode.root_import)?;
     let mut command = Command::new(executable);
     command
-        .args(["--asset-probe", if image { "image" } else { "media" }])
+        .args([
+            "--asset-probe",
+            match (mode.root_import, mode.image) {
+                (false, true) => "image",
+                (false, false) => "media",
+                (true, true) => "root-image",
+                (true, false) => "root-media",
+            },
+        ])
         .stdin(Stdio::from(file.try_clone().map_err(|_| failure())?))
         .stdout(Stdio::piped())
         .stderr(Stdio::null())
@@ -177,20 +207,84 @@ fn run_command(
     collect(&mut child, &mut output, cancel, timeout)
 }
 pub fn probe(file: &File, image: bool, cancel: &AtomicBool) -> Result<vv_core::MediaMeta> {
+    run_probe(
+        file,
+        Mode {
+            image,
+            root_import: false,
+        },
+        cancel,
+    )
+}
+pub fn probe_root_media(
+    file: &File,
+    image: bool,
+    cancel: &AtomicBool,
+    remaining: Duration,
+) -> Result<vv_core::MediaMeta> {
+    reject_indirect(file)?;
+    run_probe_bounded(
+        file,
+        Mode {
+            image,
+            root_import: true,
+        },
+        cancel,
+        DEADLINE.min(remaining),
+    )
+    .map_err(|error| match error.1 {
+        "ASSET_PROBE_FAILED" => ApiError::invalid("The native engine could not read this media"),
+        "ASSET_PROBE_TIMEOUT" => ApiError::conflict(
+            "MEDIA_IMPORT_TIMEOUT",
+            "The native media metadata probe exceeded 20 seconds",
+        ),
+        _ => error,
+    })
+}
+fn reject_indirect(file: &File) -> Result<()> {
+    use std::os::unix::fs::FileExt;
+    let mut header = [0; 512];
+    let count = file.read_at(&mut header, 0).map_err(|_| failure())?;
+    let text = String::from_utf8_lossy(&header[..count]);
+    let text = text
+        .trim_start_matches('\u{feff}')
+        .trim_start()
+        .to_ascii_lowercase();
+    if text.starts_with('#')
+        || text.starts_with('<')
+        || text.starts_with("[playlist]")
+        || text.starts_with("ffconcat")
+        || text.starts_with("v=0")
+    {
+        return Err(ApiError::invalid(
+            "Indirect playlists and network manifests cannot be imported as root media",
+        ));
+    }
+    Ok(())
+}
+fn run_probe(file: &File, mode: Mode, cancel: &AtomicBool) -> Result<vv_core::MediaMeta> {
+    run_probe_bounded(file, mode, cancel, DEADLINE)
+}
+fn run_probe_bounded(
+    file: &File,
+    mode: Mode,
+    cancel: &AtomicBool,
+    timeout: Duration,
+) -> Result<vv_core::MediaMeta> {
     #[cfg(test)]
     {
-        if cancel.load(Ordering::Acquire) {
+        if cancel.load(Ordering::Acquire) || timeout.is_zero() {
             return Err(ApiError::conflict(
                 "ASSET_CANCELED",
                 "Asset preparation was canceled",
             ));
         }
-        native(file, image)
+        native(file, mode)
     }
     #[cfg(not(test))]
     {
         let executable = std::env::current_exe().map_err(|_| failure())?;
-        run_command(command(&executable, file, image)?, cancel, DEADLINE)
+        run_command(command(&executable, file, mode)?, cancel, timeout)
     }
 }
 fn sandbox() -> std::result::Result<(), Box<dyn std::error::Error>> {
@@ -228,12 +322,12 @@ fn sandbox() -> std::result::Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 pub fn child_main(args: &[String]) -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let image = parse_mode(args)?;
+    let mode = parse_mode(args)?;
     sandbox()?;
     let file = File::open("/proc/self/fd/0")?;
-    input(&file).map_err(|e| e.2)?;
+    bounded_input(&file, mode.root_import).map_err(|e| e.2)?;
     let before = crate::asset_store::stable_identity(&file).map_err(|e| e.2)?;
-    let metadata = native(&file, image).map_err(|e| e.2)?;
+    let metadata = native(&file, mode).map_err(|e| e.2)?;
     if crate::asset_store::stable_identity(&file).map_err(|e| e.2)? != before {
         return Err("Asset probe input changed".into());
     }

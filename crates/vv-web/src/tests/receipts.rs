@@ -11,6 +11,38 @@ fn root() -> std::path::PathBuf {
     ))
 }
 #[test]
+fn bounded_media_batch_receipts_keep_all_ids_and_file_errors_after_restart() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    let (mut store, _) = Store::open(&files).unwrap();
+    let ids = (0..128)
+        .map(|index| (u64::MAX - index).to_string())
+        .collect::<Vec<_>>();
+    let errors=(0..128).map(|index|json!({"path_token":format!("file-{index}.wav"),"name":format!("file-{index}.wav"),"code":"INVALID_OPERATION","message":"x".repeat(2048),"status":422})).collect::<Vec<_>>();
+    let result = json!({"status":"applied","command_id":"batch","media_ids":ids,"errors":errors,"receipt_persisted":true});
+    assert!(serde_json::to_vec(&result).unwrap().len() > 4096);
+    store.append(&files, "batch", [12; 32], &result).unwrap();
+    let before = std::fs::read(root.join(NAME)).unwrap();
+    assert!(
+        store
+            .append(
+                &files,
+                "excessive",
+                [0; 32],
+                &json!({"status":"applied","message":"x".repeat(MAX_ENTRY_BYTES)})
+            )
+            .is_err()
+    );
+    assert_eq!(std::fs::read(root.join(NAME)).unwrap(), before);
+    drop(store);
+    let (store, entries) = Store::open(&files).unwrap();
+    let mut expected = result;
+    expected["server_restarted"] = json!(true);
+    assert_eq!(entries["batch"], ([12; 32], expected));
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+#[test]
 fn persisted_receipts_survive_restart_with_exact_request_identity_and_single_root_owner() {
     let root = root();
     let files = Files::new(&root).unwrap();

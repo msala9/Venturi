@@ -1,4 +1,73 @@
 use super::*;
+
+#[test]
+fn media_import_tokens_preserve_full_native_domain_order_and_explicit_batch_bounds() {
+    let tokens: Vec<String> = [
+        "clip.AVI",
+        "clip.m4v",
+        "sound.aac",
+        "picture.bmp",
+        "picture.tif",
+        "picture.TIFF",
+        "clip.AVI",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect();
+    assert_eq!(media_import_tokens(&tokens).unwrap(), tokens[..6]);
+    let batch: Vec<_> = (0..256).map(|n| format!("clip-{n}.mp4")).collect();
+    assert_eq!(media_import_tokens(&batch).unwrap().len(), 256);
+    let mut excessive = batch;
+    excessive.push("extra.mp4".into());
+    assert!(media_import_tokens(&excessive).is_err());
+    assert!(media_import_tokens(&[]).is_err());
+    assert!(media_import_tokens(&vec!["clip.mp4".into(); 4097]).is_err());
+    for token in [
+        "../clip.mp4",
+        "sub/clip.mp4",
+        "sub\\clip.mp4",
+        ".clip.mp4",
+        "clip\n.mp4",
+        "clip.m3u8",
+        "clip.txt",
+    ] {
+        assert!(media_import_tokens(&[token.into()]).is_err(), "{token:?}");
+    }
+}
+
+#[test]
+fn root_listing_includes_all_native_media_types_without_probing_or_following_links() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    let names = [
+        "clip.avi",
+        "clip.m4v",
+        "sound.aac",
+        "picture.bmp",
+        "picture.tif",
+        "picture.tiff",
+        "still.PNG",
+    ];
+    for name in names {
+        std::fs::write(root.join(name), b"unprobed").unwrap();
+    }
+    std::fs::create_dir(root.join("directory.mp4")).unwrap();
+    std::os::unix::fs::symlink(root.join(names[0]), root.join("link.mp4")).unwrap();
+    let value = files.list().unwrap();
+    let tokens: std::collections::HashSet<_> = value["importable_media"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|v| v["path_token"].as_str().unwrap())
+        .collect();
+    assert_eq!(tokens, names.into_iter().collect());
+    assert_eq!(
+        files.media_import_tokens(&["clip.avi".into()]).unwrap(),
+        ["clip.avi"]
+    );
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
 fn root() -> PathBuf {
     std::env::temp_dir().join(format!(
         "vv-web-test-{}",

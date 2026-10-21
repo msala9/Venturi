@@ -11,6 +11,33 @@ use std::{
 use vv_core::Project;
 
 const MAX_PROJECT: u64 = 8 * 1024 * 1024;
+pub const MAX_MEDIA_IMPORTS: usize = 256;
+pub(crate) fn media_import_tokens(path_tokens: &[String]) -> Result<Vec<String>> {
+    if path_tokens.is_empty() || path_tokens.len() > 4096 {
+        return Err(ApiError::invalid(
+            "Choose between 1 and 256 unique root media files",
+        ));
+    }
+    let mut seen = std::collections::HashSet::new();
+    let mut tokens = Vec::new();
+    for token in path_tokens {
+        Files::name(token)?;
+        if !vv_media::is_media_path(Path::new(token)) {
+            return Err(ApiError::invalid(
+                "Choose a native media file inside the configured project root",
+            ));
+        }
+        if seen.insert(token.as_str()) {
+            tokens.push(token.clone());
+            if tokens.len() > MAX_MEDIA_IMPORTS {
+                return Err(ApiError::invalid(
+                    "A media import batch supports at most 256 unique files",
+                ));
+            }
+        }
+    }
+    Ok(tokens)
+}
 #[derive(Clone, PartialEq, Eq)]
 struct ProjectVersion {
     identity: String,
@@ -22,6 +49,9 @@ pub struct Files {
     version: RefCell<Option<(String, ProjectVersion)>>,
 }
 impl Files {
+    pub fn media_import_tokens(&self, path_tokens: &[String]) -> Result<Vec<String>> {
+        media_import_tokens(path_tokens)
+    }
     pub fn root_file(&self) -> Result<File> {
         self.dir.try_clone().map_err(|_| ApiError::io())
     }
@@ -184,13 +214,7 @@ impl Files {
                 backups.push(item);
             } else if name.ends_with(".otio") {
                 otio.push(item);
-            } else if [
-                "mp4", "mov", "mkv", "webm", "wav", "mp3", "flac", "png", "jpg", "jpeg", "webp",
-                "m4a", "opus", "ogg",
-            ]
-            .iter()
-            .any(|ext| name.to_lowercase().ends_with(&format!(".{ext}")))
-            {
+            } else if vv_media::is_media_path(Path::new(&name)) {
                 media.push(item);
             }
         }

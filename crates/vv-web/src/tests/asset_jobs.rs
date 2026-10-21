@@ -1,4 +1,263 @@
 use super::*;
+
+#[test]
+fn media_import_preserves_order_native_fingerprints_and_original_per_file_failures() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.project.join("bad.wav"), b"not native media").unwrap();
+    let queued = fixture
+        .jobs
+        .prepare_media_import(
+            "epoch",
+            "7",
+            vec![
+                "tiny.png".into(),
+                "bad.wav".into(),
+                "tiny.png".into(),
+                "missing.mp4".into(),
+            ],
+        )
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["state"], "ready");
+    assert_eq!(ready["progress"], json!({"completed":3,"total":3}));
+    assert_eq!(
+        ready["result"]["items"],
+        json!([{"path_token":"tiny.png","name":"tiny.png","state":"ready"}])
+    );
+    assert_eq!(ready["result"]["errors"][0]["path_token"], "bad.wav");
+    assert_eq!(ready["result"]["errors"][0]["status"], 422);
+    assert_eq!(ready["result"]["errors"][1]["status"], 404);
+    let payload = fixture.jobs.media_import_payload(id, "epoch", "7").unwrap();
+    assert_eq!(payload.items.len(), 1);
+    assert_eq!(payload.errors.len(), 2);
+    assert_eq!(payload.first_error.unwrap().0.as_u16(), 422);
+    assert_eq!(
+        payload.items[0].content_hash,
+        vv_media::content_fingerprint(&fixture.path).unwrap()
+    );
+    assert_eq!(payload.items[0].meta.width, 16);
+    assert_eq!(std::fs::read_dir(&fixture.project).unwrap().count(), 2);
+    assert!(fixture.jobs.media_import_payload(id, "wrong", "7").is_err());
+    assert!(fixture.jobs.media_import_payload(id, "epoch", "8").is_err());
+    fixture.close();
+}
+
+#[test]
+fn twenty_media_files_prepare_on_one_worker_and_acceptance_releases_witnesses_once() {
+    let fixture = Fixture::new();
+    let bytes = std::fs::read(&fixture.path).unwrap();
+    let tokens: Vec<_> = (0..20).map(|n| format!("clip-{n}.png")).collect();
+    for token in &tokens {
+        std::fs::write(fixture.project.join(token), &bytes).unwrap();
+    }
+    let job = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", tokens.clone())
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(id)["state"], "ready");
+    let payload = fixture.jobs.media_import_payload(id, "epoch", "7").unwrap();
+    assert_eq!(
+        payload
+            .items
+            .iter()
+            .map(|item| item.path_token.clone())
+            .collect::<Vec<_>>(),
+        tokens
+    );
+    assert!(payload.errors.is_empty());
+    fixture.jobs.accept_media_import(id, "epoch", "7").unwrap();
+    assert!(fixture.jobs.media_import_payload(id, "epoch", "7").is_err());
+    assert!(fixture.jobs.accept_media_import(id, "epoch", "7").is_err());
+    assert_eq!(
+        fixture.jobs.status(id, "epoch", true).unwrap()["state"],
+        "applied"
+    );
+    fixture.jobs.cancel_obsolete("other");
+    assert_eq!(
+        fixture.jobs.status(id, "epoch", false).unwrap()["state"],
+        "applied"
+    );
+    assert!(
+        fixture
+            .jobs
+            .0
+            .jobs
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|j| j.id == id)
+            .unwrap()
+            .media_import
+            .is_none()
+    );
+    fixture.close();
+}
+
+#[test]
+fn prepared_media_final_cas_rejects_replacement_and_cancellation_before_acceptance() {
+    let fixture = Fixture::new();
+    let job = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", vec!["tiny.png".into()])
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(id)["state"], "ready");
+    fixture.jobs.media_import_payload(id, "epoch", "7").unwrap();
+    let replacement = fixture.project.join("replacement.png");
+    std::fs::copy(&fixture.path, &replacement).unwrap();
+    std::fs::rename(replacement, &fixture.path).unwrap();
+    assert_eq!(
+        fixture
+            .jobs
+            .accept_media_import(id, "epoch", "7")
+            .unwrap_err()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    assert!(fixture.jobs.media_import_payload(id, "epoch", "7").is_err());
+    assert_eq!(
+        fixture.jobs.status(id, "epoch", true).unwrap()["state"],
+        "canceled"
+    );
+    assert!(fixture.jobs.accept_media_import(id, "epoch", "7").is_err());
+    let next = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", vec!["tiny.png".into()])
+        .unwrap();
+    let next = next["id"].as_str().unwrap();
+    fixture.finish(next);
+    fixture.jobs.cancel_obsolete("new-epoch");
+    assert!(
+        fixture
+            .jobs
+            .media_import_payload(next, "epoch", "7")
+            .is_err()
+    );
+    fixture.close();
+}
+
+#[test]
+fn media_import_budget_records_every_unprocessed_file_and_zero_success_cannot_commit() {
+    let fixture = Fixture::new();
+    let tokens = vec!["tiny.png".into(), "missing.mp4".into()];
+    let work = Work {
+        id: "unit-budget".into(),
+        asset: None,
+        sources: vec![],
+        cancel: Arc::new(AtomicBool::new(false)),
+        import: None,
+        edit: None,
+        media_import: Some(tokens.clone()),
+    };
+    let result = run_media_import(&fixture.jobs.0, &work, &tokens, Duration::ZERO).unwrap();
+    assert!(result.items.is_empty());
+    assert_eq!(result.errors.len(), 2);
+    assert!(
+        result
+            .errors
+            .iter()
+            .all(|error| error["code"] == "MEDIA_IMPORT_BUDGET")
+    );
+    assert_eq!(result.errors[0]["path_token"], "tiny.png");
+    work.cancel.store(true, Ordering::Release);
+    assert_eq!(
+        run_media_import(&fixture.jobs.0, &work, &tokens, MEDIA_IMPORT_BUDGET)
+            .err()
+            .unwrap()
+            .1,
+        "ASSET_CANCELED"
+    );
+    let job = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", vec!["missing.mp4".into()])
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(id)["state"], "ready");
+    assert_eq!(
+        fixture
+            .jobs
+            .accept_media_import(id, "epoch", "7")
+            .unwrap_err()
+            .0
+            .as_u16(),
+        404
+    );
+    fixture.close();
+}
+
+#[test]
+fn media_import_refuses_symlink_and_root_replacement_without_committing_any_item() {
+    let fixture = Fixture::new();
+    std::os::unix::fs::symlink(&fixture.path, fixture.project.join("alias.png")).unwrap();
+    std::fs::create_dir(fixture.project.join("directory.mp4")).unwrap();
+    let job = fixture
+        .jobs
+        .prepare_media_import(
+            "epoch",
+            "7",
+            vec![
+                "tiny.png".into(),
+                "alias.png".into(),
+                "directory.mp4".into(),
+            ],
+        )
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["result"]["items"].as_array().unwrap().len(), 1);
+    assert_eq!(ready["result"]["errors"].as_array().unwrap().len(), 2);
+    let old_root = fixture.root.join("old-project");
+    std::fs::rename(&fixture.project, &old_root).unwrap();
+    std::fs::create_dir(&fixture.project).unwrap();
+    std::fs::copy(old_root.join("tiny.png"), &fixture.path).unwrap();
+    assert_eq!(
+        fixture
+            .jobs
+            .accept_media_import(id, "epoch", "7")
+            .unwrap_err()
+            .1,
+        "ASSET_CHANGED"
+    );
+    assert!(fixture.jobs.media_import_payload(id, "epoch", "7").is_err());
+    fixture.close();
+}
+
+#[test]
+fn media_import_witness_reservation_includes_ready_records_and_cancellation_releases_them() {
+    let fixture = Fixture::new();
+    let job = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", vec!["tiny.png".into()])
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(id)["state"], "ready");
+    let full: Vec<_> = (0..256).map(|n| format!("unopened-{n}.mp4")).collect();
+    assert_eq!(
+        fixture
+            .jobs
+            .prepare_media_import("epoch", "7", full.clone())
+            .unwrap_err()
+            .1,
+        "ASSET_BUSY"
+    );
+    fixture.jobs.status(id, "epoch", true).unwrap();
+    let next = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", full)
+        .unwrap();
+    let next = next["id"].as_str().unwrap();
+    fixture.jobs.status(next, "epoch", true).unwrap();
+    assert_eq!(fixture.finish(next)["state"], "canceled");
+    assert!(
+        fixture
+            .jobs
+            .media_import_payload(next, "epoch", "7")
+            .is_err()
+    );
+    fixture.close();
+}
 use vv_core::{
     Clip, ClipId, ClipSource, MediaItem, Rational, Timeline, Track, TrackKind,
     clipboard::ClipboardOrigin,

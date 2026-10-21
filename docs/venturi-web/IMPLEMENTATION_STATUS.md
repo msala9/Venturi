@@ -12,6 +12,43 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Native batch media import now passes `evidence/m2-native-media-import.json`.
+One Import selected files action prepares up to 256 unique root files outside
+the session actor, reports per-file failures, applies all successes in one native
+ImportMedia Undo step, selects them and opens the last in Source. Existing media
+paths are reused. The root list now follows the complete native extension domain.
+Legacy single-file requests retain their serialized shape and use the same
+single worker and isolated native probe; duplicate concurrent requests preserve
+the original success or error. Final source, generation, project and writer
+checks prevent canceled or obsolete imports from applying.
+
+The existing Windows browser imported a new WAV alongside an existing WAV and
+one unreadable file, displayed the error, selected both successes, opened the
+last and verified one Undo/Redo without removing the existing file. Finite API
+checks also import real video and BMP metadata, verify cancellation and source
+changes, and preserve saved projects and receipts after restart. Receipt entries
+allow 1 MiB within the unchanged 8 MiB journal; cached large reports also retire
+by bytes to bound memory. Validation is 333 web Rust, 277 core, 658 JavaScript,
+four targeted original-desktop tests, fmt, Clippy and native build, on the cached
+halo2 environment with one CPU/4 GiB/no swap/OOM score 1000. The sampled build
+peak was 1.73 GiB with no cgroup OOM events. The finite API/browser backend used
+512 MiB; it, its single Windows tab and tunnel are stopped. No browser download,
+environment rebuild, driver or NAS change occurred. Broad codec/still Source,
+interaction and release acceptance remain partial; ledger counts are unchanged.
+The verified candidate is staged separately while the main editor retains its
+five unsaved MoveClips and Undo.
+
+The existing Windows browser now verifies a functional Source handoff on a real
+601-second, 24 fps, 16×16 input: seek to frame 12960, seek within the same
+60-second job to frame 14352, play through the next job and stop at frame 14423.
+The next descriptor is exactly 14400–14424; the first is 12960–14400, with the
+same source version. There were no browser media/console errors, project writes
+or history changes. This is a short boundary check using a 200,058-byte silent
+fixture, not a long wall-clock, high-resolution, physical audio or gapless test.
+The temporary tab, finite 512 MiB halo2 backend and tunnel were closed. Evidence:
+`evidence/m3-source-windows-boundary.json` and its screenshot. No browser or
+environment installation occurred; main editor state was preserved.
+
 Native library folder organization now passes `evidence/m4-native-asset-folders.json`.
 The existing Windows browser verified create/rename, a new child under the selected
 folder, folder reparenting, a two-asset move and removal of a nonempty folder:

@@ -41,6 +41,9 @@ pub enum Action {
     PresetItem(String, SourceQuery),
     PresetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
     PrepareNativeAsset(NativeAssetRequest),
+    PrepareMediaImport(MediaImportRequest),
+    PrepareLegacyMediaImport(Mutation, oneshot::Sender<Result<NativeEditPreparation>>),
+    MediaImportStatus(String, SourceQuery, bool),
     PrepareNativeAssetEdit(Mutation, oneshot::Sender<Result<NativeEditPreparation>>),
     NativeAssetFolders(SourceQuery),
     NativeAssetList(usize, crate::asset_store::Query),
@@ -56,12 +59,20 @@ pub enum Action {
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
 const MAX_RECEIPTS: usize = 4096;
+const MAX_IMPORT_RECEIPT_CACHE: usize = 15 * 1024 * 1024;
 #[derive(Clone, Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct NativeAssetRequest {
     pub project_epoch: String,
     pub if_generation: String,
     pub action: NativeAssetAction,
+}
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MediaImportRequest {
+    pub project_epoch: String,
+    pub if_generation: String,
+    pub path_tokens: Vec<String>,
 }
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -123,6 +134,8 @@ pub struct Editor {
     asset_imports: HashMap<(u64, String, String), ImportedAsset>,
     asset_binding: String,
     native_edits: HashMap<String, PendingNativeEdit>,
+    legacy_media_imports: HashMap<String, PendingNativeEdit>,
+    media_import_receipt: Option<Value>,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
@@ -184,6 +197,8 @@ impl Editor {
             asset_imports: HashMap::new(),
             asset_binding,
             native_edits: HashMap::new(),
+            legacy_media_imports: HashMap::new(),
+            media_import_receipt: None,
             session,
             files,
             epoch: std::time::SystemTime::now()
@@ -214,6 +229,7 @@ impl Editor {
         let mut snapshot = snapshot::session(&self.session, &self.epoch);
         snapshot["command_epoch"] = json!(self.command_epoch.to_string());
         snapshot["capabilities"]["native_assets"] = json!(true);
+        snapshot["capabilities"]["media_imports"] = json!(true);
         let origins: HashMap<_, _> = self
             .session
             .project
@@ -296,6 +312,16 @@ impl Editor {
                 "Command ID was already used for another native library request",
             ));
         }
+        if self
+            .legacy_media_imports
+            .get(&request.command_id)
+            .is_some_and(|pending| pending.fingerprint != fingerprint)
+        {
+            return Err(ApiError::conflict(
+                "COMMAND_ID_REUSED",
+                "Command ID was already used for another media import",
+            ));
+        }
         let prepared_edit = matches!(&request.operation,Operation::EditNativeAssetLibrary {edit} if edit.requires_preparation());
         if prepared_edit && let Some((original,value))=self.harvest_native_completion(&request.command_id,false).map_err(|_|ApiError::conflict("OUTCOME_UNKNOWN","Native library commit requires recovery; resolve its command before retrying"))? {
             if original!=fingerprint {return Err(ApiError::conflict("COMMAND_ID_REUSED","Command ID was already used with another request"));}return Ok(value);
@@ -312,7 +338,9 @@ impl Editor {
             self.native_command_capacity()?;
         }
         let previous_epoch = self.session.epoch();
+        self.media_import_receipt = None;
         let outcome = self.perform(timeline, &request);
+        let media_import_receipt = self.media_import_receipt.take();
         if self.session.epoch() != previous_epoch {
             self.asset_jobs
                 .cancel_obsolete(&format!("{}:{}", self.epoch, self.session.epoch()));
@@ -332,7 +360,9 @@ impl Editor {
                 )),
             };
         }
-        if self.completed.len() >= MAX_RECEIPTS {
+        if self.completed.len() >= MAX_RECEIPTS
+            || (media_import_receipt.is_some() && self.import_receipt_cache_full())
+        {
             self.completed.clear();
             self.command_epoch = self
                 .command_epoch
@@ -347,6 +377,10 @@ impl Editor {
             }
             let mut value=json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()});
             if prepared_edit {value["library_durable"]=json!(true);}
+            if let Some(report)=media_import_receipt {
+                value["media_ids"]=report["media_ids"].clone();
+                value["errors"]=report["errors"].clone();
+            }
             if let Operation::ImportNativeAsset { asset_id,revision,.. }=&request.operation
                 && let Some(imported)=self.asset_imports.get(&(self.session.epoch(),asset_id.clone(),revision.clone())) {
                 use vv_core::Id;
@@ -412,6 +446,9 @@ impl Editor {
             .insert(request.command_id.clone(), (fingerprint, result.clone()));
         if prepared_edit && result.is_ok() {
             self.native_edits.remove(&request.command_id);
+        }
+        if result.is_ok() {
+            self.legacy_media_imports.remove(&request.command_id);
         }
         result
     }
@@ -543,16 +580,22 @@ impl Editor {
             Operation::Undo | Operation::Redo | Operation::HistoryJump { .. } => {
                 commands::history(&mut self.session, &request.operation)?
             }
-            Operation::ImportMedia { path_token } => {
-                if self.session.path().is_none() {
-                    return Err(ApiError::invalid(
-                        "Create or open a project before importing media",
-                    ));
-                }
-                let (path, meta) = self.files.probe(path_token)?;
-                if self.session.media_with_path(&path).is_none() {
-                    self.session.add_media(path, meta);
-                }
+            Operation::ImportMedia { .. } => {
+                let job = self
+                    .legacy_media_imports
+                    .get(&request.command_id)
+                    .ok_or_else(|| {
+                        ApiError::conflict(
+                            "MEDIA_IMPORT_PREPARATION_REQUIRED",
+                            "Prepare media outside the session before importing",
+                        )
+                    })?
+                    .job
+                    .clone();
+                self.import_prepared_media(&job, &request.project_epoch, &request.if_generation)?;
+            }
+            Operation::ImportPreparedMedia { job_id } => {
+                self.import_prepared_media(job_id, &request.project_epoch, &request.if_generation)?;
             }
             Operation::ImportOtio { path_token, name } => {
                 if self.session.has_unsaved_changes() {
@@ -737,6 +780,200 @@ impl Editor {
         }
         Ok(())
     }
+    fn prepare_media_import(&self, request: MediaImportRequest) -> Result<Value> {
+        self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
+        if self.session.path().is_none() {
+            return Err(ApiError::invalid(
+                "Create or open a project before importing media",
+            ));
+        }
+        let tokens = self.files.media_import_tokens(&request.path_tokens)?;
+        self.asset_jobs
+            .prepare_media_import(&request.project_epoch, &request.if_generation, tokens)
+    }
+    fn prepare_legacy_media_import(&mut self, request: Mutation) -> Result<NativeEditPreparation> {
+        let Operation::ImportMedia { path_token } = &request.operation else {
+            return self
+                .mutation(None, request)
+                .map(NativeEditPreparation::Complete);
+        };
+        if !valid_key(&request.command_id) {
+            return Err(ApiError::invalid("Invalid command ID"));
+        }
+        self.prune_legacy_media_imports();
+        let fingerprint: [u8; 32] = Sha256::digest(
+            serde_json::to_vec(&(None::<String>, &request))
+                .map_err(|_| ApiError::invalid("Invalid media import command"))?,
+        )
+        .into();
+        if let Some((previous, result)) =
+            self.completed
+                .get(&request.command_id)
+                .cloned()
+                .or_else(|| {
+                    self.receipts
+                        .as_ref()
+                        .and_then(|store| store.recorded(&request.command_id))
+                        .map(|(hash, value)| (hash, Ok(value)))
+                })
+        {
+            if previous != fingerprint {
+                return Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Command ID was already used with another request",
+                ));
+            }
+            return result.map(NativeEditPreparation::Complete);
+        }
+        if self
+            .legacy_media_imports
+            .get(&request.command_id)
+            .is_some_and(|pending| pending.fingerprint != fingerprint)
+        {
+            return Err(ApiError::conflict(
+                "COMMAND_ID_REUSED",
+                "Command ID was already used for another media import",
+            ));
+        }
+        self.lease(&request.client_id)?;
+        if request.command_epoch.as_deref().unwrap_or("0") != self.command_epoch.to_string() {
+            return Err(ApiError::conflict(
+                "COMMAND_EPOCH_EXPIRED",
+                "Command receipt epoch expired; refresh without replaying the old command",
+            ));
+        }
+        self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
+        self.native_command_capacity()?;
+        if self.legacy_media_imports.len() >= 64
+            && !self.legacy_media_imports.contains_key(&request.command_id)
+        {
+            return Err(ApiError::conflict(
+                "ASSET_BUSY",
+                "Resolve previous media imports before starting more",
+            ));
+        }
+        let id = if let Some(pending) = self.legacy_media_imports.get(&request.command_id) {
+            pending.job.clone()
+        } else {
+            let value = match self.prepare_media_import(MediaImportRequest {
+                project_epoch: request.project_epoch.clone(),
+                if_generation: request.if_generation.clone(),
+                path_tokens: vec![path_token.clone()],
+            }) {
+                Ok(value) => value,
+                Err(error) => {
+                    self.completed.insert(
+                        request.command_id.clone(),
+                        (fingerprint, Err(error.clone())),
+                    );
+                    return Err(error);
+                }
+            };
+            value["id"].as_str().ok_or_else(ApiError::io)?.to_owned()
+        };
+        self.legacy_media_imports.insert(
+            request.command_id,
+            PendingNativeEdit {
+                fingerprint,
+                job: id.clone(),
+                epoch: request.project_epoch.clone(),
+            },
+        );
+        Ok(NativeEditPreparation::Pending(NativeEditGuard {
+            jobs: self.asset_jobs.clone(),
+            job: id,
+            epoch: request.project_epoch,
+            armed: true,
+        }))
+    }
+    fn prune_legacy_media_imports(&mut self) {
+        let ids = self
+            .legacy_media_imports
+            .keys()
+            .cloned()
+            .collect::<Vec<_>>();
+        for id in ids {
+            if self.completed.contains_key(&id)
+                || self
+                    .receipts
+                    .as_ref()
+                    .is_some_and(|store| store.recorded(&id).is_some())
+            {
+                self.legacy_media_imports.remove(&id);
+                continue;
+            }
+            let pending = &self.legacy_media_imports[&id];
+            let terminal = match self.asset_jobs.status(&pending.job, &pending.epoch, false) {
+                Ok(value) => matches!(value["state"].as_str(), Some("failed" | "canceled")),
+                Err(error) => error.1 == "NOT_FOUND",
+            };
+            if terminal {
+                let fingerprint = pending.fingerprint;
+                let error = self.native_edit_failure(pending);
+                self.completed.insert(id.clone(), (fingerprint, Err(error)));
+                self.legacy_media_imports.remove(&id);
+            }
+        }
+    }
+    fn import_prepared_media(&mut self, job: &str, epoch: &str, generation: &str) -> Result<()> {
+        use vv_core::{Command, CommandLabel, Id, MediaItem, pool::AddEntities};
+        if self.session.path().is_none() {
+            return Err(ApiError::invalid(
+                "Create or open a project before importing media",
+            ));
+        }
+        let payload = self
+            .asset_jobs
+            .media_import_payload(job, epoch, generation)?;
+        if payload.items.is_empty() {
+            return Err(payload
+                .first_error
+                .unwrap_or_else(|| ApiError::invalid("No readable media files were prepared")));
+        }
+        let existing = payload
+            .items
+            .iter()
+            .filter_map(|item| {
+                self.session
+                    .media_with_path(&item.path)
+                    .map(|id| (item.path.clone(), id))
+            })
+            .collect::<HashMap<_, _>>();
+        let build = |project: &mut vv_core::Project| {
+            let mut additions = AddEntities::new(CommandLabel::ImportMedia);
+            let mut selected = Vec::new();
+            for item in &payload.items {
+                let id = existing.get(&item.path).copied().unwrap_or_else(|| {
+                    additions.media(
+                        project,
+                        MediaItem {
+                            path: item.path.clone(),
+                            meta: item.meta.clone(),
+                            content_hash: item.content_hash,
+                            compound: None,
+                            folder: None,
+                        },
+                    )
+                });
+                selected.push(id);
+            }
+            (additions, selected)
+        };
+        let mut trial = self.session.project.clone();
+        let (mut additions, _) = build(&mut trial);
+        additions.apply(&mut trial);
+        crate::files::validate_project(&trial)?;
+        self.asset_jobs
+            .accept_media_import(job, epoch, generation)?;
+        let (additions, selected) = build(&mut self.session.project);
+        if !additions.is_empty() {
+            self.session.apply(Box::new(additions));
+        }
+        self.media_import_receipt = Some(
+            json!({"media_ids":selected.iter().map(|id|id.raw().to_string()).collect::<Vec<_>>(),"errors":payload.errors}),
+        );
+        Ok(())
+    }
     fn harvest_native_completion(
         &mut self,
         id: &str,
@@ -906,8 +1143,22 @@ impl Editor {
             armed: true,
         }))
     }
+    fn import_receipt_cache_full(&self) -> bool {
+        let mut bytes = 0usize;
+        for (_, result) in self.completed.values() {
+            if let Ok(value) = result {
+                bytes = bytes.saturating_add(
+                    serde_json::to_vec(value).map_or(MAX_IMPORT_RECEIPT_CACHE, |value| value.len()),
+                );
+                if bytes >= MAX_IMPORT_RECEIPT_CACHE {
+                    return true;
+                }
+            }
+        }
+        false
+    }
     fn native_command_capacity(&mut self) -> Result<()> {
-        if self.completed.len() < MAX_RECEIPTS {
+        if self.completed.len() < MAX_RECEIPTS && !self.import_receipt_cache_full() {
             return Ok(());
         }
         self.completed.clear();
@@ -917,7 +1168,7 @@ impl Editor {
             .expect("Command epoch exhausted");
         Err(ApiError::conflict(
             "COMMAND_EPOCH_EXPIRED",
-            "Command receipt window retired before native library commit; refresh and submit a new command",
+            "Command receipt window retired before commit; refresh and submit a new command",
         ))
     }
     fn prune_native_edits(&mut self) {
@@ -972,6 +1223,29 @@ impl Editor {
         }
         if let Some((_, value)) = self.receipts.as_ref().and_then(|store| store.recorded(id)) {
             return Ok(value);
+        }
+        if let Some(pending) = self.legacy_media_imports.get(id) {
+            let value = match self.asset_jobs.status(&pending.job, &pending.epoch, false) {
+                Ok(value) => Some(value),
+                Err(error) if error.1 == "NOT_FOUND" => None,
+                Err(error) => return Err(error),
+            };
+            if let Some(value) = value
+                && matches!(
+                    value["state"].as_str(),
+                    Some("queued" | "running" | "ready")
+                )
+            {
+                return Ok(
+                    json!({"command_id":id,"status":"preparing","job_id":pending.job,"project_epoch":pending.epoch,"job":value}),
+                );
+            }
+            let fingerprint = pending.fingerprint;
+            let error = self.native_edit_failure(pending);
+            self.completed
+                .insert(id.to_owned(), (fingerprint, Err(error.clone())));
+            self.legacy_media_imports.remove(id);
+            return Err(error);
         }
         match self.harvest_native_completion(id, false) {
             Ok(Some((_, value))) => return Ok(value),
@@ -1299,6 +1573,25 @@ impl Editor {
                 self.presets.list(page, &query)
             }
             Action::PrepareNativeAsset(request) => self.prepare_native_asset(request),
+            Action::PrepareMediaImport(request) => self.prepare_media_import(request),
+            Action::PrepareLegacyMediaImport(request, reply) => {
+                let _ = reply.send(self.prepare_legacy_media_import(request));
+                Ok(Value::Null)
+            }
+            Action::MediaImportStatus(job, query, cancel) => {
+                if !cancel {
+                    self.validate_asset_epoch(&query.project_epoch, None)?;
+                }
+                let value = self.asset_jobs.status(&job, &query.project_epoch, false)?;
+                if value["kind"] != "media_import" {
+                    return Err(ApiError::missing());
+                }
+                if cancel {
+                    self.asset_jobs.status(&job, &query.project_epoch, true)
+                } else {
+                    Ok(value)
+                }
+            }
             Action::PrepareNativeAssetEdit(request, reply) => {
                 let _ = reply.send(self.prepare_native_edit(request));
                 Ok(Value::Null)
@@ -1443,6 +1736,72 @@ fn valid_key(key: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
 }
 impl Host {
+    pub async fn project_mutation(&self, request: Mutation) -> Result<Value> {
+        if !matches!(request.operation, Operation::ImportMedia { .. }) {
+            return self.call(Action::Mutation(None, request)).await;
+        }
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::PrepareLegacyMediaImport(request.clone(), tx))
+            .await?;
+        let guard = match rx.await.map_err(|_| ApiError::io())?? {
+            NativeEditPreparation::Complete(value) => return Ok(value),
+            NativeEditPreparation::Pending(guard) => guard,
+        };
+        self.finish_media_import(request, guard).await
+    }
+    async fn finish_media_import(
+        &self,
+        request: Mutation,
+        mut guard: NativeEditGuard,
+    ) -> Result<Value> {
+        let started = Instant::now();
+        loop {
+            let value = guard.jobs.status(&guard.job, &guard.epoch, false)?;
+            match value["state"].as_str() {
+                Some("ready" | "applied") => break,
+                Some("queued" | "running") => {}
+                Some("failed") => {
+                    let error = guard
+                        .jobs
+                        .read_failure(&guard.job, &guard.epoch)?
+                        .unwrap_or_else(|| ApiError::invalid("Media import preparation failed"));
+                    guard.armed = false;
+                    return match self.call(Action::Lookup(request.command_id.clone())).await {
+                        Ok(value) if value["status"] == "applied" => Ok(value),
+                        Err(known) if known.1 != "NOT_FOUND" => Err(known),
+                        _ => Err(error),
+                    };
+                }
+                _ => {
+                    match self.call(Action::Lookup(request.command_id.clone())).await {
+                        Ok(value) if value["status"] == "applied" => {
+                            guard.armed = false;
+                            return Ok(value);
+                        }
+                        Err(error) if error.1 != "NOT_FOUND" => {
+                            guard.armed = false;
+                            return Err(error);
+                        }
+                        _ => {}
+                    }
+                    return Err(ApiError::conflict(
+                        "ASSET_CANCELED",
+                        "Media import preparation was canceled",
+                    ));
+                }
+            }
+            if started.elapsed() >= Duration::from_secs(620) {
+                return Err(ApiError::conflict(
+                    "MEDIA_IMPORT_TIMEOUT",
+                    "Media import preparation timed out before commit",
+                ));
+            }
+            tokio::time::sleep(Duration::from_millis(25)).await;
+        }
+        let value = self.call(Action::Mutation(None, request)).await?;
+        guard.armed = false;
+        Ok(value)
+    }
     pub async fn native_asset_mutation(&self, request: Mutation) -> Result<Value> {
         let (tx, rx) = oneshot::channel();
         self.call(Action::PrepareNativeAssetEdit(request.clone(), tx))
@@ -1456,7 +1815,7 @@ impl Host {
         loop {
             let status = guard.jobs.status(&guard.job, &guard.epoch, false)?;
             match status["state"].as_str() {
-                Some("ready") => break,
+                Some("ready" | "applied") => break,
                 Some("queued" | "running") => {}
                 Some("failed") => {
                     let error = guard.jobs.read_failure(&guard.job, &guard.epoch)?.unwrap_or_else(|| ApiError::conflict(

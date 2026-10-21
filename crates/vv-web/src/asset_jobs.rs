@@ -26,6 +26,41 @@ const MAX_ASSET: u64 = 2 * 1024 * 1024 * 1024;
 const RESERVE: u64 = 512 * 1024 * 1024;
 const MAX_FILES: usize = 64;
 const MAX_RECORDS: usize = 8;
+const MEDIA_IMPORT_BUDGET: Duration = Duration::from_secs(600);
+#[derive(Clone)]
+pub struct PreparedMedia {
+    pub path_token: String,
+    pub path: PathBuf,
+    pub meta: vv_core::MediaMeta,
+    pub content_hash: u64,
+}
+pub struct ImportPayload {
+    pub items: Vec<PreparedMedia>,
+    pub errors: Vec<Value>,
+    pub first_error: Option<ApiError>,
+}
+struct ImportFile {
+    item: PreparedMedia,
+    file: File,
+    identity: String,
+}
+struct PreparedImport {
+    items: Vec<ImportFile>,
+    errors: Vec<Value>,
+    first_error: Option<ApiError>,
+}
+impl PreparedImport {
+    fn validate(&self, inner: &Inner) -> Result<()> {
+        project_root(inner)?;
+        for item in &self.items {
+            validate_import_file(inner, item)?;
+        }
+        Ok(())
+    }
+    fn value(&self) -> Value {
+        json!({"items":self.items.iter().map(|file|json!({"path_token":file.item.path_token,"name":file.item.path_token,"state":"ready"})).collect::<Vec<_>>(),"errors":self.errors})
+    }
+}
 pub struct PinnedSource {
     pub path: PathBuf,
     pub file: File,
@@ -86,14 +121,22 @@ struct Job {
     edit: Option<asset_store::Edit>,
     command_id: Option<String>,
     fingerprint: Option<[u8; 32]>,
+    media_import: Option<PreparedImport>,
+    import_completed: usize,
+    import_total: usize,
 }
 impl Job {
     fn value(&self) -> Value {
         let result = self.result.as_ref().map(|prepared| {
             let payload = asset_payload::decode(&prepared.asset).ok();
             json!({"asset_id":self.asset_id,"revision":self.revision,"name":prepared.asset.name,"media_count":payload.as_ref().map_or(0,|p| p.media_items().count()),"file_count":prepared.files.len(),"bytes":self.bytes})
-        }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary()));
-        json!({"id":self.id,"kind":self.kind,"project_epoch":self.epoch,"generation":self.generation,"state":self.state,"bytes":self.bytes,"total_bytes":self.total,"error":self.error,"result":result})
+        }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary())).or_else(||self.media_import.as_ref().map(PreparedImport::value));
+        let mut value = json!({"id":self.id,"kind":self.kind,"project_epoch":self.epoch,"generation":self.generation,"state":self.state,"bytes":self.bytes,"total_bytes":self.total,"error":self.error,"result":result});
+        if self.kind == "media_import" {
+            value["progress"] =
+                json!({"completed":self.import_completed,"total":self.import_total});
+        }
+        value
     }
 }
 struct Work {
@@ -103,10 +146,12 @@ struct Work {
     cancel: Arc<AtomicBool>,
     import: Option<(String, String)>,
     edit: Option<(asset_store::Edit, crate::asset_journal::Completion)>,
+    media_import: Option<Vec<String>>,
 }
 enum Finished {
     Media(Prepared),
     Edit(crate::asset_journal::PreparedEdit),
+    Import(PreparedImport),
 }
 struct Inner {
     store: Store,
@@ -187,7 +232,10 @@ impl Jobs {
                     {
                         job.state = "running";
                     }
-                    let result = if let Some((edit, completion)) = &work.edit {
+                    let result = if let Some(tokens) = &work.media_import {
+                        run_media_import(&inner, &work, tokens, MEDIA_IMPORT_BUDGET)
+                            .map(Finished::Import)
+                    } else if let Some((edit, completion)) = &work.edit {
                         inner
                             .store
                             .prepare_edit(edit, completion.clone(), &work.cancel)
@@ -205,6 +253,7 @@ impl Jobs {
                                 match prepared {
                                     Finished::Media(prepared) => job.result = Some(prepared),
                                     Finished::Edit(prepared) => job.edit_result = Some(prepared),
+                                    Finished::Import(prepared) => job.media_import = Some(prepared),
                                 }
                             }
                             Ok(_) => {
@@ -303,6 +352,7 @@ impl Jobs {
             cancel: cancel.clone(),
             import: None,
             edit: Some((edit.clone(), completion)),
+            media_import: None,
         };
         let job = Job {
             id,
@@ -322,6 +372,9 @@ impl Jobs {
             edit: Some(edit),
             command_id: Some(command_id.into()),
             fingerprint: Some(fingerprint),
+            media_import: None,
+            import_completed: 0,
+            import_total: 0,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -443,6 +496,7 @@ impl Jobs {
             cancel: cancel.clone(),
             import: import.clone(),
             edit: None,
+            media_import: None,
         };
         let job = Job {
             id,
@@ -466,6 +520,9 @@ impl Jobs {
             edit: None,
             command_id: None,
             fingerprint: None,
+            media_import: None,
+            import_completed: 0,
+            import_total: 0,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -474,6 +531,121 @@ impl Jobs {
             return Err(busy());
         }
         Ok(value)
+    }
+    pub fn prepare_media_import(
+        &self,
+        epoch: &str,
+        generation: &str,
+        path_tokens: Vec<String>,
+    ) -> Result<Value> {
+        binding(epoch, generation)?;
+        let tokens = crate::files::media_import_tokens(&path_tokens)?;
+        project_root(&self.0)?;
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        // Ready records retain descriptors too. Reserve the complete running/queued
+        // batch up front so the eight-record ring cannot accumulate 2048 witnesses.
+        let retained: usize = jobs
+            .iter()
+            .map(|job| {
+                if matches!(job.state, "queued" | "running") {
+                    job.import_total
+                } else {
+                    job.media_import
+                        .as_ref()
+                        .map_or(0, |prepared| prepared.items.len())
+                }
+            })
+            .sum();
+        if retained.saturating_add(tokens.len()) > crate::files::MAX_MEDIA_IMPORTS {
+            return Err(busy());
+        }
+        reserve(&mut jobs)?;
+        let id = format!("asset-{}", nonce());
+        let cancel = Arc::new(AtomicBool::new(false));
+        let total = tokens.len();
+        let work = Work {
+            id: id.clone(),
+            asset: None,
+            sources: vec![],
+            cancel: cancel.clone(),
+            import: None,
+            edit: None,
+            media_import: Some(tokens),
+        };
+        let job = Job {
+            id,
+            kind: "media_import",
+            epoch: epoch.into(),
+            generation: generation.into(),
+            state: "queued",
+            bytes: 0,
+            total: 0,
+            error: None,
+            failure: None,
+            asset_id: None,
+            revision: None,
+            cancel,
+            result: None,
+            edit_result: None,
+            edit: None,
+            command_id: None,
+            fingerprint: None,
+            media_import: None,
+            import_completed: 0,
+            import_total: total,
+        };
+        let value = job.value();
+        jobs.push_back(job);
+        if self.0.sender.try_send(work).is_err() {
+            jobs.pop_back();
+            return Err(busy());
+        }
+        Ok(value)
+    }
+    pub fn media_import_payload(
+        &self,
+        id: &str,
+        epoch: &str,
+        generation: &str,
+    ) -> Result<ImportPayload> {
+        let jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, "media_import")?;
+        let prepared = job.media_import.as_ref().ok_or_else(ApiError::missing)?;
+        prepared.validate(&self.0)?;
+        Ok(ImportPayload {
+            items: prepared
+                .items
+                .iter()
+                .map(|file| file.item.clone())
+                .collect(),
+            errors: prepared.errors.clone(),
+            first_error: prepared.first_error.clone(),
+        })
+    }
+    // The actor calls this only after its complete native trial, immediately before
+    // infallible allocation/apply. Cancellation and acceptance share this mutex.
+    pub fn accept_media_import(&self, id: &str, epoch: &str, generation: &str) -> Result<()> {
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter_mut()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, "media_import")?;
+        let prepared = job.media_import.as_ref().ok_or_else(ApiError::missing)?;
+        prepared.validate(&self.0)?;
+        if prepared.items.is_empty() {
+            return Err(prepared
+                .first_error
+                .clone()
+                .unwrap_or_else(|| ApiError::invalid("No readable media files were prepared")));
+        }
+        job.state = "applied";
+        job.media_import = None;
+        Ok(())
     }
     pub fn status(&self, id: &str, epoch: &str, cancel: bool) -> Result<Value> {
         let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
@@ -490,6 +662,7 @@ impl Jobs {
                 job.state = "canceled";
                 job.result = None;
                 job.edit_result = None;
+                job.media_import = None;
                 job.error = Some("ASSET_CANCELED");
                 job.failure = Some(canceled());
             }
@@ -517,6 +690,7 @@ impl Jobs {
             job.cancel.store(true, Ordering::Release);
             job.result = None;
             job.edit_result = None;
+            job.media_import = None;
             if !matches!(job.state, "running" | "queued") {
                 job.state = "canceled";
                 job.error = Some("ASSET_CANCELED");
@@ -1068,6 +1242,9 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
 }
 fn roots(inner: &Inner) -> Result<()> {
     inner.store.validate_root()?;
+    project_root(inner)
+}
+fn project_root(inner: &Inner) -> Result<()> {
     let live = File::from(
         rustix::fs::open(
             inner.root.as_path(),
@@ -1077,6 +1254,118 @@ fn roots(inner: &Inner) -> Result<()> {
         .map_err(|_| source_changed())?,
     );
     asset_store::same_directory(&live, &inner.directory)
+}
+
+fn validate_import_file(inner: &Inner, item: &ImportFile) -> Result<()> {
+    let live = File::from(
+        openat(
+            &inner.directory,
+            item.item.path_token.as_str(),
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|_| source_changed())?,
+    );
+    if asset_store::stable_identity(&item.file)? != item.identity
+        || asset_store::stable_identity(&live)? != item.identity
+    {
+        return Err(source_changed());
+    }
+    Ok(())
+}
+fn prepare_import_file(
+    inner: &Inner,
+    token: &str,
+    cancel: &AtomicBool,
+    remaining: Duration,
+) -> Result<ImportFile> {
+    project_root(inner)?;
+    if cancel.load(Ordering::Acquire) {
+        return Err(canceled());
+    }
+    let file = File::from(
+        openat(
+            &inner.directory,
+            token,
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|_| ApiError::missing())?,
+    );
+    if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
+        return Err(ApiError::invalid("Media must be a regular file"));
+    }
+    let identity = asset_store::stable_identity(&file)?;
+    let meta = crate::asset_probe::probe_root_media(
+        &file,
+        vv_media::is_image_path(Path::new(token)),
+        cancel,
+        remaining,
+    )?;
+    let content_hash = fingerprint(&file)?;
+    let result = ImportFile {
+        item: PreparedMedia {
+            path_token: token.into(),
+            path: inner.root.join(token),
+            meta,
+            content_hash,
+        },
+        file,
+        identity,
+    };
+    project_root(inner)?;
+    validate_import_file(inner, &result)?;
+    Ok(result)
+}
+fn run_media_import(
+    inner: &Inner,
+    work: &Work,
+    tokens: &[String],
+    budget: Duration,
+) -> Result<PreparedImport> {
+    let start = Instant::now();
+    let mut prepared = PreparedImport {
+        items: vec![],
+        errors: vec![],
+        first_error: None,
+    };
+    project_root(inner)?;
+    for (index, token) in tokens.iter().enumerate() {
+        if work.cancel.load(Ordering::Acquire) {
+            return Err(canceled());
+        }
+        let remaining = budget.saturating_sub(start.elapsed());
+        let result = if remaining.is_zero() {
+            Err(ApiError::conflict(
+                "MEDIA_IMPORT_BUDGET",
+                "The media import processing budget was exhausted; this file was not prepared",
+            ))
+        } else {
+            prepare_import_file(inner, token, &work.cancel, remaining)
+        };
+        if work.cancel.load(Ordering::Acquire) {
+            return Err(canceled());
+        }
+        match result {
+            Ok(file) => prepared.items.push(file),
+            Err(error) => {
+                prepared.errors.push(json!({"path_token":token,"name":token,"code":error.1,"message":error.2,"status":error.0.as_u16()}));
+                if prepared.first_error.is_none() {
+                    prepared.first_error = Some(error);
+                }
+            }
+        }
+        if let Ok(mut jobs) = inner.jobs.lock()
+            && let Some(job) = jobs.iter_mut().find(|job| job.id == work.id)
+        {
+            job.import_completed = index + 1;
+        }
+    }
+    if work.cancel.load(Ordering::Acquire) {
+        return Err(canceled());
+    }
+    prepared.validate(inner)?;
+    Ok(prepared)
 }
 
 #[cfg(test)]

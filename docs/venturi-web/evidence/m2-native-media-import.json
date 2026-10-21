@@ -1,0 +1,2647 @@
+{
+  "project": "Media_Import_API_check.vvproj",
+  "root": "/home/marco/VenturiWeb-media-import-20261022-3",
+  "project_sha256": "dd1ba3f955d14225c5e9439be379e8570227c3e1de1ac1bf0361949fd24adb86",
+  "media": [
+    {
+      "audio_stream_count": 0,
+      "compound_timeline_id": "1",
+      "content_hash": "3",
+      "duration_frames": 0,
+      "folder": null,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "has_audio": false,
+      "has_video": false,
+      "id": "1",
+      "is_image": false,
+      "name": "Timeline 1",
+      "offline": false
+    },
+    {
+      "audio_stream_count": 1,
+      "compound_timeline_id": null,
+      "content_hash": "13797082783401333765",
+      "duration_frames": 3,
+      "folder": null,
+      "fps": {
+        "den": 1,
+        "num": 30
+      },
+      "has_audio": true,
+      "has_video": false,
+      "id": "2",
+      "is_image": false,
+      "name": "second.wav",
+      "offline": false
+    },
+    {
+      "audio_stream_count": 0,
+      "compound_timeline_id": null,
+      "content_hash": "11435671567367832594",
+      "duration_frames": 1000000000,
+      "folder": null,
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "has_audio": false,
+      "has_video": true,
+      "id": "3",
+      "is_image": true,
+      "name": "native.bmp",
+      "offline": false
+    },
+    {
+      "audio_stream_count": 0,
+      "compound_timeline_id": null,
+      "content_hash": "13195898059207990865",
+      "duration_frames": 14424,
+      "folder": null,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "has_audio": false,
+      "has_video": true,
+      "id": "4",
+      "is_image": false,
+      "name": "long-source-601s.mp4",
+      "offline": false
+    },
+    {
+      "audio_stream_count": 1,
+      "compound_timeline_id": null,
+      "content_hash": "10615968521646715239",
+      "duration_frames": 3,
+      "folder": null,
+      "fps": {
+        "den": 1,
+        "num": 30
+      },
+      "has_audio": true,
+      "has_video": false,
+      "id": "5",
+      "is_image": false,
+      "name": "first.wav",
+      "offline": false
+    },
+    {
+      "audio_stream_count": 0,
+      "compound_timeline_id": "2",
+      "content_hash": "4",
+      "duration_frames": 0,
+      "folder": null,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "has_audio": false,
+      "has_video": false,
+      "id": "6",
+      "is_image": false,
+      "name": "Import CAS",
+      "offline": false
+    }
+  ],
+  "partial_job": {
+    "bytes": 0,
+    "error": null,
+    "generation": "0",
+    "id": "asset-1792625248533905539-0",
+    "kind": "media_import",
+    "progress": {
+      "completed": 5,
+      "total": 5
+    },
+    "project_epoch": "1792625248179519676:1",
+    "result": {
+      "errors": [
+        {
+          "code": "INVALID_OPERATION",
+          "message": "The native engine could not read this media",
+          "name": "bad.wav",
+          "path_token": "bad.wav",
+          "status": 422
+        }
+      ],
+      "items": [
+        {
+          "name": "second.wav",
+          "path_token": "second.wav",
+          "state": "ready"
+        },
+        {
+          "name": "native.bmp",
+          "path_token": "native.bmp",
+          "state": "ready"
+        },
+        {
+          "name": "long-source-601s.mp4",
+          "path_token": "long-source-601s.mp4",
+          "state": "ready"
+        },
+        {
+          "name": "first.wav",
+          "path_token": "first.wav",
+          "state": "ready"
+        }
+      ]
+    },
+    "state": "ready",
+    "total_bytes": 0
+  },
+  "receipt": {
+    "command_epoch": "0",
+    "command_id": "16c96d50-4eca-4df3-ace6-af145984c565",
+    "durability": {
+      "recovery_revision": "778abef58151f8c485a3500fb5d6f56ec0a71e0ed445f9e83d3175e92c57adf3",
+      "state": "recovery"
+    },
+    "errors": [
+      {
+        "code": "INVALID_OPERATION",
+        "message": "The native engine could not read this media",
+        "name": "bad.wav",
+        "path_token": "bad.wav",
+        "status": 422
+      }
+    ],
+    "generation": "1",
+    "media_ids": [
+      "2",
+      "3",
+      "4",
+      "5"
+    ],
+    "project_epoch": "1792625248179519676:1",
+    "receipt_persisted": true,
+    "status": "applied"
+  },
+  "source_sha256": {
+    "first.wav": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+    "second.wav": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+    "third.wav": "c726d333dd159a31423f3480dbb1c5c4a9dfcd30efe1f7e12ade390dc92e8908",
+    "bad.wav": "75582d11d809c40858513e10c671801b617cc158536c09722485e61b57b7fd51",
+    "native.bmp": "d10873ea8010924d06dd3aa239495c00a4227658d5422fc733e0351835ea1c50",
+    "long-source-601s.mp4": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f"
+  },
+  "served_asset_hashes": {
+    "main.js": "97a0c563756ddd849a51a2f494b581878706d84747d39c5ad7f5f93fff4cacd5",
+    "media-import.js": "0814ac8f616afc2a9c35feedde5d60e7439a648e0a2927a46f6d35faea84799e",
+    "source.js": "762807ee3f9bb6e8a8fdfb90fa5f8af794ab848238d1346030fd1e27f44035ac"
+  },
+  "binary_sha256": "82d8561a4cedb87a0889be7dedd891f9527a0b18083b7906ff33ca837bf8858b",
+  "checks": {
+    "prepare_read_only": true,
+    "native_bmp_and_audio_import": true,
+    "first_unique_order": true,
+    "partial_success_file_errors": true,
+    "one_native_import_undo_redo": true,
+    "retry_exact": true,
+    "command_id_reuse_refused": true,
+    "late_cancel_after_applied_keeps_applied": true,
+    "legacy_single_uses_worker": true,
+    "legacy_existing_adds_no_undo": true,
+    "legacy_failure_lookup_and_retry_exact": true,
+    "canceled_ready_never_commits": true,
+    "source_changed_never_commits": true,
+    "stale_generation_never_commits": true,
+    "sources_preserved": true,
+    "save_restart_exact": true,
+    "receipt_survives_restart": true
+  },
+  "hardware_gpu_used": false,
+  "no_gpu_or_shared_lock_fds": true,
+  "limits": [
+    "Only small native audio/BMP fixtures and one Windows browser tab; no local build, browser download, environment rebuild, GPU, long rendering or soak.",
+    "Batch <=256 unique root files, <=4096 raw tokens, global import witnesses <=256; one shared worker and one pending job. Each isolated native probe <=512 MiB address space, ten CPU seconds and twenty wall seconds; batch processing <=600 seconds. Source file length is not an asset-storage cap.",
+    "Native extension dispatch and BMP/audio metadata are covered; broad codec, hostile-media, high-resolution and every still format in Source are not accepted by this evidence.",
+    "No new NAS mount or library configuration. Shared ds4 media integration remains separate. The main editor retained its five unsaved MoveClips and Undo; this candidate is staged without restarting it."
+  ],
+  "gui_acceptance": false,
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "primary_editor_preserved": true,
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792625232.606922,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "82d8561a4cedb87a0889be7dedd891f9527a0b18083b7906ff33ca837bf8858b",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "rust_tests": 333,
+  "javascript_tests": 658,
+  "validation_summary": [
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-core",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.06s",
+    "test result: ok. 277 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+    "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media browser_proxy::tests::",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.05s",
+    "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out; finished in 0.44s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_software_thread_bound",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.05s",
+    "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 0.21s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_cached_device_release",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.05s",
+    "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 126 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-web",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 47.18s",
+    "test result: ok. 333 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.72s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo clippy --locked -p vv-core -p vv-media -p vv-web -p vv-app --all-targets -- -D warnings",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 3.16s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-app --bin vv-app web_exported_ -- --test-threads=1",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.15s",
+    "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 545 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-app --bin vv-app web_compatible_folder_removal_ -- --test-threads=1",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.12s",
+    "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 547 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/node/bin/node --test --test-concurrency=1 web/test/api.test.js web/test/attributes.test.js web/test/audio-meters.test.js web/test/audition.test.js web/test/balance.test.js web/test/capture.test.js web/test/catalog.test.js web/test/compound-navigation.test.js web/test/curves.test.js web/test/eventkeys.test.js web/test/export-codecs.test.js web/test/export-panel.test.js web/test/export.test.js web/test/fast-transport.test.js web/test/inspector.test.js web/test/keyselection.test.js web/test/library.test.js web/test/masks.test.js web/test/media-import-panel.test.js web/test/media-import.test.js web/test/mixer.test.js web/test/native-asset-folders.test.js web/test/native-assets-panel.test.js web/test/native-assets.test.js web/test/preset-panel.test.js web/test/preset-shortcuts.test.js web/test/presets.test.js web/test/preview-cache.test.js web/test/program-range.test.js web/test/program.test.js web/test/recovery.test.js web/test/retime-inspector.test.js web/test/retime-menu.test.js web/test/retime-visibility.test.js web/test/review.test.js web/test/reviewmeta.test.js web/test/scopes.test.js web/test/silence.test.js web/test/slip.test.js web/test/source-assets.test.js web/test/source-clock.test.js web/test/source-seek.test.js web/test/source-streams.test.js web/test/source-windows.test.js web/test/source.test.js web/test/timeline-compound-input.test.js web/test/timeline-fades.test.js web/test/timeline-preset-drop.test.js web/test/timeline-retime-input.test.js web/test/timeline-retime.test.js web/test/timeline-transition-input.test.js web/test/timeline-transition-placement-input.test.js web/test/timeline-transition-placement.test.js web/test/timeline-transitions.test.js web/test/timeline.test.js web/test/transition-selection.test.js web/test/ui.test.js web/test/viewer-mask-overlay.test.js web/test/viewer-mask-pen.test.js web/test/viewer-mask.test.js web/test/viewer-transform-overlay.test.js web/test/viewer-transform.test.js web/test/viewer.test.js web/test/visual.test.js web/test/voiceover.test.js",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo build --locked -p vv-web",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 38.21s"
+  ],
+  "windows_native_states": {
+    "before": {
+      "session": {
+        "api_version": 1,
+        "audio_effects": {
+          "compressor": {
+            "attack_ms": [
+              0.10000000149011612,
+              200.0
+            ],
+            "crossovers_hz": [
+              20.0,
+              20000.0
+            ],
+            "makeup_db": [
+              -12.0,
+              24.0
+            ],
+            "ratio": [
+              1.0,
+              20.0
+            ],
+            "release_ms": [
+              5.0,
+              2000.0
+            ],
+            "threshold_db": [
+              -60.0,
+              0.0
+            ]
+          },
+          "defaults": {
+            "Equalizer": {
+              "enabled": true,
+              "kind": {
+                "Equalizer": {
+                  "bands": [
+                    {
+                      "enabled": false,
+                      "freq_hz": 80.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighPass"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 120.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowShelf"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 2500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 8000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighShelf"
+                    },
+                    {
+                      "enabled": false,
+                      "freq_hz": 18000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowPass"
+                    }
+                  ]
+                }
+              }
+            },
+            "Mono": {
+              "enabled": true,
+              "kind": "Mono"
+            },
+            "MultibandCompressor": {
+              "enabled": true,
+              "kind": {
+                "MultibandCompressor": {
+                  "bands": [
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    }
+                  ],
+                  "crossovers_hz": [
+                    200.0,
+                    2000.0
+                  ]
+                }
+              }
+            },
+            "Normalize": {
+              "enabled": true,
+              "kind": {
+                "Normalize": {
+                  "mode": "SamplePeak",
+                  "set_level": "Relative",
+                  "target_db": -1.0
+                }
+              }
+            }
+          },
+          "eq": {
+            "freq_hz": [
+              20.0,
+              20000.0
+            ],
+            "gain_db": [
+              -24.0,
+              24.0
+            ],
+            "q": [
+              0.10000000149011612,
+              18.0
+            ],
+            "shapes": [
+              "HighPass",
+              "LowShelf",
+              "Peak",
+              "HighShelf",
+              "LowPass"
+            ]
+          },
+          "normalization": [
+            {
+              "default": -1.0,
+              "mode": "SamplePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -1.0,
+              "mode": "TruePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -23.0,
+              "mode": "Loudness",
+              "range": [
+                -40.0,
+                -5.0
+              ]
+            }
+          ],
+          "presets": {
+            "Equalizer": [
+              "mixer.eq_preset_flat",
+              "mixer.eq_preset_voice",
+              "mixer.eq_preset_warm",
+              "mixer.eq_preset_bright",
+              "mixer.eq_preset_mud",
+              "mixer.eq_preset_rumble",
+              "mixer.eq_preset_telephone"
+            ],
+            "MultibandCompressor": [
+              "mixer.preset_default",
+              "mixer.preset_glue",
+              "mixer.preset_voice",
+              "mixer.preset_deesser",
+              "mixer.preset_low_end",
+              "mixer.preset_broadcast",
+              "mixer.preset_master"
+            ]
+          }
+        },
+        "autosave": {
+          "base_changed": true,
+          "created_unix_ms": 1792625249243,
+          "pending": false,
+          "project_token": "Media_Import_API_check.vvproj",
+          "resolved_to": "Media_Import_API_check.vvproj",
+          "revision": "16519c40748e17416bd93d1318d8699b234d52f66ac7f941edd27ca4737347ff",
+          "state": "saved"
+        },
+        "capabilities": {
+          "editing": true,
+          "export": false,
+          "media_imports": true,
+          "native_assets": true,
+          "playback": false,
+          "preview": false,
+          "scopes": false,
+          "software_preview": false,
+          "source_playback": true
+        },
+        "clipboard_count": 0,
+        "clipboard_revision": null,
+        "command_epoch": "0",
+        "folders": [],
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "import_warnings": [],
+        "media": [
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "1",
+            "content_hash": "3",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "1",
+            "is_image": false,
+            "name": "Timeline 1",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "13797082783401333765",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "2",
+            "is_image": false,
+            "name": "second.wav",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "11435671567367832594",
+            "duration_frames": 1000000000,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 25
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "3",
+            "is_image": true,
+            "name": "native.bmp",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "13195898059207990865",
+            "duration_frames": 14424,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "4",
+            "is_image": false,
+            "name": "long-source-601s.mp4",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "10615968521646715239",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "5",
+            "is_image": false,
+            "name": "first.wav",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "2",
+            "content_hash": "4",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "6",
+            "is_image": false,
+            "name": "Import CAS",
+            "offline": false
+          }
+        ],
+        "persistence_notice": null,
+        "project_epoch": "1792625254158922327:1",
+        "project_name": "Media_Import_API_check.vvproj",
+        "recording_formats": [
+          {
+            "id": "mp3",
+            "label": "MP3"
+          },
+          {
+            "id": "wav",
+            "label": "WAV"
+          },
+          {
+            "id": "flac",
+            "label": "FLAC"
+          },
+          {
+            "id": "aac",
+            "label": "AAC (.m4a)"
+          },
+          {
+            "id": "opus",
+            "label": "Opus"
+          },
+          {
+            "id": "vorbis",
+            "label": "Ogg Vorbis"
+          }
+        ],
+        "timelines": [
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "1",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Timeline 1",
+            "resolution": {
+              "height": 1080,
+              "width": 1920
+            },
+            "revision": "d1215a762e8d85aa",
+            "timeline_id": "1",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          },
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "2",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Import CAS",
+            "resolution": {
+              "height": 360,
+              "width": 640
+            },
+            "revision": "984a0b5b16f064e8",
+            "timeline_id": "2",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          }
+        ],
+        "unsaved": false
+      },
+      "main_editor_preserved": true,
+      "saved_project_bytes_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    },
+    "imported": {
+      "session": {
+        "api_version": 1,
+        "audio_effects": {
+          "compressor": {
+            "attack_ms": [
+              0.10000000149011612,
+              200.0
+            ],
+            "crossovers_hz": [
+              20.0,
+              20000.0
+            ],
+            "makeup_db": [
+              -12.0,
+              24.0
+            ],
+            "ratio": [
+              1.0,
+              20.0
+            ],
+            "release_ms": [
+              5.0,
+              2000.0
+            ],
+            "threshold_db": [
+              -60.0,
+              0.0
+            ]
+          },
+          "defaults": {
+            "Equalizer": {
+              "enabled": true,
+              "kind": {
+                "Equalizer": {
+                  "bands": [
+                    {
+                      "enabled": false,
+                      "freq_hz": 80.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighPass"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 120.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowShelf"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 2500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 8000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighShelf"
+                    },
+                    {
+                      "enabled": false,
+                      "freq_hz": 18000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowPass"
+                    }
+                  ]
+                }
+              }
+            },
+            "Mono": {
+              "enabled": true,
+              "kind": "Mono"
+            },
+            "MultibandCompressor": {
+              "enabled": true,
+              "kind": {
+                "MultibandCompressor": {
+                  "bands": [
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    }
+                  ],
+                  "crossovers_hz": [
+                    200.0,
+                    2000.0
+                  ]
+                }
+              }
+            },
+            "Normalize": {
+              "enabled": true,
+              "kind": {
+                "Normalize": {
+                  "mode": "SamplePeak",
+                  "set_level": "Relative",
+                  "target_db": -1.0
+                }
+              }
+            }
+          },
+          "eq": {
+            "freq_hz": [
+              20.0,
+              20000.0
+            ],
+            "gain_db": [
+              -24.0,
+              24.0
+            ],
+            "q": [
+              0.10000000149011612,
+              18.0
+            ],
+            "shapes": [
+              "HighPass",
+              "LowShelf",
+              "Peak",
+              "HighShelf",
+              "LowPass"
+            ]
+          },
+          "normalization": [
+            {
+              "default": -1.0,
+              "mode": "SamplePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -1.0,
+              "mode": "TruePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -23.0,
+              "mode": "Loudness",
+              "range": [
+                -40.0,
+                -5.0
+              ]
+            }
+          ],
+          "presets": {
+            "Equalizer": [
+              "mixer.eq_preset_flat",
+              "mixer.eq_preset_voice",
+              "mixer.eq_preset_warm",
+              "mixer.eq_preset_bright",
+              "mixer.eq_preset_mud",
+              "mixer.eq_preset_rumble",
+              "mixer.eq_preset_telephone"
+            ],
+            "MultibandCompressor": [
+              "mixer.preset_default",
+              "mixer.preset_glue",
+              "mixer.preset_voice",
+              "mixer.preset_deesser",
+              "mixer.preset_low_end",
+              "mixer.preset_broadcast",
+              "mixer.preset_master"
+            ]
+          }
+        },
+        "autosave": {
+          "base_changed": false,
+          "created_unix_ms": 1792625270337,
+          "pending": false,
+          "project_token": "Media_Import_API_check.vvproj",
+          "resolved_to": null,
+          "revision": "7948814353ee28a02671d6921a29772a7c4cfed1dafb2719d6fa9887194a98d1",
+          "state": "ready"
+        },
+        "capabilities": {
+          "editing": true,
+          "export": false,
+          "media_imports": true,
+          "native_assets": true,
+          "playback": false,
+          "preview": false,
+          "scopes": false,
+          "software_preview": false,
+          "source_playback": true
+        },
+        "clipboard_count": 0,
+        "clipboard_revision": null,
+        "command_epoch": "0",
+        "folders": [],
+        "generation": "1",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 1
+        },
+        "import_warnings": [],
+        "media": [
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "1",
+            "content_hash": "3",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "1",
+            "is_image": false,
+            "name": "Timeline 1",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "13797082783401333765",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "2",
+            "is_image": false,
+            "name": "second.wav",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "11435671567367832594",
+            "duration_frames": 1000000000,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 25
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "3",
+            "is_image": true,
+            "name": "native.bmp",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "13195898059207990865",
+            "duration_frames": 14424,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "4",
+            "is_image": false,
+            "name": "long-source-601s.mp4",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "10615968521646715239",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "5",
+            "is_image": false,
+            "name": "first.wav",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "2",
+            "content_hash": "4",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "6",
+            "is_image": false,
+            "name": "Import CAS",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "16505281471030809129",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "7",
+            "is_image": false,
+            "name": "third.wav",
+            "offline": false
+          }
+        ],
+        "persistence_notice": null,
+        "project_epoch": "1792625254158922327:1",
+        "project_name": "Media_Import_API_check.vvproj",
+        "recording_formats": [
+          {
+            "id": "mp3",
+            "label": "MP3"
+          },
+          {
+            "id": "wav",
+            "label": "WAV"
+          },
+          {
+            "id": "flac",
+            "label": "FLAC"
+          },
+          {
+            "id": "aac",
+            "label": "AAC (.m4a)"
+          },
+          {
+            "id": "opus",
+            "label": "Opus"
+          },
+          {
+            "id": "vorbis",
+            "label": "Ogg Vorbis"
+          }
+        ],
+        "timelines": [
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "1",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Timeline 1",
+            "resolution": {
+              "height": 1080,
+              "width": 1920
+            },
+            "revision": "d1215a762e8d85aa",
+            "timeline_id": "1",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          },
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "2",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Import CAS",
+            "resolution": {
+              "height": 360,
+              "width": 640
+            },
+            "revision": "984a0b5b16f064e8",
+            "timeline_id": "2",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          }
+        ],
+        "unsaved": true
+      },
+      "main_editor_preserved": true,
+      "saved_project_bytes_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    },
+    "undone": {
+      "session": {
+        "api_version": 1,
+        "audio_effects": {
+          "compressor": {
+            "attack_ms": [
+              0.10000000149011612,
+              200.0
+            ],
+            "crossovers_hz": [
+              20.0,
+              20000.0
+            ],
+            "makeup_db": [
+              -12.0,
+              24.0
+            ],
+            "ratio": [
+              1.0,
+              20.0
+            ],
+            "release_ms": [
+              5.0,
+              2000.0
+            ],
+            "threshold_db": [
+              -60.0,
+              0.0
+            ]
+          },
+          "defaults": {
+            "Equalizer": {
+              "enabled": true,
+              "kind": {
+                "Equalizer": {
+                  "bands": [
+                    {
+                      "enabled": false,
+                      "freq_hz": 80.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighPass"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 120.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowShelf"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 2500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 8000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighShelf"
+                    },
+                    {
+                      "enabled": false,
+                      "freq_hz": 18000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowPass"
+                    }
+                  ]
+                }
+              }
+            },
+            "Mono": {
+              "enabled": true,
+              "kind": "Mono"
+            },
+            "MultibandCompressor": {
+              "enabled": true,
+              "kind": {
+                "MultibandCompressor": {
+                  "bands": [
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    }
+                  ],
+                  "crossovers_hz": [
+                    200.0,
+                    2000.0
+                  ]
+                }
+              }
+            },
+            "Normalize": {
+              "enabled": true,
+              "kind": {
+                "Normalize": {
+                  "mode": "SamplePeak",
+                  "set_level": "Relative",
+                  "target_db": -1.0
+                }
+              }
+            }
+          },
+          "eq": {
+            "freq_hz": [
+              20.0,
+              20000.0
+            ],
+            "gain_db": [
+              -24.0,
+              24.0
+            ],
+            "q": [
+              0.10000000149011612,
+              18.0
+            ],
+            "shapes": [
+              "HighPass",
+              "LowShelf",
+              "Peak",
+              "HighShelf",
+              "LowPass"
+            ]
+          },
+          "normalization": [
+            {
+              "default": -1.0,
+              "mode": "SamplePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -1.0,
+              "mode": "TruePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -23.0,
+              "mode": "Loudness",
+              "range": [
+                -40.0,
+                -5.0
+              ]
+            }
+          ],
+          "presets": {
+            "Equalizer": [
+              "mixer.eq_preset_flat",
+              "mixer.eq_preset_voice",
+              "mixer.eq_preset_warm",
+              "mixer.eq_preset_bright",
+              "mixer.eq_preset_mud",
+              "mixer.eq_preset_rumble",
+              "mixer.eq_preset_telephone"
+            ],
+            "MultibandCompressor": [
+              "mixer.preset_default",
+              "mixer.preset_glue",
+              "mixer.preset_voice",
+              "mixer.preset_deesser",
+              "mixer.preset_low_end",
+              "mixer.preset_broadcast",
+              "mixer.preset_master"
+            ]
+          }
+        },
+        "autosave": {
+          "base_changed": false,
+          "created_unix_ms": 1792625291689,
+          "pending": false,
+          "project_token": "Media_Import_API_check.vvproj",
+          "resolved_to": null,
+          "revision": "64987905d99e1b60dcdc4d0c909c2ba8d359e94ba36f9e7ea7a27d4fe4136796",
+          "state": "ready"
+        },
+        "capabilities": {
+          "editing": true,
+          "export": false,
+          "media_imports": true,
+          "native_assets": true,
+          "playback": false,
+          "preview": false,
+          "scopes": false,
+          "software_preview": false,
+          "source_playback": true
+        },
+        "clipboard_count": 0,
+        "clipboard_revision": null,
+        "command_epoch": "0",
+        "folders": [],
+        "generation": "2",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 0
+        },
+        "import_warnings": [],
+        "media": [
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "1",
+            "content_hash": "5",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "1",
+            "is_image": false,
+            "name": "Timeline 1",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "13797082783401333765",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "2",
+            "is_image": false,
+            "name": "second.wav",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "11435671567367832594",
+            "duration_frames": 1000000000,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 25
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "3",
+            "is_image": true,
+            "name": "native.bmp",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "13195898059207990865",
+            "duration_frames": 14424,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "4",
+            "is_image": false,
+            "name": "long-source-601s.mp4",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "10615968521646715239",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "5",
+            "is_image": false,
+            "name": "first.wav",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "2",
+            "content_hash": "6",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "6",
+            "is_image": false,
+            "name": "Import CAS",
+            "offline": false
+          }
+        ],
+        "persistence_notice": null,
+        "project_epoch": "1792625254158922327:1",
+        "project_name": "Media_Import_API_check.vvproj",
+        "recording_formats": [
+          {
+            "id": "mp3",
+            "label": "MP3"
+          },
+          {
+            "id": "wav",
+            "label": "WAV"
+          },
+          {
+            "id": "flac",
+            "label": "FLAC"
+          },
+          {
+            "id": "aac",
+            "label": "AAC (.m4a)"
+          },
+          {
+            "id": "opus",
+            "label": "Opus"
+          },
+          {
+            "id": "vorbis",
+            "label": "Ogg Vorbis"
+          }
+        ],
+        "timelines": [
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "1",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Timeline 1",
+            "resolution": {
+              "height": 1080,
+              "width": 1920
+            },
+            "revision": "d1215a762e8d85aa",
+            "timeline_id": "1",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          },
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "2",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Import CAS",
+            "resolution": {
+              "height": 360,
+              "width": 640
+            },
+            "revision": "984a0b5b16f064e8",
+            "timeline_id": "2",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          }
+        ],
+        "unsaved": true
+      },
+      "main_editor_preserved": true,
+      "saved_project_bytes_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    },
+    "redone": {
+      "session": {
+        "api_version": 1,
+        "audio_effects": {
+          "compressor": {
+            "attack_ms": [
+              0.10000000149011612,
+              200.0
+            ],
+            "crossovers_hz": [
+              20.0,
+              20000.0
+            ],
+            "makeup_db": [
+              -12.0,
+              24.0
+            ],
+            "ratio": [
+              1.0,
+              20.0
+            ],
+            "release_ms": [
+              5.0,
+              2000.0
+            ],
+            "threshold_db": [
+              -60.0,
+              0.0
+            ]
+          },
+          "defaults": {
+            "Equalizer": {
+              "enabled": true,
+              "kind": {
+                "Equalizer": {
+                  "bands": [
+                    {
+                      "enabled": false,
+                      "freq_hz": 80.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighPass"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 120.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowShelf"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 2500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 8000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighShelf"
+                    },
+                    {
+                      "enabled": false,
+                      "freq_hz": 18000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowPass"
+                    }
+                  ]
+                }
+              }
+            },
+            "Mono": {
+              "enabled": true,
+              "kind": "Mono"
+            },
+            "MultibandCompressor": {
+              "enabled": true,
+              "kind": {
+                "MultibandCompressor": {
+                  "bands": [
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    }
+                  ],
+                  "crossovers_hz": [
+                    200.0,
+                    2000.0
+                  ]
+                }
+              }
+            },
+            "Normalize": {
+              "enabled": true,
+              "kind": {
+                "Normalize": {
+                  "mode": "SamplePeak",
+                  "set_level": "Relative",
+                  "target_db": -1.0
+                }
+              }
+            }
+          },
+          "eq": {
+            "freq_hz": [
+              20.0,
+              20000.0
+            ],
+            "gain_db": [
+              -24.0,
+              24.0
+            ],
+            "q": [
+              0.10000000149011612,
+              18.0
+            ],
+            "shapes": [
+              "HighPass",
+              "LowShelf",
+              "Peak",
+              "HighShelf",
+              "LowPass"
+            ]
+          },
+          "normalization": [
+            {
+              "default": -1.0,
+              "mode": "SamplePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -1.0,
+              "mode": "TruePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -23.0,
+              "mode": "Loudness",
+              "range": [
+                -40.0,
+                -5.0
+              ]
+            }
+          ],
+          "presets": {
+            "Equalizer": [
+              "mixer.eq_preset_flat",
+              "mixer.eq_preset_voice",
+              "mixer.eq_preset_warm",
+              "mixer.eq_preset_bright",
+              "mixer.eq_preset_mud",
+              "mixer.eq_preset_rumble",
+              "mixer.eq_preset_telephone"
+            ],
+            "MultibandCompressor": [
+              "mixer.preset_default",
+              "mixer.preset_glue",
+              "mixer.preset_voice",
+              "mixer.preset_deesser",
+              "mixer.preset_low_end",
+              "mixer.preset_broadcast",
+              "mixer.preset_master"
+            ]
+          }
+        },
+        "autosave": {
+          "base_changed": false,
+          "created_unix_ms": 1792625299946,
+          "pending": false,
+          "project_token": "Media_Import_API_check.vvproj",
+          "resolved_to": null,
+          "revision": "6ea014832e00f08f65fb9429db751477efe8388c8a6abdd2129797579dc55c20",
+          "state": "ready"
+        },
+        "capabilities": {
+          "editing": true,
+          "export": false,
+          "media_imports": true,
+          "native_assets": true,
+          "playback": false,
+          "preview": false,
+          "scopes": false,
+          "software_preview": false,
+          "source_playback": true
+        },
+        "clipboard_count": 0,
+        "clipboard_revision": null,
+        "command_epoch": "0",
+        "folders": [],
+        "generation": "3",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 1
+        },
+        "import_warnings": [],
+        "media": [
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "1",
+            "content_hash": "7",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "1",
+            "is_image": false,
+            "name": "Timeline 1",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "13797082783401333765",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "2",
+            "is_image": false,
+            "name": "second.wav",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "11435671567367832594",
+            "duration_frames": 1000000000,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 25
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "3",
+            "is_image": true,
+            "name": "native.bmp",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": null,
+            "content_hash": "13195898059207990865",
+            "duration_frames": 14424,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": true,
+            "id": "4",
+            "is_image": false,
+            "name": "long-source-601s.mp4",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "10615968521646715239",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "5",
+            "is_image": false,
+            "name": "first.wav",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "2",
+            "content_hash": "8",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "6",
+            "is_image": false,
+            "name": "Import CAS",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "16505281471030809129",
+            "duration_frames": 3,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 30
+            },
+            "has_audio": true,
+            "has_video": false,
+            "id": "7",
+            "is_image": false,
+            "name": "third.wav",
+            "offline": false
+          }
+        ],
+        "persistence_notice": null,
+        "project_epoch": "1792625254158922327:1",
+        "project_name": "Media_Import_API_check.vvproj",
+        "recording_formats": [
+          {
+            "id": "mp3",
+            "label": "MP3"
+          },
+          {
+            "id": "wav",
+            "label": "WAV"
+          },
+          {
+            "id": "flac",
+            "label": "FLAC"
+          },
+          {
+            "id": "aac",
+            "label": "AAC (.m4a)"
+          },
+          {
+            "id": "opus",
+            "label": "Opus"
+          },
+          {
+            "id": "vorbis",
+            "label": "Ogg Vorbis"
+          }
+        ],
+        "timelines": [
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "1",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Timeline 1",
+            "resolution": {
+              "height": 1080,
+              "width": 1920
+            },
+            "revision": "d1215a762e8d85aa",
+            "timeline_id": "1",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          },
+          {
+            "api_version": 1,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "id": "2",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Import CAS",
+            "resolution": {
+              "height": 360,
+              "width": 640
+            },
+            "revision": "984a0b5b16f064e8",
+            "timeline_id": "2",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          }
+        ],
+        "unsaved": true
+      },
+      "main_editor_preserved": true,
+      "saved_project_bytes_preserved": true,
+      "no_gpu_or_shared_lock_fds": true
+    }
+  },
+  "windows_browser": {
+    "dialog": {
+      "buttonDisabled": [
+        {
+          "disabled": false,
+          "label": "Refresh import files"
+        },
+        {
+          "disabled": true,
+          "label": "Import selected files"
+        },
+        {
+          "disabled": true,
+          "label": "Cancel import"
+        }
+      ],
+      "results": [
+        "first.wav \u00b7 imported",
+        "bad.wav \u00b7 INVALID_OPERATION: The native engine could not read this media",
+        "third.wav \u00b7 imported"
+      ],
+      "selection": [
+        "first.wav",
+        "bad.wav",
+        "third.wav"
+      ],
+      "status": "2 files imported \u00b7 1 could not be imported"
+    },
+    "imported": {
+      "redoDisabled": true,
+      "selected": [
+        {
+          "id": "5",
+          "label": "first.wav"
+        },
+        {
+          "id": "7",
+          "label": "third.wav"
+        }
+      ],
+      "source": "third.wav \u00b7 SOURCE WINDOW \u00b7 0\u20133 / 3 frames \u00b7 medium \u00b7 audio stream 0 (zero-based)",
+      "undoDisabled": false,
+      "video": {
+        "error": null,
+        "readyState": 4,
+        "src": "/api/v1/media/7/jobs/1792625270480371647/source.mp4?project_epoch=1792625254158922327%3A1"
+      }
+    },
+    "undone": {
+      "redoDisabled": false,
+      "thirdVisible": false,
+      "undoDisabled": true
+    },
+    "redone": {
+      "redoDisabled": true,
+      "thirdVisible": true,
+      "undoDisabled": false
+    },
+    "console_errors": []
+  },
+  "build_resource_sample": {
+    "MainPID": "1463748",
+    "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-build-20261021.service",
+    "MemoryCurrent": "1717837824",
+    "MemoryPeak": "1852317696",
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "4294967296",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19",
+    "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n",
+    "shared_mem_available_gib": 118.84
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "1c3afad68dc34d8ecbe755fff7dded2f2bd54f6d247f40275ab3ca314711a6bd",
+      "crates/vv-web/src/asset_jobs.rs": "47d4eacf58c3c7e61aedab0f6cbfc42659e46771e1c6c1d3bcfd1222b9afaf4c",
+      "crates/vv-web/src/asset_probe.rs": "29c5f89a5ae7a25c1e8631e3717f68f2f5f5fa415399159d1ca783740cf9d908",
+      "crates/vv-web/src/commands.rs": "ae1006744c607ff4ad68781d7a5f888b87e03bd276e8c3054461e45613ced01e",
+      "crates/vv-web/src/files.rs": "9be76c0aebc78648b44ed043586b71181924f870c2d4711c1222b70ab30376e7",
+      "crates/vv-web/src/host.rs": "270620b179c36b160d0711d934290387874ea858fa1f1d684f03365939e231d9",
+      "crates/vv-web/src/receipts.rs": "d5149b3a152db9396a12c61bacc7a7cbd2748362475df73ee13ed7c571120bda",
+      "crates/vv-web/src/tests/api.rs": "167948cb5ce8f528dd93a8de8c588fddc91cb70633ea93c7ff100ad0b3fb5f08",
+      "crates/vv-web/src/tests/asset_jobs.rs": "508cd3d082c2103f145d0d1807dd0b74ff67ab9d666563e40080fbac7fb92c91",
+      "crates/vv-web/src/tests/asset_probe.rs": "0d43be3cf829376262fce6183316e72b65c2e6ff8e5e1864463bfb306148c1b7",
+      "crates/vv-web/src/tests/files.rs": "5a1d3fcc2912f1f6c45dc0acc6a782a2c4b7f6f755002d32411f8c72d81eff52",
+      "crates/vv-web/src/tests/host.rs": "8f5504e32d96c91d13f5ac90c449a5073c8a5a02063fbabfa4e3f523b6a0c478",
+      "crates/vv-web/src/tests/receipts.rs": "411963c0fc77e55efea08578dd134de4ab93da4073d124759b0b411db330ac1a",
+      "web/index.html": "a4caf029b1fea3ab86ecdcc6360de09d3512edbb67bb3b1a302a0e0e52d12f0d",
+      "web/js/main.js": "97a0c563756ddd849a51a2f494b581878706d84747d39c5ad7f5f93fff4cacd5",
+      "web/js/media-import.js": "0814ac8f616afc2a9c35feedde5d60e7439a648e0a2927a46f6d35faea84799e",
+      "web/test/media-import-panel.test.js": "5374e3a6b39aa6d222988ba862cde9e0b6e07e10b32aac56c83b9655af581976",
+      "web/test/media-import.test.js": "90a55224ec684dd9838dedcd9b7670e0cfcaae81bb71ce2a551e5936beb22f23"
+    },
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "core_tests": 277,
+    "rust_tests": 333,
+    "javascript_tests": 658,
+    "native_desktop_tests": 4,
+    "browser_gui": true,
+    "browser_multi_select": true,
+    "browser_partial_success": true,
+    "browser_existing_path_reuse": true,
+    "browser_all_successes_selected": true,
+    "browser_last_source_open": true,
+    "browser_one_undo_redo": true,
+    "physical_drag": false,
+    "rendered_gpu": false
+  },
+  "validation_repairs": [
+    "First full run: 328/330 web tests passed. Corrected two fixture assumptions: root replacement preserves existing ASSET_CHANGED code; native timeline wrapper content hashes change during Undo/Redo, so file media are compared separately.",
+    "A static concurrent retry review found already-applied jobs could report canceled; stopped the second bounded build, fixed ready/applied replay and terminal receipt lookup, and added a deterministic success/failure owner regression before repeating full validation.",
+    "After interrupting compilation, the linker reported undefined hidden symbols in vv-web intermediates. Cleaned only that package under the same resource limits, retaining the cached toolchain and all dependencies; full validation then passed.",
+    "Finite API fixture expectations were corrected for existing ASSET_NOT_READY cancellation responses and the existing server_restarted:true receipt marker. No production change was needed for either expectation.",
+    "Review of large batch reports found the original 4096-byte receipt entry cap too small. Entries now allow 1 MiB within the unchanged 8 MiB journal; native preparation and large import acknowledgments retire cached receipts by bytes as well as count, with a deterministic memory-budget regression."
+  ],
+  "own_browser_tab_closed": true,
+  "own_tunnel_stopped": true,
+  "own_ui_server_stopped": true
+}

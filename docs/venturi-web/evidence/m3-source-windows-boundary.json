@@ -1,0 +1,144 @@
+{
+  "status": "passed",
+  "scope": "Real Windows browser functional Source boundary check; no long wall-clock, high-resolution, physical audio or gapless acceptance",
+  "source_commit": "0c0ea8b60dc1b5719a194ab17bed3f4eacf8f0ef",
+  "binary_sha256": "760d9c32f5e7e43165144fe99425c3f9743d6e6cf6cd3e1bb92daf928f85c501",
+  "source": {
+    "audio_stream_count": 0,
+    "compound_timeline_id": null,
+    "content_hash": "6990017245511064573",
+    "duration_frames": 14424,
+    "folder": null,
+    "fps": {
+      "den": 1,
+      "num": 24
+    },
+    "has_audio": false,
+    "has_video": true,
+    "id": "2",
+    "is_image": false,
+    "name": "long-source-601s.mp4",
+    "offline": false
+  },
+  "source_sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+  "source_logical_bytes": 200058,
+  "browser": {
+    "observations": [
+      {
+        "currentTime": 0,
+        "duration": 60,
+        "ended": false,
+        "error": null,
+        "frame": "12960",
+        "observed_at": "2026-10-21T23:08:30.313Z",
+        "paused": true,
+        "readyState": 4,
+        "src": "/api/v1/media/2/jobs/1792624091808798621/source.mp4?project_epoch=1792623924677277678%3A1",
+        "status": "long-source-601s.mp4 \u00b7 SOURCE WINDOW \u00b7 12960\u201314400 / 14424 frames \u00b7 medium"
+      },
+      {
+        "currentTime": 58,
+        "duration": 60,
+        "ended": false,
+        "error": null,
+        "frame": "14352",
+        "observed_at": "2026-10-21T23:08:36.398Z",
+        "paused": true,
+        "readyState": 4,
+        "src": "/api/v1/media/2/jobs/1792624091808798621/source.mp4?project_epoch=1792623924677277678%3A1",
+        "status": "long-source-601s.mp4 \u00b7 SOURCE WINDOW \u00b7 12960\u201314400 / 14424 frames \u00b7 medium"
+      },
+      {
+        "currentTime": 1,
+        "duration": 1,
+        "ended": true,
+        "error": null,
+        "frame": "14423",
+        "observed_at": "2026-10-21T23:08:44.999Z",
+        "paused": true,
+        "readyState": 4,
+        "src": "/api/v1/media/2/jobs/1792624119410806859/source.mp4?project_epoch=1792623924677277678%3A1",
+        "status": "long-source-601s.mp4 \u00b7 End of Source"
+      }
+    ],
+    "console_errors": []
+  },
+  "jobs": [
+    {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": false,
+      "error": null,
+      "export_revision": null,
+      "frames": 1440,
+      "id": "1792624091808798621",
+      "previous_state": null,
+      "program": null,
+      "progress": null,
+      "project_epoch": null,
+      "source_asset": "source.mp4",
+      "source_assets": null,
+      "source_window": {
+        "audio_stream_index": 0,
+        "end_frame": 14400,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "source_version": "64512:8261745:200058:1792623917:630213145",
+        "start_frame": 12960,
+        "total_frames": 14424
+      },
+      "state": "ready"
+    },
+    {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": false,
+      "error": null,
+      "export_revision": null,
+      "frames": 24,
+      "id": "1792624119410806859",
+      "previous_state": null,
+      "program": null,
+      "progress": null,
+      "project_epoch": null,
+      "source_asset": "source.mp4",
+      "source_assets": null,
+      "source_window": {
+        "audio_stream_index": 0,
+        "end_frame": 14424,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "source_version": "64512:8261745:200058:1792623917:630213145",
+        "start_frame": 14400,
+        "total_frames": 14424
+      },
+      "state": "ready"
+    }
+  ],
+  "served_asset_hashes": {
+    "main.js": "eb6080586ed54af4082a876956f494e6b2bfff197b7ed5fc0012d0eeb35e1cd4",
+    "source.js": "762807ee3f9bb6e8a8fdfb90fa5f8af794ab848238d1346030fd1e27f44035ac",
+    "source-clock.js": "555d9a65661ded5b1e1049a6e1f4410274eb7dd934ef167b03d594bbc284846d",
+    "source-seek.js": "cf81d221318a6981c2a7ae05f0550b7f1d07d1068cec94755a3e916ca025f355"
+  },
+  "project_unchanged": true,
+  "main_five_unsaved_moves_preserved": true,
+  "hardware_gpu_used": false,
+  "existing_windows_browser_reused": true,
+  "browser_download_or_install": false,
+  "remote_limits": {
+    "cpu": 1,
+    "memory_mib": 512,
+    "swap": 0,
+    "oom_score": 1000,
+    "runtime_seconds": 600
+  },
+  "screenshot": "m3-source-windows-boundary.jpg",
+  "own_ui_server_stopped": true,
+  "own_tunnel_stopped": true,
+  "own_browser_tab_closed": true
+}

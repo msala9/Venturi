@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {retimeHandles,retimeDraft,hitTest,frameToX,RULER,TRACK,MAX_FRAME} from '../js/timeline/geometry.js';
 
-const fps={num:24,den:1},view={scale:240,origin:0,scrollY:0,playhead:0,tool:'select',retime:true,snap:false};
+const fps={num:24,den:1},view={scale:240,origin:0,scrollY:0,playhead:0,tool:'select',retimeVisible:new Set(['9007199254740993']),snap:false};
 function fixture(){
   const clip={id:'9007199254740993',kind:'media',media_id:'9007199254740997',start_frame:20,length_frames:40,linked_group:null,source_in_frames:100,source_out_frames:180,freeze_source_frame:3,fade_in:2,fade_out:2,retime:{source_span:80,min_length:1,max_length:8000,pitch_correction:true}};
   const neighbor={id:'9007199254740995',kind:'media',start_frame:100,length_frames:40,linked_group:null,retime:null};
@@ -10,10 +10,10 @@ function fixture(){
   return {clip,neighbor,track,timeline,handle:retimeHandles(track,view,fps)[0]};
 }
 
-test('speed strips require explicit speed mode and complete authoritative native media metadata',()=>{
+test('speed strips require explicit per-clip visibility and complete authoritative native media metadata',()=>{
   const {clip,track,handle}=fixture();assert.equal(handle.kind,'retime');assert.equal(handle.clip_id,'9007199254740993');assert.equal(handle.end_frame,60);assert.equal(handle.x,frameToX(60,view,fps));
   assert.deepEqual(handle.metadata,clip.retime);assert.notEqual(handle.metadata,clip.retime);assert.equal(handle.topOffset,7);assert.equal(handle.bottomOffset,21);
-  for(const changed of [{retime:false},{retime:'true'},{tool:'slip'}])assert.deepEqual(retimeHandles(track,{...view,...changed},fps),[]);
+  for(const changed of [{retimeVisible:new Set()},{retimeVisible:undefined,retime:true},{retimeVisible:['9007199254740993']},{tool:'slip'}])assert.deepEqual(retimeHandles(track,{...view,...changed},fps),[]);
   for(const changed of [{locked:true},{kind:'unknown'}])assert.deepEqual(retimeHandles({...track,...changed},view,fps),[]);
   assert.equal(retimeHandles({...track,kind:'audio'},view,fps).length,1);assert.deepEqual(retimeHandles(track,{...view,scale:1},fps),[]);
 });
@@ -71,7 +71,7 @@ test('linked resizing retains known primary collisions while unknown follower ge
 test('speed right-edge hits take the upper band while fade, transition and trim controls retain their modes',()=>{
   const {clip,timeline}=fixture();const endX=frameToX(60,view,fps);
   assert.equal(hitTest(endX-2,RULER+14,timeline,view).kind,'retime');assert.equal(hitTest(endX-2,RULER+30,timeline,view).kind,'trim_end');
-  const fadeX=frameToX(22,view,fps);assert.equal(hitTest(fadeX,RULER+14,timeline,{...view,retime:false}).kind,'fade');assert.equal(hitTest(fadeX,RULER+14,timeline,view).kind,'move');
+  const fadeX=frameToX(22,view,fps);assert.equal(hitTest(fadeX,RULER+14,timeline,{...view,retimeVisible:new Set()}).kind,'fade');assert.equal(hitTest(fadeX,RULER+14,timeline,view).kind,'move');
   assert.notEqual(hitTest(endX-2,RULER+14,timeline,{...view,tool:'slip'}).kind,'retime');
   clip.transition_out={kind:'Push',duration:4,direction:'Left',ease:'InOut',curve:0.25};assert.equal(hitTest(frameToX(56,view,fps),RULER+TRACK-14,timeline,view).kind,'transition');
 });

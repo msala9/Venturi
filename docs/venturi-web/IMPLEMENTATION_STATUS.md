@@ -24,7 +24,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-220 Rust tests, 455 JavaScript tests,
+220 Rust tests, 464 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -32,12 +32,12 @@ qualification remain open. Latest evidence:
 `evidence/m4-mask-pen-path-keys.json`, `evidence/m4-transition-placement.json`
 `evidence/m3-preview-cache-safety.json`, `evidence/m3-program-rollover.json`
 `evidence/m3-source-windows.json`, `evidence/m3-source-assets.json`
-and `evidence/m4-speed-presets.json`;
+`evidence/m4-speed-presets.json` and `evidence/m4-retime-selected-visibility.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
 Remaining work includes mask/transition browser and rendered qualification,
-native speed strip selection-only visibility, compound and
+compound and
 import coverage, long-media preview qualification, full-source asset GUI acceptance
 and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
@@ -2803,3 +2803,41 @@ OOM scoring, 4 GiB build/512 MiB finite API limits. Own units stopped and port
 still differs: the web mode toggles all eligible strips, while desktop toggles
 selected media. Selection-only visibility, browser/DPI/rendered playback and
 hardware qualification remain open. No capability row is promoted to done.
+
+## M4 — native selected-only speed-strip visibility and Windows UI acceptance
+
+Ctrl+R and Selected speed handles now collect existing selected media IDs only,
+without expanding linked groups for visibility. If all are already visible,
+only those IDs are removed; otherwise they are all added. Other clips and
+timelines retain their local visibility. Generators/deleted IDs are ignored,
+empty selection is a no-op, and project changes clear IDs. The toolbar reflects
+the selected media rather than a global mode. Per-clip close/menu hide removes
+one ID. Drawing and hit testing require explicit membership; there is no global
+fallback. Locked strips are painted with native percentages but have no editing
+targets. Visibility changes invalidate pending gestures and menus.
+
+220 Rust and 464 JavaScript tests, fmt, clippy with warnings denied and native
+build pass on halo2. Real Windows in-app browser checks at 1280x720 confirm
+selected Ctrl+R, no implicit linked visibility, preservation of unselected and
+other-timeline strips, per-clip hiding, generator exclusion, keyboard menu,
+Escape focus return and Advanced native Ripple/focus. Choosing 125% through the
+actual menu updates both linked clips with one ClipSpeed history entry; one UI
+Undo restores the exact saved native timeline. Session's dirty flag remains true
+after Undo because upstream compares history generation with saved_generation;
+the original saved project bytes remain unchanged.
+
+The isolated halo2 API service used one CPU, 512 MiB, no swap, low priority,
+sacrificial OOM scoring and a finite runtime, with composition/export disabled.
+Its GPU/shared-lock file descriptors were checked absent. The service and its
+Windows tunnel stopped; the main editor retains five unsaved MoveClips.
+Heavy work remained on halo2; no workstation build/test fleet was started.
+Evidence: `evidence/m4-retime-selected-visibility.json` and
+`evidence/m4-retime-selected-menu-windows.jpg`.
+
+An unrequested private browser setup on halo2 was abandoned after the owner
+clarified that the existing Windows browser must be used. All downloaded browser
+binaries, private libraries/package caches and the setup directory were removed;
+no system packages or AMD/ROCm drivers were changed. The owner constraint is
+recorded in AGENTS.md. Browser pointer-drag, OS scaling, rendered playback,
+physical audio and hardware acceptance remain open; the full parity ledger is
+still 32 done, 56 partial and two not started.

@@ -9,7 +9,7 @@ function harness({linked=false}={}){
   const tracks=[{id:'v',kind:'video',locked:false,clips:[clip,following],crossings:[]}];
   if(linked)tracks.push({id:'a',kind:'audio',locked:false,clips:[{...structuredClone(clip),id:'9007199254740995'}],crossings:[]});
   let timeline={id:'t',revision:'r',fps:{num:24,den:1},tracks},writable=true,selections=0,rect={left:5,top:8,width:2400,height:300};
-  const view={origin:0,scale:240,scrollY:0,selection:[],playhead:80,snap:false,tool:'move',retime:true,retimeOverwrite:false,draft:null},handlers=new Map(),windowHandlers=new Map(),documentHandlers=new Map(),commands=[],notices=[],menus=[],captures=new Set(),originalWindow=globalThis.window;
+  const view={origin:0,scale:240,scrollY:0,selection:[],playhead:80,snap:false,tool:'move',retimeVisible:new Set(tracks.flatMap(track=>track.clips.map(clip=>clip.id))),retimeOverwrite:false,draft:null},handlers=new Map(),windowHandlers=new Map(),documentHandlers=new Map(),commands=[],notices=[],menus=[],captures=new Set(),originalWindow=globalThis.window;
   const document={hidden:false,addEventListener:(key,value)=>documentHandlers.set(key,value),removeEventListener:key=>documentHandlers.delete(key)};
   globalThis.window={document,addEventListener:(key,value)=>windowHandlers.set(key,value),removeEventListener:key=>windowHandlers.delete(key)};
   const canvas={style:{},ownerDocument:document,addEventListener:(key,value)=>handlers.set(key,value),removeEventListener:key=>handlers.delete(key),focus(){},getBoundingClientRect:()=>({...rect}),setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
@@ -24,7 +24,7 @@ test('speed strip menu and per-clip hide are local click actions and endpoint re
     h.send('pointerdown',70);h.send('pointermove',70,{pointerId:2});await h.send('pointerup',70,{pointerId:2,buttons:0});assert.equal(h.captured(1),true);
     await h.send('pointerup',70,{buttons:0});assert.deepEqual(h.menus,[{clip_id:h.clip.id,track_id:'v',returnFocus:h.canvas}]);assert.equal(h.commands.length,0);assert.equal(h.selections(),0);
     h.send('pointerdown',118);await h.send('pointerup',118,{buttons:0});
-    assert.equal(h.view.retimeHidden.has(h.clip.id),true);assert.equal(h.view.retimeHidden.has(h.following.id),false);assert.equal(h.commands.length,0);
+    assert.equal(h.view.retimeVisible.has(h.clip.id),false);assert.equal(h.view.retimeVisible.has(h.following.id),true);assert.equal(h.commands.length,0);
     assert.equal(hitTest(frameToX(30,h.view,h.timeline().fps),RULER+14,h.timeline(),h.view).kind,'fade');
     assert.equal(retimeHandles(h.tracks[0],h.view,h.timeline().fps).length,1);
   }finally{h.destroy();}
@@ -51,10 +51,20 @@ test('speed strip keyboard menu is scoped to selected visible unlocked media and
   const h=harness();try{
     h.view.selection=[h.clip.id];const key={key:'F10',shiftKey:true,preventDefault(){},stopPropagation(){}};
     h.handlers.get('keydown')(key);assert.equal(h.menus.length,1);assert.equal(h.menus[0].clip_id,h.clip.id);
-    h.view.retimeHidden=new Set([h.clip.id]);h.handlers.get('keydown')(key);assert.equal(h.menus.length,1);
-    h.view.retimeHidden.clear();h.setWritable(false);h.handlers.get('keydown')(key);assert.equal(h.menus.length,1);
+    h.view.retimeVisible.delete(h.clip.id);h.handlers.get('keydown')(key);assert.equal(h.menus.length,1);
+    h.view.retimeVisible.add(h.clip.id);h.setWritable(false);h.handlers.get('keydown')(key);assert.equal(h.menus.length,1);
     h.setWritable(true);h.handlers.get('keydown')({...key,repeat:true});h.handlers.get('keydown')({...key,target:{closest:()=>({})}});assert.equal(h.menus.length,1);
     h.handlers.get('keydown')({key:'ContextMenu',preventDefault(){},stopPropagation(){}});assert.equal(h.menus.length,2);assert.equal(h.commands.length,0);
+  }finally{h.destroy();}
+});
+
+test('visible locked speed strips expose no preset, close or endpoint action',async()=>{
+  const h=harness();try{
+    h.tracks[0].locked=true;h.view.selection=[h.clip.id];
+    const [strip]=retimeStrips(h.tracks[0],h.view,h.timeline().fps,2400);assert.equal(strip.interactive,false);
+    for(const frame of [70,118,120]){h.send('pointerdown',frame);await h.send('pointerup',frame,{buttons:0});}
+    h.handlers.get('keydown')({key:'F10',shiftKey:true,preventDefault(){},stopPropagation(){}});
+    assert.equal(h.view.retimeVisible.has(h.clip.id),true);assert.equal(h.menus.length,0);assert.equal(h.commands.length,0);
   }finally{h.destroy();}
 });
 
@@ -124,11 +134,12 @@ test('overlap defaults to refusal and explicit overwrite requires a fresh opt-in
 });
 
 test('mode, overwrite, snap, tool, selection and viewport changes invalidate speed drafts',async()=>{
-  for(const change of ['mode','overwrite','snap','tool','selection','scale','origin','scrollY','rect','revision','lock','readonly','escape','pointercancel','capture','blur','resize','visibility']){
+  for(const change of ['mode','visible','overwrite','snap','tool','selection','scale','origin','scrollY','rect','revision','lock','readonly','escape','pointercancel','capture','blur','resize','visibility']){
     const h=harness();
     try{
       h.send('pointerdown',120);h.send('pointermove',130);
-      if(change==='mode')h.view.retime=false;
+      if(change==='mode')h.view.retimeVisible.clear();
+      else if(change==='visible')h.view.retimeVisible.add('other-timeline-clip');
       else if(change==='overwrite')h.view.retimeOverwrite=true;
       else if(change==='snap')h.view.snap=true;
       else if(change==='tool')h.view.tool='slip';
@@ -157,8 +168,8 @@ test('unchanged, returned and read-only speed handles create no command; other t
     h.send('pointerdown',120);h.send('pointermove',130);await h.send('pointerup',120,{buttons:0});assert.deepEqual(h.commands,[]);
     h.setWritable(false);h.send('pointerdown',120);await h.send('pointerup',130,{buttons:0});assert.deepEqual(h.commands,[]);h.setWritable(true);
     const x=frameToX(120,h.view,h.timeline().fps);assert.equal(hitTest(x,RULER+14,h.timeline(),h.view).kind,'retime');assert.equal(hitTest(x,RULER+40,h.timeline(),h.view).kind,'trim_end');
-    h.view.retime=false;assert.equal(retimeHandles(h.tracks[0],h.view,h.timeline().fps).length,0);assert.equal(hitTest(frameToX(30,h.view,h.timeline().fps),RULER+14,h.timeline(),h.view).kind,'fade');
-    h.view.retime=true;h.view.tool='slip';assert.equal(retimeHandles(h.tracks[0],h.view,h.timeline().fps).length,0);
+    h.view.retimeVisible.clear();assert.equal(retimeHandles(h.tracks[0],h.view,h.timeline().fps).length,0);assert.equal(hitTest(frameToX(30,h.view,h.timeline().fps),RULER+14,h.timeline(),h.view).kind,'fade');
+    h.view.retimeVisible.add(h.clip.id);h.view.tool='slip';assert.equal(retimeHandles(h.tracks[0],h.view,h.timeline().fps).length,0);
   }finally{h.destroy();}
 });
 

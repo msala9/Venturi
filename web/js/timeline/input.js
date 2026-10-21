@@ -36,6 +36,7 @@ export function createInput({
   onMarkerEdit = () => {},
   onTransitionSelect = () => {},
   onRetimeMenu = () => {},
+  onRetimeVisibilityChange = () => {},
 }) {
   let gesture = null,
     waiting = false,
@@ -46,7 +47,7 @@ export function createInput({
   };
   const transitionContext=timeline=>{
     const rect=canvas.getBoundingClientRect();
-    return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,view.tool,view.snap,view.retime,view.retimeOverwrite,[...(view.retimeHidden || [])].sort(),Boolean(view.transitionReplace),view.transitionSelection,view.playhead,[...view.selection].sort(),rect.left,rect.top,rect.width,rect.height]);
+    return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,view.tool,view.snap,view.retimeOverwrite,[...(view.retimeVisible || [])].sort(),Boolean(view.transitionReplace),view.transitionSelection,view.playhead,[...view.selection].sort(),rect.left,rect.top,rect.width,rect.height]);
   };
   const transitionCurrent=g=>{const timeline=getTimeline();return timeline===g.timeline && !timeline.tracks[g.track]?.locked && transitionContext(timeline)===g.context && canEdit();};
   const placementContextCurrent=g=>getTimeline()===g.timeline && transitionContext(getTimeline())===g.context && !canvas.ownerDocument?.querySelector?.('dialog[open]');
@@ -294,7 +295,7 @@ export function createInput({
       const [x,y]=point(event),hit=hitTest(x,y,timeline,view,canvas.getBoundingClientRect().width);
       const clicked=!g.moved && Math.hypot(x-g.x,y-g.y)<4 && hit.kind===g.kind && hit.clip_id===g.clip_id;
       cancel();
-      if(clicked && g.kind==='retime_close'){view.retimeHidden??=new Set();view.retimeHidden.add(g.clip_id);onNotice('Speed strip hidden for this clip');invalidate();}
+      if(clicked && g.kind==='retime_close'){view.retimeVisible.delete(g.clip_id);onRetimeVisibilityChange();onNotice('Speed strip hidden for this clip');invalidate();}
       else if(clicked)onRetimeMenu({clip_id:g.clip_id,track_id:timeline.tracks[g.track].id,returnFocus:canvas});
       return;
     }
@@ -416,8 +417,8 @@ export function createInput({
     invalidate();
   };
   const key = (event) => {
-    if(!event.defaultPrevented && !event.repeat && !event.isComposing && !gesture && !transitionDrag && !waiting && view.retime && view.tool!=='slip' && canEdit() && !isTextTarget(event.target) && !documentRef?.querySelector?.('dialog[open]') && !event.ctrlKey && !event.metaKey && !event.altKey && ((event.key==='F10' && event.shiftKey) || (event.key==='ContextMenu' && !event.shiftKey))){
-      const timeline=getTimeline(),target=timeline?.tracks.flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id) && clip.retime && !track.locked && !view.retimeHidden?.has(clip.id)).map(clip=>({clip,track})))[0];
+    if(!event.defaultPrevented && !event.repeat && !event.isComposing && !gesture && !transitionDrag && !waiting && view.retimeVisible?.size && view.tool!=='slip' && canEdit() && !isTextTarget(event.target) && !documentRef?.querySelector?.('dialog[open]') && !event.ctrlKey && !event.metaKey && !event.altKey && ((event.key==='F10' && event.shiftKey) || (event.key==='ContextMenu' && !event.shiftKey))){
+      const timeline=getTimeline(),target=timeline?.tracks.flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id) && clip.retime && !track.locked && view.retimeVisible.has(clip.id)).map(clip=>({clip,track})))[0];
       if(target){event.preventDefault?.();event.stopPropagation?.();onRetimeMenu({clip_id:target.clip.id,track_id:target.track.id,returnFocus:canvas});return;}
     }
     if(event.key!=='Escape' || isTextTarget(event.target) || documentRef?.querySelector?.('dialog[open]'))return;

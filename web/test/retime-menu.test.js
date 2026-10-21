@@ -25,12 +25,13 @@ function harness({commit}={}){
   const document=fakeDocument(),commands=[],notices=[],advanced=[],hidden=[];
   let context={project_epoch:'epoch',generation:'2',timeline_id:'timeline',revision:'revision',track_id:'track',editable:true,overwrite:false,viewIdentity:'viewport',linked:[{track_id:'track',locked:false}],
     clip:{id:'9007199254740993',name:'Primary <literal>',retime:{speed_percent:150,pitch_correction:true}}};
+  const visible=new Set([context.clip.id]);
   const returnFocus=document.createElement('canvas');returnFocus.focus();
-  const menu=createRetimeMenu({document,getContext:target=>target.clip_id===context.clip.id && target.track_id===context.track_id?context:null,
+  const menu=createRetimeMenu({document,getContext:target=>target.clip_id===context.clip.id && target.track_id===context.track_id?{...context,editable:context.editable && visible.has(target.clip_id),viewIdentity:JSON.stringify([context.viewIdentity,[...visible].sort()])}:null,
     commit:async operation=>{commands.push(operation);return commit?.(operation);},notice:message=>notices.push(message),onAdvanced:target=>advanced.push(target),onHide:target=>hidden.push(target)});
   const target={clip_id:context.clip.id,track_id:context.track_id,returnFocus};
   const dialog=()=>document.querySelector('dialog[open]'),buttons=()=>dialog().children.filter(node=>node.tagName==='button');
-  return {menu,document,commands,notices,advanced,hidden,returnFocus,target,dialog,buttons,context:()=>context,setContext:value=>{context=value;},open:()=>menu.open(target)};
+  return {menu,document,commands,notices,advanced,hidden,visible,returnFocus,target,dialog,buttons,context:()=>context,setContext:value=>{context=value;},open:()=>menu.open(target)};
 }
 
 test('native preset menu opens without edits and preserves exact native percentages and primary identity',async()=>{
@@ -78,6 +79,14 @@ test('advanced speed and per-clip hide are local guarded actions with no command
   const h=harness();try{
     h.open();h.buttons()[10].emit('click');assert.deepEqual(h.advanced,[{clip_id:h.target.clip_id,track_id:'track'}]);assert.equal(h.commands.length,0);
     h.open();h.buttons()[11].emit('click');assert.deepEqual(h.hidden,[{clip_id:h.target.clip_id,track_id:'track'}]);assert.equal(h.commands.length,0);assert.equal(h.document.activeElement,h.returnFocus);
+  }finally{h.menu.dispose();}
+});
+
+test('visibility changes invalidate an open speed menu and cannot submit from a hidden clip',async()=>{
+  const h=harness();try{
+    h.open();const preset=h.buttons()[0];h.visible.delete(h.target.clip_id);await preset.emit('click');
+    assert.equal(h.commands.length,0);assert.equal(h.dialog(),undefined);assert.equal(h.open(),false);
+    h.visible.add(h.target.clip_id);assert.equal(h.open(),true);h.visible.add('other-timeline-clip');h.menu.invalidate();assert.equal(h.dialog(),undefined);
   }finally{h.menu.dispose();}
 });
 

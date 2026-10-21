@@ -166,20 +166,20 @@ function retimeMetadata(clip){
   return transitionClip(clip) && clip.kind==='media' && Number.isSafeInteger(metadata?.source_span) && metadata.source_span>0 && Number.isSafeInteger(metadata.min_length) && metadata.min_length>=1 && Number.isSafeInteger(metadata.max_length) && metadata.max_length>=metadata.min_length && metadata.max_length<=MAX_FRAME-clip.start_frame && typeof metadata.pitch_correction==='boolean';
 }
 export function retimeHandles(track,view,fps){
-  if(view.retime!==true || view.tool==='slip' || !['video','audio'].includes(track?.kind) || track.locked)return [];
-  return (track.clips || []).filter(clip=>!view.retimeHidden?.has(clip.id) && retimeMetadata(clip) && clip.length_frames*pixelsPerFrame(view,fps)>=20).map(clip=>{
+  if(!(view.retimeVisible instanceof Set) || !view.retimeVisible.size || view.tool==='slip' || !['video','audio'].includes(track?.kind) || track.locked)return [];
+  return (track.clips || []).filter(clip=>view.retimeVisible.has(clip.id) && retimeMetadata(clip) && clip.length_frames*pixelsPerFrame(view,fps)>=20).map(clip=>{
     const end_frame=clip.start_frame+clip.length_frames,left=frameToX(clip.start_frame,view,fps),right=frameToX(end_frame,view,fps);
     return {kind:'retime',clip,clip_id:clip.id,end_frame,metadata:structuredClone(clip.retime),left,right,x:right,topOffset:7,bottomOffset:21};
   });
 }
 export function retimeStrips(track,view,fps,width=Infinity){
-  return retimeHandles(track,view,fps).flatMap(handle=>{
+  return retimeHandles(track?.locked?{...track,locked:false}:track,view,fps).flatMap(handle=>{
     const left=Math.max(HEADER,handle.left),right=Math.min(width,handle.right),visible=right-left;
     if(visible<12)return [];
     const endpointVisible=handle.right<=width,endpointInset=endpointVisible?10:0,showClose=visible>=90;
     const close=showClose?{left:right-endpointInset-16,right:right-endpointInset}:null;
     const menuRight=close?close.left-2:right-endpointInset,menuWidth=Math.min(120,Math.max(0,menuRight-left)),center=(left+menuRight)/2;
-    return [{...handle,visibleLeft:left,visibleRight:right,menu:{left:center-menuWidth/2,right:center+menuWidth/2},close}];
+    return [{...handle,interactive:!track.locked,visibleLeft:left,visibleRight:right,menu:{left:center-menuWidth/2,right:center+menuWidth/2},close}];
   });
 }
 export function retimeSpeedLabel(percent){
@@ -217,9 +217,9 @@ export function hitTest(x, y, timeline, view, width=Infinity) {
   const top=RULER+track*TRACK-view.scrollY;
   const speedStrips=y>=top+7 && y<=top+21?retimeStrips(timeline.tracks[track],view,timeline.fps,width):[];
   if(y>=top+7 && y<=top+21){
-    const retime=speedStrips.find(handle=>x>=handle.left && x<=handle.right && handle.right-x<8);
+    const retime=speedStrips.find(handle=>handle.interactive && x>=handle.left && x<=handle.right && handle.right-x<8);
     if(retime)return {...retime,track};
-    const strip=speedStrips.find(strip=>x>=strip.visibleLeft && x<=strip.visibleRight);
+    const strip=speedStrips.find(strip=>strip.interactive && x>=strip.visibleLeft && x<=strip.visibleRight);
     if(strip?.close && x>=strip.close.left && x<=strip.close.right)return {...strip,kind:'retime_close',track};
     if(strip && x>=strip.menu.left && x<=strip.menu.right)return {...strip,kind:'retime_menu',track};
   }

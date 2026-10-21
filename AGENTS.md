@@ -18,6 +18,10 @@ orchestration. Do not start local builds, renders, soak tests or browser GUI
 qualification. Avoid recursive cache scans, large copies and full-log reads.
 Use existing remote build artifacts and incremental source transfers. Resuming
 development does not authorize resuming workstation qualification workloads.
+The owner clarified that browser checks must use the existing Windows browser
+environment, one tab at a time. Do not download or install browsers on halo2.
+Keep compilation, rendering and heavy test workloads on resource-limited halo2;
+small browser interaction checks on Windows are authorized.
 Check shared-host memory headroom before heavy tests/builds. Make disposable
 test/build processes sacrificial with OOMScoreAdjust=1000; never protect them
 at the expense of inference or the live editor. Preserve global OOM evidence

@@ -3,6 +3,7 @@ import { createTimeline, fixtureTimeline } from "./timeline/index.js";
 import { linkedSelection, playheadSelection,selectedTransition } from "./timeline/geometry.js";
 import {isRetimeShortcut} from './timeline/input.js';
 import {createRetimeMenu} from './retime-menu.js';
+import {retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} from './retime-visibility.js';
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import { createViewer } from "./viewer.js";
 import { createSourcePlayer, sourceAssetURL, sourceSelection } from "./source.js";
@@ -287,7 +288,7 @@ const view = {
   snap: true,
   retime: false,
   retimeOverwrite: false,
-  retimeHidden: new Set(),
+  retimeVisible: new Set(),
   transitionSelection: null,
   transitionReplace: false,
   draft: null,
@@ -406,7 +407,7 @@ function syncSelectionActions(){
   $("delete").disabled=disabled || (target?target.locked:!view.selection.length);
 }
 function selected() {
-  retimeMenu?.invalidate();
+  updateRetimeControls();
   trackViewerSelection();
   transformDetail=null;transformOverlay?.cancel();transformOverlay?.invalidate();
   maskOverlay?.cancel();maskOverlay?.invalidate();syncViewerMasks();
@@ -579,6 +580,7 @@ function syncPlayheadSelection(render) {
   const next=playheadSelection(timeline,view.playhead);
   if(next.length===view.selection.length && next.every(id=>view.selection.includes(id)))return;
   view.selection=next;
+  updateRetimeControls();
   if(render)selected();
 }
 const canvasTimeline = createTimeline({
@@ -590,6 +592,7 @@ const canvasTimeline = createTimeline({
   onSelect: ()=>{view.transitionSelection=null;selected();},
   onTransitionSelect:selection=>{view.transitionSelection=selection;view.selection=[];view.markerId=null;revealInspector();selected();},
   onRetimeMenu:target=>retimeMenu?.open(target),
+  onRetimeVisibilityChange:updateRetimeControls,
   onSeek: (final) => {
     audioMeters?.invalidate();
     audioScrub?.stop();
@@ -611,11 +614,11 @@ function retimeContext(target){
   const linked=timeline.tracks.flatMap(lane=>lane.clips.filter(item=>item.id===clip.id || (clip.linked_group!=null && item.linked_group===clip.linked_group)).map(item=>({track_id:lane.id,locked:lane.locked,clip:item})));
   const rect=$("timeline").getBoundingClientRect();
   return {project_epoch:documentState.project_epoch,generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,track_id:track.id,clip,linked,overwrite:view.retimeOverwrite===true,
-    editable:writable && !busy && !unresolved && timeline.id!=='fixture' && view.retime && view.tool!=='slip' && !view.retimeHidden.has(clip.id) && !linked.some(item=>item.locked),
-    viewIdentity:JSON.stringify([view.origin,view.scale,view.scrollY,view.tool,view.snap,view.retime,[...view.retimeHidden].sort(),view.selection,view.transitionSelection,rect.left,rect.top,rect.width,rect.height])};
+    editable:writable && !busy && !unresolved && timeline.id!=='fixture' && view.tool!=='slip' && view.retimeVisible.has(clip.id) && !linked.some(item=>item.locked),
+    viewIdentity:JSON.stringify([view.origin,view.scale,view.scrollY,view.tool,view.snap,[...view.retimeVisible].sort(),view.selection,view.transitionSelection,rect.left,rect.top,rect.width,rect.height])};
 }
 retimeMenu=createRetimeMenu({getContext:retimeContext,commit:operation=>commit(operation),notice,
-  onHide:target=>{view.retimeHidden.add(target.clip_id);canvasTimeline.invalidate();notice('Speed strip hidden for this clip');},
+  onHide:target=>{view.retimeVisible.delete(target.clip_id);updateRetimeControls();notice('Speed strip hidden for this clip');},
   onAdvanced:target=>{programPlayer?.stop();fastTransport?.stop();audioScrub?.stop();if(viewerMode!=='program')viewerModeSet('program');view.transitionSelection=null;view.selection=[target.clip_id];visualState.set('retime',true);visualState.set('retime-focus',target.clip_id);revealInspector();selected();canvasTimeline.invalidate();notice('Change clip speed · native Ripple is the initial duration policy; linked clips follow');},
 });
 function renderTransitionPresets(){
@@ -685,11 +688,15 @@ $("snap").addEventListener("click", () => {
 });
 $("transition-replace").addEventListener('change',()=>{canvasTimeline.cancel();view.transitionReplace=$("transition-replace").checked;notice(view.transitionReplace?'Replacing existing transitions is enabled for drops; Undo restores the previous settings':'Transition drops refuse occupied slots');});
 function updateRetimeControls(){
-  retimeMenu?.invalidate();$("retime-handles").setAttribute('aria-pressed',String(view.retime));$("retime-overwrite").disabled=!view.retime;$("retime-overwrite").checked=view.retimeOverwrite;canvasTimeline.invalidate();
+  const state=retimeVisibilityState(timeline,view.selection,view.retimeVisible);view.retime=state.any;
+  if(!state.any)view.retimeOverwrite=false;
+  retimeMenu?.invalidate();$("retime-handles").setAttribute('aria-pressed',String(state.pressed));$("retime-handles").disabled=state.disabled;$("retime-overwrite").disabled=!state.any;$("retime-overwrite").checked=view.retimeOverwrite;canvasTimeline.invalidate();
 }
 $("retime-handles").addEventListener('click',()=>{
-  canvasTimeline.cancel();view.retime=!view.retime;if(!view.retime){view.retimeOverwrite=false;view.retimeHidden.clear();}updateRetimeControls();
-  notice(view.retime?'Speed handles · click the speed strip for presets, or select a clip and press Shift+F10; drag its endpoint to resize · overlaps require Overwrite clips':'Speed handles hidden');
+  const state=retimeVisibilityState(timeline,view.selection,view.retimeVisible);
+  if(state.disabled)return;
+  canvasTimeline.cancel();view.retimeVisible=toggleRetimeVisibility(timeline,view.selection,view.retimeVisible);updateRetimeControls();
+  notice(state.pressed?'Speed strips hidden for the selected media clips; other clips keep their controls':'Speed strips shown for the selected media clips · click for presets or press Shift+F10; drag endpoints to resize · overlaps require Overwrite clips');
 });
 $("retime-handles").addEventListener('keydown',event=>{if(event.key===' ' || event.key==='Enter')event.stopPropagation();});
 $("retime-overwrite").addEventListener('change',()=>{
@@ -763,8 +770,9 @@ async function refresh() {
   const sourceChanged=(id)=>documentState?.media.find((item)=>item.id===id)?.content_hash !== next.media.find((item)=>item.id===id)?.content_hash;
   for(const [id,asset] of mediaAssets)if(sourceChanged(id)){releaseMediaAsset(asset);mediaAssets.delete(id);}
   if(sourceOpenId && (!next.media.some((item)=>item.id===sourceOpenId) || sourceChanged(sourceOpenId))){sourcePlayer?.reset();sourceAssets?.cancel();sourceRanges.delete(sourceOpenId);sourceOpenId=null;}
+  view.retimeVisible=retimeProjectVisibility(documentState?.project_epoch,next.project_epoch,view.retimeVisible);
   if (documentState?.project_epoch !== next.project_epoch) {
-    canvasTimeline.cancel();view.retime=false;view.retimeOverwrite=false;view.retimeHidden.clear();view.transitionSelection=null;view.transitionReplace=false;$("transition-replace").checked=false;updateRetimeControls();
+    canvasTimeline.cancel();view.retime=false;view.retimeOverwrite=false;view.transitionSelection=null;view.transitionReplace=false;$("transition-replace").checked=false;updateRetimeControls();
     sourcePlayer?.reset();
     sourceAssets?.cancel();
     sourceOpenId = null; sourceRanges.clear();

@@ -1,0 +1,150 @@
+{
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792602389.37753,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "579dcd5f32163ebeecd8e17b041b1f47f7c43dd0cdaf6241838ed4fd08396b02",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "served_asset_hashes": {
+    "main.js": "5b56544f83346295c8afa8a81b19c9fc49f57268138a330e78ce7260f4c8663e",
+    "retime-visibility.js": "8b3ed482b80551f866be5b0a9ee2e192691e9dbde82c3672d54d1158d3eba159",
+    "retime-menu.js": "9ed298c37c872b870e193dff023bd35be20fef05676a1717033488482cddf3ab",
+    "timeline/geometry.js": "efc8e1dfe8abb960e501e278bd8af932d9ffccc1e7b87dd44a420d3dad04e80e",
+    "timeline/input.js": "1119f45c04c628e1a7b23a731aacb6b36757349ed89712cafd48eb2e0c02d423",
+    "timeline/draw.js": "6d6eb1328e3183199e6ba0074fa3e828fd21fecb4b75e1575f668b70ab88b25a"
+  },
+  "exact_saved_timeline_restored": true,
+  "parents_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "history_after_undo": {
+    "labels": [
+      "ClipSpeed"
+    ],
+    "position": 0
+  },
+  "dirty_flag_after_undo": true,
+  "dirty_flag_semantics": "Native Session compares history generation with saved_generation, so Undo does not clear it",
+  "resource_observation": {
+    "MainPID": "1322747",
+    "MemoryPeak": "29433856",
+    "CPUUsageNSec": "840132000"
+  },
+  "no_gpu_or_shared_lock_fds": true,
+  "main_editor_preserved": true,
+  "own_test_unit_stopped": true,
+  "port8811_closed": true,
+  "after_preset": {
+    "history": {
+      "labels": [
+        "ClipSpeed"
+      ],
+      "position": 1
+    },
+    "unsaved": true,
+    "clips": [
+      {
+        "id": "19",
+        "length_frames": 4,
+        "speed_percent": 125.0,
+        "linked_group": "1"
+      },
+      {
+        "id": "20",
+        "length_frames": 8,
+        "speed_percent": 125.0,
+        "linked_group": "1"
+      }
+    ],
+    "timeline_id": "10",
+    "project_epoch": "1792602539756360792:1"
+  },
+  "after_undo": {
+    "history": {
+      "labels": [
+        "ClipSpeed"
+      ],
+      "position": 0
+    },
+    "unsaved": true,
+    "clips": [
+      {
+        "id": "19",
+        "length_frames": 3,
+        "speed_percent": 200.0,
+        "linked_group": "1"
+      },
+      {
+        "id": "20",
+        "length_frames": 5,
+        "speed_percent": 200.0,
+        "linked_group": "1"
+      }
+    ]
+  },
+  "observed_windows_ui": {
+    "ctrl_r_selected_media_only": true,
+    "no_implicit_linked_visibility": true,
+    "unselected_visibility_preserved": true,
+    "hide_single_clip": true,
+    "generated_clip_toggle_disabled": true,
+    "timeline_visibility_preserved": true,
+    "keyboard_menu": true,
+    "native_ten_presets": true,
+    "focus_returns_to_timeline_on_escape": true,
+    "advanced_native_ripple_initial": true,
+    "advanced_focus_speed": true,
+    "viewport_css_pixels": [
+      1280,
+      720
+    ],
+    "windows_os_scaling_qualified": false,
+    "preview_and_export_disabled": true,
+    "screenshot": "m4-retime-selected-menu-windows.jpg"
+  },
+  "status": "passed",
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "09f037145447a9b3ed5a71aca225c510389fb3babf73ded7ec33501ead025cbe",
+      "web/index.html": "36d515971d84d600be10ca6010e2211467836ac694bbf8ea1449d73bd538df93",
+      "web/js/main.js": "5b56544f83346295c8afa8a81b19c9fc49f57268138a330e78ce7260f4c8663e",
+      "web/js/retime-visibility.js": "8b3ed482b80551f866be5b0a9ee2e192691e9dbde82c3672d54d1158d3eba159",
+      "web/js/timeline/geometry.js": "efc8e1dfe8abb960e501e278bd8af932d9ffccc1e7b87dd44a420d3dad04e80e",
+      "web/js/timeline/input.js": "1119f45c04c628e1a7b23a731aacb6b36757349ed89712cafd48eb2e0c02d423",
+      "web/test/retime-menu.test.js": "c057ca9a6f087c4ceeeac3dade21e6fd156c0b612ab6856ec7769447edd90940",
+      "web/test/retime-visibility.test.js": "1c3b05562a26dc1d7d81a7d7a67648efa5ec43d6d65978421a7993d482bdad82",
+      "web/test/timeline-retime-input.test.js": "e59fa6d202a0f53b7afc232447bdfb08c6282ea7679456925376df0add81f030",
+      "web/test/timeline-retime.test.js": "1544218f3597bf6dbbc6ceaa629337797dbf929bf7ff87f388a8a4d7dc40040d"
+    },
+    "rust_tests": 220,
+    "javascript_tests": 464,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "hardware_gpu": false
+  },
+  "scope_note": "Native selected-only speed-strip visibility and locked decorative strips. Remote bounded aggregate plus real Windows in-app browser on one synthetic project: selected Ctrl+R, linked visibility independence, preservation of other clips/timelines, per-clip menu hide, generated clip exclusion, keyboard menu, Escape focus, Advanced Ripple, actual 125-percent linked edit and one UI Undo restoring the exact saved native timeline. No Source/Program media preparation, timeline render, export, hardware GPU, OS scaling, pointer drag or physical audio qualification in this increment. Build/test heavy work stayed on halo2; browser checks used the existing Windows environment. The unrequested private halo2 browser setup was abandoned and its binaries/packages/cache removed; no system package or driver installation occurred.",
+  "screenshot_sha256": "0cb7c8485b8d1fe52f52596f820a3db98ce63270de902f495cad828ddfdab816"
+}

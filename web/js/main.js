@@ -1,6 +1,6 @@
 import { isTextTarget, installSplitter } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
-import { linkedSelection } from "./timeline/geometry.js";
+import { linkedSelection, playheadSelection } from "./timeline/geometry.js";
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import { createViewer } from "./viewer.js";
 import { createSourcePlayer, sourceAssetURL, sourceSelection } from "./source.js";
@@ -30,6 +30,8 @@ let voiceover = null;
 let review = null;
 let reviewMetadata = null;
 let pasteAttributes = null;
+let selectionFollowsPlayhead=true;
+try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
@@ -204,6 +206,8 @@ restoreInspector.addEventListener("click", () => {
   $("palette").close();
 });
 $("command-list").append(restoreInspector);
+const followSelection=document.createElement("button");followSelection.textContent="Selection follows playhead";followSelection.setAttribute("aria-pressed",String(selectionFollowsPlayhead));
+followSelection.addEventListener("click",()=>{selectionFollowsPlayhead=!selectionFollowsPlayhead;followSelection.setAttribute("aria-pressed",String(selectionFollowsPlayhead));try{localStorage.setItem("venturi-selection-follows-playhead",String(selectionFollowsPlayhead));}catch{}syncPlayheadSelection(true);notice(selectionFollowsPlayhead?"Selection follows playhead enabled":"Selection follows playhead disabled");});$("command-list").append(followSelection);
 installSplitter($("left-splitter"), editor, "--left", 260);
 installSplitter($("right-splitter"), editor, "--right", 280, -1);
 installSplitter($("timeline-splitter"), editor, "--bottom", 300, -1);
@@ -462,10 +466,17 @@ function selected() {
       const button=document.createElement("button");button.textContent=label;button.disabled=disabled;button.addEventListener("click",()=>commit(operation()).catch((error)=>notice(error.message)));fieldset.append(button);
     }
     const properties=document.createElement("button");properties.textContent="Paste selected properties";properties.disabled=!view.selection.length || !documentState.clipboard_revision || !writable || busy || !!unresolved;properties.addEventListener("click",()=>pasteAttributes?.open());fieldset.append(properties);
-    renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,seek:(frame)=>{view.playhead=frame;updateTime();seek();selected();}});
+    renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,seek:(frame)=>{view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();}});
     const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
     mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery});
   }
+}
+function syncPlayheadSelection(render) {
+  if(!selectionFollowsPlayhead || viewerMode!=="program" || !timeline || view.draft || view.lasso)return;
+  const next=playheadSelection(timeline,view.playhead);
+  if(next.length===view.selection.length && next.every(id=>view.selection.includes(id)))return;
+  view.selection=next;
+  if(render)selected();
 }
 const canvasTimeline = createTimeline({
   canvas: $("timeline"),
@@ -476,8 +487,9 @@ const canvasTimeline = createTimeline({
   onSeek: (final) => {
     programPlayer?.pauseLocal();
     scopes?.invalidate("STALE · scrubbing");
+    syncPlayheadSelection(false);
     updateTime();
-    if (final) { seek(); if (view.selection.length) selected(); }
+    if (final) { seek(); selected(); }
   },
   onCommand: (operation) => commit(operation),
   onNotice: notice,
@@ -561,9 +573,10 @@ function step(delta) {
     return;
   }
   view.playhead = Math.max(0, view.playhead + delta);
+  syncPlayheadSelection(false);
   updateTime();
   seek();
-  if (view.selection.length) selected();
+  selected();
 }
 $("step-back").addEventListener("click", () => step(-1));
 $("step-forward").addEventListener("click", () => step(1));
@@ -1012,7 +1025,7 @@ programPlayer = createProgramPlayer({
     const start = Math.min(view.playhead, Math.max(0, end - 1));
     return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: start, end_frame: Math.min(end, start + Math.floor(300 * timeline.fps.num / timeline.fps.den)), width: 960 } : null;
   },
-  onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; updateTime(); } },
+  onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); } },
   onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
   onError: notice,
 });

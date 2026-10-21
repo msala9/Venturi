@@ -318,6 +318,13 @@ saved custom attribute presets remain separate work.
 
 ## Save conflicts
 
+Commands (Ctrl+K) → Selection follows playhead toggles the local preference,
+enabled by default like the desktop. Seek, frame steps, marker jumps and composed
+playback select the top visible video clip and its linked group; locked tracks
+are excluded and gaps clear selection. Disable it to retain a manual selection
+while moving the playhead. The preference persists in this browser and never
+writes native project state or Undo history.
+
 Save refuses a project changed, replaced or removed by an external editor after
 Open/last Save. Your native edits and Undo history remain in memory. Projects
 opens with an explanation and a proposed Save As name; save your copy before

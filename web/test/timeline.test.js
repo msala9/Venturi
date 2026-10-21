@@ -7,10 +7,18 @@ import {
   hitTest,
   validateDraft,
   linkedSelection,
+  playheadSelection,
 } from "../js/timeline/geometry.js";
 import { fixtureTimeline } from "../js/timeline/index.js";
 import { createInput } from "../js/timeline/input.js";
 const view = { scale: 120, origin: 17, scrollY: 0 };
+test("playhead selection matches visible native video order, linked groups and locked targets",()=>{
+  const clip=(id,start,length,group=null)=>({id,start_frame:start,length_frames:length,linked_group:group});
+  const timeline={tracks:[{kind:"video",clips:[clip("bottom",0,30,"pair")]},{kind:"audio",clips:[clip("audio",0,30,"pair")]},{kind:"video",clips:[clip("top",10,10)]}]};
+  assert.deepEqual(playheadSelection(timeline,5),["bottom","audio"]);assert.deepEqual(playheadSelection(timeline,10),["top"]);assert.deepEqual(playheadSelection(timeline,20),["bottom","audio"]);assert.deepEqual(playheadSelection(timeline,30),[]);
+  timeline.tracks[2].muted=true;assert.deepEqual(playheadSelection(timeline,15),["bottom","audio"]);timeline.tracks[2].muted=false;timeline.tracks[2].clips[0].disabled=true;assert.deepEqual(playheadSelection(timeline,15),["bottom","audio"]);
+  timeline.tracks[0].locked=true;assert.deepEqual(playheadSelection(timeline,15),["audio"]);timeline.tracks[1].locked=true;assert.deepEqual(playheadSelection(timeline,15),[]);assert.deepEqual(playheadSelection(null,0),[]);
+});
 for (const fps of [
   { num: 24000, den: 1001 },
   { num: 30000, den: 1001 },

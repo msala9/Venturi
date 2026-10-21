@@ -2,6 +2,13 @@ export const HEADER = 150,
   RULER = 30,
   TRACK = 62,
   MAX_FRAME = 1_000_000_000;
+export function playheadSelection(timeline, frame) {
+  if(!timeline)return [];
+  const video=[...timeline.tracks].reverse().filter(track=>track.kind==="video" && !track.muted);
+  const active=video.map(track=>track.clips.find(clip=>!clip.disabled && clip.start_frame<=frame && frame<clip.start_frame+clip.length_frames)).find(Boolean);
+  if(!active)return [];
+  return timeline.tracks.filter(track=>!track.locked).flatMap(track=>track.clips.filter(clip=>clip.id===active.id || (active.linked_group!=null && clip.linked_group===active.linked_group)).map(clip=>clip.id));
+}
 export function pixelsPerFrame(view, fps) {
   if (!(fps.num > 0 && fps.den > 0 && view.scale > 0))
     throw new RangeError("Invalid frame scale");

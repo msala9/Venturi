@@ -1,0 +1,61 @@
+{
+  "fixture": "Own saved 20-shot montage; CPU/lavapipe composed preview",
+  "browser_checks": [
+    {
+      "frame": "00:00:00:01",
+      "selected": "Montage_01_B.mp4"
+    },
+    {
+      "frame": "00:00:02:12",
+      "selected": "No clip selected"
+    },
+    {
+      "frame": "00:00:03:00",
+      "selected": "Montage_02_C.mp4"
+    },
+    {
+      "enabled": false,
+      "frame": "00:00:05:12",
+      "selected": "Montage_02_C.mp4"
+    },
+    {
+      "preference_after_reload": "false"
+    },
+    {
+      "enabled": false,
+      "frame": "00:00:00:01",
+      "selected": "Montage_02_C.mp4",
+      "under_playhead": "Montage_01_B.mp4"
+    },
+    {
+      "enabled": true,
+      "selected": "Montage_01_B.mp4"
+    },
+    {
+      "playback": {
+        "timecode": "00:00:52:04",
+        "selected": "Montage_18_C.mp4",
+        "video": {
+          "currentTime": 52.148566,
+          "duration": 59.968,
+          "paused": true
+        }
+      }
+    }
+  ],
+  "playback_native_frame": 1252,
+  "playback_native_expected_clip": "Montage_18_C.mp4",
+  "native_session_before_after_sha256": "f3d94a650950c5cff360b4abc65129f5d05b3b67381779bc48315ef72f13ba55",
+  "native_session_exactly_unchanged": true,
+  "history_unchanged": {
+    "labels": [],
+    "position": 0
+  },
+  "preference_restored_enabled": true,
+  "tests": {
+    "javascript": 68,
+    "vv_web": 103
+  },
+  "native_reference": "vv-app::sync_selection_to_playhead; vv-core::Timeline::active_video_clip_at",
+  "rules": "Topmost enabled clip on unmuted video tracks; linked group; drop locked tracks; empty gaps; local preference only"
+}

@@ -1413,3 +1413,24 @@ The embedded main module matches the tested source; the saved shared project,
 Favorite annotation and exact seed remain available. CPU/lavapipe and two-worker
 caps are retained, with no DRI/KFD handles or hardware-lock probe/acquisition.
 Evidence: m7-halo2-save-conflict.json.
+
+## M4 — selection follows playhead
+
+The Commands palette has a persisted Selection follows playhead toggle, enabled
+by default like the desktop. It follows the audited native visible-video order:
+topmost clip on unmuted video tracks, disabled clips excluded, whole linked group
+then locked tracks dropped. Gaps clear selection. Seek drafts update selection
+locally and refresh Inspector only at the final seek; playback updates Inspector
+at clip boundaries. Frame steps and marker jumps use the same rule. Disabling
+the preference retains manual selection independently of the playhead.
+
+68 JS tests pass, including video layering, disabled/muted sources, linked
+members, locked tracks and exclusive end boundaries. Browser acceptance moved
+from Shot 01 B through its gap into Shot 02 C, verified a disabled manual
+selection over another take, persisted the disabled option across reload and
+reenabled it. During composed CPU playback, timeline frame 1252 selected Shot
+18 C exactly as the native timeline predicted. The complete native session
+snapshot and history were byte-for-byte equivalent before/after these view-only
+checks. Evidence: m4-selection-follows-playhead.json and the associated
+playhead/gap/playback browser screenshots. No HTTP editing or DSP runs in this
+view preference.

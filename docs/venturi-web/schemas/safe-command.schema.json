@@ -134,6 +134,10 @@
       "type": "string",
       "pattern": "^[A-Za-z0-9_-]{1,80}$"
     },
+    "command_epoch": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9]+$"
+    },
     "if_generation": {
       "type": "string",
       "pattern": "^[0-9]+$"

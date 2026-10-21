@@ -712,6 +712,7 @@ async function mutate(operation, project = false) {
   const body = {
     command_id: crypto.randomUUID(),
     client_id: clientId,
+    command_epoch: documentState.command_epoch,
     project_epoch: documentState.project_epoch,
     if_generation: documentState.generation,
     if_revision: project ? null : timeline.revision,

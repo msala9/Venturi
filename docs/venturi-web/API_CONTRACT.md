@@ -150,6 +150,18 @@ and project history generation. The JSON schemas reflect implemented timeline
 DTOs and the safe move/trim/split request subset, rather than the earlier examples
 below. Unimplemented routes in this design table must not be assumed available.
 
+Session snapshots and successful mutation receipts include a string
+`command_epoch`, independent of the project epoch. Mutations send that value.
+At 4096 retained receipts, the host rotates the command epoch, keeps the boundary
+receipt and continues without saving/restarting or resetting model/history/view
+identity. Stored request identities are fixed SHA-256 digests. Matching cached
+retries return their original result; changed bodies reuse neither the ID nor its
+effect. Evicted commands from an earlier receipt epoch return
+`COMMAND_EPOCH_EXPIRED` before engine work, even if history generation is unchanged.
+Unknown old lookups remain 404. Never refresh the epoch of an unresolved envelope
+to replay it. A missing/null command epoch is accepted only in the initial epoch
+for legacy clients. This bounded in-memory registry is not a durable command log.
+
 All endpoints below are **new** `vv-web` routes to implement. Do not say Venturi already exposes REST. `vv-app mcp` is a stdio tool server; use it only as a temporary proof-of-concept backend.
 
 ## Common conventions

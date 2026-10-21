@@ -1816,3 +1816,33 @@ The original shared project was reopened afterward with identical project and
 Review hashes, original PNG hash, exact seed and Favorite. CPU isolation and no
 hardware-lock acquisition are recorded in m3-halo2-six-minute-export.json and
 its browser screenshot. Shared archive content and inference were untouched.
+
+## M7 — bounded command receipt rotation without editor restart
+
+The hard 4096-command/8 MiB request-fingerprint stop is replaced by a bounded
+4096-receipt window with fixed SHA-256 request identities. At capacity the host
+rotates a separate command_epoch and retains the boundary receipt. Model/project
+epoch, dirty state, history, selection identity and render job identity remain
+unchanged. Session/ACK expose the current receipt epoch and the UI sends it on
+new commands. Cached matching retries retain their original result; changed
+bodies are rejected. Evicted old envelopes are rejected by command_epoch before
+engine work, including clipboard/metadata operations without a history advance.
+Legacy envelopes without the field work only in the initial receipt epoch.
+
+120 web Rust tests and 93 JavaScript tests pass, with formatting, clippy and build.
+The native test performs 5000 copy operations through rotation, preserves the
+dirty project and history, rejects the old command and replays the boundary ACK.
+Actual HTTP acceptance on an isolated GPU-disabled host applied 5003 commands,
+preserved the native project, generation/history, dirty state and saved-file hash,
+recovered the boundary receipt and refused both an evicted request and changed
+ID reuse. Old lookup returns unknown rather than guessing an outcome. Evidence:
+m7-command-receipt-rotation.json. This removes the capacity restart interruption;
+durable command acknowledgment and restart recovery remain open. No shared host
+hardware or source file was involved.
+
+The browser subsequently acquired the same isolated host in command epoch 1.
+Copy applied successfully without moving its playhead, then native Disable/Undo
+restored the clip while retaining the pre-existing InsertClips history entry.
+The server confirmed epoch 1, the original project epoch, dirty state and Undo
+position. m7-command-receipt-rotation-browser.png records the editing UI; preview
+is deliberately disabled on this protocol-only fixture.

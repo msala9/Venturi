@@ -10,7 +10,9 @@ test("writer identity survives reload in one tab and remains isolated from anoth
 });
 test("a lost mutation response looks up the same ID without replaying", async () => {
   const calls = [];
+  let posted;
   const fetcher = async (path, options) => {
+    if(options.method==="POST")posted=JSON.parse(options.body);
     calls.push({ path, method: options.method });
     if (calls.length === 1) throw new TypeError("Disconnected");
     return {
@@ -20,10 +22,11 @@ test("a lost mutation response looks up the same ID without replaying", async ()
   };
   const result = await sendMutation(
     "/timelines/0/commands",
-    { command_id: "same-id" },
+    { command_id: "same-id",command_epoch:"7" },
     fetcher,
   );
   assert.equal(result.status, "applied");
+  assert.equal(posted.command_epoch,"7","Receipt recovery preserves the original epoch without resubmitting");
   assert.deepEqual(calls, [
     { path: "/api/v1/timelines/0/commands", method: "POST" },
     { path: "/api/v1/commands/same-id", method: "GET" },

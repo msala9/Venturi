@@ -99,9 +99,12 @@ One browser owns a renewable 90-second writer lease; other browsers read
 snapshots. Reconnect retries lease acquisition. Reload preserves the tab's
 client ID in session storage. Server restarts replace the project epoch
 and require reopening a saved project. Completed command lookup is process
-local, bounded to 4096 entries / 8 MiB of request fingerprints; a final save is
-reserved before command capacity is exhausted. Restart after saving to reset
-the registry. Import probing is currently serialized on the session actor and
+local, bounded to 4096 receipts with SHA-256 request fingerprints. The command
+epoch rotates automatically at capacity without changing the project epoch,
+dirty state or Undo history. Clients send the current command_epoch from session
+snapshots; a receipt from the previous window is rejected after eviction rather
+than executed again. Never resubmit an unresolved command with a fresh epoch.
+Lookup is not durable across host restarts. Import probing is currently serialized on the session actor and
 can delay other session requests for large sources. This needs extraction
 before claiming interactive import at production scale.
 

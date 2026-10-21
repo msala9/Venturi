@@ -1,0 +1,78 @@
+{
+  "url": "http://127.0.0.1:8804",
+  "pid": 306692,
+  "commands": 5003,
+  "copy_commands": 5001,
+  "seconds": 1.7162042819982162,
+  "before": {
+    "project_epoch": "1792559706993325662:1",
+    "generation": "1",
+    "history": {
+      "labels": [
+        "InsertClips"
+      ],
+      "position": 1
+    },
+    "unsaved": true
+  },
+  "after": {
+    "project_epoch": "1792559706993325662:1",
+    "generation": "1",
+    "history": {
+      "labels": [
+        "InsertClips"
+      ],
+      "position": 1
+    },
+    "unsaved": true,
+    "command_epoch": "1"
+  },
+  "rotation": {
+    "request": {
+      "client_id": "receipt-probe",
+      "command_id": "receipt-copy-4093",
+      "command_epoch": "0",
+      "project_epoch": "1792559706993325662:1",
+      "if_generation": "1",
+      "if_revision": "bde759e20e28b9ab",
+      "operation": {
+        "kind": "copy_clips",
+        "clip_ids": [
+          "0"
+        ]
+      }
+    },
+    "result": {
+      "command_epoch": "1",
+      "command_id": "receipt-copy-4093",
+      "generation": "1",
+      "project_epoch": "1792559706993325662:1",
+      "status": "applied"
+    },
+    "index": 4093
+  },
+  "expired_code": "COMMAND_EPOCH_EXPIRED",
+  "duplicate_boundary_receipt_identical": true,
+  "reused_id_refused": true,
+  "old_lookup_missing": true,
+  "native_model_unchanged": true,
+  "saved_file_sha256": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20",
+  "saved_file_unchanged": true,
+  "gpu_initialized": false,
+  "software_only": true,
+  "browser": {
+    "before_timecode": "00:00:00:01",
+    "after_timecode": "00:00:00:01",
+    "notice": "Command applied",
+    "native_edit_undo_verified": true,
+    "post_edit_history": {
+      "labels": [
+        "InsertClips",
+        "ToggleClipsDisabled"
+      ],
+      "position": 1
+    },
+    "post_edit_generation": "3",
+    "command_epoch": "1"
+  }
+}

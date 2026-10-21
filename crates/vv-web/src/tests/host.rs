@@ -1,6 +1,101 @@
 use super::*;
 
 #[test]
+fn receipt_rotation_keeps_editing_state_and_rejects_evicted_commands_even_without_a_history_change()
+{
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-receipts-{}",
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let mut create = request(
+        &editor,
+        Operation::NewProject {
+            name: "rotation".into(),
+        },
+        "rotate-new",
+        None,
+    );
+    create.command_epoch = None;
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let path = Some(vv_core::Id::raw(id).to_string());
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 48,
+        },
+        "rotate-add",
+        Some(id),
+    );
+    editor.mutation(path.clone(), add).unwrap();
+    let before = serde_json::to_value(&editor.session.project).unwrap();
+    let generation = editor.session.history.generation();
+    let position = editor.session.history.position();
+    let project_epoch = editor.snapshot()["project_epoch"].clone();
+    let oldest = request(
+        &editor,
+        Operation::CopyClips {
+            clip_ids: vec!["0".into()],
+        },
+        "rotate-oldest",
+        Some(id),
+    );
+    editor.mutation(path.clone(), oldest.clone()).unwrap();
+    let mut boundary = None;
+    for index in 0..5000 {
+        let request = request(
+            &editor,
+            Operation::CopyClips {
+                clip_ids: vec!["0".into()],
+            },
+            &format!("rotate-copy-{index}"),
+            Some(id),
+        );
+        let epoch = editor.command_epoch;
+        let result = editor.mutation(path.clone(), request.clone()).unwrap();
+        if epoch != editor.command_epoch {
+            boundary = Some((request, result));
+        }
+        assert!(editor.completed.len() <= MAX_RECEIPTS);
+    }
+    assert_eq!(editor.command_epoch, 1);
+    assert_eq!(editor.session.history.generation(), generation);
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        before
+    );
+    assert_eq!(editor.snapshot()["project_epoch"], project_epoch);
+    assert_eq!(editor.snapshot()["clipboard_count"], 1);
+    assert!(editor.session.has_unsaved_changes());
+    assert_eq!(
+        editor.mutation(path.clone(), oldest).unwrap_err().1,
+        "COMMAND_EPOCH_EXPIRED"
+    );
+    let (record, result) = boundary.unwrap();
+    assert_eq!(result["command_epoch"], "1");
+    assert_eq!(
+        editor.mutation(path.clone(), record.clone()).unwrap(),
+        result
+    );
+    let mut reused = record;
+    reused.operation = Operation::Undo;
+    assert_eq!(
+        editor.mutation(path, reused).unwrap_err().1,
+        "COMMAND_ID_REUSED"
+    );
+    assert_eq!(editor.session.history.position(), position);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn unsupported_reopen_metadata_does_not_turn_a_successful_native_save_into_a_failed_command() {
     let root = std::env::temp_dir().join(format!(
         "vv-web-resume-metadata-{}",
@@ -112,6 +207,7 @@ fn request(
     Mutation {
         command_id: id.into(),
         client_id: "test-client".into(),
+        command_epoch: Some(editor.command_epoch.to_string()),
         project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
         if_generation: editor.session.history.generation().to_string(),
         if_revision: timeline.map(|id| editor.session.timeline_revision(id)),

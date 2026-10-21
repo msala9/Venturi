@@ -7,6 +7,7 @@ use crate::{
     source::{SourceQuery, SourceSpec},
 };
 use serde_json::{Value, json};
+use sha2::{Digest, Sha256};
 use std::{
     collections::HashMap,
     path::Path,
@@ -41,6 +42,7 @@ pub enum Action {
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
+const MAX_RECEIPTS: usize = 4096;
 #[derive(Clone)]
 pub struct Host(mpsc::SyncSender<Message>);
 pub struct Editor {
@@ -48,7 +50,8 @@ pub struct Editor {
     files: Files,
     epoch: String,
     lease: Option<(String, Instant)>,
-    completed: HashMap<String, (String, Result<Value>)>,
+    command_epoch: u64,
+    completed: HashMap<String, ([u8; 32], Result<Value>)>,
     import_warnings: Vec<String>,
     clipboard: Option<crate::clipboard::Clipboard>,
     persistence_notice: Option<&'static str>,
@@ -86,6 +89,7 @@ impl Editor {
                 .to_string(),
             lease: None,
             completed: HashMap::new(),
+            command_epoch: 0,
             import_warnings: vec![],
             clipboard: None,
             persistence_notice,
@@ -94,6 +98,7 @@ impl Editor {
     }
     fn snapshot(&self) -> Value {
         let mut snapshot = snapshot::session(&self.session, &self.epoch);
+        snapshot["command_epoch"] = json!(self.command_epoch.to_string());
         let origins: HashMap<_, _> = self
             .session
             .project
@@ -145,8 +150,9 @@ impl Editor {
         if !valid_key(&request.command_id) {
             return Err(ApiError::invalid("Invalid command ID"));
         }
-        let fingerprint = serde_json::to_string(&(timeline.clone(), &request))
+        let encoded = serde_json::to_vec(&(timeline.clone(), &request))
             .map_err(|_| ApiError::invalid("Invalid command"))?;
+        let fingerprint: [u8; 32] = Sha256::digest(&encoded).into();
         if let Some((original, result)) = self.completed.get(&request.command_id) {
             if original != &fingerprint {
                 return Err(ApiError::conflict(
@@ -157,29 +163,27 @@ impl Editor {
             return result.clone();
         }
         self.lease(&request.client_id)?;
-        let bytes = self
-            .completed
-            .values()
-            .map(|(key, _)| key.len())
-            .sum::<usize>()
-            + fingerprint.len();
-        if self.completed.len() >= 4096
-            || bytes > 8 * 1024 * 1024
-            || (!matches!(request.operation, Operation::Save)
-                && (self.completed.len() >= 4095 || bytes > 8 * 1024 * 1024 - 4096))
-        {
+        if request.command_epoch.as_deref().unwrap_or("0") != self.command_epoch.to_string() {
             return Err(ApiError::conflict(
-                "COMMAND_LIMIT",
-                "Save and restart the host before further commands",
+                "COMMAND_EPOCH_EXPIRED",
+                "Command receipt epoch expired; refresh without replaying the old command",
             ));
         }
-        let result=self.perform(timeline,&request).map(|_|{
+        let outcome = self.perform(timeline, &request);
+        if self.completed.len() >= MAX_RECEIPTS {
+            self.completed.clear();
+            self.command_epoch = self
+                .command_epoch
+                .checked_add(1)
+                .expect("Command epoch exhausted");
+        }
+        let result=outcome.map(|_|{
             if matches!(request.operation,Operation::Save|Operation::SaveAs{..}) {self.autosave.saved(&self.files,&self.session);}
             if matches!(request.operation,Operation::NewProject{..}|Operation::OpenProject{..}|Operation::Save|Operation::SaveAs{..}|Operation::RecoverBackup{..}|Operation::ImportOtio{..}|Operation::RecoverAutosave{open:true,..})
                 && let Some(name)=self.session.path().and_then(|path|path.file_name()).and_then(|name|name.to_str()) {
                 self.persistence_notice=crate::resume::remember(&self.files,name).err().map(|_|"The project operation succeeded, but automatic reopen could not be updated. Existing recovery metadata was preserved.");
             }
-            json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string()})
+            json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()})
         });
         self.completed
             .insert(request.command_id.clone(), (fingerprint, result.clone()));

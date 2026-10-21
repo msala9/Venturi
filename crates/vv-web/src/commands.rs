@@ -13,6 +13,8 @@ pub const MAX_FRAME: FrameIdx = 1_000_000_000;
 pub struct Mutation {
     pub command_id: String,
     pub client_id: String,
+    #[serde(default)]
+    pub command_epoch: Option<String>,
     pub project_epoch: String,
     pub if_generation: String,
     pub if_revision: Option<String>,

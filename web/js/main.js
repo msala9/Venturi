@@ -25,6 +25,7 @@ import { createPreviewCache } from "./preview-cache.js";
 import { createAudioMeters } from "./audio-meters.js";
 import {createPresetPanel} from './presets.js';
 import {createPresetShortcuts} from './preset-shortcuts.js';
+import {createViewerTransformOverlay} from './viewer-transform-overlay.js';
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -282,6 +283,7 @@ let commit = async () => {
 };
 let seek = () => {};
 let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = null, slipView = null;
+let transformOverlay=null,transformDetail=null;
 let sourceOpenId = null;
 const sourceRanges = new Map();
 const mediaAssets = new Map();
@@ -300,6 +302,7 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  transformOverlay?.cancel();
   audioMeters?.invalidate();
   fastTransport?.stop();
   audioScrub?.stop();
@@ -359,6 +362,7 @@ function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead,key_page:visualState.get(`key-page:${documentState.project_epoch}:${timeline.id}:${clip}`) || 0 } : null;
 }
 function selected() {
+  transformDetail=null;transformOverlay?.cancel();transformOverlay?.invalidate();
   presetPanel?.invalidate();
   recoveryPanel?.invalidate();
   pasteAttributes?.invalidate();
@@ -405,6 +409,7 @@ function selected() {
     request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(clip.id)}/keys/${state.key_page}?${query}`).then((detail) => {
       if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
       target.replaceChildren();
+      transformDetail={identity,detail};transformOverlay?.invalidate();
       visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage });
     }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else target.textContent = error.message;} });
   }
@@ -543,6 +548,7 @@ const canvasTimeline = createTimeline({
 });
 window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});
 function updateTime() {
+  transformOverlay?.invalidate();
   if (viewerMode === "source") { canvasTimeline.invalidate(); return; }
   const fps = Math.round(timeline?.fps.num / timeline?.fps.den || 24),
     frame = view.playhead;
@@ -1081,6 +1087,13 @@ viewer = createViewer({
         }
       : null,
 });
+transformOverlay=createViewerTransformOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-transform"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:()=>{
+  if(!documentState || !timeline || viewerMode!=="program" || !$("program-view").hidden || !$("slip-view").hidden)return null;
+  const clips=timeline.tracks.filter(track=>track.kind==="video").flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id)));
+  const clip=clips.length===1?clips[0]:null,current=viewer.current();
+  if(!clip || clip.disabled || clip.kind==="adjustment" || view.playhead<clip.start_frame || view.playhead>=clip.start_frame+clip.length_frames || transformDetail?.identity!==detailIdentity(inspectorState(clip.id)))return null;
+  return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,clip_id:clip.id,preview_current:Boolean(current),timeline_size:[timeline.resolution.width,timeline.resolution.height],detail:transformDetail.detail};
+}});
 scopes = createScopes({ panel: $("scopes"), getTarget: () => viewerMode === "program" && !scopePlayback ? scopeTarget(documentState, timeline, view.selection, view.playhead) : null });
 scopes.setVisible(editor.dataset.workspace === "Color");
 previewCache = createPreviewCache({getState: () => documentState?.capabilities.preview && timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0,width:960} : null,status:$("preview-cache-status"),onChange:()=>canvasTimeline.invalidate()});

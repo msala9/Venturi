@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles } from "./geometry.js";
 export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
@@ -93,6 +93,16 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           top + 41,
         );
         ctx.restore();
+        const fading=view.draft?.kind==='fade' && view.draft.clip_id===clip.id;
+        const shown=fading?{...clip,[`fade_${view.draft.edge}`]:view.draft.frames}:clip;
+        if(!track.locked && view.tool!=='slip')for(const handle of fadeHandles(shown,view,timeline.fps)){
+          if(!handle.frames && !fading && !view.selection.includes(clip.id) && view.hoverFadeClip!==clip.id)continue;
+          const active=fading && view.draft.edge===handle.edge;
+          ctx.strokeStyle=active?color('--primary'):color('--text');ctx.fillStyle=ctx.strokeStyle;
+          if(handle.frames){ctx.save();ctx.globalAlpha=0.65;ctx.beginPath();ctx.moveTo(handle.edge==='in'?x:right,top+TRACK-8);ctx.lineTo(handle.end,top+8);ctx.stroke();ctx.restore();}
+          ctx.beginPath();ctx.arc(handle.x,top+14,active?5:4,0,Math.PI*2);ctx.fill();
+          if(active){ctx.fillStyle=color('--text');ctx.fillText(`Fade ${handle.edge} ${handle.frames}f`,Math.max(x+8,HEADER+4),top+TRACK-13);}
+        }
       }
       for (const crossing of track.crossings || []) {
         const left=frameToX(crossing.start_frame,view,timeline.fps),right=frameToX(crossing.end_frame,view,timeline.fps);

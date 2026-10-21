@@ -67,6 +67,13 @@ The all-parameter list is bounded to 2048 options; its parameter filter exposes
 each row's complete current page. Native mutation validation rejects a group
 containing a removed key rather than silently dropping a hidden pick.
 
+Clip detail includes `source_size:[width,height]`, using native media dimensions
+or timeline dimensions for generated sources. Transform `value` remains native
+evaluation at the reported source frame. The viewer overlay does not interpolate
+in JavaScript; its static-axis edits use the existing guarded SetProperties route.
+Its displayed-frame identity must match the project/generation/timeline/revision
+and playhead before a gesture can begin or complete.
+
 Scalar `edit_curve_key` and `edit_curve_keys` edits accept optional
 `link_zoom:true`. Omitted or false preserves the original request serialization,
 including durable receipt fingerprints. For Zoom X/Y, creation adds both keys;

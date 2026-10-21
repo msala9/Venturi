@@ -8,6 +8,7 @@ import {
   linkedSelection,
   validateDraft,
   markerDraft,
+  fadeDraft,
 } from "./geometry.js";
 
 export function createInput({
@@ -31,14 +32,16 @@ export function createInput({
   };
   const cancel = () => {
     const slipping = gesture?.kind === "slip";
+    const pointerId=gesture?.pointerId;
     gesture = null;
     view.draft = null;
     view.lasso = null;
     if(slipping)onSlip({phase:"cancel"});
+    if(pointerId!==undefined && canvas.hasPointerCapture(pointerId))canvas.releasePointerCapture(pointerId);
     invalidate();
   };
   const down = (event) => {
-    if (waiting) return;
+    if (waiting || gesture) return;
     const timeline = getTimeline();
     if (!timeline) return;
     canvas.focus();
@@ -77,6 +80,11 @@ export function createInput({
         frame: xToFrame(x, view, timeline.fps),
         moved: false,
       };
+      if(hit.kind==='fade'){
+        if(!canEdit()){gesture=null;onNotice('A writable idle session is required to edit a fade');return;}
+        gesture.timeline=timeline;
+        gesture.pointerId=event.pointerId;
+      }
       if(view.tool === "slip") {
         const linked=linkedSelection(timeline,[hit.clip.id]);
         const affected=timeline.tracks.flatMap((track)=>track.clips.filter((clip)=>linked.includes(clip.id)).map((clip)=>({track,clip})));
@@ -102,14 +110,20 @@ export function createInput({
     if (!gesture) {
       const timeline = getTimeline(); if (!timeline) return;
       const [x,y] = point(event), hit = hitTest(x,y,timeline,view);
-      canvas.title = hit.marker ? `${hit.marker.note || "Marker"} · ${hit.marker.start_frame}f · drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : "";
-      if(canvas.style)canvas.style.cursor = hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
+      canvas.title = hit.marker ? `${hit.marker.note || "Marker"} · ${hit.marker.start_frame}f · drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : hit.kind==='fade' ? `Fade ${hit.edge} · ${hit.clip[`fade_${hit.edge}`]}f · drag to change this clip's fade` : '';
+      if(canvas.style)canvas.style.cursor = hit.kind==='fade' ? 'ew-resize' : hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
+      const hover=hit.clip?.id ?? null;if(view.hoverFadeClip!==hover){view.hoverFadeClip=hover;invalidate();}
       return;
     }
     const timeline = getTimeline(),
       [x, y] = point(event),
       g = gesture;
-    if (g.kind === "pan") {
+    if(g.kind==='fade'){
+      if(event.pointerId!==g.pointerId)return;
+      if(timeline!==g.timeline || !canEdit()){cancel();onNotice('Fade gesture cancelled because the editing session changed');return;}
+      if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
+      view.draft=fadeDraft(g.clip,g.edge,Math.round((x-g.x)*timeline.fps.num/(view.scale*timeline.fps.den)));
+    } else if (g.kind === "pan") {
       view.origin = Math.max(
         0,
         g.origin -
@@ -208,6 +222,8 @@ export function createInput({
     const g = gesture,
       timeline = getTimeline(),
       draft = view.draft;
+    if(g.kind==='fade' && event.pointerId!==g.pointerId)return;
+    if(g.kind==='fade' && (timeline!==g.timeline || !canEdit())){cancel();onNotice('Fade gesture cancelled because the editing session changed');return;}
     if (g.kind === "lasso" && view.lasso) {
       const box = view.lasso;
       const start = xToFrame(box.x, view, timeline.fps),
@@ -233,13 +249,13 @@ export function createInput({
     if (g.kind === "scrub") onSeek(true);
     if (g.kind === "marker" && !g.moved) { view.playhead=g.marker.start_frame;onSeek(true); }
     const markerChanged = g.kind !== "marker" || (draft && (draft.marker.start_frame!==g.marker.start_frame || draft.marker.duration_frames!==g.marker.duration_frames));
-    if (draft && g.moved && markerChanged && !(g.kind === "slip" && draft.target === 0)) {
+    if (draft && g.moved && markerChanged && !(g.kind === "slip" && draft.target === 0) && !(g.kind==='fade' && draft.frames===draft.original)) {
       if (draft.error) onNotice(draft.error);
       else {
         waiting = true;
         try {
           const operation =
-            g.kind === "marker" ? {kind:"move_marker",marker_id:g.marker.id,start_frame:draft.marker.start_frame,duration_frames:draft.marker.duration_frames} : g.kind === "move"
+            g.kind==='fade' ? {kind:'set_properties',clip_id:g.clip.id,patch:{[`fade_${g.edge}`]:draft.frames}} : g.kind === "marker" ? {kind:"move_marker",marker_id:g.marker.id,start_frame:draft.marker.start_frame,duration_frames:draft.marker.duration_frames} : g.kind === "move"
               ? {
                   kind: "safe_move",
                   moves: draft.changes.map(
@@ -269,6 +285,7 @@ export function createInput({
     invalidate();
   };
   const wheel = (event) => {
+    if(gesture?.kind==='fade')cancel();
     const timeline = getTimeline();
     if (!timeline) return;
     event.preventDefault();

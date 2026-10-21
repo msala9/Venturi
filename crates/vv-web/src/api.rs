@@ -1179,6 +1179,10 @@ async fn assets(request: Request) -> Response {
         "/js/keyselection.js" => asset!("/web/js/keyselection.js", "text/javascript"),
         "/js/presets.js" => asset!("/web/js/presets.js", "text/javascript"),
         "/js/preset-shortcuts.js" => asset!("/web/js/preset-shortcuts.js", "text/javascript"),
+        "/js/viewer-transform.js" => asset!("/web/js/viewer-transform.js", "text/javascript"),
+        "/js/viewer-transform-overlay.js" => {
+            asset!("/web/js/viewer-transform-overlay.js", "text/javascript")
+        }
         "/js/catalog.js" => asset!("/web/js/catalog.js", "text/javascript"),
         "/js/slip.js" => asset!("/web/js/slip.js", "text/javascript"),
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),

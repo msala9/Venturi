@@ -15,7 +15,8 @@ export function createViewer({ image, empty, status, getState, matches = matches
   let sequence = 0,
     controller = null,
     url = null,
-    pendingURL = null;
+    pendingURL = null,
+    displayed = null;
   function clearPending() {
     if (pendingURL) {
       URL.revokeObjectURL(pendingURL);
@@ -23,6 +24,7 @@ export function createViewer({ image, empty, status, getState, matches = matches
     }
   }
   function invalidate() {
+    displayed = null;
     sequence++;
     controller?.abort();
     clearPending();
@@ -32,6 +34,7 @@ export function createViewer({ image, empty, status, getState, matches = matches
       : "STALE_REVISION";
   }
   async function seek() {
+    displayed = null;
     const current = getState();
     if (!current) {
       invalidate();
@@ -74,6 +77,7 @@ export function createViewer({ image, empty, status, getState, matches = matches
       image.classList.remove("stale");
       empty.hidden = true;
       status.textContent = "CURRENT";
+      displayed = { ...current };
     } catch (error) {
       if (seq === sequence && error.name !== "AbortError") {
         clearPending();
@@ -82,6 +86,7 @@ export function createViewer({ image, empty, status, getState, matches = matches
     }
   }
   return {
+    current: () => displayed && matches(displayed,getState()) ? {...displayed} : null,
     seek,
     invalidate,
     destroy() {

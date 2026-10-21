@@ -469,10 +469,31 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 .filter(|(t, _)| tl.tracks[*t].kind == TrackKind::Audio)
                 .map(|(t, _)| *t)
                 .collect::<HashSet<_>>();
-            if video.len() > 1 || audio.len() > 1 {
-                return Err(ApiError::invalid(
-                    "This compound adapter supports one video and one audio track at a time",
-                ));
+            let multiple_tracks = video.len() > 1 || audio.len() > 1;
+            if multiple_tracks {
+                if video
+                    .iter()
+                    .chain(audio.iter())
+                    .any(|&index| tl.tracks[index].muted)
+                {
+                    return Err(ApiError::invalid(
+                        "Multitrack compounds require unmuted source tracks",
+                    ));
+                }
+                if !audio.is_empty()
+                    && (tl
+                        .tracks
+                        .iter()
+                        .any(|track| track.kind == TrackKind::Audio && track.solo)
+                        || audio.iter().any(|&index| {
+                            let mix = &tl.tracks[index].mix;
+                            mix.pan != 0.0 || !mix.effects.is_empty() || !mix.gain_db.is_finite()
+                        }))
+                {
+                    return Err(ApiError::invalid(
+                        "Multitrack compounds require gain-only audio tracks without solo, pan or inserts",
+                    ));
+                }
             }
             if let Some(&track) = audio.iter().next()
                 && selected.iter().filter(|(t, _)| *t == track).count() > 1
@@ -488,8 +509,43 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             let mut plan = core::plan_compound_clip(&session.project, id, &selected)
                 .ok_or_else(ApiError::missing)?;
             plan.nested_timeline.name = name.clone();
+            if multiple_tracks && !video.is_empty() {
+                let first = *video.iter().min().unwrap();
+                let last = *video.iter().max().unwrap();
+                for (index, track) in tl
+                    .tracks
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, track)| track.kind == TrackKind::Video)
+                {
+                    for clip in &track.clips {
+                        if clip.timeline_start >= plan.range_start + plan.len
+                            || clip.timeline_end() <= plan.range_start
+                        {
+                            continue;
+                        }
+                        if clip.is_adjustment()
+                            || clip.effects.matte.is_some()
+                            || ids.contains(&clip.id)
+                                && clip.effects.blend_mode != core::BlendMode::Normal
+                        {
+                            return Err(ApiError::invalid(
+                                "Multitrack compounds cannot change adjustment, matte or selected blend dependencies",
+                            ));
+                        }
+                        if (first..=last).contains(&index) && !ids.contains(&clip.id) {
+                            return Err(ApiError::conflict(
+                                "OVERLAP",
+                                "Include intervening video material before making a multitrack compound",
+                            ));
+                        }
+                    }
+                }
+            }
             for track in [plan.video_track, plan.audio_track].into_iter().flatten() {
                 free(tl, track, plan.range_start, plan.len, &ids)?;
+            }
+            for track in video.iter().chain(audio.iter()).copied() {
                 if tl.tracks[track]
                     .crossings
                     .iter()

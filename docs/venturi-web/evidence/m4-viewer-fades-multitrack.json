@@ -1,0 +1,106 @@
+{
+  "project": "Handles_Compound_API_check.vvproj",
+  "project_sha256": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+  "timeline": "3",
+  "clip_ids": [
+    "5",
+    "6"
+  ],
+  "nested_timeline": "4",
+  "source_size": [
+    1280,
+    720
+  ],
+  "fade_values": [
+    13,
+    17
+  ],
+  "transform_values": {
+    "PositionX": 64.0,
+    "PositionY": -32.0,
+    "ZoomX": 0.75,
+    "ZoomY": 1.25
+  },
+  "retry_receipts_exact": true,
+  "one_undo_per_operation": true,
+  "undo_redo": true,
+  "layered_compound": true,
+  "restart_preserved": true,
+  "parent_hashes_preserved": {
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "gui_acceptance": false,
+  "gpu_initialized": false,
+  "resource_limits": {
+    "cpu": "one CPU",
+    "memory": "512 MiB",
+    "swap": "0",
+    "oom_score": 1000,
+    "runtime_max_seconds": 90
+  },
+  "own_test_units_stopped": true,
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792584253.0537353,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "a3ca33faa3405fe26991a5d33159e360124801f2baecf887fc92891b5f83e1e6",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "main_editor_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    },
+    "unsaved": true
+  },
+  "syntax_checks": true,
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "fe9581f8364f9ff8b6ec2ba3a8ccb46e9804db7902658721be0246d90d164292",
+      "crates/vv-web/src/commands.rs": "42fe9ec5e45ad5192656843dd4ad5e13d55782986b43e55ae293910b608a26d9",
+      "crates/vv-web/src/inspector.rs": "3669f5e6e8f3923577ded7ca5f944442428575b04f28381209fe32265bb4be65",
+      "crates/vv-web/src/tests/commands.rs": "6d9efe9d391f0a95246c92d08a2f013190a0009a228d24f1488053ee8765d83b",
+      "crates/vv-web/src/tests/inspector.rs": "568c505574e31331b41a8a13eac1b30822bef96af694d3337e8e479bd9475afc",
+      "web/index.html": "818ffbf0db27b9a6c69f754bf1f2a4273a08b906f702792eaff2033f1bf07a1c",
+      "web/js/main.js": "e0efd4b5237251b07ba4b976fc1a8a76218c6c7f54e898ad16f95d6ae8dbd508",
+      "web/js/timeline/draw.js": "6db7d63c4a61cbd1d3e2218a5e5336b523819fc1d023b9b3944cd98eeca8bd49",
+      "web/js/timeline/geometry.js": "7b5f2e41892a8050a93984fec4cb9ecec5cee352f646dcc3b8f38452983dac8b",
+      "web/js/timeline/input.js": "fd59c8542fbf8d1e4a83c25a256b45f7adca04ba2d42c41fa5f1908401534c15",
+      "web/js/viewer.js": "949e1a2e75ea5300bf0c6bbd2407b7e849390b8a547d557ffcc8c9ee203b5899",
+      "web/js/viewer-transform.js": "b640bd82c6c70c6747ad6400f7122a853bd825e61a6578c8f01a42e0630f7e98",
+      "web/js/viewer-transform-overlay.js": "a5c5a3b21cf640671fe38763b8f14d3d4db0edd7f69bde8710e914d95a112cfe",
+      "web/style/app.css": "30c81bfd5b0d625f2503eacfadae5b2153e500c6d1fb4d515d938b0bd77b9f1b",
+      "web/test/viewer.test.js": "8f4fbec01a308dfe41865d33a5928830c9e1a6a9e55fd73c20290bda426d34f1",
+      "web/test/timeline-fades.test.js": "413e9b32655bb43eab2b89c86d21d1abca713a5fec2d8be694b2d8ac23c79eb0",
+      "web/test/viewer-transform.test.js": "632c32f8b52ea3d3dc93b9b424bec48b5433b4052250806b85588a9c146a3d54",
+      "web/test/viewer-transform-overlay.test.js": "0812f862b256d7b8486003c0d3765a170d0caecbde470aefd8267916cd22c7e8"
+    },
+    "rust_tests": 154,
+    "javascript_tests": 137,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": false,
+    "desktop_application_import": false,
+    "nas_preset_sharing": false
+  },
+  "scope_note": "Viewer static position/scale and fade gesture controllers, native source geometry, conservative multitrack compound API and restart accepted. GUI, rendered equivalence and hardware acceptance remain open. Compound pan/inserts/solo/matte/adjustment dependencies are refused; flattening is not implemented."
+}

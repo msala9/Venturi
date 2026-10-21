@@ -2,6 +2,42 @@ use super::*;
 use vv_core::{Rational, Timeline, Track, TrackKind};
 
 #[test]
+fn viewer_geometry_uses_native_source_dimensions_instead_of_timeline_dimensions() {
+    let (mut session, id, raw) = fixture();
+    assert_eq!(
+        detail(&session, id, &raw, 100).unwrap()["source_size"],
+        json!([640, 360])
+    );
+    let media = session.project.media_pool.insert(core::MediaItem {
+        path: "geometry-source.mp4".into(),
+        meta: core::MediaMeta {
+            width: 1920,
+            height: 800,
+            duration_frames: 120,
+            fps: Rational::new(24, 1),
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 0,
+        compound: None,
+        folder: None,
+    });
+    session.project.timelines[id].tracks[0].clips[0].source = ClipSource::Media(media);
+    let before = session.timeline_revision(id);
+    let position = session.history.position();
+    assert_eq!(
+        detail(&session, id, &raw, 100).unwrap()["source_size"],
+        json!([1920, 800])
+    );
+    assert_eq!(session.timeline_revision(id), before);
+    assert_eq!(session.history.position(), position);
+}
+
+#[test]
 fn dense_key_pages_expose_every_native_scalar_and_text_key_without_unbounded_summaries() {
     let (mut session, id, raw) = fixture();
     let clip = &mut session.project.timelines[id].tracks[0].clips[0];

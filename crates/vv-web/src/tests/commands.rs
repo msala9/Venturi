@@ -246,6 +246,215 @@ fn a_compound_cannot_change_the_normalization_policy_of_multiple_audio_clips() {
     assert_eq!(session.project.timelines.len(), 2);
 }
 
+fn multitrack_compound_fixture() -> (Session, TimelineId, Vec<ClipId>) {
+    let mut session = Session::default();
+    let id = session.create_timeline(Timeline {
+        name: "Multitrack".into(),
+        fps: core::Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: [
+            TrackKind::Video,
+            TrackKind::Video,
+            TrackKind::Audio,
+            TrackKind::Audio,
+        ]
+        .into_iter()
+        .map(core::Track::new)
+        .collect(),
+        markers: vec![],
+        master: Default::default(),
+    });
+    let media = session.add_media(
+        std::path::PathBuf::from("offline-compound.wav"),
+        core::MediaMeta {
+            duration_frames: 48,
+            fps: core::Rational::new(24, 1),
+            width: 0,
+            height: 0,
+            has_video: false,
+            has_audio: true,
+            sample_rate: 48000,
+            channels: 2,
+            audio_streams: 1,
+            file: Default::default(),
+        },
+    );
+    let mut clips = vec![];
+    for track in 0..4 {
+        let clip_id = session.project.alloc_clip_id();
+        let mut clip = core::Clip::from_source_range(
+            clip_id,
+            if track < 2 {
+                core::ClipSource::SolidColor
+            } else {
+                core::ClipSource::Media(media)
+            },
+            0,
+            48,
+            0,
+            core::Rational::one(),
+        );
+        if track == 0 || track == 2 {
+            clip.linked_group = Some(core::LinkGroupId(9));
+        }
+        session.project.timelines[id].tracks[track].insert_sorted(clip);
+        clips.push(clip_id);
+    }
+    session.project.timelines[id].tracks[2].mix.gain_db = -3.0;
+    session.project.timelines[id].tracks[3].mix.gain_db = -9.0;
+    (session, id, clips)
+}
+
+#[test]
+fn neutral_multitrack_compound_preserves_layers_gain_links_and_one_step_undo() {
+    let (mut session, id, clips) = multitrack_compound_fixture();
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let media_count = session.project.media_pool.len();
+    let steps = session.history.position();
+    let request = Operation::MakeCompound {
+        clip_ids: [clips[0], clips[1], clips[3]]
+            .iter()
+            .map(|clip| clip.0.to_string())
+            .collect(),
+        name: "Four tracks".into(),
+    };
+    apply(&mut session, id, &request).unwrap();
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(session.project.media_pool.len(), media_count + 1);
+    let parent = &session.project.timelines[id];
+    assert!(parent.tracks[1].clips.is_empty());
+    assert!(parent.tracks[3].clips.is_empty());
+    let wrapper = &parent.tracks[0].clips[0];
+    assert_eq!(wrapper.linked_group, parent.tracks[2].clips[0].linked_group);
+    assert!(wrapper.linked_group.is_some());
+    let core::ClipSource::Media(media) = &wrapper.source else {
+        panic!("Expected native compound media")
+    };
+    let nested_id = session.project.media_pool[*media].compound.unwrap();
+    let nested = &session.project.timelines[nested_id];
+    assert_eq!(nested.tracks.len(), 4);
+    for (index, clip_id) in clips.iter().enumerate() {
+        assert_eq!(nested.tracks[index].clips[0].id, *clip_id);
+    }
+    assert_eq!(nested.tracks[2].mix.gain_db, 0.0);
+    assert_eq!(nested.tracks[3].mix.gain_db, -6.0);
+    assert_eq!(parent.tracks[2].mix.gain_db, -3.0);
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(session.project.timelines.len(), 1);
+    assert_eq!(session.project.media_pool.len(), media_count);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    apply(&mut session, id, &Operation::Redo).unwrap();
+    assert_eq!(
+        session.project.timelines[nested_id].tracks[3].mix.gain_db,
+        -6.0
+    );
+}
+
+#[test]
+fn multitrack_compound_rejects_processing_audibility_and_linked_locks_without_mutation() {
+    for case in 0..11 {
+        let (mut session, id, clips) = multitrack_compound_fixture();
+        let timeline = &mut session.project.timelines[id];
+        match case {
+            0 => timeline.tracks[1].muted = true,
+            1 => timeline.tracks[3].muted = true,
+            2 => timeline.tracks[2].solo = true,
+            3 => timeline.tracks[3].mix.pan = 0.5,
+            4 => timeline.tracks[3]
+                .mix
+                .effects
+                .push(core::AudioEffect::new(core::AudioEffectKind::Mono)),
+            5 => timeline.tracks[1].clips[0].effects.blend_mode = core::BlendMode::Multiply,
+            6 => timeline.tracks[1].clips[0].source = core::ClipSource::Adjustment,
+            7 => timeline.tracks[2].locked = true,
+            8 => {
+                let mut outside = core::Track::new(TrackKind::Audio);
+                outside.solo = true;
+                timeline.tracks.push(outside);
+            }
+            9 => timeline.tracks[3].mix.effects.push(core::AudioEffect::new(
+                core::AudioEffectKind::Normalize {
+                    target_db: -1.0,
+                    mode: core::NormalizeMode::SamplePeak,
+                    set_level: core::SetLevel::Relative,
+                },
+            )),
+            _ => timeline.tracks[1].clips[0].effects.matte = Some(core::MatteMode::Alpha),
+        }
+        let request = Operation::MakeCompound {
+            clip_ids: [clips[0], clips[1], clips[3]]
+                .iter()
+                .map(|clip| clip.0.to_string())
+                .collect(),
+            name: "Refused processing".into(),
+        };
+        let before = serde_json::to_value(&session.project).unwrap();
+        let steps = session.history.position();
+        let error = apply(&mut session, id, &request).unwrap_err();
+        if case == 7 {
+            assert_eq!(error.1, "TRACK_LOCKED");
+        }
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            before,
+            "Case {case}"
+        );
+        assert_eq!(session.history.position(), steps, "Case {case}");
+    }
+}
+
+#[test]
+fn multitrack_compound_refuses_intervening_layers_and_crossing_boundaries() {
+    for crossing in [false, true] {
+        let (mut session, id, clips) = multitrack_compound_fixture();
+        let extra_id = session.project.alloc_clip_id();
+        let extra = core::Clip::from_source_range(
+            extra_id,
+            core::ClipSource::SolidColor,
+            0,
+            48,
+            if crossing { 48 } else { 0 },
+            core::Rational::one(),
+        );
+        let timeline = &mut session.project.timelines[id];
+        if crossing {
+            timeline.tracks[1].insert_sorted(extra);
+            timeline.tracks[1].crossings.push(core::CrossTransition {
+                left_clip: clips[1],
+                right_clip: extra_id,
+                transition: core::Transition {
+                    kind: core::TransitionKind::CrossDissolve,
+                    duration: 12,
+                    direction: core::PushDirection::Left,
+                    ease: core::Ease::InOut,
+                    curve: 0.5,
+                },
+            });
+        } else {
+            let mut intervening = core::Track::new(TrackKind::Video);
+            intervening.insert_sorted(extra);
+            timeline.tracks.insert(1, intervening);
+        }
+        let request = Operation::MakeCompound {
+            clip_ids: clips.iter().map(|clip| clip.0.to_string()).collect(),
+            name: "Refused boundary".into(),
+        };
+        let before = serde_json::to_value(&session.project).unwrap();
+        let steps = session.history.position();
+        let error = apply(&mut session, id, &request).unwrap_err();
+        if crossing {
+            assert!(error.2.contains("crossing transition"));
+        } else {
+            assert_eq!(error.1, "OVERLAP");
+        }
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.position(), steps);
+    }
+}
+
 #[test]
 fn native_linked_retime_rejects_overlap_then_ripples_atomically_and_undoes() {
     let (mut session, id, _) = fixture();

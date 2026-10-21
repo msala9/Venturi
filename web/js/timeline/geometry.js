@@ -42,6 +42,16 @@ export function snapFrame(frame, candidates, view, fps, threshold = 8) {
   }
   return Math.max(0, best);
 }
+export function fadeHandles(clip,view,fps){
+  if(!Number.isSafeInteger(clip.fade_in) || !Number.isSafeInteger(clip.fade_out) || clip.length_frames<1)return [];
+  const left=frameToX(clip.start_frame,view,fps),right=frameToX(clip.start_frame+clip.length_frames,view,fps);
+  if(right-left<20)return [];
+  return ['in','out'].map(edge=>{const frames=Math.max(0,Math.min(clip.length_frames,clip[`fade_${edge}`])),end=frameToX(clip.start_frame+(edge==='in'?frames:clip.length_frames-frames),view,fps);return {edge,frames,end,x:Math.max(left+4,Math.min(right-4,end)),left,right};});
+}
+export function fadeDraft(clip,edge,delta){
+  const original=clip[`fade_${edge}`],frames=Math.max(0,Math.min(clip.length_frames,original+(edge==='in'?delta:-delta)));
+  return {kind:'fade',clip_id:clip.id,edge,frames,original};
+}
 export function hitTest(x, y, timeline, view) {
   if (x >= HEADER && y >= MARKER_TOP && y < MARKER_BOTTOM) {
     for (const marker of [...(timeline.markers || [])].reverse()) {
@@ -63,12 +73,18 @@ export function hitTest(x, y, timeline, view) {
       view,
       timeline.fps,
     );
-    if (x >= left && x <= right)
+    if (x >= left && x <= right){
+      const top=RULER+track*TRACK-view.scrollY;
+      if(!timeline.tracks[track].locked && view.tool!=='slip' && y>=top+7 && y<=top+21){
+        const handle=fadeHandles(clip,view,timeline.fps).filter(handle=>Math.abs(x-handle.x)<=9).sort((a,b)=>Math.abs(x-a.x)-Math.abs(x-b.x))[0];
+        if(handle)return {kind:'fade',edge:handle.edge,track,clip};
+      }
       return {
         kind: x - left < 8 ? "trim_start" : right - x < 8 ? "trim_end" : "move",
         track,
         clip,
       };
+    }
   }
   return { kind: "blank", track };
 }

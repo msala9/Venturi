@@ -2307,3 +2307,53 @@ and the main editor's generation 5/five unsaved moves were preserved. Evidence:
 `evidence/m4-saved-native-presets.json`. Browser acceptance, actual desktop
 application import, NAS preset sharing and concurrent desktop/web writes remain
 unqualified. The ds4 media-catalog NAS evidence does not qualify preset sharing.
+
+## M4 — timeline fades, static viewer handles and neutral multitrack compounds
+
+The timeline now draws draggable fade handles in each clip's top band, leaving
+lower edge trim targets and the Slip tool available. Existing fades are visible;
+selection/hover reveals zero-fade handles. The draft changes only on the client;
+release submits one native SetProperties operation for that clip. Fade behavior
+matches desktop: audio and video fades remain independent even for linked clips.
+Escape, pointer cancellation/capture loss, wheel or changed session discards the
+draft and releases capture. Returning to the original value creates no edit.
+
+The Program viewer's explicit Transform toggle exposes position and corner-scale
+handles for a selected active video clip on a current stopped frame. The overlay
+uses authoritative source dimensions and evaluated native transform values, with
+the desktop's fitted source, crop, flip, pivot and clockwise rotation geometry.
+Shift scales independently; normal corner dragging scales proportionally. Only
+static affected axes are editable in this increment. Animated affected axes use
+the existing inspector controls. The displayed frame identity, property identity
+and viewport are checked throughout a gesture; stale frames never accept a move.
+Geometry values use native f32 precision, including the minimum scale boundary
+and sub-ULP no-op detection. Ghost outlines do not render or mutate media.
+
+The overlay redraws only on invalidation, coalesces animation-frame requests,
+and caps its backing canvas at 4,194,304 pixels. Default-off controls, pointer
+ownership, Escape/cancel/blur/visibility/resize handling and numeric Inspector
+fallback avoid background loops or hidden writes. Real browser/DPI acceptance
+remains pending; mock DOM interaction tests are not a visual qualification.
+
+MakeCompound now accepts multiple video/audio tracks when the native planner
+can preserve normal compositing and gain-only audio. Linked groups expand before
+validation. Muted tracks, audio solo/pan/inserts, adjustment/matte dependencies,
+selected non-normal blends, unselected intervening video and boundary-crossing
+transitions are refused. Native relative gain compensation, nesting and one-step
+Undo/Redo are retained. No core/desktop behavior was changed. Arbitrary bus/effect
+preservation and flattening still require native planning work.
+
+154 Rust tests, 137 JavaScript tests, fmt, clippy with warnings denied, native
+build and changed JavaScript syntax checks pass on halo2. One new geometry test
+initially compared binary floating-point coordinates exactly; it now uses the
+existing small numeric tolerance. A finite API fixture verified native source
+dimensions, fade and position/scale edits, exact retry ACK, Undo/Redo, a two-video
+layer compound and Save/restart. Native unit tests cover four linked video/audio
+tracks, relative gains and rejected processing/layer/lock/crossing cases.
+
+Evidence: `evidence/m4-viewer-fades-multitrack.json`. Temporary servers used no
+preview/GPU, one CPU, 512 MiB, no swap, OOMScoreAdjust=1000 and 90-second runtime
+caps; both are stopped. Parent files and the primary editor's five unsaved moves
+were preserved. No local browser/build, hardware probe or long soak was started.
+GUI/rendered-equivalence/hardware acceptance remains open; affected ledger rows
+remain partial.

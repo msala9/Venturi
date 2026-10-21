@@ -405,6 +405,27 @@ archived preset metadata requires enabling again. Assignment of new desktop
 shortcuts is not available. Native JSON files are limited to 4 MiB and the web
 adapter's supported format/name/frame bounds. GUI qualification remains pending.
 
+## Viewer and fade handles
+
+On a current stopped Program frame, select a video clip and enable Transform.
+Drag inside its outline to move or a corner to scale; Shift scales the axes
+independently. This increment edits static position/scale axes. Animated axes
+continue through the Inspector; crop, anchor and rotation handles are not yet
+exposed. The outline is a local draft until release; Escape cancels. Stale frames,
+playback, Source/slip views, locked clips and changed selections cannot commit.
+
+Timeline fade handles occupy the upper band of sufficiently wide clips. Drag a
+handle to set that clip's fade; lower edge trims and the Slip tool retain their
+hit targets. Linked audio/video fades are independent, matching the desktop.
+Release creates one Undo, while cancellation or no change creates none.
+
+Multitrack compounds are available for normal video layers and unmuted gain-only
+audio with no solo/pan/inserts. Include intervening video and both sides of a
+crossing. Dependencies that cannot be preserved are explicitly rejected;
+flattening and arbitrary mixer/compositing preservation remain unavailable.
+These increments have native/API and interaction-state tests; real GUI and
+rendered-equivalence qualification remains pending.
+
 ## Checks
 
 ```bash

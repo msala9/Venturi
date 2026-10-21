@@ -484,6 +484,26 @@ reopening the external version. Neither a conflict nor Save As overwrites the
 external project. Close other editors while saving the same file: external
 filesystem tools do not share the web host's directory ownership lock.
 
+## Opening compound timelines
+
+Select a compound clip and choose **Open selected compound**, press Enter with
+the timeline focused, or double-click its Canvas clip. The child opens at the
+native picture frame under the current playhead, including its trim, speed and
+freeze. Linked video/audio wrappers that reference the same child count as one;
+ordinary clips in the selection are ignored. Locked compounds remain navigable.
+
+Use a parent button in **Compound timeline ancestry**, or Alt+Left, to return.
+Rust maps the child playhead through the current wrappers in reverse order.
+Frozen or removed wrappers restore their entry playhead. Returning restores the
+parent viewport and retains only still-existing selected clips. Navigation never
+edits the project or adds an Undo step. Directly choosing a timeline or opening
+it from the Media pool starts a new root and clears the ancestry path.
+
+The path is limited to 16 levels with no repeated timelines. Editing, modal
+dialogs and active pointer drags prevent navigation; stale replies after a
+session, frame, selection or viewport change cannot switch timelines. Native
+frame conversion runs on the host. No browser-side FPS arithmetic is used.
+
 ## Saved attribute presets
 
 Open Presets to save the selected native video/audio attribute groups, apply a

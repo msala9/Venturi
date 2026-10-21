@@ -1,0 +1,374 @@
+{
+  "status": "passed",
+  "root": "/home/marco/VenturiWeb-compound-navigation-20261021-2",
+  "project": "Compound_Navigation_API_check.vvproj",
+  "project_sha256": "9aad62d628c743b6ed5700b6e9ffc6fe1d85cab6779499dfa2e85e4438a8066e",
+  "timeline_ids": {
+    "outer": "4",
+    "middle": "2",
+    "inner": "3"
+  },
+  "clip_ids": {
+    "outer": "2",
+    "middle": "1",
+    "inner": "0"
+  },
+  "entry": {
+    "frame": 28,
+    "generation": "5",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "59b83afe22ecb472",
+    "source_frame": 20,
+    "source_revision": "678a5038cd7c65c0",
+    "source_timeline_id": "2",
+    "timeline_id": "3",
+    "via_clip_id": "1"
+  },
+  "inverse": {
+    "frame": 26,
+    "generation": "5",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "678a5038cd7c65c0",
+    "source_frame": 40,
+    "source_revision": "59b83afe22ecb472",
+    "source_timeline_id": "3",
+    "timeline_id": "2",
+    "via_clip_id": null
+  },
+  "past_end": {
+    "frame": 94,
+    "generation": "5",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "59b83afe22ecb472",
+    "source_frame": 1000,
+    "source_revision": "678a5038cd7c65c0",
+    "source_timeline_id": "2",
+    "timeline_id": "3",
+    "via_clip_id": "1"
+  },
+  "frozen": {
+    "frame": 54,
+    "generation": "6",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "59b83afe22ecb472",
+    "source_frame": 20,
+    "source_revision": "4b4e886eaafee42a",
+    "source_timeline_id": "2",
+    "timeline_id": "3",
+    "via_clip_id": "1"
+  },
+  "frozen_back": {
+    "frame": 20,
+    "generation": "6",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "4b4e886eaafee42a",
+    "source_frame": 60,
+    "source_revision": "59b83afe22ecb472",
+    "source_timeline_id": "3",
+    "timeline_id": "2",
+    "via_clip_id": null
+  },
+  "locked": {
+    "frame": 28,
+    "generation": "8",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "59b83afe22ecb472",
+    "source_frame": 20,
+    "source_revision": "095a1fe3754d6ceb",
+    "source_timeline_id": "2",
+    "timeline_id": "3",
+    "via_clip_id": "1"
+  },
+  "outer_entry": {
+    "frame": 40,
+    "generation": "11",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "678a5038cd7c65c0",
+    "source_frame": 150,
+    "source_revision": "ab13b4afc7c3a072",
+    "source_timeline_id": "4",
+    "timeline_id": "2",
+    "via_clip_id": "2"
+  },
+  "inner_entry": {
+    "frame": 68,
+    "generation": "11",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "59b83afe22ecb472",
+    "source_frame": 40,
+    "source_revision": "678a5038cd7c65c0",
+    "source_timeline_id": "2",
+    "timeline_id": "3",
+    "via_clip_id": "1"
+  },
+  "nested_back": {
+    "frame": 133,
+    "generation": "11",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "ab13b4afc7c3a072",
+    "source_frame": 40,
+    "source_revision": "59b83afe22ecb472",
+    "source_timeline_id": "3",
+    "timeline_id": "4",
+    "via_clip_id": null
+  },
+  "deleted_wrapper_back": {
+    "frame": 20,
+    "generation": "12",
+    "project_epoch": "1792617840139015890:1",
+    "revision": "2f402c8da9e1e382",
+    "source_frame": 60,
+    "source_revision": "59b83afe22ecb472",
+    "source_timeline_id": "3",
+    "timeline_id": "2",
+    "via_clip_id": null
+  },
+  "stale_parent": {
+    "status": 409,
+    "error": "REVISION_CONFLICT"
+  },
+  "stale_generation": {
+    "status": 409,
+    "error": "REVISION_CONFLICT"
+  },
+  "wrong_path": {
+    "status": 422,
+    "error": "INVALID_OPERATION"
+  },
+  "ordinary_clip_refused": {
+    "status": 422,
+    "error": "INVALID_OPERATION"
+  },
+  "restart_preserved": true,
+  "readonly_navigation_preserves_session": true,
+  "binary_sha256": "a2284555a48d350fde6481293001a3d698bed916ecb7ddcfbfcdd608d3a246bb",
+  "hardware_gpu_used": false,
+  "failure": null,
+  "failure_traceback": null,
+  "main_editor_preserved": true,
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "cleanup_errors": [],
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792617794.0332103,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "a2284555a48d350fde6481293001a3d698bed916ecb7ddcfbfcdd608d3a246bb",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "served_asset_hashes": {
+    "/": "801cc72868d19d5ddccf20c8ff7e7a1ab142f78969228dc60b0342c39af1fbd7",
+    "/style/app.css": "8f7da2c112740c55a76c5bc7c6b43f0aa6a8020da287657af5fd15c4a6ee93fc",
+    "/js/main.js": "fe78d0a327d0dd345e8280b232a5253c73ba000b3759a4f67b76a2348015bcd6",
+    "/js/compound-navigation.js": "0d81298dde73cb7a27e9c723094f83012b88ed36c9ffe39b0ae159e8f00b1950",
+    "/js/timeline/input.js": "31bdfa6ddd6ec07c00d8e2bcba4b5316470fcd3ab07d2f7c963ef902344024b2",
+    "/js/timeline/index.js": "f24a325dd72d23b337e53251543a18282c0bac313449d57f6e9de8596a9a36e0"
+  },
+  "core_tests": 277,
+  "media_proxy_tests": 10,
+  "bounded_decoder_tests": 3,
+  "cached_device_tests": 1,
+  "rust_tests": 258,
+  "javascript_tests": 594,
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "windows_navigation_preserves_generation_history_saved_bytes": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "validation_summary": [
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-core",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.19s",
+    "test result: ok. 277 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s",
+    "test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media browser_proxy::tests::",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.09s",
+    "test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out; finished in 0.48s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_software_thread_bound",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.05s",
+    "test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 0.24s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-media web_cached_device_release",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 0.09s",
+    "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 126 filtered out; finished in 0.00s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo test --locked -p vv-web",
+    "    Finished `test` profile [optimized + debuginfo] target(s) in 45.64s",
+    "test result: ok. 258 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.05s",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo clippy --locked -p vv-core -p vv-media -p vv-web -p vv-app --all-targets -- -D warnings",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 5.21s",
+    "+ /home/marco/.cache/venturi-build/node/bin/node --test --test-concurrency=1 web/test/api.test.js web/test/attributes.test.js web/test/audio-meters.test.js web/test/audition.test.js web/test/balance.test.js web/test/capture.test.js web/test/catalog.test.js web/test/compound-navigation.test.js web/test/curves.test.js web/test/eventkeys.test.js web/test/export-codecs.test.js web/test/export-panel.test.js web/test/export.test.js web/test/fast-transport.test.js web/test/inspector.test.js web/test/keyselection.test.js web/test/library.test.js web/test/masks.test.js web/test/mixer.test.js web/test/preset-panel.test.js web/test/preset-shortcuts.test.js web/test/presets.test.js web/test/preview-cache.test.js web/test/program-range.test.js web/test/program.test.js web/test/recovery.test.js web/test/retime-inspector.test.js web/test/retime-menu.test.js web/test/retime-visibility.test.js web/test/review.test.js web/test/reviewmeta.test.js web/test/scopes.test.js web/test/silence.test.js web/test/slip.test.js web/test/source-assets.test.js web/test/source-clock.test.js web/test/source-seek.test.js web/test/source-streams.test.js web/test/source-windows.test.js web/test/source.test.js web/test/timeline-compound-input.test.js web/test/timeline-fades.test.js web/test/timeline-preset-drop.test.js web/test/timeline-retime-input.test.js web/test/timeline-retime.test.js web/test/timeline-transition-input.test.js web/test/timeline-transition-placement-input.test.js web/test/timeline-transition-placement.test.js web/test/timeline-transitions.test.js web/test/timeline.test.js web/test/transition-selection.test.js web/test/ui.test.js web/test/viewer-mask-overlay.test.js web/test/viewer-mask-pen.test.js web/test/viewer-mask.test.js web/test/viewer-transform-overlay.test.js web/test/viewer-transform.test.js web/test/viewer.test.js web/test/visual.test.js web/test/voiceover.test.js",
+    "+ /home/marco/.cache/venturi-build/cargo/bin/cargo build --locked -p vv-web",
+    "    Finished `dev` profile [optimized + debuginfo] target(s) in 37.62s"
+  ],
+  "own_ui_test_unit_stopped": true,
+  "windows_ui_observations": {
+    "outer": {
+      "breadcrumb": "Outer navigation",
+      "clock": "00:00:00:00",
+      "parents": [],
+      "saved": "Saved",
+      "timeline": "4",
+      "undoDisabled": true
+    },
+    "middle": {
+      "breadcrumb": "Outer navigation / Middle navigation",
+      "clock": "00:00:00:00",
+      "parents": [
+        "Outer navigation"
+      ],
+      "saved": "Saved",
+      "timeline": "2",
+      "undoDisabled": true
+    },
+    "inner_entry": {
+      "breadcrumb": "Outer navigation / Middle navigation / Inner navigation",
+      "clock": "00:00:00:12",
+      "parents": [
+        "Outer navigation",
+        "Middle navigation"
+      ],
+      "saved": "Saved",
+      "timeline": "3",
+      "undoDisabled": true
+    },
+    "inner_frame24": {
+      "breadcrumb": "Outer navigation / Middle navigation / Inner navigation",
+      "clock": "00:00:01:00",
+      "parents": [
+        "Outer navigation",
+        "Middle navigation"
+      ],
+      "saved": "Saved",
+      "timeline": "3",
+      "undoDisabled": true
+    },
+    "outer_return123": {
+      "breadcrumb": "Outer navigation",
+      "clock": "00:00:04:03",
+      "parents": [],
+      "saved": "Saved",
+      "timeline": "4",
+      "undoDisabled": true
+    },
+    "middle_return18": {
+      "breadcrumb": "Outer navigation / Middle navigation",
+      "clock": "00:00:00:18",
+      "parents": [
+        "Outer navigation"
+      ],
+      "saved": "Saved",
+      "timeline": "2",
+      "undoDisabled": true
+    },
+    "button_focused_alt_left": {
+      "breadcrumb": "Outer navigation",
+      "clock": "00:00:04:03",
+      "parents": [],
+      "saved": "Saved",
+      "timeline": "4",
+      "undoDisabled": true
+    },
+    "direct_open_resets_ancestry": {
+      "breadcrumb": "Inner navigation",
+      "clock": "00:00:00:00",
+      "parents": [],
+      "saved": "Saved",
+      "timeline": "3",
+      "undoDisabled": true
+    },
+    "ordinary_root_keys_no_edit": {
+      "breadcrumb": "Inner navigation",
+      "clock": "00:00:00:00",
+      "parents": [],
+      "saved": "Saved",
+      "timeline": "3",
+      "undoDisabled": true
+    },
+    "consoleErrors": []
+  },
+  "ui_original_runtime": {
+    "unit": "venturi-windows-ui-20261021.service",
+    "pid": 1415139,
+    "args": [
+      "/home/marco/.cache/venturi-build/target/debug/vv-web",
+      "--listen",
+      "127.0.0.1:8811",
+      "--projects-root",
+      "/home/marco/VenturiWeb-compound-navigation-20261021-2"
+    ],
+    "binary_sha256": "a2284555a48d350fde6481293001a3d698bed916ecb7ddcfbfcdd608d3a246bb",
+    "root": "/home/marco/VenturiWeb-compound-navigation-20261021-2",
+    "parents": {
+      "Compound_Navigation_API_check.vvproj": "9aad62d628c743b6ed5700b6e9ffc6fe1d85cab6779499dfa2e85e4438a8066e"
+    },
+    "session_before": {
+      "project_name": "Compound_Navigation_API_check.vvproj",
+      "project_epoch": "1792617849601913076:1",
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false
+    },
+    "main_preserved": true,
+    "preview_and_export_disabled": true,
+    "runtime_seconds": 600
+  },
+  "collector_retry": "The initial log parser had incorrectly escaped patterns; its finally block stopped the reader. UI observations were retained. Only the bounded reader was restarted to collect unchanged binary/source checks using line-field parsing; no tests or browser actions were repeated.",
+  "first_attempt": {
+    "status": "failed_fixture_expectation",
+    "reason": "set_freeze.frame is a timeline frame; at 200% timeline33 freezes source54, not source33.",
+    "raw_result": {
+      "status": "failed",
+      "failure": "AssertionError()",
+      "failure_traceback": "Traceback (most recent call last):\n  File \"<stdin>\", line 156, in <module>\nAssertionError\n",
+      "main_editor_preserved": true,
+      "own_test_units_stopped": true,
+      "port8811_closed": true,
+      "cleanup_errors": []
+    },
+    "original_remote_root": "/home/marco/VenturiWeb-compound-navigation-20261021",
+    "retained": true,
+    "implementation_changed_after_attempt": false
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "b3e8c98acf4123096660d7b62d184bf139d0033ece267b2ee2318b3282fa06e9",
+      "crates/vv-web/src/host.rs": "394d56a813617a390aed4ef7c9dc3bb4baeb83a67bc7eb62cbc1c16f4beaff38",
+      "crates/vv-web/src/main.rs": "e6d8d7b11b6e3c6de1280b23ec8e7adb54d004c497949a1d40814c7edd38f80a",
+      "crates/vv-web/src/tests/api.rs": "26295e1e0a64f28121c953d2d59e921063b3e7d9283a25fcc63436936c26ec24",
+      "crates/vv-web/src/tests/host.rs": "0bd9559a03b4f7d118ad6f66f8a1e8d54b681488d725c9e258e3fc19c76a8935",
+      "web/index.html": "801cc72868d19d5ddccf20c8ff7e7a1ab142f78969228dc60b0342c39af1fbd7",
+      "web/js/main.js": "fe78d0a327d0dd345e8280b232a5253c73ba000b3759a4f67b76a2348015bcd6",
+      "web/js/timeline/index.js": "f24a325dd72d23b337e53251543a18282c0bac313449d57f6e9de8596a9a36e0",
+      "web/js/timeline/input.js": "31bdfa6ddd6ec07c00d8e2bcba4b5316470fcd3ab07d2f7c963ef902344024b2",
+      "web/style/app.css": "8f7da2c112740c55a76c5bc7c6b43f0aa6a8020da287657af5fd15c4a6ee93fc",
+      "crates/vv-web/src/compound_navigation.rs": "7bb864d863180694c8f5764c96841eccce45366820b27595c7f5345d738ac277",
+      "crates/vv-web/src/tests/compound_navigation.rs": "2efd617bea4fb0418a7d56dee94c759ec0201f904333829b177b4a2b9e515ce0",
+      "web/js/compound-navigation.js": "0d81298dde73cb7a27e9c723094f83012b88ed36c9ffe39b0ae159e8f00b1950",
+      "web/test/compound-navigation.test.js": "56fc49a6d9d924f20470007def2779719795abb77519e741c1abe0bc73285e90",
+      "web/test/timeline-compound-input.test.js": "8bda50c1c86334ccf6b109c2390ccc5d8f76a7ae39c25c5547494ba233142382"
+    },
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "browser_enter_and_breadcrumb": true,
+    "browser_focused_button_alt_left": true,
+    "physical_pointer_double_click": false,
+    "rendered_gpu": false,
+    "core_tests": 277,
+    "rust_tests": 258,
+    "javascript_tests": 594
+  },
+  "limits": [
+    "CPU-only finite fixture, no GPU render/preview. Native frame mapping and Windows navigation, not rendered nested equivalence.",
+    "Physical Canvas double-click/DPI remains unqualified in the available DOM-only Windows browser; its Input controller is deterministically tested.",
+    "Native compound asset storage/import and lossless unrestricted multitrack mixer/compositing remain separate work. No verified native Flatten/Uncompound GUI workflow was found.",
+    "No browser/environment installation, local builds/tests/rendering, primary restart or foreign inference changes."
+  ]
+}

@@ -305,6 +305,7 @@
       <section id="timeline-panel" class="panel">
         <div class="panel-heading">
           <select id="timeline-select" aria-label="Active timeline"></select>
+          <button id="open-compound" type="button" disabled title="Enter · open the selected compound timeline">Open selected compound</button>
           <div class="spacer"></div>
           <button id="insert-media" disabled>Insert media</button
           ><button id="add-solid" disabled>Add solid</button
@@ -317,10 +318,11 @@
           ><button id="zoom-in" aria-label="Zoom in">+</button
           ><button id="fit">Fit</button>
         </div>
+        <nav id="compound-breadcrumb" class="compound-breadcrumb" aria-label="Compound timeline ancestry"></nav>
         <canvas
           id="timeline"
           tabindex="0"
-          aria-label="Timeline. Arrow keys seek, T splits, Delete removes. Clip controls follow below."
+          aria-label="Timeline. Arrow keys seek, Enter opens selected compounds, Alt+Left returns to the parent. T splits, Delete removes. Clip controls follow below."
         ></canvas>
         <div
           id="clip-list"

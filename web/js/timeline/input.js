@@ -35,6 +35,9 @@ export function createInput({
   onNotice,
   onSlip = () => {},
   canEdit = () => true,
+  canNavigate = () => true,
+  onOpenCompound = () => {},
+  onNavigationIntent = () => {},
   onMarkerEdit = () => {},
   onTransitionSelect = () => {},
   onRetimeMenu = () => {},
@@ -116,6 +119,7 @@ export function createInput({
     if (waiting || gesture || transitionDrag || presetDrop?.active() || modal()) return;
     const timeline = getTimeline();
     if (!timeline) return;
+    onNavigationIntent();
     canvas.focus();
     const [x, y] = point(event);
     const hit = hitTest(x, y, timeline, view,canvas.getBoundingClientRect().width);
@@ -392,6 +396,7 @@ export function createInput({
     invalidate();
   };
   const wheel = (event) => {
+    onNavigationIntent();
     if(presetDrop?.active() || transitionDrag || gesture?.fromTransitionBody || ['fade','transition','retime','retime_menu','retime_close','transition_body','transition_copy'].includes(gesture?.kind))cancel();
     const timeline = getTimeline();
     if (!timeline) return;
@@ -431,6 +436,7 @@ export function createInput({
     if(event.key!=='Escape' || isTextTarget(event.target) || documentRef?.querySelector?.('dialog[open]'))return;
     const active=Boolean(gesture || transitionDrag);
     if(transitionDrag || gesture?.fromTransitionBody || ['transition','retime','retime_menu','retime_close','transition_body','transition_copy'].includes(gesture?.kind) || (!active && view.transitionSelection)){event.preventDefault?.();event.stopPropagation?.();}
+    onNavigationIntent();
     cancel();
     if(!active && view.transitionSelection){view.transitionSelection=null;onTransitionSelect(null);invalidate();}
   };
@@ -442,6 +448,7 @@ export function createInput({
   function startTransitionDrag(kind){
     const timeline=getTimeline(),transition=catalogTransition(timeline,kind);
     if(waiting || !canEdit() || !transition || documentRef?.querySelector?.('dialog[open]'))return false;
+    onNavigationIntent();
     cancel();transitionDrag={catalogKind:kind,transition:structuredClone(transition),defaultsIdentity:JSON.stringify(transition),timeline,context:transitionContext(timeline)};return true;
   }
   function endTransitionDrag(){if(!transitionDrag)return;transitionDrag=null;if(view.draft?.kind==='transition_placement')view.draft=null;invalidate();}
@@ -467,9 +474,10 @@ export function createInput({
     await applyPlacement(draft);view.draft=null;invalidate();
   }
   const doubleClick = event => {
-    const timeline = getTimeline(); if (!timeline || waiting || presetDrop?.active()) return;
-    const hit = hitTest(...point(event),timeline,view);
-    if(hit.marker)onMarkerEdit(hit.marker.id);
+    const timeline = getTimeline(); if (!timeline || waiting || gesture || transitionDrag || presetDrop?.active() || modal() || event.defaultPrevented || event.button!==0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    const hit = hitTest(...point(event),timeline,view,canvas.getBoundingClientRect().width);
+    if(hit.marker){onMarkerEdit(hit.marker.id);return;}
+    if(hit.clip && canNavigate()){event.preventDefault();onOpenCompound([hit.clip.id]);}
   };
   presetDrop=createPresetDrop({canvas,getTimeline,getPresetContext,view,invalidate,onCommand,onNotice,canEdit,getBusy:()=>waiting,setBusy:value=>waiting=value,cancelGesture:cancel});
   const endDrag=()=>{endTransitionDrag();presetDrop.dnd.end();};
@@ -493,6 +501,7 @@ export function createInput({
     cancel,
     transitionDnd:{type:TRANSITION_DRAG_TYPE,start:startTransitionDrag,end:endTransitionDrag},
     presetDnd:presetDrop.dnd,
+    navigationIdle:()=>!gesture && !waiting && !transitionDrag && !presetDrop.active() && !view.draft && !view.lasso,
     checkPresetDrop:()=>presetDrop.current(),
     destroy() {
       cancel();

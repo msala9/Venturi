@@ -33,6 +33,7 @@ pub enum Action {
     ClipDetail(String, FrameQuery, Option<usize>),
     SlipDetail(String, i64, FrameQuery),
     TakePlan(crate::take::Preview),
+    CompoundNavigation(crate::compound_navigation::Request),
     Review(SourceQuery),
     CapturePreset(crate::presets::Capture),
     PresetList(usize, crate::preset_store::Query),
@@ -529,7 +530,10 @@ impl Editor {
         }
         Ok(())
     }
-    fn validate_frame(&self, query: &FrameQuery) -> Result<(vv_core::TimelineId, (u32, u32))> {
+    fn validate_frame_identity(
+        &self,
+        query: &FrameQuery,
+    ) -> Result<(vv_core::TimelineId, (u32, u32))> {
         if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch())
             || query.if_generation != self.session.history.generation().to_string()
         {
@@ -546,13 +550,23 @@ impl Editor {
             ));
         }
         let tl = &self.session.project.timelines[id];
+        Ok((id, frame_size(tl.resolution, query.width)?))
+    }
+    fn validate_frame(&self, query: &FrameQuery) -> Result<(vv_core::TimelineId, (u32, u32))> {
+        let (id, size) = self.validate_frame_identity(query)?;
+        let tl = &self.session.project.timelines[id];
         if !(0..tl.total_frames().max(1)).contains(&query.frame) {
             return Err(ApiError::invalid("Preview frame is outside the timeline"));
         }
-        Ok((id, frame_size(tl.resolution, query.width)?))
+        Ok((id, size))
     }
     fn handle(&mut self, action: Action) -> Result<Value> {
         match action {
+            Action::CompoundNavigation(request) => {
+                request.validate()?;
+                let (id, _) = self.validate_frame_identity(&request.query)?;
+                crate::compound_navigation::navigate(&self.session, id, &request)
+            }
             Action::EqResponse(channel, index, query) => {
                 let (id, _) = self.validate_frame(&query)?;
                 let mut value = crate::audio::eq_response(

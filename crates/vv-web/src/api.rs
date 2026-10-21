@@ -57,6 +57,10 @@ pub fn router(state: AppState) -> Router {
             get(library_status).delete(library_cancel),
         )
         .route("/api/v1/timelines/{id}", get(timeline))
+        .route(
+            "/api/v1/timelines/{id}/compound-navigation",
+            post(compound_navigation),
+        )
         .route("/api/v1/timelines/{id}/timeline.otio", get(export_otio))
         .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
         .route(
@@ -1042,6 +1046,26 @@ async fn balance(
 async fn timeline(State(state): State<AppState>, Path(id): Path<String>) -> Result<Json<Value>> {
     state.host.call(Action::Timeline(id)).await.map(Json)
 }
+async fn compound_navigation(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<
+        Json<crate::compound_navigation::Request>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid compound navigation request"))?
+        .0;
+    if request.query.timeline_id != id {
+        return Err(ApiError::invalid("Timeline ID does not match the query"));
+    }
+    state
+        .host
+        .call(Action::CompoundNavigation(request))
+        .await
+        .map(Json)
+}
 async fn clip_detail(
     State(state): State<AppState>,
     Path((id, clip)): Path<(String, String)>,
@@ -1248,6 +1272,7 @@ async fn assets(request: Request) -> Response {
         "/style/tokens.css" => asset!("/web/style/tokens.css", "text/css"),
         "/style/app.css" => asset!("/web/style/app.css", "text/css"),
         "/js/main.js" => asset!("/web/js/main.js", "text/javascript"),
+        "/js/compound-navigation.js" => asset!("/web/js/compound-navigation.js", "text/javascript"),
         "/js/ui.js" => asset!("/web/js/ui.js", "text/javascript"),
         "/js/api.js" => asset!("/web/js/api.js", "text/javascript"),
         "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),

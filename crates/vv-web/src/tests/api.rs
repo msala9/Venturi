@@ -218,6 +218,59 @@ async fn http_command_roundtrip_and_malformed_requests() {
     let latest: Value =
         serde_json::from_slice(&to_bytes(response.into_body(), 1024 * 1024).await.unwrap())
             .unwrap();
+    let navigation_query = json!({"project_epoch":latest["project_epoch"],"if_generation":latest["generation"],"timeline_id":id,"revision":latest["timelines"][0]["revision"],"frame":10000,"width":320});
+    for (path, action, expected) in [
+        (
+            format!("/api/v1/timelines/{id}/compound-navigation"),
+            json!({"kind":"enter","clip_ids":["9007199254740993"]}),
+            StatusCode::NOT_FOUND,
+        ),
+        (
+            "/api/v1/timelines/other/compound-navigation".into(),
+            json!({"kind":"enter","clip_ids":["1"]}),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            format!("/api/v1/timelines/{id}/compound-navigation"),
+            json!({"kind":"enter","clip_ids":["1"],"unexpected":true}),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(path)
+                    .header("host", "127.0.0.1:8787")
+                    .header("content-type", "application/json")
+                    .body(Body::from(
+                        json!({"query":navigation_query,"action":action}).to_string(),
+                    ))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), expected);
+    }
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri(format!("/api/v1/timelines/{id}/compound-navigation"))
+                .header("host", "127.0.0.1:8787")
+                .header("origin", "https://evil.example")
+                .header("content-type", "application/json")
+                .body(Body::from(
+                    json!({"query":navigation_query,"action":{"kind":"enter","clip_ids":["1"]}})
+                        .to_string(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
     for (state, status) in [(&latest, StatusCode::OK), (&snapshot, StatusCode::CONFLICT)] {
         let query = format!(
             "project_epoch={}&if_generation={}&timeline_id={id}&revision={}&frame=0&width=960",
@@ -358,6 +411,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/", 200),
         ("/js/timeline/input.js", 200),
         ("/js/timeline/preset-drop.js", 200),
+        ("/js/compound-navigation.js", 200),
         ("/js/export.js", 200),
         ("/js/scopes.js", 200),
         ("/js/balance.js", 200),

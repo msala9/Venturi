@@ -1,6 +1,150 @@
 use super::*;
 
 #[test]
+fn compound_navigation_is_a_lease_free_reader_with_raw_frames_and_complete_parent_cas() {
+    use crate::compound_navigation::{Ancestor, Navigation, Request as NavigationRequest};
+    use vv_core::{Clip, ClipId, ClipSource, Id};
+    let root = std::env::temp_dir().join(format!(
+        "vv-navigation-host-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let make = |name: &str| Timeline {
+        name: name.into(),
+        fps: Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![Track::new(TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    };
+    let parent = editor.session.create_timeline(make("Parent"));
+    let child = editor.session.create_timeline(make("Child"));
+    editor.session.project.timelines[child].tracks[0]
+        .clips
+        .push(Clip::from_source_range(
+            ClipId(1),
+            ClipSource::SolidColor,
+            0,
+            100,
+            0,
+            Rational::one(),
+        ));
+    let media = editor
+        .session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, m)| m.compound == Some(child))
+        .unwrap()
+        .0;
+    let clip = ClipId(9007199254740993);
+    editor.session.project.timelines[parent].tracks[0]
+        .clips
+        .push(Clip::from_source_range(
+            clip,
+            ClipSource::Media(media),
+            0,
+            60,
+            10,
+            Rational::one(),
+        ));
+    editor.session.project.timelines[parent].tracks[0].locked = true;
+    editor.lease = Some(("foreign-writer".into(), Instant::now()));
+    let query = |editor: &Editor, id: vv_core::TimelineId, frame| FrameQuery {
+        timeline_id: id.raw().to_string(),
+        project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+        if_generation: editor.session.history.generation().to_string(),
+        revision: editor.session.timeline_revision(id),
+        frame,
+        width: 320,
+    };
+    let before = serde_json::to_value(&editor.session.project).unwrap();
+    let generation = editor.session.history.generation();
+    let position = editor.session.history.position();
+    let epoch = editor.command_epoch;
+    let receipts = editor.completed.len();
+    let source = query(&editor, parent, 10_000);
+    assert!(
+        editor.handle(Action::CheckFrame(source.clone())).is_err(),
+        "Normal frame previews retain their content range restriction"
+    );
+    let request = NavigationRequest {
+        query: source.clone(),
+        action: Navigation::Enter {
+            clip_ids: vec![clip.0.to_string()],
+        },
+    };
+    let result = editor
+        .handle(Action::CompoundNavigation(request.clone()))
+        .unwrap();
+    assert_eq!(result["frame"], 59);
+    assert_eq!(result["source_frame"], 10_000);
+    assert_eq!(result["timeline_id"], child.raw().to_string());
+    for field in ["epoch", "generation", "revision", "width"] {
+        let mut invalid = request.clone();
+        match field {
+            "epoch" => invalid.query.project_epoch = "stale".into(),
+            "generation" => invalid.query.if_generation = "999".into(),
+            "revision" => invalid.query.revision = "stale".into(),
+            _ => invalid.query.width = 0,
+        }
+        assert!(
+            editor.handle(Action::CompoundNavigation(invalid)).is_err(),
+            "{field}"
+        );
+    }
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        before
+    );
+    assert_eq!(editor.session.history.generation(), generation);
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(editor.command_epoch, epoch);
+    assert_eq!(editor.completed.len(), receipts);
+    assert_eq!(editor.lease.as_ref().unwrap().0, "foreign-writer");
+    let ancestor = Ancestor {
+        timeline_id: parent.raw().to_string(),
+        revision: editor.session.timeline_revision(parent),
+        clip_id: Some(clip.0.to_string()),
+        entry_playhead: 10_000,
+    };
+    let mut replacement = editor.session.project.timelines[parent].tracks[0].clips[0].clone();
+    replacement.timeline_len = 50;
+    editor.session.apply(Box::new(vv_core::SetClipValue::new(
+        parent,
+        0,
+        clip,
+        vv_core::CommandLabel::ReplaceTake,
+        replacement,
+        |clip: &mut Clip| clip,
+    )));
+    let exit = NavigationRequest {
+        query: query(&editor, child, 20),
+        action: Navigation::Exit {
+            ancestors: vec![ancestor],
+        },
+    };
+    let changed = serde_json::to_value(&editor.session.project).unwrap();
+    assert_eq!(
+        editor
+            .handle(Action::CompoundNavigation(exit))
+            .unwrap_err()
+            .1,
+        "REVISION_CONFLICT"
+    );
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        changed
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn acknowledged_edits_have_a_synchronous_recovery_checkpoint_and_restart_receipt_without_replay() {
     let root = std::env::temp_dir().join(format!(
         "vv-web-durable-{}",

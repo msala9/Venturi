@@ -2,13 +2,15 @@ import { createDraw } from "./draw.js";
 import { createInput } from "./input.js";
 export function createTimeline(options) {
   const draw = createDraw(options.canvas, options.getTimeline, options.view, options.getAssets, options.onPaint, options.getCache);
-  const input = createInput({ ...options, invalidate: draw.invalidate });
+  const changed=()=>{options.onNavigationStateChange?.();draw.invalidate();};
+  const input = createInput({ ...options, invalidate: changed });
   return {
     ...draw,
-    invalidate(){input.checkPresetDrop();draw.invalidate();},
+    invalidate(){input.checkPresetDrop();changed();},
     cancel: input.cancel,
     transitionDnd: input.transitionDnd,
-    presetDnd: input.presetDnd,
+    presetDnd:{...input.presetDnd,start(item,current){options.onNavigationIntent?.();return input.presetDnd.start(item,current);}},
+    navigationIdle:input.navigationIdle,
     destroy() {
       input.destroy();
       draw.destroy();

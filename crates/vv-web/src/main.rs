@@ -6,6 +6,7 @@ mod catalog;
 mod clipboard;
 mod codecs;
 mod commands;
+mod compound_navigation;
 mod curves;
 mod error;
 mod eventkeys;

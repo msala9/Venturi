@@ -69,6 +69,25 @@ retain legacy serialized command fingerprints and never activate a binding.
 catalog, without a session lease, native probe or library access. Settings offer
 the complete native key domain; Keep and Remove do not require the catalog.
 
+`POST /api/v1/timelines/{id}/compound-navigation` is a read-only adapter. It
+accepts `{query:FrameQuery,action:{kind:"enter",clip_ids:[string]}}` or
+`{query,action:{kind:"exit",ancestors:[{timeline_id,revision,clip_id:string|null,
+entry_playhead}]}}`. Ancestors run from the selected parent to the immediate
+parent, with at most the native 16 levels and no repeated timelines. Query
+identity and every parent revision are checked before resolving a return.
+Navigation accepts the actual view frame within 0..1000000000, including past
+the content end; preview frame range validation is unchanged.
+
+Entry clamps the outer playhead onto the wrapper, calls native
+`Clip::picture_frame_at` and clamps the result to the child timeline. Multiple
+selected compounds must resolve to the same child; ordinary clips are ignored.
+Locked clips remain navigable. Return calls native `timeline_frame_at`, clamped
+to each wrapper; freeze, null or removed wrappers use their captured entry
+playhead. The response contains `{project_epoch,generation,source_timeline_id,
+source_revision,source_frame,timeline_id,revision,frame,via_clip_id}`. Exit has
+`via_clip_id:null`. No lease, history, generation or project write is involved;
+frame conversion is never performed in JavaScript.
+
 `POST /api/v1/timelines/{id}/presets/apply` accepts the ordinary mutation envelope
 with `operation:{kind:"apply_attribute_preset",clip_ids,preset}` and a 4 MiB body
 limit. It refuses other operations. Small preset operations also fit the ordinary

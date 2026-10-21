@@ -285,6 +285,8 @@ input[type="search"] {
   min-height: 80px;
   touch-action: none;
 }
+.compound-breadcrumb {display:flex;align-items:center;gap:4px;min-height:24px;overflow-x:auto;padding:2px 8px;border-bottom:1px solid var(--border);white-space:nowrap;font-size:11px;}
+.compound-breadcrumb button {font-size:inherit;}
 .clip-list {
   display: flex;
   gap: 4px;

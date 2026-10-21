@@ -13,7 +13,7 @@ with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
 Saved native preset storage, its browser panel, full native shortcut assignment
-and explicit session shortcut activation now pass 251 web Rust tests and 575
+and explicit session shortcut activation now pass 258 web Rust tests and 594
 JavaScript tests, fmt, clippy and native build on halo2, plus finite API/restart
 and existing Windows-browser checks. The actual exported v1 preset also passes
 the original desktop parser and Library::open, and all 936 key/modifier
@@ -28,7 +28,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-251 web Rust tests, 277 native core tests and 553 JavaScript tests,
+258 web Rust tests, 277 native core tests and 594 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -3210,4 +3210,58 @@ pointer drag/release; that acceptance and DPI interaction remain open. This
 increment does not claim rendered, GPU or cross-project GUI acceptance. The
 single temporary tab, tunnel and CPU-only backend were stopped; the primary
 editor retains all five unsaved MoveClips. Ledger totals and the uncertain
+65-70% engineering estimate are unchanged.
+
+## M4 - native compound entry and ancestor navigation
+
+The native compound workflow is now exposed from the timeline: Open selected
+compound, Enter and Canvas double-click enter the child at the picture under
+the current playhead. A breadcrumb and Alt+Left return to a selected ancestor.
+Rust calls the existing `Clip::picture_frame_at` and `timeline_frame_at`; no
+browser-side FPS, trim, speed or freeze arithmetic was introduced. Child entry
+is clamped to content. Moving-wrapper return is clamped to the wrapper; frozen,
+missing or null wrappers retain the original entry playhead, matching desktop.
+
+The read-only endpoint guards epoch, generation, source revision, current parent
+revisions, canonical opaque native IDs, bounded frames and the 16-level path.
+It accepts the actual view frame past content end without relaxing preview
+frame validation. Ordinary selected clips are ignored, matching-child A/V
+wrappers count as one, and locked compounds remain navigable without a lease.
+Navigation does not change history, receipts, generation or project bytes.
+
+The client guards source/document identity, frame, selection, viewport, pending
+ownership and explicit double-click sources. Direct timeline/Media-pool opens
+reset ancestry; parent viewport and surviving selection return with the native
+frame. Modal and gesture guards apply in read-only projects too. Review fixed
+two integration defects before execution: synchronous Canvas cancellation had
+cleared the just-pushed ancestry; button-focused Alt+Left could have reached
+the old clip-move binding. Tests model the synchronous install callback order
+and reserved back-navigation during blocked gestures.
+
+Bounded halo2 fmt, clippy (native desktop included), build and tests pass:
+277 core, 258 web, 10 media-proxy, three decoder, one cached-device and 594
+JavaScript tests. Seven new Rust tests and 19 JavaScript cases cover mapping,
+strict DTOs, lease-free reads, parent CAS, stale responses, loops/depth,
+cancellation and marker/drag compatibility. A finite API fixture verifies
+24/30-fps nested entry, 200% speed, offsets, freeze, out-of-content playheads,
+removed wrappers, stale parents/generation, path refusal and restart. Its first
+attempt incorrectly expected a source frame from `set_freeze.frame`, which is
+a timeline frame; corrected fixture expectations pass without implementation
+changes. Raw failure evidence and the original disposable root are retained.
+
+The existing Windows browser verified Open, Enter, two nested breadcrumbs,
+frame-24 child to frame-123 outer return, frame-18 re-entry, focused-button
+Alt+Left and direct-open reset. Undo remained empty, generation stayed zero,
+saved project bytes were unchanged and no browser errors were logged. A log
+collector escaping error was corrected without rerunning tests or browser
+actions. The collector records its separate bounded-reader retry explicitly.
+
+Evidence: `evidence/m4-compound-navigation.json` and its screenshot. Canvas
+physical double-click/DPI and nested rendered/GPU equivalence remain open.
+Native compound asset storage/import is a distinct remaining gap. No native
+Flatten/Uncompound GUI command was found in this source audit, so it is not
+used as an unverified native-parity blocker. General mixer/compositing
+preservation remains required before expanding the current compound guards.
+All own finite jobs, the temporary Windows tab and tunnel are stopped; the
+primary editor retains five unsaved MoveClips. Ledger totals and the uncertain
 65-70% engineering estimate are unchanged.

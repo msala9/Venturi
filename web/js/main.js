@@ -34,6 +34,7 @@ import {createPresetPanel} from './presets.js';
 import {createPresetShortcuts} from './preset-shortcuts.js';
 import {createViewerTransformOverlay} from './viewer-transform-overlay.js';
 import {createViewerMaskOverlay} from './viewer-mask-overlay.js';
+import {createCompoundNavigation,compoundNavigationAction} from './compound-navigation.js';
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -51,6 +52,7 @@ let audioScrub = null;
 let fastTransport = null;
 let presetPanel=null;
 let retimeMenu=null;
+let compoundNavigation=null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));}
@@ -358,7 +360,7 @@ function openSource() {
   if (!item) return notice("Select a media file first");
   if (item.compound_timeline_id) {
     const next=documentState.timelines.find((t)=>t.id===item.compound_timeline_id);
-    if (next) {view.playhead=0;$("timeline-select").value=next.id;installTimeline(next);viewerModeSet("program");}
+    if (next) openTimelineRoot(next);
     return;
   }
   const startFrame=sourceOpenId===item.id ? sourcePosition(true)?.frame ?? 0 : 0;
@@ -408,6 +410,7 @@ function syncSelectionActions(){
   $("delete").disabled=disabled || (target?target.locked:!view.selection.length);
 }
 function selected() {
+  compoundNavigation?.invalidate();
   updateRetimeControls();
   trackViewerSelection();
   transformDetail=null;transformOverlay?.cancel();transformOverlay?.invalidate();
@@ -588,6 +591,10 @@ const canvasTimeline = createTimeline({
   canvas: $("timeline"),
   getTimeline: () => timeline,
   getPresetContext:presetContext,
+  canNavigate:()=>!busy && !unresolved,
+  onOpenCompound:ids=>compoundNavigation?.enter(ids),
+  onNavigationIntent:()=>compoundNavigation?.cancel(),
+  onNavigationStateChange:()=>compoundNavigation?.invalidate(),
   view,
   getAssets: () => mediaAssets,
   getCache: () => previewCache?.ranges(),
@@ -679,6 +686,7 @@ function installTimeline(next,{transitionSelection=null}={}) {
   updateTime();
 }
 $("demo-button").addEventListener("click", () => {
+  compoundNavigation?.reset();
   installTimeline(fixtureTimeline());
   $("connection").textContent = "Demo / no server · fixture";
   $("timeline-select").replaceChildren(new Option(timeline.name, timeline.id));
@@ -762,7 +770,31 @@ let documentState = null,
   unresolved = null,
   selectedMedia = null;
 const clientId = persistentClientId();
+compoundNavigation=createCompoundNavigation({
+  root:$("compound-breadcrumb"),openButton:$("open-compound"),notice,
+  getState:()=>({document:documentState,timeline,frame:view.playhead,selection:[...view.selection],viewport:{scale:view.scale,origin:view.origin,scrollY:view.scrollY,selection:[...view.selection]}}),
+  canNavigate:()=>!busy && !unresolved && canvasTimeline.navigationIdle() && !document.querySelector('dialog[open]'),
+  stop:()=>{fastTransport?.stop();audioScrub?.stop();programPlayer?.stop();sourcePlayer?.pause();sourceAssets?.cancel();slipView?.reset();viewer?.invalidate();},
+  install:(next,frame,viewport)=>{
+    view.playhead=frame;view.origin=Number.isFinite(viewport?.origin) && viewport.origin>=0?viewport.origin:0;view.scrollY=Number.isFinite(viewport?.scrollY) && viewport.scrollY>=0?viewport.scrollY:0;
+    if(Number.isFinite(viewport?.scale) && viewport.scale>0)view.scale=viewport.scale;
+    installTimeline(next);view.selection=(viewport?.selection || []).filter(id=>next.tracks.some(track=>track.clips.some(clip=>clip.id===id)));
+    $("timeline-select").value=next.id;$("revision").textContent=`Revision ${next.revision.slice(0,8)}`;viewerModeSet('program');selected();canvasTimeline.invalidate();
+  },
+});
+$("open-compound").addEventListener('click',()=>compoundNavigation.enter());
+document.addEventListener('toggle',()=>compoundNavigation.invalidate(),true);
+document.addEventListener('keydown',event=>{
+  const action=compoundNavigationAction(event,{dialogOpen:Boolean(document.querySelector('dialog[open]')),idle:!busy && !unresolved && canvasTimeline.navigationIdle(),hasAncestors:compoundNavigation.state().ancestors.length>0});
+  if(!action)return;
+  if(action==='enter' && $("open-compound").disabled)return;
+  event.preventDefault();event.stopImmediatePropagation();if(action==='enter')compoundNavigation.enter();else if(action==='exit')compoundNavigation.exit();
+},true);
+function openTimelineRoot(next){
+  compoundNavigation?.reset();programPlayer?.stop();sourcePlayer?.pause();viewer?.invalidate();view.playhead=0;view.origin=0;view.scrollY=0;$("timeline-select").value=next.id;installTimeline(next);viewerModeSet('program');compoundNavigation?.invalidate();
+}
 async function refresh() {
+  compoundNavigation?.cancel();
   fastTransport?.stop();
   audioScrub?.stop();
   slipView?.reset();
@@ -788,6 +820,7 @@ async function refresh() {
   const previousId = timeline?.id,
     selection = view.selection,transitionSelection=view.transitionSelection;
   documentState = next;
+  compoundNavigation?.invalidate();
   $("play").disabled = viewerMode === "program" && !next.capabilities.playback;
   $("timeline-select").replaceChildren(
     ...next.timelines.map((t) => new Option(t.name, t.id)),
@@ -868,6 +901,7 @@ async function mutate(operation, project = false,route=null) {
     operation,
   };
   busy = true;
+  compoundNavigation?.invalidate();
   notice("Applying command…");
   try {
     const receipt = await sendMutation(
@@ -952,7 +986,7 @@ $("timeline-action").addEventListener("submit",async(event)=>{
     event.preventDefault();const before=new Set(documentState?.timelines.map((t)=>t.id));
     try {
       await mutate({kind:timelineAction,name:event.target.elements.name.value});
-      if(timelineAction==="duplicate_timeline") {const next=documentState.timelines.find((t)=>!before.has(t.id));if(next){$("timeline-select").value=next.id;view.playhead=0;installTimeline(next);seek();}}
+      if(timelineAction==="duplicate_timeline") {const next=documentState.timelines.find((t)=>!before.has(t.id));if(next)openTimelineRoot(next);}
       $("timeline-action-dialog").close();
     }catch(error){$("timeline-action-error").textContent=error.message;}
 });
@@ -961,7 +995,7 @@ $("new-timeline").addEventListener("submit",async(event)=>{
   try {
     await mutate({kind:"new_timeline",name:data.get("name"),fps:{num:Number(data.get("fps_num")),den:Number(data.get("fps_den"))},resolution:[Number(data.get("width")),Number(data.get("height"))]},true);
     const next=documentState.timelines.find((t)=>!before.has(t.id));
-    if(next){$("timeline-select").value=next.id;view.playhead=0;installTimeline(next);seek();}
+    if(next)openTimelineRoot(next);
     $("new-timeline-dialog").close();
   }catch(error){$("timeline-error").textContent=error.message;}
 });
@@ -1054,7 +1088,7 @@ $("timeline-select").addEventListener("change", () => {
   const next = documentState?.timelines.find(
     (t) => t.id === $("timeline-select").value,
   );
-  if (next) {programPlayer?.stop();viewer?.invalidate();view.playhead=0;installTimeline(next);seek();}
+  if (next) openTimelineRoot(next);
 });
 async function projects() {
   recoveryPanel?.refresh();
@@ -1164,7 +1198,7 @@ setInterval(() => {
     });
 }, 30_000);
 document.addEventListener("keydown", (event) => {
-  if (isTextTarget(event.target)) return;
+  if (event.defaultPrevented || isTextTarget(event.target)) return;
   const modifier = event.ctrlKey || event.metaKey;
   if (
     event.altKey &&

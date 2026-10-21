@@ -7,6 +7,20 @@ export function reviewIdentity(context) {
 export function comparisonTime(seconds,duration) {
   return Number.isFinite(seconds) && Number.isFinite(duration) && duration>0?Math.max(0,Math.min(seconds,Math.max(0,duration-0.001))):null;
 }
+export function comparisonDuration(media){
+  if(media?.is_image || ![media?.duration_frames,media?.fps?.num,media?.fps?.den].every(value=>Number.isSafeInteger(value) && value>0))return null;
+  const duration=media.duration_frames*media.fps.den/media.fps.num;
+  return Number.isFinite(duration) && duration>0?duration:null;
+}
+export function comparisonLeader(panes){
+  let leader=null;
+  for(const pane of panes){
+    if(!pane.ready || comparisonDuration(pane.media)===null || (!pane.media.has_video && !pane.media.has_audio))continue;
+    if(!leader || BigInt(pane.media.duration_frames)*BigInt(pane.media.fps.den)*BigInt(leader.media.fps.num)>
+      BigInt(leader.media.duration_frames)*BigInt(leader.media.fps.den)*BigInt(pane.media.fps.num))leader=pane;
+  }
+  return leader;
+}
 function formatKnownMetadata(item) {
   if(!item)return "Generation metadata not supplied";
   return [["Model",item.model],["Seed",item.seed],["Prompt",item.prompt]].filter(([,value])=>value!==null && value!==undefined && value!=="").map(([name,value])=>`${name}: ${value}`).join("\n") || "Generation metadata not supplied";
@@ -27,7 +41,7 @@ export function replacementAudioChange(change,count,policy){
 }
 export function createReview({root,getContext,canCommit,commit,notice,api=request,sourceFactory=createSourcePlayer}) {
   const find=(selector)=>root.querySelector(selector),form=find("form"),status=find("[data-review-status]"),apply=find("[data-review-apply]"),planButton=find("[data-review-plan]"),changes=find("[data-review-changes]"),refresh=find("[data-review-refresh]"),close=find("[data-review-close]"),play=find("[data-review-play]"),swap=find("[data-review-swap]"),sync=find('[name="sync"]'),listen=find('[name="listen"]');
-  let context=null,plan=null,annotations=null,sequence=0,planning=false,applying=false,frameCallback=null,frameOwner=null,closing=false;
+  let context=null,plan=null,annotations=null,sequence=0,planning=false,applying=false,frameTicket=null,closing=false;
   const panes=["A","B"].map((name)=>{
     const element=find(`[data-review-pane="${name}"]`),pane={name,select:element.querySelector("select"),video:element.querySelector("video"),image:element.querySelector("img"),status:element.querySelector("output"),cancel:element.querySelector("button"),metadata:element.querySelector("pre"),ready:false,media:null};
     pane.player=sourceFactory({video:pane.video,image:pane.image,status:pane.status,cancel:pane.cancel,onReady:()=>{pane.ready=true;controls();}});return pane;
@@ -44,20 +58,33 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
     const count=streamCount(),available=count!==null && count>0;
     audioPolicy.disabled=applying || !candidate(context);audioIndex.disabled=applying || audioPolicy.value!=='select' || !available;audioIndex.max=available?String(count-1):'0';selectAudio.disabled=!available;
     audioNote.textContent=count===null?'Replacement audio streams · Native B stream count unavailable; refresh review before choosing a stream':`Replacement only · B has ${count} audio stream(s)${available?` · available zero-based indices 0–${count-1}`:''}`;
-    planButton.disabled=planning || applying || !context?.clip || !current() || !panes[1].select.value || !audioValid();apply.disabled=applying || !plan || !current() || plan.settings!==settingsIdentity() || !canCommit();refresh.disabled=applying;close.disabled=applying;play.disabled=panes.some(pane=>pane.select.value && !pane.ready) || !panes.some(pane=>pane.ready && !pane.media?.is_image);swap.disabled=applying;for(const pane of panes)pane.select.disabled=applying;for(const name of ["source_in","duration","links","attributes"])form.elements[name].disabled=applying;
+    for(const pane of panes)if(pane.ready && !pane.media?.is_image && !playable(pane))pane.status.textContent='Comparison unavailable · invalid native source timing; refresh review';
+    planButton.disabled=planning || applying || !context?.clip || !current() || !panes[1].select.value || !audioValid();apply.disabled=applying || !plan || !current() || plan.settings!==settingsIdentity() || !canCommit();refresh.disabled=applying;close.disabled=applying;play.disabled=panes.some(pane=>pane.select.value && !pane.ready) || !master();swap.disabled=applying;for(const pane of panes)pane.select.disabled=applying;for(const name of ["source_in","duration","links","attributes"])form.elements[name].disabled=applying;
   }
   function clearPlan(message){sequence++;planning=false;plan=null;changes.replaceChildren();if(message)status.textContent=message;controls();}
   function audioChoice(){for(const pane of panes)pane.video.muted=listen.value!==pane.name;}
-  function master(){return panes.find(pane=>pane.ready && !pane.media?.is_image);}
+  function playable(pane){return comparisonLeader([pane])!==null;}
+  function master(){return comparisonLeader(panes);}
   function align(){
     if(!sync.checked || closing)return;const leader=master();if(!leader)return;
-    for(const pane of panes){if(pane===leader || !pane.ready || pane.media?.is_image)continue;const time=comparisonTime(leader.video.currentTime,pane.video.duration);if(time===null || pane.video.readyState<1)continue;
+    for(const pane of panes){if(pane===leader || !playable(pane))continue;const time=comparisonTime(leader.video.currentTime,pane.video.duration);if(time===null || pane.video.readyState<1)continue;
       if(Math.abs(pane.video.currentTime-time)>0.08)pane.video.currentTime=time;
       if(leader.video.currentTime>=pane.video.duration)pane.video.pause();else if(!leader.video.paused && pane.video.paused)pane.video.play().catch(error=>notice(error.message));
     }
   }
-  function cancelFrame(){if(frameCallback!==null)frameOwner?.cancelVideoFrameCallback?.(frameCallback);frameCallback=null;frameOwner=null;}
-  function schedule(){const leader=master();if(!leader || leader.video.paused || closing || frameCallback!==null || !leader.video.requestVideoFrameCallback)return;frameOwner=leader.video;frameCallback=leader.video.requestVideoFrameCallback(()=>{frameCallback=null;align();schedule();});}
+  function cancelFrame(){const old=frameTicket;frameTicket=null;if(old?.id!=null)old.owner.cancelVideoFrameCallback?.(old.id);}
+  function schedule(){
+    const leader=master();if(!leader || leader.video.paused || closing || !root.open || frameTicket || !leader.video.requestVideoFrameCallback)return;
+    const ticket={owner:leader.video,leader,media:leader.media,id:null};frameTicket=ticket;
+    ticket.id=ticket.owner.requestVideoFrameCallback(()=>{
+      if(frameTicket!==ticket)return;
+      frameTicket=null;
+      if(closing || !root.open || !current())return;
+      if(master()!==ticket.leader || ticket.leader.media!==ticket.media){schedule();return;}
+      if(ticket.owner.paused)return;
+      align();schedule();
+    });
+  }
   function describe(pane){
     const source=pane.media?.is_image?"Original still":pane.media?.fps?`Native source ${pane.media.fps.num}/${pane.media.fps.den} fps · ${pane.media.duration_frames} frames`:"";
     const take=annotations?.items.find(item=>item.media_id===pane.media?.id),label=take?[annotations.shots[take.shot_id],take.label,take.rating!=="unrated"?take.rating:null,take.stale_source?"SOURCE CHANGED · review captured annotations":null].filter(Boolean).join(" · "):"";
@@ -71,12 +98,12 @@ export function createReview({root,getContext,canCommit,commit,notice,api=reques
     pane.select.addEventListener("change",()=>{if(pane.name==='B')resetAudioPolicy();clearPlan("Take choice changed · preview replacement before applying");cancelFrame();for(const other of panes)other.video.pause();load(pane);});
     for(const event of ["timeupdate","seeking","loadedmetadata"])pane.video.addEventListener(event,()=>{if(pane===master())align();});
     pane.video.addEventListener("play",()=>{if(pane===master()){align();schedule();}});
-    pane.video.addEventListener("pause",()=>{if(pane===master()){cancelFrame();if(sync.checked)for(const other of panes)if(other!==pane)other.video.pause();}});
+    for(const event of ['pause','ended'])pane.video.addEventListener(event,()=>{if(pane===master()){cancelFrame();if(sync.checked)for(const other of panes)if(other!==pane)other.video.pause();}});
     pane.video.addEventListener("volumechange",()=>{if(!pane.video.muted && listen.value!==pane.name){listen.value=pane.name;audioChoice();}else if(panes.every(other=>other.video.muted))listen.value="silent";});
     pane.video.addEventListener("ratechange",()=>{if(sync.checked && !closing)for(const other of panes)if(other!==pane && other.video.playbackRate!==pane.video.playbackRate)other.video.playbackRate=pane.video.playbackRate;});
   }
   listen.addEventListener("change",audioChoice);sync.addEventListener("change",()=>{const leader=master();if(sync.checked && leader)for(const pane of panes)pane.video.playbackRate=leader.video.playbackRate;align();});
-  play.addEventListener("click",async()=>{const leader=master();if(!leader)return;try{if(!leader.video.paused){for(const pane of panes)pane.video.pause();}else {align();const results=await Promise.allSettled(panes.filter(pane=>pane.ready && !pane.media?.is_image).map(pane=>pane.video.play()));for(const result of results)if(result.status==="rejected")notice(result.reason.message);align();schedule();}}catch(error){notice(error.message);}});
+  play.addEventListener("click",async()=>{const leader=master();if(!leader)return;try{if(!leader.video.paused){for(const pane of panes)pane.video.pause();}else {align();const results=await Promise.allSettled(panes.filter(playable).map(pane=>pane.video.play()));for(const result of results)if(result.status==="rejected")notice(result.reason.message);align();schedule();}}catch(error){notice(error.message);}});
   swap.addEventListener("click",()=>{const old=panes[0].select.value;panes[0].select.value=panes[1].select.value;panes[1].select.value=old;resetAudioPolicy();clearPlan("A/B swapped · preview replacement before applying");cancelFrame();panes.forEach(pane=>pane.video.pause());panes.forEach(load);});
   form.addEventListener("input",()=>clearPlan("Replacement settings changed · preview before applying"));form.addEventListener("change",()=>clearPlan("Replacement settings changed · preview before applying"));
   form.addEventListener("submit",async(event)=>{

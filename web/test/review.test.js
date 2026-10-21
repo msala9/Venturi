@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {comparisonTime,createReview,knownTakeMetadata,reviewIdentity,replacementAudioStreams,replacementAudioChange} from "../js/review.js";
+import {comparisonTime,comparisonDuration,comparisonLeader,createReview,knownTakeMetadata,reviewIdentity,replacementAudioStreams,replacementAudioChange} from "../js/review.js";
 
 test("review replacement identity ignores transport time but binds the selected native document and clip",()=>{
   const context={query:{project_epoch:"epoch",if_generation:"2",timeline_id:"1",revision:"rev",frame:12,width:640},clip:{id:"9007199254740993"}};
@@ -18,23 +18,27 @@ test("review displays generation metadata only when supplied and preserves the e
 });
 
 class Control extends EventTarget {
-  constructor(value=""){super();this.value=value;this.disabled=false;this.children=[];this.textContent="";this.checked=true;this.paused=true;}
+  constructor(value=""){super();this.value=value;this.disabled=false;this.children=[];this.textContent="";this.checked=true;this.paused=true;this.currentTime=0;this.duration=NaN;this.readyState=1;this.ended=false;this.playCount=0;this.frameCallbacks=new Map();this.nextFrame=0;this.requestedFrames=[];this.canceledFrames=[];}
   replaceChildren(...children){this.children=children;}
   append(child){this.children.push(child);}
   click(){if(!this.disabled)this.dispatchEvent(new Event("click"));}
-  pause(){this.paused=true;}
-  async play(){this.paused=false;this.dispatchEvent(new Event("play"));}
+  pause(){if(!this.paused){this.paused=true;this.dispatchEvent(new Event('pause'));}}
+  async play(){this.playCount++;this.ended=false;if(this.paused){this.paused=false;this.dispatchEvent(new Event("play"));}}
+  requestVideoFrameCallback(callback){const id=++this.nextFrame;this.frameCallbacks.set(id,callback);this.requestedFrames.push(id);return id;}
+  cancelVideoFrameCallback(id){this.canceledFrames.push(id);this.frameCallbacks.delete(id);}
+  advance(seconds){this.currentTime=seconds;this.dispatchEvent(new Event('timeupdate'));}
+  finish(){this.currentTime=this.duration;this.ended=true;this.pause();this.dispatchEvent(new Event('ended'));}
 }
-function harness(api){
+function harness(api,{deferSources=false}={}){
   globalThis.Option=class{constructor(label,value){this.label=label;this.value=value;}};globalThis.document={createElement:()=>new Control()};
   const selectors=["form","[data-review-status]","[data-review-apply]","[data-review-plan]","[data-review-changes]","[data-review-refresh]","[data-review-close]","[data-review-play]","[data-review-swap]",'[name="sync"]','[name="listen"]',"[data-review-target]",'[data-review-audio-streams]','[data-review-audio-select]'];
   const nodes=Object.fromEntries(selectors.map(selector=>[selector,new Control()])),root=new Control(),panes=[];root.querySelector=selector=>nodes[selector];root.showModal=()=>{root.open=true;};root.close=()=>{root.open=false;};
   for(const name of ["A","B"]){const parts=Object.fromEntries(["select","video","img","output","button","pre"].map(selector=>[selector,new Control()])),pane={querySelector:selector=>parts[selector]};nodes[`[data-review-pane="${name}"]`]=pane;panes.push(parts);}
   nodes.form.elements=Object.fromEntries(Object.entries({source_in:"0",duration:"preserve",links:"replace_linked",attributes:"preserve",audio_streams:"preserve",audio_stream_index:"0"}).map(([name,value])=>[name,new Control(value)]));nodes.form.reportValidity=()=>true;
   nodes['[name="listen"]'].value="A";
-  const context={query:{project_epoch:"epoch",if_generation:"2",timeline_id:"1",revision:"rev",frame:12,width:640},clip:{id:"1",media_id:"2",name:"old.mp4",start_frame:12,length_frames:72},document:{media:[{id:"2",name:"old.mp4",has_audio:true,audio_stream_count:2,content_hash:'old-hash'},{id:"3",name:"new.mp4",has_audio:true,audio_stream_count:2,content_hash:'new-hash'}]}},commits=[],loaded=[];let writable=true;
-  const review=createReview({root,getContext:()=>context,canCommit:()=>writable,commit:async operation=>{commits.push(operation);context.query.if_generation="3";review.invalidate();},notice(){},api:(path,body)=>path.startsWith("/review?")?Promise.resolve({items:[],shots:{},project_epoch:"epoch",generation:"2"}):api(path,body),sourceFactory:({onReady,cancel})=>({reset(){},async open(item){loaded.push(item.id);cancel.disabled=true;onReady();}})});
-  return{review,root,nodes,panes,context,commits,loaded,button:name=>nodes[`[data-review-${name}]`],setWritable:value=>{writable=value;},submit:()=>nodes.form.dispatchEvent(new Event("submit",{cancelable:true}))};
+  const context={query:{project_epoch:"epoch",if_generation:"2",timeline_id:"1",revision:"rev",frame:12,width:640},clip:{id:"1",media_id:"2",name:"old.mp4",start_frame:12,length_frames:72},document:{media:[{id:"2",name:"old.mp4",has_video:true,has_audio:true,duration_frames:72,fps:{num:24,den:1},audio_stream_count:2,content_hash:'old-hash'},{id:"3",name:"new.mp4",has_video:true,has_audio:true,duration_frames:120,fps:{num:24,den:1},audio_stream_count:2,content_hash:'new-hash'}]}},commits=[],loaded=[],ready=new Map();let writable=true;
+  const review=createReview({root,getContext:()=>context,canCommit:()=>writable,commit:async operation=>{commits.push(operation);context.query.if_generation="3";review.invalidate();},notice(){},api:(path,body)=>path.startsWith("/review?")?Promise.resolve({items:[],shots:{},project_epoch:"epoch",generation:"2"}):api(path,body),sourceFactory:({onReady,cancel,video})=>({reset(){video.pause();},async open(item){loaded.push(item.id);video.duration=comparisonDuration(item) ?? NaN;video.currentTime=0;video.ended=false;cancel.disabled=true;ready.set(video,onReady);if(!deferSources)onReady();}})});
+  return{review,root,nodes,panes,context,commits,loaded,ready,button:name=>nodes[`[data-review-${name}]`],setWritable:value=>{writable=value;},submit:()=>nodes.form.dispatchEvent(new Event("submit",{cancelable:true}))};
 }
 async function settle(){for(let n=0;n<4;n++)await new Promise(resolve=>setImmediate(resolve));}
 const planned={source_version:"verified-file",removed_crossings:0,audio_stream_count:2,changes:[{track:"0",clip_id:"1",start_frame:12,previous_length:72,length:60,source_in:0,source_out:75,previous_audio_stream_index:null,audio_stream_index:null}]};
@@ -129,5 +133,62 @@ test('changed B stream metadata or changed unannounced settings invalidate confi
 test('inconsistent native stream counts or partial Audio mappings cannot enable confirmation',async()=>{
   for(const result of [{...planned,audio_stream_count:1},{...planned,changes:[{...planned.changes[0],previous_audio_stream_index:1,audio_stream_index:0}]},{...planned,changes:[{...planned.changes[0],previous_audio_stream_index:null,audio_stream_index:0}]}]){
     const h=harness(async()=>result);await h.review.open();h.submit();await settle();assert.equal(h.button('apply').disabled,true);assert.equal(h.nodes['[data-review-changes]'].children.length,0);assert.equal(h.commits.length,0);
+  }
+});
+
+test('comparison leadership uses exact longest native duration, stable A ties and no proxy or playback-rate guesses',()=>{
+  const pane=(frames,num=24,den=1)=>({ready:true,media:{duration_frames:frames,fps:{num,den},has_video:true},video:{duration:1,playbackRate:1}});
+  const a=pane(48),b=pane(144);a.video.duration=1000;b.video.duration=.1;a.video.playbackRate=100;b.video.playbackRate=.1;
+  assert.equal(comparisonLeader([a,b]),b);assert.equal(comparisonDuration(b.media),6);
+  b.media.duration_frames=48;assert.equal(comparisonLeader([a,b]),a);
+  a.media={...a.media,duration_frames:24_000,fps:{num:24_000,den:1001}};b.media={...b.media,duration_frames:30_000,fps:{num:30_000,den:1001}};
+  assert.equal(comparisonLeader([a,b]),a);b.ready=false;assert.equal(comparisonLeader([a,b]),a);
+  a.media.is_image=true;assert.equal(comparisonLeader([a,b]),null);a.media.is_image=false;a.media.fps.den=0;assert.equal(comparisonLeader([a,b]),null);
+  for(const changed of [{duration_frames:0},{duration_frames:1.5},{duration_frames:Infinity},{fps:{num:NaN,den:1}},{fps:{num:24,den:-1}},{fps:null}])assert.equal(comparisonDuration({...pane(48).media,...changed}),null);
+});
+
+test('a naturally ending shorter A or B holds its final picture while the longest source continues to its own end',async()=>{
+  for(const shortIndex of [0,1]){
+    const h=harness(async()=>planned);h.context.document.media[shortIndex].duration_frames=48;h.context.document.media[1-shortIndex].duration_frames=144;
+    await h.review.open();h.button('play').click();await settle();
+    const short=h.panes[shortIndex].video,long=h.panes[1-shortIndex].video;
+    assert.equal(short.paused,false);assert.equal(long.paused,false);assert.equal(short.frameCallbacks.size,0);assert.equal(long.frameCallbacks.size,1);
+    short.finish();assert.equal(short.ended,true);assert.equal(short.paused,true);assert.equal(long.paused,false);
+    long.advance(4);assert.equal(long.currentTime,4);assert.equal(long.paused,false);assert.equal(short.paused,true);assert(short.currentTime>=short.duration-.001);
+    long.finish();assert.equal(long.ended,true);assert.equal(long.paused,true);assert.equal(short.paused,true);assert.equal(long.frameCallbacks.size,0);
+    h.button('close').click();
+  }
+});
+
+test('equal native durations keep A as leader despite proxy lengths and playback-rate changes',async()=>{
+  const h=harness(async()=>planned);h.context.document.media[1].duration_frames=72;await h.review.open();
+  h.panes[0].video.duration=.25;h.panes[1].video.duration=100;h.panes[1].video.playbackRate=4;h.panes[1].video.dispatchEvent(new Event('ratechange'));
+  h.button('play').click();await settle();assert.equal(h.panes[0].video.frameCallbacks.size,1);assert.equal(h.panes[1].video.frameCallbacks.size,0);
+  h.panes[0].video.playbackRate=.25;h.panes[0].video.dispatchEvent(new Event('ratechange'));
+  assert.equal(h.panes[1].video.playbackRate,.25);assert.equal(h.panes[0].video.frameCallbacks.size,1);assert.equal(h.panes[1].video.frameCallbacks.size,0);
+  h.button('close').click();
+});
+
+test('still, unready and invalid native timing never start an invalid comparison leader',async()=>{
+  const pending=harness(async()=>planned,{deferSources:true});await pending.review.open();assert.equal(pending.button('play').disabled,true);
+  pending.ready.get(pending.panes[0].video)();assert.equal(pending.button('play').disabled,true);pending.ready.get(pending.panes[1].video)();assert.equal(pending.button('play').disabled,false);pending.button('close').click();
+  const h=harness(async()=>planned);h.context.document.media[0].is_image=true;h.context.document.media[1].fps.den=0;await h.review.open();
+  assert.equal(h.button('play').disabled,true);assert.match(h.panes[1].output.textContent,/invalid native source timing/);h.button('play').click();await settle();assert.equal(h.panes[0].video.playCount,0);assert.equal(h.panes[1].video.playCount,0);
+  h.context.document.media[0].is_image=false;await h.review.open();h.button('play').click();await settle();assert.equal(h.panes[0].video.paused,false);assert.equal(h.panes[1].video.paused,true);assert.equal(h.panes[1].video.playCount,0);h.button('close').click();
+});
+
+test('canceled frame callbacks after swap, reopen or close cannot clear a newer schedule or align obsolete panes',async()=>{
+  for(const action of ['swap','reopen','close']){
+    const h=harness(async()=>planned);await h.review.open();h.button('play').click();await settle();
+    const oldOwner=h.panes[1].video,oldId=[...oldOwner.frameCallbacks.keys()][0],obsolete=oldOwner.frameCallbacks.get(oldId);
+    if(action==='swap'){h.button('swap').click();await settle();}
+    else {if(action==='close')h.button('close').click();await h.review.open();}
+    assert(oldOwner.canceledFrames.includes(oldId));h.button('play').click();await settle();
+    const owner=h.panes[action==='swap'?0:1].video,follower=h.panes[action==='swap'?1:0].video;
+    const activeId=[...owner.frameCallbacks.keys()][0],active=owner.frameCallbacks.get(activeId),requests=owner.requestedFrames.length;
+    owner.currentTime=1.25;follower.currentTime=.25;obsolete();
+    assert.equal(follower.currentTime,.25,action);assert.equal(owner.frameCallbacks.get(activeId),active,action);assert.equal(owner.requestedFrames.length,requests,action);
+    owner.frameCallbacks.delete(activeId);active();assert.equal(follower.currentTime,1.25,action);assert.equal(owner.frameCallbacks.size,1,action);assert.equal(owner.requestedFrames.length,requests+1,action);
+    h.button('close').click();
   }
 });

@@ -24,7 +24,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-224 web Rust tests, 271 native core tests and 472 JavaScript tests,
+224 web Rust tests, 271 native core tests and 477 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -33,7 +33,7 @@ qualification remain open. Latest evidence:
 `evidence/m3-preview-cache-safety.json`, `evidence/m3-program-rollover.json`
 `evidence/m3-source-windows.json`, `evidence/m3-source-assets.json`
 `evidence/m4-speed-presets.json`, `evidence/m4-retime-selected-visibility.json`
-and `evidence/m6-take-audio-streams.json`;
+`evidence/m6-take-audio-streams.json` and `evidence/m6-review-longest-clock.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
@@ -2875,3 +2875,28 @@ Evidence: `evidence/m6-take-audio-streams.json` and
 defect, not the whole Review milestone. Long-source A/B windows, shorter-A clock
 continuation, selected-stream audition, frozen/compound policies and physical
 audio/hardware acceptance remain open. The completion ledger is unchanged.
+
+## M6 - longest native source leads A/B comparison
+
+Comparison chooses the longest ready playable native duration using exact
+rational frame/FPS comparison, with stable A ties. Browser proxy duration and
+playback rate do not elect the leader. A shorter A no longer pauses a longer B
+at its natural EOF; a shorter B retains the same behavior. Invalid native
+timing is shown and excluded from playback. Frame callback tickets prevent a
+canceled callback after swap, reopen or close from affecting the new schedule.
+
+The limited halo2 aggregate passed 271 core tests, 224 web Rust tests and
+477 JavaScript tests, formatting, clippy and build. Five controller regressions
+exercise natural pause/ended in either pane, leader end, exact duration ties,
+invalid/still/unready media, rates and canceled callbacks. In the existing
+Windows browser, a 0.5-second source A was held while the 5-second B continued
+at 1x; after swapping, the long A reached its own end. Both stopped normally.
+Native project/history, parent projects and source hashes stayed unchanged;
+no GPU or shared-lock descriptors were open. The own finite 512 MiB/one-CPU
+server, temporary browser tab and hidden SSH tunnel were stopped. The primary
+editor's five unsaved MoveClips remain intact.
+
+Evidence: `evidence/m6-review-longest-clock.json` and
+`evidence/m6-review-clock-windows.jpg`. Long-source Review windows, exact native
+last-frame hold, selected-stream audition and physical audio remain open.
+The parity ledger and overall completion estimate are unchanged.

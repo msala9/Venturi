@@ -1,0 +1,201 @@
+{
+  "project": "Review_Clock_API_check.vvproj",
+  "project_sha256": "19d1c44ae5fa08cd7e7741ea9ab8c95c8ad48cd9b7092048fb224e8c37a6571c",
+  "short_media": {
+    "audio_stream_count": 1,
+    "compound_timeline_id": null,
+    "content_hash": "11577340289215487896",
+    "duration_frames": 15,
+    "folder": null,
+    "fps": {
+      "den": 1,
+      "num": 30
+    },
+    "has_audio": true,
+    "has_video": false,
+    "id": "10",
+    "is_image": false,
+    "name": "retime-2ff7eebc7279.wav",
+    "offline": false
+  },
+  "long_media": {
+    "audio_stream_count": 1,
+    "compound_timeline_id": null,
+    "content_hash": "11500996876326872528",
+    "duration_frames": 150,
+    "folder": null,
+    "fps": {
+      "den": 1,
+      "num": 30
+    },
+    "has_audio": true,
+    "has_video": false,
+    "id": "16",
+    "is_image": false,
+    "name": "review-clock-fdfc2e75b01e.wav",
+    "offline": false
+  },
+  "source_hashes": {
+    "retime-2ff7eebc7279.wav": "92e19540f656c3af507bd038e72cfb6c1279bf1ddf21cf8c5002090691323a4b",
+    "review-clock-fdfc2e75b01e.wav": "262d1f34f300560a4c82ba8127ddea9e1d72946f187fdbd3e8f70ee096077aec"
+  },
+  "save_restart_exact": true,
+  "parent_hashes_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Take_Audio_API_check.vvproj": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Retime_UI_Retained_677fba04bbac.vvproj": "d9c29a84906ea350ba2bbcb66261e2eb373d58e72e2e0df441f70981c314a63d",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "binary_sha256": "34ce04cd6af5e3c77ebde7a73f933cace9a4369e46239ba33e4dc7e8e7f87c8c",
+  "hardware_gpu_used": false,
+  "no_gpu_or_shared_lock_fds": true,
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792604757.1651785,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "34ce04cd6af5e3c77ebde7a73f933cace9a4369e46239ba33e4dc7e8e7f87c8c",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "served_asset_hashes": {
+    "index.html": "e877836593d396a2f5e6ebbc36f720302e1397cd5327a947eb31f9a557368a98",
+    "js/review.js": "110bfccaa2197d34137027e97602f0cca4195e1bee44ab11fd524f0b5f0cad61"
+  },
+  "project_history_unchanged": true,
+  "parents_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Take_Audio_API_check.vvproj": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Retime_UI_Retained_677fba04bbac.vvproj": "d9c29a84906ea350ba2bbcb66261e2eb373d58e72e2e0df441f70981c314a63d",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Take_Audio_UI_Retained_fdfc2e75b01e.vvproj": "399a2f41a8b84d767595472d871647585e466b4d6500adb8789b9bd4e562d6ee",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Review_Clock_API_check.vvproj": "19d1c44ae5fa08cd7e7741ea9ab8c95c8ad48cd9b7092048fb224e8c37a6571c",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "core_tests": 271,
+  "rust_tests": 224,
+  "javascript_tests": 477,
+  "main_editor_preserved": true,
+  "own_ui_test_unit_stopped": true,
+  "windows_ui_observations": {
+    "short_a_running": {
+      "A": {
+        "currentTime": 0.512,
+        "duration": 0.512,
+        "ended": true,
+        "media": "10",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4
+      },
+      "B": {
+        "currentTime": 5.001873,
+        "duration": 5.056,
+        "ended": false,
+        "media": "16",
+        "paused": false,
+        "playbackRate": 1,
+        "readyState": 4
+      }
+    },
+    "finished": {
+      "A": {
+        "currentTime": 0.512,
+        "duration": 0.512,
+        "ended": true,
+        "paused": true,
+        "playbackRate": 1
+      },
+      "B": {
+        "currentTime": 5.056,
+        "duration": 5.056,
+        "ended": true,
+        "paused": true,
+        "playbackRate": 1
+      }
+    },
+    "long_a_finished": {
+      "A": {
+        "currentTime": 5.056,
+        "duration": 5.056,
+        "ended": true,
+        "media": "16",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4
+      },
+      "B": {
+        "currentTime": 0.512,
+        "duration": 0.512,
+        "ended": true,
+        "media": "10",
+        "paused": true,
+        "playbackRate": 1,
+        "readyState": 4
+      }
+    }
+  },
+  "acceptance": {
+    "code_hashes": {
+      "web/js/review.js": "110bfccaa2197d34137027e97602f0cca4195e1bee44ab11fd524f0b5f0cad61",
+      "web/test/review.test.js": "dba4e5a1675e5ec459cf908e52188e884824f278ae30a1a50c2c3066b78f55ba"
+    },
+    "core_tests": 271,
+    "rust_tests": 224,
+    "javascript_tests": 477,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "hardware_gpu": false
+  },
+  "scope_note": "The longest playable ready native duration leads elapsed comparison, with stable first-pane ties independent of proxy duration and playback rate. Unique frame callback tickets reject obsolete callbacks after swap/close/reopen. Unit controller coverage includes natural shorter-A and shorter-B pause/ended, full leader EOF, invalid/still/unready sources, rational durations and canceled callbacks. Actual existing Windows browser verifies 0.5-second A holds while 5-second B continues, reverse pane order, unchanged 1x rates and both stopped at the longer end. CPU-only finite halo2 service; no browser installation, timeline render, export or project/history mutation. Full-source windows, exact frame hold and physical audio remain separate qualification.",
+  "screenshot_sha256": "b7c375b761aacc22aa2a9ac970978320de61db1a3016db24ec9aa4c977d71b0f"
+}

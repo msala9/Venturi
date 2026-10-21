@@ -632,7 +632,10 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   source files remain unchanged. Frozen clips and compounds must be handled
   explicitly before take replacement. Review offers two independent bounded
   source players with equal-elapsed-time comparison and exclusive audio
-  audition. Replacement always requires a visible native preview followed by
+  audition. The longest ready playable native duration leads comparison, with
+  A winning equal-duration ties; a shorter pane cannot stop the longer one at
+  its end. Playback rate and encoded proxy duration do not select the leader.
+  Invalid native timing is excluded from playback. Replacement always requires a visible native preview followed by
   Confirm. Changing a take, policies or native document invalidates that plan.
   Keys map through native timeline frames; rounding collisions retain the first
   key and their count is shown before confirmation. Shot/Take sidecars are a

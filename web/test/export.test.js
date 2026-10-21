@@ -10,6 +10,7 @@ test("export captures an integer exclusive range and native settings without cha
   assert.equal(body.range.revision,"r"); assert.equal(body.range.width,1920);
   assert.equal(body.range.fps,undefined); assert.deepEqual(body.settings,{quality:23,preset:"medium",audio:true});
   assert.equal(state.start_frame,0);
-  for (const patch of [{start:""},{start:"-1"},{start:"1.5"},{end:"8001"},{end:"7205"},{end:"12"},{width:"8192"},{quality:"NaN"},{quality:"52"},{audio:"false"}]) assert.throws(()=>exportRequest(state,{...values,...patch}));
+  assert.equal(exportRequest(state,{...values,end:"8000"}).range.end_frame,8000,"Export may include the full timeline beyond the preview duration cap");
+  for (const patch of [{start:""},{start:"-1"},{start:"1.5"},{end:"8001"},{end:"12"},{width:"8192"},{quality:"NaN"},{quality:"52"},{audio:"false"}]) assert.throws(()=>exportRequest(state,{...values,...patch}));
   assert.throws(()=>exportRequest(null,values));
 });

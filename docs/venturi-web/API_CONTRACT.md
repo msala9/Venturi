@@ -568,13 +568,16 @@ the same bounded native pipeline in both modes. No automatic hardware fallback.
 
 POST `/exports` accepts `{range: ProgramQuery, settings:{quality,preset,audio}}`.
 The native x264 preset list and CRF 0–51 are validated. The requested range is
-an integer exclusive-out range within the captured timeline, at most five
-minutes. Width is capped at 1920 and native aspect/pixel budgets still apply.
+an integer exclusive-out range within the captured timeline. Export duration is
+independent of the five-minute Program preview window. Width is capped at 1920
+and native aspect/pixel budgets still apply.
 Encoding/mixing/compositing use vv-session, vv-media and vv-audio. CPU x264/AAC
 are explicit; no unverified hardware encoder or decoder is offered.
 
 The shared bounded media worker runs one job and queues one more; output is
-limited to 512 MiB/ten minutes, inside the private 2 GiB process cache. Identical
+limited to 512 MiB and ten minutes of processing, inside the private 2 GiB process
+cache. Native normalization analysis respects the caller's nonzero CPU thread
+budget; the desktop's default automatic policy is preserved. Identical
 snapshot/settings/input identities return the existing job. GET/DELETE
 `/exports/{job}?project_epoch=...` reports/cancels it. GET
 `/exports/{job}/export.mp4?project_epoch=...` downloads the completed immutable
@@ -587,7 +590,8 @@ user-selected server output path and no overwrite of source/project files.
 Jobs continue while the browser is closed, until server shutdown or cache
 eviction. The UI remembers the latest job in browser session storage and can
 resume status polling after reload. Durable queues/server restart recovery,
-arbitrary output formats and timelines longer than five minutes remain open.
+and arbitrary output formats remain open. A six-minute 24 fps synthetic export
+and its actual Windows browser download are verified in m3-six-minute-export.json.
 
 - Timeline `set_speed {clip_ids,percent,pitch_correction,fit}` uses native
   SetClipSpeed with percent 1–10000, whole linked groups and fit keep_length,

@@ -3,7 +3,7 @@ import { request } from "./api.js";
 export function exportRequest(state, values) {
   if (!state) throw new Error("Open a nonempty native timeline first");
   const start = Number(values.start), end = Number(values.end), width = Number(values.width), quality = Number(values.quality);
-  if ([values.start, values.end, values.width, values.quality].some((value) => String(value).trim() === "") || ![start, end, width, quality].every(Number.isSafeInteger) || typeof values.audio !== "boolean" || start < 0 || end <= start || end > state.end_frame || end - start > Math.floor(300 * state.fps.num / state.fps.den) || ![640, 960, 1280, 1920].includes(width) || quality < 0 || quality > 51) throw new Error("Choose an integer range up to five minutes within the timeline and CRF 0–51");
+  if ([values.start, values.end, values.width, values.quality].some((value) => String(value).trim() === "") || ![start, end, width, quality].every(Number.isSafeInteger) || typeof values.audio !== "boolean" || start < 0 || end <= start || end > state.end_frame || ![640, 960, 1280, 1920].includes(width) || quality < 0 || quality > 51) throw new Error("Choose an integer range within the timeline and CRF 0–51");
   const { fps, ...range } = state;
   return { range: { ...range, start_frame: start, end_frame: end, width }, settings: { quality, preset: values.preset, audio: values.audio } };
 }

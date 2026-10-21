@@ -1768,3 +1768,31 @@ five-second movie at 8x with both audio windows completed and clock drift below
 14 ms. Exact seed, Favorite, source hash, saved session and CPU-only isolation
 remain intact. Evidence: m5-halo2-audio-meters.json and its browser screenshot.
 No shared hardware lock, inference process or archive content was touched.
+
+## M3/M7 — export duration independent of Program preview windows
+
+Export now accepts any valid exclusive-out range inside the captured timeline;
+the five-minute duration check applies only to Program preview preparation.
+The existing streaming native pipeline, ten-minute processing deadline, 512 MiB
+output cap, bounded job queue/cache, cancellation and immutable snapshot remain
+authoritative. Native normalization analysis honors a nonzero export CPU thread
+budget; the original desktop's automatic thread policy stays unchanged.
+
+119 web Rust tests, 100 session tests and 92 JavaScript tests pass; one existing
+manual precision benchmark is ignored. Formatting, web/session clippy with
+warnings denied, native GUI test compilation and build pass. The native/JS range
+tests accept long export ranges while preserving preview, bounds and CRF checks.
+
+Actual CPU/lavapipe acceptance exported 8,640 frames at 24 fps from a separate
+synthetic project: a 64x36 generated clip and a six-minute 660 Hz WAV. Native
+H.264 video and stereo 48 kHz AAC both decode to exactly 360 seconds. Beginning,
+middle and end video samples match the native composed reference within four
+8-bit RGB levels; decoded audio stays near 660 Hz throughout. The Windows browser
+downloaded the 6,052,915-byte MP4 with SHA-256
+c4cb58b9921c770e659bc2d5f6f72d2cb669ce3a425acc7f02b391e30c904312,
+identical to the native job artifact. A repeat after the CPU-budget change produced
+the same bytes. Saved project/session, the synthetic WAV and all 60 existing
+source hashes remained unchanged. Evidence: m3-six-minute-export.json and its
+browser screenshot. This fixture validates duration, timestamps and download at
+64x36; full-resolution performance remains separate. Durable queues and hardware
+codec selection are still open. No halo2 hardware resource was acquired.

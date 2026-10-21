@@ -409,6 +409,9 @@ pub fn export_timeline_with_gpu<G>(
             // Stops once the encoder side is gone.
             scope.spawn(move || {
                 let levels = &mut LevelCache::on_disk();
+                if cpu_threads > 0 {
+                    levels.threads = cpu_threads;
+                }
                 render_offline(project, timeline, samples, levels, |chunk| {
                     match audio_tx.send(chunk.to_vec()) {
                         Ok(()) => ControlFlow::Continue(()),

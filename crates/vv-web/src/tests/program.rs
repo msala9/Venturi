@@ -132,3 +132,30 @@ fn export_settings_are_native_bounded_and_part_of_the_immutable_job_identity() {
     task.query.start_frame = -1;
     assert!(task.validate().is_err());
 }
+
+#[test]
+fn export_accepts_full_long_timelines_while_preview_keeps_its_duration_budget() {
+    let mut task = task();
+    task.snapshot.project.timelines[task.snapshot.timeline].tracks[0].clips[0] =
+        Clip::from_source_range(
+            ClipId(1),
+            ClipSource::SolidColor,
+            0,
+            8640,
+            0,
+            Rational::one(),
+        );
+    task.query.end_frame = 8640;
+    assert!(task.validate().is_err());
+    task.export = Some(ExportOptions {
+        quality: 23,
+        preset: "ultrafast".into(),
+        audio: true,
+    });
+    assert!(task.validate().is_ok());
+    task.query.end_frame = 8641;
+    assert!(task.validate().is_err());
+    task.query.end_frame = 8640;
+    task.query.start_frame = -1;
+    assert!(task.validate().is_err());
+}

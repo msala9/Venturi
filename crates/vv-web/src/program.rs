@@ -195,13 +195,14 @@ impl ProgramTask {
             .end_frame
             .checked_sub(self.query.start_frame)
             .ok_or_else(|| ApiError::invalid("Invalid Program range"))?;
-        if count <= 0
-            || self.query.start_frame < 0
-            || self.query.end_frame > tl.total_frames()
-            || count as f64 / tl.fps.as_f64() > 300.0
-        {
+        if count <= 0 || self.query.start_frame < 0 || self.query.end_frame > tl.total_frames() {
             return Err(ApiError::invalid(
-                "Choose a nonempty Program range up to five minutes inside the timeline",
+                "Choose a nonempty range inside the timeline",
+            ));
+        }
+        if self.export.is_none() && count as f64 / tl.fps.as_f64() > 300.0 {
+            return Err(ApiError::invalid(
+                "Program preview ranges are limited to five minutes",
             ));
         }
         Ok(())

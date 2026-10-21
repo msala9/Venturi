@@ -105,8 +105,10 @@ the registry. Import probing is currently serialized on the session actor and
 can delay other session requests for large sources. This needs extraction
 before claiming interactive import at production scale.
 
-The Export drawer uses integer In/exclusive Out frames, up to five minutes,
-width up to 1920 and the native x264 quality/speed settings. The server mixes
+The Export drawer accepts integer In/exclusive Out frames anywhere inside the
+timeline, width up to 1920 and native x264 quality/speed settings. Each job has a
+ten-minute processing and 512 MiB output budget; the five-minute Program preview
+window does not restrict export duration. The server mixes
 AAC unless disabled. Close the drawer or continue editing while the immutable
 snapshot renders; reopening/reloading can recover the latest job status.
 Download the MP4 before server shutdown or cache eviction. This first adapter

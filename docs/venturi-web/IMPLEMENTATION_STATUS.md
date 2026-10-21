@@ -1758,3 +1758,13 @@ nine native audio windows with live inspection enabled; maximum audio/video-cloc
 drift stayed below 13 ms. The earlier failed run is retained in the evidence as
 the regression trigger. This fixes the cached fast-transport regression without
 claiming continuous output meters or physical audio-loopback qualification.
+
+The a55eb58 build is deployed on halo2, SHA-256
+051dbeed370eea43385b6d5b827f7b6d6341f2bb9b1436df3bec44b27c38c44d.
+Commands opened its native meter window on the saved shared-image fixture;
+stereo silence, 2049 native spectrum bins, stale/missing-insert refusal and
+matching embedded assets were verified. A nonzero seek reused its existing
+five-second movie at 8x with both audio windows completed and clock drift below
+14 ms. Exact seed, Favorite, source hash, saved session and CPU-only isolation
+remain intact. Evidence: m5-halo2-audio-meters.json and its browser screenshot.
+No shared hardware lock, inference process or archive content was touched.

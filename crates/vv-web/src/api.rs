@@ -1209,6 +1209,7 @@ async fn assets(request: Request) -> Response {
             asset!("/web/js/viewer-transform-overlay.js", "text/javascript")
         }
         "/js/viewer-mask.js" => asset!("/web/js/viewer-mask.js", "text/javascript"),
+        "/js/viewer-mask-pen.js" => asset!("/web/js/viewer-mask-pen.js", "text/javascript"),
         "/js/viewer-mask-overlay.js" => {
             asset!("/web/js/viewer-mask-overlay.js", "text/javascript")
         }

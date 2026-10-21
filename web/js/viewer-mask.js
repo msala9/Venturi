@@ -28,7 +28,8 @@ function nativeState(context){
 const toLayer=(state,point)=>add(state.center,viewerRotateCW(point,state.rotation));
 const toLocal=(state,point)=>viewerRotateCW(sub(point,state.center),-state.rotation);
 function cubic(path,index,t){const a=path.points[index],b=path.points[(index+1)%path.points.length],controls=[a.point,add(a.point,a.out_handle),add(b.point,b.in_handle),b.point],u=1-t,weights=[u*u*u,3*u*u*t,3*u*t*t,t*t*t];return [0,1].map(axis=>controls.reduce((sum,point,index)=>sum+point[axis]*weights[index],0));}
-function flattened(path){return path.points.flatMap((point,index)=>{
+export function viewerMaskPathOutline(path,{closed=true}={}){return path.points.flatMap((point,index)=>{
+  if(!closed && index===path.points.length-1)return [point.point];
   const next=path.points[(index+1)%path.points.length];
   return point.out_handle.every(value=>value===0) && next.in_handle.every(value=>value===0)?[point.point]:Array.from({length:12},(_,sample)=>cubic(path,index,sample/12));
 });}
@@ -48,7 +49,7 @@ export function viewerMaskGeometry(context,viewport,{selectedVertex=null,state=n
   const boxPoint=side=>screen(side.map((value,axis)=>value*state.size[axis]/2)),center=mapping.toScreen(state.center),top=boxPoint([0,1]),delta=sub(top,center),length=Math.hypot(...delta),up=length?delta.map(value=>value/length):[0,-1];
   const path=state.shape==='Path',vertices=path?state.path.points.map(point=>screen(point.point)):[],selected=Number.isSafeInteger(selectedVertex) && selectedVertex>=0 && selectedVertex<vertices.length?selectedVertex:null;
   const tangents=selected===null?[]:['in_handle','out_handle'].map((name,index)=>({kind:index?'tangent_out':'tangent_in',index:selected,point:screen(add(state.path.points[selected].point,state.path.points[selected][name])),vertex:vertices[selected]}));
-  const outline=path?flattened(state.path).map(screen):state.shape==='Rectangle'?corners.map(boxPoint):Array.from({length:64},(_,index)=>{const angle=index/64*Math.PI*2;return screen([Math.cos(angle)*state.size[0]/2,Math.sin(angle)*state.size[1]/2]);});
+  const outline=path?viewerMaskPathOutline(state.path).map(screen):state.shape==='Rectangle'?corners.map(boxPoint):Array.from({length:64},(_,index)=>{const angle=index/64*Math.PI*2;return screen([Math.cos(angle)*state.size[0]/2,Math.sin(angle)*state.size[1]/2]);});
   return {shape:state.shape,outline,closed:true,center,top:path?null:top,knob:path?null:add(top,up.map(value=>value*30)),corners:path?[]:corners.map(side=>({side,point:boxPoint(side)})),sides:path?[]:sides.map(side=>({side,point:boxPoint(side)})),vertices,tangents,selectedVertex:selected,state};
 }
 export function viewerMaskHit(context,viewport,point,{selectedVertex=null}={}){

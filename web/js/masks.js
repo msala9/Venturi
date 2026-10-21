@@ -1,4 +1,20 @@
-export function renderMasks(root,detail,{disabled,getFrame,commit,notice,openState}) {
+function currentPath(detail,mask,frame){
+  if(!Number.isSafeInteger(frame) || frame!==detail.timeline_frame)throw Error('Read native mask properties at the current playhead before editing or navigating path keys');
+  if(mask.shape!=='Path' || typeof mask.path_navigation?.on_keyframe!=='boolean')throw Error('Read native path-key navigation before editing or navigating path keys');
+}
+export function maskPathKeyDestination(detail,mask,frame,direction){
+  currentPath(detail,mask,frame);
+  if(direction!=='previous' && direction!=='next')throw Error('Choose the previous or next native path key');
+  const key=mask.path_navigation[direction];if(key===null)return null;
+  if(!key || !Number.isSafeInteger(key.source_frame) || !Number.isSafeInteger(key.timeline_frame) || key.timeline_frame<0 || !Number.isSafeInteger(detail.source_frame) || (direction==='previous'?key.source_frame>=detail.source_frame:key.source_frame<=detail.source_frame))throw Error('Read valid native path-key navigation at the current playhead');
+  return key.timeline_frame;
+}
+export function maskPathKeyOperation(detail,mask,frame){
+  currentPath(detail,mask,frame);
+  if(!mask.path_navigation.on_keyframe && !mask.evaluated_path)throw Error('Read the native evaluated path before setting a path key');
+  return {kind:'edit_mask',clip_id:detail.clip_id,edit:{action:'path_key',index:mask.index,timeline_frame:frame,path:mask.path_navigation.on_keyframe?null:structuredClone(mask.evaluated_path)}};
+}
+export function renderMasks(root,detail,{disabled,getFrame,commit,notice,openState,seek,canInteract=()=>!disabled}) {
   const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.visualPath="masks";section.open=openState?.get("masks") || false;summary.textContent=`Masks (${detail.masks.items.length})`;section.append(summary);root.append(section);
   let built=false;
   const send=(edit)=>commit({kind:"edit_mask",clip_id:detail.clip_id,edit}).catch((error)=>notice(error.message));
@@ -29,17 +45,42 @@ export function renderMasks(root,detail,{disabled,getFrame,commit,notice,openSta
       }
       if(mask.shape==="Path") {
         const pathNote=document.createElement('p');pathNote.className='muted';pathNote.textContent='Apply path below changes its default. Path keys use the native evaluated path at this playhead; viewer edits add a Linear key when path animation exists.';group.append(pathNote);
-        for(const [label,remove] of [['Set path key at playhead',false],['Remove path key at playhead',true]]){
-          const button=document.createElement('button');button.type='button';button.textContent=label;button.disabled=disabled || (remove?mask.path_keyframes===0:!mask.evaluated_path);
-          button.addEventListener('keydown',event=>{if(event.key===' ' || event.key==='Enter')event.stopPropagation();});
-          button.addEventListener('click',()=>{if(detail.timeline_frame!==getFrame()){notice('Read native mask properties at the current playhead before editing a path key');return;}send({action:'path_key',index:mask.index,timeline_frame:detail.timeline_frame,path:remove?null:structuredClone(mask.evaluated_path)});});group.append(button);
-        }
+        pathKeyControls(group,detail,mask,{disabled,getFrame,commit,notice,openState,seek,canInteract});
         pathEditor(group,mask,disabled,(path)=>send({action:"set",index:mask.index,patch:{path}}));
       }
       section.append(group);
     }
   }
   section.addEventListener("toggle",build);build();
+}
+function pathKeyControls(root,detail,mask,{disabled,getFrame,commit,notice,openState,seek,canInteract}){
+  const row=document.createElement('div');row.className='property-row';row.setAttribute('role','group');row.setAttribute('aria-label',`Mask ${mask.index+1} path keyframes`);
+  const navigation=mask.path_navigation,focusKey=`mask-path-key-focus:${detail.clip_id}:${mask.index}`;
+  const available=!disabled && detail.timeline_frame===getFrame() && typeof navigation?.on_keyframe==='boolean';
+  let waiting=false;
+  const buttons=[],initialDisabled=new Map();
+  const blocked=()=>disabled || waiting || !canInteract() || Boolean(document.querySelector('dialog[open]'));
+  const remember=button=>{if(document.activeElement===button)openState?.set(focusKey,button.dataset.pathKeyAction);};
+  for(const [action,text,label] of [['previous','‹','Previous path keyframe'],['toggle',navigation?.on_keyframe?'◆':'◇',navigation?.on_keyframe?'Remove path key at playhead':'Set path key at playhead'],['next','›','Next path keyframe']]){
+    const button=document.createElement('button');button.type='button';button.textContent=text;button.dataset.pathKeyAction=action;button.setAttribute('aria-label',`Mask ${mask.index+1} ${label}`);button.title=label;
+    button.disabled=!available || (action==='toggle'?!navigation.on_keyframe && !mask.evaluated_path:typeof seek!=='function' || !navigation[action]);
+    if(action==='toggle')button.setAttribute('aria-pressed',String(Boolean(navigation?.on_keyframe)));
+    button.addEventListener('keydown',event=>{if([' ','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))event.stopPropagation();});
+    button.addEventListener('click',()=>{
+      if(blocked())return;
+      try{
+        if(action!=='toggle'){
+          const frame=maskPathKeyDestination(detail,mask,getFrame(),action);if(frame===null || typeof seek!=='function')return;
+          remember(button);seek(frame);return;
+        }
+        const operation=maskPathKeyOperation(detail,mask,getFrame());remember(button);waiting=true;for(const control of buttons)control.disabled=true;
+        Promise.resolve().then(()=>commit(operation)).catch(error=>{waiting=false;for(const control of buttons)control.disabled=initialDisabled.get(control) || detail.timeline_frame!==getFrame() || blocked();notice(error.message);}).finally(()=>{waiting=false;});
+      }catch(error){if(detail.timeline_frame!==getFrame())for(const control of buttons)control.disabled=true;notice(error.message);}
+    });
+    buttons.push(button);initialDisabled.set(button,button.disabled);row.append(button);
+    if(openState?.get(focusKey)===action){openState.delete(focusKey);queueMicrotask(()=>{if(button.isConnected && !button.disabled && document.activeElement===document.body && !document.querySelector('dialog[open]'))button.focus({preventScroll:true});});}
+  }
+  const status=document.createElement('span');status.className='muted';status.textContent=typeof navigation?.on_keyframe==='boolean'?`${mask.path_keyframes} native path keys · ${navigation.on_keyframe?'key at playhead':'evaluated path at playhead'}`:'Read native path-key navigation';row.append(status);root.append(row);
 }
 function pathEditor(root,mask,disabled,apply) {
   const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent=`Bezier vertices · ${mask.path_keyframes} path keys retained`;section.append(summary);root.append(section);

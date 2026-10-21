@@ -1,5 +1,18 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+`edit_mask {clip_id,edit:{action:"add",shape:"Path",path?:MaskPath}}` can add
+a complete pen-drawn path through one native Masks command. Omitted path keeps
+the existing native shape defaults. Supplied geometry is Path-only and must
+satisfy the shared 3–21 vertex, coordinate, eight-mask and flattened-polygon
+budgets. Empty and incomplete pen drafts remain client-only.
+Each native Path mask detail exposes `path_navigation` with `on_keyframe` and
+nullable `previous`/`next` `{source_frame,timeline_frame}` destinations. Native
+strict neighbours are found on the entire path track, filtered to the clip's
+source interval and mapped by `timeline_frame_at`; the first 16 `path_keys`
+remain a preview. The current source clock comes from `source_frame_at` even
+when the picture is frozen. The existing `path_key` action sets the evaluated
+path with native Linear interpolation or removes an exact source-frame key.
+
 `retime_clip {clip_id,end_frame,overwrite?:false}` uses the ordinary timeline
 mutation envelope. Eligible media snapshots expose `retime` with native
 `source_span`, `min_length`, `max_length` and `pitch_correction`; unsupported

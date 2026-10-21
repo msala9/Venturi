@@ -418,7 +418,9 @@ function selected() {
       if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
       target.replaceChildren();
       transformDetail={identity,detail};transformOverlay?.invalidate();syncViewerMasks();maskOverlay?.invalidate();
-      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage });
+      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,
+        seek:frame=>{maskOverlay?.cancel();view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();},
+        canInteract:()=>identity===detailIdentity(inspectorState(clip.id)) && writable && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]') });
     }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else target.textContent = error.message;} });
   }
   if (clip)
@@ -1132,18 +1134,19 @@ function syncViewerMasks(){
   $("viewer-mask-select").value=selected===null?'':String(selected);$("viewer-mask-select").disabled=!items.length;
 }
 transformOverlay=createViewerTransformOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-transform"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:currentViewerContext});
-maskOverlay=createViewerMaskOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-mask"),canCommit:()=>writable && !busy && !unresolved,notice,getContext:()=>{
+maskOverlay=createViewerMaskOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-mask"),penToggle:$("viewer-mask-pen"),getPenContext:currentViewerContext,canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),notice,getContext:()=>{
   const context=currentViewerContext();if(!context)return null;
   const index=maskChoice?.scope===maskScope(context) && maskChoice.revision===context.revision?maskChoice.index:null;
   return {...context,mask_index:index};
 },commit:async operation=>{
-  const before=currentViewerContext(),choice=maskChoice?{...maskChoice}:null,selectionSequence=maskSelectionSequence,receipt=await commit(operation);
+  const before=currentViewerContext(),choice=operation.kind==='edit_mask' && operation.edit.action==='add' && before?{scope:maskScope(before),revision:before.revision,index:before.detail.masks.items.length}:maskChoice?{...maskChoice}:null,selectionSequence=maskSelectionSequence,receipt=await commit(operation);
   const clip=timeline?.tracks.flatMap(track=>track.clips).find(clip=>clip.id===operation.clip_id);
   if(choice && before && selectionSequence===maskSelectionSequence && documentState?.project_epoch===before.project_epoch && timeline?.id===before.timeline_id && clip && view.selection.includes(clip.id))maskChoice={...choice,revision:timeline.revision};
   syncViewerMasks();maskOverlay?.invalidate();return receipt;
 }});
 $("viewer-transform").addEventListener('click',()=>{maskSelectionSequence++;if($("viewer-transform").getAttribute('aria-pressed')==='true')maskOverlay.setEnabled(false);});
 $("viewer-mask").addEventListener('click',()=>{maskSelectionSequence++;if(maskOverlay.enabled() && $("viewer-transform").getAttribute('aria-pressed')==='true')$("viewer-transform").click();});
+$("viewer-mask-pen").addEventListener('click',()=>{maskSelectionSequence++;if(maskOverlay.penActive() && $("viewer-transform").getAttribute('aria-pressed')==='true')$("viewer-transform").click();});
 $("viewer-mask-select").addEventListener('change',()=>{
   maskSelectionSequence++;maskOverlay.cancel();const context=currentViewerContext(),value=$("viewer-mask-select").value,index=value===''?null:Number(value);
   maskChoice=context && context.detail.masks.items.some(item=>item.index===index)?{scope:maskScope(context),revision:context.revision,index}:null;

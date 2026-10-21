@@ -1,0 +1,122 @@
+{
+  "commands_exercised_binary_sha256": "cbe295024d98aab2427f021e8c6e15acdde7d4e1cc495ed2b08967874c28e53a",
+  "native_command_source_hashes": {
+    "api.rs": "80bc0346d719256590898158676049d976ff40157f8d1ca765d21fc49fae573a",
+    "masks.rs": "5566ed40491444530d0bef707875fb275fe94c3f8766d1cceb437d5b4a1a4008",
+    "tests/masks.rs": "d381dcf17a73fa90fc81296e2cf6fa71e60ae10f6f40aba9377144661daa569b",
+    "tests/curves.rs": "89fb7f3275c61794a43ff7ef5e989547922c1327737725aad232e595d7117dfc",
+    "tests/keyselection.rs": "380369f4ae1e7c0d396391e9f1549e92caa96cf2c3e9a79e3da2260016888407"
+  },
+  "project": "Mask_Pen_PathKeys_API_check.vvproj",
+  "project_sha256": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+  "checks": {
+    "completed_pen_path_native_add": true,
+    "existing_mask_preserved": true,
+    "one_undo_redo_retry_exact": true,
+    "full_native_navigation_beyond_sixteen": true,
+    "strict_prev_next_and_boundaries": true,
+    "evaluated_path_diamond_set_remove": true,
+    "path_default_preserved": true,
+    "invalid_creation_atomic": true,
+    "real_video_retimed_offset_source_clock": true,
+    "frozen_picture_does_not_change_animation_clock": true,
+    "native_mapped_navigation_destinations": true,
+    "other_timelines_preserved": true
+  },
+  "served_asset_hashes": {
+    "main.js": "a1591a22e772801a37fea937bac8e362133fbef9af8ca88517d1182b887de02b",
+    "inspector.js": "f0e8018f816d12c714e3809d71337f274e66b4638833f811bc7ab56192983d62",
+    "masks.js": "cca56564c7ad2f4e0e15275e5c5a91f61bd0eed6d746e99b95e7240f8a9afa5c",
+    "viewer-mask.js": "dba615e72e4a48e649768858282cd3a3f89df98de829aeb728e3e1c63af1e8c6",
+    "viewer-mask-pen.js": "adf80068348004e3ea5b30ccbe44c38fa43bbf7cb9ab867572ec24f210e6bc13",
+    "viewer-mask-overlay.js": "777c1b9e13a8083399929298e27f14cf4c092aea784391140d277b31facaaa33"
+  },
+  "save_restart_exact": true,
+  "parent_hashes_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "binary_sha256": "6d03da6aead2bd1a80b739ad31dbfae38d64488592b5913e2df8b4abb4f33fb4",
+  "gui_acceptance": false,
+  "hardware_gpu_used": false,
+  "no_render_or_exports": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "limits": {
+    "cpu": "one CPU",
+    "memory": "512 MiB",
+    "swap": 0,
+    "oom_score": 1000,
+    "runtime_max_seconds": 60
+  },
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "checkpoint": "/home/marco/.cache/venturi-mask-pen-check/acceptance.json",
+  "phase": "verified",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792593567.4692633,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "6d03da6aead2bd1a80b739ad31dbfae38d64488592b5913e2df8b4abb4f33fb4",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "main_editor_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    },
+    "unsaved": true
+  },
+  "syntax_checks": true,
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "80bc0346d719256590898158676049d976ff40157f8d1ca765d21fc49fae573a",
+      "crates/vv-web/src/masks.rs": "5566ed40491444530d0bef707875fb275fe94c3f8766d1cceb437d5b4a1a4008",
+      "crates/vv-web/src/tests/masks.rs": "d381dcf17a73fa90fc81296e2cf6fa71e60ae10f6f40aba9377144661daa569b",
+      "crates/vv-web/src/tests/curves.rs": "89fb7f3275c61794a43ff7ef5e989547922c1327737725aad232e595d7117dfc",
+      "crates/vv-web/src/tests/keyselection.rs": "380369f4ae1e7c0d396391e9f1549e92caa96cf2c3e9a79e3da2260016888407",
+      "web/index.html": "7134729b7fc29f068022796897c815e49e5ec51302badc9704129d3a111c0c4f",
+      "web/js/main.js": "a1591a22e772801a37fea937bac8e362133fbef9af8ca88517d1182b887de02b",
+      "web/js/inspector.js": "f0e8018f816d12c714e3809d71337f274e66b4638833f811bc7ab56192983d62",
+      "web/js/masks.js": "cca56564c7ad2f4e0e15275e5c5a91f61bd0eed6d746e99b95e7240f8a9afa5c",
+      "web/js/viewer-mask.js": "dba615e72e4a48e649768858282cd3a3f89df98de829aeb728e3e1c63af1e8c6",
+      "web/js/viewer-mask-pen.js": "adf80068348004e3ea5b30ccbe44c38fa43bbf7cb9ab867572ec24f210e6bc13",
+      "web/js/viewer-mask-overlay.js": "777c1b9e13a8083399929298e27f14cf4c092aea784391140d277b31facaaa33",
+      "web/test/masks.test.js": "1a72fefd53dc6f189635e925eb0cdf48f9ab01f6544c0f126be59315c7d5da98",
+      "web/test/viewer-mask-pen.test.js": "f235395dac35f83666abae41404ed44af40741984d989c3fc94ff67276d6a3e2",
+      "web/test/viewer-mask-overlay.test.js": "a8536e6ef28908f129c86123fcb361cfa5dee3106b0f34b68b24faf4840fa21d"
+    },
+    "rust_tests": 198,
+    "javascript_tests": 243,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": false,
+    "hardware_gpu": false
+  },
+  "scope_note": "Native complete pen-path Add and full-track path navigation accepted through real API, including twenty keys beyond the sixteen-key preview, exact Undo/Redo/retry, diamond set/remove, invalid atomic rejection, preserved defaults, real retimed video source offset and frozen picture independent of animation clock, native-mapped destinations and Save/restart. Pen pointer/controller/wrapper and navigation DOM tests run without a browser. Browser/DPI/rendered/hardware qualification remains open."
+}

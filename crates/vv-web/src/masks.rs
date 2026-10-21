@@ -13,6 +13,8 @@ use vv_session::Session;
 pub enum MaskEdit {
     Add {
         shape: MaskShape,
+        #[serde(default)]
+        path: Option<core::MaskPath>,
     },
     Remove {
         index: usize,
@@ -105,7 +107,10 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &MaskEdit) -
     }
     let mut masks = clip.effects.masks.clone();
     match edit {
-        MaskEdit::Add { shape } => {
+        MaskEdit::Add { shape, path } => {
+            if path.is_some() && *shape != MaskShape::Path {
+                return Err(ApiError::invalid("Bezier vertices require a Path mask"));
+            }
             let timeline_size = session.project.timelines[id].resolution;
             let source_size = if let core::ClipSource::Media(media) = clip.source {
                 session
@@ -119,10 +124,14 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &MaskEdit) -
             };
             let (sw, sh) = (source_size.0.max(1) as f32, source_size.1.max(1) as f32);
             let scale = (timeline_size.0 as f32 / sw).min(timeline_size.1 as f32 / sh);
-            masks.push(core::ClipMask::new(
+            let mut mask = core::ClipMask::new(
                 *shape,
                 ((sw * scale).round() as u32, (sh * scale).round() as u32),
-            ));
+            );
+            if let Some(path) = path {
+                mask.path.default = path.clone();
+            }
+            masks.push(mask);
         }
         MaskEdit::Remove { index } => {
             if *index >= masks.len() {
@@ -267,7 +276,15 @@ pub fn viewer_edit(
     Ok(())
 }
 pub fn detail(clip: &core::Clip, frame: i64) -> Value {
-    json!({"shapes":MaskShape::ALL,"modes":core::MaskMode::ALL,"items":clip.effects.masks.iter().enumerate().map(|(index,mask)|json!({"index":index,"shape":mask.shape,"enabled":mask.enabled,"invert":mask.invert,"mode":mask.mode,"path":mask.path.default,"evaluated_path":mask.path.value_at(frame),"path_keyframes":mask.path.keyframes().len(),"path_keys":mask.path.keyframes().iter().take(16).collect::<Vec<_>>(),"parameters":MaskParam::ALL.into_iter().filter(|p|p.applies_to(mask.shape)).map(|param|{let track=mask.track(param);let (min,max)=limits(param);json!({"param":param,"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":track.keyframes().len(),"min":min,"max":max})}).collect::<Vec<_>>() })).collect::<Vec<_>>()})
+    json!({"shapes":MaskShape::ALL,"modes":core::MaskMode::ALL,"items":clip.effects.masks.iter().enumerate().map(|(index,mask)|json!({"index":index,"shape":mask.shape,"enabled":mask.enabled,"invert":mask.invert,"mode":mask.mode,"path":mask.path.default,"evaluated_path":mask.path.value_at(frame),"path_keyframes":mask.path.keyframes().len(),"path_keys":mask.path.keyframes().iter().take(16).collect::<Vec<_>>(),"path_navigation":(mask.shape==MaskShape::Path).then(||path_navigation(clip,mask,frame)),"parameters":MaskParam::ALL.into_iter().filter(|p|p.applies_to(mask.shape)).map(|param|{let track=mask.track(param);let (min,max)=limits(param);json!({"param":param,"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":track.keyframes().len(),"min":min,"max":max})}).collect::<Vec<_>>() })).collect::<Vec<_>>()})
+}
+
+fn path_navigation(clip: &core::Clip, mask: &core::ClipMask, frame: i64) -> Value {
+    let visible = clip.source_in()..clip.source_out();
+    let key = |source_frame| json!({"source_frame":source_frame,"timeline_frame":clip.timeline_frame_at(source_frame)});
+    json!({"on_keyframe":mask.path.keyframe_at(frame).is_some(),
+        "previous":mask.path.keyframe_before(frame).filter(|at|visible.contains(at)).map(key),
+        "next":mask.path.keyframe_after(frame).filter(|at|visible.contains(at)).map(key)})
 }
 
 #[cfg(test)]

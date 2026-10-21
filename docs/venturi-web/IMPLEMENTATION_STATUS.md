@@ -22,15 +22,17 @@ ds4 media-catalog integration has actual NAS evidence.
 
 Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
-handles now pass 194 Rust tests, 213 JavaScript tests,
+handles, completed-path pen drawing and full path-key navigation now pass
+198 Rust tests, 243 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json` and
-`evidence/m4-transition-duration-handles.json` and `evidence/m4-speed-handles.json`;
+`evidence/m4-transition-duration-handles.json`, `evidence/m4-speed-handles.json`
+and `evidence/m4-mask-pen-path-keys.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
-Remaining work includes pen drawing, full path-key navigation, transition
+Remaining work includes mask browser/rendered qualification, transition
 selection/duplication, native speed strip preset menus, compound and
 import coverage, long-media preview and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
@@ -2531,3 +2533,42 @@ unsaved moves remain intact. API limits are one CPU, 512 MiB, no swap,
 OOMScoreAdjust=1000 and 60 seconds per instance. No render/export/GPU/local
 browser/build/soak is used. Native strip preset menu, browser/DPI/rendered
 playback and hardware acceptance remain open; affected ledger rows stay partial.
+
+## M4 — native completed-path pen and full path-key navigation
+
+Draw path uses the existing bounded viewer overlay. Clicks place vertices and
+drags pull Bezier tangents; Alt keeps the incoming tangent independent. Clicking
+the first vertex after three points or pressing Enter on the focused canvas
+submits one complete Path Add. Escape discards the entire draft. Zero to two
+vertices stay client-only, preserving the native valid-path contract. The new
+mask retains native defaults and layer coordinates. Existing mask editing and
+Transform modes remain exclusive; owner-only release, pending suppression,
+frame/writer/context/viewport changes and image/visibility loss protect drafts.
+No HTTP is sent while placing or dragging vertices. Numeric Inspector controls
+remain available. This is the native click/drag pen, not sampled freehand.
+
+Path details now expose strict previous/next destinations and exact-key status
+from the full Rust track, filtered to the source interval and mapped by native
+timeline_frame_at. The 16-key preview does not limit navigation. Inspector arrows
+seek these destinations; the diamond sets the core-evaluated path with Linear
+interpolation or removes the exact key. Source-frame animation remains separate
+from frozen picture selection. Controls reject stale playheads and identities,
+open dialogs, active playback and duplicate submissions; focus is retained on
+refresh without taking focus from dialogs. No browser keyframe interpolation is
+introduced.
+
+198 Rust and 243 JavaScript tests, fmt, clippy with warnings denied and native
+build pass on halo2. The finite API proof creates a complete path with tangents,
+preserves an existing Ellipse, verifies exact single Undo/Redo/retry, twenty path
+keys beyond the preview, strict neighbours and endpoint boundaries, diamond
+set/remove, retained path defaults and atomic invalid creation. A real retimed
+video with source offset verifies native mapped key destinations and unchanged
+animation navigation when its picture is frozen. Save/restart retains both mask
+stacks and all other timelines. Evidence:
+`evidence/m4-mask-pen-path-keys.json`.
+
+Disposable API units are stopped and port 8811 is closed. Parent project hashes
+and the primary editor's five unsaved moves are preserved. The same one-CPU,
+512 MiB, no-swap, OOMScoreAdjust=1000 and 60-second API caps apply. No local
+browser/build, render/export, GPU or soak is used. Browser/DPI/rendered/hardware
+acceptance remains open; ledger rows stay partial.

@@ -269,6 +269,7 @@ fn every_advertised_scalar_target_and_mixed_values_share_one_native_move() {
         &raw,
         &crate::masks::MaskEdit::Add {
             shape: core::MaskShape::Rectangle,
+            path: None,
         },
     )
     .unwrap();

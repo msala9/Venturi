@@ -605,6 +605,7 @@ fn every_advertised_filter_grade_mask_and_audio_curve_accepts_its_native_default
         &raw,
         &crate::masks::MaskEdit::Add {
             shape: core::MaskShape::Rectangle,
+            path: None,
         },
     )
     .unwrap();

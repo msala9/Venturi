@@ -20,7 +20,7 @@ export function keyPageIndex(value,total) {
   if(!Number.isSafeInteger(page) || page<1 || page>total)throw Error(`Choose a key page from 1 to ${total}`);
   return page-1;
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract }) {
   const disabled = !writable || detail.locked;
   if(detail.key_page){
     const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
@@ -95,7 +95,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink});if(curves)controls.push(curves);
   const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope});if(eventKeys)controls.push(eventKeys);
   const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload});if(keySelection)controls.push(keySelection);
-  if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState});
+  if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState,seek,canInteract});
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report);
   return controls;

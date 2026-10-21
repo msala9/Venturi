@@ -26,6 +26,7 @@ import { createAudioMeters } from "./audio-meters.js";
 import {createPresetPanel} from './presets.js';
 import {createPresetShortcuts} from './preset-shortcuts.js';
 import {createViewerTransformOverlay} from './viewer-transform-overlay.js';
+import {createViewerMaskOverlay} from './viewer-mask-overlay.js';
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -283,7 +284,7 @@ let commit = async () => {
 };
 let seek = () => {};
 let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = null, slipView = null;
-let transformOverlay=null,transformDetail=null;
+let transformOverlay=null,transformDetail=null,maskOverlay=null,maskChoice=null,maskPickerIdentity=null,maskSelectionSequence=0,maskSelectionIdentity=null;
 let sourceOpenId = null;
 const sourceRanges = new Map();
 const mediaAssets = new Map();
@@ -302,7 +303,9 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  maskSelectionSequence++;
   transformOverlay?.cancel();
+  maskOverlay?.cancel();
   audioMeters?.invalidate();
   fastTransport?.stop();
   audioScrub?.stop();
@@ -362,7 +365,9 @@ function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead,key_page:visualState.get(`key-page:${documentState.project_epoch}:${timeline.id}:${clip}`) || 0 } : null;
 }
 function selected() {
+  trackViewerSelection();
   transformDetail=null;transformOverlay?.cancel();transformOverlay?.invalidate();
+  maskOverlay?.cancel();maskOverlay?.invalidate();syncViewerMasks();
   presetPanel?.invalidate();
   recoveryPanel?.invalidate();
   pasteAttributes?.invalidate();
@@ -409,7 +414,7 @@ function selected() {
     request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(clip.id)}/keys/${state.key_page}?${query}`).then((detail) => {
       if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
       target.replaceChildren();
-      transformDetail={identity,detail};transformOverlay?.invalidate();
+      transformDetail={identity,detail};transformOverlay?.invalidate();syncViewerMasks();maskOverlay?.invalidate();
       visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage });
     }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else target.textContent = error.message;} });
   }
@@ -548,7 +553,9 @@ const canvasTimeline = createTimeline({
 });
 window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});
 function updateTime() {
+  trackViewerSelection();
   transformOverlay?.invalidate();
+  syncViewerMasks();maskOverlay?.invalidate();
   if (viewerMode === "source") { canvasTimeline.invalidate(); return; }
   const fps = Math.round(timeline?.fps.num / timeline?.fps.den || 24),
     frame = view.playhead;
@@ -1087,13 +1094,52 @@ viewer = createViewer({
         }
       : null,
 });
-transformOverlay=createViewerTransformOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-transform"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:()=>{
+function currentViewerContext(){
   if(!documentState || !timeline || viewerMode!=="program" || !$("program-view").hidden || !$("slip-view").hidden)return null;
   const clips=timeline.tracks.filter(track=>track.kind==="video" && !track.muted).flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id)));
-  const clip=clips.length===1?clips[0]:null,current=viewer.current();
+  const clip=clips.length===1?clips[0]:null,current=viewer?.current();
   if(!clip || clip.disabled || clip.kind==="adjustment" || view.playhead<clip.start_frame || view.playhead>=clip.start_frame+clip.length_frames || transformDetail?.identity!==detailIdentity(inspectorState(clip.id)))return null;
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,clip_id:clip.id,preview_current:Boolean(current),timeline_size:[timeline.resolution.width,timeline.resolution.height],detail:transformDetail.detail};
+}
+function maskScope(context){return context?`${context.project_epoch}:${context.timeline_id}:${context.clip_id}`:null;}
+function trackViewerSelection(){
+  const identity=JSON.stringify([documentState?.project_epoch,timeline?.id,view.playhead,[...view.selection].sort()]);
+  if(identity!==maskSelectionIdentity){maskSelectionIdentity=identity;maskSelectionSequence++;}
+}
+function syncViewerMasks(){
+  const context=currentViewerContext(),items=context?.detail.masks?.items || [],scope=maskScope(context);
+  if(context && maskChoice && (maskChoice.scope!==scope || maskChoice.revision!==context.revision))maskChoice=null;
+  const selected=maskChoice && items.some(item=>item.index===maskChoice.index)?maskChoice.index:null;
+  const identity=JSON.stringify([scope,context?.revision,selected,items.map(item=>[item.index,item.name,item.shape,item.enabled])]);
+  if(identity===maskPickerIdentity)return;maskPickerIdentity=identity;
+  $("viewer-mask-select").replaceChildren(new Option('Choose a mask',''),...items.map(item=>new Option(`${item.index+1} · ${item.name?`${item.name} · `:''}${item.shape}${item.enabled?'':' · disabled'}`,String(item.index))));
+  $("viewer-mask-select").value=selected===null?'':String(selected);$("viewer-mask-select").disabled=!items.length;
+}
+transformOverlay=createViewerTransformOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-transform"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:currentViewerContext});
+maskOverlay=createViewerMaskOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-mask"),canCommit:()=>writable && !busy && !unresolved,notice,getContext:()=>{
+  const context=currentViewerContext();if(!context)return null;
+  const index=maskChoice?.scope===maskScope(context) && maskChoice.revision===context.revision?maskChoice.index:null;
+  return {...context,mask_index:index};
+},commit:async operation=>{
+  const before=currentViewerContext(),choice=maskChoice?{...maskChoice}:null,selectionSequence=maskSelectionSequence,receipt=await commit(operation);
+  const clip=timeline?.tracks.flatMap(track=>track.clips).find(clip=>clip.id===operation.clip_id);
+  if(choice && before && selectionSequence===maskSelectionSequence && documentState?.project_epoch===before.project_epoch && timeline?.id===before.timeline_id && clip && view.selection.includes(clip.id))maskChoice={...choice,revision:timeline.revision};
+  syncViewerMasks();maskOverlay?.invalidate();return receipt;
 }});
+$("viewer-transform").addEventListener('click',()=>{maskSelectionSequence++;if($("viewer-transform").getAttribute('aria-pressed')==='true')maskOverlay.setEnabled(false);});
+$("viewer-mask").addEventListener('click',()=>{maskSelectionSequence++;if(maskOverlay.enabled() && $("viewer-transform").getAttribute('aria-pressed')==='true')$("viewer-transform").click();});
+$("viewer-mask-select").addEventListener('change',()=>{
+  maskSelectionSequence++;maskOverlay.cancel();const context=currentViewerContext(),value=$("viewer-mask-select").value,index=value===''?null:Number(value);
+  maskChoice=context && context.detail.masks.items.some(item=>item.index===index)?{scope:maskScope(context),revision:context.revision,index}:null;
+  syncViewerMasks();maskOverlay.invalidate();
+});
+$("inspector-content").addEventListener('click',event=>{
+  const button=event.target.closest?.('[data-viewer-mask-index]'),context=currentViewerContext();
+  if(!button || !context || button.dataset.clipId!==context.clip_id)return;
+  const index=Number(button.dataset.viewerMaskIndex);if(!context.detail.masks.items.some(item=>item.index===index))return;
+  maskSelectionSequence++;maskOverlay.cancel();maskChoice={scope:maskScope(context),revision:context.revision,index};syncViewerMasks();
+  if(!maskOverlay.enabled())$("viewer-mask").click();maskOverlay.invalidate();$("viewer-mask-select").focus();
+});
 scopes = createScopes({ panel: $("scopes"), getTarget: () => viewerMode === "program" && !scopePlayback ? scopeTarget(documentState, timeline, view.selection, view.playhead) : null });
 scopes.setVisible(editor.dataset.workspace === "Color");
 previewCache = createPreviewCache({getState: () => documentState?.capabilities.preview && timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0,width:960} : null,status:$("preview-cache-status"),onChange:()=>canvasTimeline.invalidate()});
@@ -1119,7 +1165,7 @@ programPlayer = createProgramPlayer({
     return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: start, end_frame: Math.min(end, start + Math.floor(300 * timeline.fps.num / timeline.fps.den)), width: 960 } : null;
   },
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); } },
-  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; transformOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
+  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
   onStop:async()=>{await viewer?.seek();scopes?.refresh();previewCache.refresh();},
   onCache:()=>previewCache.refresh(),
   onError: notice,

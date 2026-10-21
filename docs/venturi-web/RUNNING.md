@@ -440,7 +440,21 @@ or replace Linear keys at the native current source frame, matching desktop
 handles. Undo restores previous interpolation. The outline is a local draft
 until release; Escape cancels. Stale frames, playback, Source/slip views, locked
 clips and changed selections cannot commit. Numeric Inspector controls remain
-the keyboard alternative; mask/path handles remain separate work.
+the keyboard alternative.
+
+Choose a mask in the viewer's Mask selector, or use its Inspector selection
+button, then enable **Mask handles**. Mask and Transform modes are exclusive.
+Rectangle/ellipse corners and sides resize against the opposite edge; Shift
+preserves proportions for corners. Drag inside to move, or the knob to rotate
+(Shift snaps to 15 degrees). Path vertices expose incoming/outgoing tangents;
+dragging a tangent mirrors its counterpart unless Alt is held. Outside-edge
+clicks insert a corner at the pointer, Alt-click removes a vertex down to three,
+and double-click switches between a corner and native automatic smooth handles.
+Escape cancels the draft. Selected vertices survive own edits and preview
+refreshes. The Inspector can set/remove a path key at the playhead using native
+evaluated geometry; Apply path continues to edit the default. Animated viewer
+edits create Linear keys with one Undo. Pen drawing and full path-key timeline
+navigation remain open, as do browser/DPI/rendered qualification.
 
 Timeline fade handles occupy the upper band of sufficiently wide clips. Drag a
 handle to set that clip's fade; lower edge trims and the Slip tool retain their

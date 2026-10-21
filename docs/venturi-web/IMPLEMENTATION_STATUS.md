@@ -20,14 +20,15 @@ and desktop import qualification remain open. A configurable preset
 folder does not establish sharing through the 14 TB archive; only the existing
 ds4 media-catalog integration has actual NAS evidence.
 
-Animated viewer move/scale/rotation/anchor/crop, persistent export history and
-explicit terminal-export discard now pass 175 Rust tests, 158 JavaScript tests,
-fmt, clippy and build, plus finite software API/restart qualification. GUI, DPI
-and hardware qualification remain open. Latest evidence:
-`evidence/m4-animated-viewer-durable-exports.json` and
-`evidence/m3-export-discard.json`.
+Animated viewer transforms, mask/path handles, persistent export history and
+explicit terminal-export discard now pass 182 Rust tests, 177 JavaScript tests,
+fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
+qualification remain open. Latest mask evidence:
+`evidence/m4-viewer-mask-handles.json`; prior transform/export proofs remain valid
+for their recorded scope.
 
-Remaining work includes mask/path and transition/speed timeline handles, compound and
+Remaining work includes pen drawing, full path-key navigation, transition/speed
+timeline interaction, compound and
 import coverage, long-media preview and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
 and final deployment, DPI, duration and resource qualification. Historical
@@ -2431,3 +2432,39 @@ Evidence: `evidence/m3-export-discard.json`. API checks used one CPU, 512 MiB,
 no swap, OOMScoreAdjust=1000 and 60-second runtime caps. Browser confirmation,
 real filesystem failure recovery, hardware codecs and full GUI parity remain
 unqualified. No local build/browser/render/soak or new export render was started.
+
+## M4 — mask viewer handles and explicit Bezier path keys
+
+Rectangle/ellipse masks have native layer-space move, corner/side resize and
+rotation gestures. Path masks expose vertices, selected incoming/outgoing
+tangents, native outside-edge corner insertion, Alt removal and smooth/corner
+double-click. Shift and Alt follow native resize/rotation/tangent behavior.
+Current-frame values and paths come from Rust; JavaScript only maps geometry and
+drafts a gesture. One native set_clip_masks command chooses constant defaults or
+Linear source-frame keys and preserves other masks/effects. Explicit path-key
+set/remove controls let users begin animation without changing the default.
+Invalid geometry/topology/budgets refuse the entire command. Selected vertices
+survive own commits and transient preview refreshes; stale gestures still cancel.
+
+Mask and Transform modes are exclusive, with a revision-bound mask picker and
+Inspector selection buttons. The overlay is off by default, capped at 4M backing
+pixels and redraws on events only. Pointer movement sends no HTTP; release sends
+one command, and Escape/capture loss/viewport or identity changes cancel. Numeric
+Inspector controls remain available. Pen drawing and full path-key navigation
+remain open.
+
+182 Rust and 177 JavaScript tests, fmt, clippy with warnings denied and native
+build pass on halo2. Native tests include rate/freeze source-clock behavior and
+atomic rejection. Finite no-GPU API checks verify mixed static/animated edits,
+Hold-to-Linear replacement, exact single Undo/Redo/retry, no-op history, ellipse
+parameters, explicit path keys, vertex/tangent/topology changes, preserved path
+defaults and invalid-path atomicity. Save/restart retained identical mask data;
+the fixture uses generated media, so freeze remains a native-test result rather
+than a live API claim. Served asset hashes match the validated source.
+
+Evidence: `evidence/m4-viewer-mask-handles.json`. Both disposable processes were
+stopped and port 8811 closed. Project hashes and the primary editor's five unsaved
+moves remained intact. API checks used one CPU, 512 MiB, no swap,
+OOMScoreAdjust=1000 and 60-second runtime caps. No GPU, render, export, local
+browser/build or soak was started. Browser/DPI/rendered/hardware acceptance stays
+open and affected ledger rows remain partial.

@@ -147,6 +147,14 @@ pub enum Operation {
         timeline_frame: FrameIdx,
         transform: Vec<crate::inspector::Parameter>,
     },
+    EditViewerMask {
+        clip_id: String,
+        index: usize,
+        timeline_frame: FrameIdx,
+        #[serde(default)]
+        parameters: Vec<crate::masks::MaskValue>,
+        path: Option<core::MaskPath>,
+    },
     SetKeyframe {
         clip_id: String,
         edit: crate::inspector::Keyframe,
@@ -644,6 +652,21 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             values,
         } => crate::visual::apply_grade_at_frame(session, id, clip_id, *frame, values)?,
         Operation::EditMask { clip_id, edit } => crate::masks::edit(session, id, clip_id, edit)?,
+        Operation::EditViewerMask {
+            clip_id,
+            index,
+            timeline_frame,
+            parameters,
+            path,
+        } => crate::masks::viewer_edit(
+            session,
+            id,
+            clip_id,
+            *index,
+            *timeline_frame,
+            parameters,
+            path.as_ref(),
+        )?,
         Operation::SetAudioEffects { channel, effects } => {
             crate::audio::set_effects(session, id, channel, effects)?
         }

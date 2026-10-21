@@ -1208,6 +1208,10 @@ async fn assets(request: Request) -> Response {
         "/js/viewer-transform-overlay.js" => {
             asset!("/web/js/viewer-transform-overlay.js", "text/javascript")
         }
+        "/js/viewer-mask.js" => asset!("/web/js/viewer-mask.js", "text/javascript"),
+        "/js/viewer-mask-overlay.js" => {
+            asset!("/web/js/viewer-mask-overlay.js", "text/javascript")
+        }
         "/js/catalog.js" => asset!("/web/js/catalog.js", "text/javascript"),
         "/js/slip.js" => asset!("/web/js/slip.js", "text/javascript"),
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),

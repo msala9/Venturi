@@ -1,0 +1,107 @@
+{
+  "project": "Mask_Viewer_API_check.vvproj",
+  "project_sha256": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+  "checks": {
+    "mixed_static_animated": true,
+    "hold_replaced_linear": true,
+    "one_undo_redo_exact": true,
+    "retry_exact": true,
+    "no_op_history": true,
+    "ellipse_geometry": true,
+    "explicit_path_key_workflow": true,
+    "evaluated_path_authoritative": true,
+    "source_frame_clock": true,
+    "frozen_picture_transform_clock": false,
+    "path_default_preserved": true,
+    "path_vertex_tangent_topology": true,
+    "invalid_path_atomic": true,
+    "prior_masks_preserved": true
+  },
+  "served_asset_hashes": {
+    "viewer-mask.js": "b68108c3710d00677ad9c1989d6ab1c83be0d5de4836ce1031f78af30648deea",
+    "viewer-mask-overlay.js": "e8cc19e8678a3f90679d97133e468c249b5ac553fe9f0a39ab673c815e4485d8",
+    "viewer-transform.js": "6515ddce1436dba78fc56e986ffe6d02210b0480f2d1473396d3783031ba6fa6",
+    "main.js": "f797bdded0d26f0428f501316f027ecd6f76e2ca3b89146870216451a226d954",
+    "masks.js": "f1953436e7720f61d58f1349fb73532a7316c21b2151de0755660eaea18b5f38"
+  },
+  "save_restart_exact": true,
+  "parent_hashes_preserved": {
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "binary_sha256": "a883c2887cdacc22d7f01304b49128b2171209cef4ddee6f79aff3bb727a5754",
+  "gui_acceptance": false,
+  "hardware_gpu_used": false,
+  "no_render_or_exports": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "limits": {
+    "cpu": "one CPU",
+    "memory": "512 MiB",
+    "swap": 0,
+    "oom_score": 1000,
+    "runtime_max_seconds": 60
+  },
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "checkpoint": "/home/marco/.cache/venturi-mask-viewer-check/acceptance.json",
+  "phase": "verified",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792588287.8536432,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "a883c2887cdacc22d7f01304b49128b2171209cef4ddee6f79aff3bb727a5754",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "main_editor_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    },
+    "unsaved": true
+  },
+  "syntax_checks": true,
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/api.rs": "15e9118701a567f40139555718c5bda6c2d47f8a9bcc04ac8e5aeda138ba8a5b",
+      "crates/vv-web/src/masks.rs": "4508f8e0aa562e5021df9f9bd503ccb228963c85ab60998079b022d20f87499e",
+      "crates/vv-web/src/commands.rs": "124044357cd236311a1f52ad1c781043c95de023a0b56e9ea200555c92f218dc",
+      "crates/vv-web/src/tests/masks.rs": "002db2ddab538e114d1b16fb697c7a6a941f307e48d6766a4664b2f6080a5a44",
+      "web/js/viewer-mask.js": "b68108c3710d00677ad9c1989d6ab1c83be0d5de4836ce1031f78af30648deea",
+      "web/test/viewer-mask.test.js": "ba394d2c832870161d19e5c2af1d1b88421f0ef19c15b079c90e55b080baaf74",
+      "web/js/viewer-transform.js": "6515ddce1436dba78fc56e986ffe6d02210b0480f2d1473396d3783031ba6fa6",
+      "web/js/viewer-mask-overlay.js": "e8cc19e8678a3f90679d97133e468c249b5ac553fe9f0a39ab673c815e4485d8",
+      "web/test/viewer-mask-overlay.test.js": "dceb34d6d05e6d9161685dc8d7770ffde55cac3f98a727674a83393121aa9117",
+      "web/js/main.js": "f797bdded0d26f0428f501316f027ecd6f76e2ca3b89146870216451a226d954",
+      "web/index.html": "98cc3495d5e44115dd35845a3d65da3e814dc78d10bf90ffc7692098e4a8bb3b",
+      "web/js/masks.js": "f1953436e7720f61d58f1349fb73532a7316c21b2151de0755660eaea18b5f38"
+    },
+    "rust_tests": 182,
+    "javascript_tests": 177,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": false,
+    "hardware_gpu": false
+  },
+  "scope_note": "Native rectangle/ellipse and existing Bezier path gestures, explicit path-key creation/removal, evaluated path and static/animated Linear semantics implemented. Native source clock/atomic rejection/Undo/Redo/retry/no-op and saved restart accepted; static assets served with matching source hashes. Pointer geometry/controller/lifecycle tested without a local browser. Pen drawing, full path-key navigation, browser/DPI/rendered equivalence and hardware acceptance remain open."
+}

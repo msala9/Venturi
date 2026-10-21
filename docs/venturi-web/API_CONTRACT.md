@@ -846,7 +846,11 @@ failure qualification remain open.
 - `set_display_color {clip_ids,color}` changes native ClipColor labels (null
   restores the default). This label is distinct from rendered solid RGBA.
 - `edit_mask {clip_id,edit}` accepts add(shape), remove(index),
-  move(index,to_index) or set(index,patch). Patch fields enabled/invert/mode,
+  move(index,to_index), set(index,patch), or
+  path_key(index,timeline_frame,path). A path key uses native source-frame mapping
+  and Linear insertion/replacement; null removes the key at that exact frame.
+  This explicitly starts path animation; viewer edits retain the static/animated
+  policy below. Patch fields enabled/invert/mode,
   parameters `[{param,value}]` and native path `{points:[{point,in_handle,
   out_handle}]}` validate before one native set_clip_masks command. Defaults
   retain existing animation. New shapes fit the source's layer at zoom 1,
@@ -854,6 +858,25 @@ failure qualification remain open.
   per path with a conservative shared 256-point tessellation budget, including
   animated endpoints. Keyframe target `{kind:mask,index,param}` reuses native
   source-frame mapping, interpolation, insertion and removal.
+- `edit_viewer_mask {clip_id,index,timeline_frame,parameters,path?}` accepts up to
+  five unique geometric parameters `[{param,value}]`: CenterX/Y, Width/Height and
+  Rotation, applicable to the mask shape. At least one parameter or Path value is
+  required. The unlocked video clip must contain the timeline frame. Constant
+  native tracks change defaults; animated tracks upsert a Linear source-frame
+  key. Native scalar epsilon no-ops and unchanged paths retain interpolation and
+  history. Path edits use native evaluated geometry, leaving the default intact
+  when animated. Mask/path limits validate before one native set_clip_masks
+  command; other masks/effects/keys remain untouched. Frozen picture time does
+  not replace the native effect-animation clock. Detail includes `evaluated_path`
+  and `path_keys` (first 16 native source-frame/path/interpolation tuples) alongside
+  `path` default and authoritative `path_keyframes` count. The viewer performs no
+  key interpolation and sends no command during pointer movement.
+
+Mask handles have 182 Rust/177 JavaScript tests, fmt/clippy/build and finite
+no-GPU API/Save/restart proof in `evidence/m4-viewer-mask-handles.json`. Native
+tests cover frozen/retimed clocks; the live generated-media fixture covers
+ordinary source time. Pen drawing, full path-key navigation, browser/DPI/rendered
+and hardware acceptance remain open.
 
 - Project `import_otio {path_token,name}` reads a flat-root .otio file up to
   8 MiB/64 distinct media URLs through the native parser. Media probing and

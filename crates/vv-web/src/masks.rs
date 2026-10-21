@@ -11,10 +11,25 @@ use vv_session::Session;
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum MaskEdit {
-    Add { shape: MaskShape },
-    Remove { index: usize },
-    Move { index: usize, to_index: usize },
-    Set { index: usize, patch: MaskPatch },
+    Add {
+        shape: MaskShape,
+    },
+    Remove {
+        index: usize,
+    },
+    Move {
+        index: usize,
+        to_index: usize,
+    },
+    Set {
+        index: usize,
+        patch: MaskPatch,
+    },
+    PathKey {
+        index: usize,
+        timeline_frame: i64,
+        path: Option<core::MaskPath>,
+    },
 }
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -150,13 +165,109 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &MaskEdit) -
                 mask.path.default = path.clone();
             }
         }
+        MaskEdit::PathKey {
+            index,
+            timeline_frame,
+            path,
+        } => {
+            if !clip.contains(*timeline_frame) {
+                return Err(ApiError::invalid(
+                    "Place the playhead inside the selected video clip",
+                ));
+            }
+            let mask = masks.get_mut(*index).ok_or_else(ApiError::missing)?;
+            if mask.shape != MaskShape::Path {
+                return Err(ApiError::invalid("Bezier keyframes require a Path mask"));
+            }
+            let source_frame = clip.source_frame_at(*timeline_frame);
+            if let Some(path) = path {
+                mask.path
+                    .upsert(source_frame, path.clone(), core::Interpolation::Linear);
+            } else {
+                mask.path.remove_at(source_frame);
+            }
+        }
     }
     validate(&masks)?;
+    if matches!(edit, MaskEdit::PathKey { .. }) && masks == clip.effects.masks {
+        return Ok(());
+    }
     session.apply(Box::new(core::set_clip_masks(id, track, clip_id, masks)));
     Ok(())
 }
+pub fn viewer_edit(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    index: usize,
+    timeline_frame: i64,
+    parameters: &[MaskValue],
+    path: Option<&core::MaskPath>,
+) -> Result<()> {
+    if parameters.len() > 5 || parameters.is_empty() && path.is_none() {
+        return Err(ApiError::invalid(
+            "Choose geometric mask parameters or a closed path",
+        ));
+    }
+    let (track, clip_id, clip) = inspector::find(session, id, raw)?;
+    inspector::writable(session, id, track)?;
+    if session.project.timelines[id].tracks[track].kind != core::TrackKind::Video
+        || !clip.contains(timeline_frame)
+    {
+        return Err(ApiError::invalid(
+            "Place the playhead inside the selected video clip",
+        ));
+    }
+    let source_frame = clip.source_frame_at(timeline_frame);
+    let mut masks = clip.effects.masks.clone();
+    let mask = masks.get_mut(index).ok_or_else(ApiError::missing)?;
+    let mut seen = std::collections::HashSet::new();
+    for parameter in parameters {
+        if !matches!(
+            parameter.param,
+            MaskParam::CenterX
+                | MaskParam::CenterY
+                | MaskParam::Width
+                | MaskParam::Height
+                | MaskParam::Rotation
+        ) || !parameter.param.applies_to(mask.shape)
+            || !seen.insert(parameter.param)
+        {
+            return Err(ApiError::invalid(
+                "Choose unique applicable geometric mask parameters",
+            ));
+        }
+        bounded(parameter.value, limits(parameter.param))?;
+        let values = mask.track_mut(parameter.param);
+        if (values.value_at(source_frame) - parameter.value).abs() > f32::EPSILON {
+            if values.is_constant() {
+                values.default = parameter.value;
+            } else {
+                values.upsert(source_frame, parameter.value, core::Interpolation::Linear);
+            }
+        }
+    }
+    if let Some(path) = path {
+        if mask.shape != MaskShape::Path {
+            return Err(ApiError::invalid("Bezier vertices require a Path mask"));
+        }
+        if mask.path.value_at(source_frame) != *path {
+            if mask.path.is_constant() {
+                mask.path.default = path.clone();
+            } else {
+                mask.path
+                    .upsert(source_frame, path.clone(), core::Interpolation::Linear);
+            }
+        }
+    }
+    validate(&masks)?;
+    if masks != clip.effects.masks {
+        session.apply(Box::new(core::set_clip_masks(id, track, clip_id, masks)));
+    }
+    Ok(())
+}
 pub fn detail(clip: &core::Clip, frame: i64) -> Value {
-    json!({"shapes":MaskShape::ALL,"modes":core::MaskMode::ALL,"items":clip.effects.masks.iter().enumerate().map(|(index,mask)|json!({"index":index,"shape":mask.shape,"enabled":mask.enabled,"invert":mask.invert,"mode":mask.mode,"path":mask.path.default,"path_keyframes":mask.path.keyframes().len(),"parameters":MaskParam::ALL.into_iter().filter(|p|p.applies_to(mask.shape)).map(|param|{let track=mask.track(param);let (min,max)=limits(param);json!({"param":param,"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":track.keyframes().len(),"min":min,"max":max})}).collect::<Vec<_>>() })).collect::<Vec<_>>()})
+    json!({"shapes":MaskShape::ALL,"modes":core::MaskMode::ALL,"items":clip.effects.masks.iter().enumerate().map(|(index,mask)|json!({"index":index,"shape":mask.shape,"enabled":mask.enabled,"invert":mask.invert,"mode":mask.mode,"path":mask.path.default,"evaluated_path":mask.path.value_at(frame),"path_keyframes":mask.path.keyframes().len(),"path_keys":mask.path.keyframes().iter().take(16).collect::<Vec<_>>(),"parameters":MaskParam::ALL.into_iter().filter(|p|p.applies_to(mask.shape)).map(|param|{let track=mask.track(param);let (min,max)=limits(param);json!({"param":param,"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":track.keyframes().len(),"min":min,"max":max})}).collect::<Vec<_>>() })).collect::<Vec<_>>()})
 }
 
 #[cfg(test)]

@@ -190,6 +190,8 @@
           <div class="spacer"></div>
           <button id="show-inspector" type="button" aria-label="Show inspector" aria-controls="inspector">Inspector</button>
           <button id="viewer-transform" type="button" aria-pressed="false" aria-controls="screen" title="Move, scale, rotate, anchor or crop the selected clip. Animated properties create Linear keys at the current frame.">Transform</button>
+          <label class="muted" for="viewer-mask-select">Mask</label><select id="viewer-mask-select" class="viewer-mask-select" aria-label="Selected viewer mask" disabled><option value="">Choose a mask</option></select>
+          <button id="viewer-mask" type="button" aria-pressed="false" aria-controls="screen" title="Edit the selected mask on a current stopped Program frame. Numeric mask controls remain in the Inspector.">Mask handles</button>
           <button id="fullscreen" aria-label="Fullscreen viewer">⛶</button>
         </div>
         <div id="screen">

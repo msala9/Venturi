@@ -10,6 +10,7 @@ export function renderMasks(root,detail,{disabled,getFrame,commit,notice,openSta
     const add=document.createElement("button");add.textContent="Add mask";add.disabled=disabled || detail.masks.items.length>=8;add.addEventListener("click",()=>send({action:"add",shape:shape.value}));section.append(shape,add);
     for(const mask of detail.masks.items) {
       const group=document.createElement("fieldset"),legend=document.createElement("legend");legend.textContent=`Mask ${mask.index+1} · ${mask.shape}`;group.append(legend);
+      const viewer=document.createElement('button');viewer.type='button';viewer.textContent=`Edit mask ${mask.index+1} in viewer`;viewer.disabled=disabled;viewer.dataset.viewerMaskIndex=String(mask.index);viewer.dataset.clipId=detail.clip_id;viewer.addEventListener('keydown',event=>{if(event.key===' ' || event.key==='Enter')event.stopPropagation();});group.append(viewer);
       for(const name of ["enabled","invert"]) {
         const label=document.createElement("label");label.textContent=`Mask ${mask.index+1} ${name}`;const input=document.createElement("input");input.type="checkbox";input.checked=mask[name];input.disabled=disabled;input.addEventListener("change",()=>send({action:"set",index:mask.index,patch:{[name]:input.checked}}));label.append(input);group.append(label);
       }
@@ -26,7 +27,15 @@ export function renderMasks(root,detail,{disabled,getFrame,commit,notice,openSta
         }
         group.append(form);
       }
-      if(mask.shape==="Path") pathEditor(group,mask,disabled,(path)=>send({action:"set",index:mask.index,patch:{path}}));
+      if(mask.shape==="Path") {
+        const pathNote=document.createElement('p');pathNote.className='muted';pathNote.textContent='Apply path below changes its default. Path keys use the native evaluated path at this playhead; viewer edits add a Linear key when path animation exists.';group.append(pathNote);
+        for(const [label,remove] of [['Set path key at playhead',false],['Remove path key at playhead',true]]){
+          const button=document.createElement('button');button.type='button';button.textContent=label;button.disabled=disabled || (remove?mask.path_keyframes===0:!mask.evaluated_path);
+          button.addEventListener('keydown',event=>{if(event.key===' ' || event.key==='Enter')event.stopPropagation();});
+          button.addEventListener('click',()=>{if(detail.timeline_frame!==getFrame()){notice('Read native mask properties at the current playhead before editing a path key');return;}send({action:'path_key',index:mask.index,timeline_frame:detail.timeline_frame,path:remove?null:structuredClone(mask.evaluated_path)});});group.append(button);
+        }
+        pathEditor(group,mask,disabled,(path)=>send({action:"set",index:mask.index,patch:{path}}));
+      }
       section.append(group);
     }
   }

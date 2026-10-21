@@ -57,6 +57,11 @@ function toClip(transform,point){
   const rotated=rotate(point.map((value,axis)=>value-transform.position[axis]-transform.anchor[axis]),-transform.rotation);
   return rotated.map((value,axis)=>value/transform.zoom[axis]+transform.anchor[axis]);
 }
+export const viewerRotateCW=rotate;
+export function viewerLayerMapping(context,viewport){
+  const transform=nativeState(context),frame=viewerFrameRect(viewport,context.timeline_size);
+  return {frame,transform,toScreen:point=>toScreen(frame,toFrame(transform,point)),fromScreen:point=>toClip(transform,[(point[0]-frame.left-frame.width/2)/frame.scale,-(point[1]-frame.top-frame.height/2)/frame.scale])};
+}
 
 export function viewerTransformGeometry(context,viewport,transform=nativeState(context)){
   const frame=viewerFrameRect(viewport,context.timeline_size),box=clipBox(context,transform);

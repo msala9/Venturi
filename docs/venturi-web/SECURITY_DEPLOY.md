@@ -53,7 +53,8 @@ Regular .vvproj.bak files are listed for explicit recovery. Recovery requires
 a clean session, native project/media/depth validation, an 8 MiB regular-file
 NOFOLLOW read, and a new no-replace destination before changing the session
 epoch. The original file and backup are preserved. Save As can preserve dirty
-current edits first. No unsaved-edit autosave or durable render queue is claimed.
+current edits first. Unsaved-edit snapshots are separate from these saved-version
+backups (see below); durable render queues remain pending.
 
 These complement the loopback Host/Origin/JSON/CSP boundaries and bounded
 queues. Save now compares the current file's descriptor identity and SHA-256
@@ -64,7 +65,7 @@ publication narrow concurrent-change windows; they cannot lock an uncooperative
 external writer between the final check and rename. An external desktop editor
 should still be closed while saving the same project from the web.
 
-Long soak, unsaved autosave, durable jobs and a complete public-host threat review
+Long soak, durable jobs and a complete public-host threat review
 remain open. No background service or public listener is enabled.
 
 Last-saved project reopening uses a private, bounded version-1 cursor containing
@@ -74,6 +75,15 @@ the existing native project/media validation; otherwise it leaves files intact
 and offers explicit Open. This restores saved state and never implicitly applies
 an unsaved edit journal. Cursor persistence errors are reported separately from
 the outcome of the native project operation.
+
+Unsaved recovery now stores one private, bounded native-RON snapshot with a
+checksum and atomic publication. The actor freezes previous-session unresolved
+data until a no-replace copy is kept. Restores reapply native project/media root
+validation and exact revision/ownership guards, with no full payload download.
+Unknown schemas, corrupt checksums, links and name collisions preserve existing
+data. Keeping a copy without opening cannot replace dirty current state/history
+or its Save baseline. This complements saved-file conflict checks; it does not
+make all acknowledged edits, Undo chains or render jobs durable across crashes.
 
 ## License and brand
 

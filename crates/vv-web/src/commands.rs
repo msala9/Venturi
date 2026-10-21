@@ -28,6 +28,11 @@ pub enum Operation {
         path_token: String,
     },
     Save,
+    RecoverAutosave {
+        revision: String,
+        name: String,
+        open: bool,
+    },
     SaveAs {
         name: String,
     },

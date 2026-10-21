@@ -22,6 +22,7 @@ pub enum Action {
     Session,
     Timeline(String),
     Projects,
+    Recovery,
     Lease(String),
     Mutation(Option<String>, Mutation),
     Lookup(String),
@@ -50,6 +51,7 @@ pub struct Editor {
     import_warnings: Vec<String>,
     clipboard: Option<crate::clipboard::Clipboard>,
     persistence_notice: Option<&'static str>,
+    autosave: crate::autosave::Store,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
@@ -72,6 +74,7 @@ impl Editor {
                 "The previous saved project could not be reopened automatically. Open a project explicitly; existing files were preserved.",
             ),
         };
+        let autosave = crate::autosave::Store::new(&files);
         Ok(Self {
             session,
             files,
@@ -85,6 +88,7 @@ impl Editor {
             import_warnings: vec![],
             clipboard: None,
             persistence_notice,
+            autosave,
         })
     }
     fn snapshot(&self) -> Value {
@@ -107,6 +111,7 @@ impl Editor {
         }
         snapshot["import_warnings"] = json!(self.import_warnings);
         snapshot["persistence_notice"] = json!(self.persistence_notice);
+        snapshot["autosave"] = self.autosave.info();
         snapshot["clipboard_count"] = json!(
             self.clipboard
                 .as_ref()
@@ -168,7 +173,8 @@ impl Editor {
             ));
         }
         let result=self.perform(timeline,&request).map(|_|{
-            if matches!(request.operation,Operation::NewProject{..}|Operation::OpenProject{..}|Operation::Save|Operation::SaveAs{..}|Operation::RecoverBackup{..}|Operation::ImportOtio{..})
+            if matches!(request.operation,Operation::Save|Operation::SaveAs{..}) {self.autosave.saved(&self.files,&self.session);}
+            if matches!(request.operation,Operation::NewProject{..}|Operation::OpenProject{..}|Operation::Save|Operation::SaveAs{..}|Operation::RecoverBackup{..}|Operation::ImportOtio{..}|Operation::RecoverAutosave{open:true,..})
                 && let Some(name)=self.session.path().and_then(|path|path.file_name()).and_then(|name|name.to_str()) {
                 self.persistence_notice=crate::resume::remember(&self.files,name).err().map(|_|"The project operation succeeded, but automatic reopen could not be updated. Existing recovery metadata was preserved.");
             }
@@ -234,6 +240,13 @@ impl Editor {
             };
         }
         match &request.operation {
+            Operation::RecoverAutosave {
+                revision,
+                name,
+                open,
+            } => self
+                .autosave
+                .recover(&self.files, &mut self.session, revision, name, *open)?,
             Operation::EditReview {
                 project_token,
                 revision,
@@ -580,6 +593,7 @@ impl Editor {
                 Ok(Value::Null)
             }
             Action::Projects => self.files.list(),
+            Action::Recovery => Ok(self.autosave.info()),
             Action::Lease(client) => self.lease(&client),
             Action::Mutation(timeline, request) => self.mutation(timeline, request),
             Action::Lookup(id) => self
@@ -625,8 +639,15 @@ impl Host {
         let mut editor = Editor::new(root)?;
         let (tx, rx) = mpsc::sync_channel::<Message>(16);
         std::thread::spawn(move || {
-            while let Ok((action, reply)) = rx.recv() {
-                let _ = reply.send(editor.handle(action));
+            loop {
+                match rx.recv_timeout(Duration::from_millis(250)) {
+                    Ok((action, reply)) => {
+                        let _ = reply.send(editor.handle(action));
+                    }
+                    Err(mpsc::RecvTimeoutError::Timeout) => {}
+                    Err(mpsc::RecvTimeoutError::Disconnected) => break,
+                }
+                editor.autosave.tick(&editor.files, &editor.session);
             }
         });
         Ok(Self(tx))

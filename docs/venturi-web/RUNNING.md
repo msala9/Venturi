@@ -337,7 +337,33 @@ automatic reopen baseline. Unsupported or linked reopen metadata is preserved
 and does not turn a successful project save into a failed command.
 
 This restores saved composition, media and separately saved Review annotations.
-Unsaved-edit autosave and render-job restoration remain separate pending work.
+Unsaved edits use the separate recovery snapshots described below. Render-job
+restoration remains pending.
+
+## Recovering unsaved edits
+
+Dirty native project state is captured to a separate recovery snapshot at a
+two-second interval while the session actor is available. The footer reports
+the latest stored snapshot; the project keeps its Unsaved changes badge until
+Save. The snapshot holds the native RON model (up to 8 MiB) in a versioned,
+checksummed atomic record (up to 16 MiB). It never saves over the project file.
+Edits newer than the last completed snapshot can still be lost on a crash.
+
+After restart, Recovery opens Projects at the pending snapshot. Enter a new
+project name and create a recovery copy; existing files are never overwritten.
+Opening that copy requires a clean current session and starts a fresh Undo
+history. If newer edits are already in memory, uncheck Open the recovery copy:
+the snapshot is kept as a separate saved project and current edits/history stay
+in place. New snapshots then resume. A pending snapshot stays frozen until a
+copy is kept, so new edits cannot silently replace it. Separately saved Review
+annotations are copied from the source project's sidecar.
+
+Missing or externally changed backing project files do not prevent explicit
+recovery to a new file. Unsupported, altered or linked recovery records are
+preserved and reported as unavailable; normal Save/Save As remain independent.
+Snapshots contain current project state, not the pre-crash Undo chain or render
+jobs. The configured project root retains one active recovery record; kept
+recovery copies are ordinary saved projects.
 
 ## Save conflicts
 

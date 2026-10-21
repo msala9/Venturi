@@ -18,6 +18,7 @@ import { createVoiceover } from "./voiceover.js";
 import { createReview } from "./review.js";
 import { createReviewMetadata } from "./reviewmeta.js";
 import { createPasteAttributes } from "./attributes.js";
+import { createRecoveryPanel } from "./recovery.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -30,6 +31,7 @@ let voiceover = null;
 let review = null;
 let reviewMetadata = null;
 let pasteAttributes = null;
+let recoveryPanel = null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
@@ -327,6 +329,7 @@ function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead } : null;
 }
 function selected() {
+  recoveryPanel?.invalidate();
   pasteAttributes?.invalidate();
   reviewMetadata?.invalidate();
   review?.invalidate();
@@ -638,6 +641,7 @@ async function refresh() {
   }
   $("project-name").textContent = next.project_name || "Untitled project";
   $("project-persistence-notice").textContent=next.persistence_notice || "";
+  recoveryPanel?.update(next.autosave);
   $("save-state").textContent = next.unsaved ? "Unsaved changes" : "Saved";
   $("revision").textContent = active
     ? `Revision ${active.revision.slice(0, 8)}`
@@ -870,6 +874,7 @@ $("timeline-select").addEventListener("change", () => {
   if (next) {programPlayer?.stop();viewer?.invalidate();view.playhead=0;installTimeline(next);seek();}
 });
 async function projects() {
+  recoveryPanel?.refresh();
   try {
     const data = await request("/projects");
     $("project-list").replaceChildren();
@@ -1105,6 +1110,8 @@ const reviewContext=()=>{
 review=createReview({root:$("review-dialog"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:reviewContext});
 reviewMetadata=createReviewMetadata({root:$("review-metadata-dialog"),getContext:reviewContext,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),notice,onCompare:media_id=>review.open({media_id}).catch(error=>notice(error.message))});
 pasteAttributes=createPasteAttributes({root:$("paste-attributes-dialog"),getContext:()=>documentState && timeline?{epoch:documentState.project_epoch,generation:documentState.generation,timeline:timeline.id,revision:timeline.revision,clipboard:documentState.clipboard_revision,clip_ids:[...view.selection]}:null,canCommit:()=>writable && !busy && !unresolved,commit,notice});
+recoveryPanel=createRecoveryPanel({root:$("recovery-panel"),status:$("recovery-status"),button:$("recovery-button"),canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),openProjects:async()=>{$("projects").showModal();await projects();if(!$("recovery-panel").hidden){$("recovery-panel").scrollIntoView({block:"start"});$("recovery-panel").querySelector("input").focus();}},onOpened:()=>$("projects").close(),notice});
+setInterval(()=>{if(documentState)recoveryPanel.refresh();},3000);
 voiceover=createVoiceover({root:$("voiceover-dialog"),getClientId:()=>clientId,canCommit:()=>writable && !busy && !unresolved,commit,notice,playback:{video:$("program-video"),start:async()=>{await programPlayer.toggle();if(programPlayer.state()!=="ready")throw new Error("Composed playback is unavailable; try recording without playback");},pause:()=>programPlayer.stop()},onProgress:(progress)=>{
   view.recording=progress;if(progress && timeline){view.recording.length_frames=Math.floor(progress.seconds*timeline.fps.num/timeline.fps.den);if(progress.withoutPlayback){view.playhead=Math.min(1_000_000_000,progress.start_frame+view.recording.length_frames);updateTime();}}canvasTimeline.invalidate();
 },getTarget:()=>documentState?.project_name && timeline && timeline.id!=="fixture"?{project_epoch:documentState.project_epoch,generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,start_frame:view.playhead,tracks:timeline.tracks.filter((track)=>track.kind==="audio" && track.armed && !track.locked).map((track)=>track.id),formats:documentState.recording_formats,canPlayback:!!documentState.capabilities.playback && timeline.tracks.some((track)=>track.clips.length)}:null});

@@ -58,6 +58,7 @@ pub fn router(state: AppState) -> Router {
             get(eq_response),
         )
         .route("/api/v1/projects", get(projects))
+        .route("/api/v1/recovery", get(recovery_status))
         .route("/api/v1/projects/commands", post(project_command))
         .route(
             "/api/v1/timelines/{id}/commands",
@@ -663,6 +664,9 @@ async fn clip_detail(
         .await
         .map(Json)
 }
+async fn recovery_status(State(state): State<AppState>) -> Result<Json<Value>> {
+    state.host.call(Action::Recovery).await.map(Json)
+}
 async fn projects(State(state): State<AppState>) -> Result<Json<Value>> {
     state.host.call(Action::Projects).await.map(Json)
 }
@@ -806,6 +810,7 @@ async fn assets(request: Request) -> Response {
         "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),
         "/js/reviewmeta.js" => asset!("/web/js/reviewmeta.js", "text/javascript"),
         "/js/attributes.js" => asset!("/web/js/attributes.js", "text/javascript"),
+        "/js/recovery.js" => asset!("/web/js/recovery.js", "text/javascript"),
         "/js/capture.js" => asset!("/web/js/capture.js", "text/javascript"),
         "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
         "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),

@@ -339,7 +339,8 @@ input[type="search"] {
 #editor[data-workspace="Color"] .workspace-tools p { margin: 0 0 4px; }
 footer {
   padding: 0 12px;
-  gap: 20px;
+  gap: 10px;
+  white-space: nowrap;
   font-size: 10px;
   color: var(--muted);
 }
@@ -559,3 +560,11 @@ label {
 #paste-attributes-dialog [data-attribute-groups]{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:calc(2 * var(--spacing-unit))}
 #paste-attributes-dialog [data-attribute-groups] label{display:flex;align-items:center;gap:calc(2 * var(--spacing-unit))}
 #paste-attributes-dialog .actions{position:sticky;bottom:0;background:var(--surface);padding:10px 0}
+#recovery-status{max-width:min(300px,22vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#recovery-panel{border:1px solid var(--primary);padding:12px;margin:12px 0}
+#recovery-panel form:not([method="dialog"]){display:grid;gap:8px;margin:12px 0;align-items:stretch}
+#recovery-panel .field{grid-template-columns:130px minmax(0,1fr);margin:0}
+#recovery-panel .field input{width:100%;min-width:0}
+#recovery-panel .checkbox-field{display:flex;gap:8px;align-items:center}
+#recovery-panel .checkbox-field input{width:auto}
+#recovery-panel p{overflow-wrap:anywhere}

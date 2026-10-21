@@ -1,0 +1,568 @@
+{
+  "fixture": "Own synthetic 20-shot montage copies; CPU/lavapipe only",
+  "phases": {
+    "base_saved": {
+      "project": "Autosave_UI_check.vvproj",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "video_muted": false,
+      "audio_muted": false,
+      "recovery": {
+        "pending": false,
+        "state": "empty"
+      },
+      "project_file_sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40
+    },
+    "first_dirty_snapshot": {
+      "project": "Autosave_UI_check.vvproj",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MuteTrack"
+        ],
+        "position": 1
+      },
+      "video_muted": true,
+      "audio_muted": false,
+      "recovery": {
+        "base_changed": false,
+        "created_unix_ms": 1792543434236,
+        "pending": false,
+        "project_token": "Autosave_UI_check.vvproj",
+        "resolved_to": null,
+        "revision": "8ac457a337f3b11240f7ef7eea2a99de166e78d110d78378d38445e1e7837a74",
+        "state": "ready"
+      },
+      "project_file_sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_check.vvproj",
+        "project_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "base_sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331",
+        "created_unix_ms": 1792543434236,
+        "resolved_to": null,
+        "receipt": "8ac457a337f3b11240f7ef7eea2a99de166e78d110d78378d38445e1e7837a74"
+      }
+    },
+    "first_crash_pending": {
+      "project": "Autosave_UI_check.vvproj",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "video_muted": false,
+      "audio_muted": false,
+      "recovery": {
+        "base_changed": false,
+        "created_unix_ms": 1792543434236,
+        "pending": true,
+        "project_token": "Autosave_UI_check.vvproj",
+        "resolved_to": null,
+        "revision": "8ac457a337f3b11240f7ef7eea2a99de166e78d110d78378d38445e1e7837a74",
+        "state": "pending"
+      },
+      "project_file_sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_check.vvproj",
+        "project_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "base_sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331",
+        "created_unix_ms": 1792543434236,
+        "resolved_to": null,
+        "receipt": "8ac457a337f3b11240f7ef7eea2a99de166e78d110d78378d38445e1e7837a74"
+      }
+    },
+    "first_recovered_saved": {
+      "project": "Autosave_UI_recovered.vvproj",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "video_muted": true,
+      "audio_muted": false,
+      "recovery": {
+        "base_changed": false,
+        "created_unix_ms": 1792543434236,
+        "pending": false,
+        "project_token": "Autosave_UI_check.vvproj",
+        "resolved_to": "Autosave_UI_recovered.vvproj",
+        "revision": "fa9bc6d2121c6bdc768152690bc616a41ec2d6f39555ecd2a126099d370aca9c",
+        "state": "saved"
+      },
+      "project_file_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_check.vvproj",
+        "project_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "base_sha256": "e1bf6acf7b620fbf4db77cd71ce971313bcba349ad0c01ab6b5ef2233e356331",
+        "created_unix_ms": 1792543434236,
+        "resolved_to": {
+          "project_token": "Autosave_UI_recovered.vvproj",
+          "sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57"
+        },
+        "receipt": "fa9bc6d2121c6bdc768152690bc616a41ec2d6f39555ecd2a126099d370aca9c"
+      }
+    },
+    "second_dirty_snapshot": {
+      "project": "Autosave_UI_recovered.vvproj",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MuteTrack"
+        ],
+        "position": 1
+      },
+      "video_muted": false,
+      "audio_muted": false,
+      "recovery": {
+        "base_changed": false,
+        "created_unix_ms": 1792543601043,
+        "pending": false,
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "resolved_to": null,
+        "revision": "426aa907ecdadb02faf8e7845d5e5671b03051bd9aba73f54f2c2f3cf3bed776",
+        "state": "ready"
+      },
+      "project_file_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "project_sha256": "c80a4798fcb83d805dfb776762d6a4cb1b2feba43bdeec4426692f4efddc9986",
+        "base_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "created_unix_ms": 1792543601043,
+        "resolved_to": null,
+        "receipt": "426aa907ecdadb02faf8e7845d5e5671b03051bd9aba73f54f2c2f3cf3bed776"
+      }
+    },
+    "second_crash_pending": {
+      "project": "Autosave_UI_recovered.vvproj",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "video_muted": true,
+      "audio_muted": false,
+      "recovery": {
+        "base_changed": false,
+        "created_unix_ms": 1792543601043,
+        "pending": true,
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "resolved_to": null,
+        "revision": "426aa907ecdadb02faf8e7845d5e5671b03051bd9aba73f54f2c2f3cf3bed776",
+        "state": "pending"
+      },
+      "project_file_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "project_sha256": "c80a4798fcb83d805dfb776762d6a4cb1b2feba43bdeec4426692f4efddc9986",
+        "base_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "created_unix_ms": 1792543601043,
+        "resolved_to": null,
+        "receipt": "426aa907ecdadb02faf8e7845d5e5671b03051bd9aba73f54f2c2f3cf3bed776"
+      }
+    },
+    "refused_open_with_new_edits": {
+      "project": "Autosave_UI_recovered.vvproj",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MuteTrack"
+        ],
+        "position": 1
+      },
+      "video_muted": true,
+      "audio_muted": true,
+      "recovery": {
+        "base_changed": false,
+        "created_unix_ms": 1792543601043,
+        "pending": true,
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "resolved_to": null,
+        "revision": "426aa907ecdadb02faf8e7845d5e5671b03051bd9aba73f54f2c2f3cf3bed776",
+        "state": "pending"
+      },
+      "project_file_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "project_sha256": "c80a4798fcb83d805dfb776762d6a4cb1b2feba43bdeec4426692f4efddc9986",
+        "base_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "created_unix_ms": 1792543601043,
+        "resolved_to": null,
+        "receipt": "426aa907ecdadb02faf8e7845d5e5671b03051bd9aba73f54f2c2f3cf3bed776"
+      }
+    },
+    "kept_copy_current_edits_retained": {
+      "project": "Autosave_UI_recovered.vvproj",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MuteTrack"
+        ],
+        "position": 1
+      },
+      "video_muted": true,
+      "audio_muted": true,
+      "recovery": {
+        "base_changed": false,
+        "created_unix_ms": 1792543642768,
+        "pending": false,
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "resolved_to": null,
+        "revision": "6d8918643e3b9581a41288a45078c01cf131a70537117c821ad16c8f257a4aa5",
+        "state": "ready"
+      },
+      "project_file_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "project_sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc",
+        "base_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "created_unix_ms": 1792543642768,
+        "resolved_to": null,
+        "receipt": "6d8918643e3b9581a41288a45078c01cf131a70537117c821ad16c8f257a4aa5"
+      }
+    },
+    "current_edits_saved": {
+      "project": "Autosave_UI_recovered.vvproj",
+      "unsaved": false,
+      "history": {
+        "labels": [
+          "MuteTrack"
+        ],
+        "position": 1
+      },
+      "video_muted": true,
+      "audio_muted": true,
+      "recovery": {
+        "base_changed": true,
+        "created_unix_ms": 1792543642768,
+        "pending": false,
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "resolved_to": "Autosave_UI_recovered.vvproj",
+        "revision": "da92148ad1b17c995da3eeb5bbb51b37a38f0a9b44a2e81ac8110cb89783ac2a",
+        "state": "saved"
+      },
+      "project_file_sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "project_sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc",
+        "base_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "created_unix_ms": 1792543642768,
+        "resolved_to": {
+          "project_token": "Autosave_UI_recovered.vvproj",
+          "sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc"
+        },
+        "receipt": "da92148ad1b17c995da3eeb5bbb51b37a38f0a9b44a2e81ac8110cb89783ac2a"
+      }
+    },
+    "final_restart_saved": {
+      "project": "Autosave_UI_recovered.vvproj",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "video_muted": true,
+      "audio_muted": true,
+      "recovery": {
+        "base_changed": true,
+        "created_unix_ms": 1792543642768,
+        "pending": false,
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "resolved_to": "Autosave_UI_recovered.vvproj",
+        "revision": "da92148ad1b17c995da3eeb5bbb51b37a38f0a9b44a2e81ac8110cb89783ac2a",
+        "state": "saved"
+      },
+      "project_file_sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "project_sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc",
+        "base_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "created_unix_ms": 1792543642768,
+        "resolved_to": {
+          "project_token": "Autosave_UI_recovered.vvproj",
+          "sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc"
+        },
+        "receipt": "da92148ad1b17c995da3eeb5bbb51b37a38f0a9b44a2e81ac8110cb89783ac2a"
+      }
+    },
+    "kept_snapshot_opened": {
+      "project": "Autosave_UI_kept.vvproj",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "video_muted": false,
+      "audio_muted": false,
+      "recovery": {
+        "base_changed": true,
+        "created_unix_ms": 1792543642768,
+        "pending": false,
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "resolved_to": "Autosave_UI_recovered.vvproj",
+        "revision": "da92148ad1b17c995da3eeb5bbb51b37a38f0a9b44a2e81ac8110cb89783ac2a",
+        "state": "saved"
+      },
+      "project_file_sha256": "c80a4798fcb83d805dfb776762d6a4cb1b2feba43bdeec4426692f4efddc9986",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_recovered.vvproj",
+        "project_sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc",
+        "base_sha256": "e4d813f76315fb7ac93d8045b88e0e9a94b437e23051d57bd436b50cfbb11e57",
+        "created_unix_ms": 1792543642768,
+        "resolved_to": {
+          "project_token": "Autosave_UI_recovered.vvproj",
+          "sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc"
+        },
+        "receipt": "da92148ad1b17c995da3eeb5bbb51b37a38f0a9b44a2e81ac8110cb89783ac2a"
+      }
+    },
+    "layout_current_saved": {
+      "project": "Autosave_UI_layout_current.vvproj",
+      "unsaved": false,
+      "history": {
+        "labels": [
+          "MuteTrack"
+        ],
+        "position": 1
+      },
+      "video_muted": true,
+      "audio_muted": false,
+      "recovery": {
+        "base_changed": false,
+        "created_unix_ms": 1792544178483,
+        "pending": false,
+        "project_token": "Autosave_UI_kept.vvproj",
+        "resolved_to": "Autosave_UI_layout_current.vvproj",
+        "revision": "6a8da011b71d2f15164c27e13f4d0a2f21e5baabe4feda538882cfcc9d7eedf1",
+        "state": "saved"
+      },
+      "project_file_sha256": "d62ba7d14f1c2f9bf777c2d1c270f157fcfbc16f2c4b454717b511482d3ff068",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_kept.vvproj",
+        "project_sha256": "d62ba7d14f1c2f9bf777c2d1c270f157fcfbc16f2c4b454717b511482d3ff068",
+        "base_sha256": "c80a4798fcb83d805dfb776762d6a4cb1b2feba43bdeec4426692f4efddc9986",
+        "created_unix_ms": 1792544178483,
+        "resolved_to": {
+          "project_token": "Autosave_UI_layout_current.vvproj",
+          "sha256": "d62ba7d14f1c2f9bf777c2d1c270f157fcfbc16f2c4b454717b511482d3ff068"
+        },
+        "receipt": "6a8da011b71d2f15164c27e13f4d0a2f21e5baabe4feda538882cfcc9d7eedf1"
+      }
+    },
+    "missing_backing_file_copy_saved": {
+      "project": "Autosave_UI_layout_copy.vvproj",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "video_muted": true,
+      "audio_muted": true,
+      "recovery": {
+        "base_changed": false,
+        "created_unix_ms": 1792544178483,
+        "pending": false,
+        "project_token": "Autosave_UI_kept.vvproj",
+        "resolved_to": "Autosave_UI_layout_current.vvproj",
+        "revision": "6a8da011b71d2f15164c27e13f4d0a2f21e5baabe4feda538882cfcc9d7eedf1",
+        "state": "saved"
+      },
+      "project_file_sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc",
+      "annotations_sha256": "3aceccb200260d4bf68164e3b84c6d51136171edc6a1424da5294c20c94614b1",
+      "shots": 20,
+      "takes": 60,
+      "linked_clips": 40,
+      "snapshot": {
+        "project_token": "Autosave_UI_kept.vvproj",
+        "project_sha256": "d62ba7d14f1c2f9bf777c2d1c270f157fcfbc16f2c4b454717b511482d3ff068",
+        "base_sha256": "c80a4798fcb83d805dfb776762d6a4cb1b2feba43bdeec4426692f4efddc9986",
+        "created_unix_ms": 1792544178483,
+        "resolved_to": {
+          "project_token": "Autosave_UI_layout_current.vvproj",
+          "sha256": "d62ba7d14f1c2f9bf777c2d1c270f157fcfbc16f2c4b454717b511482d3ff068"
+        },
+        "receipt": "6a8da011b71d2f15164c27e13f4d0a2f21e5baabe4feda538882cfcc9d7eedf1"
+      }
+    }
+  },
+  "all_sixty_source_hashes_unchanged": true,
+  "tests": {
+    "vv_web": 115,
+    "javascript": 72,
+    "clippy": "vv-web all targets; warnings denied"
+  },
+  "checks": {
+    "two_owned_process_sigkills": true,
+    "exact_argv_and_synthetic_root_marker_checked": true,
+    "snapshot_receipts_identical_across_both_crashes": true,
+    "original_saved_project_sha256_unchanged": true,
+    "native_ron_recovery_copies_byte_exact": true,
+    "all_review_sidecars_byte_exact": true,
+    "newer_native_edits_and_history_retained": true,
+    "kept_snapshot_and_saved_current_state_are_independent": true,
+    "final_restart_has_no_pending_recovery": true,
+    "all_twenty_midpoint_keys": [
+      {
+        "clip_id": "1",
+        "timeline_frame": 19,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "3",
+        "timeline_frame": 91,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "5",
+        "timeline_frame": 163,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "7",
+        "timeline_frame": 235,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "9",
+        "timeline_frame": 307,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "11",
+        "timeline_frame": 379,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "13",
+        "timeline_frame": 451,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "15",
+        "timeline_frame": 523,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "17",
+        "timeline_frame": 595,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "19",
+        "timeline_frame": 667,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "21",
+        "timeline_frame": 739,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "23",
+        "timeline_frame": 811,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "25",
+        "timeline_frame": 883,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "27",
+        "timeline_frame": 955,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "29",
+        "timeline_frame": 1027,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "31",
+        "timeline_frame": 1099,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "33",
+        "timeline_frame": 1171,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "35",
+        "timeline_frame": 1243,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "37",
+        "timeline_frame": 1315,
+        "opacity": 65.0
+      },
+      {
+        "clip_id": "39",
+        "timeline_frame": 1387,
+        "opacity": 65.0
+      }
+    ],
+    "hardware_gpu_used": false,
+    "shared_ds4_catalog_or_nas_modified": false
+  },
+  "layout_check": {
+    "saved_backing_file_temporarily_held": true,
+    "expected_sha256": "04cfe4c3733507b0c3d660cbdc587c58caf2eaf7148cd7f3fd6fbb603a4446fc",
+    "saved_backing_file_restored_byte_exact": true,
+    "readable_column_form_verified": true,
+    "retained_error_and_checkbox_verified": true,
+    "missing_backing_recovery_copy_byte_exact": true,
+    "independent_layout_current_edits_saved": true
+  }
+}

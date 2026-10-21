@@ -79,3 +79,12 @@ Twenty-shot montage acceptance additionally covers 60 takes, per-shot flags,
 restart metadata equality and a full 60-second x264/AAC export. Decoded output
 verifies frame count, source tones and black/silent explicit gaps. This was CPU
 acceptance; current Review-specific R9700 acceptance remains open.
+
+TS-011 additionally uses two verified own-process SIGKILLs after completed native
+recovery snapshots. Snapshot receipts survive unchanged; recovery copies match
+their native RON payload bytes, retain all 20 middle keys and exact Review
+sidecars, and leave the original project/source hashes intact. A second crash
+tests refusal over newer edits, keep-without-open, unchanged current history,
+normal Save and a clean restart. Missing backing file recovery and focused form
+layout are also exercised. This proves periodic recovery, not durability of edits
+after the last checkpoint or survival of render jobs/Undo history.

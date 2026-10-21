@@ -51,6 +51,25 @@ require explicit Open. Auxiliary cursor failures leave successful native project
 acknowledgments successful and report the notice separately. This is saved-state
 restoration; no unsaved autosave or durable render-job claim is implied.
 
+Unsaved recovery is now implemented separately by `GET /api/v1/recovery` and
+project command `recover_autosave {revision,name,open}`. Status is `empty`,
+`ready`, `saved`, `pending` or `blocked`, with optional root project token,
+snapshot revision, creation time, changed-base flag and resolved-copy token.
+The session snapshot also includes this metadata in `autosave`; the full native
+snapshot payload is never served by this route. Recovery uses the normal writer,
+epoch/generation/idempotency checks and an exact snapshot revision. It creates a
+no-replace project plus a source Review sidecar copy. `open:true` refuses dirty
+current sessions; `open:false` keeps their project/history and save baseline.
+
+The actor periodically stores dirty native RON in private version-1
+`.venturi-autosave.json`, with an 8 MiB RON / 16 MiB record budget, checksums,
+NOFOLLOW reads, exclusive temporary writes, fsync and atomic publication. A
+previous-session pending record is frozen until a recovery copy is kept. Save/
+Save As resolve owned snapshots against saved files; opening a recovery resets
+history through native Session installation. Missing backing files still permit
+validated recovery to a new name. Unknown/corrupt/linked records remain intact.
+The snapshot interval is not durable command acknowledgment or a render queue.
+
 The implemented M2 subset and its deliberate schema deltas are documented in
 [RUNNING.md](RUNNING.md#actual-api-deltas-from-the-proposal). In particular,
 project epoch is now a string and every mutation also requires client ownership

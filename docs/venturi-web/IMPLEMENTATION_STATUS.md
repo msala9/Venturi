@@ -1476,3 +1476,42 @@ connection. Exact provenance/annotation seed and Favorite stayed intact.
 CPU/lavapipe, two workers and absence of DRI/KFD handles were verified; the
 hardware lock was not acquired or probed. Evidence:
 m7-halo2-saved-resume.json/browser.png.
+
+## M7 — independent unsaved-edit recovery snapshots
+
+The serial actor now captures dirty native RON at a two-second interval without
+changing the project, history or saved badge. A bounded versioned record uses
+raw payload checksum, NOFOLLOW access, exclusive temporary creation, fsync and
+atomic publication. It retains one active snapshot. Restart freezes unresolved
+data; explicit recovery creates a new saved file and copies Review annotations.
+Opening it requires a clean session and uses native installation/fresh history.
+Keeping it without opening preserves newer edits, history and the current Save
+baseline, then enables new snapshots. Save/Save As track protected saved copies.
+Unknown or altered records stay intact; auxiliary failures do not change native
+Save acknowledgments. Source media and shared appliance/NAS data are untouched.
+
+115 web tests and 72 JS tests pass, with formatting, web clippy (warnings denied)
+and build. Tests cover native snapshot round-trip, project/history preservation,
+pending-data freeze, annotation copies, safe dirty-current handling, Save As,
+immediate saves after recovery, correct retained-copy association, stale receipts,
+existing names, checksum/schema failures and symlinks. UI state tests cover late
+status replies, read-only ownership, retained errors/choices and explicit retry.
+
+Real acceptance used two SIGKILLs of the exact owned CPU test process. Each
+snapshot receipt stayed identical across its crash. The first recovered edit
+returned in a new saved copy while the original project hash stayed unchanged.
+The second refused opening over newer dirty edits, then kept the old snapshot
+separately while retaining current flags and Undo history. Saving current edits
+and restarting produced no pending recovery. Reopening the kept copy verified
+its independent older flags. Both recovered native RON files were byte-exact
+copies of their captured payloads; all 20 opacity middle keys remained 65,
+all Review sidecars matched and all 60 source hashes stayed unchanged.
+
+Visual QA found and fixed a narrow horizontal form inherited from Projects.
+The recovery form now uses readable full-width rows and focuses its name. A
+separate missing-backing-file test verified recovery while its own saved fixture
+was temporarily held; that backing file was restored byte-exact afterward.
+Evidence: m7-unsaved-recovery.json and the snapshot/recovery/refusal/kept-current
+browser screenshots. Capture timing depends on actor availability, and edits
+after the latest snapshot are not crash-durable. Durable command receipts/render
+jobs, deployment/service packaging, soak and remaining native parity stay open.

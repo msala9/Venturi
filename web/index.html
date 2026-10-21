@@ -301,6 +301,7 @@
       <span id="connection" role="status">Demo / no server</span
       ><button id="reconnect">Reconnect</button
       ><span id="notice" aria-live="polite">Local navigation ready</span>
+      <button id="recovery-button" aria-label="Recover unsaved edits" hidden>Recovery</button><span id="recovery-status" role="status"></span>
       <div class="spacer"></div>
       <span id="gpu-status">GPU unverified</span><span id="revision">—</span>
     </footer>
@@ -317,6 +318,16 @@
       </p>
       <div id="project-list"></div>
       <p id="project-persistence-notice" role="status"></p>
+      <section id="recovery-panel" hidden aria-label="Recover unsaved edits">
+        <h3>Recover unsaved edits</h3>
+        <p data-recovery-detail role="status"></p>
+        <form>
+          <label class="field">Recovery copy name<input name="recovery_name" required maxlength="64" pattern="[A-Za-z0-9_-]+"></label>
+          <label class="checkbox-field"><input type="checkbox" name="open_recovery" checked>Open the recovery copy</label>
+          <p>Recovery creates a new project. Uncheck Open to keep current edits and save the recovery copy separately. Opening a recovery starts a fresh Undo history.</p>
+          <button data-recovery-apply>Save recovery as new project</button><button type="button" data-recovery-refresh>Refresh recovery snapshot</button>
+        </form>
+      </section>
       <form id="new-project">
         <label
           >New project name<input

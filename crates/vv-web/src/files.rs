@@ -280,6 +280,29 @@ impl Files {
             .filter(|(token, _)| token == name)
             .map(|(_, version)| version.sha256.clone())
     }
+    pub fn project_fingerprint(&self, name: &str) -> Result<String> {
+        self.read_versioned(name).map(|(_, version)| version.sha256)
+    }
+    pub fn load_detached(&self, name: &str) -> Result<Project> {
+        let previous = self.version.borrow().clone();
+        let result = self.load(name);
+        *self.version.borrow_mut() = previous;
+        result
+    }
+    pub fn save_detached(&self, project: &Project, name: &str) -> Result<String> {
+        let previous = self.version.borrow().clone();
+        let result = self
+            .save(project, name, true)
+            .and_then(|_| self.saved_fingerprint(name).ok_or_else(ApiError::io));
+        *self.version.borrow_mut() = previous;
+        result
+    }
+    pub fn validate_recovery(&self, mut project: Project) -> Result<Project> {
+        self.validate_media(&mut project)?;
+        validate_project(&project)?;
+        project.refresh_clip_rates();
+        Ok(project)
+    }
     pub fn load_backup(&self, name: &str) -> Result<Project> {
         if !name.ends_with(".vvproj.bak") {
             return Err(ApiError::invalid("Choose a listed .vvproj.bak backup"));

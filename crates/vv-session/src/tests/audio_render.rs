@@ -171,6 +171,35 @@ fn a_render_in_chunks_equals_one_mix_of_the_whole_timeline() {
     let first_diff = chunked.iter().zip(&whole).position(|(a, b)| a != b);
     assert_eq!(first_diff, None, "the chunked render differs");
     assert!(chunked.iter().any(|s| s.abs() > 0.1));
+    let mut metered = Vec::new();
+    let mut chunks = 0;
+    render_offline_metered(
+        &project,
+        &tl,
+        samples(0..480),
+        &mut LevelCache::default(),
+        |pcm, snapshot| {
+            chunks += 1;
+            metered.extend_from_slice(pcm);
+            assert!(snapshot.meters.master().take().0 > 0.0);
+            assert!(snapshot.meters.track(0).unwrap().take().0 > 0.0);
+            assert!(
+                snapshot
+                    .meters
+                    .spectrum(vv_core::MixerChannel::Track(0), 1)
+                    .unwrap()
+                    .written()
+                    > 0
+            );
+            ControlFlow::Continue(())
+        },
+    )
+    .unwrap();
+    assert!(chunks > 3);
+    assert_eq!(
+        metered, chunked,
+        "Meter taps must not alter native PCM or effect continuity"
+    );
 }
 
 #[test]

@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 use vv_core::{self as core, Command, Timeline, TimelineId};
 use vv_session::Session;
 
-fn locate(timeline: &Timeline, value: &str) -> Result<core::MixerChannel> {
+pub(crate) fn locate(timeline: &Timeline, value: &str) -> Result<core::MixerChannel> {
     if value == "master" {
         return Ok(core::MixerChannel::Master);
     }

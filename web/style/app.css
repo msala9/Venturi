@@ -571,6 +571,16 @@ label {
 #recovery-status{max-width:min(300px,22vw);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #recovery-panel{border:1px solid var(--primary);padding:12px;margin:12px 0}
 #recovery-panel form:not([method="dialog"]){display:grid;gap:8px;margin:12px 0;align-items:stretch}
+#audio-meters-dialog{width:min(680px,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto;position:fixed;z-index:10;box-shadow:0 8px 40px var(--bg)}
+#audio-meters-dialog h2{margin:0;font-size:18px;flex:1}
+#audio-meters-dialog .tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+#audio-meters-dialog .tools label{display:flex;align-items:center;gap:4px}
+#audio-meters-dialog p{font-size:12px}
+#audio-meters-dialog svg{display:block;width:100%;height:auto;background:var(--bg)}
+.audio-meter-row{display:grid;grid-template-columns:70px 1fr 1fr;gap:8px;align-items:center;margin:8px 0}
+.audio-meter-row meter{width:100%;height:18px}
+.audio-meter-row span{grid-column:2 / 4;font-size:12px;font-variant-numeric:tabular-nums}
+#audio-meters-dialog[data-stale="true"] svg,#audio-meters-dialog[data-stale="true"] [data-meter-rows]{opacity:.45}
 #recovery-panel .field{grid-template-columns:130px minmax(0,1fr);margin:0}
 #recovery-panel .field input{width:100%;min-width:0}
 #recovery-panel .checkbox-field{display:flex;gap:8px;align-items:center}

@@ -84,6 +84,82 @@ fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_th
         .fold(0.0_f32, f32::max);
     assert!((peak - 0.5 * 10.0_f32.powf(-6.0 / 20.0)).abs() < 0.002);
     assert_eq!(serde_json::to_value(&project).unwrap(), before);
+    let readings = task.meters(None, Arc::new(AtomicBool::new(false))).unwrap();
+    assert_eq!(readings["samples"], 4096);
+    assert_eq!(readings["channels"].as_array().unwrap().len(), 2);
+    assert!((readings["channels"][0]["peak"][0].as_f64().unwrap() - f64::from(peak)).abs() < 0.002);
+    assert_eq!(
+        readings["master_spectrum_db"].as_array().unwrap().len(),
+        2049
+    );
+    assert_eq!(readings["insert"], Value::Null);
+    assert_eq!(
+        task.meters(None, Arc::new(AtomicBool::new(true)))
+            .unwrap_err()
+            .1,
+        "INVALID_OPERATION"
+    );
+    assert!(
+        task.meters(
+            Some(InsertQuery {
+                channel: "0".into(),
+                index: 0
+            }),
+            Arc::new(AtomicBool::new(false))
+        )
+        .is_err()
+    );
+    let mut with_eq = project.clone();
+    let mut eq = vv_core::Equalizer::DEFAULT;
+    eq.bands[2].freq_hz = 440.0;
+    eq.bands[2].gain_db = -12.0;
+    eq.bands[2].enabled = true;
+    with_eq.timelines[timeline].tracks[0].mix.effects = vec![
+        vv_core::AudioEffect::new(vv_core::AudioEffectKind::Equalizer(eq)),
+        vv_core::AudioEffect::new(vv_core::AudioEffectKind::MultibandCompressor(
+            vv_core::MultibandCompressor::DEFAULT,
+        )),
+    ];
+    let eq_task = pin(snapshot(with_eq), &files).unwrap();
+    let eq_reading = eq_task
+        .meters(
+            Some(InsertQuery {
+                channel: "0".into(),
+                index: 0,
+            }),
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+    let pre = eq_reading["insert"]["before_db"].as_array().unwrap();
+    let post = eq_reading["insert"]["after_db"].as_array().unwrap();
+    assert_eq!(pre.len(), 2049);
+    assert_eq!(post.len(), 2049);
+    assert!(
+        pre.iter()
+            .zip(post)
+            .any(|(a, b)| (a.as_f64().unwrap() - b.as_f64().unwrap()).abs() > 1.0)
+    );
+    let compressor = eq_task
+        .meters(
+            Some(InsertQuery {
+                channel: "0".into(),
+                index: 1,
+            }),
+            Arc::new(AtomicBool::new(false)),
+        )
+        .unwrap();
+    assert_eq!(
+        compressor["insert"]["band_level"].as_array().unwrap().len(),
+        3
+    );
+    assert_eq!(
+        compressor["insert"]["reduction_db"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+    assert_eq!(serde_json::to_value(&project).unwrap(), before);
     let source_spec = || crate::source::SourceSpec {
         file: File::open(&path).unwrap(),
         epoch: "test".into(),
@@ -206,13 +282,22 @@ fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_th
         );
     }
     project.timelines[timeline].tracks[0].muted = true;
-    let silence = pin(snapshot(project), &files)
-        .unwrap()
-        .run(Arc::new(AtomicBool::new(false)))
+    let muted_task = pin(snapshot(project), &files).unwrap();
+    let silent_meters = muted_task
+        .meters(None, Arc::new(AtomicBool::new(false)))
         .unwrap();
+    assert_eq!(silent_meters["channels"][0]["peak"], json!([0.0, 0.0]));
+    assert_eq!(silent_meters["channels"][1]["db"], json!([null, null]));
+    let silence = muted_task.run(Arc::new(AtomicBool::new(false))).unwrap();
     assert!(silence[44..].iter().all(|b| *b == 0));
     assert!(task.run(Arc::new(AtomicBool::new(true))).is_err());
     std::fs::write(&path, b"changed").unwrap();
+    assert_eq!(
+        task.meters(None, Arc::new(AtomicBool::new(false)))
+            .unwrap_err()
+            .1,
+        "SOURCE_CHANGED"
+    );
     assert_eq!(
         task.run(Arc::new(AtomicBool::new(false))).unwrap_err().1,
         "SOURCE_CHANGED"

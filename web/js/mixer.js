@@ -1,6 +1,6 @@
 import { request } from "./api.js";
 
-export function renderMixer(root, timeline, { writable, commit, notice, open = false, catalog, openPaths = new Set(), query }) {
+export function renderMixer(root, timeline, { writable, commit, notice, open = false, catalog, openPaths = new Set(), query, onMeters }) {
   const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Audio mixer";section.open=open;section.append(summary);
   const tracks=timeline.tracks.filter((track)=>track.kind === "audio").map((track)=>({channel:track.id,label:track.label || track.id,locked:track.locked,...track.mix}));
   tracks.push({channel:"master",label:"Master",locked:false,...timeline.master});
@@ -17,7 +17,8 @@ export function renderMixer(root, timeline, { writable, commit, notice, open = f
     section.append(form);
     if(catalog) renderEffects(section,track,catalog,!writable || track.locked,commit,notice,openPaths,timeline.id,query);
   }
-  const note=document.createElement("p");note.className="muted";note.textContent="Native timeline mix. Source playback uses the original source audio. Level meters are not connected yet.";section.append(note);
+  if(onMeters){const meters=document.createElement("button");meters.textContent="Open native meters / spectrum";meters.addEventListener("click",onMeters);section.append(meters);}
+  const note=document.createElement("p");note.className="muted";note.textContent="Native timeline mix. Source playback uses the original source audio.";section.append(note);
   root.append(section);return section;
 }
 export function effectName(effect) {return typeof effect.kind === "string" ? effect.kind : Object.keys(effect.kind)[0];}

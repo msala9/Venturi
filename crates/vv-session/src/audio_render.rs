@@ -14,7 +14,7 @@ use std::sync::mpsc::{Receiver, SyncSender, sync_channel};
 use vv_audio::loudness::{LOOKAHEAD_FRAMES, LevelMeter, LevelParts};
 use vv_audio::mixer::{
     AudioSource, ClipAudio, MixSnapshot, MixState, PROJECT_SAMPLE_RATE, mix_range_from,
-    remix_channels_into,
+    mix_range_metered, remix_channels_into,
 };
 use vv_audio::{
     LevelAnalysis, LevelReading, LevelSegment, SampleBlocks, StretchRequest, Stretcher,
@@ -47,6 +47,17 @@ pub fn render_offline(
     sink: impl FnMut(&[f32]) -> ControlFlow<()>,
 ) -> Result<(), ExportError> {
     render(project, Mix::Timeline(timeline), range, levels, sink)
+}
+
+/// The same native render, exposing post-fader peaks and insert taps per chunk.
+pub fn render_offline_metered(
+    project: &Project,
+    timeline: &Timeline,
+    range: Range<u64>,
+    levels: &mut LevelCache,
+    sink: impl FnMut(&[f32], &MixSnapshot) -> ControlFlow<()>,
+) -> Result<(), ExportError> {
+    render_with_meters(project, Mix::Timeline(timeline), range, levels, true, sink)
 }
 
 /// The level `analysis` describes, from the measures of its segments:
@@ -324,6 +335,16 @@ fn render(
     levels: &mut LevelCache,
     mut sink: impl FnMut(&[f32]) -> ControlFlow<()>,
 ) -> Result<(), ExportError> {
+    render_with_meters(project, mix, range, levels, false, |out, _| sink(out))
+}
+fn render_with_meters(
+    project: &Project,
+    mix: Mix,
+    range: Range<u64>,
+    levels: &mut LevelCache,
+    metered: bool,
+    mut sink: impl FnMut(&[f32], &MixSnapshot) -> ControlFlow<()>,
+) -> Result<(), ExportError> {
     let ch = PROJECT_CHANNELS as usize;
     let mut audio = StreamingAudio::new(levels);
     let mut state: Option<MixState> = None;
@@ -342,8 +363,12 @@ fn render(
         }
         let state = state.insert(next);
         out.resize((chunk.end - chunk.start) as usize * ch, 0.0);
-        mix_range_from(&snapshot, state, chunk.start, &mut out);
-        if sink(&out).is_break() {
+        if metered {
+            mix_range_metered(&snapshot, state, chunk.start, &mut out);
+        } else {
+            mix_range_from(&snapshot, state, chunk.start, &mut out);
+        }
+        if sink(&out, &snapshot).is_break() {
             return Ok(());
         }
         at = chunk.end;

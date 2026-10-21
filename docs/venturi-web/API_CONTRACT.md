@@ -13,6 +13,26 @@ the returned descriptor for status/asset requests and media clock conversion.
 Before resuming a retained movie, validate its status again; a stale or evicted
 entry must be prepared again. The browser retains one ready movie reference,
 seeks relative to its actual origin, and checks source validity before playback.
+It waits for metadata and the initial seek to complete before Play, including
+on cached ranges. Cancellation also aborts these waits, preventing late media
+events from starting obsolete playback or canceling newly prepared fast audio.
+
+`POST /api/v1/preview/audio/meters` accepts `{query:FrameQuery,insert:null}` or
+`{query,insert:{channel,index}}`. The optional insert selects an enabled native
+EQ/compressor on an audio track or `master`. Replies contain the frame, 48 kHz
+sample rate, 4096-sample window, post-fader stereo track/master peaks and dBFS
+(`null` for silence), overload flags, native master spectrum/peak bin, and optional
+before/after insert spectra with three-band compressor activity. Spectra use
+the native 4096-point Hann transform, with 2049 frequency bins.
+
+Rendering uses `vv_session::audio_render::render_offline_metered` and the existing
+native mixer taps. File pinning, source identity checks, post-render snapshot
+checks, the single CPU audio worker, five-second budget and cancellation also
+cover these reads. The browser allows one request in flight, discards obsolete
+replies, refreshes after a final seek and polls at most every 250 ms while playing.
+This is independent window inspection: dynamic processors start afresh for each
+window, and peaks between windows are not held. It does not measure the Windows
+output device or browser volume. Continuous output-stream metering remains open.
 
 Audio audition is implemented by `GET /api/v1/preview/audio.wav` with the normal
 `FrameQuery`, and `GET /api/v1/media/{id}/audio.wav?project_epoch=...&frame=...`

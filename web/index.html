@@ -30,6 +30,14 @@
       <div class="spacer"></div>
       <span class="theme-note">MADROCK THEME</span>
     </nav>
+    <dialog id="audio-meters-dialog" aria-labelledby="audio-meters-heading">
+      <div class="tools"><h2 id="audio-meters-heading">Native audio meters</h2><button type="button" data-meter-close>Close meters</button></div>
+      <p>Reads an 85 ms window at the Program playhead, including track/master gains and effects. Browser output volume is separate. Live follows Program playback; each reading identifies its frame.</p>
+      <div class="tools"><label><input type="checkbox" checked> Live during Program playback</label><button type="button" data-meter-play>Play / pause Program</button><button type="button" data-meter-refresh>Read current Program frame</button><label>Spectrum <select aria-label="Meter spectrum"><option value="">Master output</option></select></label></div>
+      <div data-meter-rows></div>
+      <svg viewBox="0 0 610 182" role="img" aria-label="Native audio spectrum in Hz and dBFS"></svg>
+      <p data-meter-context></p><p data-meter-status aria-live="off">Read a Program frame</p><p data-meter-playback></p>
+    </dialog>
     <dialog id="review-metadata-dialog" aria-labelledby="review-metadata-heading">
       <h2 id="review-metadata-heading">Shot / Take annotations</h2>
       <p>Annotations save separately from the native project. Timeline Undo stays unchanged. Restore previous annotations swaps the last two saved states. Save As copies annotations with the project.</p>

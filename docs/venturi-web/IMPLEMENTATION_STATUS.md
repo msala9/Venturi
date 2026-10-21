@@ -1718,3 +1718,43 @@ telemetry. The same job ID, embedded asset hashes, exact provenance seed,
 Favorite, source hash, saved session and CPU-only isolation are recorded in
 m5-halo2-preview-cache.json and m5-halo2-preview-cache-browser.png. No shared
 hardware-lock probe/acquisition or archive write occurred.
+
+## M5 — native audio window meters and insert spectra
+
+Audio workspace, Mixer and Commands now open a nonmodal audio inspection window.
+It displays post-fader stereo peaks for audio tracks/master, native master FFT,
+before/after EQ or compressor spectra and three-band gain reduction. Each reading
+names its Program frame and 85 ms window. Live inspection allows one request in
+flight and follows playback at most every 250 ms; close, seek, source/document
+change and cancellation suppress obsolete output. The window includes the same
+Play/Cancel/Pause action and progress as the main transport.
+
+The session renderer exposes its existing native metered mixer through the same
+streaming source, normalization and effect-state path. Existing render callers
+retain their unmetered path. A multi-chunk test with EQ, compression, resampling,
+varispeed and pitch correction produces byte-identical PCM with metering enabled.
+Pinned source identities, snapshot checks, a single CPU audio worker and the
+existing five-second cancellation budget cover inspection. No browser DSP or
+GPU work is added. These are independent mix windows: dynamic processors start
+afresh, peaks between requests are not held, and browser/device volume is
+excluded. Continuous output-stream metering remains a parity gap.
+
+118 web Rust tests and 100 session tests pass; one existing manual precision
+benchmark is ignored. All 92 JavaScript tests, formatting, web/session clippy
+with warnings denied, native GUI test compilation and web build pass. Actual
+synthetic acceptance found native peak bins at 656.25/878.90625 Hz for 660/880 Hz
+sources, exact gap silence, a 12 dB EQ boost and about 11.1 dB middle-band gain
+reduction. The browser displayed both insert spectra, live advancing readings,
+stereo levels and negative infinity in the gap. Save/process restart retained
+identical project/annotation hashes, fresh history and exactly identical native
+meter responses. All 60 original source hashes and the original project remain
+unchanged. Evidence: m5-native-audio-meters.json and the EQ, compressor, live,
+silence and fast meter screenshots.
+
+Combined acceptance exposed an initial-seek race in cached fast playback. Program
+Play now waits for metadata and seek completion; canceled waits cannot autoplay.
+Actual full 60-second and internally sought cached 8x playback both completed all
+nine native audio windows with live inspection enabled; maximum audio/video-clock
+drift stayed below 13 ms. The earlier failed run is retained in the evidence as
+the regression trigger. This fixes the cached fast-transport regression without
+claiming continuous output meters or physical audio-loopback qualification.

@@ -75,6 +75,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/preview/cache", get(preview_cache))
         .route("/api/v1/preview/audio.wav", get(audition))
         .route("/api/v1/preview/audio/window", post(program_audio_window))
+        .route("/api/v1/preview/audio/meters", post(audio_meters))
         .route("/api/v1/media/{id}/audio.wav", get(source_audition))
         .route("/api/v1/media/{id}/audio/window", post(source_audio_window))
         .route("/api/v1/preview/balance/{clip}", get(balance))
@@ -108,6 +109,21 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+async fn audio_meters(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::audition::MeterRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid audio meter request"))?
+        .0;
+    let task = state.host.audio_snapshot(payload.query.clone()).await?;
+    let result = render_audio(move |cancel| task.meters(payload.insert, cancel)).await?;
+    state.host.call(Action::CheckFrame(payload.query)).await?;
+    Ok(([(header::CACHE_CONTROL, "no-store")], Json(result)).into_response())
 }
 async fn audition(
     State(state): State<AppState>,
@@ -987,6 +1003,7 @@ async fn assets(request: Request) -> Response {
         "/js/audition.js" => asset!("/web/js/audition.js", "text/javascript"),
         "/js/fast-transport.js" => asset!("/web/js/fast-transport.js", "text/javascript"),
         "/js/preview-cache.js" => asset!("/web/js/preview-cache.js", "text/javascript"),
+        "/js/audio-meters.js" => asset!("/web/js/audio-meters.js", "text/javascript"),
         "/js/capture.js" => asset!("/web/js/capture.js", "text/javascript"),
         "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
         "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),

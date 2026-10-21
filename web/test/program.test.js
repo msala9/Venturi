@@ -15,7 +15,7 @@ test("composed playback identity follows the document and ignores its advancing 
 
 test("stopped movies resume at a seek only after native input validation; changed inputs rebuild",async()=>{
   const events={},checks=[],requests=[];let nextCheck;
-  const video={src:"",currentTime:0,paused:true,pause(){this.paused=true;},play(){this.paused=false;return Promise.resolve();},load(){},removeAttribute(){this.src="";},addEventListener(name,callback){events[name]=callback;}};
+  const video={src:"",currentTime:0,paused:true,readyState:1,seeking:false,pause(){this.paused=true;},play(){this.paused=false;return Promise.resolve();},load(){},removeAttribute(){this.src="";},addEventListener(name,callback){events[name]=callback;}};
   let current={project_epoch:"p:1",if_generation:"0",timeline_id:"1",revision:"r",width:960,start_frame:0,end_frame:48};
   const ready=(id)=>({id,state:"ready",program:{start_frame:0,end_frame:48,width:960,height:540,fps:{num:24,den:1}}});
   const player=createProgramPlayer({video,status:{textContent:""},cancel:{addEventListener(){}},getState:()=>current,onFrame(){},onState(){},api:async(path,query)=>{requests.push(query);return ready(`job${requests.length}`);},fetcher:(url)=>{checks.push(url);return new Promise(resolve=>nextCheck=resolve);}});
@@ -32,7 +32,7 @@ test("stopped movies resume at a seek only after native input validation; change
 
 test("an old composed range cannot replace a later seek; native media time drives the playhead", async () => {
   const requests = [], events = {}, frames = [];
-  const video = { src: "", currentTime: 0, paused: true, pause() { this.paused = true; }, play() { this.paused = false; return Promise.resolve(); }, load() {}, removeAttribute() { this.src = ""; }, addEventListener(name, callback) { events[name] = callback; } };
+  const video = { src: "", currentTime: 0, paused: true, readyState:1, seeking:false, pause() { this.paused = true; }, play() { this.paused = false; return Promise.resolve(); }, load() {}, removeAttribute() { this.src = ""; }, addEventListener(name, callback) { events[name] = callback; } };
   let state = { project_epoch: "p:1", if_generation: "2", timeline_id: "1", revision: "revision", width: 960, start_frame: 0, end_frame: 48 };
   let stopped=0;
   const cancel={addEventListener:(_,callback)=>events.cancel=callback};
@@ -51,4 +51,28 @@ test("an old composed range cannot replace a later seek; native media time drive
   await player.toggle();video.currentTime=0.75;events.timeupdate();assert.equal(frames.at(-1),30,"resuming reattaches the media clock");
   state = { ...state, revision: "next" }; video.currentTime = 1; events.timeupdate(); assert.equal(frames.at(-1), 30);
   events.cancel(); assert.equal(stopped,1);assert.equal(video.src, ""); assert.equal(video.paused, true);
+});
+
+test("Program play waits for metadata and the initial seek, and cancellation cannot start a late movie",async()=>{
+  let metadataWaiting,sought;
+  const metadata=new Promise(resolve=>metadataWaiting=resolve),seek=new Promise(resolve=>sought=resolve);
+  class Video extends EventTarget {
+    readyState=0;seeking=false;paused=true;position=0;plays=0;
+    addEventListener(name,callback,options){super.addEventListener(name,callback,options);if(name==="loadedmetadata")metadataWaiting();}
+    set currentTime(value){this.position=value;this.seeking=true;sought();}
+    get currentTime(){return this.position;}
+    pause(){this.paused=true;}
+    play(){assert.equal(this.seeking,false);assert.equal(this.readyState,1);this.paused=false;this.plays++;return Promise.resolve();}
+    removeAttribute(){this.src="";this.readyState=0;}
+    load(){}
+  }
+  const video=new Video(),state={project_epoch:"p:1",if_generation:"0",timeline_id:"1",revision:"r",width:960,start_frame:12,end_frame:48};
+  const player=createProgramPlayer({video,status:{textContent:""},cancel:{addEventListener(){}},getState:()=>state,onFrame(){},onState(){},api:async()=>({id:"movie",state:"ready",program:{start_frame:0,end_frame:48,fps:{num:24,den:1}}}),fetcher:async()=>Response.json({state:"ready"})});
+  const first=player.toggle();await metadata;assert.equal(video.plays,0);
+  video.readyState=1;video.dispatchEvent(new Event("loadedmetadata"));await seek;
+  assert.equal(video.currentTime,.5);assert.equal(video.plays,0);video.seeking=false;video.dispatchEvent(new Event("seeked"));await first;assert.equal(video.plays,1);
+  player.stop();
+  let waiting;const nextMetadata=new Promise(resolve=>waiting=resolve);metadataWaiting=waiting;
+  const late=player.toggle();await nextMetadata;player.stop();video.readyState=1;video.dispatchEvent(new Event("loadedmetadata"));await late;
+  assert.equal(video.plays,1);assert.equal(video.paused,true);
 });

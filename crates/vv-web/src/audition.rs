@@ -4,6 +4,7 @@ use crate::{
     preview::FrameSnapshot,
     source::file_identity,
 };
+use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
 use std::{
     fs::File,
@@ -16,6 +17,19 @@ use std::{
 };
 use vv_audio::mixer::{PROJECT_SAMPLE_RATE, sample_to_timeline_frame, timeline_frame_to_sample};
 use vv_session::audio_render::{LevelCache, render_offline};
+
+#[derive(Clone, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct InsertQuery {
+    pub channel: String,
+    pub index: usize,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct MeterRequest {
+    pub query: crate::preview::FrameQuery,
+    pub insert: Option<InsertQuery>,
+}
 
 #[derive(Clone, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -86,6 +100,81 @@ fn changed() -> ApiError {
     ApiError::conflict("SOURCE_CHANGED", "Audio sources changed; seek again")
 }
 impl Task {
+    pub fn meters(&self, insert: Option<InsertQuery>, cancel: Arc<AtomicBool>) -> Result<Value> {
+        use vv_audio::spectrum::{SPECTRUM_SIZE, SpectrumTap, magnitudes_db};
+        use vv_core::MixerChannel;
+        self.check_inputs()?;
+        let timeline = &self.snapshot.project.timelines[self.snapshot.timeline];
+        let selected = insert
+            .as_ref()
+            .map(|query| {
+                let channel = crate::audio::locate(timeline, &query.channel)?;
+                let mix = match channel {
+                    MixerChannel::Master => &timeline.master,
+                    MixerChannel::Track(index) => &timeline.tracks[index].mix,
+                };
+                let effect = mix
+                    .effects
+                    .get(query.index)
+                    .filter(|effect| effect.enabled)
+                    .ok_or_else(|| {
+                        ApiError::invalid("Select an enabled EQ or compressor insert")
+                    })?;
+                let kind = match effect.kind {
+                    vv_core::AudioEffectKind::Equalizer(_) => "Equalizer",
+                    vv_core::AudioEffectKind::MultibandCompressor(_) => "MultibandCompressor",
+                    _ => {
+                        return Err(ApiError::invalid(
+                            "Select an enabled EQ or compressor insert",
+                        ));
+                    }
+                };
+                Ok((channel, query.index, kind))
+            })
+            .transpose()?;
+        let start = timeline_frame_to_sample(
+            self.snapshot.query.frame,
+            timeline.fps.as_f64(),
+            PROJECT_SAMPLE_RATE,
+        );
+        let mut levels = LevelCache::on_disk();
+        levels.threads = 1;
+        levels.cancel = Some(cancel.clone());
+        let mut result = None;
+        vv_session::audio_render::render_offline_metered(
+            &self.snapshot.project, timeline, start..start + SPECTRUM_SIZE as u64, &mut levels,
+            |samples, snapshot| {
+                if cancel.load(Ordering::Relaxed) || samples.len() != SPECTRUM_SIZE * 2 || samples.iter().any(|v| !v.is_finite()) {
+                    return ControlFlow::Break(());
+                }
+                let reading = |channel: String, peak: (f32, f32)| {
+                    let db = |value: f32| (value > 0.0).then(|| 20.0 * value.log10());
+                    json!({"channel":channel,"peak":[peak.0,peak.1],"db":[db(peak.0),db(peak.1)],"clipped":[peak.0>1.0,peak.1>1.0]})
+                };
+                let mut channels: Vec<_> = timeline.tracks.iter().enumerate().filter(|(_,track)| track.kind == vv_core::TrackKind::Audio)
+                    .map(|(index,_)| reading(index.to_string(), snapshot.meters.track(index).map_or((0.0,0.0),|meter|meter.take()))).collect();
+                channels.push(reading("master".into(), snapshot.meters.master().take()));
+                let tap=SpectrumTap::default();tap.record_post(samples, 2);
+                let effect = selected.and_then(|(channel,index,kind)| {
+                    let (pre,post)=snapshot.meters.spectrum(channel,index)?.read();
+                    let bands=snapshot.meters.band_meter(channel,index)?.take();
+                    Some(json!({"channel":insert.as_ref().unwrap().channel,"index":index,"kind":kind,"before_db":magnitudes_db(&pre),"after_db":magnitudes_db(&post),"band_level":bands.level,"reduction_db":bands.reduction_db}))
+                });
+                let spectrum=magnitudes_db(&tap.read().1);
+                let peak_hz=spectrum.iter().enumerate().skip(1).max_by(|(_,a),(_,b)|a.total_cmp(b)).filter(|(_,db)|**db > -120.0).map(|(bin,_)|bin as f32 * PROJECT_SAMPLE_RATE as f32 / SPECTRUM_SIZE as f32);
+                result=Some(json!({"frame":self.snapshot.query.frame,"sample_rate":PROJECT_SAMPLE_RATE,"samples":SPECTRUM_SIZE,"channels":channels,"master_spectrum_db":spectrum,"master_peak_hz":peak_hz,"insert":effect}));
+                ControlFlow::Continue(())
+            },
+        ).map_err(|_| ApiError::invalid("Native audio metering failed or was canceled"))?;
+        if cancel.load(Ordering::Relaxed) {
+            return Err(ApiError::conflict(
+                "AUDIO_CANCELED",
+                "Audio metering was canceled",
+            ));
+        }
+        self.check_inputs()?;
+        result.ok_or_else(|| ApiError::invalid("Native audio metering returned an invalid window"))
+    }
     pub fn source(spec: crate::source::SourceSpec, frame: i64) -> Result<Self> {
         use vv_core::{
             Clip, ClipId, ClipSource, Id, MediaItem, Project, Rational, Timeline, Track, TrackKind,

@@ -22,10 +22,11 @@ import { createRecoveryPanel } from "./recovery.js";
 import { createAudioScrub, bindSourceScrub } from "./audition.js";
 import { createFastTransport } from "./fast-transport.js";
 import { createPreviewCache } from "./preview-cache.js";
+import { createAudioMeters } from "./audio-meters.js";
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
-let scopes = null, scopePlayback = false, previewCache = null;
+let scopes = null, scopePlayback = false, previewCache = null, audioMeters = null;
 let slipScopesState = null;
 let catalog = null;
 let silencePanel = null;
@@ -73,6 +74,7 @@ const workspaceTools = {
   ],
   Audio: [
     "Track / Master mixer",
+    "VU / spectrum",
     "Six-band equalizer",
     "Three-band compressor",
     "Normalization / Mono",
@@ -106,11 +108,12 @@ function showWorkspace(name) {
   for (const label of workspaceTools[name]) {
     const button = document.createElement("button");
     button.textContent = label;
-    button.disabled = !((name === "Audio" && ["Track / Master mixer","Six-band equalizer","Three-band compressor","Normalization / Mono","Analyze silence · VAD","Voiceover"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)) || name === "Review");
+    button.disabled = !((name === "Audio" && ["Track / Master mixer","VU / spectrum","Six-band equalizer","Three-band compressor","Normalization / Mono","Analyze silence · VAD","Voiceover"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)) || name === "Review");
     if (!button.disabled) button.addEventListener("click",()=>{
       if(name==="Review"){programPlayer?.stop();sourcePlayer?.pause();const panel=["Shot / Take grouping","Prompt / Seed / Model metadata"].includes(label)?reviewMetadata:review;panel?.open().catch(error=>notice(error.message));return;}
       if(label === "Analyze silence · VAD"){programPlayer?.stop();silencePanel?.open();return;}
       if(label === "Voiceover"){viewerModeSet("program");voiceover?.open();return;}
+      if(label === "VU / spectrum"){audioMeters?.open();return;}
       if(name === "Color") {
         if (label === "Auto balance") {
           if (!writable || busy || unresolved) return notice("A connected writer is required");
@@ -213,6 +216,7 @@ restoreInspector.addEventListener("click", () => {
   $("palette").close();
 });
 $("command-list").append(restoreInspector);
+const meterCommand=document.createElement("button");meterCommand.textContent="Audio meters / spectrum";meterCommand.addEventListener("click",()=>{$("palette").close();audioMeters?.open();});$("command-list").append(meterCommand);
 const followSelection=document.createElement("button");followSelection.textContent="Selection follows playhead";followSelection.setAttribute("aria-pressed",String(selectionFollowsPlayhead));
 followSelection.addEventListener("click",()=>{selectionFollowsPlayhead=!selectionFollowsPlayhead;followSelection.setAttribute("aria-pressed",String(selectionFollowsPlayhead));try{localStorage.setItem("venturi-selection-follows-playhead",String(selectionFollowsPlayhead));}catch{}syncPlayheadSelection(true);notice(selectionFollowsPlayhead?"Selection follows playhead enabled":"Selection follows playhead disabled");});$("command-list").append(followSelection);
 installSplitter($("left-splitter"), editor, "--left", 260);
@@ -286,6 +290,7 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  audioMeters?.invalidate();
   fastTransport?.stop();
   audioScrub?.stop();
   viewerMode = mode;
@@ -327,12 +332,14 @@ for (const [id,out] of [["source-mark-in",false],["source-mark-out",true]]) $(id
   const frame = sourceFrameAtTime($("source-video").currentTime,item.fps.num/item.fps.den);
   $(out ? "source-out" : "source-in").value = Math.min(item.duration_frames - (out ? 0 : 1),frame+(out ? 1 : 0)); rememberSourceRange();
 });
-$("play").addEventListener("click", () => {
+function togglePlayback() {
+  audioScrub?.stop();
   if(fastTransport?.cancelPreparation())return;
   if(viewerMode==="program" && timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked)){voiceover?.open();return;}
   if (viewerMode === "program") { viewer?.invalidate(); programPlayer.toggle().catch((error) => notice(error.message)); }
   else sourcePlayer.toggle().catch((error) => notice(error.message));
-});
+}
+$("play").addEventListener("click", togglePlayback);
 let inspectorSequence = 0;
 let mixerDetail = null;
 const mixerPaths = new Set();
@@ -484,7 +491,7 @@ function selected() {
     const properties=document.createElement("button");properties.textContent="Paste selected properties";properties.disabled=!view.selection.length || !documentState.clipboard_revision || !writable || busy || !!unresolved;properties.addEventListener("click",()=>pasteAttributes?.open());fieldset.append(properties);
     renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,seek:(frame)=>{view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();}});
     const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
-    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery});
+    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open()});
   }
 }
 function syncPlayheadSelection(render) {
@@ -502,6 +509,7 @@ const canvasTimeline = createTimeline({
   getCache: () => previewCache?.ranges(),
   onSelect: selected,
   onSeek: (final) => {
+    audioMeters?.invalidate();
     audioScrub?.stop();
     programPlayer?.pauseLocal();
     scopes?.invalidate("STALE · scrubbing");
@@ -529,6 +537,7 @@ function updateTime() {
   canvasTimeline.invalidate();
 }
 function installTimeline(next) {
+  audioMeters?.invalidate();
   canvasTimeline.cancel();
   timeline = next;
   updatePlayAvailability();
@@ -1044,7 +1053,7 @@ viewer = createViewer({
 scopes = createScopes({ panel: $("scopes"), getTarget: () => viewerMode === "program" && !scopePlayback ? scopeTarget(documentState, timeline, view.selection, view.playhead) : null });
 scopes.setVisible(editor.dataset.workspace === "Color");
 previewCache = createPreviewCache({getState: () => documentState?.capabilities.preview && timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0,width:960} : null,status:$("preview-cache-status"),onChange:()=>canvasTimeline.invalidate()});
-seek = async () => { if (viewerMode === "program") { programPlayer?.stop(); scopes.invalidate("SEEKING"); await viewer.seek(); scopes.refresh(); previewCache.refresh(); } };
+seek = async () => { if (viewerMode === "program") { programPlayer?.stop(); scopes.invalidate("SEEKING"); await viewer.seek(); scopes.refresh(); previewCache.refresh(); audioMeters?.refresh(); } };
 audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-status"),getState:()=>{
   if(!documentState || fastTransport?.active())return null;
   if(viewerMode==="source") {
@@ -1071,6 +1080,10 @@ programPlayer = createProgramPlayer({
   onCache:()=>previewCache.refresh(),
   onError: notice,
 });
+audioMeters=createAudioMeters({root:$("audio-meters-dialog"),onTransport:()=>{if(viewerMode!=="program")viewerModeSet("program");togglePlayback();},getPlayback:()=>({label:viewerMode==="program"?`${$("play").textContent} Program`:"Play Program",status:viewerMode!=="program"?"Source viewer active":programPlayer.state()==="stopped"?"Program stopped":[$("program-status").textContent,$("fast-playback-status").textContent].filter(Boolean).join(" · ")}),isPlaying:()=>viewerMode==="program" && !$("program-video").paused,getTarget:()=>{
+  if(!documentState || !timeline || viewerMode!=="program")return null;
+  return {query:{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,width:960},channels:[...timeline.tracks.filter(track=>track.kind==="audio").map(track=>({id:track.id,label:track.label || track.id,effects:track.mix.effects})),{id:"master",label:"Master",effects:timeline.master.effects}]};
+}});
 fastTransport=createFastTransport({videos:[$("program-video"),$("source-video")],select:$("playback-rate"),status:$("fast-playback-status"),getVideo:()=>$(viewerMode==="program"?"program-video":"source-video"),notice,onState:state=>{$("play").textContent=state==="preparing"?"Cancel fast audio":state==="playing"?"❚❚ Pause":"▶ Play";},getTarget:video=>{
   if(!documentState)return null;
   if(video===$("source-video") && viewerMode==="source") {

@@ -6,6 +6,21 @@ export function sameComposition(a, b) {
 export function containsProgramRange(cached, current) {
   return sameComposition(cached, current) && cached.start_frame <= current.start_frame && current.start_frame < cached.end_frame && current.end_frame <= cached.end_frame;
 }
+async function seekMedia(video, seconds, signal) {
+  const wait = (event, ready) => {
+    signal.throwIfAborted();
+    if (ready()) return Promise.resolve();
+    return new Promise((resolve,reject) => {
+      const cleanup=()=>{clearTimeout(timer);video.removeEventListener(event,done);video.removeEventListener("error",failed);signal.removeEventListener("abort",aborted);};
+      const done=()=>{cleanup();resolve();},failed=()=>{cleanup();reject(new Error("Program media failed to load or seek"));},aborted=()=>{cleanup();reject(signal.reason);};
+      const timer=setTimeout(()=>{cleanup();reject(new Error("Program media load or seek timed out"));},10_000);
+      video.addEventListener(event,done);video.addEventListener("error",failed);signal.addEventListener("abort",aborted,{once:true});
+    });
+  };
+  await wait("loadedmetadata",()=>video.readyState>=1);
+  signal.throwIfAborted();video.currentTime=seconds;
+  await wait("seeked",()=>!video.seeking);
+}
 export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onCache, api = request, fetcher = fetch }) {
   let sequence = 0, controller = null, query = null, jobURL = null, state = "stopped", monitor = null, frameCallback = null, suspended = true, presented = 0, cached = null;
   const setState = (next) => { state = next; cancel.disabled = next === "stopped"; cancel.textContent = next === "preparing" ? "Cancel preparation" : "Stop playback"; onState(next); };
@@ -82,7 +97,8 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
         if (response.ok && (await response.json()).state === "ready") {
           if (seq !== sequence || signal.aborted) return;
           query = cached.query; jobURL = cached.url; video.src = cached.src;
-          video.currentTime = (current.start_frame - query.start_frame) * query.fps.den / query.fps.num;
+          await seekMedia(video,(current.start_frame - query.start_frame) * query.fps.den / query.fps.num,signal);
+          if(seq!==sequence || !sameComposition(current,getState()))return;
           setState("ready"); status.textContent = "CACHED COMPOSED PREVIEW · inputs verified";
           monitorDocument(seq); suspended=false;
           try { await video.play(); } catch(error) { if(seq===sequence && error.name!=="AbortError")status.textContent += " · press Play"; }
@@ -111,7 +127,8 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       if (job.state !== "ready") throw new Error(job.error === "GPU_BUSY" ? "GPU_BUSY · retry after the inference workload releases the GPU" : job.error === "RENDER_BUSY" ? "The CPU compositor is preparing another job · wait or cancel it" : (job.error || `Composition ${job.state}`));
       query = { ...prepared, fps: job.program.fps };
       video.src = `/api/v1/preview/program/${encodeURIComponent(job.id)}/program.mp4?${new URLSearchParams(prepared)}`;
-      video.currentTime = (current.start_frame - query.start_frame) * query.fps.den / query.fps.num;
+      await seekMedia(video,(current.start_frame - query.start_frame) * query.fps.den / query.fps.num,signal);
+      if(seq!==sequence || !sameComposition(current,getState()))return;
       cached = {query, url:jobURL, src:video.src};
       onCache?.();
       setState("ready"); status.textContent = `${reused ? "CACHED " : ""}COMPOSED PREVIEW · ${job.program.width}×${job.program.height} · revision ${current.revision.slice(0, 8)}`;

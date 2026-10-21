@@ -21,14 +21,17 @@ async function seekMedia(video, seconds, signal) {
   signal.throwIfAborted();video.currentTime=seconds;
   await wait("seeked",()=>!video.seeking);
 }
-export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onCache, api = request, fetcher = fetch }) {
+export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onCache, api = request, fetcher = fetch, timers = globalThis }) {
   let sequence = 0, controller = null, query = null, jobURL = null, state = "stopped", monitor = null, frameCallback = null, suspended = true, presented = 0, cached = null;
-  const setState = (next) => { state = next; cancel.disabled = next === "stopped"; cancel.textContent = next === "preparing" ? "Cancel preparation" : "Stop playback"; onState(next); };
+  const setState = (next) => { if(next!=="ready")stopMonitor(); state = next; cancel.disabled = next === "stopped"; cancel.textContent = next === "preparing" ? "Cancel preparation" : "Stop playback"; onState(next); };
+  function stopMonitor() {
+    const previous=monitor;monitor=null;
+    if(previous){timers.clearTimeout(previous.timer);previous.controller.abort();}
+  }
   function pauseLocal() {
     suspended = true;
     controller?.abort();
     video.pause();
-    clearInterval(monitor);
     if (frameCallback !== null && video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(frameCallback);
     frameCallback = null;
     if (state === "preparing") sequence++;
@@ -36,6 +39,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   function stop() {
     const path = state === "preparing" ? jobURL : null;
     sequence++;
+    stopMonitor();
     pauseLocal();
     query = null;
     presented = 0;
@@ -59,14 +63,25 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     video.dataset.playbackMetrics = JSON.stringify({ presented_frames: presented, total_frames: quality?.totalVideoFrames ?? null, dropped_frames: quality?.droppedVideoFrames ?? null, media_time: video.currentTime, duration: video.duration, frame_callback: !!video.requestVideoFrameCallback });
   }
   function monitorDocument(seq) {
-    clearInterval(monitor);
-    monitor = setInterval(async () => {
-      if (seq !== sequence) return;
+    stopMonitor();
+    const owner={controller:new AbortController(),timer:null,url:jobURL,query,src:video.src};monitor=owner;
+    const active=()=>monitor===owner && seq===sequence && state==="ready" && query===owner.query && jobURL===owner.url && !!owner.src && video.src===owner.src;
+    const fail=message=>{cached=null;pauseLocal();status.textContent=message;setState("failed");};
+    const check=async()=>{
+      owner.timer=null;
+      if(!active()){if(monitor===owner)stopMonitor();return;}
+      if(!sameComposition(owner.query,getState())){fail("STALE_REVISION · reconnect before playback");return;}
       try {
-        const response = await fetcher(jobURL, { signal: AbortSignal.timeout(5_000), cache: "no-store" });
-        if (seq === sequence && !response.ok) { cached=null;pauseLocal(); status.textContent = "STALE_REVISION · reconnect before playback"; setState("failed"); }
-      } catch { if (seq === sequence) { cached=null;pauseLocal(); status.textContent = "Playback connection lost · reconnect"; setState("failed"); } }
-    }, 2_000);
+        const response=await fetcher(owner.url,{signal:AbortSignal.any([owner.controller.signal,AbortSignal.timeout(5_000)]),cache:"no-store"});
+        if(!active())return;
+        if(!sameComposition(owner.query,getState()) || !response.ok){fail("STALE_REVISION · reconnect before playback");return;}
+        const job=await response.json();
+        if(!active())return;
+        if(!sameComposition(owner.query,getState()) || job.state!=="ready"){fail("Program media unavailable or changed · prepare again");return;}
+      } catch { if(active())fail("Playback connection lost · reconnect"); }
+      finally { if(active())owner.timer=timers.setTimeout(check,2_000);else if(monitor===owner)stopMonitor(); }
+    };
+    owner.timer=timers.setTimeout(check,2_000);
   }
   video.addEventListener("timeupdate", () => {present();metrics();});
   video.addEventListener("play", () => {suspended=false;scheduleFrame();});
@@ -77,7 +92,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   });
   video.addEventListener("ended",metrics);
   video.addEventListener("error", () => {
-    if (video.getAttribute("src")) { cached=null;status.textContent = "Program media unavailable or changed · prepare again"; setState("failed"); }
+    if (video.getAttribute("src")) { cached=null;pauseLocal();status.textContent = "Program media unavailable or changed · prepare again"; setState("failed"); }
   });
   cancel.addEventListener("click", () => {stop();onStop?.();});
   async function toggle() {
@@ -110,10 +125,8 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       let job = await api("/preview/program/prepare", current);
       const reused = job.state === "ready";
       const prepared = {...current, start_frame:job.program.start_frame, end_frame:job.program.end_frame};
-      if (seq !== sequence || !sameComposition(current, getState())) {
-        const obsolete = `/api/v1/preview/program/${encodeURIComponent(job.id)}?${new URLSearchParams(prepared)}`;
-        fetcher(obsolete,{method:"DELETE",signal:AbortSignal.timeout(5_000)}).catch(()=>{});return;
-      }
+      // Prepare can return a job shared by another player: obsolete ACKs only detach locally.
+      if (seq !== sequence || !sameComposition(current, getState())) return;
       jobURL = `/api/v1/preview/program/${encodeURIComponent(job.id)}?${new URLSearchParams(prepared)}`;
       while (job.state === "queued" || job.state === "running") {
         status.textContent = `Preparing composition · ${job.progress?.current_frame || 0}/${job.progress?.total_frames || "…"} frames`;
@@ -124,7 +137,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
         job = await response.json();
         if (seq !== sequence || !sameComposition(current, getState())) return;
       }
-      if (job.state !== "ready") throw new Error(job.error === "GPU_BUSY" ? "GPU_BUSY · retry after the inference workload releases the GPU" : job.error === "RENDER_BUSY" ? "The CPU compositor is preparing another job · wait or cancel it" : (job.error || `Composition ${job.state}`));
+      if (job.state !== "ready") throw new Error(job.error === "PREVIEW_STORAGE_PRESSURE" ? "Preview stopped to preserve scratch disk space · free space before preparing again" : job.error === "GPU_BUSY" ? "GPU_BUSY · retry after the inference workload releases the GPU" : job.error === "RENDER_BUSY" ? "The CPU compositor is preparing another job · wait or cancel it" : (job.error || `Composition ${job.state}`));
       query = { ...prepared, fps: job.program.fps };
       video.src = `/api/v1/preview/program/${encodeURIComponent(job.id)}/program.mp4?${new URLSearchParams(prepared)}`;
       await seekMedia(video,(current.start_frame - query.start_frame) * query.fps.den / query.fps.num,signal);

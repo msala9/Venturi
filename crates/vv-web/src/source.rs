@@ -26,6 +26,10 @@ use vv_media::proxy::ProxyQuality;
 
 const MAX_JOB_BYTES: u64 = 512 * 1024 * 1024;
 const MAX_CACHE_BYTES: u64 = 2 * 1024 * 1024 * 1024;
+const MIN_FREE_BYTES: u64 = 1024 * 1024 * 1024;
+const MAX_CACHE_JOBS: usize = 32;
+const CACHE_TTL: Duration = Duration::from_secs(45);
+const MAX_CACHE_FILES: usize = 16;
 
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -63,6 +67,7 @@ struct Job {
     directory: PathBuf,
     cancel: Arc<AtomicBool>,
     bytes: u64,
+    touched: Instant,
     export: Option<Arc<Mutex<vv_session::export::ExportProgress>>>,
     descriptor: Option<Value>,
     inputs: Inputs,
@@ -74,6 +79,20 @@ struct Job {
     durability_error: bool,
 }
 impl Job {
+    fn charge(&self) -> u64 {
+        if self.durable.is_some() {
+            0
+        } else if matches!(self.state, "queued" | "running") {
+            MAX_JOB_BYTES
+        } else {
+            self.bytes
+        }
+    }
+    fn touch(&mut self) {
+        if self.durable.is_none() && self.state == "ready" {
+            self.touched = Instant::now();
+        }
+    }
     fn progress_value(&self) -> Option<Value> {
         self.export
             .as_ref()
@@ -170,6 +189,7 @@ impl MediaJobs {
                     directory: stored.directory(),
                     cancel: Arc::new(AtomicBool::new(false)),
                     bytes: stored.record.bytes,
+                    touched: Instant::now(),
                     export: None,
                     descriptor: Some(stored.record.program.clone()),
                     inputs: vec![],
@@ -240,6 +260,12 @@ impl MediaJobs {
                 if let Some(job) = jobs.iter_mut().find(|j| j.id == id) {
                     let result = if job.export_epoch.is_some() && job.explicit_cancel {
                         Err(ApiError::invalid("Export was canceled"))
+                    } else if job.durable.is_none()
+                        && result.is_ok()
+                        && !available_bytes(&directory)
+                            .is_ok_and(|free| publication_fits(directory_bytes(&directory), free))
+                    {
+                        Err(cache_full())
                     } else {
                         result
                     };
@@ -257,6 +283,7 @@ impl MediaJobs {
                                 Ok(()) => {
                                     job.state = "ready";
                                     job.bytes = directory_bytes(&directory);
+                                    job.touch();
                                 }
                                 Err(error) => {
                                     job.state = "failed";
@@ -273,7 +300,7 @@ impl MediaJobs {
                             job.state = if canceled { "canceled" } else { "failed" };
                             job.error = Some(error.1.into());
                             if job.durable.is_none() {
-                                let _ = std::fs::remove_dir_all(&directory);
+                                let _ = reclaim(job);
                             }
                         }
                     }
@@ -288,7 +315,9 @@ impl MediaJobs {
                 }
                 trim(&mut jobs);
             }
-            let _ = std::fs::remove_dir_all(worker_root);
+            let mut jobs = owned.lock().unwrap();
+            jobs.retain_mut(|job| job.durable.is_some() || !reclaim(job));
+            let _ = remove_cache_directory(&worker_root);
         });
         Ok(Self {
             root: Arc::new(root),
@@ -326,18 +355,19 @@ impl MediaJobs {
         );
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs
-            .iter()
+            .iter_mut()
             .find(|j| j.key == key && !matches!(j.state, "failed" | "canceled"))
         {
+            job.touch();
             return Ok(job.value());
         }
-        trim(&mut jobs);
-        if jobs.iter().filter(|job| job.durable.is_none()).count() >= 32 {
+        if jobs.iter().any(|job| job.state == "queued") {
             return Err(ApiError::conflict(
                 "SOURCE_BUSY",
-                "The source cache is full; cancel a pending job",
+                "One source job is running and one is pending",
             ));
         }
+        admit_cache(&mut jobs, &self.root)?;
         let id = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -354,6 +384,7 @@ impl MediaJobs {
             directory: directory.clone(),
             cancel: Arc::new(AtomicBool::new(false)),
             bytes: 0,
+            touched: Instant::now(),
             export: None,
             descriptor: None,
             program_query: None,
@@ -369,8 +400,7 @@ impl MediaJobs {
             .try_send((id.clone(), Work::Source(Box::new(spec), quality)))
             .is_err()
         {
-            jobs.pop_back();
-            let _ = std::fs::remove_dir(&directory);
+            reject_ephemeral(&mut jobs);
             return Err(ApiError::conflict(
                 "SOURCE_BUSY",
                 "One source job is running and one is pending",
@@ -386,7 +416,7 @@ impl MediaJobs {
         let key = task.key();
         let inputs = program::inputs(&task.snapshot)?;
         let mut jobs = self.jobs.lock().unwrap();
-        if let Some(job) = jobs.iter().find(|j| {
+        if let Some(job) = jobs.iter_mut().find(|j| {
             j.inputs == inputs
                 && ((j.key == key && !matches!(j.state, "failed" | "canceled"))
                     || (task.export.is_none()
@@ -395,18 +425,20 @@ impl MediaJobs {
                             .as_ref()
                             .is_some_and(|range| range.contains(&task.query))))
         }) {
+            job.touch();
             return Ok(job.value());
         }
-        if task.export.is_some()
-            && self.exports.is_some()
-            && jobs.iter().any(|job| job.state == "queued")
-        {
+        if jobs.iter().any(|job| job.state == "queued") {
             return Err(ApiError::conflict(
                 "MEDIA_BUSY",
                 "One media job is running and one is pending",
             ));
         }
-        trim(&mut jobs);
+        if task.export.is_none() || self.exports.is_none() {
+            admit_cache(&mut jobs, &self.root)?;
+        } else {
+            trim(&mut jobs);
+        }
         let id = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
@@ -451,6 +483,7 @@ impl MediaJobs {
             directory: directory.clone(),
             cancel: Arc::new(AtomicBool::new(false)),
             bytes: 0,
+            touched: Instant::now(),
             export: Some(Arc::new(Mutex::new(progress))),
             descriptor: Some(descriptor),
             program_query: task.export.is_none().then(|| task.query.clone()),
@@ -478,8 +511,7 @@ impl MediaJobs {
                     job.persist(store)?;
                 }
             } else {
-                jobs.pop_back();
-                let _ = std::fs::remove_dir(directory);
+                reject_ephemeral(&mut jobs);
             }
             return Err(ApiError::conflict(
                 "MEDIA_BUSY",
@@ -514,6 +546,9 @@ impl MediaJobs {
         if cancel && matches!(job.state, "queued" | "running") {
             job.cancel.store(true, Ordering::Relaxed);
         }
+        if !cancel {
+            job.touch();
+        }
         Ok(job.value())
     }
     pub fn export_status(&self, id: &str, epoch: &str, cancel: bool) -> Result<Value> {
@@ -529,6 +564,9 @@ impl MediaJobs {
             if let Some(store) = &self.exports {
                 job.persist(store)?;
             }
+        }
+        if !cancel {
+            job.touch();
         }
         Ok(job.value())
     }
@@ -592,9 +630,9 @@ impl MediaJobs {
     }
     pub fn export_asset(&self, id: &str, epoch: &str) -> Result<File> {
         self.check_exports()?;
-        let jobs = self.jobs.lock().unwrap();
+        let mut jobs = self.jobs.lock().unwrap();
         let job = jobs
-            .iter()
+            .iter_mut()
             .find(|j| j.id == id && j.export_epoch.as_deref() == Some(epoch))
             .ok_or_else(ApiError::missing)?;
         if job.state != "ready" {
@@ -610,7 +648,9 @@ impl MediaJobs {
                 .ok_or_else(ApiError::io)?
                 .output(stored);
         }
-        File::open(job.directory.join("program.mp4")).map_err(|_| ApiError::missing())
+        let file = open_cache_asset(&job.directory.join("program.mp4"))?;
+        job.touch();
+        Ok(file)
     }
     fn check_exports(&self) -> Result<()> {
         if self.exports_blocked {
@@ -639,7 +679,9 @@ impl MediaJobs {
                 "Media changed since Program preparation",
             ));
         }
-        File::open(job.directory.join("program.mp4")).map_err(|_| ApiError::missing())
+        let file = open_cache_asset(&job.directory.join("program.mp4"))?;
+        job.touch();
+        Ok(file)
     }
     fn authorized<'a>(
         jobs: &'a mut VecDeque<Job>,
@@ -656,6 +698,9 @@ impl MediaJobs {
         let job = Self::authorized(&mut jobs, id, spec)?;
         if cancel && matches!(job.state, "queued" | "running") {
             job.cancel.store(true, Ordering::Relaxed);
+        }
+        if !cancel {
+            job.touch();
         }
         Ok(job.value())
     }
@@ -680,37 +725,221 @@ impl MediaJobs {
                 "Wait for the source job to finish",
             ));
         }
-        File::open(job.directory.join(name)).map_err(|_| ApiError::missing())
+        let file = open_cache_asset(&job.directory.join(name))?;
+        job.touch();
+        Ok(file)
     }
 }
 fn trim(jobs: &mut VecDeque<Job>) {
-    while jobs.iter().filter(|job| job.durable.is_none()).count() >= 24
-        || jobs
-            .iter()
-            .filter(|job| job.durable.is_none())
-            .map(|j| j.bytes)
-            .sum::<u64>()
-            > MAX_CACHE_BYTES
+    trim_for(jobs, 0, 24, Instant::now());
+}
+
+fn cache_full() -> ApiError {
+    ApiError::conflict(
+        "SOURCE_CACHE_FULL",
+        "Preview cache or free disk space is full; stop unused playback and wait before retrying",
+    )
+}
+fn cache_charge(jobs: &VecDeque<Job>) -> u64 {
+    jobs.iter()
+        .fold(0u64, |total, job| total.saturating_add(job.charge()))
+}
+fn cache_count(jobs: &VecDeque<Job>) -> usize {
+    jobs.iter().filter(|job| job.durable.is_none()).count()
+}
+fn reserved_bytes(jobs: &VecDeque<Job>) -> u64 {
+    jobs.iter()
+        .filter(|job| job.durable.is_none() && matches!(job.state, "queued" | "running"))
+        .fold(0u64, |total, _| total.saturating_add(MAX_JOB_BYTES))
+}
+fn admission_fits(jobs: &VecDeque<Job>, free: u64) -> bool {
+    cache_count(jobs) < MAX_CACHE_JOBS
+        && cache_charge(jobs).saturating_add(MAX_JOB_BYTES) <= MAX_CACHE_BYTES
+        && free
+            >= MIN_FREE_BYTES
+                .saturating_add(reserved_bytes(jobs))
+                .saturating_add(MAX_JOB_BYTES)
+}
+fn publication_fits(bytes: u64, free: u64) -> bool {
+    bytes <= MAX_JOB_BYTES && free >= MIN_FREE_BYTES
+}
+fn admit_cache(jobs: &mut VecDeque<Job>, root: &Path) -> Result<()> {
+    let now = Instant::now();
+    trim_for(jobs, MAX_JOB_BYTES, MAX_CACHE_JOBS, now);
+    let mut free = available_bytes(root)?;
+    let mut index = 0;
+    while !admission_fits(jobs, free) && index < jobs.len() {
+        if reclaimable(&jobs[index], now) && reclaim(&mut jobs[index]) {
+            jobs.remove(index);
+            free = available_bytes(root)?;
+        } else {
+            index += 1;
+        }
+    }
+    if !admission_fits(jobs, free) {
+        return Err(cache_full());
+    }
+    Ok(())
+}
+fn reclaimable(job: &Job, now: Instant) -> bool {
+    job.durable.is_none()
+        && !matches!(job.state, "queued" | "running")
+        && !(job.state == "ready" && now.saturating_duration_since(job.touched) < CACHE_TTL)
+}
+fn trim_for(jobs: &mut VecDeque<Job>, extra: u64, count_limit: usize, now: Instant) {
+    let mut index = 0;
+    while index < jobs.len()
+        && (cache_count(jobs) >= count_limit
+            || cache_charge(jobs).saturating_add(extra) > MAX_CACHE_BYTES)
     {
-        let Some(i) = jobs
-            .iter()
-            .position(|j| j.durable.is_none() && !matches!(j.state, "queued" | "running"))
-        else {
-            break;
-        };
-        if let Some(job) = jobs.remove(i) {
-            let _ = std::fs::remove_dir_all(job.directory);
+        let job = &mut jobs[index];
+        if reclaimable(job, now) && reclaim(job) {
+            jobs.remove(index);
+        } else {
+            index += 1;
         }
     }
 }
+fn reject_ephemeral(jobs: &mut VecDeque<Job>) {
+    if let Some(job) = jobs.back_mut() {
+        job.state = "failed";
+        job.error = Some("MEDIA_BUSY".into());
+        if reclaim(job) {
+            jobs.pop_back();
+        }
+    }
+}
+fn reclaim(job: &mut Job) -> bool {
+    reclaim_with(job, remove_cache_directory)
+}
+fn reclaim_with(job: &mut Job, remove: impl FnOnce(&Path) -> std::io::Result<()>) -> bool {
+    match remove(&job.directory) {
+        Ok(()) => {
+            job.bytes = 0;
+            true
+        }
+        Err(error) => {
+            job.bytes = measured_directory_bytes(&job.directory)
+                .unwrap_or_else(|_| job.bytes.max(MAX_CACHE_BYTES));
+            if job.state == "ready" && error.kind() != std::io::ErrorKind::WouldBlock {
+                job.state = "failed";
+                job.error = Some("SOURCE_CACHE_RECLAIM_FAILED".into());
+            }
+            false
+        }
+    }
+}
+fn available_bytes(path: &Path) -> Result<u64> {
+    let directory = File::open(path).map_err(|_| ApiError::io())?;
+    let stat = rustix::fs::fstatvfs(&directory).map_err(|_| ApiError::io())?;
+    Ok(stat.f_bavail.saturating_mul(stat.f_frsize))
+}
+pub(crate) fn disk_headroom(path: &Path) -> bool {
+    available_bytes(path).is_ok_and(|bytes| bytes >= MIN_FREE_BYTES)
+}
+fn open_cache_asset(path: &Path) -> Result<File> {
+    use rustix::fs::{Mode, OFlags};
+    let file: File = rustix::fs::open(
+        path,
+        OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+        Mode::empty(),
+    )
+    .map_err(|_| ApiError::missing())?
+    .into();
+    if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
+        return Err(ApiError::missing());
+    }
+    rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockShared).map_err(|_| {
+        ApiError::conflict(
+            "SOURCE_CACHE_BUSY",
+            "Preview cache entry is being reclaimed",
+        )
+    })?;
+    Ok(file)
+}
+fn remove_cache_directory(path: &Path) -> std::io::Result<()> {
+    use rustix::fs::{AtFlags, Mode, OFlags};
+    let directory: File = match rustix::fs::open(
+        path,
+        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+        Mode::empty(),
+    ) {
+        Ok(directory) => directory.into(),
+        Err(rustix::io::Errno::NOENT) => return Ok(()),
+        Err(error) => return Err(error.into()),
+    };
+    let anchored = PathBuf::from(format!("/proc/self/fd/{}", directory.as_raw_fd()));
+    let mut files = Vec::new();
+    for entry in std::fs::read_dir(&anchored)? {
+        if files.len() >= MAX_CACHE_FILES {
+            return Err(std::io::Error::other(
+                "Preview cache contains too many files",
+            ));
+        }
+        let entry = entry?;
+        let file: File = rustix::fs::openat(
+            &directory,
+            entry.file_name(),
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        )?
+        .into();
+        if !file.metadata()?.is_file() {
+            return Err(std::io::Error::other(
+                "Preview cache contains a nonregular entry",
+            ));
+        }
+        rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
+        files.push((entry.file_name(), file));
+    }
+    for (name, file) in &files {
+        let expected = file.metadata()?;
+        let actual = std::fs::symlink_metadata(anchored.join(name))?;
+        if !actual.is_file() || actual.dev() != expected.dev() || actual.ino() != expected.ino() {
+            return Err(std::io::Error::other("Preview cache entry changed"));
+        }
+        rustix::fs::unlinkat(&directory, name, AtFlags::empty())?;
+    }
+    directory.sync_all()?;
+    let expected = directory.metadata()?;
+    let actual = std::fs::symlink_metadata(path)?;
+    if !actual.is_dir() || actual.dev() != expected.dev() || actual.ino() != expected.ino() {
+        return Err(std::io::Error::other("Preview cache directory changed"));
+    }
+    std::fs::remove_dir(path)?;
+    if let Some(parent) = path.parent() {
+        File::open(parent)?.sync_all()?;
+    }
+    Ok(())
+}
 fn directory_bytes(path: &Path) -> u64 {
-    std::fs::read_dir(path)
-        .into_iter()
-        .flatten()
-        .filter_map(|e| e.ok())
-        .filter_map(|e| e.metadata().ok())
-        .map(|m| m.len())
-        .sum()
+    measured_directory_bytes(path).unwrap_or(MAX_CACHE_BYTES)
+}
+fn measured_directory_bytes(path: &Path) -> std::io::Result<u64> {
+    let metadata = match std::fs::symlink_metadata(path) {
+        Ok(metadata) => metadata,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(0),
+        Err(error) => return Err(error),
+    };
+    if !metadata.is_dir() {
+        return Err(std::io::Error::other("Preview cache is not a directory"));
+    }
+    let mut bytes = 0u64;
+    for (count, entry) in std::fs::read_dir(path)?.enumerate() {
+        if count >= MAX_CACHE_FILES {
+            return Err(std::io::Error::other(
+                "Preview cache contains too many files",
+            ));
+        }
+        let metadata = std::fs::symlink_metadata(entry?.path())?;
+        if !metadata.is_file() {
+            return Err(std::io::Error::other(
+                "Preview cache contains a nonregular entry",
+            ));
+        }
+        bytes = bytes.saturating_add(metadata.len());
+    }
+    Ok(bytes)
 }
 fn generate(
     spec: &SourceSpec,
@@ -748,6 +977,7 @@ fn generate(
         !cancel.load(Ordering::Relaxed)
             && started.elapsed() < Duration::from_secs(600)
             && directory_bytes(directory) < MAX_JOB_BYTES
+            && disk_headroom(directory)
     })
     .map_err(|_| {
         ApiError::invalid("Source generation failed, canceled or exceeded its resource budget")
@@ -771,7 +1001,11 @@ fn generate(
             &path,
             &[0],
             vv_media::recommended_num_peaks(seconds),
-            || !cancel.load(Ordering::Relaxed) && started.elapsed() < Duration::from_secs(600),
+            || {
+                !cancel.load(Ordering::Relaxed)
+                    && started.elapsed() < Duration::from_secs(600)
+                    && disk_headroom(directory)
+            },
         )
         .map_err(|_| ApiError::invalid("Waveform generation failed"))?;
         if let Some(waveform) = &waveforms[0] {
@@ -825,7 +1059,7 @@ fn generate_image(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> R
     let mut offset = 0;
     let mut buffer = [0; 64 * 1024];
     loop {
-        if cancel.load(Ordering::Relaxed) || offset > MAX_JOB_BYTES {
+        if cancel.load(Ordering::Relaxed) || offset > MAX_JOB_BYTES || !disk_headroom(directory) {
             return Err(ApiError::invalid(
                 "Image preparation canceled or exceeded its budget",
             ));

@@ -23,13 +23,14 @@ ds4 media-catalog integration has actual NAS evidence.
 Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
-selection/placement now pass
-201 Rust tests, 275 JavaScript tests,
+selection/placement and preview cache retention now pass
+206 Rust tests, 304 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
 `evidence/m4-transition-duration-handles.json`, `evidence/m4-speed-handles.json`,
-`evidence/m4-mask-pen-path-keys.json` and `evidence/m4-transition-placement.json`;
+`evidence/m4-mask-pen-path-keys.json`, `evidence/m4-transition-placement.json`
+and `evidence/m3-preview-cache-safety.json`;
 prior transform/export proofs remain valid
 for their recorded scope.
 
@@ -2617,3 +2618,40 @@ Both own API instances stop and port 8811 closes. Parent file hashes and the
 primary editor's five unsaved moves are preserved. API uses one CPU, 512 MiB,
 no swap, OOMScoreAdjust=1000 and 60-second instance caps. No local browser/build,
 render/export, GPU or soak is started.
+
+
+## M3 — preview cache admission and live media retention
+
+Ephemeral Source/Program admission now reserves the full 512 MiB budget of each
+queued/running job against 2 GiB and at most 32 entries, with a 1 GiB scratch
+free-space floor after outstanding reservations. Final publication refuses
+oversized jobs; native cancellation points check free space. These checks do not
+claim an instantaneous filesystem quota over encoder batches or trailers.
+Durable export quotas and history remain separate.
+
+Ready status, cache hits and asset opens renew a shared 45-second retention
+period. Source renews every ten seconds, including original stills; Program
+renews every two seconds, including paused playback. Both loops allow one status
+request in flight and isolate obsolete replies/JSON completions from replacement
+media. Missing, changed or disconnected jobs stop playback and require reopening.
+Obsolete preparation acknowledgments never cancel shared deduplicated jobs.
+
+Active HTTP response bodies hold shared file locks. Reclamation acquires
+exclusive locks on all bounded regular files before unlinking anything. Failed
+cleanup retains its job and remaining bytes; unknown sizes fail closed. Cleanup
+is flat and restricted to the current process cache, without orphan scans.
+
+206 Rust and 304 JavaScript tests, fmt, clippy with warnings denied and native
+build pass on halo2. Tiny deterministic tests cover reservations, free-space and
+publication boundaries, TTL expiry, live HTTP-body protection, partial cleanup,
+unknown-size refusal and timer/async ownership failures. Finite API acceptance
+prepares two qualities of the existing 2375-byte video using CPU only, verifies
+reuse, authorized ready status and byte ranges, continued access to the first
+job, stale epoch refusal and exact unchanged saved restart. Evidence:
+`evidence/m3-preview-cache-safety.json`. No disk-filling, large-media pressure,
+browser, GPU, render/export or soak qualification was run. Long-media Source
+segmentation and Program rollover remain open; capability rows stay partial.
+
+Own test units stop and port 8811 closes. Parent files, source media and the
+primary editor's five unsaved moves remain intact. The candidate is staged
+without restarting that editor.

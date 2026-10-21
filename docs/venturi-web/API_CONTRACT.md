@@ -450,6 +450,18 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 - GET `/api/v1/media/{id}/jobs/{job}?project_epoch=...` returns id, state, frames
   and optional error. States: queued, running, ready, failed, canceled.
 - DELETE the same job URL requests cancellation; it never deletes source media.
+- Ready status, preparation cache hits and asset opens renew shared retention for
+  45 seconds. DELETE does not release another viewer's retention. Source checks
+  attached ready media every ten seconds, Program every two seconds, also paused;
+  requests are serial and stale completions cannot affect replacement media.
+  Obsolete prepare replies do not cancel shared deduplicated jobs.
+- Ephemeral admission reserves 512 MiB per queued/running job against 2 GiB and
+  32 entries, separately from durable exports. SOURCE_CACHE_FULL refuses admission
+  when retained entries, failed cleanup or scratch free space prevent a safe
+  reservation with a 1 GiB floor. Native cancellation checks and final publication
+  enforce job budgets; write batches/trailers are not filesystem quotas.
+  Active asset streams hold file locks against eviction. No route scans old
+  process caches or evicts durable export history.
 - GET `.../{job}/{source.mp4|thumb.png|waveform.json}?project_epoch=...` serves
   completed assets only. Every request revalidates epoch, media ID and file
   identity. Files are streamed with MIME, Content-Length, Accept-Ranges, ETag,

@@ -84,8 +84,23 @@ composed stills; source playback does not display timeline effects.
 
 Source jobs currently accept regular media up to ten minutes and 8192 pixels
 per dimension, cap decoded audio samples at 256 MiB plus encoder overhead,
-and cap each generated job at 512 MiB. Cache is private, 2 GiB, process-local;
-evicted material can be regenerated. PNG/JPEG stills display their original
+and reject completed ephemeral jobs larger than 512 MiB. The private,
+process-local cache reserves 512 MiB for every queued/running job before
+admission against a 2 GiB budget and at most 32 jobs. Admission also reserves
+outstanding job budgets against available scratch space, preserving a 1 GiB
+free-space floor. Preparation checks that floor at native cancellation points;
+native write batches and encoder trailers can temporarily exceed a job budget.
+This is not an instantaneous filesystem quota.
+
+Ready status, cache reuse and asset requests renew a shared 45-second retention
+period. Attached Source media renews every ten seconds; Program renews every two
+seconds, including paused media. Each viewer has at most one status request in
+flight. A lost/changed job stops playback and requires reopening or preparation.
+Active HTTP streams also hold shared file locks; eviction acquires exclusive
+locks on every job file before unlinking anything. Failed cleanup retains the
+job and accounts for remaining bytes; unknown sizes refuse further admission.
+Stop unused viewers and wait for retention to expire when SOURCE_CACHE_FULL is
+reported. Evicted material can be regenerated. PNG/JPEG/WebP stills display their original
 bytes; compound media opens its child timeline for Program preview. Original
 source files are preserved.
 

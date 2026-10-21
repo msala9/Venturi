@@ -240,6 +240,7 @@ impl ProgramTask {
     ) -> Result<()> {
         let done = AtomicBool::new(false);
         let budget = AtomicBool::new(false);
+        let storage_pressure = AtomicBool::new(false);
         let mut settings = self.settings(directory);
         if durable {
             settings.output_path = directory.join("rendering.mp4");
@@ -248,6 +249,11 @@ impl ProgramTask {
             scope.spawn(|| {
                 let start = Instant::now();
                 while !done.load(Ordering::Relaxed) {
+                    if !durable && !crate::source::disk_headroom(directory) {
+                        storage_pressure.store(true, Ordering::Relaxed);
+                        cancel.store(true, Ordering::Relaxed);
+                        break;
+                    }
                     if start.elapsed() > Duration::from_secs(600)
                         || std::fs::metadata(&settings.output_path)
                             .is_ok_and(|m| m.len() > 512 * 1024 * 1024)
@@ -270,6 +276,13 @@ impl ProgramTask {
                 )
             })
         });
+        if storage_pressure.load(Ordering::Relaxed) {
+            return Err(ApiError(
+                axum::http::StatusCode::INSUFFICIENT_STORAGE,
+                "PREVIEW_STORAGE_PRESSURE",
+                "Program preparation stopped to preserve at least 1 GiB of scratch disk space",
+            ));
+        }
         if budget.load(Ordering::Relaxed) {
             return Err(ApiError(
                 axum::http::StatusCode::UNPROCESSABLE_ENTITY,

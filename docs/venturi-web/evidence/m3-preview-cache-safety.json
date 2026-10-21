@@ -1,0 +1,113 @@
+{
+  "source_assets": {
+    "low": {
+      "bytes": 2744,
+      "etag": "\"1792596101314720750-video/mp4-2744\""
+    },
+    "medium": {
+      "bytes": 2756,
+      "etag": "\"1792596101367507901-video/mp4-2756\""
+    }
+  },
+  "source_file_sha256": "047831d4494ac1caa4597b2de72fcd2bbc44adb41f3c4c9017e033ae2c7cd4f5",
+  "native_source_cpu_proxy_used": true,
+  "low_disk_pressure_simulation": false,
+  "cache_policy_unit_coverage": true,
+  "project": "Transition_Placement_API_check.vvproj",
+  "project_sha256": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+  "checks": {
+    "tiny_cpu_source_preparation": true,
+    "low_medium_jobs_ready": true,
+    "same_source_quality_reuses_ready_job": true,
+    "authorized_ready_status_and_range_access": true,
+    "active_source_still_readable_after_another_job": true,
+    "stale_project_epoch_refused": true,
+    "session_history_and_source_file_unchanged": true
+  },
+  "served_asset_hashes": {
+    "source.js": "7e6fff51c7a477a27d9ef5f742e1d6e03c2a4cbac237db5c2337a09a10ac6040",
+    "program.js": "d2a1bef0d9215b0b7cd17329e98a0575434b6b4dba23ffbd7c9d545d0b2e9b15"
+  },
+  "save_restart_exact": true,
+  "parent_hashes_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "binary_sha256": "5efb3275cda984fab2dceac60cf419b8082f4a24c3ddc4b57ada15d435b4454d",
+  "gui_acceptance": false,
+  "hardware_gpu_used": false,
+  "no_render_or_exports": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "limits": {
+    "cpu": "one CPU",
+    "memory": "512 MiB",
+    "swap": 0,
+    "oom_score": 1000,
+    "runtime_max_seconds": 60
+  },
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "checkpoint": "/home/marco/.cache/venturi-cache-safety-check/acceptance.json",
+  "phase": "verified",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792596086.4562624,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "5efb3275cda984fab2dceac60cf419b8082f4a24c3ddc4b57ada15d435b4454d",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "main_editor_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    },
+    "unsaved": true
+  },
+  "syntax_checks": true,
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/source.rs": "7e6c2dfc39d584ad087eec78ff881f84725f6e0c6cfe3a99b856f122b9e211bb",
+      "crates/vv-web/src/program.rs": "5edb50a92942e3b29b3a1377119e2c5f25a842b8d7d84272741b682c27a186d3",
+      "crates/vv-web/src/tests/source.rs": "3a7de9b006b04acab264b4c4d19d46915a363794b727985540cef3dc571c5e60",
+      "web/js/source.js": "7e6fff51c7a477a27d9ef5f742e1d6e03c2a4cbac237db5c2337a09a10ac6040",
+      "web/js/program.js": "d2a1bef0d9215b0b7cd17329e98a0575434b6b4dba23ffbd7c9d545d0b2e9b15",
+      "web/test/source.test.js": "356da2912ce66e8d4547a348e5f97d8a6ecbf0244451aac631b6c1bcf84170a6",
+      "web/test/program.test.js": "4770374e8094b35d59ad48b23f4e4f9bd5d2069d1af02a1f5be2a3c4131c9a65"
+    },
+    "rust_tests": 206,
+    "javascript_tests": 304,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": false,
+    "hardware_gpu": false
+  },
+  "scope_note": "Preview cache admission reserves complete queued/running job budgets, protects live HTTP file locks and ready status pins, retains failed-cleanup accounting and checks free scratch space. Source and Program ready attachments maintain bounded nonoverlapping heartbeats including paused media. Native policy/timer tests exercise safety failures without filling disks. Finite API proves tiny CPU source preparation, reuse, authorized range/status access across another job, stale epoch refusal, unchanged session/source/parent files and saved restart. Long-media segmentation, cache pressure under real large renders, browser/DPI/GPU/soak acceptance remain open."
+}

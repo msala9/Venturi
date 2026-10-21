@@ -1,5 +1,205 @@
 use super::*;
 
+fn cache_fixture_job(directory: PathBuf, state: &'static str, bytes: u64) -> Job {
+    Job {
+        id: "cache-fixture".into(),
+        key: "cache-fixture".into(),
+        state,
+        progress: 0,
+        error: None,
+        directory,
+        cancel: Arc::new(AtomicBool::new(false)),
+        bytes,
+        touched: Instant::now(),
+        export: None,
+        descriptor: None,
+        inputs: vec![],
+        source_asset: Some("source.mp4"),
+        export_epoch: None,
+        program_query: None,
+        durable: None,
+        explicit_cancel: false,
+        durability_error: false,
+    }
+}
+fn cache_fixture_root(label: &str) -> PathBuf {
+    let path = std::env::temp_dir().join(format!(
+        "vv-cache-{label}-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&path).unwrap();
+    path
+}
+
+#[test]
+fn cache_admission_reserves_each_active_job_and_obeys_exact_cache_and_free_space_boundaries() {
+    let mut jobs = VecDeque::from([
+        cache_fixture_job("unused-running".into(), "running", 3),
+        cache_fixture_job("unused-queued".into(), "queued", 7),
+        cache_fixture_job("unused-ready".into(), "ready", 11),
+    ]);
+    assert_eq!(reserved_bytes(&jobs), 2 * MAX_JOB_BYTES);
+    assert_eq!(cache_charge(&jobs), 2 * MAX_JOB_BYTES + 11);
+    let required = MIN_FREE_BYTES + 3 * MAX_JOB_BYTES;
+    assert!(admission_fits(&jobs, required));
+    assert!(!admission_fits(&jobs, required - 1));
+    jobs[2].bytes = 2 * MAX_JOB_BYTES;
+    assert_eq!(cache_charge(&jobs), MAX_CACHE_BYTES);
+    assert!(!admission_fits(&jobs, u64::MAX));
+    jobs[2].bytes = MAX_JOB_BYTES;
+    assert!(admission_fits(&jobs, required));
+    let zero = VecDeque::from_iter(
+        (0..MAX_CACHE_JOBS).map(|_| cache_fixture_job("unused-count".into(), "ready", 0)),
+    );
+    assert!(!admission_fits(&zero, u64::MAX));
+    assert!(publication_fits(MAX_JOB_BYTES, MIN_FREE_BYTES));
+    assert!(!publication_fits(MAX_JOB_BYTES + 1, MIN_FREE_BYTES));
+    assert!(!publication_fits(1, MIN_FREE_BYTES - 1));
+}
+
+#[test]
+fn fresh_ready_cache_is_pinned_until_the_shared_ttl_expires_then_reclaims_before_admission() {
+    let root = cache_fixture_root("ttl");
+    let directory = root.join("job");
+    std::fs::create_dir(&directory).unwrap();
+    std::fs::write(directory.join("source.mp4"), b"small").unwrap();
+    let now = Instant::now();
+    let mut job = cache_fixture_job(directory.clone(), "ready", 5);
+    job.touched = now;
+    let mut jobs = VecDeque::from([job]);
+    trim_for(
+        &mut jobs,
+        MAX_CACHE_BYTES,
+        MAX_CACHE_JOBS,
+        now + CACHE_TTL - Duration::from_nanos(1),
+    );
+    assert_eq!(jobs.len(), 1);
+    assert!(directory.join("source.mp4").exists());
+    trim_for(&mut jobs, MAX_CACHE_BYTES, MAX_CACHE_JOBS, now + CACHE_TTL);
+    assert!(jobs.is_empty());
+    assert!(!directory.exists());
+    std::fs::remove_dir(root).unwrap();
+}
+
+#[tokio::test]
+async fn an_active_cache_response_body_locks_every_file_against_reclamation_until_download_ends() {
+    use axum::{body::to_bytes, http::HeaderMap};
+    let root = cache_fixture_root("http-lock");
+    let directory = root.join("job");
+    std::fs::create_dir(&directory).unwrap();
+    std::fs::write(directory.join("source.mp4"), b"small").unwrap();
+    std::fs::write(directory.join("thumb.png"), b"tiny").unwrap();
+    let mut jobs = VecDeque::from([cache_fixture_job(directory.clone(), "ready", 9)]);
+    let expired = jobs[0].touched + CACHE_TTL;
+    let file = open_cache_asset(&directory.join("source.mp4")).unwrap();
+    let response = stream_file(file, "video/mp4", "cache-fixture", &HeaderMap::new())
+        .await
+        .unwrap();
+    trim_for(&mut jobs, MAX_CACHE_BYTES, MAX_CACHE_JOBS, expired);
+    assert_eq!(jobs.len(), 1);
+    assert_eq!(jobs[0].bytes, 9);
+    assert!(directory.join("source.mp4").exists());
+    assert!(directory.join("thumb.png").exists());
+    assert_eq!(
+        &to_bytes(response.into_body(), 16).await.unwrap()[..],
+        b"small"
+    );
+    trim_for(&mut jobs, MAX_CACHE_BYTES, MAX_CACHE_JOBS, expired);
+    assert!(jobs.is_empty());
+    assert!(!directory.exists());
+    std::fs::remove_dir(root).unwrap();
+}
+
+#[test]
+fn failed_cache_cleanup_keeps_the_job_and_actual_remaining_bytes_and_unknown_sizes_fail_closed() {
+    let root = cache_fixture_root("failed-cleanup");
+    let directory = root.join("job");
+    std::fs::create_dir(&directory).unwrap();
+    std::fs::write(directory.join("first"), b"123").unwrap();
+    std::fs::write(directory.join("second"), b"12345").unwrap();
+    let mut job = cache_fixture_job(directory.clone(), "ready", 8);
+    assert!(!reclaim_with(&mut job, |path| {
+        std::fs::remove_file(path.join("first"))?;
+        Err(std::io::Error::other("injected unlink failure"))
+    }));
+    assert_eq!(job.bytes, 5);
+    assert_eq!(job.charge(), 5);
+    assert_eq!(job.state, "failed");
+    assert!(directory.join("second").exists());
+    std::fs::create_dir(directory.join("unknown")).unwrap();
+    assert!(!reclaim(&mut job));
+    assert_eq!(job.bytes, MAX_CACHE_BYTES);
+    assert!(directory.join("second").exists());
+    let mut jobs = VecDeque::from([job]);
+    trim_for(&mut jobs, MAX_JOB_BYTES, MAX_CACHE_JOBS, Instant::now());
+    assert_eq!(jobs.len(), 1);
+    assert!(!admission_fits(&jobs, u64::MAX));
+    std::fs::remove_dir(directory.join("unknown")).unwrap();
+    assert!(reclaim(&mut jobs[0]));
+    assert_eq!(jobs[0].bytes, 0);
+    std::fs::remove_dir(root).unwrap();
+}
+
+#[test]
+fn ready_source_status_cache_hits_and_assets_refresh_ttl_but_cancel_does_not_unpin_another_viewer()
+{
+    let source = MediaJobs::start().unwrap();
+    let input = source.root.join("input");
+    std::fs::write(&input, b"original").unwrap();
+    let spec = SourceSpec {
+        file: File::open(&input).unwrap(),
+        epoch: "cache:1".into(),
+        media_id: "1".into(),
+        meta: vv_core::MediaMeta {
+            duration_frames: 24,
+            fps: vv_core::Rational::new(24, 1),
+            width: 2,
+            height: 2,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+    };
+    let directory = source.root.join("cached");
+    std::fs::create_dir(&directory).unwrap();
+    std::fs::write(directory.join("source.mp4"), b"proxy").unwrap();
+    let mut job = cache_fixture_job(directory, "ready", 5);
+    job.key = format!("cache:1:1:{}:v1:medium", spec.identity().unwrap());
+    let old = Instant::now() - Duration::from_secs(90);
+    job.touched = old;
+    source.jobs.lock().unwrap().push_back(job);
+    source.status("cache-fixture", &spec, false).unwrap();
+    assert!(source.jobs.lock().unwrap()[0].touched > old);
+    let touched = source.jobs.lock().unwrap()[0].touched;
+    source.status("cache-fixture", &spec, true).unwrap();
+    assert_eq!(source.jobs.lock().unwrap()[0].touched, touched);
+    source.jobs.lock().unwrap()[0].touched = old;
+    let repeated = source
+        .prepare(
+            SourceSpec {
+                file: spec.file.try_clone().unwrap(),
+                epoch: spec.epoch.clone(),
+                media_id: spec.media_id.clone(),
+                meta: spec.meta.clone(),
+            },
+            "medium",
+        )
+        .unwrap();
+    assert_eq!(repeated["id"], "cache-fixture");
+    assert!(source.jobs.lock().unwrap()[0].touched > old);
+    source.jobs.lock().unwrap()[0].touched = old;
+    let asset = source.asset("cache-fixture", &spec, "source.mp4").unwrap();
+    assert!(source.jobs.lock().unwrap()[0].touched > old);
+    drop(asset);
+}
+
 #[test]
 fn webp_shared_images_keep_original_bytes_and_use_the_native_thumbnail_path() {
     use std::io::Read;
@@ -284,6 +484,7 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         directory,
         cancel: Arc::new(AtomicBool::new(false)),
         bytes: 5,
+        touched: Instant::now(),
         export: None,
         descriptor: None,
         program_query: None,
@@ -322,6 +523,7 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
         directory,
         cancel: cancel.clone(),
         bytes: 13,
+        touched: Instant::now(),
         export: None,
         descriptor: None,
         program_query: None,
@@ -480,6 +682,7 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
         directory: jobs.root.join("queued-marker"),
         cancel: Arc::new(AtomicBool::new(false)),
         bytes: 0,
+        touched: Instant::now(),
         export: None,
         descriptor: None,
         inputs: vec![],

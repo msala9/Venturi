@@ -275,7 +275,7 @@
       }
     ],
     "persistence_notice": null,
-    "project_epoch": "1792557747472862433:1",
+    "project_epoch": "1792558628984902759:1",
     "project_name": "Long_Export_UI_check.vvproj",
     "recording_formats": [
       {
@@ -493,7 +493,7 @@
     "unsaved": false
   },
   "query": {
-    "project_epoch": "1792557747472862433:1",
+    "project_epoch": "1792558628984902759:1",
     "if_generation": "0",
     "timeline_id": "2",
     "revision": "9b756b9e80b71632",
@@ -501,15 +501,16 @@
     "end_frame": 8640,
     "width": 640
   },
-  "pid": 298980,
-  "rss_before": 166019072,
+  "pid": 304211,
+  "rss_before": 166797312,
   "project_sha256": "e9863c7b8eff49cc35d6fcda115fd5cf836b869f5ce6af8f083717c8cb4ca13b",
   "preview_duration_cap_preserved": true,
   "job": {
     "error": null,
     "frames": 0,
-    "id": "1792557756121032553",
+    "id": "1792558637257023229",
     "program": {
+      "audio_present": true,
       "end_frame": 8640,
       "export_settings": {
         "audio": true,
@@ -522,21 +523,21 @@
       },
       "generation": "0",
       "height": 36,
-      "project_epoch": "1792557747472862433:1",
+      "project_epoch": "1792558628984902759:1",
       "revision": "9b756b9e80b71632",
       "start_frame": 0,
       "width": 64
     },
     "progress": {
-      "compose_fps": 1250.2325246190887,
+      "compose_fps": 1059.1648403491818,
       "compositor": "llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan)",
       "current_frame": 8640,
-      "decode_fps": 1273.1380743571783,
-      "elapsed_ms": 7294.02287,
-      "encode_fps": 1222.24017591816,
+      "decode_fps": 1128.3972573949422,
+      "elapsed_ms": 8772.768875,
+      "encode_fps": 1053.7866003151594,
       "encoder": "X264",
-      "fps": 1184.531520395411,
-      "startup_ms": 148.43110000000001,
+      "fps": 984.8657958631105,
+      "startup_ms": 314.690799,
       "total_frames": 8640
     },
     "source_asset": null,
@@ -549,97 +550,103 @@
   },
   "measurements": [
     {
-      "seconds": 1.200009137392044e-06,
-      "rss": 244367360,
+      "seconds": 8.00006091594696e-07,
+      "rss": 243159040,
       "state": "running",
-      "frame": 5416
+      "frame": 5175
     },
     {
-      "seconds": 0.20151269900088664,
-      "rss": 244404224,
+      "seconds": 0.20130259900179226,
+      "rss": 243191808,
       "state": "running",
-      "frame": 5670
+      "frame": 5406
     },
     {
-      "seconds": 0.40289679799752776,
-      "rss": 244441088,
+      "seconds": 0.4027422990038758,
+      "rss": 243245056,
       "state": "running",
-      "frame": 5908
+      "frame": 5648
     },
     {
-      "seconds": 0.6041855970106553,
-      "rss": 244486144,
+      "seconds": 0.6040074979973724,
+      "rss": 243277824,
       "state": "running",
-      "frame": 6157
+      "frame": 5884
     },
     {
-      "seconds": 0.8054848970059538,
-      "rss": 244531200,
+      "seconds": 0.8053733970009489,
+      "rss": 243314688,
       "state": "running",
-      "frame": 6409
+      "frame": 6112
     },
     {
-      "seconds": 1.00676259600732,
-      "rss": 242511872,
+      "seconds": 1.006941696992726,
+      "rss": 243347456,
       "state": "running",
-      "frame": 6660
+      "frame": 6335
     },
     {
-      "seconds": 1.2081238950049737,
-      "rss": 242577408,
+      "seconds": 1.2083980960014742,
+      "rss": 243384320,
       "state": "running",
-      "frame": 6894
+      "frame": 6572
     },
     {
-      "seconds": 1.4094694939994952,
-      "rss": 242606080,
+      "seconds": 1.4096960960014258,
+      "rss": 243421184,
       "state": "running",
-      "frame": 7149
+      "frame": 6800
     },
     {
-      "seconds": 1.6107628930039937,
-      "rss": 242647040,
+      "seconds": 1.6109992949932348,
+      "rss": 243466240,
       "state": "running",
-      "frame": 7404
+      "frame": 7042
     },
     {
-      "seconds": 1.812111792009091,
-      "rss": 242679808,
+      "seconds": 1.8124339939968195,
+      "rss": 243494912,
       "state": "running",
-      "frame": 7642
+      "frame": 7288
     },
     {
-      "seconds": 2.0135119920014404,
-      "rss": 242712576,
+      "seconds": 2.014086794006289,
+      "rss": 243548160,
       "state": "running",
-      "frame": 7892
+      "frame": 7529
     },
     {
-      "seconds": 2.214879491002648,
-      "rss": 242757632,
+      "seconds": 2.2155169930047123,
+      "rss": 243580928,
       "state": "running",
-      "frame": 8146
+      "frame": 7766
     },
     {
-      "seconds": 2.4162787899986142,
-      "rss": 240685056,
+      "seconds": 2.417335492995335,
+      "rss": 243605504,
       "state": "running",
-      "frame": 8400
+      "frame": 7999
     },
     {
-      "seconds": 2.6175432890013326,
-      "rss": 227061760,
+      "seconds": 2.6188464919978287,
+      "rss": 243646464,
       "state": "running",
-      "frame": 8640
+      "frame": 8239
     },
     {
-      "seconds": 2.8189160879992414,
-      "rss": 227061760,
+      "seconds": 2.82036459200026,
+      "rss": 241569792,
+      "state": "running",
+      "frame": 8466
+    },
+    {
+      "seconds": 3.021777292000479,
+      "rss": 227876864,
       "state": "ready",
       "frame": 8640
     }
   ],
-  "file": "/home/marco/.cache/venturi-six-minute-export-1792557756121032553.mp4",
+  "file": "/home/marco/.cache/venturi-six-minute-export-1792558637257023229.mp4",
   "bytes": 6052915,
   "sha256": "c4cb58b9921c770e659bc2d5f6f72d2cb669ce3a425acc7f02b391e30c904312",
   "source_fixture": {
@@ -775,7 +782,7 @@
       }
     ],
     "format": {
-      "filename": "/home/marco/.cache/venturi-six-minute-export-1792557756121032553.mp4",
+      "filename": "/home/marco/.cache/venturi-six-minute-export-1792558637257023229.mp4",
       "nb_streams": 2,
       "nb_programs": 0,
       "nb_stream_groups": 0,
@@ -828,13 +835,13 @@
   ],
   "browser": {
     "status": "READY \u00b7 8640/8640 frames \u00b7 llvmpipe (LLVM 21.1.8, 256 bits) (Vulkan) \u00b7 X264 \u00b7 snapshot frames 0\u20138640 \u00b7 64\u00d736",
-    "href": "/api/v1/exports/1792557756121032553/export.mp4?project_epoch=1792557747472862433%3A1",
+    "href": "/api/v1/exports/1792558637257023229/export.mp4?project_epoch=1792558628984902759%3A1",
     "label": "Download MP4 \u00b7 frames 0\u20138640 \u00b7 CRF 23 ultrafast + AAC",
-    "download_path": "C:\\Users\\marco\\Downloads\\venturi-export (4).mp4",
+    "download_path": "C:\\Users\\marco\\Downloads\\venturi-export (5).mp4",
     "download_sha256": "c4cb58b9921c770e659bc2d5f6f72d2cb669ce3a425acc7f02b391e30c904312",
     "download_bytes": 6052915,
     "windows_download_verified": true
   },
-  "observed_peak_rss": 244531200,
+  "observed_peak_rss": 243646464,
   "observed_rss_note": "Monitoring began at the first recorded progress frame; this is not a whole-job peak guarantee."
 }

@@ -573,6 +573,9 @@ independent of the five-minute Program preview window. Width is capped at 1920
 and native aspect/pixel budgets still apply.
 Encoding/mixing/compositing use vv-session, vv-media and vv-audio. CPU x264/AAC
 are explicit; no unverified hardware encoder or decoder is offered.
+The returned `program.audio_present` follows the native export rule: requested
+audio is included when an audio track contains clips. Download labels use this
+actual stream choice; empty audio tracks do not announce an AAC stream.
 
 The shared bounded media worker runs one job and queues one more; output is
 limited to 512 MiB and ten minutes of processing, inside the private 2 GiB process

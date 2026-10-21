@@ -1,4 +1,5 @@
 import { request } from "./api.js";
+export function exportAudioLabel(output) {return output.audio_present?" + AAC":" · silent";}
 
 export function exportRequest(state, values) {
   if (!state) throw new Error("Open a nonempty native timeline first");
@@ -22,7 +23,7 @@ export function createExportPanel({ form, status, cancel, refresh, download, get
     if(job.program) {
       const output=job.program,settings=output.export_settings;
       status.textContent+=` · snapshot frames ${output.start_frame}–${output.end_frame} · ${output.width}×${output.height}`;
-      download.textContent=`Download MP4 · frames ${output.start_frame}–${output.end_frame}${settings ? ` · CRF ${settings.quality} ${settings.preset}${settings.audio ? " + AAC" : " · silent"}` : ""}`;
+      download.textContent=`Download MP4 · frames ${output.start_frame}–${output.end_frame}${settings ? ` · CRF ${settings.quality} ${settings.preset}${exportAudioLabel(output)}` : ""}`;
     }
     if (!download.hidden) download.href = `/api/v1/exports/${encodeURIComponent(current.id)}/export.mp4?${new URLSearchParams({ project_epoch: current.epoch })}`;
     clearTimeout(timer);

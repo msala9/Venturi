@@ -226,8 +226,9 @@ impl ProgramTask {
     }
     pub fn descriptor(&self, directory: &Path) -> Value {
         let tl = &self.snapshot.project.timelines[self.snapshot.timeline];
-        let size = self.settings(directory).output_size(tl.resolution);
-        json!({"start_frame":self.query.start_frame,"end_frame":self.query.end_frame,"width":size.0,"height":size.1,"fps":tl.fps,"revision":self.query.revision,"project_epoch":self.query.project_epoch,"generation":self.query.if_generation,"export_settings":self.export})
+        let settings = self.settings(directory);
+        let size = settings.output_size(tl.resolution);
+        json!({"start_frame":self.query.start_frame,"end_frame":self.query.end_frame,"width":size.0,"height":size.1,"fps":tl.fps,"revision":self.query.revision,"project_epoch":self.query.project_epoch,"generation":self.query.if_generation,"export_settings":self.export,"audio_present":settings.audio_for_timeline(tl).is_some()})
     }
     pub fn generate(
         &self,

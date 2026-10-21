@@ -123,6 +123,11 @@ fn export_settings_are_native_bounded_and_part_of_the_immutable_job_identity() {
     task.export.as_mut().unwrap().audio = true;
     assert_ne!(before, task.key());
     assert!(task.settings(Path::new("/tmp")).audio.is_some());
+    assert_eq!(
+        task.descriptor(Path::new("/tmp"))["audio_present"],
+        false,
+        "An audio checkbox alone does not create a native audio stream"
+    );
     task.export.as_mut().unwrap().quality = 52;
     assert!(task.validate().is_err());
     task.export.as_mut().unwrap().quality = 18;

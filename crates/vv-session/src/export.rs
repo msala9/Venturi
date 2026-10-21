@@ -80,6 +80,13 @@ impl ExportSettings {
         let scale = |v: u32| ((v * self.scale_percent / 100) & !1).max(2);
         (scale(timeline_size.0), scale(timeline_size.1))
     }
+    pub fn audio_for_timeline(&self, timeline: &Timeline) -> Option<&vv_media::AudioSettings> {
+        self.audio.as_ref().filter(|_| {
+            timeline
+                .tracks_of_kind(TrackKind::Audio)
+                .any(|(_, track)| !track.clips.is_empty())
+        })
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -362,11 +369,7 @@ pub fn export_timeline_with_gpu<G>(
         return Ok(());
     }
 
-    let audio_settings = settings.audio.as_ref().filter(|_| {
-        timeline
-            .tracks_of_kind(TrackKind::Audio)
-            .any(|(_, t)| !t.clips.is_empty())
-    });
+    let audio_settings = settings.audio_for_timeline(timeline);
     let has_audio_track = audio_settings.is_some();
 
     let (out_w, out_h) = settings.output_size(timeline.resolution);

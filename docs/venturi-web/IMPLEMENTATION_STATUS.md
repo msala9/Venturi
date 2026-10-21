@@ -1796,3 +1796,11 @@ source hashes remained unchanged. Evidence: m3-six-minute-export.json and its
 browser screenshot. This fixture validates duration, timestamps and download at
 64x36; full-resolution performance remains separate. Durable queues and hardware
 codec selection are still open. No halo2 hardware resource was acquired.
+
+Remote video-only acceptance also exposed an inaccurate download label: an
+enabled audio checkbox announced AAC even when the native exporter omitted it
+because no audio track contained clips. The descriptor now exposes audio_present
+through the same native condition used by encoding, and the UI names AAC or
+silent output accordingly. The six-minute WAV case retains AAC and exactly the
+same encoded bytes after this extraction. 119 web tests, 100 session tests,
+93 JavaScript tests, clippy, formatting, native GUI compilation and build pass.

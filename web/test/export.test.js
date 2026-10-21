@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { exportRequest } from "../js/export.js";
+import { exportRequest, exportAudioLabel } from "../js/export.js";
+test("the download describes actual native audio presence rather than the requested checkbox",()=>{
+  assert.equal(exportAudioLabel({audio_present:false,export_settings:{audio:true}})," · silent");
+  assert.equal(exportAudioLabel({audio_present:true,export_settings:{audio:true}})," + AAC");
+});
 
 test("export captures an integer exclusive range and native settings without changing the document", () => {
   const state = { project_epoch: "p:1", if_generation: "4", timeline_id: "2", revision: "r", start_frame: 0, end_frame: 8000, fps: { num: 24000, den: 1001 }, width: 960 };

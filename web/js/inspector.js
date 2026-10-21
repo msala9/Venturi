@@ -1,6 +1,7 @@
 import {renderFilters} from "./visual.js";
 import {renderMasks} from "./masks.js";
 import {renderCurves} from "./curves.js";
+import {renderEventKeys} from "./eventkeys.js";
 
 export function detailIdentity(state) {
   return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame].join(":") : null;
@@ -73,6 +74,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   renderRetime(root,detail,disabled,getFrame,report,visualState);
   const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
   const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope});if(curves)controls.push(curves);
+  const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope});if(eventKeys)controls.push(eventKeys);
   if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState});
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report);
@@ -104,7 +106,7 @@ function renderTitle(root, detail, disabled, report) {
   const section = document.createElement("details"), summary = document.createElement("summary"); summary.textContent = "Title typography"; section.append(summary);
   const form = document.createElement("form"), fields = {};
   function field(name,key,type,value,min,max) {
-    const label = document.createElement("label"); label.className = "field"; label.textContent = name;
+    const label = document.createElement("label"); label.className = key === "text" ? "field text-field" : "field"; label.textContent = name;
     const input = document.createElement(key === "text" ? "textarea" : "input");
     if (key !== "text") input.type = type;
     if (type === "checkbox") input.checked = value; else input.value = value;

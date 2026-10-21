@@ -305,6 +305,8 @@ input[type="search"] {
 .field input {
   width: 100%;
 }
+.field.text-field { grid-template-columns: minmax(0, 1fr); }
+.text-field textarea { width: 100%; min-height: 80px; resize: vertical; }
 .section-title {
   font-size: 10px;
   letter-spacing: 1.4px;

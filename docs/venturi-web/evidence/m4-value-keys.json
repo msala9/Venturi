@@ -1,0 +1,1972 @@
+{
+  "url": "http://127.0.0.1:8805",
+  "parent_hashes": {
+    "Durable_receipt_UI_check.vvproj": "e53c56a26df1787f1048a5c4e42f8ce429003a106792cf5c244254a22fbeac20",
+    "Durable_receipt_recovered_UI.vvproj": "2c88cbfea9362f9cb45d038209fc9af43aef73dc94ef252f7babd8c0c0fe8c70",
+    "Marker_Gestures_UI_check.vvproj": "22fa3416edc8126cd65be3f04099fdb5486646c603a18f511066edf58915b008",
+    "Curve_Group_UI_check.vvproj": "67fc3a39532ffbba6b602422bb01ac9784ea1d1d08e21d475d1fec97f83b4f50"
+  },
+  "phases": {
+    "color_moved_filter_added": {
+      "generation": "4",
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "Filters"
+        ],
+        "position": 4
+      },
+      "revision": "623defb365b25428",
+      "unsaved": true,
+      "clips": [
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "0",
+            "kind": "solid_color",
+            "length_frames": 48,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Solid color",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 48,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": [
+                    [
+                      0.5,
+                      0.0
+                    ],
+                    [
+                      0.5,
+                      1.0
+                    ]
+                  ],
+                  "interpolation": "EaseInOut",
+                  "source_frame": 2,
+                  "timeline_frame": 2,
+                  "value": {
+                    "a": 0.800000011920929,
+                    "b": 0.6000000238418579,
+                    "g": 0.4000000059604645,
+                    "r": 0.20000000298023224
+                  }
+                },
+                {
+                  "controls": [
+                    [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  ],
+                  "interpolation": {
+                    "Bezier": {
+                      "c1": [
+                        0.20000000298023224,
+                        0.10000000149011612
+                      ],
+                      "c2": [
+                        0.800000011920929,
+                        0.8999999761581421
+                      ]
+                    }
+                  },
+                  "source_frame": 12,
+                  "timeline_frame": 12,
+                  "value": {
+                    "a": 0.20000000298023224,
+                    "b": 0.4000000059604645,
+                    "g": 0.6000000238418579,
+                    "r": 0.800000011920929
+                  }
+                }
+              ],
+              "name": "RGBA color",
+              "target": {
+                "kind": "color"
+              }
+            },
+            {
+              "choices": [
+                "Both",
+                "Horizontal",
+                "Vertical"
+              ],
+              "default": "Both",
+              "key_count": 0,
+              "keys": [],
+              "name": "GaussianBlur direction",
+              "target": {
+                "filter": "GaussianBlur",
+                "kind": "direction"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [
+              [
+                7,
+                25.0,
+                "Hold"
+              ],
+              [
+                17,
+                45.0,
+                {
+                  "Bezier": {
+                    "c1": [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    "c2": [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  }
+                }
+              ],
+              [
+                20,
+                60.0,
+                "EaseInOut"
+              ]
+            ],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 25.0
+          },
+          "title": null
+        }
+      ],
+      "autosave": {
+        "base_changed": false,
+        "created_unix_ms": 1792564618154,
+        "pending": false,
+        "project_token": "Value_Keys_UI_check.vvproj",
+        "resolved_to": null,
+        "revision": "5ac53a025a2e335e647954e1c8773981f378540053b4dd35524cf36d3c6f2bf5",
+        "state": "ready"
+      }
+    },
+    "direction_pointer_moved": {
+      "generation": "8",
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "Filters",
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "MoveKeyframes"
+        ],
+        "position": 8
+      },
+      "revision": "31145948724cf0ab",
+      "unsaved": true,
+      "clips": [
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "0",
+            "kind": "solid_color",
+            "length_frames": 48,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Solid color",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 48,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": [
+                    [
+                      0.5,
+                      0.0
+                    ],
+                    [
+                      0.5,
+                      1.0
+                    ]
+                  ],
+                  "interpolation": "EaseInOut",
+                  "source_frame": 2,
+                  "timeline_frame": 2,
+                  "value": {
+                    "a": 0.800000011920929,
+                    "b": 0.6000000238418579,
+                    "g": 0.4000000059604645,
+                    "r": 0.20000000298023224
+                  }
+                },
+                {
+                  "controls": [
+                    [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  ],
+                  "interpolation": {
+                    "Bezier": {
+                      "c1": [
+                        0.20000000298023224,
+                        0.10000000149011612
+                      ],
+                      "c2": [
+                        0.800000011920929,
+                        0.8999999761581421
+                      ]
+                    }
+                  },
+                  "source_frame": 12,
+                  "timeline_frame": 12,
+                  "value": {
+                    "a": 0.20000000298023224,
+                    "b": 0.4000000059604645,
+                    "g": 0.6000000238418579,
+                    "r": 0.800000011920929
+                  }
+                }
+              ],
+              "name": "RGBA color",
+              "target": {
+                "kind": "color"
+              }
+            },
+            {
+              "choices": [
+                "Both",
+                "Horizontal",
+                "Vertical"
+              ],
+              "default": "Both",
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 5,
+                  "timeline_frame": 5,
+                  "value": "Horizontal"
+                },
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 17,
+                  "timeline_frame": 17,
+                  "value": "Vertical"
+                }
+              ],
+              "name": "GaussianBlur direction",
+              "target": {
+                "filter": "GaussianBlur",
+                "kind": "direction"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [
+              [
+                7,
+                25.0,
+                "Hold"
+              ],
+              [
+                17,
+                45.0,
+                {
+                  "Bezier": {
+                    "c1": [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    "c2": [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  }
+                }
+              ],
+              [
+                20,
+                60.0,
+                "EaseInOut"
+              ]
+            ],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 25.0
+          },
+          "title": null
+        }
+      ],
+      "autosave": {
+        "base_changed": false,
+        "created_unix_ms": 1792565269009,
+        "pending": false,
+        "project_token": "Value_Keys_UI_check.vvproj",
+        "resolved_to": null,
+        "revision": "86ba0ba82b980ddc7647044189b34c8a8ebb8d1aa2aca976ccd740b60a5c47af",
+        "state": "ready"
+      }
+    },
+    "title_added": {
+      "generation": "9",
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "Filters",
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "MoveKeyframes",
+          "InsertClips"
+        ],
+        "position": 9
+      },
+      "revision": "9c9e7a8e6ee7826a",
+      "unsaved": true,
+      "clips": [
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "0",
+            "kind": "solid_color",
+            "length_frames": 48,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Solid color",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 48,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": [
+                    [
+                      0.5,
+                      0.0
+                    ],
+                    [
+                      0.5,
+                      1.0
+                    ]
+                  ],
+                  "interpolation": "EaseInOut",
+                  "source_frame": 2,
+                  "timeline_frame": 2,
+                  "value": {
+                    "a": 0.800000011920929,
+                    "b": 0.6000000238418579,
+                    "g": 0.4000000059604645,
+                    "r": 0.20000000298023224
+                  }
+                },
+                {
+                  "controls": [
+                    [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  ],
+                  "interpolation": {
+                    "Bezier": {
+                      "c1": [
+                        0.20000000298023224,
+                        0.10000000149011612
+                      ],
+                      "c2": [
+                        0.800000011920929,
+                        0.8999999761581421
+                      ]
+                    }
+                  },
+                  "source_frame": 12,
+                  "timeline_frame": 12,
+                  "value": {
+                    "a": 0.20000000298023224,
+                    "b": 0.4000000059604645,
+                    "g": 0.6000000238418579,
+                    "r": 0.800000011920929
+                  }
+                }
+              ],
+              "name": "RGBA color",
+              "target": {
+                "kind": "color"
+              }
+            },
+            {
+              "choices": [
+                "Both",
+                "Horizontal",
+                "Vertical"
+              ],
+              "default": "Both",
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 5,
+                  "timeline_frame": 5,
+                  "value": "Horizontal"
+                },
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 17,
+                  "timeline_frame": 17,
+                  "value": "Vertical"
+                }
+              ],
+              "name": "GaussianBlur direction",
+              "target": {
+                "filter": "GaussianBlur",
+                "kind": "direction"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [
+              [
+                7,
+                25.0,
+                "Hold"
+              ],
+              [
+                17,
+                45.0,
+                {
+                  "Bezier": {
+                    "c1": [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    "c2": [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  }
+                }
+              ],
+              [
+                20,
+                60.0,
+                "EaseInOut"
+              ]
+            ],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 25.0
+          },
+          "title": null
+        },
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "1",
+            "kind": "title",
+            "length_frames": 120,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Title",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 120,
+            "speed_percent": 100.0,
+            "start_frame": 60,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": "Title",
+              "key_count": 0,
+              "keys": [],
+              "name": "Title content",
+              "target": {
+                "kind": "text"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          },
+          "title": {
+            "align": "Center",
+            "anchor": [
+              "Center",
+              "Middle"
+            ],
+            "background": {
+              "center": [
+                0.0,
+                0.0
+              ],
+              "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 0.0
+              },
+              "corner_radius": 0.10000000149011612,
+              "enabled": false,
+              "height": 0.0,
+              "opacity": 100.0,
+              "outline_color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "outline_width": 0.0,
+              "width": 0.0
+            },
+            "case": "Mixed",
+            "color": {
+              "a": 1.0,
+              "b": 1.0,
+              "g": 1.0,
+              "r": 1.0
+            },
+            "content": {
+              "default": "Title",
+              "keyframes": []
+            },
+            "font_family": "",
+            "font_weight": 400,
+            "italic": false,
+            "line_spacing": 0.0,
+            "position": [
+              0.0,
+              0.0
+            ],
+            "size": 96.0,
+            "strikethrough": false,
+            "tracking": 0.0,
+            "underline": false
+          }
+        }
+      ],
+      "autosave": {
+        "base_changed": false,
+        "created_unix_ms": 1792565313539,
+        "pending": false,
+        "project_token": "Value_Keys_UI_check.vvproj",
+        "resolved_to": null,
+        "revision": "b30035855f37dca73f27d163d0b464e8554c112549b7ce3bb4c7c91a4021d4cb",
+        "state": "ready"
+      }
+    },
+    "text_moved": {
+      "generation": "12",
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "Filters",
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "MoveKeyframes",
+          "InsertClips",
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes"
+        ],
+        "position": 12
+      },
+      "revision": "f8808beac79520d9",
+      "unsaved": true,
+      "clips": [
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "0",
+            "kind": "solid_color",
+            "length_frames": 48,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Solid color",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 48,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": [
+                    [
+                      0.5,
+                      0.0
+                    ],
+                    [
+                      0.5,
+                      1.0
+                    ]
+                  ],
+                  "interpolation": "EaseInOut",
+                  "source_frame": 2,
+                  "timeline_frame": 2,
+                  "value": {
+                    "a": 0.800000011920929,
+                    "b": 0.6000000238418579,
+                    "g": 0.4000000059604645,
+                    "r": 0.20000000298023224
+                  }
+                },
+                {
+                  "controls": [
+                    [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  ],
+                  "interpolation": {
+                    "Bezier": {
+                      "c1": [
+                        0.20000000298023224,
+                        0.10000000149011612
+                      ],
+                      "c2": [
+                        0.800000011920929,
+                        0.8999999761581421
+                      ]
+                    }
+                  },
+                  "source_frame": 12,
+                  "timeline_frame": 12,
+                  "value": {
+                    "a": 0.20000000298023224,
+                    "b": 0.4000000059604645,
+                    "g": 0.6000000238418579,
+                    "r": 0.800000011920929
+                  }
+                }
+              ],
+              "name": "RGBA color",
+              "target": {
+                "kind": "color"
+              }
+            },
+            {
+              "choices": [
+                "Both",
+                "Horizontal",
+                "Vertical"
+              ],
+              "default": "Both",
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 5,
+                  "timeline_frame": 5,
+                  "value": "Horizontal"
+                },
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 17,
+                  "timeline_frame": 17,
+                  "value": "Vertical"
+                }
+              ],
+              "name": "GaussianBlur direction",
+              "target": {
+                "filter": "GaussianBlur",
+                "kind": "direction"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [
+              [
+                7,
+                25.0,
+                "Hold"
+              ],
+              [
+                17,
+                45.0,
+                {
+                  "Bezier": {
+                    "c1": [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    "c2": [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  }
+                }
+              ],
+              [
+                20,
+                60.0,
+                "EaseInOut"
+              ]
+            ],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 25.0
+          },
+          "title": null
+        },
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "1",
+            "kind": "title",
+            "length_frames": 120,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Title",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 120,
+            "speed_percent": 100.0,
+            "start_frame": 60,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": "Title",
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 5,
+                  "timeline_frame": 65,
+                  "value": "First <literal> \u03b1\nline two"
+                },
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 25,
+                  "timeline_frame": 85,
+                  "value": "Second title"
+                }
+              ],
+              "name": "Title content",
+              "target": {
+                "kind": "text"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          },
+          "title": {
+            "align": "Center",
+            "anchor": [
+              "Center",
+              "Middle"
+            ],
+            "background": {
+              "center": [
+                0.0,
+                0.0
+              ],
+              "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 0.0
+              },
+              "corner_radius": 0.10000000149011612,
+              "enabled": false,
+              "height": 0.0,
+              "opacity": 100.0,
+              "outline_color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "outline_width": 0.0,
+              "width": 0.0
+            },
+            "case": "Mixed",
+            "color": {
+              "a": 1.0,
+              "b": 1.0,
+              "g": 1.0,
+              "r": 1.0
+            },
+            "content": {
+              "default": "Title",
+              "keyframes": [
+                [
+                  5,
+                  "First <literal> \u03b1\nline two",
+                  "Hold"
+                ],
+                [
+                  25,
+                  "Second title",
+                  "Hold"
+                ]
+              ]
+            },
+            "font_family": "",
+            "font_weight": 400,
+            "italic": false,
+            "line_spacing": 0.0,
+            "position": [
+              0.0,
+              0.0
+            ],
+            "size": 96.0,
+            "strikethrough": false,
+            "tracking": 0.0,
+            "underline": false
+          }
+        }
+      ],
+      "autosave": {
+        "base_changed": false,
+        "created_unix_ms": 1792565376534,
+        "pending": false,
+        "project_token": "Value_Keys_UI_check.vvproj",
+        "resolved_to": null,
+        "revision": "43fe2bdb316161bdee8b03aaac69958f89fadc55dbb50a3070e0586e8740853d",
+        "state": "ready"
+      }
+    },
+    "text_deleted": {
+      "generation": "13",
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "Filters",
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "MoveKeyframes",
+          "InsertClips",
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "SetKeyframe"
+        ],
+        "position": 13
+      },
+      "revision": "9c9e7a8e6ee7826a",
+      "unsaved": true,
+      "clips": [
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "0",
+            "kind": "solid_color",
+            "length_frames": 48,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Solid color",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 48,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": [
+                    [
+                      0.5,
+                      0.0
+                    ],
+                    [
+                      0.5,
+                      1.0
+                    ]
+                  ],
+                  "interpolation": "EaseInOut",
+                  "source_frame": 2,
+                  "timeline_frame": 2,
+                  "value": {
+                    "a": 0.800000011920929,
+                    "b": 0.6000000238418579,
+                    "g": 0.4000000059604645,
+                    "r": 0.20000000298023224
+                  }
+                },
+                {
+                  "controls": [
+                    [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  ],
+                  "interpolation": {
+                    "Bezier": {
+                      "c1": [
+                        0.20000000298023224,
+                        0.10000000149011612
+                      ],
+                      "c2": [
+                        0.800000011920929,
+                        0.8999999761581421
+                      ]
+                    }
+                  },
+                  "source_frame": 12,
+                  "timeline_frame": 12,
+                  "value": {
+                    "a": 0.20000000298023224,
+                    "b": 0.4000000059604645,
+                    "g": 0.6000000238418579,
+                    "r": 0.800000011920929
+                  }
+                }
+              ],
+              "name": "RGBA color",
+              "target": {
+                "kind": "color"
+              }
+            },
+            {
+              "choices": [
+                "Both",
+                "Horizontal",
+                "Vertical"
+              ],
+              "default": "Both",
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 5,
+                  "timeline_frame": 5,
+                  "value": "Horizontal"
+                },
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 17,
+                  "timeline_frame": 17,
+                  "value": "Vertical"
+                }
+              ],
+              "name": "GaussianBlur direction",
+              "target": {
+                "filter": "GaussianBlur",
+                "kind": "direction"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [
+              [
+                7,
+                25.0,
+                "Hold"
+              ],
+              [
+                17,
+                45.0,
+                {
+                  "Bezier": {
+                    "c1": [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    "c2": [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  }
+                }
+              ],
+              [
+                20,
+                60.0,
+                "EaseInOut"
+              ]
+            ],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 25.0
+          },
+          "title": null
+        },
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "1",
+            "kind": "title",
+            "length_frames": 120,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Title",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 120,
+            "speed_percent": 100.0,
+            "start_frame": 60,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": "Title",
+              "key_count": 0,
+              "keys": [],
+              "name": "Title content",
+              "target": {
+                "kind": "text"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          },
+          "title": {
+            "align": "Center",
+            "anchor": [
+              "Center",
+              "Middle"
+            ],
+            "background": {
+              "center": [
+                0.0,
+                0.0
+              ],
+              "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 0.0
+              },
+              "corner_radius": 0.10000000149011612,
+              "enabled": false,
+              "height": 0.0,
+              "opacity": 100.0,
+              "outline_color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "outline_width": 0.0,
+              "width": 0.0
+            },
+            "case": "Mixed",
+            "color": {
+              "a": 1.0,
+              "b": 1.0,
+              "g": 1.0,
+              "r": 1.0
+            },
+            "content": {
+              "default": "Title",
+              "keyframes": []
+            },
+            "font_family": "",
+            "font_weight": 400,
+            "italic": false,
+            "line_spacing": 0.0,
+            "position": [
+              0.0,
+              0.0
+            ],
+            "size": 96.0,
+            "strikethrough": false,
+            "tracking": 0.0,
+            "underline": false
+          }
+        }
+      ],
+      "autosave": {
+        "base_changed": false,
+        "created_unix_ms": 1792565415485,
+        "pending": false,
+        "project_token": "Value_Keys_UI_check.vvproj",
+        "resolved_to": null,
+        "revision": "e0bce27f96df18f6485b01c059d342aa0e397da68b1c81b25545a7a203102808",
+        "state": "ready"
+      }
+    },
+    "undo_saved": {
+      "generation": "14",
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "Filters",
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "MoveKeyframes",
+          "InsertClips",
+          "SetKeyframe",
+          "SetKeyframe",
+          "MoveKeyframes",
+          "SetKeyframe"
+        ],
+        "position": 12
+      },
+      "revision": "f8808beac79520d9",
+      "unsaved": false,
+      "clips": [
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "0",
+            "kind": "solid_color",
+            "length_frames": 48,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Solid color",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 48,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": [
+                    [
+                      0.5,
+                      0.0
+                    ],
+                    [
+                      0.5,
+                      1.0
+                    ]
+                  ],
+                  "interpolation": "EaseInOut",
+                  "source_frame": 2,
+                  "timeline_frame": 2,
+                  "value": {
+                    "a": 0.800000011920929,
+                    "b": 0.6000000238418579,
+                    "g": 0.4000000059604645,
+                    "r": 0.20000000298023224
+                  }
+                },
+                {
+                  "controls": [
+                    [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  ],
+                  "interpolation": {
+                    "Bezier": {
+                      "c1": [
+                        0.20000000298023224,
+                        0.10000000149011612
+                      ],
+                      "c2": [
+                        0.800000011920929,
+                        0.8999999761581421
+                      ]
+                    }
+                  },
+                  "source_frame": 12,
+                  "timeline_frame": 12,
+                  "value": {
+                    "a": 0.20000000298023224,
+                    "b": 0.4000000059604645,
+                    "g": 0.6000000238418579,
+                    "r": 0.800000011920929
+                  }
+                }
+              ],
+              "name": "RGBA color",
+              "target": {
+                "kind": "color"
+              }
+            },
+            {
+              "choices": [
+                "Both",
+                "Horizontal",
+                "Vertical"
+              ],
+              "default": "Both",
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 5,
+                  "timeline_frame": 5,
+                  "value": "Horizontal"
+                },
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 17,
+                  "timeline_frame": 17,
+                  "value": "Vertical"
+                }
+              ],
+              "name": "GaussianBlur direction",
+              "target": {
+                "filter": "GaussianBlur",
+                "kind": "direction"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [
+              [
+                7,
+                25.0,
+                "Hold"
+              ],
+              [
+                17,
+                45.0,
+                {
+                  "Bezier": {
+                    "c1": [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    "c2": [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  }
+                }
+              ],
+              [
+                20,
+                60.0,
+                "EaseInOut"
+              ]
+            ],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 25.0
+          },
+          "title": null
+        },
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "1",
+            "kind": "title",
+            "length_frames": 120,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Title",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 120,
+            "speed_percent": 100.0,
+            "start_frame": 60,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": "Title",
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 5,
+                  "timeline_frame": 65,
+                  "value": "First <literal> \u03b1\nline two"
+                },
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 25,
+                  "timeline_frame": 85,
+                  "value": "Second title"
+                }
+              ],
+              "name": "Title content",
+              "target": {
+                "kind": "text"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          },
+          "title": {
+            "align": "Center",
+            "anchor": [
+              "Center",
+              "Middle"
+            ],
+            "background": {
+              "center": [
+                0.0,
+                0.0
+              ],
+              "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 0.0
+              },
+              "corner_radius": 0.10000000149011612,
+              "enabled": false,
+              "height": 0.0,
+              "opacity": 100.0,
+              "outline_color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "outline_width": 0.0,
+              "width": 0.0
+            },
+            "case": "Mixed",
+            "color": {
+              "a": 1.0,
+              "b": 1.0,
+              "g": 1.0,
+              "r": 1.0
+            },
+            "content": {
+              "default": "Title",
+              "keyframes": [
+                [
+                  5,
+                  "First <literal> \u03b1\nline two",
+                  "Hold"
+                ],
+                [
+                  25,
+                  "Second title",
+                  "Hold"
+                ]
+              ]
+            },
+            "font_family": "",
+            "font_weight": 400,
+            "italic": false,
+            "line_spacing": 0.0,
+            "position": [
+              0.0,
+              0.0
+            ],
+            "size": 96.0,
+            "strikethrough": false,
+            "tracking": 0.0,
+            "underline": false
+          }
+        }
+      ],
+      "autosave": {
+        "base_changed": true,
+        "created_unix_ms": 1792565433753,
+        "pending": false,
+        "project_token": "Value_Keys_UI_check.vvproj",
+        "resolved_to": "Value_Keys_UI_check.vvproj",
+        "revision": "9f741aa782bda25adca2f6aa65a6095b2568245efd3eb6854a7beca548635a66",
+        "state": "saved"
+      }
+    },
+    "reopened": {
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "revision": "f8808beac79520d9",
+      "unsaved": false,
+      "clips": [
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "0",
+            "kind": "solid_color",
+            "length_frames": 48,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Solid color",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 48,
+            "speed_percent": 100.0,
+            "start_frame": 0,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": [
+                    [
+                      0.5,
+                      0.0
+                    ],
+                    [
+                      0.5,
+                      1.0
+                    ]
+                  ],
+                  "interpolation": "EaseInOut",
+                  "source_frame": 2,
+                  "timeline_frame": 2,
+                  "value": {
+                    "a": 0.800000011920929,
+                    "b": 0.6000000238418579,
+                    "g": 0.4000000059604645,
+                    "r": 0.20000000298023224
+                  }
+                },
+                {
+                  "controls": [
+                    [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  ],
+                  "interpolation": {
+                    "Bezier": {
+                      "c1": [
+                        0.20000000298023224,
+                        0.10000000149011612
+                      ],
+                      "c2": [
+                        0.800000011920929,
+                        0.8999999761581421
+                      ]
+                    }
+                  },
+                  "source_frame": 12,
+                  "timeline_frame": 12,
+                  "value": {
+                    "a": 0.20000000298023224,
+                    "b": 0.4000000059604645,
+                    "g": 0.6000000238418579,
+                    "r": 0.800000011920929
+                  }
+                }
+              ],
+              "name": "RGBA color",
+              "target": {
+                "kind": "color"
+              }
+            },
+            {
+              "choices": [
+                "Both",
+                "Horizontal",
+                "Vertical"
+              ],
+              "default": "Both",
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 5,
+                  "timeline_frame": 5,
+                  "value": "Horizontal"
+                },
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 17,
+                  "timeline_frame": 17,
+                  "value": "Vertical"
+                }
+              ],
+              "name": "GaussianBlur direction",
+              "target": {
+                "filter": "GaussianBlur",
+                "kind": "direction"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [
+              [
+                7,
+                25.0,
+                "Hold"
+              ],
+              [
+                17,
+                45.0,
+                {
+                  "Bezier": {
+                    "c1": [
+                      0.20000000298023224,
+                      0.10000000149011612
+                    ],
+                    "c2": [
+                      0.800000011920929,
+                      0.8999999761581421
+                    ]
+                  }
+                }
+              ],
+              [
+                20,
+                60.0,
+                "EaseInOut"
+              ]
+            ],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 25.0
+          },
+          "title": null
+        },
+        {
+          "clip": {
+            "disabled": false,
+            "display_color": null,
+            "display_rgb": null,
+            "fade_in": 0,
+            "fade_out": 0,
+            "freeze_source_frame": null,
+            "id": "1",
+            "kind": "title",
+            "length_frames": 120,
+            "linked_group": null,
+            "media_id": null,
+            "name": "Title",
+            "slip_range": null,
+            "source_in_frames": 0,
+            "source_out_frames": 120,
+            "speed_percent": 100.0,
+            "start_frame": 60,
+            "transition_in": null,
+            "transition_out": null
+          },
+          "event_keys": [
+            {
+              "choices": null,
+              "default": "Title",
+              "key_count": 2,
+              "keys": [
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 5,
+                  "timeline_frame": 65,
+                  "value": "First <literal> \u03b1\nline two"
+                },
+                {
+                  "controls": null,
+                  "interpolation": "Hold",
+                  "source_frame": 25,
+                  "timeline_frame": 85,
+                  "value": "Second title"
+                }
+              ],
+              "name": "Title content",
+              "target": {
+                "kind": "text"
+              }
+            }
+          ],
+          "opacity": {
+            "default": 100.0,
+            "keyframes": [],
+            "max": 100.0,
+            "min": 0.0,
+            "param": "Opacity",
+            "value": 100.0
+          },
+          "title": {
+            "align": "Center",
+            "anchor": [
+              "Center",
+              "Middle"
+            ],
+            "background": {
+              "center": [
+                0.0,
+                0.0
+              ],
+              "color": {
+                "a": 1.0,
+                "b": 0.0,
+                "g": 0.0,
+                "r": 0.0
+              },
+              "corner_radius": 0.10000000149011612,
+              "enabled": false,
+              "height": 0.0,
+              "opacity": 100.0,
+              "outline_color": {
+                "a": 1.0,
+                "b": 1.0,
+                "g": 1.0,
+                "r": 1.0
+              },
+              "outline_width": 0.0,
+              "width": 0.0
+            },
+            "case": "Mixed",
+            "color": {
+              "a": 1.0,
+              "b": 1.0,
+              "g": 1.0,
+              "r": 1.0
+            },
+            "content": {
+              "default": "Title",
+              "keyframes": [
+                [
+                  5,
+                  "First <literal> \u03b1\nline two",
+                  "Hold"
+                ],
+                [
+                  25,
+                  "Second title",
+                  "Hold"
+                ]
+              ]
+            },
+            "font_family": "",
+            "font_weight": 400,
+            "italic": false,
+            "line_spacing": 0.0,
+            "position": [
+              0.0,
+              0.0
+            ],
+            "size": 96.0,
+            "strikethrough": false,
+            "tracking": 0.0,
+            "underline": false
+          }
+        }
+      ],
+      "autosave": {
+        "base_changed": true,
+        "created_unix_ms": 1792565433753,
+        "pending": false,
+        "project_token": "Value_Keys_UI_check.vvproj",
+        "resolved_to": "Value_Keys_UI_check.vvproj",
+        "revision": "9f741aa782bda25adca2f6aa65a6095b2568245efd3eb6854a7beca548635a66",
+        "state": "saved"
+      }
+    }
+  },
+  "native_preview": {
+    "software_only": true,
+    "pid": 321690,
+    "hardware_handles": [],
+    "frames": [
+      {
+        "frame": 2,
+        "sha256": "37cc3b85b79b28e1a1b070af6891b1ad8e4fb5058a6461778075210c02652e43",
+        "center_rgb": [
+          9,
+          20,
+          30
+        ],
+        "nonblack": 57600
+      },
+      {
+        "frame": 12,
+        "sha256": "d322ea7a9b5984147eaa813bd3dcfcad58b2643910db9fee773c112a1c3af8ca",
+        "center_rgb": [
+          9,
+          7,
+          4
+        ],
+        "nonblack": 57600
+      },
+      {
+        "frame": 48,
+        "sha256": "adfbe4a06a969b2673678da8c0420df1a041b7fe8c4c86271fbf726f9d29c922",
+        "center_rgb": [
+          0,
+          0,
+          0
+        ],
+        "nonblack": 0
+      },
+      {
+        "frame": 65,
+        "sha256": "feec1f25a395dd5927955eecf30d3ae389310af1fa618756c159db17cae6c742",
+        "center_rgb": [
+          0,
+          0,
+          0
+        ],
+        "nonblack": 901
+      },
+      {
+        "frame": 85,
+        "sha256": "c0cc6d168384150bfbdc0dd2a78875a0bae4cb6b6d1e13ba6a6cc0a8de776c7e",
+        "center_rgb": [
+          0,
+          0,
+          0
+        ],
+        "nonblack": 501
+      }
+    ],
+    "saved_project_sha256": "d51eb73ac579856d26f22a7e6e6352e6f08b2bd90f05667f01b3a0b2ce56378c",
+    "project_and_session_unchanged": true,
+    "native_cache_repeats_identical": true
+  },
+  "typed_rgba_text_direction_values_and_interpolation_preserved": true,
+  "native_move_keyframes_history_used": true,
+  "pointer_direction_group_moved_once": true,
+  "keyboard_delete_preserved_title_clip": true,
+  "undo_and_saved_restart_preserved_native_state": true,
+  "inspector_drawer": {
+    "expanded": "true",
+    "height": 964,
+    "input": "First <literal> \u03b1\nline two",
+    "visible": "visible",
+    "width": 707,
+    "closed": "false",
+    "command_open": "true",
+    "focus": "collapse-inspector",
+    "desktop": {
+      "height": 800,
+      "visible": "visible",
+      "width": 1280
+    }
+  },
+  "served_assets_sha256": {
+    "js/eventkeys.js": "e58eddeebec9731ddf2d28396bfc2549a6794cc72975d8033d4d657eda9ceef1",
+    "js/curves.js": "ca417dd1e61123bab91be6cdec5a1f3ad3096c465fe4ffe59b7cbce3b21c5d5f",
+    "js/inspector.js": "b5ef6b1955f0af4316774a806ad37d0424d23aceb2bc4b60e146d032c8847006",
+    "js/main.js": "00a0b9fcaa1b29fd0b52d88029d72e33c157fd8ba4d165aa68be3f077acd2ef0",
+    "style/app.css": "4dc5d8b7cb87f554df20b3445045ea052664a9730c2aa81b59dba9ce5fcc5385"
+  },
+  "shared_gpu_or_inference_touched": false
+}

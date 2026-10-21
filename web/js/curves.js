@@ -1,12 +1,20 @@
 export function curveKeyOperation(clip, target, previous, frame, value, mode, handles) {
   if (!Number.isSafeInteger(frame) || (value !== null && frame < 0)) throw new Error("Choose a nonnegative integer source frame for a new or moved key");
   if (value !== null && !Number.isFinite(value)) throw new Error("Choose a finite keyframe value");
+  return {kind: "edit_curve_key", clip_id: clip, edit: {target, previous_source_frame: previous, source_frame: frame, value, interpolation:curveInterpolation(mode,handles)}};
+}
+export function curveInterpolation(mode,handles) {
   let interpolation = mode;
   if (mode === "Bezier") {
     if (handles.length !== 4 || handles.some((v, i) => !Number.isFinite(v) || v < (i % 2 ? -10 : 0) || v > (i % 2 ? 10 : 1))) throw new Error("Bezier X must be 0–1 and Y must be −10–10");
     interpolation = {Bezier: {c1: handles.slice(0, 2), c2: handles.slice(2)}};
   } else if (!["Linear", "Hold", "EaseInOut", "EaseIn", "EaseOut"].includes(mode)) throw new Error("Choose a native interpolation");
-  return {kind: "edit_curve_key", clip_id: clip, edit: {target, previous_source_frame: previous, source_frame: frame, value, interpolation}};
+  return interpolation;
+}
+export function retainedKeySelection(stored,frames,fallback=[]) {
+  const available=new Set(frames);
+  const selected=Array.isArray(stored)?stored:stored?.before?.length && stored.before.every(frame=>available.has(frame))?stored.before:stored?.after || fallback;
+  return [...new Set(selected.filter(frame=>available.has(frame)))];
 }
 
 export function curveGroupOperation(clip,target,frames,deltaFrame,deltaValue,deleting=false) {
@@ -234,8 +242,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
     viewRange=openState?.get(viewportKey()) || fullViewport();
     groupKeys.replaceChildren(...current().keys.map(key=>new Option(`Source ${key.source_frame} · ${key.value}`,String(key.source_frame))));
     const stored=openState?.get(selectionKey());
-    const candidates=Array.isArray(stored)?stored:stored?.before?.length && stored.before.every(frame=>current().keys.some(key=>key.source_frame===frame))?stored.before:stored?.after || (previous()===null?[]:[previous()]);
-    selectedFrames=new Set(candidates.filter(frame=>current().keys.some(key=>key.source_frame===frame)));
+    selectedFrames=new Set(retainedKeySelection(stored,current().keys.map(key=>key.source_frame),previous()===null?[]:[previous()]));
     if(previous()===null && selectedFrames.size)select.value=String([...selectedFrames][0]);
     load();
     if (current().key_count > current().keys.length) status.textContent += " · first 2048 keys shown";

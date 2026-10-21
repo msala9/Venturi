@@ -598,6 +598,12 @@ pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64)
     result["filters"]["wheel_hues"] = crate::visual::wheel_palette();
     result["filters"]["wheels"] = crate::visual::wheels();
     result["curves"] = crate::curves::detail(session, id, clip, track);
+    result["event_keys"] =
+        if session.project.timelines[id].tracks[track].kind == core::TrackKind::Video {
+            crate::eventkeys::detail(clip)
+        } else {
+            json!([])
+        };
     Ok(result)
 }
 

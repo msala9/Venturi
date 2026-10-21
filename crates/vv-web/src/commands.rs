@@ -158,6 +158,14 @@ pub enum Operation {
         clip_id: String,
         edit: crate::curves::GroupEdit,
     },
+    EditEventKey {
+        clip_id: String,
+        edit: crate::eventkeys::Edit,
+    },
+    EditEventKeys {
+        clip_id: String,
+        edit: crate::eventkeys::Group,
+    },
     ApplyGradeAtFrame {
         clip_id: String,
         frame: FrameIdx,
@@ -527,6 +535,12 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         }
         Operation::EditCurveKeys { clip_id, edit } => {
             crate::curves::edit_group(session, id, clip_id, edit)?
+        }
+        Operation::EditEventKey { clip_id, edit } => {
+            crate::eventkeys::edit(session, id, clip_id, edit)?
+        }
+        Operation::EditEventKeys { clip_id, edit } => {
+            crate::eventkeys::group(session, id, clip_id, edit)?
         }
         Operation::EditFilter { clip_id, edit } => crate::visual::edit(session, id, clip_id, edit)?,
         Operation::ApplyGradePreset { clip_id, preset } => {

@@ -1985,3 +1985,46 @@ Saved with fresh history; project/Review/source hashes and exact seed/Favorite
 remain unchanged. Evidence: m4-halo2-curve-groups.json and browser PNG. The test
 copy is retained. Preview is still explicitly CPU-only; no hardware lock, AMD
 driver or inference work was touched.
+
+## M4 — native RGBA, text and direction key tracks
+
+The inspector now exposes typed RGBA, title-content and blur-direction key tracks,
+including exact source/timeline positions, native interpolation/Bezier controls,
+value editing, a time-row Canvas, additive/box selection and group movement/delete.
+The thin adapter validates typed values, UTF-8 size, target existence, video track,
+locks, bounds and collisions before using native UpsertKeyframe, RemoveKeyframe
+and MoveKeyframes. Group moves retain values/interpolation and use the desktop
+MoveKeyframes history label. Unselected keys are never silently overwritten.
+No interpolation, color processing or typography engine was added in JavaScript.
+The API reports truncation after the first 1024 keys; editing requests remain
+bounded. Source coordinates avoid a timeline/source round trip.
+
+131 Rust web tests and 101 JavaScript tests pass, with fmt, clippy and build.
+Actual browser acceptance created RGBA keys with EaseInOut/explicit Bezier and
+moved them to source 2/12; created Horizontal/Vertical blur keys and moved them
+by a real pointer group drag to 5/17; and created literal Unicode multiline
+text keys, moving them to source 5/25 (timeline 65/85 on the title at frame 60).
+Graph-focused Delete kept the title clip; Undo restored both values and their
+interpolation. Save/process restart preserved all typed keys, the native curve
+revision, prior scalar opacity keys and every parent project hash. An internal
+browser restoration interrupted one unsubmitted direction edit; the server and
+recovery checkpoint retained the applied RGBA/filter state, and testing resumed
+in a fresh tab after the writer lease expired. No blind replay was used.
+
+The same saved fixture was then opened with explicit llvmpipe software preview.
+Native composed frames show different RGBA results, a black gap and both literal
+text variants. Cached repeats are byte-identical; session/project hashes are
+unchanged. CPU preview is explicit, with no DRI/KFD/DXG handles. Evidence:
+m4-value-keys.json, m4-value-keys-rgba-browser.png,
+m4-value-keys-native-text-browser.png and m4-value-keys-text-browser.png.
+Linked zoom and selection across parameter rows remain open.
+
+Responsive acceptance also found that Show inspector did not open the drawer
+below 950px. A viewer Inspector button and the command now share the reveal path;
+marker double-click also reveals it. Close/open state and focus return were
+verified in the actual 707px Codex pane, including Ctrl+K / Show inspector. A
+1280x800 desktop viewport also shows the controls and native frame together;
+temporary viewport overrides were reset. Title/key text areas now use the full
+inspector width. Workspace tooltips identify their actual action. Evidence:
+m4-value-keys-drawer-browser.png and the drawer metadata in m4-value-keys.json.
+No OS DPI qualification or hardware GPU claim is inferred from these viewports.

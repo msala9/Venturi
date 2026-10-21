@@ -468,6 +468,21 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   has no history effect. The browser supports box/additive selection, accessible
   multi-select/delta controls, local drafts and Delete scoped to curve focus.
   Zoom/pan operate on bounded browser viewport state, never the native project.
+- Clip detail `event_keys` exposes native RGBA, title-content and blur-direction
+  tracks with typed defaults, choices, key counts and the first 1024 source/time
+  keys plus outgoing interpolation/control points. RGBA is `{r,g,b,a}` in 0–1;
+  text is literal UTF-8 (4096-byte edit budget); direction uses the native enum.
+- `edit_event_key {clip_id,edit:{target,previous_source_frame,source_frame,value,
+  interpolation}}` inserts/edits/moves or deletes (`value:null`) one typed value
+  key. Targets are `{kind:"color"}`, `{kind:"text"}`, or
+  `{kind:"direction",filter:"GaussianBlur"}` (also BoxBlur). Validation and
+  collision checks complete before a native Upsert/Remove CompositeCommand.
+- `edit_event_keys {clip_id,edit:{target,source_frames,delta_source_frames,delete}}`
+  moves a group through native MoveKeyframes or deletes it in one native Undo.
+  Values and interpolation never pass through a browser evaluator. The same
+  distinct-key/range/overflow/lock/conflict rules apply; unselected destinations
+  are never overwritten. These are video-track value targets. Both commands use
+  normal writer, epoch, generation, timeline revision and idempotency guards.
 
 - GET `/api/v1/timelines/{id}/clips/{clip}` accepts the same revisioned query as
   exact frame preview. Returns native evaluated/default transform and gain,

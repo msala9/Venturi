@@ -40,7 +40,8 @@ let audioScrub = null;
 let fastTransport = null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
-function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");}
+function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));}
+function revealInspector(){editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");updateInspectorToggle();}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
   if(catalog){catalog.search(query);return;}
@@ -101,7 +102,7 @@ function showWorkspace(name) {
   area.hidden = name === "Edit" || $("screen").dataset.viewerMode === "source" || !!scopePlayback;
   const note = document.createElement("p");
   note.className = "muted";
-  note.textContent = `${name} tools · Unavailable integrations are disabled`;
+  note.textContent = `${name} tools`;
   area.append(note);
   const tools = document.createElement("div");
   tools.className = "tools";
@@ -133,7 +134,7 @@ function showWorkspace(name) {
       if (!mixerDetail) return notice("Open a native timeline first");
       revealInspector();mixerDetail.open=true;mixerDetail.scrollIntoView({block:"start"});
     });
-    button.title = button.disabled ? "Not implemented in the web host" : name === "Color" ? "Open clip filters and color controls" : "Open the track/master mixer and its insert chain";
+    button.title = button.disabled ? "Unavailable" : label === "Auto balance" ? "Analyze the selected clip and apply native auto balance" : `Open ${label}`;
     tools.append(button);
   }
   area.append(tools);
@@ -189,9 +190,12 @@ $("close-export").addEventListener("click", () => {
   $("export-panel").hidden = true;
 });
 $("collapse-inspector").addEventListener("click", () => {
-  if(editor.classList.contains("inspector-drawer-open")){editor.classList.remove("inspector-drawer-open");return;}
-  editor.classList.toggle("inspector-collapsed");
+  editor.classList.remove("inspector-drawer-open");
+  if(innerWidth>950)editor.classList.toggle("inspector-collapsed");
+  updateInspectorToggle();$("show-inspector").focus();
 });
+$("show-inspector").addEventListener("click",()=>{revealInspector();$("collapse-inspector").focus();});
+window.addEventListener("resize",updateInspectorToggle);updateInspectorToggle();
 $("fullscreen").addEventListener("click", async () => {
   try {
     if (document.fullscreenElement) await document.exitFullscreen();
@@ -212,8 +216,9 @@ for (const name of ["Edit", "Color", "Audio", "Review"]) {
 const restoreInspector = document.createElement("button");
 restoreInspector.textContent = "Show inspector";
 restoreInspector.addEventListener("click", () => {
-  editor.classList.remove("inspector-collapsed");
+  revealInspector();
   $("palette").close();
+  $("collapse-inspector").focus();
 });
 $("command-list").append(restoreInspector);
 const meterCommand=document.createElement("button");meterCommand.textContent="Audio meters / spectrum";meterCommand.addEventListener("click",()=>{$("palette").close();audioMeters?.open();});$("command-list").append(meterCommand);
@@ -521,7 +526,7 @@ const canvasTimeline = createTimeline({
   onCommand: (operation) => commit(operation),
   onNotice: notice,
   canEdit: () => writable && !busy && !unresolved,
-  onMarkerEdit: id => { view.markerTarget=`${documentState?.project_epoch}:${timeline.id}`;view.markerId=id;visualState.set("markers",true);selected();document.querySelector('[data-visual-path="markers"] select')?.focus(); },
+  onMarkerEdit: id => { revealInspector();view.markerTarget=`${documentState?.project_epoch}:${timeline.id}`;view.markerId=id;visualState.set("markers",true);selected();document.querySelector('[data-visual-path="markers"] select')?.focus(); },
   onSlip: (event)=>{if(event.phase==="begin"){programPlayer?.stop();sourcePlayer?.pause();}slipView?.draft(event);},
 });
 window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});

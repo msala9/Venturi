@@ -7,6 +7,7 @@ mod clipboard;
 mod commands;
 mod curves;
 mod error;
+mod eventkeys;
 mod files;
 mod host;
 mod inspector;

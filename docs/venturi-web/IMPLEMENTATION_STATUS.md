@@ -24,7 +24,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-241 web Rust tests, 271 native core tests and 533 JavaScript tests,
+241 web Rust tests, 271 native core tests and 535 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -3044,3 +3044,23 @@ Evidence: `evidence/m3-native-codec-selectors.json` and its CPU/R9700 screenshot
 The two selector rows are done for the verified native R9700 behavior. Other
 GPU vendors, long-source/format combinations and sustained resource qualification
 remain separate release work. The broader engineering estimate remains 65–70%.
+
+## M4 - modal cancellation of captured duration gestures
+
+Timeline pointer captures cannot begin while a native dialog is open. If a
+dialog appears during transition-duration or speed-endpoint capture, the next
+move/release cancels the draft and releases capture without submitting an edit.
+The transition-placement guard shares the same modal predicate.
+
+Two regressions cover dialogs before capture, before movement and before
+release. Each preserves the native duration and creates no command; closing
+the dialog permits exactly one ordinary native operation. All 535 JavaScript
+tests and the cached native asset build passed on bounded halo2. A finite
+CPU-only API served the exact new input asset and preserved project/history
+and the primary editor's five unsaved edits. No local build/render, GPU or
+additional browser qualification was used. Rust/native source is unchanged
+from c4afce9; its Rust/clippy and R9700 results are inherited, not rerun.
+
+Evidence: `evidence/m4-modal-duration-capture.json`. Actual pointer/DPI and
+rendered mask/transition qualification remain open. The ledger counts and
+overall engineering estimate are unchanged.

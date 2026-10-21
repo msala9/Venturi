@@ -8,14 +8,14 @@ function harness({linked=false}={}){
   const following={...clip,id:'9007199254740999',start_frame:140,length_frames:80,linked_group:null};
   const tracks=[{id:'v',kind:'video',locked:false,clips:[clip,following],crossings:[]}];
   if(linked)tracks.push({id:'a',kind:'audio',locked:false,clips:[{...structuredClone(clip),id:'9007199254740995'}],crossings:[]});
-  let timeline={id:'t',revision:'r',fps:{num:24,den:1},tracks},writable=true,selections=0,rect={left:5,top:8,width:2400,height:300};
+  let timeline={id:'t',revision:'r',fps:{num:24,den:1},tracks},writable=true,selections=0,dialog=false,rect={left:5,top:8,width:2400,height:300};
   const view={origin:0,scale:240,scrollY:0,selection:[],playhead:80,snap:false,tool:'move',retimeVisible:new Set(tracks.flatMap(track=>track.clips.map(clip=>clip.id))),retimeOverwrite:false,draft:null},handlers=new Map(),windowHandlers=new Map(),documentHandlers=new Map(),commands=[],notices=[],menus=[],captures=new Set(),originalWindow=globalThis.window;
-  const document={hidden:false,addEventListener:(key,value)=>documentHandlers.set(key,value),removeEventListener:key=>documentHandlers.delete(key)};
+  const document={hidden:false,querySelector:()=>dialog?{}:null,addEventListener:(key,value)=>documentHandlers.set(key,value),removeEventListener:key=>documentHandlers.delete(key)};
   globalThis.window={document,addEventListener:(key,value)=>windowHandlers.set(key,value),removeEventListener:key=>windowHandlers.delete(key)};
   const canvas={style:{},ownerDocument:document,addEventListener:(key,value)=>handlers.set(key,value),removeEventListener:key=>handlers.delete(key),focus(){},getBoundingClientRect:()=>({...rect}),setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
   const input=createInput({canvas,getTimeline:()=>timeline,view,invalidate(){},onSelect:()=>selections++,onSeek(){},onCommand:async operation=>commands.push(operation),onNotice:message=>notices.push(message),onRetimeMenu:target=>menus.push(target),canEdit:()=>writable});
   function event(frame,extra={}){return {clientX:rect.left+frameToX(frame,view,timeline.fps),clientY:rect.top+RULER+14,pointerId:1,button:0,buttons:1,preventDefault(){},stopPropagation(){},...extra};}
-  return {clip,following,tracks,view,canvas,input,handlers,windowHandlers,documentHandlers,document,commands,notices,menus,event,timeline:()=>timeline,send:(type,frame,extra={})=>handlers.get(type)(event(frame,extra)),captured:id=>captures.has(id),selections:()=>selections,setWritable:value=>writable=value,replaceTimeline(){timeline={...timeline,revision:'new'};},moveCanvas(){rect={...rect,left:rect.left+1};},destroy(){input.destroy();globalThis.window=originalWindow;}};
+  return {clip,following,tracks,view,canvas,input,handlers,windowHandlers,documentHandlers,document,commands,notices,menus,event,timeline:()=>timeline,send:(type,frame,extra={})=>handlers.get(type)(event(frame,extra)),captured:id=>captures.has(id),selections:()=>selections,setWritable:value=>writable=value,setDialog:value=>dialog=value,replaceTimeline(){timeline={...timeline,revision:'new'};},moveCanvas(){rect={...rect,left:rect.left+1};},destroy(){input.destroy();globalThis.window=originalWindow;}};
 }
 
 test('speed strip menu and per-clip hide are local click actions and endpoint retains priority',async()=>{
@@ -103,6 +103,18 @@ test('speed pointer drafts stay local and owner release submits exact native end
     await h.send('pointerup',135,{buttons:0});
     assert.deepEqual(h.commands,[{kind:'retime_clip',clip_id:h.clip.id,end_frame:135,overwrite:false}]);assert.equal(h.captured(1),false);assert.equal(h.view.draft,null);assert.deepEqual(h.clip,original);
   }finally{h.destroy();}
+});
+
+test('open dialogs block speed endpoint capture and cancel captured drafts without preventing the next edit',async()=>{
+  for(const phase of ['before_begin','before_move','before_release']){
+    const h=harness();try{
+      if(phase==='before_begin')h.setDialog(true);else{h.send('pointerdown',120);h.send('pointermove',130);assert.equal(h.captured(1),true);assert.equal(h.view.draft.length_frames,110);h.setDialog(true);}
+      if(phase==='before_begin')h.send('pointerdown',120);if(phase!=='before_release')h.send('pointermove',132);await h.send('pointerup',135,{buttons:0});
+      assert.deepEqual(h.commands,[],phase);assert.equal(h.captured(1),false,phase);assert.equal(h.view.draft,null,phase);assert.equal(h.clip.length_frames,100,phase);
+      h.setDialog(false);h.send('pointerdown',120);await h.send('pointerup',135,{buttons:0});
+      assert.deepEqual(h.commands,[{kind:'retime_clip',clip_id:h.clip.id,end_frame:135,overwrite:false}]);assert.equal(h.captured(1),false);assert.equal(h.view.draft,null);
+    }finally{h.destroy();}
+  }
 });
 
 test('native length bounds and snapped integer endpoints apply even without a move event',async()=>{

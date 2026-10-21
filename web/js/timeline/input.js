@@ -49,8 +49,9 @@ export function createInput({
     const rect=canvas.getBoundingClientRect();
     return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,view.tool,view.snap,view.retimeOverwrite,[...(view.retimeVisible || [])].sort(),Boolean(view.transitionReplace),view.transitionSelection,view.playhead,[...view.selection].sort(),rect.left,rect.top,rect.width,rect.height]);
   };
-  const transitionCurrent=g=>{const timeline=getTimeline();return timeline===g.timeline && !timeline.tracks[g.track]?.locked && transitionContext(timeline)===g.context && canEdit();};
-  const placementContextCurrent=g=>getTimeline()===g.timeline && transitionContext(getTimeline())===g.context && !canvas.ownerDocument?.querySelector?.('dialog[open]');
+  const modal=()=>Boolean(canvas.ownerDocument?.querySelector?.('dialog[open]'));
+  const transitionCurrent=g=>{const timeline=getTimeline();return timeline===g.timeline && !timeline.tracks[g.track]?.locked && transitionContext(timeline)===g.context && !modal() && canEdit();};
+  const placementContextCurrent=g=>getTimeline()===g.timeline && transitionContext(getTimeline())===g.context && !modal();
   const placementCurrent=g=>placementContextCurrent(g) && canEdit();
   const sourceIdentity=(timeline,selection)=>{
     const source=selectedTransition(timeline,selection);if(!source)return null;
@@ -108,7 +109,7 @@ export function createInput({
     gesture={...gesture,fromTransitionBody:true,pointerId:g.pointerId,timeline,context:transitionContext(timeline),source:g.source,sourceIdentity:g.sourceIdentity};return true;
   }
   const down = (event) => {
-    if (waiting || gesture || transitionDrag) return;
+    if (waiting || gesture || transitionDrag || modal()) return;
     const timeline = getTimeline();
     if (!timeline) return;
     canvas.focus();

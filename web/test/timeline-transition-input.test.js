@@ -12,13 +12,13 @@ function fixture(crossing=false){
 }
 function harness(crossing=false){
   const state=fixture(crossing),canvasHandlers=new Map(),windowHandlers=new Map(),documentHandlers=new Map(),commands=[],notices=[],captures=new Set();
-  let timeline=state.timeline,writable=true,selections=0,rect={left:5,top:8,width:2200,height:300};const originalWindow=globalThis.window;
-  const document={hidden:false,addEventListener:(name,callback)=>documentHandlers.set(name,callback),removeEventListener:name=>documentHandlers.delete(name)};
+  let timeline=state.timeline,writable=true,selections=0,dialog=false,rect={left:5,top:8,width:2200,height:300};const originalWindow=globalThis.window;
+  const document={hidden:false,querySelector:()=>dialog?{}:null,addEventListener:(name,callback)=>documentHandlers.set(name,callback),removeEventListener:name=>documentHandlers.delete(name)};
   globalThis.window={document,addEventListener:(name,callback)=>windowHandlers.set(name,callback),removeEventListener:name=>windowHandlers.delete(name)};
   const canvas={ownerDocument:document,style:{},addEventListener:(name,callback)=>canvasHandlers.set(name,callback),removeEventListener:name=>canvasHandlers.delete(name),focus(){},getBoundingClientRect:()=>({...rect}),setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);canvasHandlers.get('lostpointercapture')?.({pointerId:id});}};
   const input=createInput({canvas,getTimeline:()=>timeline,view:state.view,invalidate(){},onSelect:()=>selections++,onSeek(){},onCommand:async operation=>commands.push(operation),onNotice:message=>notices.push(message),canEdit:()=>writable});
   function event(frame,extra={}){return {clientX:rect.left+frameToX(frame,state.view,timeline.fps),clientY:rect.top+RULER+TRACK-14,pointerId:1,button:0,buttons:1,preventDefault(){},stopPropagation(){},...extra};}
-  return {...state,input,commands,notices,canvasHandlers,windowHandlers,documentHandlers,document,canvas,event,send:(name,frame,extra={})=>canvasHandlers.get(name)(event(frame,extra)),captured:id=>captures.has(id),selected:()=>selections,setWritable:value=>writable=value,
+  return {...state,input,commands,notices,canvasHandlers,windowHandlers,documentHandlers,document,canvas,event,send:(name,frame,extra={})=>canvasHandlers.get(name)(event(frame,extra)),captured:id=>captures.has(id),selected:()=>selections,setWritable:value=>writable=value,setDialog:value=>dialog=value,
     replaceTimeline(){timeline={...timeline,revision:'r2'};},changeRect(){rect={...rect,left:rect.left+1};},destroy(){input.destroy();globalThis.window=originalWindow;}};
 }
 
@@ -90,6 +90,18 @@ test('transition drafts cancel on owner loss, stale timeline/view/tool and editi
       else if(change==='wheel')h.canvasHandlers.get('wheel')(h.event(37,{deltaX:0,deltaY:1}));
       else if(change==='destroy'){h.input.destroy();assert.equal(h.captured(1),false);continue;}
       await h.send('pointerup',39,{buttons:0});assert.deepEqual(h.commands,[],change);assert.equal(h.captured(1),false,change);assert.equal(h.view.draft,null,change);
+    }finally{h.destroy();}
+  }
+});
+
+test('open dialogs block transition capture and cancel existing duration drafts before move or release',async()=>{
+  for(const phase of ['before_begin','before_move','before_release']){
+    const h=harness();try{
+      if(phase==='before_begin')h.setDialog(true);else{h.send('pointerdown',30);h.send('pointermove',37);assert.equal(h.captured(1),true);assert.equal(h.view.draft.duration,17);h.setDialog(true);}
+      if(phase==='before_begin')h.send('pointerdown',30);if(phase!=='before_release')h.send('pointermove',38);await h.send('pointerup',39,{buttons:0});
+      assert.deepEqual(h.commands,[],phase);assert.equal(h.captured(1),false,phase);assert.equal(h.view.draft??null,null,phase);assert.equal(h.left.transition_in.duration,10,phase);
+      h.setDialog(false);h.send('pointerdown',30);h.send('pointermove',37);await h.send('pointerup',39,{buttons:0});
+      assert.deepEqual(h.commands,[{kind:'set_transition',clip_id:h.left.id,slot:'in',transition:{...h.left.transition_in,duration:19}}]);assert.equal(h.captured(1),false);assert.equal(h.view.draft,null);
     }finally{h.destroy();}
   }
 });

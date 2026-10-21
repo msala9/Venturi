@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { exportRequest, exportAudioLabel,exportReference,savedExportJobs,exportCanDiscard,exportDiscardRequest } from "../js/export.js";
+import { exportRequest, exportAudioLabel,exportReference,savedExportJobs,exportCanDiscard,exportDiscardRequest,exportScales,exportMarkedRange,exportProgressLabel,exportStageLabel } from "../js/export.js";
 
 test('saved export history retains its original epoch across a new editor session',()=>{
   const ready={id:'export-9007199254740993',project_epoch:'old-server:7',state:'ready'},interrupted={id:'export-2',project_epoch:'old-server:8',state:'interrupted',previous_state:'running'};
@@ -35,4 +35,24 @@ test("export captures an integer exclusive range and native settings without cha
   assert.equal(exportRequest(state,{...values,end:"8000"}).range.end_frame,8000,"Export may include the full timeline beyond the preview duration cap");
   for (const patch of [{start:""},{start:"-1"},{start:"1.5"},{end:"8001"},{end:"12"},{width:"8192"},{quality:"NaN"},{quality:"52"},{audio:"false"}]) assert.throws(()=>exportRequest(state,{...values,...patch}));
   assert.throws(()=>exportRequest(null,values));
+});
+
+test('native scales select exact server dimensions and leave old requests unchanged when omitted',()=>{
+  const state={project_epoch:'e',if_generation:'1',timeline_id:'t',revision:'r',end_frame:100,marks:{start_frame:11,end_frame:31},export_scales:[{percent:100,width:1920,height:1080},{percent:75,width:1440,height:810},{percent:50,width:960,height:540},{percent:25,width:480,height:270}]},values={scope:'marks',start:'0',end:'100',width:'1920',quality:'18',preset:'veryfast',audio:false,scale_percent:'25'};
+  assert.equal(exportScales(state)[3].width,480);assert.deepEqual(exportMarkedRange(state),{start_frame:11,end_frame:31});
+  const body=exportRequest(state,values);assert.equal(body.settings.scale_percent,25);assert.equal(body.range.start_frame,11);assert.equal(body.range.end_frame,31);assert.equal(body.range.marks,undefined);assert.equal(body.range.export_scales,undefined);
+  assert.equal(exportRequest(state,{...values,scope:'whole'}).range.end_frame,100);assert.equal(exportRequest(state,{...values,scope:'custom',start:'17',end:'19'}).range.start_frame,17);
+  assert.equal(exportRequest(state,{...values,scale_percent:''}).settings.scale_percent,undefined);
+  for(const patch of [{scale_percent:'33'},{scale_percent:'25.5'},{scope:'unknown'}])assert.throws(()=>exportRequest(state,{...values,...patch}));
+  assert.deepEqual(exportMarkedRange({...state,marks:{start_frame:100,end_frame:100}}),{start_frame:100,end_frame:100});assert.throws(()=>exportRequest({...state,marks:{start_frame:100,end_frame:100}},values));assert.throws(()=>exportScales({...state,export_scales:[...state.export_scales.slice(0,3),state.export_scales[0]]}));
+});
+
+test('progress estimates use measured positive rates only during running and retain native stage measurements',()=>{
+  const progress={current_frame:24,total_frames:72,elapsed_ms:1500,fps:24,decode_fps:120,compose_fps:30,encode_fps:60,startup_ms:250};
+  assert.match(exportProgressLabel(progress,'running'),/Elapsed 0:01.*24.0 fps.*Remaining ~0:02/);
+  for(const state of ['ready','failed','canceled','interrupted','queued'])assert.doesNotMatch(exportProgressLabel(progress,state),/Remaining/);
+  assert.doesNotMatch(exportProgressLabel(progress,'queued'),/fps/);
+  for(const fps of [0,-1,NaN,Infinity,null])assert.doesNotMatch(exportProgressLabel({...progress,fps},'running'),/fps|Remaining/);
+  assert.match(exportStageLabel(progress),/Decode 120.0 fps.*Compose 30.0 fps.*Encode 60.0 fps.*Startup 0:00/);
+  assert.match(exportStageLabel({decode_fps:NaN,compose_fps:0,encode_fps:-1}),/Decode not yet measured.*Compose not yet measured.*Encode not yet measured/);
 });

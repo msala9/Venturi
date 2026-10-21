@@ -242,6 +242,11 @@
             </div>
           </div>
         </div>
+        <div id="program-marks" class="source-toolbar" aria-label="Program export marks">
+          <button id="program-mark-in" type="button" title="I · current Program frame" disabled>Set Program In</button>
+          <button id="program-mark-out" type="button" title="O · after current Program frame" disabled>Set Program Out</button>
+          <output id="program-mark-range" aria-live="polite">Open a native timeline</output>
+        </div>
         <div class="transport">
           <button id="step-back" aria-label="Previous frame">◀│</button
           ><button id="play" disabled title="Select Source for media playback">
@@ -459,11 +464,14 @@
       </div>
       <p>Native H.264 / AAC · immutable timeline snapshot</p>
       <form id="export-form">
+        <label class="field">Export range<select name="scope"><option value="marks">Program In/Out</option><option value="whole">Whole timeline</option><option value="custom">Custom frame range</option></select></label>
         <label class="field">In frame<input name="start" type="number" min="0" step="1" required value="0"></label>
         <button type="button" id="export-in">Use playhead as In</button>
         <label class="field">Out frame (exclusive)<input name="end" type="number" min="1" step="1" required value="1"></label>
         <button type="button" id="export-out">Use playhead as Out</button>
-        <label class="field">Maximum output width<select name="width"><option value="1920">1920</option><option value="1280">1280</option><option value="960">960</option><option value="640">640</option></select></label>
+        <label class="field">Output size<select name="scale_percent"><option value="100">Timeline resolution (100%)</option><option value="">Legacy maximum width</option></select></label>
+        <label class="field" data-export-legacy-width>Maximum output width<select name="width"><option value="1920">1920</option><option value="1280">1280</option><option value="960">960</option><option value="640">640</option></select></label>
+        <output data-export-timeline-fps>Timeline frame rate unavailable</output>
         <label class="field">Video encoder<select name="encoder"><option value="x264">H.264 · x264 (CPU)</option></select></label>
         <button type="button" data-export-probe="encoder" disabled>Check selected encoder</button>
         <label class="field">Video decoder<select name="decoder"><option value="software">CPU</option></select></label>
@@ -474,9 +482,14 @@
         <p class="muted" data-export-quality-hint>0–51 · lower values improve quality</p>
         <label class="field" data-export-preset-field>Encoding speed<select name="preset"><option>veryfast</option><option>ultrafast</option><option>superfast</option><option>faster</option><option>fast</option><option>medium</option><option>slow</option><option>slower</option><option>veryslow</option></select></label>
         <label class="field">Include audio<input name="audio" type="checkbox" checked></label>
+        <label class="field">Audio encoder<select name="audio_codec"><option value="aac">AAC</option><option value="fdk_aac" disabled>FDK AAC · checking availability</option></select></label>
+        <label class="field">Audio bitrate<select name="audio_bitrate_kbps"><option value="128">128 kbps</option></select></label>
+        <label class="field" data-export-aac-coder>AAC encoding mode<select name="audio_coder"><option value="twoloop">Two loop</option><option value="fast">Fast</option></select></label>
+        <output data-export-audio-status>Reading native audio choices</output>
+        <details><summary>Native pipeline performance</summary><output data-export-progress-detail>Native stage measurements are not yet available</output></details>
         <button id="export-start" class="primary">Start export</button>
       </form>
-      <p class="muted">Select any range inside the timeline, up to 1920 pixels wide. Software x264/CPU is the initial choice. Hardware requires an explicit bounded check; decoder support can vary by source, and actual paths appear in job status. Each job has a 10-minute processing and 512 MiB output budget. Completed exports are retained across server restarts. Interrupted jobs are listed for review and do not restart automatically. History is limited to 64 jobs and 2 GiB of output; new jobs are refused when full.</p>
+      <p class="muted">Choose Program In/Out, the whole timeline or a custom frame range. Output percentages use the native timeline dimensions. Software x264/CPU is the initial video choice. Hardware requires an explicit bounded check; decoder support can vary by source, and actual paths appear in job status. Each job has a 10-minute processing and 512 MiB output budget. Completed exports are retained across server restarts. Interrupted jobs are listed for review and do not restart automatically. History is limited to 64 jobs and 2 GiB of output; new jobs are refused when full.</p>
       <label class="field">Saved exports<select id="export-history" aria-label="Saved exports"><option value="">Choose a saved export</option></select></label>
       <button id="export-history-refresh" type="button">Refresh saved exports</button>
       <p id="export-history-status" class="muted" role="status"></p>

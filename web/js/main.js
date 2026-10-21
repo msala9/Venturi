@@ -37,6 +37,7 @@ import {createPresetShortcuts} from './preset-shortcuts.js';
 import {createViewerTransformOverlay} from './viewer-transform-overlay.js';
 import {createViewerMaskOverlay} from './viewer-mask-overlay.js';
 import {createCompoundNavigation,compoundNavigationAction} from './compound-navigation.js';
+import {resolveMarkRange,setMarkIn,setMarkOut,markRangeContext,markRangeAction} from './mark-range.js';
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
@@ -67,6 +68,7 @@ let fastTransport = null;
 let presetPanel=null;
 let retimeMenu=null;
 let compoundNavigation=null;
+let exportPanel=null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));}
@@ -321,6 +323,7 @@ let sourceOpenId = null;
 let sourceSeek=null;
 let sourceAssets=null,forceSourceAssets=false;
 const sourceRanges = new Map();
+let programMarkState=markRangeContext(null,null,null);
 const mediaAssets = new Map();
 const mediaState = {selected: [], anchor: null, folder: "*", kind: "all", open: false};
 function updatePlayAvailability() {
@@ -352,6 +355,7 @@ function viewerModeSet(mode) {
   $("source-view").hidden = mode !== "source";
   $("program-mode").setAttribute("aria-pressed", mode === "program");
   $("source-mode").setAttribute("aria-pressed", mode === "source");
+  syncProgramMarks();
   updatePlayAvailability();
   $("viewer-caption").textContent = mode === "source" ? "Source proxy · independent of timeline edits" : "Exact timeline frame";
   if (mode === "program") { sourcePlayer?.pause(); sourceAssets?.cancel(); updateTime(); seek(); }
@@ -378,11 +382,13 @@ function openSource() {
     if (next) openTimelineRoot(next);
     return;
   }
-  const startFrame=sourceOpenId===item.id ? sourcePosition(true)?.frame ?? 0 : 0;
+  const sameSource=sourceOpenId===item.id;
+  const startFrame=sameSource ? sourcePosition(true)?.frame ?? 0 : 0;
   if(sourceOpenId!==item.id)sourceAssets?.cancel();
   sourceOpenId = item.id;
   forceSourceAssets=true;
-  const range = sourceRanges.get(item.id) || { source_in:0, source_out:item.is_image ? Math.round(5*item.fps.num/item.fps.den) : item.duration_frames };
+  const range = (sameSource?sourceRanges.get(item.id):null) || { source_in:0, source_out:item.is_image ? Math.round(5*item.fps.num/item.fps.den) : item.duration_frames };
+  sourceRanges.set(item.id,range);
   $("source-in").value = range.source_in; $("source-out").value = range.source_out;
   $("source-mark-in").disabled = !!item.is_image; $("source-mark-out").disabled = !!item.is_image;
   viewerModeSet("source");
@@ -401,8 +407,31 @@ for (const [id,out] of [["source-mark-in",false],["source-mark-out",true]]) $(id
   const position=sourcePosition();
   if(!position)return notice("Wait for the Source window before setting In or Out");
   const frame = position.frame;
-  $(out ? "source-out" : "source-in").value = Math.min(item.duration_frames - (out ? 0 : 1),frame+(out ? 1 : 0)); rememberSourceRange();
+  const marks={mark_in:Number($("source-in").value),mark_out:Number($("source-out").value)};
+  try {
+    const resolved=resolveMarkRange(out?setMarkOut(marks,frame,item.duration_frames):setMarkIn(marks,frame,item.duration_frames),item.duration_frames);
+    $("source-in").value=resolved.start_frame;$("source-out").value=resolved.end_frame;rememberSourceRange();
+  } catch(error){notice(error.message);}
 });
+function programMarkTotal(){return timeline?Math.max(0,...timeline.tracks.flatMap(track=>track.clips.map(clip=>clip.start_frame+clip.length_frames))):0;}
+function canProgramMark(){return Boolean(documentState && timeline && timeline.id!=='fixture' && programMarkTotal()>0 && !busy && !unresolved && canvasTimeline.navigationIdle());}
+function syncProgramMarks(){
+  programMarkState=markRangeContext(programMarkState,documentState?.project_epoch,timeline?.id);
+  const range=resolveMarkRange(programMarkState.marks,programMarkTotal()),disabled=!canProgramMark();
+  $("program-marks").hidden=viewerMode!=='program';
+  for(const id of ['program-mark-in','program-mark-out','export-in','export-out'])$(id).disabled=disabled;
+  const label=timeline?.id==='fixture' || !documentState?'Open a native timeline':`Program In ${range.start_frame} · Out ${range.end_frame} (exclusive) · ${range.end_frame-range.start_frame} frames selected for export`;
+  if($("program-mark-range").textContent!==label)$("program-mark-range").textContent=label;
+  return range;
+}
+function setProgramMark(out){
+  if(!canProgramMark())return;
+  programMarkState=markRangeContext(programMarkState,documentState.project_epoch,timeline.id);
+  programMarkState.marks=out?setMarkOut(programMarkState.marks,view.playhead,programMarkTotal()):setMarkIn(programMarkState.marks,view.playhead,programMarkTotal());
+  syncProgramMarks();exportPanel?.invalidate?.();
+}
+$("program-mark-in").addEventListener('click',()=>setProgramMark(false));
+$("program-mark-out").addEventListener('click',()=>setProgramMark(true));
 function togglePlayback() {
   audioScrub?.stop();
   if(fastTransport?.cancelPreparation())return;
@@ -609,7 +638,7 @@ const canvasTimeline = createTimeline({
   canNavigate:()=>!busy && !unresolved,
   onOpenCompound:ids=>compoundNavigation?.enter(ids),
   onNavigationIntent:()=>compoundNavigation?.cancel(),
-  onNavigationStateChange:()=>compoundNavigation?.invalidate(),
+  onNavigationStateChange:()=>{compoundNavigation?.invalidate();queueMicrotask(syncProgramMarks);},
   view,
   getAssets: () => mediaAssets,
   getCache: () => previewCache?.ranges(),
@@ -659,6 +688,7 @@ function renderTransitionPresets(){
 }
 window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});
 function updateTime() {
+  syncProgramMarks();
   trackViewerSelection();
   transformOverlay?.invalidate();
   syncViewerMasks();maskOverlay?.invalidate();
@@ -680,6 +710,7 @@ function installTimeline(next,{transitionSelection=null}={}) {
   audioMeters?.invalidate();
   canvasTimeline.cancel();
   timeline = next;
+  syncProgramMarks();exportPanel?.invalidate?.();
   view.transitionSelection=selectedTransition(next,transitionSelection)?transitionSelection:null;
   updatePlayAvailability();
   view.selection = [];
@@ -772,7 +803,8 @@ $("step-forward").addEventListener("click", () => step(1));
 document.addEventListener("keydown", (event) => {
   if (isTextTarget(event.target)) return;
   if (event.altKey) return;
-  if (viewerMode === "source" && ["i","o"].includes(event.key.toLowerCase())) { event.preventDefault(); $(event.key.toLowerCase() === "i" ? "source-mark-in" : "source-mark-out").click(); }
+  const mark=markRangeAction(event,{textTarget:isTextTarget(event.target),dialogOpen:Boolean(document.querySelector('dialog[open]'))});
+  if(mark){event.preventDefault();$(viewerMode==='source'?mark==='in'?'source-mark-in':'source-mark-out':mark==='in'?'program-mark-in':'program-mark-out').click();}
   if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
     event.preventDefault();
     step(event.key === "ArrowLeft" ? -1 : 1);
@@ -852,6 +884,7 @@ async function refresh() {
     canvasTimeline.invalidate();
   } else {
     timeline = null;
+    syncProgramMarks();exportPanel?.invalidate?.();
     selected();
     canvasTimeline.invalidate();
   }
@@ -1419,13 +1452,13 @@ async function diagnostics() {
       : "GPU preview unavailable";
   } catch {}
 }
-const exportPanel = createExportPanel({ form: $("export-form"), status: $("export-status"), cancel: $("export-cancel"), refresh: $("export-refresh"), download: $("export-download"), history:{select:$("export-history"),refresh:$("export-history-refresh"),status:$("export-history-status")}, discard:{button:$("export-discard"),dialog:$("export-discard-dialog"),summary:$("export-discard-summary"),status:$("export-discard-status"),confirm:$("export-discard-confirm"),keep:$("export-discard-keep")}, getState: () => {
+exportPanel = createExportPanel({ form: $("export-form"), status: $("export-status"), cancel: $("export-cancel"), refresh: $("export-refresh"), download: $("export-download"), history:{select:$("export-history"),refresh:$("export-history-refresh"),status:$("export-history-status")}, discard:{button:$("export-discard"),dialog:$("export-discard-dialog"),summary:$("export-discard-summary"),status:$("export-discard-status"),confirm:$("export-discard-confirm"),keep:$("export-discard-keep")}, getState: () => {
   if (!timeline || !documentState) return null;
   const end = Math.max(0, ...timeline.tracks.flatMap((track) => track.clips.map((clip) => clip.start_frame + clip.length_frames)));
-  return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: 0, end_frame: end, width: 1920, fps: timeline.fps } : null;
+  return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: 0, end_frame: end, width: 1920, fps: timeline.fps, marks:resolveMarkRange(programMarkState.marks,end),export_scales:timeline.export_scales,has_audio:timeline.tracks.some(track=>track.kind==="audio" && track.clips.length>0) } : null;
 } });
-$("export-in").addEventListener("click", () => { $("export-form").elements.start.value = view.playhead; });
-$("export-out").addEventListener("click", () => { $("export-form").elements.end.value = view.playhead + 1; });
+$("export-in").addEventListener("click", () => {setProgramMark(false);exportPanel.useMarks?.();});
+$("export-out").addEventListener("click", () => {setProgramMark(true);exportPanel.useMarks?.();});
 slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(operation),onVisible:(visible)=>{
   if(visible){slipScopesState={workspace:editor.dataset.workspace,visible:!$("scopes").hidden};scopes?.setVisible(false);}
   else if(slipScopesState){scopes?.setVisible(editor.dataset.workspace==="Color" && (slipScopesState.workspace!==editor.dataset.workspace || slipScopesState.visible));slipScopesState=null;}

@@ -1101,7 +1101,8 @@ the same bounded native pipeline in both modes. No automatic hardware fallback.
 ## Native export adapter (bounded first release)
 
 POST `/exports` accepts
-`{range: ProgramQuery, settings:{quality,preset,audio,encoder?,decoder?}}`.
+`{range: ProgramQuery, settings:{quality,preset,audio,encoder?,decoder?,
+scale_percent?,audio_codec?,audio_bitrate_kbps?,audio_fast_coder?}}`.
 Omitted codecs retain x264 and software decoding, including the existing
 canonical job identity and saved settings. Encoder IDs are `x264`, `nvenc`,
 `vulkan` and platform-native `videotoolbox`; decoder IDs are `software`, `nvdec`
@@ -1109,8 +1110,35 @@ and `vulkan`. Choices and quality/preset bounds come from the native catalog.
 Unknown IDs, unsupported platform encoders and invalid settings are refused.
 The requested range is
 an integer exclusive-out range within the captured timeline. Export duration is
-independent of the five-minute Program preview window. Width is capped at 1920
-and native aspect/pixel budgets still apply.
+independent of the five-minute Program preview window. Without `scale_percent`,
+the existing maximum-width path remains capped at 1920. An explicit native
+percentage (`100`, `75`, `50`, `25`) uses `ExportSettings::output_size` and the
+captured timeline resolution, independently of that legacy width. Timeline
+snapshots expose `export_scales:[{percent,width,height}]`; the client does not
+reimplement native output rounding. Dimensions must be within 1–8192 pixels.
+
+Explicit percentages require memory admission before enqueue and again in the
+worker. The conservative working estimate is native pixels × 64 + output pixels
+× 16 + 256 MiB, with another 4 GiB of host headroom and 256 MiB of effective
+cgroup headroom. The minimum headroom across cgroup ancestors applies. Missing
+or malformed memory metadata fails closed; a controller-less cgroup v2 root is
+allowed after delegated ancestors are checked. Refusal is 409
+`EXPORT_MEMORY_PRESSURE`. This is an admission estimate, not an allocation
+guarantee or high-resolution qualification; renderer process limits still apply.
+
+Optional audio settings use native `aac`/`fdk_aac`, a bitrate of
+`96|128|160|192|256|320` kbps and `audio_fast_coder` for Fast versus Twoloop.
+Unavailable selected encoders are refused. Omitting these fields retains legacy
+AAC/128/Twoloop settings, serialization and job identity. The audio checkbox
+still controls whether any audio is included.
+
+Program In/Out are client transport state with exclusive Out. Setting an In at
+or after Out clears Out; setting an Out at or before In clears In, matching
+native `MarkRange`. Marks reset on project/timeline changes, remain across
+Program/Source switches on the same timeline and create no history entry.
+The export drawer defaults to Marks when the resolved range is not the whole
+timeline, offers an explicit Whole choice and preserves Custom ranges. Empty
+resolved marks refuse submission. Only the resolved range is sent to the API.
 Encoding/mixing/compositing use vv-session, vv-media and vv-audio. A selected
 hardware codec requires a successful explicit check in the current server
 instance. Hardware encoding does not silently fall back to x264. Native
@@ -1155,10 +1183,16 @@ or interrupted partials. Each pending job reserves 512 MiB. Admission refuses
 eviction. Source/Program jobs remain ephemeral and cannot read
 export records. The drawer lists saved exports and retains the latest selection
 in session storage. Arbitrary output formats, automatic resume and automatic
-retention policies remain open.
+retention policies are not implemented and are not acceptance requirements
+established from the original GUI. The browser reattaches to its selected job
+after refresh without submitting another export. Status shows measured elapsed
+time and FPS, an estimated running ETA and expandable native pipeline metrics.
 
 `GET /exports/codecs` reads native metadata without opening codec devices. It
-returns `identity`, `build`, `adapter`, `encoders` and `decoders`. Each option
+returns `identity`, `build`, `adapter`, `encoders`, `decoders` and `audio`. The
+audio object contains `codecs:[{id,label,status}]`, `bitrates` and
+`coders:[{id,label,fast_coder}]`; availability only checks the native registry.
+Each video option
 has `id`, `label`, `status` and an optional `reason`; encoder rows also include
 `quality:{min,max,rises,default,label}`, `presets` and `default_preset`. Status is
 `not_checked`, `checking`, `available`, `unavailable` or `disabled`. Identity is

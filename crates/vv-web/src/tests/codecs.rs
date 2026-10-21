@@ -15,6 +15,10 @@ fn options(encoder: Encoder, decoder: Decoder) -> ExportOptions {
         audio: true,
         encoder,
         decoder,
+        scale_percent: None,
+        audio_codec: None,
+        audio_bitrate_kbps: None,
+        audio_fast_coder: None,
     }
 }
 fn row<'a>(catalog: &'a Value, kind: &str, id: &str) -> &'a Value {
@@ -30,6 +34,32 @@ fn catalog_is_stable_pure_and_cpu_hosts_disable_every_hardware_path() {
     let preview = Preview::disabled();
     let codecs = Codecs::new(preview.clone());
     let before = codecs.catalog();
+    assert_eq!(
+        before["audio"]["bitrates"],
+        serde_json::json!([96, 128, 160, 192, 256, 320])
+    );
+    assert_eq!(
+        before["audio"]["coders"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| row["fast_coder"].as_bool().unwrap())
+            .collect::<Vec<_>>(),
+        [false, true]
+    );
+    for (index, codec) in [vv_media::AudioCodec::Aac, vv_media::AudioCodec::FdkAac]
+        .into_iter()
+        .enumerate()
+    {
+        assert_eq!(
+            before["audio"]["codecs"][index]["status"],
+            if codec.is_available() {
+                "available"
+            } else {
+                "unavailable"
+            }
+        );
+    }
     for _ in 0..3 {
         assert_eq!(before, codecs.catalog());
     }

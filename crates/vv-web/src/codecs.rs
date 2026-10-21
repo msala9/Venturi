@@ -221,7 +221,7 @@ impl Codecs {
                 row
             })
             .collect();
-        json!({"identity":self.0.identity,"build":self.0.build,"adapter":self.0.preview.diagnostic(),"encoders":encoders,"decoders":decoders})
+        json!({"identity":self.0.identity,"build":self.0.build,"adapter":self.0.preview.diagnostic(),"encoders":encoders,"decoders":decoders,"audio":crate::program::audio_catalog()})
     }
     pub fn validate_export(&self, options: &ExportOptions) -> Result<()> {
         options.validate()?;

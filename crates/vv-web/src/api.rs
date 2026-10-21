@@ -1545,6 +1545,7 @@ async fn assets(request: Request) -> Response {
             asset!("/web/js/native-asset-folders.js", "text/javascript")
         }
         "/js/media-import.js" => asset!("/web/js/media-import.js", "text/javascript"),
+        "/js/mark-range.js" => asset!("/web/js/mark-range.js", "text/javascript"),
         "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
         "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),
         "/js/reviewmeta.js" => asset!("/web/js/reviewmeta.js", "text/javascript"),

@@ -5,6 +5,8 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
+    fs::File,
+    io::Read,
     os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     sync::{
@@ -76,6 +78,49 @@ pub struct ExportOptions {
     pub encoder: crate::codecs::Encoder,
     #[serde(default, skip_serializing_if = "crate::codecs::Decoder::is_default")]
     pub decoder: crate::codecs::Decoder,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scale_percent: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audio_codec: Option<AudioEncoder>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audio_bitrate_kbps: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub audio_fast_coder: Option<bool>,
+}
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum AudioEncoder {
+    Aac,
+    FdkAac,
+}
+impl AudioEncoder {
+    pub fn native(self) -> vv_media::AudioCodec {
+        match self {
+            Self::Aac => vv_media::AudioCodec::Aac,
+            Self::FdkAac => vv_media::AudioCodec::FdkAac,
+        }
+    }
+}
+const AUDIO_BITRATES: [u32; 6] = [96, 128, 160, 192, 256, 320];
+pub fn audio_catalog() -> Value {
+    let codecs = [(AudioEncoder::Aac,"aac","AAC – FFmpeg"),(AudioEncoder::FdkAac,"fdk_aac","AAC – FDK")].map(|(codec,id,label)| {
+        // Native availability only looks up the registered encoder, without opening it.
+        json!({"id":id,"label":label,"status":if codec.native().is_available(){"available"}else{"unavailable"}})
+    });
+    json!({"codecs":codecs,"bitrates":AUDIO_BITRATES,"coders":[{"id":"twoloop","label":"Twoloop","fast_coder":false},{"id":"fast","label":"Fast","fast_coder":true}]})
+}
+pub fn export_scales(resolution: (u32, u32)) -> Value {
+    Value::Array(
+        ExportSettings::SCALE_CHOICES
+            .into_iter()
+            .map(|percent| {
+                let mut settings = ExportSettings::new(PathBuf::new());
+                settings.scale_percent = percent;
+                let (width, height) = settings.output_size(resolution);
+                json!({"percent":percent,"width":width,"height":height})
+            })
+            .collect(),
+    )
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -98,7 +143,148 @@ impl ExportOptions {
                 "Choose native encoder quality and a supported speed preset",
             ));
         }
+        if self
+            .scale_percent
+            .is_some_and(|scale| !ExportSettings::SCALE_CHOICES.contains(&scale))
+        {
+            return Err(ApiError::invalid(
+                "Choose a native export scale of 100, 75, 50 or 25 percent",
+            ));
+        }
+        if self
+            .audio_bitrate_kbps
+            .is_some_and(|bitrate| !AUDIO_BITRATES.contains(&bitrate))
+        {
+            return Err(ApiError::invalid(
+                "Choose a native audio bitrate of 96, 128, 160, 192, 256 or 320 kbps",
+            ));
+        }
+        if self.audio
+            && self
+                .audio_codec
+                .is_some_and(|codec| !codec.native().is_available())
+        {
+            return Err(ApiError::invalid(
+                "The selected native audio encoder is unavailable in this FFmpeg build",
+            ));
+        }
         Ok(())
+    }
+}
+fn validate_export_size(native: (u32, u32), output: (u32, u32)) -> Result<()> {
+    if [native.0, native.1, output.0, output.1]
+        .into_iter()
+        .any(|dimension| dimension == 0 || dimension > 8192)
+    {
+        return Err(ApiError::invalid(
+            "Native export dimensions must be between 1 and 8192 pixels",
+        ));
+    }
+    Ok(())
+}
+fn export_working_bytes(native: (u32, u32), output: (u32, u32)) -> u64 {
+    // The native pipeline queues eight decoded layers and eight composed frames.
+    // Allow another queue's worth for in-flight decode/composition, plus encoder/audio.
+    let pixels = |size: (u32, u32)| u64::from(size.0) * u64::from(size.1);
+    pixels(native)
+        .saturating_mul(64)
+        .saturating_add(pixels(output).saturating_mul(16))
+        .saturating_add(256 * 1024 * 1024)
+}
+fn memory_pressure() -> ApiError {
+    ApiError::conflict(
+        "EXPORT_MEMORY_PRESSURE",
+        "Not enough host or process memory headroom for this native export scale; choose a smaller scale or retry later",
+    )
+}
+fn read_small(path: &Path, limit: u64) -> Option<String> {
+    let mut text = String::new();
+    File::open(path)
+        .ok()?
+        .take(limit + 1)
+        .read_to_string(&mut text)
+        .ok()?;
+    (text.len() as u64 <= limit).then_some(text)
+}
+fn available_host_memory(meminfo: &str) -> Option<u64> {
+    meminfo.lines().find_map(|line| {
+        let mut fields = line.split_whitespace();
+        if fields.next() != Some("MemAvailable:") {
+            return None;
+        }
+        let kib = fields.next()?.parse::<u64>().ok()?;
+        if fields.next() != Some("kB") || fields.next().is_some() {
+            return None;
+        }
+        kib.checked_mul(1024)
+    })
+}
+fn cgroup_headroom(root: &Path, membership: &str) -> Option<u64> {
+    let relative = membership
+        .lines()
+        .find_map(|line| line.strip_prefix("0::"))?;
+    let relative = Path::new(relative);
+    if !relative.is_absolute()
+        || relative.components().any(|part| {
+            !matches!(
+                part,
+                std::path::Component::RootDir | std::path::Component::Normal(_)
+            )
+        })
+    {
+        return None;
+    }
+    let mut path = root.join(relative.strip_prefix("/").ok()?);
+    let mut available = u64::MAX;
+    for _ in 0..64 {
+        let max_path = path.join("memory.max");
+        let max = match read_small(&max_path, 128) {
+            Some(max) => max,
+            // The cgroup v2 root need not expose controller files. Host memory
+            // admission still applies; missing delegated controller files fail closed.
+            None if path == root
+                && std::fs::metadata(&max_path)
+                    .is_err_and(|error| error.kind() == std::io::ErrorKind::NotFound) =>
+            {
+                return Some(available);
+            }
+            None => return None,
+        };
+        if max.trim() != "max" {
+            let max = max.trim().parse::<u64>().ok()?;
+            let current = read_small(&path.join("memory.current"), 128)?
+                .trim()
+                .parse::<u64>()
+                .ok()?;
+            available = available.min(max.saturating_sub(current));
+        }
+        if path == root {
+            return Some(available);
+        }
+        if !path.pop() || !path.starts_with(root) {
+            return None;
+        }
+    }
+    None
+}
+fn memory_fits(required: u64, host: u64, process: u64) -> bool {
+    host >= required.saturating_add(4 * 1024 * 1024 * 1024)
+        && process >= required.saturating_add(256 * 1024 * 1024)
+}
+fn admit_export_memory(required: u64) -> Result<()> {
+    let host = read_small(Path::new("/proc/meminfo"), 64 * 1024)
+        .as_deref()
+        .and_then(available_host_memory);
+    let process = read_small(Path::new("/proc/self/cgroup"), 16 * 1024)
+        .as_deref()
+        .and_then(|membership| cgroup_headroom(Path::new("/sys/fs/cgroup"), membership));
+    if host
+        .zip(process)
+        .is_some_and(|(host, process)| memory_fits(required, host, process))
+    {
+        Ok(())
+    } else {
+        Err(memory_pressure())
     }
 }
 pub type Inputs = Vec<(PathBuf, String)>;
@@ -220,6 +406,21 @@ impl ProgramTask {
                 "Program preview ranges are limited to five minutes",
             ));
         }
+        self.admit_scale()?;
+        Ok(())
+    }
+    fn admit_scale(&self) -> Result<()> {
+        if self
+            .export
+            .as_ref()
+            .is_some_and(|options| options.scale_percent.is_some())
+        {
+            let resolution = self.snapshot.project.timelines[self.snapshot.timeline].resolution;
+            validate_export_size(resolution, resolution)?;
+            let output = self.settings(Path::new("")).output_size(resolution);
+            validate_export_size(resolution, output)?;
+            admit_export_memory(export_working_bytes(resolution, output))?;
+        }
         Ok(())
     }
     fn settings(&self, directory: &Path) -> ExportSettings {
@@ -231,10 +432,24 @@ impl ProgramTask {
         settings.video.preset = "veryfast".into();
         settings.video.quality = 18;
         if let Some(options) = &self.export {
+            if let Some(scale) = options.scale_percent {
+                settings.scale_percent = scale;
+            }
             settings.video.codec = options.encoder.native();
             settings.hw_decode = options.decoder.devices(&self.preview);
             settings.video.quality = options.quality;
             settings.video.preset = options.preset.clone();
+            if let Some(audio) = &mut settings.audio {
+                if let Some(codec) = options.audio_codec {
+                    audio.codec = codec.native();
+                }
+                if let Some(bitrate) = options.audio_bitrate_kbps {
+                    audio.bitrate_kbps = bitrate;
+                }
+                if let Some(fast) = options.audio_fast_coder {
+                    audio.fast_coder = fast;
+                }
+            }
             if !options.audio {
                 settings.audio = None;
             }
@@ -255,6 +470,8 @@ impl ProgramTask {
         inputs: &Inputs,
         durable: bool,
     ) -> Result<()> {
+        // A queued job must still fit when the sole media worker starts it.
+        self.admit_scale()?;
         let done = AtomicBool::new(false);
         let budget = AtomicBool::new(false);
         let storage_pressure = AtomicBool::new(false);

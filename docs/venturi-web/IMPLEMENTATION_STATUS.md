@@ -4,13 +4,47 @@
 
 ## Current completion assessment
 
-The ledger contains 90 in-scope capabilities: 34 done, 56 partial and none not
+The ledger contains 90 in-scope capabilities: 36 done, 54 partial and none not
 started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus
-37.8% of capability rows have full acceptance; this is not an estimate of
+40.0% of capability rows have full acceptance; this is not an estimate of
 implementation effort. Many partial rows already have native adapters and
 working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
+
+Native Program export marks, percentage output sizes, audio settings and
+measured pipeline progress now pass `evidence/m3-native-export-options.json`.
+Program I/O and opposite-bound resets follow native MarkRange; marks survive
+Program/Source switches on the same timeline and reset on timeline changes.
+Marks/Whole scope, four native scales, AAC codec/bitrate/coder selection,
+unavailable FDK refusal and unchanged legacy request identities are covered.
+Explicit scales use native dimensions and conservative host/cgroup memory
+admission; a 4K request was refused before enqueue under the 1 GiB test limit.
+
+The existing Windows browser exported frames 2–10 at 64×36 with AAC 192 kbps
+Fast, then downloaded bytes matching the native file SHA. Another single export
+was running at frame 9 before refresh and frame 95 afterward with the same job
+ID, then completed all 2400 frames at 640×360. A distinct export was canceled
+at frame 162. Source opposite-bound resets, same-timeline Program mark retention,
+no browser errors and no project/history/source changes were verified. Only the
+isolated test unit was temporarily slowed to 10% CPU to observe reconnect;
+its one-CPU quota was restored. A final JavaScript-only correction preserves
+the native 100% default after an empty timeline, while retaining an explicitly
+selected Legacy width. Its unchanged Rust hashes, fmt, 677 JavaScript tests,
+native build and metadata-only Windows check passed. This is finite functional
+qualification, not a
+performance, high-resolution, hardware GPU, physical audio or sustained-load test.
+
+Validation passed 340 web Rust, 277 core, 677 JavaScript, 10 proxy, 3 decoder,
+1 cached-device and four targeted desktop tests, fmt, Clippy and native build.
+All computation used the cached halo2 environment with one CPU, 4 GiB build
+RAM, no swap and OOM score 1000; the software API/browser unit was capped at
+1 GiB. Its final recorded memory.events had no OOM events. The single Windows
+tab, finite server and tunnel are closed. No browser or environment installation
+occurred. Program In/Out and export cancellation/progress now meet their ledger
+acceptance; broader high-resolution export and release qualification remain open.
+The main editor and its five unsaved MoveClips/Undo were preserved. Its older
+runtime remains active while the new candidate is staged separately.
 
 Native batch media import now passes `evidence/m2-native-media-import.json`.
 One Import selected files action prepares up to 256 unique root files outside

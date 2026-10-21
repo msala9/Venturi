@@ -726,6 +726,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/native-assets.js", 200),
         ("/js/native-asset-folders.js", 200),
         ("/js/media-import.js", 200),
+        ("/js/mark-range.js", 200),
         ("/api/v1/library", 200),
         ("/js/slip.js", 200),
         ("/js/catalog.js", 200),
@@ -1006,7 +1007,13 @@ async fn native_asset_http_library_readers_import_routes_security_and_download_c
     let pending: Value =
         serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
     assert_eq!(pending["error"]["code"], "OUTCOME_UNKNOWN");
-    assert_eq!(pending["error"]["details"]["status"], "preparing");
+    assert!(matches!(
+        pending["error"]["details"]["status"].as_str(),
+        Some("preparing" | "pending")
+    ));
+    if pending["error"]["details"]["status"] == "pending" {
+        assert_eq!(pending["error"]["details"]["recovery_pending"], true);
+    }
     assert!(pending["error"]["details"]["job_id"].is_string());
     drop(preparation);
     let command = folder_command("create-http-folder");

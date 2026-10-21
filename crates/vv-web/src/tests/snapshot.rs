@@ -1,6 +1,28 @@
 use super::*;
 
 #[test]
+fn timeline_export_scales_are_native_dimensions_without_a_preview_width_cap_or_project_mutation() {
+    let mut session = Session::default();
+    let id = session.create_timeline(vv_core::Timeline {
+        name: "Native export dimensions".into(),
+        fps: vv_core::Rational::new(30000, 1001),
+        resolution: (4096, 2160),
+        tracks: vec![],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    let value = timeline(&session, id);
+    assert_eq!(
+        value["export_scales"],
+        json!([{"percent":100,"width":4096,"height":2160},{"percent":75,"width":3072,"height":1620},{"percent":50,"width":2048,"height":1080},{"percent":25,"width":1024,"height":540}])
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+}
+
+#[test]
 fn media_stream_counts_use_native_metadata_without_mutating_legacy_projects() {
     let mut editor = Session::default();
     for (has_audio, audio_streams) in [(true, 2), (true, 0), (false, 4)] {

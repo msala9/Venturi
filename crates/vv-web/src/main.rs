@@ -22,6 +22,7 @@ mod program;
 mod receipts;
 mod recording;
 mod resume;
+mod retime;
 mod reviewmeta;
 mod silence;
 mod slip;

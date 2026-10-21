@@ -1,5 +1,20 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+`retime_clip {clip_id,end_frame,overwrite?:false}` uses the ordinary timeline
+mutation envelope. Eligible media snapshots expose `retime` with native
+`source_span`, `min_length`, `max_length` and `pitch_correction`; unsupported
+sources expose null. The endpoint computes an exact native rational speed and
+applies `SetClipSpeed` with `ResizeTo`, expanding the primary's linked group.
+It preserves the primary pitch flag and native source-frame mapping. A shared
+old endpoint must remain shared; source clamps or unrepresentable linked media
+results reject the whole operation. Other linked endpoints use native Resize.
+An unchanged endpoint creates no history step. Ordinary growth rejects overlaps;
+explicit `overwrite:true` uses native make-room trim/delete commands in the same
+Undo step. Foreign linked groups must be completely aligned and covered on
+every affected track; locked or incomplete groups refuse atomically. Validation
+runs on a cloned native project before planning against real ID allocators.
+This does not add speed ramps or reverse playback.
+
 `POST /api/v1/timelines/{id}/presets/capture` accepts
 `{query:FrameQuery,clip_ids,options:{name,attributes,anchor,append_filters}}`.
 It validates snapshot identity and returns `{project_epoch,generation,revision,

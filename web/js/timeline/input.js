@@ -10,7 +10,13 @@ import {
   markerDraft,
   fadeDraft,
   transitionDraft,
+  retimeDraft,
 } from "./geometry.js";
+import {isTextTarget} from '../ui.js';
+
+export function isRetimeShortcut(event,{dialogOpen=false}={}){
+  return !dialogOpen && !event.defaultPrevented && !event.repeat && !event.isComposing && !event.altKey && !event.shiftKey && Boolean(event.ctrlKey)!==Boolean(event.metaKey) && event.key?.toLowerCase()==='r' && !isTextTarget(event.target);
+}
 
 export function createInput({
   canvas,
@@ -33,7 +39,7 @@ export function createInput({
   };
   const transitionContext=timeline=>{
     const rect=canvas.getBoundingClientRect();
-    return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,view.tool,[...view.selection].sort(),rect.left,rect.top,rect.width,rect.height]);
+    return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,view.tool,view.snap,view.retime,view.retimeOverwrite,[...view.selection].sort(),rect.left,rect.top,rect.width,rect.height]);
   };
   const transitionCurrent=g=>{const timeline=getTimeline();return timeline===g.timeline && !timeline.tracks[g.track]?.locked && transitionContext(timeline)===g.context && canEdit();};
   const cancel = () => {
@@ -64,8 +70,8 @@ export function createInput({
         scrollY: view.scrollY,
       };
     } else if (event.button !== 0) return;
-    else if(hit.kind==='transition'){
-      if(!canEdit()){onNotice('A writable idle session is required to edit a transition');return;}
+    else if(['transition','retime'].includes(hit.kind)){
+      if(!canEdit()){onNotice('A writable idle session is required to edit this handle');return;}
       gesture={...hit,x,y,moved:false,pointerId:event.pointerId,timeline,context:transitionContext(timeline)};
     } else if (hit.clip) {
       if (event.ctrlKey && view.selection.includes(hit.clip.id)) {
@@ -119,20 +125,20 @@ export function createInput({
     if (!gesture) {
       const timeline = getTimeline(); if (!timeline) return;
       const [x,y] = point(event), hit = hitTest(x,y,timeline,view);
-      canvas.title = hit.marker ? `${hit.marker.note || "Marker"} · ${hit.marker.start_frame}f · drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : hit.kind==='transition' ? `${hit.slot==='cut_after'?'Cross transition':`Transition ${hit.slot}`} · ${hit.duration}f · drag to change duration` : hit.kind==='fade' ? `Fade ${hit.edge} · ${hit.clip[`fade_${hit.edge}`]}f · drag to change this clip's fade` : '';
-      if(canvas.style)canvas.style.cursor = ['fade','transition'].includes(hit.kind) ? 'ew-resize' : hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
+      canvas.title = hit.marker ? `${hit.marker.note || "Marker"} · ${hit.marker.start_frame}f · drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : hit.kind==='retime' ? `Speed handle · drag the right endpoint to resize at native speed${view.retimeOverwrite?' · OVERWRITE clips enabled':''}` : hit.kind==='transition' ? `${hit.slot==='cut_after'?'Cross transition':`Transition ${hit.slot}`} · ${hit.duration}f · drag to change duration` : hit.kind==='fade' ? `Fade ${hit.edge} · ${hit.clip[`fade_${hit.edge}`]}f · drag to change this clip's fade` : '';
+      if(canvas.style)canvas.style.cursor = ['fade','transition','retime'].includes(hit.kind) ? 'ew-resize' : hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
       const hover=hit.clip?.id ?? null;if(view.hoverFadeClip!==hover){view.hoverFadeClip=hover;invalidate();}
       return;
     }
     const timeline = getTimeline(),
       [x, y] = point(event),
       g = gesture;
-    if(g.kind==='transition'){
+    if(g.kind==='transition' || g.kind==='retime'){
       if(event.pointerId!==g.pointerId)return;
-      if(!transitionCurrent(g)){cancel();onNotice('Transition gesture cancelled because the editing session or viewport changed');return;}
+      if(!transitionCurrent(g)){cancel();onNotice('Duration gesture cancelled because the editing session or viewport changed');return;}
       if(event.buttons!==undefined && !(event.buttons&1)){cancel();return;}
       if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
-      view.draft={...transitionDraft(g,x-g.x,view,timeline.fps),track_id:timeline.tracks[g.track].id};
+      view.draft={...(g.kind==='retime'?retimeDraft(g,x-g.x,timeline,view):transitionDraft(g,x-g.x,view,timeline.fps)),track_id:timeline.tracks[g.track].id};
     } else if(g.kind==='fade'){
       if(event.pointerId!==g.pointerId)return;
       if(timeline!==g.timeline || !canEdit()){cancel();onNotice('Fade gesture cancelled because the editing session changed');return;}
@@ -236,11 +242,11 @@ export function createInput({
     if (!gesture) return;
     const g = gesture,
       timeline = getTimeline();
-    if(g.kind==='transition'){
+    if(g.kind==='transition' || g.kind==='retime'){
       if(event.pointerId!==g.pointerId || event.button!==0)return;
-      if(!transitionCurrent(g)){cancel();onNotice('Transition gesture cancelled because the editing session or viewport changed');return;}
+      if(!transitionCurrent(g)){cancel();onNotice('Duration gesture cancelled because the editing session or viewport changed');return;}
       const [x,y]=point(event);
-      if(g.moved || Math.hypot(x-g.x,y-g.y)>=4){g.moved=true;view.draft={...transitionDraft(g,x-g.x,view,timeline.fps),track_id:timeline.tracks[g.track].id};}
+      if(g.moved || Math.hypot(x-g.x,y-g.y)>=4){g.moved=true;view.draft={...(g.kind==='retime'?retimeDraft(g,x-g.x,timeline,view):transitionDraft(g,x-g.x,view,timeline.fps)),track_id:timeline.tracks[g.track].id};}
     }
     const draft=view.draft;
     if(g.kind==='fade' && event.pointerId!==g.pointerId)return;
@@ -270,13 +276,13 @@ export function createInput({
     if (g.kind === "scrub") onSeek(true);
     if (g.kind === "marker" && !g.moved) { view.playhead=g.marker.start_frame;onSeek(true); }
     const markerChanged = g.kind !== "marker" || (draft && (draft.marker.start_frame!==g.marker.start_frame || draft.marker.duration_frames!==g.marker.duration_frames));
-    if (draft && g.moved && markerChanged && !(g.kind === "slip" && draft.target === 0) && !(g.kind==='fade' && draft.frames===draft.original) && !(g.kind==='transition' && draft.duration===g.duration)) {
+    if (draft && g.moved && markerChanged && !(g.kind === "slip" && draft.target === 0) && !(g.kind==='fade' && draft.frames===draft.original) && !(g.kind==='transition' && draft.duration===g.duration) && !(g.kind==='retime' && draft.end_frame===g.end_frame)) {
       if (draft.error) onNotice(draft.error);
       else {
         waiting = true;
         try {
           const operation =
-            g.kind==='transition' ? draft.operation : g.kind==='fade' ? {kind:'set_properties',clip_id:g.clip.id,patch:{[`fade_${g.edge}`]:draft.frames}} : g.kind === "marker" ? {kind:"move_marker",marker_id:g.marker.id,start_frame:draft.marker.start_frame,duration_frames:draft.marker.duration_frames} : g.kind === "move"
+            ['transition','retime'].includes(g.kind) ? draft.operation : g.kind==='fade' ? {kind:'set_properties',clip_id:g.clip.id,patch:{[`fade_${g.edge}`]:draft.frames}} : g.kind === "marker" ? {kind:"move_marker",marker_id:g.marker.id,start_frame:draft.marker.start_frame,duration_frames:draft.marker.duration_frames} : g.kind === "move"
               ? {
                   kind: "safe_move",
                   moves: draft.changes.map(
@@ -306,7 +312,7 @@ export function createInput({
     invalidate();
   };
   const wheel = (event) => {
-    if(['fade','transition'].includes(gesture?.kind))cancel();
+    if(['fade','transition','retime'].includes(gesture?.kind))cancel();
     const timeline = getTimeline();
     if (!timeline) return;
     event.preventDefault();
@@ -337,10 +343,10 @@ export function createInput({
     invalidate();
   };
   const key = (event) => {
-    if (event.key === "Escape") {if(gesture?.kind==='transition'){event.preventDefault?.();event.stopPropagation?.();}cancel();}
+    if (event.key === "Escape") {if(['transition','retime'].includes(gesture?.kind)){event.preventDefault?.();event.stopPropagation?.();}cancel();}
   };
-  const pointerAbort=event=>{if(gesture?.kind==='transition' && event?.pointerId!==undefined && event.pointerId!==gesture.pointerId)return;cancel();};
-  const viewportChanged=()=>{if(gesture?.kind==='transition')cancel();};
+  const pointerAbort=event=>{if(['transition','retime'].includes(gesture?.kind) && event?.pointerId!==undefined && event.pointerId!==gesture.pointerId)return;cancel();};
+  const viewportChanged=()=>{if(['transition','retime'].includes(gesture?.kind))cancel();};
   const documentRef=canvas.ownerDocument ?? window.document;
   const visibilityChanged=()=>{if(documentRef?.hidden)viewportChanged();};
   const doubleClick = event => {

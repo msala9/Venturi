@@ -94,6 +94,31 @@ export function transitionDraft(handle,pixelDelta,view,fps){
   const handles=transitionGeometry(handle,duration,view,fps),geometry=handles.find(candidate=>candidate.clip.id===handle.clip.id && candidate.edge===handle.edge);
   return {...handle,...geometry,original:handle.duration,handles,operation:{kind:'set_transition',clip_id:handle.clip_id,slot:handle.slot,transition:structuredClone(geometry.transition)}};
 }
+function retimeMetadata(clip){
+  const metadata=clip?.retime;
+  return transitionClip(clip) && clip.kind==='media' && Number.isSafeInteger(metadata?.source_span) && metadata.source_span>0 && Number.isSafeInteger(metadata.min_length) && metadata.min_length>=1 && Number.isSafeInteger(metadata.max_length) && metadata.max_length>=metadata.min_length && metadata.max_length<=MAX_FRAME-clip.start_frame && typeof metadata.pitch_correction==='boolean';
+}
+export function retimeHandles(track,view,fps){
+  if(view.retime!==true || view.tool==='slip' || !['video','audio'].includes(track?.kind) || track.locked)return [];
+  return (track.clips || []).filter(clip=>retimeMetadata(clip) && clip.length_frames*pixelsPerFrame(view,fps)>=20).map(clip=>{
+    const end_frame=clip.start_frame+clip.length_frames,left=frameToX(clip.start_frame,view,fps),right=frameToX(end_frame,view,fps);
+    return {kind:'retime',clip,clip_id:clip.id,end_frame,metadata:structuredClone(clip.retime),left,right,x:right,topOffset:7,bottomOffset:21};
+  });
+}
+export function retimeDraft(handle,pixelDelta,timeline,view){
+  if(handle?.kind!=='retime' || !retimeMetadata({...handle.clip,retime:handle.metadata}) || !Number.isFinite(pixelDelta))throw Error('Choose a complete native speed handle');
+  const clip=handle.clip,metadata=handle.metadata,source=timeline.tracks.find(track=>track.clips.some(candidate=>candidate.id===clip.id));
+  if(!source)throw Error('The speed handle clip is no longer in this timeline');
+  const linked=typeof clip.linked_group==='string'?timeline.tracks.flatMap(track=>track.clips.filter(candidate=>candidate.linked_group===clip.linked_group).map(candidate=>({track,clip:candidate}))):[{track:source,clip}];
+  const exclude=new Set([clip.id,...linked.map(target=>target.clip.id)]),candidates=[view.playhead,...timeline.tracks.flatMap(track=>track.clips.filter(candidate=>!exclude.has(candidate.id)).flatMap(candidate=>[candidate.start_frame,candidate.start_frame+candidate.length_frames]))].filter(frame=>Number.isSafeInteger(frame) && frame>=0 && frame<=MAX_FRAME);
+  const raw=handle.end_frame+pixelDelta/pixelsPerFrame(view,timeline.fps);if(!Number.isFinite(raw))throw Error('Speed pointer exceeds its integer frame budget');
+  const rounded=Math.max(0,Math.min(MAX_FRAME,Math.round(raw))),snapped=view.snap?snapFrame(rounded,candidates,view,timeline.fps):rounded;
+  const length_frames=Math.max(metadata.min_length,Math.min(metadata.max_length,snapped-clip.start_frame)),end_frame=clip.start_frame+length_frames,overwrite=view.retimeOverwrite===true;
+  const changes=[{clip_id:clip.id,to_track:source.id,to_start_frame:clip.start_frame,length_frames}],validation=validateDraft(timeline,changes),validation_pending=linked.length>1;
+  let error=validation;if(error==='Overlap · safe move blocked' && overwrite)error=null;
+  if(linked.some(target=>target.track.locked))error='Track locked or incompatible';
+  return {...handle,metadata:structuredClone(metadata),original:handle.end_frame,start_frame:clip.start_frame,end_frame,length_frames,left:frameToX(clip.start_frame,view,timeline.fps),right:frameToX(end_frame,view,timeline.fps),x:frameToX(end_frame,view,timeline.fps),target:end_frame,changes,error,validation_pending,operation:{kind:'retime_clip',clip_id:clip.id,end_frame,overwrite}};
+}
 export function hitTest(x, y, timeline, view) {
   if (x >= HEADER && y >= MARKER_TOP && y < MARKER_BOTTOM) {
     for (const marker of [...(timeline.markers || [])].reverse()) {
@@ -109,6 +134,10 @@ export function hitTest(x, y, timeline, view) {
   if (!timeline.tracks[track]) return { kind: "blank" };
   if (x < HEADER) return { kind: "header", track };
   const top=RULER+track*TRACK-view.scrollY;
+  if(y>=top+7 && y<=top+21){
+    const retime=retimeHandles(timeline.tracks[track],view,timeline.fps).find(handle=>x>=handle.left && x<=handle.right && handle.right-x<8);
+    if(retime)return {...retime,track};
+  }
   if(y>=top+TRACK-21 && y<=top+TRACK-7){
     const transition=transitionHandles(timeline.tracks[track],view,timeline.fps).find(handle=>x>=frameToX(handle.clip.start_frame,view,timeline.fps) && x<=frameToX(handle.clip.start_frame+handle.clip.length_frames,view,timeline.fps) && Math.abs(x-handle.x)<=9);
     if(transition)return {...transition,track};
@@ -122,7 +151,7 @@ export function hitTest(x, y, timeline, view) {
     );
     if (x >= left && x <= right){
       const top=RULER+track*TRACK-view.scrollY;
-      if(!timeline.tracks[track].locked && view.tool!=='slip' && y>=top+7 && y<=top+21){
+      if(!timeline.tracks[track].locked && view.tool!=='slip' && !(view.retime===true && retimeMetadata(clip)) && y>=top+7 && y<=top+21){
         const handle=fadeHandles(clip,view,timeline.fps).filter(handle=>Math.abs(x-handle.x)<=9).sort((a,b)=>Math.abs(x-a.x)-Math.abs(x-b.x))[0];
         if(handle)return {kind:'fade',edge:handle.edge,track,clip};
       }

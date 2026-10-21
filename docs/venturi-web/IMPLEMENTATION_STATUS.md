@@ -21,16 +21,17 @@ folder does not establish sharing through the 14 TB archive; only the existing
 ds4 media-catalog integration has actual NAS evidence.
 
 Animated viewer transforms, mask/path handles, persistent export history and
-explicit terminal-export discard and transition duration handles now pass
-182 Rust tests, 195 JavaScript tests,
+explicit terminal-export discard, transition duration handles and exact speed
+handles now pass 194 Rust tests, 213 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json` and
-`evidence/m4-transition-duration-handles.json`; prior transform/export proofs remain valid
+`evidence/m4-transition-duration-handles.json` and `evidence/m4-speed-handles.json`;
+prior transform/export proofs remain valid
 for their recorded scope.
 
 Remaining work includes pen drawing, full path-key navigation, transition
-selection/duplication, exact speed handles, compound and
+selection/duplication, native speed strip preset menus, compound and
 import coverage, long-media preview and export lifecycle/codec selection,
 continuous audio behavior and physical recording, remaining AI Review cases,
 and final deployment, DPI, duration and resource qualification. Historical
@@ -2493,3 +2494,40 @@ port 8811 closed; project hashes and the primary editor's five unsaved moves
 remained intact. CPU1/512 MiB/no swap/OOMScoreAdjust=1000/60-second API caps were
 used; no render/export/GPU/local browser/build/soak was started. GUI/DPI/rendered
 and hardware acceptance remain open; affected ledger rows remain partial.
+
+## M4 — exact native speed pointer handles
+
+An explicit Speed handles mode (Ctrl/Cmd+R outside text inputs/dialogs) shows
+eligible media endpoints in the upper clip strip. Native snapshots supply the
+source span, integer length bounds and pitch flag. JavaScript drafts integer
+endpoints and snapping only; Rust computes the exact rational speed and uses
+native ResizeTo. One release produces one ClipSpeed Undo step. Escape, stale
+identity, viewport/tool/mode/selection changes and capture loss cancel locally.
+Known primary overlap stays visibly invalid even for linked selections.
+
+Safe growth refuses overlaps. An unchecked, explicit Overwrite clips control
+permits native make-room trim/delete in the same Undo step, and resets on project
+change or mode exit. All selected linked media are validated before and after a
+cloned native change. Originally shared endpoints must remain exact; locked,
+source-capped or unrepresentable linked results reject the whole edit. Foreign
+linked overwrite groups must be fully aligned and covered on every member
+track. Failure preserves real allocators and history. A no-op after Undo/Redo also
+preserves compound media metadata instead of triggering an incidental refresh.
+Native percent/pitch/fit Inspector controls remain available, including when
+handles are too small.
+
+194 Rust and 213 JavaScript tests, fmt, clippy with warnings denied and native
+build pass on halo2. Finite API qualification uses a 2375-byte H.264 fixture and
+48044-byte silent WAV, fractional timeline FPS, nonzero video source-in and a
+linked audio clip with a different original end. It verifies exact endpoints,
+safe collision rejection, explicit obstruction trim, shared speed/pitch/group,
+one exact Undo/Redo/retry, invalid atomic rejection, no-op, freeze-to-speed,
+source/other timeline preservation and Save/restart. Native tests additionally
+cover delete, source caps and locked/incomplete foreign groups. Evidence:
+`evidence/m4-speed-handles.json`.
+
+Both own instances stop and port 8811 closes; the primary editor and its five
+unsaved moves remain intact. API limits are one CPU, 512 MiB, no swap,
+OOMScoreAdjust=1000 and 60 seconds per instance. No render/export/GPU/local
+browser/build/soak is used. Native strip preset menu, browser/DPI/rendered
+playback and hardware acceptance remain open; affected ledger rows stay partial.

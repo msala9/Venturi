@@ -1,0 +1,154 @@
+{
+  "no_op_changed_snapshot_fields": [],
+  "retained_failed_attempt": {
+    "project": "Speed_Handles_Failed_2ff7eebc7279_3.vvproj",
+    "sha256": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "failure": "AssertionError('No-op changed project data, history or revision')"
+  },
+  "retained_attempts": [
+    {
+      "project": "Speed_Handles_Failed_2ff7eebc7279.vvproj",
+      "sha256": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+      "failure": "AssertionError('No-op created history or revision')"
+    }
+  ],
+  "prior_attempts": [
+    {
+      "binary_sha256": "64991c824270a36f351b9a6db29ce085ce711f8faa1b1e504699a041f1a78077",
+      "proof": {
+        "status": "failed",
+        "own_test_units_stopped": true,
+        "port8811_closed": true,
+        "primary_editor_preserved": true,
+        "parent_hashes_preserved": {
+          "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+          "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+          "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+          "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+          "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+          "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+          "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+          "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+          "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+          "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+          "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+          "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+          "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+          "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+        },
+        "checkpoint": "/home/marco/.cache/venturi-retime-handles-check/acceptance.json",
+        "phase": "editing",
+        "failure": "AssertionError('No-op changed project data, history or revision')",
+        "failure_traceback": "Traceback (most recent call last):\n  File \"<stdin>\", line 222, in <module>\nAssertionError: No-op changed project data, history or revision\n",
+        "cleanup_errors": []
+      },
+      "reason": "Native no-op adapter incorrectly refreshed compound media after Undo/Redo; corrected and regression tested"
+    }
+  ],
+  "project": "Speed_Handles_API_check.vvproj",
+  "project_sha256": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+  "checks": {
+    "fractional_timeline_fps": true,
+    "nonzero_source_in": true,
+    "exact_integer_endpoint": true,
+    "default_overlap_atomic": true,
+    "explicit_native_overwrite_trims_obstruction": true,
+    "one_undo_redo_exact": true,
+    "retry_exact": true,
+    "invalid_endpoint_atomic": true,
+    "no_op_no_history": true,
+    "freeze_unfreezes_with_undo": true,
+    "source_file_and_other_timelines_preserved": true,
+    "linked_group_live_api": true,
+    "linked_different_end_native_resize": true,
+    "linked_pitch_and_group_preserved": true
+  },
+  "served_asset_hashes": {
+    "main.js": "5c842ad5357f99b5755c9978d51f2f137fea41756781fb968def1506b252d419",
+    "timeline/draw.js": "9da3ce855b3d727f86d2ce75d4faf87e6166c0ccda86b2fc3096f82706f0413b",
+    "timeline/input.js": "4b00469701a35a63bb4b26c5b01441a14d809f8f8e99fcdaa6025db73aef36a3",
+    "timeline/geometry.js": "2f624ad9fff90835f61d7b46d8a35aaa7afa514bf68f645f255e0f26d75e90e8"
+  },
+  "save_restart_exact": true,
+  "parent_hashes_preserved": {
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "primary_editor_preserved": true,
+  "binary_sha256": "ed5c3ec55363aa23b2d281edd1c6f6faf72a265de9ecf8fe2404be4923d77850",
+  "gui_acceptance": false,
+  "hardware_gpu_used": false,
+  "no_render_or_exports": true,
+  "no_gpu_or_shared_lock_fds": true,
+  "limits": {
+    "cpu": "one CPU",
+    "memory": "512 MiB",
+    "swap": 0,
+    "oom_score": 1000,
+    "runtime_max_seconds": 60
+  },
+  "status": "passed",
+  "own_test_units_stopped": true,
+  "port8811_closed": true,
+  "checkpoint": "/home/marco/.cache/venturi-retime-handles-check/acceptance.json",
+  "phase": "verified",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792592943.7342136,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "ed5c3ec55363aa23b2d281edd1c6f6faf72a265de9ecf8fe2404be4923d77850",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "main_editor_preserved": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "generation": "5",
+    "history": {
+      "labels": [
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips",
+        "MoveClips"
+      ],
+      "position": 5
+    },
+    "unsaved": true
+  },
+  "syntax_checks": true,
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/commands.rs": "f34f79ee5077085af2c92afa88cf924023f90ce03b09b76d08843f04ed497871",
+      "crates/vv-web/src/main.rs": "8202c2956c5b45e2f33587c6179105650a425c166cef95eecd943aab50ab0e5e",
+      "crates/vv-web/src/snapshot.rs": "cb9d443354709126b30c5df0b32fb475736e0fd478e299daa07f17b1e9fafeea",
+      "crates/vv-web/src/retime.rs": "088a1f486502bc838985b56db27ede953824292728bd33afcfe51a51ff75146d",
+      "crates/vv-web/src/tests/retime.rs": "c1df7370e1a51331a85edb9db79976b74778b0e7da2d4860a12cab82014f779b",
+      "web/js/timeline/geometry.js": "2f624ad9fff90835f61d7b46d8a35aaa7afa514bf68f645f255e0f26d75e90e8",
+      "web/js/timeline/input.js": "4b00469701a35a63bb4b26c5b01441a14d809f8f8e99fcdaa6025db73aef36a3",
+      "web/js/timeline/draw.js": "9da3ce855b3d727f86d2ce75d4faf87e6166c0ccda86b2fc3096f82706f0413b",
+      "web/js/main.js": "5c842ad5357f99b5755c9978d51f2f137fea41756781fb968def1506b252d419",
+      "web/index.html": "8a29a12651d3bcf77bb918d95f1491f376ea36398eaaa49ff3064a8c36affcec",
+      "web/test/timeline-retime.test.js": "86138aa1039cd07ee5fe675177c9d157b9701ea8b4d938625f2b821e8883db4e",
+      "web/test/timeline-retime-input.test.js": "395c2086949c8ee67ca9b7ba0f55876494c2a214f40783bd096b7f0082d40ad3"
+    },
+    "rust_tests": 194,
+    "javascript_tests": 213,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": false,
+    "hardware_gpu": false
+  },
+  "scope_note": "Exact native speed ResizeTo endpoints at fractional timeline FPS and nonzero source offset; safe overlap refusal, explicit native trim-overwrite, one Undo/Redo, retry, no-op, invalid atomic rejection, freeze-to-speed and saved restart accepted through real API. Real API also verifies linked audio with a different original end, shared pitch, native resizing and exact group Undo/Redo. Locked peers, source caps and native delete behavior have unit coverage. Pointer geometry/controller lifecycle tested without a browser. Native preset strip menu, browser/DPI/rendered playback and hardware qualification remain open."
+}

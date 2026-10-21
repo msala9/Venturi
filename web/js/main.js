@@ -1,6 +1,7 @@
 import { isTextTarget, installSplitter } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
 import { linkedSelection, playheadSelection } from "./timeline/geometry.js";
+import {isRetimeShortcut} from './timeline/input.js';
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import { createViewer } from "./viewer.js";
 import { createSourcePlayer, sourceAssetURL, sourceSelection, sourceFrameAtTime } from "./source.js";
@@ -277,6 +278,8 @@ const view = {
   playhead: 0,
   selection: [],
   snap: true,
+  retime: false,
+  retimeOverwrite: false,
   draft: null,
 };
 let commit = async () => {
@@ -601,6 +604,18 @@ $("snap").addEventListener("click", () => {
   view.snap = !view.snap;
   $("snap").setAttribute("aria-pressed", view.snap);
 });
+function updateRetimeControls(){
+  $("retime-handles").setAttribute('aria-pressed',String(view.retime));$("retime-overwrite").disabled=!view.retime;$("retime-overwrite").checked=view.retimeOverwrite;canvasTimeline.invalidate();
+}
+$("retime-handles").addEventListener('click',()=>{
+  canvasTimeline.cancel();view.retime=!view.retime;if(!view.retime)view.retimeOverwrite=false;updateRetimeControls();
+  notice(view.retime?'Speed handles · drag the upper-right endpoint; overlaps are refused unless Overwrite clips is checked':'Speed handles hidden');
+});
+$("retime-handles").addEventListener('keydown',event=>{if(event.key===' ' || event.key==='Enter')event.stopPropagation();});
+$("retime-overwrite").addEventListener('change',()=>{
+  canvasTimeline.cancel();view.retimeOverwrite=view.retime && $("retime-overwrite").checked;updateRetimeControls();notice(view.retimeOverwrite?'Overwrite clips enabled · speed edits may replace overlaps; Undo restores them':'Speed resize refuses overlaps');
+});
+document.addEventListener('keydown',event=>{if(isRetimeShortcut(event,{dialogOpen:Boolean(document.querySelector('dialog[open]'))})){event.preventDefault();event.stopPropagation();$("retime-handles").click();}});
 $("edit-tool").addEventListener("change",()=>{canvasTimeline.cancel();view.tool=$("edit-tool").value;slipView?.reset();notice(view.tool === "slip" ? "Slip tool · drag right to advance source; linked clips follow" : "Move / trim tool");});
 for (const [id, factor] of [
   ["zoom-in", 1.4],
@@ -669,6 +684,7 @@ async function refresh() {
   for(const [id,asset] of mediaAssets)if(sourceChanged(id)){asset.thumbnail?.close();mediaAssets.delete(id);}
   if(sourceOpenId && (!next.media.some((item)=>item.id===sourceOpenId) || sourceChanged(sourceOpenId))){sourcePlayer?.reset();sourceRanges.delete(sourceOpenId);sourceOpenId=null;}
   if (documentState?.project_epoch !== next.project_epoch) {
+    canvasTimeline.cancel();view.retime=false;view.retimeOverwrite=false;updateRetimeControls();
     sourcePlayer?.reset();
     sourceOpenId = null; sourceRanges.clear();
     view.playhead=0;view.origin=0;view.scrollY=0;view.selection=[];

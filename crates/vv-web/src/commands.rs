@@ -231,6 +231,12 @@ pub enum Operation {
         pitch_correction: bool,
         fit: SpeedFit,
     },
+    RetimeClip {
+        clip_id: String,
+        end_frame: FrameIdx,
+        #[serde(default)]
+        overwrite: bool,
+    },
     SetFreeze {
         clip_ids: Vec<String>,
         frame: Option<FrameIdx>,
@@ -598,6 +604,15 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                     fit.native(),
                 )),
             )?;
+        }
+        Operation::RetimeClip {
+            clip_id,
+            end_frame,
+            overwrite,
+        } => {
+            if !crate::retime::apply(session, id, clip_id, *end_frame, *overwrite)? {
+                return Ok(());
+            }
         }
         Operation::SetFreeze { clip_ids, frame } => {
             let selected = media_refs(tl, clip_ids)?;
@@ -1225,7 +1240,7 @@ fn compound_command(
     ))
 }
 
-fn media_refs(tl: &Timeline, ids: &[String]) -> Result<Vec<edit::ClipRef>> {
+pub(crate) fn media_refs(tl: &Timeline, ids: &[String]) -> Result<Vec<edit::ClipRef>> {
     let selected = refs(tl, ids)?;
     if selected.iter().any(|&(track, id)| {
         !matches!(

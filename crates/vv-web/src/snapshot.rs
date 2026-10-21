@@ -26,11 +26,11 @@ pub fn timeline(session: &Session, id: TimelineId) -> Value {
         "locked":track.locked,"muted":track.muted,"solo":track.solo,"armed":track.armed,
         "mix":track.mix,
         "crossings":track.crossings.iter().filter_map(|c|{let left=track.clip(c.left_clip)?;let right=track.clip(c.right_clip)?;let window=c.window(left,right);Some(json!({"left_clip":left.id.0.to_string(),"right_clip":right.id.0.to_string(),"start_frame":window.start,"end_frame":window.end,"kind":c.transition.kind,"transition":c.transition}))}).collect::<Vec<_>>(),
-        "clips":track.clips.iter().map(|clip|clip_snapshot(session,clip)).collect::<Vec<_>>()
+        "clips":track.clips.iter().map(|clip|clip_snapshot(session,tl,clip)).collect::<Vec<_>>()
       })).collect::<Vec<_>>()})
 }
 
-fn clip_snapshot(session: &Session, clip: &vv_core::Clip) -> Value {
+fn clip_snapshot(session: &Session, timeline: &vv_core::Timeline, clip: &vv_core::Clip) -> Value {
     let (kind, media_id, name) = match &clip.source {
         ClipSource::Media(id) => (
             "media",
@@ -47,7 +47,7 @@ fn clip_snapshot(session: &Session, clip: &vv_core::Clip) -> Value {
         ClipSource::Adjustment => ("adjustment", None, "Adjustment".into()),
     };
     let slip_range = vv_core::edit::slip_range(&session.project, clip);
-    json!({"id":clip.id.0.to_string(),"name":name,"kind":kind,"media_id":media_id,"start_frame":clip.timeline_start,"length_frames":clip.timeline_len,
+    json!({"id":clip.id.0.to_string(),"name":name,"kind":kind,"media_id":media_id,"start_frame":clip.timeline_start,"length_frames":clip.timeline_len,"retime":crate::retime::metadata(&session.project,timeline,clip),
             "source_in_frames":clip.source_in(),"source_out_frames":clip.source_out(),"slip_range":slip_range,"linked_group":clip.linked_group.map(|g|g.0.to_string()),"disabled":clip.disabled,"fade_in":clip.fade_in,"fade_out":clip.fade_out,"transition_in":clip.effects.transition_in,"transition_out":clip.effects.transition_out,"speed_percent":clip.speed().as_percent(),"freeze_source_frame":clip.freeze,"display_color":clip.display_color,"display_rgb":clip.display_color.map(|color|{let (r,g,b)=color.rgb();[r,g,b]})})
 }
 

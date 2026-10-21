@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles,retimeHandles } from "./geometry.js";
 export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
@@ -38,6 +38,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       ctx.beginPath();
       ctx.rect(HEADER, top, width - HEADER, TRACK);
       ctx.clip();
+      const speedHandles=retimeHandles(track,view,timeline.fps),speedIds=new Set(speedHandles.map(handle=>handle.clip_id));
       for (const clip of track.clips) {
         if (
           clip.start_frame + clip.length_frames < first ||
@@ -93,9 +94,15 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           top + 41,
         );
         ctx.restore();
+        const speed=speedHandles.find(handle=>handle.clip_id===clip.id);
+        if(speed){
+          const active=view.draft?.kind==='retime' && view.draft.clip_id===clip.id,end=active?view.draft.right:speed.right;
+          ctx.fillStyle=active && view.draft.error?color('--danger'):active?color('--primary'):color('--violet');ctx.save();ctx.globalAlpha=0.75;ctx.fillRect(speed.left+1,top+7,Math.max(1,end-speed.left-2),14);ctx.restore();
+          ctx.fillStyle=color('--text');if(end-speed.left>=70)ctx.fillText('Speed',speed.left+7,top+14);ctx.beginPath();ctx.arc(end-4,top+14,active?5:4,0,Math.PI*2);ctx.fill();
+        }
         const fading=view.draft?.kind==='fade' && view.draft.clip_id===clip.id;
         const shown=fading?{...clip,[`fade_${view.draft.edge}`]:view.draft.frames}:clip;
-        if(!track.locked && view.tool!=='slip')for(const handle of fadeHandles(shown,view,timeline.fps)){
+        if(!track.locked && view.tool!=='slip' && !speedIds.has(clip.id))for(const handle of fadeHandles(shown,view,timeline.fps)){
           if(!handle.frames && !fading && !view.selection.includes(clip.id) && view.hoverFadeClip!==clip.id)continue;
           const active=fading && view.draft.edge===handle.edge;
           ctx.strokeStyle=active?color('--primary'):color('--text');ctx.fillStyle=ctx.strokeStyle;
@@ -140,6 +147,10 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
             : color("--primary");
           ctx.strokeRect(x, top + 5, end - x, TRACK - 10);
           if(view.draft.kind === "slip"){ctx.fillStyle=color("--text");ctx.fillText(`Slip ${view.draft.target>=0?"+":""}${view.draft.target}f`,x+6,top+TRACK-15);}
+          if(view.draft.kind==='retime'){
+            const label=`Speed length ${draft.length_frames}f · end ${view.draft.end_frame}f${view.draft.validation_pending?' · linked validation on release':''}${view.draft.operation.overwrite?' · OVERWRITE':''}${view.draft.error?` · ${view.draft.error}`:''}`,labelX=Math.max(HEADER+5,x+6);
+            ctx.fillStyle=color('--raised');ctx.fillRect(labelX-3,top+TRACK-33,Math.max(180,Math.min(width-labelX,label.length*7)),15);ctx.fillStyle=color('--text');ctx.fillText(label,labelX,top+TRACK-25);
+          }
         }
       for (const [start,end] of view.silencePreview || []) {
         const x=Math.max(HEADER,frameToX(start,view,timeline.fps)),right=Math.min(width,frameToX(end,view,timeline.fps));

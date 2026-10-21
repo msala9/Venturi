@@ -72,6 +72,10 @@ pub struct ExportOptions {
     pub quality: u8,
     pub preset: String,
     pub audio: bool,
+    #[serde(default, skip_serializing_if = "crate::codecs::Encoder::is_default")]
+    pub encoder: crate::codecs::Encoder,
+    #[serde(default, skip_serializing_if = "crate::codecs::Decoder::is_default")]
+    pub decoder: crate::codecs::Decoder,
 }
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -81,13 +85,17 @@ pub struct ExportRequest {
 }
 impl ExportOptions {
     pub fn validate(&self) -> Result<()> {
-        if self.quality > 51
-            || !vv_media::VideoCodec::X264
-                .presets()
-                .contains(&self.preset.as_str())
+        let codec = self.encoder.native();
+        if !vv_media::VideoCodec::choices().contains(&codec)
+            || !codec.quality_range().contains(&self.quality)
+            || if codec.presets().is_empty() {
+                !self.preset.is_empty()
+            } else {
+                !codec.presets().contains(&self.preset.as_str())
+            }
         {
             return Err(ApiError::invalid(
-                "Choose x264 CRF 0–51 and a supported speed preset",
+                "Choose native encoder quality and a supported speed preset",
             ));
         }
         Ok(())
@@ -188,6 +196,13 @@ impl ProgramTask {
     pub fn validate(&self) -> Result<()> {
         if let Some(options) = &self.export {
             options.validate()?;
+            if (!options.encoder.is_default() || !options.decoder.is_default())
+                && !self.preview.hardware_enabled()
+            {
+                return Err(ApiError::invalid(
+                    "Hardware codecs are disabled on this preview host",
+                ));
+            }
         }
         let tl = &self.snapshot.project.timelines[self.snapshot.timeline];
         let count = self
@@ -216,6 +231,8 @@ impl ProgramTask {
         settings.video.preset = "veryfast".into();
         settings.video.quality = 18;
         if let Some(options) = &self.export {
+            settings.video.codec = options.encoder.native();
+            settings.hw_decode = options.decoder.devices(&self.preview);
             settings.video.quality = options.quality;
             settings.video.preset = options.preset.clone();
             if !options.audio {
@@ -304,7 +321,16 @@ impl ProgramTask {
     }
 }
 pub fn progress_value(progress: &ExportProgress) -> Value {
-    json!({"current_frame":progress.current_frame,"total_frames":progress.total_frames,"elapsed_ms":progress.elapsed.as_secs_f64()*1000.0,"startup_ms":progress.startup.map(|d|d.as_secs_f64()*1000.0),"fps":progress.fps(),"decode_fps":progress.decode.fps(),"compose_fps":progress.compose.fps(),"encode_fps":progress.encode.fps(),"compositor":progress.compositor,"encoder":progress.encoder.map(|e|format!("{e:?}"))})
+    progress_value_for(progress, crate::codecs::Decoder::Software)
+}
+pub fn progress_value_for(progress: &ExportProgress, requested: crate::codecs::Decoder) -> Value {
+    let decoders: Vec<_> = progress.decoders.iter().map(|device| match device {
+        None => json!({"id":"software","label":"Software (CPU)"}),
+        Some(vv_media::HwDevice::Cuda) => json!({"id":"nvdec","label":"NVIDIA NVDEC"}),
+        Some(vv_media::HwDevice::Vulkan(name)) => json!({"id":"vulkan","label":format!("Vulkan ({})",name.as_deref().unwrap_or("default device"))}),
+        Some(vv_media::HwDevice::VideoToolbox) => json!({"id":"videotoolbox","label":"Apple VideoToolbox"}),
+    }).collect();
+    json!({"current_frame":progress.current_frame,"total_frames":progress.total_frames,"elapsed_ms":progress.elapsed.as_secs_f64()*1000.0,"startup_ms":progress.startup.map(|d|d.as_secs_f64()*1000.0),"fps":progress.fps(),"decode_fps":progress.decode.fps(),"compose_fps":progress.compose.fps(),"encode_fps":progress.encode.fps(),"compositor":progress.compositor,"encoder":progress.encoder.map(|e|format!("{e:?}")),"decoders":decoders,"decoder_fallback":!requested.is_default() && progress.decoders.iter().any(Option::is_none)})
 }
 
 #[cfg(test)]

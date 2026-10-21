@@ -895,13 +895,23 @@ the same bounded native pipeline in both modes. No automatic hardware fallback.
 
 ## Native export adapter (bounded first release)
 
-POST `/exports` accepts `{range: ProgramQuery, settings:{quality,preset,audio}}`.
-The native x264 preset list and CRF 0–51 are validated. The requested range is
+POST `/exports` accepts
+`{range: ProgramQuery, settings:{quality,preset,audio,encoder?,decoder?}}`.
+Omitted codecs retain x264 and software decoding, including the existing
+canonical job identity and saved settings. Encoder IDs are `x264`, `nvenc`,
+`vulkan` and platform-native `videotoolbox`; decoder IDs are `software`, `nvdec`
+and `vulkan`. Choices and quality/preset bounds come from the native catalog.
+Unknown IDs, unsupported platform encoders and invalid settings are refused.
+The requested range is
 an integer exclusive-out range within the captured timeline. Export duration is
 independent of the five-minute Program preview window. Width is capped at 1920
 and native aspect/pixel budgets still apply.
-Encoding/mixing/compositing use vv-session, vv-media and vv-audio. CPU x264/AAC
-are explicit; no unverified hardware encoder or decoder is offered.
+Encoding/mixing/compositing use vv-session, vv-media and vv-audio. A selected
+hardware codec requires a successful explicit check in the current server
+instance. Hardware encoding does not silently fall back to x264. Native
+decoding may fall back to bounded software decoding; progress reports observed
+`decoders:[{id,label}]` and `decoder_fallback` separately from the encoder and
+compositor. Hardware selection is disabled on CPU-only preview hosts.
 The returned `program.audio_present` follows the native export rule: requested
 audio is included when an audio track contains clips. Download labels use this
 actual stream choice; empty audio tracks do not announce an AAC stream.
@@ -939,8 +949,38 @@ or interrupted partials. Each pending job reserves 512 MiB. Admission refuses
 `EXPORT_CAPACITY` when either limit would be exceeded; there is no automatic
 eviction. Source/Program jobs remain ephemeral and cannot read
 export records. The drawer lists saved exports and retains the latest selection
-in session storage. Hardware codec selection, arbitrary output formats, automatic
-resume and automatic retention policies remain open.
+in session storage. Arbitrary output formats, automatic resume and automatic
+retention policies remain open.
+
+`GET /exports/codecs` reads native metadata without opening codec devices. It
+returns `identity`, `build`, `adapter`, `encoders` and `decoders`. Each option
+has `id`, `label`, `status` and an optional `reason`; encoder rows also include
+`quality:{min,max,rises,default,label}`, `presets` and `default_preset`. Status is
+`not_checked`, `checking`, `available`, `unavailable` or `disabled`. Identity is
+scoped to the server instance, executable and configured adapter; restarting
+invalidates previous hardware checks. Vulkan encoding uses FFmpeg's default
+device, while Vulkan decoding names the configured adapter.
+
+`POST /exports/codecs/probe` accepts only
+`{kind:"encoder"|"decoder",id,force?:false}` within a 2 KiB body. This is the
+only catalog operation that runs a native check. A cached result is returned
+unless an explicit recheck sets `force:true`. Checks are single flight; busy,
+timeout and child failures leave previous availability intact. A disabled host
+rejects hardware checks before creating a child. Successful requests return
+the full updated catalog.
+
+Checks run in an isolated child before server/preview startup, with a private
+temporary directory, one allowed CPU, a CPU-time and output budget, low priority
+and a child-owned wall-clock deadline. They require at least 4 GiB of host
+memory headroom and an effective cgroup memory limit of at most 4 GiB with zero
+swap; missing limits return `CODEC_PROBE_RESOURCE_LIMIT` without changing cached
+availability. Hardware checks require the nonblocking shared GPU
+reservation, retained through child exit and device-cache release. The preview
+worker yields its resident context before a probe/export and holds its own
+reservation for the full residency. A hardware decoder check decodes and checks
+color through the requested native device; device creation alone is insufficient.
+The drawer reads choices on open/refresh and checks hardware only through its
+explicit check buttons. It rejects stale responses after context/server changes.
 
 `POST /exports/{job}/discard` accepts
 `{project_epoch,revision,command_id}` with the original export epoch, current

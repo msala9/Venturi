@@ -1,0 +1,2016 @@
+{
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792610615.3460727,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "20ab76df720d5ea73dad4341d80ff7627291b0284812d79b1ce19cdbde4540bc",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "binary_sha256": "20ab76df720d5ea73dad4341d80ff7627291b0284812d79b1ce19cdbde4540bc",
+  "served_asset_hashes": {
+    "index.html": "9bb7e253cdcecfb0a6e9ef3221fab24bd92082d87ef2b34efc7a34c2a9c156d7",
+    "js/export.js": "1f802cb3a1561f6a6724b4db560903302343c49f8b0d7439c9259b4ddd107ac3",
+    "js/main.js": "e9e662df411d124dc6da96e5ebf0f316c5329faa96808ab4bcb71d5e4c113d81"
+  },
+  "project_history_unchanged": true,
+  "parents_preserved": {
+    "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+    "Take_Audio_API_check.vvproj": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+    "Audition_Stream_API_check.vvproj": "931997ccae0e8428979e62921a838cf9a3ff72195815327b90196b56396b7d50",
+    "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+    "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+    "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+    "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+    "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+    "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+    "Retime_UI_Retained_677fba04bbac.vvproj": "d9c29a84906ea350ba2bbcb66261e2eb373d58e72e2e0df441f70981c314a63d",
+    "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+    "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+    "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+    "Take_Audio_UI_Retained_fdfc2e75b01e.vvproj": "399a2f41a8b84d767595472d871647585e466b4d6500adb8789b9bd4e562d6ee",
+    "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+    "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+    "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+    "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+    "Review_Windows_API_check.vvproj": "3fbdcc97b82bd44623c3a5ce94549a5891be133c3f562672bb8daca3b3c06dee",
+    "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+    "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+    "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+    "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+    "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+    "Review_Clock_API_check.vvproj": "19d1c44ae5fa08cd7e7741ea9ab8c95c8ad48cd9b7092048fb224e8c37a6571c",
+    "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+  },
+  "no_gpu_or_shared_lock_fds": true,
+  "resource_limits": {
+    "CPUQuotaPerSecUSec": "1s",
+    "IOWeight": "10",
+    "MemoryMax": "536870912",
+    "MemorySwapMax": "0",
+    "OOMScoreAdjust": "1000",
+    "Nice": "19"
+  },
+  "core_tests": 271,
+  "media_proxy_tests": 10,
+  "bounded_decoder_tests": 3,
+  "device_cache_tests": 1,
+  "rust_tests": 241,
+  "javascript_tests": 533,
+  "main_editor_preserved": true,
+  "own_ui_test_unit_stopped": true,
+  "port8811_closed": true,
+  "cpu_catalog_acceptance": {
+    "project": "Audition_Stream_API_check.vvproj",
+    "project_sha256": "931997ccae0e8428979e62921a838cf9a3ff72195815327b90196b56396b7d50",
+    "catalog_before": {
+      "adapter": {
+        "active_programs": 0,
+        "available": false,
+        "exact_context_resident": false,
+        "frame_rendered": false,
+        "reason": "Select --gpu-device or use the launcher with --software-preview",
+        "resident": false
+      },
+      "build": {
+        "executable_version": "64512:3443452:267727864:1792610614:900307297",
+        "version": "0.8.1"
+      },
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)",
+          "status": "available"
+        },
+        {
+          "id": "nvdec",
+          "label": "NVIDIA NVDEC",
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        },
+        {
+          "id": "vulkan",
+          "label": "Vulkan (configured adapter)",
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        }
+      ],
+      "encoders": [
+        {
+          "default_preset": "superfast",
+          "id": "x264",
+          "label": "x264 (CPU)",
+          "presets": [
+            "ultrafast",
+            "superfast",
+            "veryfast",
+            "faster",
+            "fast",
+            "medium",
+            "slow",
+            "slower",
+            "veryslow"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CRF",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "available"
+        },
+        {
+          "default_preset": "p5",
+          "id": "nvenc",
+          "label": "NVIDIA NVENC",
+          "presets": [
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "p5",
+            "p6",
+            "p7"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CQ",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        },
+        {
+          "default_preset": "",
+          "id": "vulkan",
+          "label": "Vulkan (FFmpeg default device)",
+          "presets": [],
+          "quality": {
+            "default": 23,
+            "label": "QP",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        }
+      ],
+      "identity": "674f0092e142ae4b91b7f94c6b73c57c120c37ed74b9f34bafef031c05ae8a1c"
+    },
+    "catalog_after": {
+      "adapter": {
+        "active_programs": 0,
+        "available": false,
+        "exact_context_resident": false,
+        "frame_rendered": false,
+        "reason": "Select --gpu-device or use the launcher with --software-preview",
+        "resident": false
+      },
+      "build": {
+        "executable_version": "64512:3443452:267727864:1792610614:900307297",
+        "version": "0.8.1"
+      },
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)",
+          "status": "available"
+        },
+        {
+          "id": "nvdec",
+          "label": "NVIDIA NVDEC",
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        },
+        {
+          "id": "vulkan",
+          "label": "Vulkan (configured adapter)",
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        }
+      ],
+      "encoders": [
+        {
+          "default_preset": "superfast",
+          "id": "x264",
+          "label": "x264 (CPU)",
+          "presets": [
+            "ultrafast",
+            "superfast",
+            "veryfast",
+            "faster",
+            "fast",
+            "medium",
+            "slow",
+            "slower",
+            "veryslow"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CRF",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "available"
+        },
+        {
+          "default_preset": "p5",
+          "id": "nvenc",
+          "label": "NVIDIA NVENC",
+          "presets": [
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "p5",
+            "p6",
+            "p7"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CQ",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        },
+        {
+          "default_preset": "",
+          "id": "vulkan",
+          "label": "Vulkan (FFmpeg default device)",
+          "presets": [],
+          "quality": {
+            "default": 23,
+            "label": "QP",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        }
+      ],
+      "identity": "674f0092e142ae4b91b7f94c6b73c57c120c37ed74b9f34bafef031c05ae8a1c"
+    },
+    "restarted_catalog": {
+      "adapter": {
+        "active_programs": 0,
+        "available": false,
+        "exact_context_resident": false,
+        "frame_rendered": false,
+        "reason": "Select --gpu-device or use the launcher with --software-preview",
+        "resident": false
+      },
+      "build": {
+        "executable_version": "64512:3443452:267727864:1792610614:900307297",
+        "version": "0.8.1"
+      },
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)",
+          "status": "available"
+        },
+        {
+          "id": "nvdec",
+          "label": "NVIDIA NVDEC",
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        },
+        {
+          "id": "vulkan",
+          "label": "Vulkan (configured adapter)",
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        }
+      ],
+      "encoders": [
+        {
+          "default_preset": "superfast",
+          "id": "x264",
+          "label": "x264 (CPU)",
+          "presets": [
+            "ultrafast",
+            "superfast",
+            "veryfast",
+            "faster",
+            "fast",
+            "medium",
+            "slow",
+            "slower",
+            "veryslow"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CRF",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "available"
+        },
+        {
+          "default_preset": "p5",
+          "id": "nvenc",
+          "label": "NVIDIA NVENC",
+          "presets": [
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "p5",
+            "p6",
+            "p7"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CQ",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        },
+        {
+          "default_preset": "",
+          "id": "vulkan",
+          "label": "Vulkan (FFmpeg default device)",
+          "presets": [],
+          "quality": {
+            "default": 23,
+            "label": "QP",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "reason": "Hardware codecs require an available hardware preview host",
+          "status": "disabled"
+        }
+      ],
+      "identity": "799279590057394dd04a3c889a4b334ebb087ebf8b125585c7db088a27e156c7"
+    },
+    "malformed_probes_refused": [
+      {
+        "status": 422,
+        "error": "INVALID_OPERATION"
+      },
+      {
+        "status": 422,
+        "error": "INVALID_OPERATION"
+      },
+      {
+        "status": 422,
+        "error": "INVALID_OPERATION"
+      },
+      {
+        "status": 422,
+        "error": "INVALID_OPERATION"
+      },
+      {
+        "status": 422,
+        "error": "INVALID_OPERATION"
+      }
+    ],
+    "disabled_hardware_probes_refused": [
+      {
+        "kind": "encoder",
+        "id": "nvenc",
+        "response": {
+          "status": 422,
+          "error": "INVALID_OPERATION"
+        }
+      },
+      {
+        "kind": "encoder",
+        "id": "vulkan",
+        "response": {
+          "status": 422,
+          "error": "INVALID_OPERATION"
+        }
+      },
+      {
+        "kind": "decoder",
+        "id": "nvdec",
+        "response": {
+          "status": 422,
+          "error": "INVALID_OPERATION"
+        }
+      },
+      {
+        "kind": "decoder",
+        "id": "vulkan",
+        "response": {
+          "status": 422,
+          "error": "INVALID_OPERATION"
+        }
+      }
+    ],
+    "read_only_catalog_exact": true,
+    "explicit_native_x264_probe": true,
+    "restart_identity_changed": true,
+    "hardware_disabled_on_cpu_host": true,
+    "project_history_unchanged": true,
+    "save_restart_exact": true,
+    "parent_hashes_preserved": {
+      "Speed_Handles_Failed_2ff7eebc7279.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+      "Dense_Keys_Halo2_UI_check.vvproj": "874ba0d703f067a03a2120637d1e6d2e66df6347d8fc8bf2bb3d976f728a6966",
+      "Take_Audio_API_check.vvproj": "803804474409fdabfb86c913be7ed0aa40a6a697c8c1121e9921393e079319d4",
+      "Audition_Stream_API_check.vvproj": "931997ccae0e8428979e62921a838cf9a3ff72195815327b90196b56396b7d50",
+      "Mask_Pen_PathKeys_API_check.vvproj": "8af1ebca00c528a305d548a17c3933f8d1bbb2db5c5a5668187e4a8dd8a3f0e3",
+      "Saved_Presets_Halo2_UI_check.vvproj": "d3c290e4d9c078f1c6a010ed4e66f3b0959dc253b375bf6c1e2e4f66883e63b4",
+      "Handles_Compound_API_check.vvproj": "9936b0dab3f2e5dad304bfd7e289ab0fd7e5e348a675a73bc65b6cae5267cbc9",
+      "Transition_Handles_API_check.vvproj": "6c7d25d773e60d20fcfff69b923ef271607f9cfdfd964da635b4871a23fa80f6",
+      "Speed_Handles_API_check.vvproj": "aa3a1cbe8f7735bd4337af57567f3c4c6cfaa9fcb9502903eec1750b9097e1a0",
+      "Cross_Parameter_Halo2_UI_check.vvproj": "5fa0330616e22e4b58b4566b6d1b32ccbc5b33708b835c3ddd6b74e955321626",
+      "Retime_UI_Retained_677fba04bbac.vvproj": "d9c29a84906ea350ba2bbcb66261e2eb373d58e72e2e0df441f70981c314a63d",
+      "Zoom_Link_Halo2_UI_check.vvproj": "51285c47a8d3e6136ef0fddd9b7a86e9f83709ff287164dc6ffe37378c0cf9bd",
+      "Speed_Handles_Failed_2ff7eebc7279_3.vvproj": "cdd41b7646060603d8680a371bb4ca6ba3ff78499f6cb42bce0df791c62884f7",
+      "Speed_Presets_Failed_6eca27fe240d.vvproj": "2f32425d0cb076c3c142662ccbdd151b18a04014abcbd90a0f967ea53a307fcc",
+      "Take_Audio_UI_Retained_fdfc2e75b01e.vvproj": "399a2f41a8b84d767595472d871647585e466b4d6500adb8789b9bd4e562d6ee",
+      "Speed_Presets_API_check.vvproj": "4abb7c2e5c407589b6343c4c3ca89374fb1478aae414ffa7c4f92ba728193fe1",
+      "Value_Keys_Halo2_UI_check.vvproj": "defc25ee1ee718d7a1dec74e61ba6df4ad08a3d8399dd8b33c9bdf1e332b8fa0",
+      "CPU_shared_library_UI_check.vvproj": "7c856087f30c3fafc50e040a50a9e2e6ccc2e4b511070e327d49097221b98c20",
+      "Mask_Viewer_API_check.vvproj": "c4bd6af54f4a510739c59a8642402f29e85274be5479af63fc052e50e0daaed9",
+      "Review_Windows_API_check.vvproj": "3fbdcc97b82bd44623c3a5ce94549a5891be133c3f562672bb8daca3b3c06dee",
+      "Rebased_shared_library_UI_check.vvproj": "749ca25b85e9bdc9784c3f52def03a7116968fb11e4be8d97ec729c2fa91bb63",
+      "Saved_Preset_Library_API_check.vvproj": "96b9b4eae1b398050a7cfc61224392be8dccc4d5f5cb0397dd5de5ec5bbb782f",
+      "Attribute_Preset_API_Halo2_UI_check.vvproj": "e7f4c4b4345caa7d1e73d46a8f506498ea190a7068d58a1e7bb681deced0c6d8",
+      "Transition_Placement_API_check.vvproj": "9c8fb2aef6a13228df08e49ad71f8c73bfe0c11b960b30420ba35d444e627677",
+      "Viewer_Animated_Export_API_check.vvproj": "dd554ad337b1acf35b4775effd3e99dcfd1a997c9277534414a4bac363c295c3",
+      "Review_Clock_API_check.vvproj": "19d1c44ae5fa08cd7e7741ea9ab8c95c8ad48cd9b7092048fb224e8c37a6571c",
+      "Dense_Keys_Halo2_UI_check_v2.vvproj": "5c07cac48401cc0361cb79da84c10788815a7dfde617dd2afab424d46653ddae"
+    },
+    "primary_editor_preserved": true,
+    "binary_sha256": "20ab76df720d5ea73dad4341d80ff7627291b0284812d79b1ce19cdbde4540bc",
+    "hardware_gpu_used": false,
+    "no_gpu_or_shared_lock_fds": true,
+    "status": "passed",
+    "own_test_units_stopped": true,
+    "port8811_closed": true
+  },
+  "hardware_acceptance": {
+    "hardware_checks": {
+      "encoder": {
+        "default_preset": "",
+        "id": "vulkan",
+        "label": "Vulkan (FFmpeg default device)",
+        "presets": [],
+        "quality": {
+          "default": 23,
+          "label": "QP",
+          "max": 51,
+          "min": 0,
+          "rises": false
+        },
+        "status": "available"
+      },
+      "decoder": {
+        "id": "vulkan",
+        "label": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201))",
+        "status": "available"
+      }
+    },
+    "catalog_before": {
+      "adapter": {
+        "active_programs": 0,
+        "available": true,
+        "backend": "Vulkan",
+        "device_id": "0x7551",
+        "driver": "radv",
+        "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+        "exact_context_resident": true,
+        "frame_rendered": false,
+        "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "resident": true,
+        "software": false,
+        "vendor_id": "0x1002"
+      },
+      "build": {
+        "executable_version": "64512:3443452:267727864:1792610614:900307297",
+        "version": "0.8.1"
+      },
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)",
+          "status": "available"
+        },
+        {
+          "id": "nvdec",
+          "label": "NVIDIA NVDEC",
+          "status": "not_checked"
+        },
+        {
+          "id": "vulkan",
+          "label": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201))",
+          "status": "not_checked"
+        }
+      ],
+      "encoders": [
+        {
+          "default_preset": "superfast",
+          "id": "x264",
+          "label": "x264 (CPU)",
+          "presets": [
+            "ultrafast",
+            "superfast",
+            "veryfast",
+            "faster",
+            "fast",
+            "medium",
+            "slow",
+            "slower",
+            "veryslow"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CRF",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "available"
+        },
+        {
+          "default_preset": "p5",
+          "id": "nvenc",
+          "label": "NVIDIA NVENC",
+          "presets": [
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "p5",
+            "p6",
+            "p7"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CQ",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "not_checked"
+        },
+        {
+          "default_preset": "",
+          "id": "vulkan",
+          "label": "Vulkan (FFmpeg default device)",
+          "presets": [],
+          "quality": {
+            "default": 23,
+            "label": "QP",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "not_checked"
+        }
+      ],
+      "identity": "4142e17ef4c0984304863a7f3be8092defdeab3c002ca0ca97a7da797180f0fc"
+    },
+    "catalog_after": {
+      "adapter": {
+        "active_programs": 0,
+        "available": true,
+        "backend": "Vulkan",
+        "device_id": "0x7551",
+        "driver": "radv",
+        "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+        "exact_context_resident": false,
+        "frame_rendered": false,
+        "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "resident": false,
+        "software": false,
+        "vendor_id": "0x1002"
+      },
+      "build": {
+        "executable_version": "64512:3443452:267727864:1792610614:900307297",
+        "version": "0.8.1"
+      },
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)",
+          "status": "available"
+        },
+        {
+          "id": "nvdec",
+          "label": "NVIDIA NVDEC",
+          "status": "not_checked"
+        },
+        {
+          "id": "vulkan",
+          "label": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201))",
+          "status": "available"
+        }
+      ],
+      "encoders": [
+        {
+          "default_preset": "superfast",
+          "id": "x264",
+          "label": "x264 (CPU)",
+          "presets": [
+            "ultrafast",
+            "superfast",
+            "veryfast",
+            "faster",
+            "fast",
+            "medium",
+            "slow",
+            "slower",
+            "veryslow"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CRF",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "available"
+        },
+        {
+          "default_preset": "p5",
+          "id": "nvenc",
+          "label": "NVIDIA NVENC",
+          "presets": [
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "p5",
+            "p6",
+            "p7"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CQ",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "not_checked"
+        },
+        {
+          "default_preset": "",
+          "id": "vulkan",
+          "label": "Vulkan (FFmpeg default device)",
+          "presets": [],
+          "quality": {
+            "default": 23,
+            "label": "QP",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "available"
+        }
+      ],
+      "identity": "4142e17ef4c0984304863a7f3be8092defdeab3c002ca0ca97a7da797180f0fc"
+    },
+    "real_exports": [
+      {
+        "job": {
+          "cancel_requested": false,
+          "durability_error": false,
+          "durable": true,
+          "error": null,
+          "export_revision": "ebb562aff6e72313274b06c6561d64da66b55436e245f1d0479a6d4ae1d797b6",
+          "frames": 0,
+          "id": "1792610883253401947",
+          "previous_state": null,
+          "program": {
+            "audio_present": false,
+            "end_frame": 3,
+            "export_settings": {
+              "audio": false,
+              "preset": "veryfast",
+              "quality": 18
+            },
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "generation": "0",
+            "height": 360,
+            "project_epoch": "1792610882813662020:1",
+            "revision": "ce77e867d8379fe2",
+            "start_frame": 0,
+            "width": 640
+          },
+          "progress": {
+            "compose_fps": 407.55531476583775,
+            "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+            "current_frame": 3,
+            "decode_fps": 1229.7344880266903,
+            "decoder_fallback": false,
+            "decoders": [
+              {
+                "id": "software",
+                "label": "Software (CPU)"
+              }
+            ],
+            "elapsed_ms": 33.363529,
+            "encode_fps": 2420.1745752593624,
+            "encoder": "X264",
+            "fps": 89.91854548719951,
+            "startup_ms": 28.086147999999998,
+            "total_frames": 3
+          },
+          "project_epoch": "1792610882813662020:1",
+          "source_asset": null,
+          "source_assets": null,
+          "source_window": null,
+          "state": "ready"
+        },
+        "preceding_frame_sha256": "f45c0e29aace9b5a7dd45809305d045c696582494a23dbd945e1d8e909e71b57",
+        "resident_frame_to_export": true
+      },
+      {
+        "job": {
+          "cancel_requested": false,
+          "durability_error": false,
+          "durable": true,
+          "error": null,
+          "export_revision": "2a6cceabcefd7d8c6afe577bee9f1f71710310180ed05de9bf01bf2eee81871d",
+          "frames": 0,
+          "id": "1792610883574804351",
+          "previous_state": null,
+          "program": {
+            "audio_present": false,
+            "end_frame": 3,
+            "export_settings": {
+              "audio": false,
+              "decoder": "vulkan",
+              "encoder": "vulkan",
+              "preset": "",
+              "quality": 23
+            },
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "generation": "0",
+            "height": 360,
+            "project_epoch": "1792610882813662020:1",
+            "revision": "ce77e867d8379fe2",
+            "start_frame": 0,
+            "width": 640
+          },
+          "progress": {
+            "compose_fps": 232.6518134510903,
+            "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+            "current_frame": 3,
+            "decode_fps": 269.6287481766356,
+            "decoder_fallback": false,
+            "decoders": [
+              {
+                "id": "vulkan",
+                "label": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201))"
+              }
+            ],
+            "elapsed_ms": 54.328397,
+            "encode_fps": 1295.5750928279554,
+            "encoder": "Vulkan",
+            "fps": 55.219740792278486,
+            "startup_ms": 44.147143,
+            "total_frames": 3
+          },
+          "project_epoch": "1792610882813662020:1",
+          "source_asset": null,
+          "source_assets": null,
+          "source_window": null,
+          "state": "ready"
+        },
+        "preceding_frame_sha256": "228957bd6a95448e930e308717a1a1d05cfa6e0c517ae0986898f724ed4b7d67",
+        "resident_frame_to_export": true
+      }
+    ],
+    "foreign_reservation_refused_without_cache_change": {
+      "status": 503,
+      "error": "GPU_BUSY"
+    },
+    "idle_gpu_handles": [],
+    "primary_editor_preserved": true,
+    "project_history_unchanged": true,
+    "parent_hashes_preserved": {
+      "Codec_Hardware_API_check.vvproj": "c1a7c4a3412faa836a6158405904fba2c50ff26cfb78aba1d47ec5f166c6dfce"
+    },
+    "binary_sha256": "20ab76df720d5ea73dad4341d80ff7627291b0284812d79b1ce19cdbde4540bc",
+    "hardware_gpu_used": true,
+    "status": "passed",
+    "own_test_units_stopped": true,
+    "port8811_closed": true
+  },
+  "windows_ui_observations": {
+    "initial": {
+      "codecStatus": "Hardware is checked only on request \u00b7 encoder: x264 (CPU) \u00b7 available \u00b7 decoder: Software (CPU) \u00b7 available \u00b7 Native build 0.8.1",
+      "decoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "Software (CPU) \u00b7 available",
+            "value": "software"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVDEC \u00b7 disabled",
+            "value": "nvdec"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (configured adapter) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "software"
+      },
+      "encoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "x264 (CPU) \u00b7 available",
+            "value": "x264"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVENC \u00b7 disabled",
+            "value": "nvenc"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (FFmpeg default device) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "x264"
+      },
+      "hidden": false,
+      "jobStatus": "No export started",
+      "preset": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "ultrafast",
+            "value": "ultrafast"
+          },
+          {
+            "disabled": false,
+            "text": "superfast",
+            "value": "superfast"
+          },
+          {
+            "disabled": false,
+            "text": "veryfast",
+            "value": "veryfast"
+          },
+          {
+            "disabled": false,
+            "text": "faster",
+            "value": "faster"
+          },
+          {
+            "disabled": false,
+            "text": "fast",
+            "value": "fast"
+          },
+          {
+            "disabled": false,
+            "text": "medium",
+            "value": "medium"
+          },
+          {
+            "disabled": false,
+            "text": "slow",
+            "value": "slow"
+          },
+          {
+            "disabled": false,
+            "text": "slower",
+            "value": "slower"
+          },
+          {
+            "disabled": false,
+            "text": "veryslow",
+            "value": "veryslow"
+          }
+        ],
+        "value": "veryfast"
+      },
+      "quality": {
+        "max": "51",
+        "min": "0",
+        "value": "18"
+      }
+    },
+    "checked": {
+      "codecStatus": "Explicit encoder check completed \u00b7 encoder: x264 (CPU) \u00b7 available \u00b7 decoder: Software (CPU) \u00b7 available \u00b7 Native build 0.8.1",
+      "decoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "Software (CPU) \u00b7 available",
+            "value": "software"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVDEC \u00b7 disabled",
+            "value": "nvdec"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (configured adapter) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "software"
+      },
+      "encoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "x264 (CPU) \u00b7 available",
+            "value": "x264"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVENC \u00b7 disabled",
+            "value": "nvenc"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (FFmpeg default device) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "x264"
+      },
+      "hidden": false,
+      "jobStatus": "No export started",
+      "preset": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "ultrafast",
+            "value": "ultrafast"
+          },
+          {
+            "disabled": false,
+            "text": "superfast",
+            "value": "superfast"
+          },
+          {
+            "disabled": false,
+            "text": "veryfast",
+            "value": "veryfast"
+          },
+          {
+            "disabled": false,
+            "text": "faster",
+            "value": "faster"
+          },
+          {
+            "disabled": false,
+            "text": "fast",
+            "value": "fast"
+          },
+          {
+            "disabled": false,
+            "text": "medium",
+            "value": "medium"
+          },
+          {
+            "disabled": false,
+            "text": "slow",
+            "value": "slow"
+          },
+          {
+            "disabled": false,
+            "text": "slower",
+            "value": "slower"
+          },
+          {
+            "disabled": false,
+            "text": "veryslow",
+            "value": "veryslow"
+          }
+        ],
+        "value": "veryfast"
+      },
+      "quality": {
+        "max": "51",
+        "min": "0",
+        "value": "18"
+      }
+    },
+    "refreshed": {
+      "codecStatus": "Hardware is checked only on request \u00b7 encoder: x264 (CPU) \u00b7 available \u00b7 decoder: Software (CPU) \u00b7 available \u00b7 Native build 0.8.1",
+      "decoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "Software (CPU) \u00b7 available",
+            "value": "software"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVDEC \u00b7 disabled",
+            "value": "nvdec"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (configured adapter) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "software"
+      },
+      "encoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "x264 (CPU) \u00b7 available",
+            "value": "x264"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVENC \u00b7 disabled",
+            "value": "nvenc"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (FFmpeg default device) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "x264"
+      },
+      "hidden": false,
+      "jobStatus": "No export started",
+      "preset": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "ultrafast",
+            "value": "ultrafast"
+          },
+          {
+            "disabled": false,
+            "text": "superfast",
+            "value": "superfast"
+          },
+          {
+            "disabled": false,
+            "text": "veryfast",
+            "value": "veryfast"
+          },
+          {
+            "disabled": false,
+            "text": "faster",
+            "value": "faster"
+          },
+          {
+            "disabled": false,
+            "text": "fast",
+            "value": "fast"
+          },
+          {
+            "disabled": false,
+            "text": "medium",
+            "value": "medium"
+          },
+          {
+            "disabled": false,
+            "text": "slow",
+            "value": "slow"
+          },
+          {
+            "disabled": false,
+            "text": "slower",
+            "value": "slower"
+          },
+          {
+            "disabled": false,
+            "text": "veryslow",
+            "value": "veryslow"
+          }
+        ],
+        "value": "veryfast"
+      },
+      "quality": {
+        "max": "51",
+        "min": "0",
+        "value": "18"
+      }
+    },
+    "reopened": {
+      "codecStatus": "Hardware is checked only on request \u00b7 encoder: x264 (CPU) \u00b7 available \u00b7 decoder: Software (CPU) \u00b7 available \u00b7 Native build 0.8.1",
+      "decoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "Software (CPU) \u00b7 available",
+            "value": "software"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVDEC \u00b7 disabled",
+            "value": "nvdec"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (configured adapter) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "software"
+      },
+      "encoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "x264 (CPU) \u00b7 available",
+            "value": "x264"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVENC \u00b7 disabled",
+            "value": "nvenc"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (FFmpeg default device) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "x264"
+      },
+      "hidden": false,
+      "jobStatus": "No export started",
+      "preset": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "ultrafast",
+            "value": "ultrafast"
+          },
+          {
+            "disabled": false,
+            "text": "superfast",
+            "value": "superfast"
+          },
+          {
+            "disabled": false,
+            "text": "veryfast",
+            "value": "veryfast"
+          },
+          {
+            "disabled": false,
+            "text": "faster",
+            "value": "faster"
+          },
+          {
+            "disabled": false,
+            "text": "fast",
+            "value": "fast"
+          },
+          {
+            "disabled": false,
+            "text": "medium",
+            "value": "medium"
+          },
+          {
+            "disabled": false,
+            "text": "slow",
+            "value": "slow"
+          },
+          {
+            "disabled": false,
+            "text": "slower",
+            "value": "slower"
+          },
+          {
+            "disabled": false,
+            "text": "veryslow",
+            "value": "veryslow"
+          }
+        ],
+        "value": "veryfast"
+      },
+      "quality": {
+        "max": "51",
+        "min": "0",
+        "value": "18"
+      }
+    },
+    "saved": {
+      "codecStatus": "Hardware is checked only on request \u00b7 encoder: x264 (CPU) \u00b7 available \u00b7 decoder: Software (CPU) \u00b7 available \u00b7 Native build 0.8.1",
+      "decoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "Software (CPU) \u00b7 available",
+            "value": "software"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVDEC \u00b7 disabled",
+            "value": "nvdec"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (configured adapter) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "software"
+      },
+      "encoder": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "x264 (CPU) \u00b7 available",
+            "value": "x264"
+          },
+          {
+            "disabled": true,
+            "text": "NVIDIA NVENC \u00b7 disabled",
+            "value": "nvenc"
+          },
+          {
+            "disabled": true,
+            "text": "Vulkan (FFmpeg default device) \u00b7 disabled",
+            "value": "vulkan"
+          }
+        ],
+        "value": "x264"
+      },
+      "hidden": false,
+      "jobStatus": "READY \u00b7 3/3 frames \u00b7 Actual encode X264 \u00b7 actual decode not yet observed \u00b7 compose AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) \u00b7 snapshot frames 0\u20133 \u00b7 640\u00d7360 \u00b7 requested x264 \u00b7 CRF 18 veryfast \u00b7 requested decode CPU",
+      "preset": {
+        "disabled": false,
+        "options": [
+          {
+            "disabled": false,
+            "text": "ultrafast",
+            "value": "ultrafast"
+          },
+          {
+            "disabled": false,
+            "text": "superfast",
+            "value": "superfast"
+          },
+          {
+            "disabled": false,
+            "text": "veryfast",
+            "value": "veryfast"
+          },
+          {
+            "disabled": false,
+            "text": "faster",
+            "value": "faster"
+          },
+          {
+            "disabled": false,
+            "text": "fast",
+            "value": "fast"
+          },
+          {
+            "disabled": false,
+            "text": "medium",
+            "value": "medium"
+          },
+          {
+            "disabled": false,
+            "text": "slow",
+            "value": "slow"
+          },
+          {
+            "disabled": false,
+            "text": "slower",
+            "value": "slower"
+          },
+          {
+            "disabled": false,
+            "text": "veryslow",
+            "value": "veryslow"
+          }
+        ],
+        "value": "veryfast"
+      },
+      "quality": {
+        "max": "51",
+        "min": "0",
+        "value": "18"
+      }
+    }
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-media/src/decode.rs": "e25be9bb76471c3101c98a303d98db11b36e33a8f5957800a0efd220b07837e4",
+      "crates/vv-media/src/hw.rs": "88214cb009f120c22f86fcae3eab2928da4d6e649e6255e28d7c62ec9bff8804",
+      "crates/vv-media/src/tests/decode.rs": "ce82bb4f19afa3287ddeea734d28e8afa6f5d6301f8ad69c3d1d7fa895c0bb9f",
+      "crates/vv-media/src/tests/hw.rs": "c9cbeff7e750571f335346b44b6f1442fcb98c0ac1244843af449af896f64e72",
+      "crates/vv-session/src/export.rs": "ef2149a357c371b08cc0f125397a6a674049dccec81fe87058a8be1fa31185cb",
+      "crates/vv-web/Cargo.toml": "00d3c9d8b1c61f84e729177700b382e46ec1ec9ac82a8773b7bc7a25cfd48c39",
+      "crates/vv-web/src/api.rs": "7724297baea7bf2fd966e1e9f1af9b67f2e46fb963f0a9d223647fc8a0d130db",
+      "crates/vv-web/src/codecs.rs": "57b402e6954464d699755b823ff13b43d35cc449962828b28a5d8a10c34a1987",
+      "crates/vv-web/src/main.rs": "2db33cd627c8f80a7320c5524b0f4e07197ae7ec11be4cf88954c7ddfdd230b7",
+      "crates/vv-web/src/preview.rs": "f12a28c35627112eee886105a9938ac402339b39b01542f9abca184628a2e6a1",
+      "crates/vv-web/src/program.rs": "ca6594710447241f3b850d6932997e16aa8cd4b523dcdfcb71800a0e500e2ff7",
+      "crates/vv-web/src/source.rs": "5a7d95de5288cf1c2ddbf78129e48f5d9f36cfb10a827371be6ab7b3ea56ef4d",
+      "crates/vv-web/src/tests/api.rs": "08aa061226e3fcdf752604a344fa1900376dfcc941cc8ced40bd895530e47600",
+      "crates/vv-web/src/tests/codecs.rs": "b0f9cf937322280c3d96dee43910bced646224c0808edc2c4aa67300cf743a8a",
+      "crates/vv-web/src/tests/preview.rs": "eaf3eedec7e7d040ac7cf2b221aef94f6408eb3a117bb16575f0f6542c6c459e",
+      "crates/vv-web/src/tests/program.rs": "68d2bba3c5bf20d134258b5a88eb04e33c435888ea1531557f81961cd4942d4c",
+      "crates/vv-web/src/tests/source.rs": "92388631f5b3aa9b590768a7466d65fe619bec95a5881b3b75b52edc99a2fcc3",
+      "web/index.html": "9bb7e253cdcecfb0a6e9ef3221fab24bd92082d87ef2b34efc7a34c2a9c156d7",
+      "web/js/export.js": "1f802cb3a1561f6a6724b4db560903302343c49f8b0d7439c9259b4ddd107ac3",
+      "web/js/main.js": "e9e662df411d124dc6da96e5ebf0f316c5329faa96808ab4bcb71d5e4c113d81",
+      "web/test/export-codecs.test.js": "6cd1fa5aa19f90ae3405bfef7958c795e9aa01ef8e38b51fd29a7751ae221860"
+    },
+    "core_tests": 271,
+    "media_proxy_tests": 10,
+    "bounded_decoder_tests": 3,
+    "device_cache_tests": 1,
+    "rust_tests": 241,
+    "javascript_tests": 533,
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "native_build": true,
+    "browser_gui": true,
+    "hardware_gpu": true
+  },
+  "scope_note": "Native export encoder and decoder selectors, strict native quality/preset metadata, isolated explicit checks and per-instance qualification. Windows uses the existing browser, one temporary tab, against a bounded CPU-only API: legacy defaults, disabled hardware, explicit x264 check, refresh/reopen and saved actual/requested labels. Separate bounded R9700 API checks passed native Vulkan encode/color and actual Vulkan decode/color; three-frame exports verified legacy x264/software and selected Vulkan/Vulkan, without CPU fallback. Both uncached preview frames handed their resident contexts to export. A held shared reservation refused a forced recheck without changing availability. No GPU handles remained at idle; own units stopped and main five unsaved edits/history were preserved. No browser installation, local build/render, foreign workload or driver changes. NVENC/VideoToolbox hardware, long-source format coverage, desktop physical UI, sustained concurrent use and release qualification remain outside this finite check. The existing Windows browser also selected unchecked Vulkan encoder and decoder against the isolated R9700 host, saw Start disabled until each explicit check, received native QP23/no-preset defaults and exported three frames. READY reported actual Vulkan encode/decode without fallback; HTTP output decoded to exactly three 640x360 H.264 frames, 0.125s, no audio. Both test tabs were used sequentially. The R9700 GUI service was capped at one CPU/2GiB/zero swap and left no GPU handles at idle.",
+  "screenshot_sha256": "1435c03960b4c14cc5d18e584b7afaa0c0e9d0bbe47533793b4c331d0cb0eef4",
+  "windows_r9700_gui_acceptance": {
+    "job": {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": true,
+      "error": null,
+      "export_revision": "621d3b99e7ed086fd1afc7cac58910348297cf829486b954dfe0c2da9a51fd29",
+      "frames": 0,
+      "id": "1792611152760285378",
+      "previous_state": null,
+      "program": {
+        "audio_present": false,
+        "end_frame": 3,
+        "export_settings": {
+          "audio": false,
+          "decoder": "vulkan",
+          "encoder": "vulkan",
+          "preset": "",
+          "quality": 23
+        },
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "0",
+        "height": 360,
+        "project_epoch": "1792611113215878691:1",
+        "revision": "ce77e867d8379fe2",
+        "start_frame": 0,
+        "width": 640
+      },
+      "progress": {
+        "compose_fps": 237.02941463926848,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 3,
+        "decode_fps": 187.27371482945014,
+        "decoder_fallback": false,
+        "decoders": [
+          {
+            "id": "vulkan",
+            "label": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201))"
+          }
+        ],
+        "elapsed_ms": 66.676569,
+        "encode_fps": 1317.920690168707,
+        "encoder": "Vulkan",
+        "fps": 44.99331691767163,
+        "startup_ms": 57.81062,
+        "total_frames": 3
+      },
+      "project_epoch": "1792611113215878691:1",
+      "source_asset": null,
+      "source_assets": null,
+      "source_window": null,
+      "state": "ready"
+    },
+    "catalog": {
+      "adapter": {
+        "active_programs": 0,
+        "available": true,
+        "backend": "Vulkan",
+        "device_id": "0x7551",
+        "driver": "radv",
+        "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+        "exact_context_resident": false,
+        "frame_rendered": true,
+        "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "resident": false,
+        "software": false,
+        "vendor_id": "0x1002"
+      },
+      "build": {
+        "executable_version": "64512:3443452:267727864:1792610614:900307297",
+        "version": "0.8.1"
+      },
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)",
+          "status": "available"
+        },
+        {
+          "id": "nvdec",
+          "label": "NVIDIA NVDEC",
+          "status": "not_checked"
+        },
+        {
+          "id": "vulkan",
+          "label": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201))",
+          "status": "available"
+        }
+      ],
+      "encoders": [
+        {
+          "default_preset": "superfast",
+          "id": "x264",
+          "label": "x264 (CPU)",
+          "presets": [
+            "ultrafast",
+            "superfast",
+            "veryfast",
+            "faster",
+            "fast",
+            "medium",
+            "slow",
+            "slower",
+            "veryslow"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CRF",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "available"
+        },
+        {
+          "default_preset": "p5",
+          "id": "nvenc",
+          "label": "NVIDIA NVENC",
+          "presets": [
+            "p1",
+            "p2",
+            "p3",
+            "p4",
+            "p5",
+            "p6",
+            "p7"
+          ],
+          "quality": {
+            "default": 20,
+            "label": "CQ",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "not_checked"
+        },
+        {
+          "default_preset": "",
+          "id": "vulkan",
+          "label": "Vulkan (FFmpeg default device)",
+          "presets": [],
+          "quality": {
+            "default": 23,
+            "label": "QP",
+            "max": 51,
+            "min": 0,
+            "rises": false
+          },
+          "status": "available"
+        }
+      ],
+      "identity": "0cabb74e5804467e9dd1ed39d260b9cebc6e77de31387d8299330b99932e65ff"
+    },
+    "download_sha256": "10a215019141f733bc2891d27206ac1aed39b79f2300b95f2e5dcdab73c5cd7c",
+    "download_bytes": 1387,
+    "decoded_streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 640,
+        "height": 360,
+        "duration": "0.125000",
+        "nb_read_frames": "3"
+      }
+    ],
+    "idle_gpu_handles": [],
+    "resource_limits": {
+      "CPUQuotaPerSecUSec": "1s",
+      "IOWeight": "10",
+      "MemoryMax": "2147483648",
+      "MemorySwapMax": "0",
+      "OOMScoreAdjust": "1000",
+      "Nice": "19"
+    },
+    "project_history_unchanged": true,
+    "parents_preserved": {
+      "Codec_Hardware_API_check.vvproj": "c1a7c4a3412faa836a6158405904fba2c50ff26cfb78aba1d47ec5f166c6dfce"
+    },
+    "ffprobe_unit_stopped": true,
+    "binary_sha256": "20ab76df720d5ea73dad4341d80ff7627291b0284812d79b1ce19cdbde4540bc",
+    "main_editor_preserved": true,
+    "own_ui_test_unit_stopped": true,
+    "port8811_closed": true,
+    "observations": {
+      "initial": {
+        "codecStatus": "Hardware is checked only on request \u00b7 encoder: x264 (CPU) \u00b7 available \u00b7 decoder: Software (CPU) \u00b7 available \u00b7 Native build 0.8.1 \u00b7 Adapter AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "decoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "Software (CPU) \u00b7 available",
+              "value": "software"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVDEC \u00b7 not checked",
+              "value": "nvdec"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 not checked",
+              "value": "vulkan"
+            }
+          ],
+          "value": "software"
+        },
+        "download": null,
+        "encoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "x264 (CPU) \u00b7 available",
+              "value": "x264"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVENC \u00b7 not checked",
+              "value": "nvenc"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (FFmpeg default device) \u00b7 not checked",
+              "value": "vulkan"
+            }
+          ],
+          "value": "x264"
+        },
+        "hidden": false,
+        "jobStatus": "No export started",
+        "preset": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "ultrafast",
+              "value": "ultrafast"
+            },
+            {
+              "disabled": false,
+              "text": "superfast",
+              "value": "superfast"
+            },
+            {
+              "disabled": false,
+              "text": "veryfast",
+              "value": "veryfast"
+            },
+            {
+              "disabled": false,
+              "text": "faster",
+              "value": "faster"
+            },
+            {
+              "disabled": false,
+              "text": "fast",
+              "value": "fast"
+            },
+            {
+              "disabled": false,
+              "text": "medium",
+              "value": "medium"
+            },
+            {
+              "disabled": false,
+              "text": "slow",
+              "value": "slow"
+            },
+            {
+              "disabled": false,
+              "text": "slower",
+              "value": "slower"
+            },
+            {
+              "disabled": false,
+              "text": "veryslow",
+              "value": "veryslow"
+            }
+          ],
+          "value": "veryfast"
+        },
+        "quality": {
+          "max": "51",
+          "min": "0",
+          "value": "18"
+        }
+      },
+      "encoder_unchecked": {
+        "codecStatus": "encoder: Vulkan (FFmpeg default device) \u00b7 not checked \u00b7 decoder: Software (CPU) \u00b7 available \u00b7 Native build 0.8.1 \u00b7 Adapter AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "decoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "Software (CPU) \u00b7 available",
+              "value": "software"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVDEC \u00b7 not checked",
+              "value": "nvdec"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 not checked",
+              "value": "vulkan"
+            }
+          ],
+          "value": "software"
+        },
+        "download": null,
+        "encoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "x264 (CPU) \u00b7 available",
+              "value": "x264"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVENC \u00b7 not checked",
+              "value": "nvenc"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (FFmpeg default device) \u00b7 not checked",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "hidden": false,
+        "jobStatus": "No export started",
+        "preset": {
+          "disabled": true,
+          "options": [],
+          "value": ""
+        },
+        "quality": {
+          "max": "51",
+          "min": "0",
+          "value": "23"
+        }
+      },
+      "encoder_checked": {
+        "codecStatus": "Explicit encoder check completed \u00b7 encoder: Vulkan (FFmpeg default device) \u00b7 available \u00b7 decoder: Software (CPU) \u00b7 available \u00b7 Native build 0.8.1 \u00b7 Adapter AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "decoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "Software (CPU) \u00b7 available",
+              "value": "software"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVDEC \u00b7 not checked",
+              "value": "nvdec"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 not checked",
+              "value": "vulkan"
+            }
+          ],
+          "value": "software"
+        },
+        "download": null,
+        "encoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "x264 (CPU) \u00b7 available",
+              "value": "x264"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVENC \u00b7 not checked",
+              "value": "nvenc"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (FFmpeg default device) \u00b7 available",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "hidden": false,
+        "jobStatus": "No export started",
+        "preset": {
+          "disabled": true,
+          "options": [],
+          "value": ""
+        },
+        "quality": {
+          "max": "51",
+          "min": "0",
+          "value": "23"
+        }
+      },
+      "decoder_unchecked": {
+        "codecStatus": "encoder: Vulkan (FFmpeg default device) \u00b7 available \u00b7 decoder: Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 not checked \u00b7 Native build 0.8.1 \u00b7 Adapter AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "decoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "Software (CPU) \u00b7 available",
+              "value": "software"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVDEC \u00b7 not checked",
+              "value": "nvdec"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 not checked",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "download": null,
+        "encoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "x264 (CPU) \u00b7 available",
+              "value": "x264"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVENC \u00b7 not checked",
+              "value": "nvenc"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (FFmpeg default device) \u00b7 available",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "hidden": false,
+        "jobStatus": "No export started",
+        "preset": {
+          "disabled": true,
+          "options": [],
+          "value": ""
+        },
+        "quality": {
+          "max": "51",
+          "min": "0",
+          "value": "23"
+        }
+      },
+      "both_checked": {
+        "codecStatus": "Explicit decoder check completed \u00b7 encoder: Vulkan (FFmpeg default device) \u00b7 available \u00b7 decoder: Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 available \u00b7 Native build 0.8.1 \u00b7 Adapter AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "decoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "Software (CPU) \u00b7 available",
+              "value": "software"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVDEC \u00b7 not checked",
+              "value": "nvdec"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 available",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "download": null,
+        "encoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "x264 (CPU) \u00b7 available",
+              "value": "x264"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVENC \u00b7 not checked",
+              "value": "nvenc"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (FFmpeg default device) \u00b7 available",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "hidden": false,
+        "jobStatus": "No export started",
+        "preset": {
+          "disabled": true,
+          "options": [],
+          "value": ""
+        },
+        "quality": {
+          "max": "51",
+          "min": "0",
+          "value": "23"
+        }
+      },
+      "completed": {
+        "codecStatus": "Explicit decoder check completed \u00b7 encoder: Vulkan (FFmpeg default device) \u00b7 available \u00b7 decoder: Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 available \u00b7 Native build 0.8.1 \u00b7 Adapter AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "decoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "Software (CPU) \u00b7 available",
+              "value": "software"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVDEC \u00b7 not checked",
+              "value": "nvdec"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 available",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "download": "/api/v1/exports/1792611152760285378/export.mp4?project_epoch=1792611113215878691%3A1",
+        "encoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "x264 (CPU) \u00b7 available",
+              "value": "x264"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVENC \u00b7 not checked",
+              "value": "nvenc"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (FFmpeg default device) \u00b7 available",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "hidden": false,
+        "jobStatus": "READY \u00b7 3/3 frames \u00b7 Actual encode Vulkan \u00b7 actual decode Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 compose AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) \u00b7 snapshot frames 0\u20133 \u00b7 640\u00d7360 \u00b7 requested Vulkan \u00b7 QP 23 \u00b7 requested decode vulkan",
+        "preset": {
+          "disabled": true,
+          "options": [],
+          "value": ""
+        },
+        "quality": {
+          "max": "51",
+          "min": "0",
+          "value": "23"
+        }
+      },
+      "refreshed": {
+        "codecStatus": "Explicit decoder check completed \u00b7 encoder: Vulkan (FFmpeg default device) \u00b7 available \u00b7 decoder: Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 available \u00b7 Native build 0.8.1 \u00b7 Adapter AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "decoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "Software (CPU) \u00b7 available",
+              "value": "software"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVDEC \u00b7 not checked",
+              "value": "nvdec"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 available",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "download": "/api/v1/exports/1792611152760285378/export.mp4?project_epoch=1792611113215878691%3A1",
+        "encoder": {
+          "disabled": false,
+          "options": [
+            {
+              "disabled": false,
+              "text": "x264 (CPU) \u00b7 available",
+              "value": "x264"
+            },
+            {
+              "disabled": false,
+              "text": "NVIDIA NVENC \u00b7 not checked",
+              "value": "nvenc"
+            },
+            {
+              "disabled": false,
+              "text": "Vulkan (FFmpeg default device) \u00b7 available",
+              "value": "vulkan"
+            }
+          ],
+          "value": "vulkan"
+        },
+        "hidden": false,
+        "jobStatus": "READY \u00b7 3/3 frames \u00b7 Actual encode Vulkan \u00b7 actual decode Vulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00b7 compose AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) \u00b7 snapshot frames 0\u20133 \u00b7 640\u00d7360 \u00b7 requested Vulkan \u00b7 QP 23 \u00b7 requested decode vulkan",
+        "preset": {
+          "disabled": true,
+          "options": [],
+          "value": ""
+        },
+        "quality": {
+          "max": "51",
+          "min": "0",
+          "value": "23"
+        }
+      }
+    },
+    "screenshots": {
+      "m3-native-codec-selectors-r9700.jpg": "fb5b1d898c6cfea86d1624b1b0a49044d17db361a2100902b81c378d91263503",
+      "m3-native-codec-selectors-r9700-result.jpg": "1bb758ed2bde40a5808623e2c7f3dac9481f23c2360979a22744366771cfcd87"
+    },
+    "unchecked_hardware_start_refused": true
+  }
+}

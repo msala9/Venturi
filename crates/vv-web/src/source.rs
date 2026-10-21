@@ -132,7 +132,16 @@ impl Job {
     fn progress_value(&self) -> Option<Value> {
         self.export
             .as_ref()
-            .map(|p| program::progress_value(&p.lock().unwrap()))
+            .map(|p| {
+                let decoder = self
+                    .descriptor
+                    .as_ref()
+                    .and_then(|d| d.get("export_settings"))
+                    .and_then(|s| s.get("decoder"))
+                    .and_then(|d| serde_json::from_value(d.clone()).ok())
+                    .unwrap_or_default();
+                program::progress_value_for(&p.lock().unwrap(), decoder)
+            })
             .or_else(|| {
                 self.durable
                     .as_ref()

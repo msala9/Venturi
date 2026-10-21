@@ -199,6 +199,13 @@ impl ActiveClipDecoder {
             vv_media::Decoder::open_image(path)
         } else if hw.is_empty() && cpu_threads > 0 {
             vv_media::Decoder::open_software_bounded(path, cpu_threads)
+        } else if cpu_threads > 0 {
+            vv_media::Decoder::open_with_bounded(
+                path,
+                hw,
+                vv_media::HwPriority::Normal,
+                cpu_threads,
+            )
         } else {
             vv_media::Decoder::open_with(path, hw, vv_media::HwPriority::Normal)
         }

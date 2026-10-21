@@ -112,6 +112,8 @@ fn export_settings_are_native_bounded_and_part_of_the_immutable_job_identity() {
         quality: 23,
         preset: "medium".into(),
         audio: false,
+        encoder: crate::codecs::Encoder::X264,
+        decoder: crate::codecs::Decoder::Software,
     });
     assert!(task.validate().is_ok());
     assert_ne!(preview_key, task.key());
@@ -139,6 +141,73 @@ fn export_settings_are_native_bounded_and_part_of_the_immutable_job_identity() {
 }
 
 #[test]
+fn legacy_export_settings_keep_canonical_bytes_and_selected_codecs_change_identity() {
+    let legacy = r#"{"quality":23,"preset":"medium","audio":true}"#;
+    let settings: ExportOptions = serde_json::from_str(legacy).unwrap();
+    assert!(settings.encoder.is_default());
+    assert!(settings.decoder.is_default());
+    assert_eq!(serde_json::to_string(&settings).unwrap(), legacy);
+    let explicit: ExportOptions = serde_json::from_str(
+        r#"{"quality":23,"preset":"medium","audio":true,"encoder":"x264","decoder":"software"}"#,
+    )
+    .unwrap();
+    assert_eq!(serde_json::to_string(&explicit).unwrap(), legacy);
+    for value in [
+        json!({"quality":23,"preset":"medium","audio":true,"encoder":"auto"}),
+        json!({"quality":23,"preset":"medium","audio":true,"decoder":"cpu"}),
+        json!({"quality":23,"preset":"medium","audio":true,"extra":1}),
+    ] {
+        assert!(serde_json::from_value::<ExportOptions>(value).is_err());
+    }
+    let mut task = task();
+    task.export = Some(settings);
+    let before = task.key();
+    task.export.as_mut().unwrap().decoder = crate::codecs::Decoder::Nvdec;
+    assert_ne!(before, task.key());
+    assert!(
+        task.validate().is_err(),
+        "CPU-only hosts must refuse selected hardware before native work"
+    );
+    task.export.as_mut().unwrap().decoder = crate::codecs::Decoder::Software;
+    task.export.as_mut().unwrap().encoder = crate::codecs::Encoder::Vulkan;
+    task.export.as_mut().unwrap().preset.clear();
+    assert_ne!(before, task.key());
+    assert_eq!(
+        task.settings(Path::new("/tmp")).video.codec,
+        vv_media::VideoCodec::Vulkan
+    );
+    assert!(task.validate().is_err());
+}
+
+#[test]
+fn decoder_progress_reports_actual_paths_and_cpu_fallback_independently_of_compositor() {
+    let mut progress = ExportProgress::default();
+    assert_eq!(
+        progress_value_for(&progress, crate::codecs::Decoder::Vulkan)["decoder_fallback"],
+        false
+    );
+    progress.encoder = Some(vv_media::VideoCodec::X264);
+    progress.decoders = vec![
+        Some(vv_media::HwDevice::Vulkan(Some("selected adapter".into()))),
+        None,
+        Some(vv_media::HwDevice::Cuda),
+    ];
+    let value = progress_value_for(&progress, crate::codecs::Decoder::Vulkan);
+    assert!(value["compositor"].is_null());
+    assert_eq!(value["encoder"], "X264");
+    assert_eq!(value["decoders"][0]["id"], "vulkan");
+    assert_eq!(value["decoders"][1]["id"], "software");
+    assert_eq!(value["decoders"][2]["id"], "nvdec");
+    assert_eq!(value["decoder_fallback"], true);
+    assert_eq!(progress_value(&progress)["decoder_fallback"], false);
+    progress.decoders = vec![None];
+    assert_eq!(
+        progress_value_for(&progress, crate::codecs::Decoder::Nvdec)["decoder_fallback"],
+        true
+    );
+}
+
+#[test]
 fn export_accepts_full_long_timelines_while_preview_keeps_its_duration_budget() {
     let mut task = task();
     task.snapshot.project.timelines[task.snapshot.timeline].tracks[0].clips[0] =
@@ -156,6 +225,8 @@ fn export_accepts_full_long_timelines_while_preview_keeps_its_duration_budget() 
         quality: 23,
         preset: "ultrafast".into(),
         audio: true,
+        encoder: crate::codecs::Encoder::X264,
+        decoder: crate::codecs::Decoder::Software,
     });
     assert!(task.validate().is_ok());
     task.query.end_frame = 8641;

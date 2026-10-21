@@ -1049,6 +1049,8 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
                 quality: 23,
                 preset: "medium".into(),
                 audio: false,
+                encoder: crate::codecs::Encoder::X264,
+                decoder: crate::codecs::Decoder::Software,
             }),
         };
         assert_eq!(jobs.prepare_program(task).unwrap_err().1, "MEDIA_BUSY");

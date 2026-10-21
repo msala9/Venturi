@@ -305,6 +305,23 @@ before creating a Vulkan instance. Mixed driver discovery and simultaneous
 --gpu-device are refused. This mode uses a private cache lock rather than the
 laboratory hardware lock. The UI identifies CPU/llvmpipe explicitly.
 
+The Export drawer reads native encoder/decoder choices without checking GPU
+devices. Select a hardware option and use its explicit check button before
+exporting. Checks are scoped to the current server instance; a server restart
+requires a new check. CPU-only preview disables hardware codecs. A selected
+hardware encoder never silently changes to x264; observed decoder fallback is
+reported separately from the compositor and encoder.
+
+Codec checks require at least 4 GiB of available host memory and a cgroup v2
+memory limit of at most 4 GiB with `MemorySwapMax=0`. Run the host in a suitably
+bounded service before requesting checks. An unbounded host returns
+`CODEC_PROBE_RESOURCE_LIMIT`. Each isolated check uses one allowed CPU, low
+priority, a CPU-time limit and its own 20-second wall deadline. Hardware checks
+also require the nonblocking shared laboratory GPU reservation. They yield any
+resident preview context and release native device caches before reservation
+release. Missing capability or a busy reservation does not trigger retries or
+an automatic software substitute.
+
 Exact frames, composed Program playback and x264/AAC export still use the
 native Venturi pipeline. They can be slower than real time. The Windows export
 fixture produced exactly eight 960x540 H.264 frames and stereo AAC; its completed

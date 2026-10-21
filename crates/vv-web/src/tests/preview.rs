@@ -137,6 +137,108 @@ async fn a_disabled_renderer_reports_actual_capability() {
 }
 
 #[test]
+fn resident_context_yields_before_immediate_probe_and_cannot_reenter_during_handover() {
+    let path = std::env::temp_dir().join(format!(
+        "vv-context-yield-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let queue = Arc::new(Queue::default());
+    let worker = queue.clone();
+    let worker_path = path.clone();
+    let (ready, started) = std::sync::mpsc::sync_channel(1);
+    let (done, finished) = std::sync::mpsc::sync_channel(1);
+    let thread = std::thread::spawn(move || {
+        let resident_lock = gpu_lock(&worker_path).unwrap();
+        ready.send(()).unwrap();
+        assert!(worker.next(std::time::Duration::from_secs(1)).is_none());
+        drop(resident_lock);
+        worker.acknowledge_release();
+        let job = worker.next(std::time::Duration::from_secs(1)).unwrap();
+        assert_eq!(job.snapshot.query.frame, 7);
+        done.send(()).unwrap();
+    });
+    started.recv().unwrap();
+    let mut preview = Preview::codec_test_host();
+    preview.config = Some((AdapterChoice::Amd(0x7551), path.clone()));
+    preview.queue = Some(queue.clone());
+    preview
+        .with_codec_probe(true, |lease| {
+            assert!(lease.is_some());
+            assert_eq!(gpu_lock(&path).unwrap_err().1, "GPU_BUSY");
+            let (reply, _receiver) = oneshot::channel();
+            queue.replace(Job {
+                snapshot: FrameSnapshot {
+                    project: Project::default(),
+                    timeline: TimelineId::from_raw(0),
+                    query: FrameQuery {
+                        timeline_id: "0".into(),
+                        project_epoch: "test".into(),
+                        if_generation: "0".into(),
+                        revision: "test".into(),
+                        frame: 7,
+                        width: 64,
+                    },
+                    size: (64, 64),
+                },
+                mode: FrameMode::Program,
+                reply,
+            });
+            assert!(
+                finished
+                    .recv_timeout(std::time::Duration::from_millis(20))
+                    .is_err(),
+                "A pending frame must not reenter while the external job owns the reservation"
+            );
+            Ok(())
+        })
+        .unwrap();
+    finished
+        .recv_timeout(std::time::Duration::from_secs(1))
+        .unwrap();
+    thread.join().unwrap();
+    drop(gpu_lock(&path).unwrap());
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn yielding_own_context_never_retries_a_foreign_gpu_reservation() {
+    let path = std::env::temp_dir().join(format!(
+        "vv-context-foreign-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let foreign = gpu_lock(&path).unwrap();
+    let mut preview = Preview::codec_test_host();
+    preview.config = Some((AdapterChoice::Amd(0x7551), path.clone()));
+    let queue = preview.queue.as_ref().unwrap().clone();
+    let thread = std::thread::spawn(move || {
+        assert!(queue.next(std::time::Duration::from_secs(1)).is_none());
+        queue.acknowledge_release();
+    });
+    let started = std::time::Instant::now();
+    assert_eq!(
+        preview
+            .with_codec_probe::<()>(true, |_| panic!(
+                "Foreign ownership must prevent native work"
+            ))
+            .unwrap_err()
+            .1,
+        "GPU_BUSY"
+    );
+    assert!(started.elapsed() < std::time::Duration::from_secs(1));
+    thread.join().unwrap();
+    drop(foreign);
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
 fn occupied_laboratory_lock_refuses_immediately_and_is_never_removed() {
     let path = std::env::temp_dir().join(format!(
         "vv-web-lock-{}-{}",

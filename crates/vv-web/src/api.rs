@@ -21,6 +21,7 @@ pub struct AppState {
     pub host: Host,
     pub port: u16,
     pub preview: Preview,
+    pub codecs: crate::codecs::Codecs,
     pub source: MediaJobs,
     pub silence: crate::silence::Jobs,
     pub library: crate::library::Library,
@@ -105,6 +106,11 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/preview/program/prepare", post(prepare_program))
         .route("/api/v1/exports", post(prepare_export).get(export_history))
+        .route("/api/v1/exports/codecs", get(codec_catalog))
+        .route(
+            "/api/v1/exports/codecs/probe",
+            post(codec_probe).layer(DefaultBodyLimit::max(2048)),
+        )
         .route(
             "/api/v1/exports/{job}",
             get(export_status).delete(cancel_export),
@@ -692,7 +698,7 @@ async fn prepare_export(
     let request = payload
         .map_err(|_| ApiError::invalid("Invalid export request"))?
         .0;
-    request.settings.validate()?;
+    state.codecs.validate_export(&request.settings)?;
     if !state.preview.available() {
         return Err(ApiError(
             StatusCode::SERVICE_UNAVAILABLE,
@@ -709,6 +715,24 @@ async fn prepare_export(
             preview: state.preview,
             export: Some(request.settings),
         })
+        .map(Json)
+}
+async fn codec_catalog(State(state): State<AppState>) -> Json<Value> {
+    Json(state.codecs.catalog())
+}
+async fn codec_probe(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::codecs::ProbeRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid codec probe request"))?
+        .0;
+    tokio::task::spawn_blocking(move || state.codecs.probe(request))
+        .await
+        .map_err(|_| ApiError::io())?
         .map(Json)
 }
 async fn export_status(

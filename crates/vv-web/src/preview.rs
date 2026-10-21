@@ -42,6 +42,26 @@ struct GpuPermit<'a> {
     poll_failed: &'a AtomicBool,
 }
 struct ProgramLease<'a>(&'a AtomicUsize);
+struct NativeDevices(Vec<vv_media::HwDevice>);
+impl Drop for NativeDevices {
+    fn drop(&mut self) {
+        vv_media::hw::release_cached_devices(&self.0);
+    }
+}
+struct ResidentCompositor<'a> {
+    // Fields drop in this order, before either reservation is released.
+    compositor: Compositor,
+    _global: File,
+    _local: std::sync::MutexGuard<'a, ()>,
+}
+impl Drop for ResidentCompositor<'_> {
+    fn drop(&mut self) {
+        let _ = self
+            .compositor
+            .device()
+            .poll(wgpu::PollType::wait_indefinitely());
+    }
+}
 impl Drop for ProgramLease<'_> {
     fn drop(&mut self) {
         self.0.fetch_sub(1, Ordering::Relaxed);
@@ -133,34 +153,82 @@ enum AdapterChoice {
 }
 #[derive(Default)]
 struct Queue {
-    pending: Mutex<Option<Job>>,
+    pending: Mutex<QueueState>,
     wake: Condvar,
+}
+#[derive(Default)]
+struct QueueState {
+    job: Option<Job>,
+    yields: usize,
+    released: bool,
+}
+struct ContextYield(Arc<Queue>);
+impl Drop for ContextYield {
+    fn drop(&mut self) {
+        let mut state = self.0.pending.lock().unwrap();
+        state.yields -= 1;
+        self.0.wake.notify_all();
+    }
 }
 impl Queue {
     fn replace(&self, job: Job) {
         let mut pending = self.pending.lock().unwrap();
         // Analysis must not displace a pending Program seek.
         if pending
+            .job
             .as_ref()
             .is_some_and(|p| p.mode.priority() > job.mode.priority())
         {
             return;
         }
-        *pending = Some(job);
+        pending.job = Some(job);
         self.wake.notify_one();
     }
     fn next(&self, idle: std::time::Duration) -> Option<Job> {
         let mut pending = self.pending.lock().unwrap();
         loop {
-            if let Some(job) = pending.take() {
+            if pending.yields > 0 {
+                if !pending.released {
+                    return None;
+                }
+                pending = self.wake.wait(pending).unwrap();
+                continue;
+            }
+            if let Some(job) = pending.job.take() {
                 return Some(job);
             }
             let (next, timeout) = self.wake.wait_timeout(pending, idle).unwrap();
             pending = next;
-            if timeout.timed_out() && pending.is_none() {
+            if timeout.timed_out() && pending.job.is_none() {
                 return None;
             }
         }
+    }
+    fn acknowledge_release(&self) {
+        let mut state = self.pending.lock().unwrap();
+        state.released = true;
+        self.wake.notify_all();
+    }
+    fn yield_context(self: &Arc<Self>) -> Result<ContextYield> {
+        let mut state = self.pending.lock().unwrap();
+        if state.yields == 0 {
+            state.released = false;
+        }
+        state.yields += 1;
+        self.wake.notify_all();
+        let (mut state, timeout) = self
+            .wake
+            .wait_timeout_while(state, std::time::Duration::from_secs(2), |s| !s.released)
+            .unwrap();
+        if timeout.timed_out() && !state.released {
+            state.yields -= 1;
+            self.wake.notify_all();
+            return Err(ApiError::conflict(
+                "RENDER_BUSY",
+                "The active frame has not released its context yet",
+            ));
+        }
+        Ok(ContextYield(self.clone()))
     }
 }
 #[derive(Clone)]
@@ -209,9 +277,17 @@ impl Preview {
         let worker_cache = cache.clone();
         std::thread::spawn(move || {
             let initialized = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                let _local = worker_gate.lock().unwrap();
-                let _lock = render_lock(&path, device)?;
-                create_compositor(device)
+                let local = worker_gate.lock().unwrap();
+                let global = render_lock(&path, device)?;
+                let (compositor, diagnostic) = create_compositor(device)?;
+                Ok((
+                    ResidentCompositor {
+                        compositor,
+                        _global: global,
+                        _local: local,
+                    },
+                    diagnostic,
+                ))
             }))
             .unwrap_or_else(|_| Err(unavailable()));
             let (compositor, diagnostic) = match initialized {
@@ -230,6 +306,7 @@ impl Preview {
                 let Some(job) = worker.next(std::time::Duration::from_secs(2)) else {
                     compositor = None;
                     worker_resident.store(false, Ordering::Relaxed);
+                    worker.acknowledge_release();
                     continue;
                 };
                 if job.reply.is_closed() {
@@ -263,19 +340,17 @@ impl Preview {
                 }
                 let poll_failed = AtomicBool::new(false);
                 let mut result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                    let local = worker_gate.lock().unwrap_or_else(|p| p.into_inner());
-                    let global = render_lock(&path, device)?;
                     if compositor.is_none() {
-                        compositor = Some(create_compositor(device)?.0);
+                        let local = worker_gate.lock().unwrap_or_else(|p| p.into_inner());
+                        let global = render_lock(&path, device)?;
+                        compositor = Some(ResidentCompositor {
+                            compositor: create_compositor(device)?.0,
+                            _global: global,
+                            _local: local,
+                        });
                         worker_resident.store(true, Ordering::Relaxed);
                     }
-                    let compositor = compositor.as_mut().unwrap();
-                    let permit = GpuPermit {
-                        _global: global,
-                        _local: local,
-                        device: compositor.device().clone(),
-                        poll_failed: &poll_failed,
-                    };
+                    let compositor = &mut compositor.as_mut().unwrap().compositor;
                     compositor.set_precision(snapshot.project.precision);
                     let data = match job.mode {
                         FrameMode::Program => encode_png(
@@ -301,7 +376,13 @@ impl Preview {
                         }
                         FrameMode::Balance(clip) => balance_values(&snapshot, clip, compositor),
                     };
-                    drop(permit);
+                    if compositor
+                        .device()
+                        .poll(wgpu::PollType::wait_indefinitely())
+                        .is_err()
+                    {
+                        poll_failed.store(true, Ordering::Relaxed);
+                    }
                     data
                 }))
                 .unwrap_or_else(|_| Err(unavailable()));
@@ -353,6 +434,51 @@ impl Preview {
     pub fn available(&self) -> bool {
         self.queue.is_some()
     }
+    pub fn hardware_enabled(&self) -> bool {
+        matches!(self.config.as_ref(), Some((AdapterChoice::Amd(_), _))) && self.available()
+    }
+    #[cfg(test)]
+    pub(crate) fn codec_test_host() -> Self {
+        let mut preview = Self::disabled();
+        preview.config = Some((
+            AdapterChoice::Amd(0x7551),
+            PathBuf::from("unused-codec-test-lock"),
+        ));
+        preview.queue = Some(Arc::new(Queue::default()));
+        preview.diagnostic = json!({"available":true,"name":"test adapter","software":false});
+        preview
+    }
+    pub fn decoder_device(&self) -> Option<vv_media::HwDevice> {
+        self.hardware_enabled().then(|| {
+            vv_media::HwDevice::Vulkan(self.diagnostic["name"].as_str().map(str::to_owned))
+        })
+    }
+    pub fn with_codec_probe<T>(
+        &self,
+        hardware: bool,
+        operation: impl FnOnce(Option<&File>) -> Result<T>,
+    ) -> Result<T> {
+        if !hardware {
+            return operation(None);
+        }
+        if !self.hardware_enabled() {
+            return Err(ApiError::invalid(
+                "Hardware codecs require an available hardware preview host",
+            ));
+        }
+        let _yield = self
+            .queue
+            .as_ref()
+            .ok_or_else(unavailable)?
+            .yield_context()?;
+        let _local = self
+            .gpu_gate
+            .try_lock()
+            .map_err(|_| ApiError::conflict("GPU_BUSY", "A local GPU job is active"))?;
+        let (_, path) = self.config.as_ref().ok_or_else(unavailable)?;
+        let global = gpu_lock(path)?;
+        operation(Some(&global))
+    }
     pub fn cached_frames(&self, query: &FrameQuery, inputs: &crate::program::Inputs) -> Vec<i64> {
         self.cache.lock().unwrap().frames(query, inputs)
     }
@@ -366,7 +492,22 @@ impl Preview {
     ) -> Result<()> {
         use vv_session::export::ExportError;
         let (device, path) = self.config.as_ref().ok_or_else(unavailable)?;
+        if !self.hardware_enabled()
+            && (settings.video.codec != vv_media::VideoCodec::X264
+                || !settings.hw_decode.is_empty())
+        {
+            return Err(ApiError::invalid(
+                "Hardware codecs are disabled on this preview host",
+            ));
+        }
+        let _yield = self
+            .queue
+            .as_ref()
+            .ok_or_else(unavailable)?
+            .yield_context()?;
         let program_lock = render_lock(path, *device)?;
+        // Native providers have joined before this guard releases cached contexts.
+        let _devices = NativeDevices(settings.hw_decode.clone());
         self.active_programs.fetch_add(1, Ordering::Relaxed);
         let _active = ProgramLease(&self.active_programs);
         let poll_failed = AtomicBool::new(false);
@@ -574,7 +715,7 @@ fn unavailable() -> ApiError {
         "The selected native Vulkan compositor is unavailable",
     )
 }
-fn gpu_lock(path: &Path) -> Result<File> {
+pub(crate) fn gpu_lock(path: &Path) -> Result<File> {
     let file = OpenOptions::new()
         .create(true)
         .truncate(false)

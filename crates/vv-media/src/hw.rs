@@ -31,12 +31,31 @@ impl HwDevice {
 struct DeviceRef(*mut ffi::AVBufferRef);
 
 // SAFETY: a device context is refcounted and meant to be shared by decoders
-// on any thread; this reference is never freed nor written.
+// on any thread; the cache owns this reference and accesses it under DEVICES.
 unsafe impl Send for DeviceRef {}
 
 /// One device per `HwDevice` per process; `None` if it could not be created.
 static DEVICES: LazyLock<Mutex<HashMap<HwDevice, Option<DeviceRef>>>> =
     LazyLock::new(Default::default);
+
+/// Releases only the cache's references to these successfully opened devices.
+/// Decoder-owned references stay valid. Callers needing exclusive GPU ownership
+/// must first drop their decoders and keep that ownership until this returns.
+/// The desktop keeps its default process-wide cache unless it calls this hook.
+pub fn release_cached_devices(devices: &[HwDevice]) {
+    let mut cached = DEVICES
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    for device in devices {
+        if cached.get(device).is_some_and(Option::is_some)
+            && let Some(Some(mut reference)) = cached.remove(device)
+        {
+            // SAFETY: this is the cache-owned reference removed under its lock;
+            // independently refcounted decoder references are not modified.
+            unsafe { ffi::av_buffer_unref(&mut reference.0) };
+        }
+    }
+}
 
 /// Bytes of HW surfaces all decoders may hold together (see `Lease`).
 static BUDGET: AtomicUsize = AtomicUsize::new(usize::MAX);
@@ -126,9 +145,13 @@ fn device_ref(device: &HwDevice) -> Option<*mut ffi::AVBufferRef> {
         }
         Some(DeviceRef(buf))
     });
-    // SAFETY: the stored reference stays valid for the whole process.
+    // SAFETY: the cache lock keeps the stored reference valid until cloned.
     created.as_ref().map(|d| unsafe { ffi::av_buffer_ref(d.0) })
 }
+
+#[cfg(test)]
+#[path = "tests/hw.rs"]
+mod tests;
 
 /// A Vulkan device opens without video decode queues too (Asahi's
 /// Honeykrisp): each stream would then fail and fall back one by one.

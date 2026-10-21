@@ -138,6 +138,9 @@ pub struct Decoder {
     hw: Option<crate::hw::HwState>,
     _hw_lease: Option<crate::hw::Lease>,
     transfer_time: Duration,
+    /// Software fallback/reopen must retain the caller's CPU bound; zero is the
+    /// desktop's existing automatic thread selection.
+    software_threads: usize,
     #[cfg(test)]
     fail_after: Option<u32>,
 }
@@ -161,7 +164,18 @@ impl Decoder {
 
     /// Keeps background web preparation from using every CPU core.
     pub fn open_software_bounded(path: &Path, threads: usize) -> Result<Self, crate::MediaError> {
-        Self::open_configured(path, &[], crate::hw::HwPriority::Low, threads.clamp(1, 4))
+        Self::open_with_bounded(path, &[], crate::hw::HwPriority::Low, threads)
+    }
+
+    /// Hardware decoding with the same bounded software fallback as web CPU
+    /// decoding. Existing desktop entry points retain automatic thread selection.
+    pub fn open_with_bounded(
+        path: &Path,
+        hw: &[crate::hw::HwDevice],
+        priority: crate::hw::HwPriority,
+        software_threads: usize,
+    ) -> Result<Self, crate::MediaError> {
+        Self::open_configured(path, hw, priority, software_threads.clamp(1, 4))
     }
 
     fn open_configured(
@@ -224,6 +238,7 @@ impl Decoder {
             hw,
             _hw_lease: lease,
             transfer_time: Duration::ZERO,
+            software_threads,
             #[cfg(test)]
             fail_after: None,
         })
@@ -565,7 +580,12 @@ impl Decoder {
         );
         crate::hw::mark_failed(&self.path);
         let transfer_time = self.transfer_time;
-        *self = Self::open(&self.path)?;
+        *self = Self::open_configured(
+            &self.path,
+            &[],
+            crate::hw::HwPriority::Normal,
+            self.software_threads,
+        )?;
         self.transfer_time = transfer_time;
         Ok(())
     }

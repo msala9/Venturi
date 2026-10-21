@@ -51,6 +51,7 @@ async fn saved_export_discard_http_checks_payload_epoch_cas_and_open_download_bo
     drop(store);
     let app = router(AppState {
         preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
         source: MediaJobs::start_with_exports(directory).unwrap(),
         silence: crate::silence::Jobs::start(),
         library: crate::library::Library::default(),
@@ -155,6 +156,7 @@ async fn http_command_roundtrip_and_malformed_requests() {
     ));
     let app = router(AppState {
         preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
         source: MediaJobs::start().unwrap(),
         silence: crate::silence::Jobs::start(),
         library: crate::library::Library::default(),
@@ -342,6 +344,7 @@ async fn health_assets_snapshot_and_host_boundary() {
     ));
     let app = router(AppState {
         preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
         source: MediaJobs::start().unwrap(),
         silence: crate::silence::Jobs::start(),
         library: crate::library::Library::default(),

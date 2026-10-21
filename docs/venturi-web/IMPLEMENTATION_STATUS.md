@@ -4,9 +4,9 @@
 
 ## Current completion assessment
 
-The ledger contains 90 in-scope capabilities: 32 done, 56 partial and two not
+The ledger contains 90 in-scope capabilities: 34 done, 56 partial and none not
 started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus
-35.6% of capability rows have full acceptance; this is not an estimate of
+37.8% of capability rows have full acceptance; this is not an estimate of
 implementation effort. Many partial rows already have native adapters and
 working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
@@ -24,7 +24,7 @@ Animated viewer transforms, mask/path handles, persistent export history and
 explicit terminal-export discard, transition duration handles and exact speed
 handles, completed-path pen drawing, full path-key navigation and transition
 selection/placement preview cache retention and Program window continuation now pass
-227 web Rust tests, 271 native core tests and 521 JavaScript tests,
+241 web Rust tests, 271 native core tests and 533 JavaScript tests,
 fmt, clippy and build, plus finite API/restart qualification. GUI, DPI and hardware
 qualification remain open. Latest evidence:
 `evidence/m4-viewer-mask-handles.json`,
@@ -38,10 +38,17 @@ qualification remain open. Latest evidence:
 prior transform/export proofs remain valid
 for their recorded scope.
 
+Native hardware codec selection is accepted on the R9700 through actual
+Windows-browser selection, explicit native checks and a three-frame Vulkan
+encode/decode export. CPU-only disablement, legacy defaults, restart identity,
+GPU contention and resident-context handover are also verified. See
+`evidence/m3-native-codec-selectors.json`. These two selector rows are done;
+this does not qualify every source format, GPU vendor or sustained workload.
+
 Remaining work includes mask/transition browser and rendered qualification,
 compound and
 import coverage, long-media preview qualification, full-source asset GUI acceptance
-and export lifecycle/codec selection,
+and remaining export lifecycle qualification,
 continuous audio behavior and physical recording, remaining AI Review cases,
 and final deployment, DPI, duration and resource qualification. Historical
 sections below describe individual increments and their then-current limits;
@@ -51,8 +58,9 @@ The owner reported renewed workstation blocking and identified SSD saturation
 as the observed symptom. The disposable browser tab, isolated halo2 preview and
 its local tunnel were stopped; the build unit was already inactive. Dirty
 sessions and foreign inference were preserved. Development may continue with
-small local edits and remote orchestration, without restarting local GUI or
-heavy qualification. The specific source of workstation I/O has not been
+small local edits and remote orchestration. Compilation, rendering and soak
+stay on bounded halo2 services; small browser checks use the existing Windows
+environment, one temporary tab at a time. The specific source of workstation I/O has not been
 measured. Code inspection confirms unchanged autosave generations skip snapshot
 publication; this does not identify or rule out other sources of SSD pressure.
 
@@ -2983,3 +2991,56 @@ Evidence: `evidence/m6-review-audition-streams.json` and
 `evidence/m6-review-audition-streams.jpg`. Frozen/compound replacement policies,
 physical audio, hardware and sustained/full-resolution qualification remain
 open. The parity ledger and overall completion estimate are unchanged.
+
+## M3 - native encoder and decoder selectors
+
+The Export drawer now offers native encoder/decoder choices with exact quality
+ranges, quality direction and codec-specific presets. Opening or refreshing the
+drawer reads metadata only. An explicit check button runs the native color
+check in an isolated child; hardware remains unqualified until that check
+passes in the current server instance. Restart changes the qualification
+identity. CPU-only hosts disable hardware. The legacy web x264 CRF18/veryfast
+and software-decoder defaults retain their canonical request/receipt bytes.
+Changing codec uses native defaults; Vulkan uses QP23 and no preset. Requested
+settings and observed encoder/decoder/compositor paths are shown separately.
+Encoding never silently falls back; native decoder fallback remains bounded
+and is reported.
+
+Preview contexts now hold the shared reservation for their entire residency.
+Export/probe handover asks the worker to release its resident context before
+nonblocking reservation admission. Native decoder cache references are dropped
+after joined providers and before reservation release. The isolated child
+inherits the same lock descriptor and keeps its own wall deadline, one allowed
+CPU, CPU-time/output limits, sacrificial OOM priority and private temporary
+directory. Parent and child require an effective cgroup RAM limit of at most
+4 GiB, zero swap and 4 GiB host memory headroom. Existing desktop decoder entry
+points retain automatic CPU thread selection; bounded web fallback retains its
+thread count across hardware failure and reopen.
+
+The bounded halo2 aggregate passed 271 core, 241 web Rust, ten native proxy,
+three bounded-decoder and one device-cache tests, plus 533 JavaScript tests,
+formatting, clippy with warnings denied and build. CPU API/restart checks
+verified pure catalog reads, strict inputs, disabled hardware refusal, an
+explicit native x264 check and identity invalidation without editing projects.
+
+On the R9700, native Vulkan encode/color and decoder/color checks passed. Two
+three-frame exports verified legacy x264/software and selected Vulkan/Vulkan;
+uncached preview frames immediately handed their resident contexts to export.
+A separately held shared reservation refused a forced check with GPU_BUSY,
+preserving prior availability. Idle GPU/lock handles were empty.
+
+The existing Windows browser then selected Vulkan for both paths, observed
+Start disabled before each explicit check, received QP23/no-preset controls and
+submitted a native three-frame export. READY reported actual Vulkan encode,
+Vulkan decode and R9700 compositing without CPU fallback. Its HTTP download
+decoded to exactly three 640x360 H.264 frames, 0.125 seconds, no audio. A separate
+CPU-only GUI check preserved legacy defaults across refresh/reopen and showed
+disabled hardware and requested/actual saved-job labels. Each temporary tab was
+closed before opening the next. GPU GUI service limits were one CPU, 2 GiB,
+zero swap, low I/O priority and OOMScoreAdjust1000. All own services and tunnels
+stopped; the main editor still has its five unsaved MoveClips and Undo history.
+
+Evidence: `evidence/m3-native-codec-selectors.json` and its CPU/R9700 screenshots.
+The two selector rows are done for the verified native R9700 behavior. Other
+GPU vendors, long-source/format combinations and sustained resource qualification
+remain separate release work. The broader engineering estimate remains 65–70%.

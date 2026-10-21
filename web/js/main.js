@@ -204,6 +204,7 @@ $("export-button").addEventListener("click", () => {
 });
 $("close-export").addEventListener("click", () => {
   $("export-panel").hidden = true;
+  exportPanel.close();
 });
 $("collapse-inspector").addEventListener("click", () => {
   editor.classList.remove("inspector-drawer-open");

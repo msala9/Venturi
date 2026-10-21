@@ -460,12 +460,19 @@
         <label class="field">Out frame (exclusive)<input name="end" type="number" min="1" step="1" required value="1"></label>
         <button type="button" id="export-out">Use playhead as Out</button>
         <label class="field">Maximum output width<select name="width"><option value="1920">1920</option><option value="1280">1280</option><option value="960">960</option><option value="640">640</option></select></label>
-        <label class="field">x264 CRF<input name="quality" type="number" min="0" max="51" step="1" value="18" required></label>
-        <label class="field">Encoding speed<select name="preset"><option>veryfast</option><option>ultrafast</option><option>superfast</option><option>faster</option><option>fast</option><option>medium</option><option>slow</option><option>slower</option><option>veryslow</option></select></label>
+        <label class="field">Video encoder<select name="encoder"><option value="x264">H.264 · x264 (CPU)</option></select></label>
+        <button type="button" data-export-probe="encoder" disabled>Check selected encoder</button>
+        <label class="field">Video decoder<select name="decoder"><option value="software">CPU</option></select></label>
+        <button type="button" data-export-probe="decoder" disabled>Check selected decoder</button>
+        <button type="button" data-export-codecs-refresh>Refresh native codec choices</button>
+        <output data-export-codec-status role="status">Software encoding and decoding selected · hardware checks run only on request</output>
+        <label class="field"><span data-export-quality-label>x264 CRF</span><input name="quality" type="number" min="0" max="51" step="1" value="18" required></label>
+        <p class="muted" data-export-quality-hint>0–51 · lower values improve quality</p>
+        <label class="field" data-export-preset-field>Encoding speed<select name="preset"><option>veryfast</option><option>ultrafast</option><option>superfast</option><option>faster</option><option>fast</option><option>medium</option><option>slow</option><option>slower</option><option>veryslow</option></select></label>
         <label class="field">Include audio<input name="audio" type="checkbox" checked></label>
         <button id="export-start" class="primary">Start export</button>
       </form>
-      <p class="muted">Select any range inside the timeline, up to 1920 pixels wide. Each job has a 10-minute processing and 512 MiB output budget. CPU x264 encoding. Completed exports are retained across server restarts. Interrupted jobs are listed for review and do not restart automatically. History is limited to 64 jobs and 2 GiB of output; new jobs are refused when full.</p>
+      <p class="muted">Select any range inside the timeline, up to 1920 pixels wide. Software x264/CPU is the initial choice. Hardware requires an explicit bounded check; decoder support can vary by source, and actual paths appear in job status. Each job has a 10-minute processing and 512 MiB output budget. Completed exports are retained across server restarts. Interrupted jobs are listed for review and do not restart automatically. History is limited to 64 jobs and 2 GiB of output; new jobs are refused when full.</p>
       <label class="field">Saved exports<select id="export-history" aria-label="Saved exports"><option value="">Choose a saved export</option></select></label>
       <button id="export-history-refresh" type="button">Refresh saved exports</button>
       <p id="export-history-status" class="muted" role="status"></p>

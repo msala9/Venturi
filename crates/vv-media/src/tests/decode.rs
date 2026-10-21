@@ -694,6 +694,70 @@ fn a_hw_error_mid_stream_goes_on_in_software_without_changing_the_frames() {
 }
 
 #[test]
+fn web_software_thread_bound_clamps_without_changing_desktop_defaults() {
+    let path = make_test_clip("web_software_thread_bound_clamps.mp4", 1);
+    for (requested, expected) in [(0, 1), (2, 2), (usize::MAX, 4)] {
+        let decoder =
+            Decoder::open_with_bounded(&path, &[], crate::hw::HwPriority::Normal, requested)
+                .unwrap();
+        assert_eq!(decoder.software_threads, expected);
+        // Read the opened codec, not just the stored fallback preference.
+        assert_eq!(
+            unsafe { (*decoder.decoder.as_ptr()).thread_count },
+            expected as i32
+        );
+    }
+    assert_eq!(Decoder::open(&path).unwrap().software_threads, 0);
+    assert_eq!(
+        Decoder::open_with(&path, &[], crate::hw::HwPriority::Normal)
+            .unwrap()
+            .software_threads,
+        0
+    );
+}
+
+#[test]
+fn web_software_thread_bound_survives_silent_hardware_fallback_and_seek() {
+    let path =
+        make_test_clip_with_gop_and_bframes("web_software_thread_bound_silent.mp4", 1, 25, 2);
+    let wanted = decode_all(Decoder::open_software_bounded(&path, 2).unwrap());
+    let mut decoder =
+        Decoder::open_with_bounded(&path, &[], crate::hw::HwPriority::Normal, 2).unwrap();
+    // A CPU decoder reporting a hardware-only expected format models FFmpeg's
+    // silent software fallback; no hardware API is invoked.
+    decoder.hw = Some(crate::hw::HwState {
+        pix_fmt: ffmpeg::ffi::AVPixelFormat::AV_PIX_FMT_CUDA,
+        device: crate::hw::HwDevice::Cuda,
+    });
+    decoder.seek_to_time(0.0).unwrap();
+    assert!(!decoder.is_hw());
+    assert_eq!(decoder.software_threads, 2);
+    assert_eq!(unsafe { (*decoder.decoder.as_ptr()).thread_count }, 2);
+    assert_same_frames(&decode_all(decoder), &wanted);
+}
+
+#[test]
+fn web_software_thread_bound_survives_midstream_hardware_error() {
+    let path = make_test_clip_with_gop_and_bframes("web_software_thread_bound_error.mp4", 1, 25, 2);
+    let wanted = decode_all(Decoder::open_software_bounded(&path, 2).unwrap());
+    let mut decoder =
+        Decoder::open_with_bounded(&path, &[], crate::hw::HwPriority::Normal, 2).unwrap();
+    decoder.hw = Some(crate::hw::HwState {
+        pix_fmt: ffmpeg::ffi::AVPixelFormat::AV_PIX_FMT_YUV420P,
+        device: crate::hw::HwDevice::Cuda,
+    });
+    decoder.fail_after = Some(5);
+    let mut got = Vec::new();
+    while let Some(frame) = decoder.next_frame().unwrap() {
+        got.push(frame);
+        assert_eq!(decoder.software_threads, 2);
+        assert_eq!(unsafe { (*decoder.decoder.as_ptr()).thread_count }, 2);
+    }
+    assert!(!decoder.is_hw());
+    assert_same_frames(&got, &wanted);
+}
+
+#[test]
 fn a_hw_error_during_a_transit_lands_on_the_wanted_frame() {
     let path = make_test_clip_with_gop_and_bframes("hw_error_transit.mp4", 4, 25, 2);
     let want = decode_all(Decoder::open(&path).unwrap());

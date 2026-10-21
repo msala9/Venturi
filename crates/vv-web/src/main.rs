@@ -4,6 +4,7 @@ mod audition;
 mod autosave;
 mod catalog;
 mod clipboard;
+mod codecs;
 mod commands;
 mod curves;
 mod error;
@@ -31,8 +32,15 @@ mod source;
 mod take;
 mod visual;
 
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<_> = std::env::args().skip(1).collect();
+    if args.first().is_some_and(|arg| arg == "--codec-probe") {
+        return codecs::child_main(&args);
+    }
+    serve()
+}
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn serve() -> Result<(), Box<dyn std::error::Error>> {
     let mut listen = "127.0.0.1:8787".parse::<std::net::SocketAddr>()?;
     let mut root = std::path::PathBuf::from("venturi-web-data");
     let mut gpu = None;
@@ -110,6 +118,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         gpu.map(|id| preview::Preview::start(id, &gpu_lock))
             .unwrap_or_else(preview::Preview::disabled)
     };
+    if preview.hardware_enabled() {
+        vv_media::hw::set_budget_bytes(128 * 1024 * 1024);
+    }
+    let codecs = codecs::Codecs::new(preview.clone());
     println!("Venturi Web: http://{listen}");
     axum::serve(
         listener,
@@ -121,6 +133,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             silence: silence::Jobs::start(),
             port: listen.port(),
             preview,
+            codecs,
         }),
     )
     .with_graceful_shutdown(async {

@@ -1,0 +1,61 @@
+{
+  "pid": 1204512,
+  "sha256": "bc69432b5db04d8e30a2d2c72a3e3b201fe303a7b8ab616290b123e021efbcd2",
+  "binary_source_commit": "b653fc97376bbf865194d8da778c34bcf48049e8",
+  "command_epoch": "0",
+  "generation": "0",
+  "clipboard_count": 0,
+  "saved_project": "CPU_shared_library_UI_check.vvproj",
+  "history": {
+    "labels": [],
+    "position": 0
+  },
+  "project_and_review_hashes_preserved": true,
+  "original_source_hash_preserved": true,
+  "exact_seed": "9007199254740993",
+  "favorite_preserved": true,
+  "main_asset_sha256": "33b77c7db4a68211101c7e6b5059a48d5a18a6bca2c84a7b205682c5821563f0",
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "copy": {
+    "project": "Marker_Gestures_Halo2_UI_check.vvproj",
+    "saved": true,
+    "generation": "2",
+    "history": {
+      "labels": [
+        "AddMarker",
+        "MoveMarker"
+      ],
+      "position": 2
+    },
+    "markers": [
+      {
+        "color": "Cyan",
+        "duration_frames": 0,
+        "id": "0",
+        "note": "Shared library cue",
+        "rgb": [
+          43,
+          179,
+          185
+        ],
+        "start_frame": 24
+      }
+    ],
+    "original_project_review_source_hashes_preserved": true,
+    "exact_seed_and_favorite_preserved": true
+  },
+  "restored": {
+    "project": "CPU_shared_library_UI_check.vvproj",
+    "saved": true,
+    "generation": "0",
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "markers": [],
+    "original_project_review_source_hashes_preserved": true,
+    "exact_seed_and_favorite_preserved": true
+  }
+}

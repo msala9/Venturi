@@ -1929,3 +1929,14 @@ final revision and both markers with a fresh history. Clip tracks and parent
 project hashes are unchanged. Evidence: m4-marker-gestures.json and browser PNG.
 The markers parity row is now done. This interaction check needed no renderer,
 shared archive mutation or shared hardware GPU.
+
+Halo2 now runs b653fc9, binary SHA-256
+bc69432b5db04d8e30a2d2c72a3e3b201fe303a7b8ab616290b123e021efbcd2.
+On an explicit Save As copy of the shared-library fixture, the real browser added
+a Cyan point marker at 12, dragged it to 24, and saved. The host recorded exactly
+AddMarker/MoveMarker at history position 2 and preserved the note/color/ID. The
+original shared project was reopened Saved with empty history and no markers.
+Its project/Review/source hashes, exact seed and Favorite provenance are unchanged.
+The separate marker test copy is retained. Evidence:
+m4-halo2-marker-gestures.json and m4-halo2-marker-gestures-browser.png. Renderer
+remains software-only with no hardware handles or shared GPU-lock acquisition.

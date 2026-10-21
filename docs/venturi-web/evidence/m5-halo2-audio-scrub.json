@@ -1,0 +1,20 @@
+{
+  "pid": 1186458,
+  "sha256": "40ed05fbe024164dc6d628becb11e47b28d0658d49a21ba1bcb39827830be049",
+  "source_commit": "f2b234fcc0628ba9f21fc481a33e5ef4b04b7d38",
+  "software_only": true,
+  "hardware_handles": [],
+  "hardware_lock": "not acquired or probed",
+  "saved_project": "CPU_shared_library_UI_check.vvproj",
+  "last_saved_project_reopened": true,
+  "seed": "9007199254740993",
+  "annotation_rating": "favorite",
+  "native_silent_audio_bytes": 15404,
+  "still_audio_refused": true,
+  "assets_sha256": {
+    "js/audition.js": "11af9499a585bbbffb132bc55ba2dd63f4a4b2439e32638b8f6f786d6b372e04",
+    "js/source.js": "33c3dc8628208f6fdfaa88c2cadb77d59d0ee0a27f9eac909e9b5f8769542a29",
+    "style/app.css": "57e85a425e3db79669638f594ef56c208489b2a99a6dde97c3148157cbd36a98"
+  },
+  "session_unchanged": true
+}

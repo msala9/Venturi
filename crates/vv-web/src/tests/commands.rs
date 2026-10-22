@@ -354,6 +354,134 @@ fn neutral_multitrack_compound_preserves_layers_gain_links_and_one_step_undo() {
 }
 
 #[test]
+fn multivideo_compound_preserves_single_audio_host_processing_audibility_and_exact_undo() {
+    for case in 0..6 {
+        let (mut session, id, clips) = multitrack_compound_fixture();
+        let timeline = &mut session.project.timelines[id];
+        match case {
+            0 => timeline.tracks[2].mix.pan = 0.5,
+            1 => timeline.tracks[2]
+                .mix
+                .effects
+                .push(core::AudioEffect::new(core::AudioEffectKind::Mono)),
+            2 => timeline.tracks[2].solo = true,
+            3 => timeline.tracks[2].muted = true,
+            4 => timeline.tracks[3].solo = true,
+            _ => {
+                timeline.tracks[2].mix.pan = -0.25;
+                timeline.tracks[2]
+                    .mix
+                    .effects
+                    .push(core::AudioEffect::new(core::AudioEffectKind::Mono));
+                timeline.tracks[2].solo = true;
+                timeline.tracks[2].muted = true;
+            }
+        }
+        let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+        let pool_count = session.project.media_pool.len();
+        let position = session.history.position();
+        let mut native = core::plan_compound_clip(
+            &session.project,
+            id,
+            &[(0, clips[0]), (1, clips[1]), (2, clips[2])],
+        )
+        .unwrap();
+        native.nested_timeline.name = "Two video, one audio".into();
+        // The linked audio peer is expanded by the adapter, as in the desktop UI.
+        let request = Operation::MakeCompound {
+            clip_ids: vec![clips[0].0.to_string(), clips[1].0.to_string()],
+            name: native.nested_timeline.name.clone(),
+        };
+        apply(&mut session, id, &request).unwrap();
+        assert_eq!(session.history.position(), position + 1, "case {case}");
+        let parent = &session.project.timelines[id];
+        for (index, track) in parent.tracks.iter().enumerate() {
+            assert_eq!(
+                serde_json::to_value(&track.mix).unwrap(),
+                before["tracks"][index]["mix"],
+                "case {case}, track {index}"
+            );
+            assert_eq!(
+                track.muted,
+                before["tracks"][index]["muted"].as_bool().unwrap()
+            );
+            assert_eq!(
+                track.solo,
+                before["tracks"][index]["solo"].as_bool().unwrap()
+            );
+        }
+        assert_eq!(
+            serde_json::to_value(&parent.tracks[3]).unwrap(),
+            before["tracks"][3]
+        );
+        let core::ClipSource::Media(media) = &parent.tracks[0].clips[0].source else {
+            panic!("Expected compound wrapper")
+        };
+        let nested = session.project.media_pool[*media].compound.unwrap();
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[nested]).unwrap(),
+            serde_json::to_value(&native.nested_timeline).unwrap()
+        );
+        assert_eq!(
+            parent.tracks[2].clips[0].linked_group,
+            parent.tracks[0].clips[0].linked_group
+        );
+        let after_parent = serde_json::to_value(parent).unwrap();
+        let after_nested = serde_json::to_value(&session.project.timelines[nested]).unwrap();
+        apply(&mut session, id, &Operation::Undo).unwrap();
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.project.timelines.len(), 1);
+        assert_eq!(session.project.media_pool.len(), pool_count);
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            before,
+            "case {case}"
+        );
+        apply(&mut session, id, &Operation::Redo).unwrap();
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            after_parent
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[nested]).unwrap(),
+            after_nested
+        );
+    }
+}
+
+#[test]
+fn two_audio_tracks_still_refuse_processing_solo_and_mute_with_only_one_video_track() {
+    for case in 0..4 {
+        let (mut session, id, clips) = multitrack_compound_fixture();
+        let timeline = &mut session.project.timelines[id];
+        match case {
+            0 => timeline.tracks[3].mix.pan = 0.25,
+            1 => timeline.tracks[3]
+                .mix
+                .effects
+                .push(core::AudioEffect::new(core::AudioEffectKind::Mono)),
+            2 => timeline.tracks[2].solo = true,
+            _ => timeline.tracks[3].muted = true,
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        // Selecting the two audio clips also expands their single linked video peer.
+        let request = Operation::MakeCompound {
+            clip_ids: vec![clips[2].0.to_string(), clips[3].0.to_string()],
+            name: "Still unsafe audio collapse".into(),
+        };
+        let error = apply(&mut session, id, &request).unwrap_err();
+        assert_eq!(error.0.as_u16(), 422, "case {case}");
+        assert_eq!(session.history.position(), position);
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            before,
+            "case {case}"
+        );
+    }
+}
+
+#[test]
 fn multitrack_compound_rejects_processing_audibility_and_linked_locks_without_mutation() {
     for case in 0..11 {
         let (mut session, id, clips) = multitrack_compound_fixture();

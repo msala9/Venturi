@@ -523,31 +523,31 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 .filter(|(t, _)| tl.tracks[*t].kind == TrackKind::Audio)
                 .map(|(t, _)| *t)
                 .collect::<HashSet<_>>();
-            let multiple_tracks = video.len() > 1 || audio.len() > 1;
-            if multiple_tracks {
-                if video
+            let multiple_video_tracks = video.len() > 1;
+            let multiple_audio_tracks = audio.len() > 1;
+            let multiple_tracks = multiple_video_tracks || multiple_audio_tracks;
+            if multiple_video_tracks && video.iter().any(|&index| tl.tracks[index].muted)
+                || multiple_audio_tracks && audio.iter().any(|&index| tl.tracks[index].muted)
+            {
+                return Err(ApiError::invalid(
+                    "Multitrack compounds require unmuted source tracks",
+                ));
+            }
+            // With one audio track the native wrapper remains on that same host,
+            // so its bus processing and audibility are not moved into the child.
+            if multiple_audio_tracks
+                && (tl
+                    .tracks
                     .iter()
-                    .chain(audio.iter())
-                    .any(|&index| tl.tracks[index].muted)
-                {
-                    return Err(ApiError::invalid(
-                        "Multitrack compounds require unmuted source tracks",
-                    ));
-                }
-                if !audio.is_empty()
-                    && (tl
-                        .tracks
-                        .iter()
-                        .any(|track| track.kind == TrackKind::Audio && track.solo)
-                        || audio.iter().any(|&index| {
-                            let mix = &tl.tracks[index].mix;
-                            mix.pan != 0.0 || !mix.effects.is_empty() || !mix.gain_db.is_finite()
-                        }))
-                {
-                    return Err(ApiError::invalid(
-                        "Multitrack compounds require gain-only audio tracks without solo, pan or inserts",
-                    ));
-                }
+                    .any(|track| track.kind == TrackKind::Audio && track.solo)
+                    || audio.iter().any(|&index| {
+                        let mix = &tl.tracks[index].mix;
+                        mix.pan != 0.0 || !mix.effects.is_empty() || !mix.gain_db.is_finite()
+                    }))
+            {
+                return Err(ApiError::invalid(
+                    "Multitrack compounds require gain-only audio tracks without solo, pan or inserts",
+                ));
             }
             if let Some(&track) = audio.iter().next()
                 && selected.iter().filter(|(t, _)| *t == track).count() > 1

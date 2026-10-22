@@ -12,6 +12,42 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Native editing fidelity now passes `evidence/m4-native-edit-fidelity.json`.
+Clip paste between different timeline FPS uses the same native relative-start,
+`Clip::retime` and target-media conformance sequence as the desktop. Linked
+groups, internal crossing durations, source-frame animation, speed, freeze and
+pitch retain native behavior; occupied or locked targets still refuse the whole
+paste. The existing Windows browser copied a linked nested video/audio group
+from 24 fps into 25 fps, verified 25 timeline frames against 24 source frames,
+then performed exactly one Undo/Redo. Finite API checks also cover 24→30 fps,
+animation, unchanged source bounds, idempotency, Save/restart and atomic refusal.
+
+Compound guards now distinguish video and audio track multiplicity. Two video
+tracks with one audio track retain the original host audio bus; pan, inserts,
+solo and mute no longer cause an unrelated multibus refusal. Native-plan tests
+cover accepted and refused variants. A finite API check with gain, pan, Mono
+and solo verified identical native 80 ms PCM before/after and one Undo/Redo.
+General multibus and compositing restrictions remain where the native planner
+would lose processing or dependencies.
+
+OTIO import/export now use the native CPU title measurement callback, including
+auto-sized backgrounds and foreign corner-radius conversion. HTTP/native and
+foreign-metadata regressions pass; a real finite title export/import passes and
+the Windows Projects download matches its native SHA. No GPU, font installation
+or external editor was used. Import into the existing project and isolated OTIO
+media preparation remain missing workflows; nested export is unsupported by the
+original native exporter. OS text/cross-project clip clipboard and continuous
+audio/hardware qualification remain open. These rows remain partial, so ledger
+counts and the engineering estimate above are unchanged.
+
+Validation passed 346 web Rust, 277 core, 677 JavaScript, 10 proxy, 3 decoder,
+1 cached-device and four targeted desktop tests, fmt, Clippy and native build
+in the cached halo2 environment: one CPU, 4 GiB build RAM, no swap and OOM score
+1000. The finite API/Windows metadata server used 512 MiB with preview/export
+disabled. Its recorded cgroup events had no OOM. The only temporary Windows
+tab, server and tunnel were closed; main editor five unsaved MoveClips and Undo
+remain intact. The verified binary is staged separately without activating it.
+
 Native Program export marks, percentage output sizes, audio settings and
 measured pipeline progress now pass `evidence/m3-native-export-options.json`.
 Program I/O and opposite-bound resets follow native MarkRange; marks survive

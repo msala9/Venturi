@@ -876,10 +876,11 @@ async fn export_otio(
         ));
     }
     let bytes = tokio::task::spawn_blocking(move || {
+        let measure = |title: &vv_core::TitleParams| vv_render::text::title_metrics(title);
         serde_json::to_vec_pretty(&vv_core::otio::timeline_to_otio(
             &snapshot.project,
             snapshot.timeline,
-            None,
+            Some(&measure),
         ))
     })
     .await

@@ -1312,13 +1312,21 @@ and hardware acceptance remain open.
   Nonempty timelines are supported. Active compound references are refused:
   the native exporter does not serialize their contents; export the child
   timeline instead. Native Venturi metadata now additionally retains track
-  mixer/lock/solo, timeline master and markers. Foreign text layout may differ
-  because headless OTIO uses the native optional-metrics fallback.
+  mixer/lock/solo, timeline master and markers. Both import and export use
+  `vv_render::text::title_metrics`, matching desktop CPU font shaping for
+  automatic title backgrounds and corner-radius conversion. This initializes
+  no GPU or audio device. Font availability can still differ across machines.
 - Timeline `rename_timeline {name}` and `duplicate_timeline {name}` use native
   pool commands. Duplicate allocates fresh clip/link IDs and is one undo step;
   names are nonempty, at most 128 bytes, without control characters.
 - `make_compound {clip_ids,name}` resolves linked groups, locks and a native
-  plan. This first adapter permits at most one video and one audio track.
+  plan. Multiple selected video/audio tracks use the native compound planner.
+  Audibility and processing guards apply independently to each role: one audio
+  track retains its original host bus, so pan, inserts, solo and mute remain
+  valid even when multiple video tracks are selected. Multiple audio tracks
+  require unmuted gain-only buses without solo, pan or inserts. Multiple video
+  tracks require unmuted tracks, all intervening material selected and no
+  changed adjustment/matte/selected-blend dependencies.
   Replacement space must be free of unselected clips, and crossing transitions
   must be selected on both sides. Internal crossings are retained by the native
   planner. Multiple audio clips with enabled per-clip normalization are refused
@@ -1337,11 +1345,16 @@ metadata editing remain available. No foreign workload is stopped.
   groups and internal crossing transitions in the session's bounded 4 MiB
   clipboard. It is writer/epoch/generation/revision/idempotency guarded but
   creates no undo step; copying locked tracks is allowed. Session snapshots
-  expose only clipboard_count, not clip payloads.
-- `paste_clips {frame}` requires the same project epoch and exact timeline FPS.
+  expose clipboard_count and a revision for property paste, not clip payloads.
+- `paste_clips {frame}` requires the same project epoch. Different timeline FPS
+  use native `Clip::retime`: set the copied relative start, conform to the target
+  timeline/media FPS, then add the destination playhead. Source-frame animation,
+  source offsets, speed, pitch and freeze retain their native semantics;
+  generator clips keep their native conform rate. Internal crossing durations
+  use native frame conversion with a one-frame minimum.
   A native trial plans missing tracks, fresh clip/group IDs, effect/animation
   copies, internal crossings and cycle/depth checks. Any occupied/locked
   destination refuses the whole paste before real IDs/tracks/history change.
   One composite undo removes all pasted clips and any new tracks. The actual
-  browser text clipboard, cross-project transfers and cross-FPS paste are not
+  browser text clipboard and cross-project transfers are not
   part of this first adapter. Copy again after opening another project.

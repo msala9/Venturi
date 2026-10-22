@@ -6,6 +6,108 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn otio_http_export_matches_native_cpu_measured_title_background() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-otio-text-http-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&root).unwrap();
+    let mut session = vv_session::Session::default();
+    let timeline = session.create_timeline(vv_core::Timeline {
+        name: "Native text".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let mut clip = vv_core::Clip::from_source_range(
+        session.project.alloc_clip_id(),
+        vv_core::ClipSource::Text,
+        0,
+        24,
+        0,
+        vv_core::Rational::one(),
+    );
+    let mut title = vv_core::TitleParams::default();
+    title.content.default = "Native title".into();
+    title.size = 32.0;
+    title.background.enabled = true;
+    title.background.width = 0.0;
+    title.background.height = 0.0;
+    clip.effects.title = Some(title);
+    session.project.timelines[timeline].tracks[0].insert_sorted(clip);
+    session.sync_timeline_media(timeline);
+    let measure = |title: &vv_core::TitleParams| vv_render::text::title_metrics(title);
+    let expected = vv_core::otio::timeline_to_otio(&session.project, timeline, Some(&measure));
+    let fallback = vv_core::otio::timeline_to_otio(&session.project, timeline, None);
+    assert_ne!(
+        expected, fallback,
+        "Auto-sized title background needs measured dimensions"
+    );
+    crate::files::Files::new(&root)
+        .unwrap()
+        .save(&session.project, "title.vvproj", true)
+        .unwrap();
+    let host = Host::start(&root).unwrap();
+    let state = host.call(Action::Session).await.unwrap();
+    host.project_mutation(serde_json::from_value(json!({
+        "command_id":"open-title", "client_id":"otio-text-browser", "command_epoch":state["command_epoch"],
+        "project_epoch":state["project_epoch"], "if_generation":state["generation"], "if_revision":null,
+        "operation":{"kind":"open_project","path_token":"title.vvproj"}
+    })).unwrap()).await.unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let timeline_id = before["timelines"][0]["id"].as_str().unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let query = format!(
+        "project_epoch={}&if_generation={}&timeline_id={}&revision={}&frame=0&width=640",
+        before["project_epoch"].as_str().unwrap(),
+        before["generation"].as_str().unwrap(),
+        timeline_id,
+        before["timelines"][0]["revision"].as_str().unwrap()
+    );
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(format!(
+                    "/api/v1/timelines/{timeline_id}/timeline.otio?{query}"
+                ))
+                .header("host", "127.0.0.1:8787")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let actual: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 1024 * 1024).await.unwrap())
+            .unwrap();
+    assert_eq!(actual, expected);
+    assert_eq!(
+        host.call(Action::Session).await.unwrap(),
+        before,
+        "Export is read-only"
+    );
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn media_import_http_batch_is_explicit_native_single_undo_and_legacy_import_uses_worker() {
     let root = std::env::temp_dir().join(format!(
         "vv-import-http-{}-{}",

@@ -326,16 +326,6 @@ pub fn paste(
     if !(0..=commands::MAX_FRAME).contains(&frame) {
         return Err(ApiError::invalid("Choose a bounded timeline frame"));
     }
-    let fps = session.project.timelines[id].fps;
-    if clipboard
-        .entries
-        .iter()
-        .any(|entry| entry.timeline_fps != fps)
-    {
-        return Err(ApiError::invalid(
-            "Clip paste currently requires matching timeline FPS; media insertion supports native FPS conformance",
-        ));
-    }
     let mut trial = session.project.clone();
     let mut command = plan(&mut trial, id, clipboard, frame)?;
     command.apply(&mut trial);
@@ -392,8 +382,23 @@ fn plan(
         let mut clip = entry.clip.clone();
         let original = clip.id;
         clip.id = project.alloc_clip_id();
-        clip.timeline_start = frame + entry.relative_start;
+        clip.timeline_start = entry.relative_start;
         clip.linked_group = None;
+        if entry.timeline_fps != layout.fps {
+            let conform_rate = match clip.source {
+                core::ClipSource::Media(media) => project
+                    .media_pool
+                    .get(media)
+                    .map_or(clip.conform_rate(), |item| {
+                        core::Rational::conform_rate(layout.fps, item.meta.fps)
+                    }),
+                core::ClipSource::SolidColor
+                | core::ClipSource::Text
+                | core::ClipSource::Adjustment => clip.conform_rate(),
+            };
+            clip.retime(entry.timeline_fps, layout.fps, conform_rate);
+        }
+        clip.timeline_start += frame;
         commands::free(
             &layout,
             track,
@@ -401,7 +406,7 @@ fn plan(
             clip.timeline_len,
             &HashSet::new(),
         )?;
-        mapped.insert(original, (track, clip.id));
+        mapped.insert(original, (track, clip.id, entry.timeline_fps));
         if let Some(group) = entry.link_tag {
             groups.entry(group).or_default().push((track, clip.id));
         }
@@ -416,13 +421,15 @@ fn plan(
         commands.push(Box::new(core::LinkClips::new(id, members)));
     }
     for crossing in &clipboard.crossings {
-        let (track, left) = mapped[&crossing.left_clip];
-        let (right_track, right) = mapped[&crossing.right_clip];
-        if track != right_track {
+        let (track, left, from) = mapped[&crossing.left_clip];
+        let (right_track, right, right_fps) = mapped[&crossing.right_clip];
+        if track != right_track || from != right_fps {
             return Err(ApiError::invalid(
                 "Copied crossing spans incompatible destination tracks",
             ));
         }
+        let mut transition = crossing.transition.clone();
+        transition.duration = core::convert_frames(transition.duration, from, layout.fps).max(1);
         commands.push(Box::new(core::SetCrossTransition::new(
             id,
             track,
@@ -430,7 +437,7 @@ fn plan(
             Some(core::CrossTransition {
                 left_clip: left,
                 right_clip: right,
-                transition: crossing.transition.clone(),
+                transition,
             }),
         )));
     }

@@ -612,7 +612,7 @@ function selected() {
     const name=document.createElement("input");name.value="Compound";name.required=true;name.maxLength=128;compoundLabel.append(name);
     const make=document.createElement("button");make.textContent="Make compound from selection";make.disabled=!view.selection.length;compound.append(compoundLabel,make);
     compound.addEventListener("submit",async(event)=>{event.preventDefault();try{await commit({kind:"make_compound",clip_ids:view.selection,name:name.value});view.selection=[];selected();canvasTimeline.invalidate();}catch(error){notice(error.message);}});fieldset.append(compound);
-    const clipboardNote=document.createElement("p");clipboardNote.className="muted";clipboardNote.textContent=`Clip clipboard: ${documentState.clipboard_count || 0} · current project, matching FPS`;fieldset.append(clipboardNote);
+    const clipboardNote=document.createElement("p");clipboardNote.className="muted";clipboardNote.textContent=`Clip clipboard: ${documentState.clipboard_count || 0} · current project · native FPS conversion`;fieldset.append(clipboardNote);
     for(const [label,operation,disabled] of [["Copy clips",()=>({kind:"copy_clips",clip_ids:view.selection}),!view.selection.length],["Paste clips safely",()=>({kind:"paste_clips",frame:view.playhead}),!documentState.clipboard_count]]) {
       const button=document.createElement("button");button.textContent=label;button.disabled=disabled;button.addEventListener("click",()=>commit(operation()).catch((error)=>notice(error.message)));fieldset.append(button);
     }

@@ -234,6 +234,7 @@ impl Files {
             ));
         }
         let mut imported = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let measure = |title: &vv_core::TitleParams| vv_render::text::title_metrics(title);
             vv_core::otio::project_from_otio(
                 &value,
                 &self.root,
@@ -261,7 +262,7 @@ impl Files {
                     ));
                     Ok((meta, vv_media::content_fingerprint(&fd_path).unwrap_or(0)))
                 },
-                None,
+                Some(&measure),
             )
         }))
         .map_err(|_| {

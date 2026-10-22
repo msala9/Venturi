@@ -398,3 +398,93 @@ fn otio_roundtrip_keeps_native_effects_rates_and_refuses_file_escapes() {
     assert!(files.import_otio("escape.otio").is_err());
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn otio_foreign_auto_background_import_uses_native_cpu_title_metrics() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    let mut session = vv_session::Session::default();
+    let timeline = session.create_timeline(vv_core::Timeline {
+        name: "Foreign text".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let mut clip = vv_core::Clip::from_source_range(
+        session.project.alloc_clip_id(),
+        vv_core::ClipSource::Text,
+        0,
+        24,
+        0,
+        vv_core::Rational::one(),
+    );
+    let mut title = vv_core::TitleParams::default();
+    title.content.default = "Native title".into();
+    title.size = 32.0;
+    title.background.enabled = true;
+    clip.effects.title = Some(title);
+    session.project.timelines[timeline].tracks[0].insert_sorted(clip);
+    let measure = |title: &vv_core::TitleParams| vv_render::text::title_metrics(title);
+    let mut foreign = vv_core::otio::timeline_to_otio(&session.project, timeline, Some(&measure));
+    let clip = &mut foreign["tracks"]["children"][0]["children"][0];
+    clip["metadata"] = json!({});
+    let blocks = clip["media_references"]["DEFAULT_MEDIA"]["parameters"]["Resolve_OTIO"]
+        .as_array_mut()
+        .unwrap();
+    let background = blocks
+        .iter_mut()
+        .find(|block| block["Effect Name"] == "Background")
+        .unwrap();
+    for parameter in background["Parameters"].as_array_mut().unwrap() {
+        match parameter["Parameter ID"].as_str() {
+            Some("backgroundWidth" | "backgroundHeight") => {
+                parameter["Parameter Value"] = json!(0.0)
+            }
+            Some("backgroundCornerRadius") => parameter["Parameter Value"] = json!(0.015),
+            _ => {}
+        }
+    }
+    let expected = vv_core::project_from_otio(
+        &foreign,
+        &root,
+        &mut |_| panic!("Text must not probe media"),
+        Some(&measure),
+    )
+    .unwrap();
+    let fallback = vv_core::project_from_otio(
+        &foreign,
+        &root,
+        &mut |_| panic!("Text must not probe media"),
+        None,
+    )
+    .unwrap();
+    std::fs::write(
+        root.join("foreign-title.otio"),
+        serde_json::to_vec(&foreign).unwrap(),
+    )
+    .unwrap();
+    let (actual, warnings) = files.import_otio("foreign-title.otio").unwrap();
+    assert!(warnings.is_empty());
+    let title = |project: &vv_core::Project| {
+        project
+            .timelines
+            .values()
+            .flat_map(|timeline| &timeline.tracks)
+            .flat_map(|track| &track.clips)
+            .find_map(|clip| clip.effects.title.clone())
+            .unwrap()
+    };
+    let actual = title(&actual);
+    let expected = title(&expected.project);
+    assert_eq!(
+        serde_json::to_value(&actual).unwrap(),
+        serde_json::to_value(&expected).unwrap()
+    );
+    assert!(
+        (actual.background.corner_radius - title(&fallback.project).background.corner_radius).abs()
+            > 0.0001
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}

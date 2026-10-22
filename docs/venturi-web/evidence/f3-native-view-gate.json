@@ -3,7 +3,7 @@
   "status": "native_and_component_gate_passed_browser_pending",
   "source_base_commit": "2cc98bb94668ac379041edf38b00b802dc0ce248",
   "source_files_sha256": {
-    "crates/vv-web/src/api.rs": "7ae77d2f32183c0f3609989549c0a77b2f0bbcc6a57a30df097affc7269e6da9",
+    "crates/vv-web/src/api.rs": "caca8f8929c264b3d9c82f0954b050792aa7832250790c60377758bac3cb66c3",
     "crates/vv-web/src/commands.rs": "f8bc58f2bb92d550bf3b81d3ca92726a4ba7d602ba641e9c848b87ed97c38538",
     "crates/vv-web/src/host.rs": "8a69d8f1eb255309e81c4ef8423a26274e00c5a6a90d2100e272907abc17a733",
     "crates/vv-web/src/main.rs": "ead88b4c134aafe8f6b4752f1f84ecb0b7d75bdbfa25d3970f804f8fc95fc527",
@@ -25,7 +25,8 @@
     "web/test/mixer.test.js": "ecb5693487d2937a5143d0a6f1e22ef2bd55899a8b376aadd7d919caa083a622",
     "web/test/project-view.test.js": "6f44e0e9d6db8b5d0c9c0aa573e921093c539a8f118a993959161b92552c1f14",
     "web/test/retime-inspector.test.js": "bc23a9ac494b7f141ef93e1e8d3d5cea297b69f7eb2d2a62e481a3d2bf6e6b8d",
-    "web/test/timeline-layout.test.js": "6459d3f4655cadee2c127b6d26fd5658ae13033a386a4ec0747863886271d1c5"
+    "web/test/timeline-layout.test.js": "6459d3f4655cadee2c127b6d26fd5658ae13033a386a4ec0747863886271d1c5",
+    "crates/vv-web/src/tests/api.rs": "32a3d34c17e69099f7a9cd2f04b2e1d6b410f08c095f453d031d131e034fe48e"
   },
   "validation": "F1-F3-native-view-compound-retime-scrollbars",
   "javascript": {
@@ -41,7 +42,8 @@
     "rustfmt": "passed",
     "clippy_vv_web_all_targets": "passed -D warnings",
     "build": "passed",
-    "binary_sha256": "71c4b56329ffe31dff504fbcd23df000de3c54e0ff8ae5c13a37b97f3102e515"
+    "binary_sha256": "39d6d09a840b778187a2488ca4450ff021968ec49709bbb4230bbe0722d304f1",
+    "additional_focused_asset_regression_passed": 1
   },
   "implemented": [
     "Explicit original-native compound grouping, retaining legacy Keep track audio mix payload and safeguards.",
@@ -70,5 +72,11 @@
     "Continuous Program audio telemetry and voiceover window handoff are concrete production gaps; see AUDIO_RUNTIME_GAPS.md.",
     "Delivered service at Windows port 8811 still runs baseline df50859; this gate is not a deployment.",
     "No functional parity capability row is closed by this gate alone."
-  ]
+  ],
+  "browser_start_correction": {
+    "failure": "Initial browser startup remained at Demo/no server because the new project-view.js module was missing from the embedded asset allowlist. No project opened or modified.",
+    "correction": "Added the explicit embedded module route and one HTTP module-dependency/MIME regression.",
+    "validation": "New focused asset regression, fmt, all-target web Clippy and build pass; unchanged1007JS and471Rust cases reused.",
+    "qualification_unit": "Stopped Saved before correction; integrated workflow remains pending."
+  }
 }

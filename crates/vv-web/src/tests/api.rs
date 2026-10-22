@@ -2265,3 +2265,58 @@ fn native_asset_folder_edits_reuse_library_operation_and_require_strict_folder_a
     assert_eq!(root.folder.as_deref(), Some(""));
     assert_eq!(root.folders_revision.as_deref(), Some("absent"));
 }
+
+#[tokio::test]
+async fn embedded_editor_module_imports_are_served_with_javascript_mime() {
+    use std::collections::{HashSet, VecDeque};
+    let mut queue = VecDeque::from(["/js/main.js".to_owned()]);
+    let mut seen = HashSet::new();
+    while let Some(path) = queue.pop_front() {
+        if !seen.insert(path.clone()) {
+            continue;
+        }
+        let response = assets(Request::builder().uri(&path).body(Body::empty()).unwrap()).await;
+        assert_eq!(
+            response.status(),
+            StatusCode::OK,
+            "Missing embedded module: {path}"
+        );
+        assert_eq!(
+            response.headers()[header::CONTENT_TYPE],
+            "text/javascript",
+            "Wrong module MIME: {path}"
+        );
+        let body = to_bytes(response.into_body(), 512 * 1024).await.unwrap();
+        let text = std::str::from_utf8(&body).unwrap();
+        for line in text
+            .lines()
+            .filter(|line| line.trim_start().starts_with("import ") || line.contains(" from "))
+        {
+            for dependency in line.split(['\'', '\"']).filter(|value| {
+                value.starts_with('.')
+                    && value.ends_with(".js")
+                    && !value.chars().any(char::is_whitespace)
+            }) {
+                let mut parts: Vec<_> = path
+                    .rsplit_once('/')
+                    .unwrap()
+                    .0
+                    .split('/')
+                    .filter(|part| !part.is_empty())
+                    .collect();
+                for part in dependency.split('/') {
+                    match part {
+                        "." => {}
+                        ".." => {
+                            assert!(parts.pop().is_some(), "Module escapes root");
+                        }
+                        _ => parts.push(part),
+                    }
+                }
+                queue.push_back(format!("/{}", parts.join("/")));
+            }
+        }
+    }
+    assert!(seen.contains("/js/project-view.js"));
+    assert!(seen.contains("/js/timeline/input.js"));
+}

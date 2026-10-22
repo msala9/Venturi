@@ -1868,6 +1868,7 @@ async fn assets(request: Request) -> Response {
         "/style/app.css" => asset!("/web/style/app.css", "text/css"),
         "/js/main.js" => asset!("/web/js/main.js", "text/javascript"),
         "/js/compound-navigation.js" => asset!("/web/js/compound-navigation.js", "text/javascript"),
+        "/js/project-view.js" => asset!("/web/js/project-view.js", "text/javascript"),
         "/js/ui.js" => asset!("/web/js/ui.js", "text/javascript"),
         "/js/api.js" => asset!("/web/js/api.js", "text/javascript"),
         "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),

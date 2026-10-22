@@ -3954,3 +3954,33 @@ preservation remains required before expanding the current compound guards.
 All own finite jobs, the temporary Windows tab and tunnel are stopped; the
 primary editor retains five unsaved MoveClips. Ledger totals and the uncertain
 65-70% engineering estimate are unchanged.
+
+
+## 2026-10-22: full-plan native interaction and ordinary-resolution checkpoint
+
+COMPLETION_PLAN.md now controls the full 90-capability scope. Earlier subjective
+percentages and general lossless-compound requirements are superseded. Grouping
+can reset bus/compositing context in the original GUI; ffb5ddf exposes that exact
+native planner explicitly while preserving the separate conservative mix option.
+
+Selected Title/Solid/Filter and key navigation implementation through bbf0fbb
+passed an actual separate Windows montage: distinct titles, selected styling,
+Solid keys, linked HD source audio, Save and 408-frame1280x720 H.264/AAC export,
+download and natural result EOF. Source/synthetic/performance limits are in
+evidence/f3-effects-workflow.json. The original editor retains all five unsaved
+moves. The user-delivered port8811 service still runs df50859.
+
+The next source block ffb5ddf adds native compounds, selected-media retiming,
+ProjectView memory/persistence, pane scrollbars/native wheel modifiers and the
+Normalize unit-boundary correction. Its combined1007-case JavaScript gate found
+one ProjectView variable-shadowing defect affecting10 cases; corrected focused
+cases pass and the997 unchanged results are reused. All471 web Rust cases, fmt,
+Clippy and embedded build pass. Native exact project/PCM grouping oracles and
+view history/cache/CAS/save/reopen regressions are included. Integrated browser
+qualification remains pending; a shared GPU lock refusal deferred that pass
+without affecting foreign workloads. See evidence/f3-native-view-gate.json.
+
+Continuous Program meter state and voiceover handoff remain concrete production
+gaps (AUDIO_RUNTIME_GAPS.md). Native paused-edit/Inspector refresh and physical
+pointer/DPI/performance/device acceptance remain open. No partial row is closed
+merely by these source/component or synthetic output proofs.

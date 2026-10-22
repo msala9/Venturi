@@ -5,15 +5,15 @@
   "javascript_unique": 61,
   "build": {
     "phase": "passed",
-    "updated_unix": 1792692001.922578,
+    "updated_unix": 1792692439.963348,
     "validation": "compact-native-library",
     "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
-    "sha256": "f7d8d6132a203339bbd20c8ee087ed0ad460727f61d4a2d0e6bad4bea35678e8",
+    "sha256": "aa47be1c0dad819f753d1b47e5cdb1f7a4939d6df6d16cdbe3160203d950637f",
     "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
   },
   "source_files": 99,
-  "source_manifest_sha256": "233e069d22d02b4406197ccc06eb4b5192511dccaafb645f39980cb74e3cc800",
-  "log_sha256": "02700603bae322af998aac3e7ee25ffe62e9e8b32c0d8f9c82d71ebbce76c30e",
+  "source_manifest_sha256": "41ca8ab6bc951bb961ffe590da9ef37906aac87295c783b093513c7bc81c0c3a",
+  "log_sha256": "42bcaa5fb29181b40c1fe441ffecbe8facbc11557aea9a4486512140050e5525",
   "reused": [
     "Unchanged Rust/Clippy gate in f5-approved-folders-gate.json",
     "Transfer/CAS/cancellation and actual folder workflow in f5-approved-folders-workflow.json",
@@ -68,5 +68,8 @@
     "done": 46,
     "partial": 44,
     "excluded": 2
-  }
+  },
+  "javascript_gate_source_commit": "cfb69c14edfb86c2f2f3506931635e17f3cfb716",
+  "javascript_gate_log_sha256": "02700603bae322af998aac3e7ee25ffe62e9e8b32c0d8f9c82d71ebbce76c30e",
+  "css_only_correction": "Remove the hidden narrow Inspector border that extended page width by one rounded pixel; JavaScript and Rust sources unchanged"
 }

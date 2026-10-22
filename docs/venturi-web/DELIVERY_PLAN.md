@@ -1,7 +1,8 @@
-# Active delivery plan — usable editing workflow
+# Completed delivery baseline — usable editing workflow
 
-2026-10-22. This is the active objective, explicitly narrowed by the owner.
-It supersedes the full-parity milestone order in IMPLEMENTATION_PLAN.md.
+2026-10-22. This narrowed objective is accepted. The owner has now resumed the
+full implementation plan: [COMPLETION_PLAN.md](COMPLETION_PLAN.md) controls
+remaining work. This file preserves the completed workflow and its boundaries.
 
 ## Outcome
 
@@ -85,5 +86,5 @@ observed blockers rather than silently retaining it.
 The goal is complete only when all three block exit conditions pass. Advanced
 parity remains explicitly deferred rather than relabeled as finished.
 
-The owner updated and resumed the app goal with this narrowed workflow on
-2026-10-22. The app goal and this delivery plan now agree.
+The narrowed app goal was completed on 2026-10-22. A new active goal now pursues
+the full remaining scope through COMPLETION_PLAN.md without losing this baseline.

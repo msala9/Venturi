@@ -2,19 +2,20 @@
 
 ## Active objective — 2026-10-22 owner instruction
 
-Follow [DELIVERY_PLAN.md](DELIVERY_PLAN.md): finish one usable editing, composed
-playback, save/reopen and H.264/AAC export workflow, then hand over an accessible
-verified candidate. This takes precedence over the original milestone order
-below. Full native GUI parity and advanced Color/Audio/Review/library work are
-deferred unless they block that workflow. Preserve the protected main editor.
+The owner accepted the usable workflow and resumed the full plan. Follow
+[COMPLETION_PLAN.md](COMPLETION_PLAN.md) for the active F1–F7 delivery blocks:
+complete the 48 partial capabilities, preserve the 42 already accepted and finish
+M7 release qualification. The two explicitly NOT-PLANNED rows remain excluded.
+[DELIVERY_PLAN.md](DELIVERY_PLAN.md) is the completed regression baseline.
+Preserve the protected editor and any new work in the delivered candidate.
 
 Work in coherent delivery blocks, reuse existing evidence, use focused checks
 during development and one integrated acceptance pass per block. Do not repeat
 full renderer/browser matrices for unrelated edits. Required regression checks
 still apply to the completed code block. All heavy work stays on bounded halo2.
 
-The milestone table below remains the broader backlog, not the active completion
-criterion. Leave upstream `vv-app` unchanged and report delivered behavior,
+The milestone table below defines the full scope; COMPLETION_PLAN.md groups its
+remaining work into coherent blocks. Leave upstream `vv-app` unchanged and report delivered behavior,
 checks, remaining defects and deployment state. No upstream PR or merge.
 
 | ID | Outcome | Dependencies | Proof / exit criterion |

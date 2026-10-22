@@ -1,18 +1,20 @@
 # Test strategy and test IDs
 
-## Active delivery qualification — 2026-10-22
+## Active full-plan qualification — 2026-10-22
 
-[DELIVERY_PLAN.md](DELIVERY_PLAN.md) is the controlling scope: one edited A/V
-project must pass composed playback, save/reopen, native H.264/AAC export and
-candidate handover in the existing Windows browser. Reuse prior evidence for
-unchanged components. Add focused regressions for actual workflow blockers;
+[COMPLETION_PLAN.md](COMPLETION_PLAN.md) controls F1–F7 full-plan completion.
+[DELIVERY_PLAN.md](DELIVERY_PLAN.md) is the accepted workflow baseline. Complete
+the missing production behavior of each block before its integrated acceptance.
+Reuse prior evidence for unchanged components. Add focused regressions for actual defects;
 run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
-The full TS matrix, DPI/device matrix and performance goals below are the
-broader backlog. They do not all gate this delivery. Data integrity, linked
-edit atomicity, Undo/Redo, current preview identity and valid output do gate it.
+The TS matrix, applicable DPI/device checks, performance requirements and M7
+release gates below now belong to the active full scope. Encoded-file timing,
+synthetic recording or tiny fixtures do not prove physical-device behavior or
+ordinary-resolution throughput. Keep unverified gates explicit. Data integrity,
+linked edit atomicity, Undo/Redo, current preview identity and valid output remain required.
 No Windows heavy workloads and no new browsers; use bounded, sequential halo2
 workloads and its shared nonblocking GPU lock. Preserve the dirty main editor.
 

@@ -2,12 +2,19 @@
 
 2026-10-22 — development branch feat/venturi-web.
 
-## Active delivery objective
+## Active completion objective
 
-The owner narrowed the objective on 2026-10-22 to one usable editing → composed
-playback with audio → save/reopen → H.264/AAC export workflow. Follow
-[DELIVERY_PLAN.md](DELIVERY_PLAN.md). Full parity is deferred; report workflow
-blocks and actual deployment state instead of a subjective overall percentage.
+After accepting the usable editing workflow, the owner resumed all remaining
+functions and requested a new goal on 2026-10-22. Follow
+[COMPLETION_PLAN.md](COMPLETION_PLAN.md): F1 editing/Inspector, F2 media/playback/
+export, F3 advanced effects/timeline, F4 Color/Audio/recording, F5 shared library/
+presets, F6 AI Review and F7 integrated release. The baseline is 42 done and 48
+partial in-scope capabilities; none are newly closed by this planning change.
+Begin F1 with missing native multi-selection Inspector semantics and connected
+timeline interaction gaps. Report delivered functions, remaining defects and
+actual deployment state without subjective percentages.
+
+## Accepted usable workflow baseline
 
 Blocks A (editing/save), B (playback/export) and C (accessible handover) are
 accepted in `evidence/delivery-workflow.json`. The actual existing Windows
@@ -31,9 +38,10 @@ The protected main editor remains on 84ef827 with its five unsaved moves intact.
 Qualification uses a small 64×64 three-second A/V edit. Physical Canvas/DPI,
 physical output latency, complex high-resolution throughput and browser playback
 across five-minute windows remain explicitly unqualified. Broader native GUI
-parity remains deferred and its ledger counts below are unchanged.
+parity is the new active objective; these gaps are tracked in COMPLETION_PLAN.md
+and the ledger counts below are unchanged.
 
-## Broader parity ledger — deferred completion assessment
+## Full parity ledger
 
 The ledger contains 90 in-scope capabilities: 42 done, 48 partial and none not
 started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus

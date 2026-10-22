@@ -1,5 +1,21 @@
 # Test strategy and test IDs
 
+## Active delivery qualification — 2026-10-22
+
+[DELIVERY_PLAN.md](DELIVERY_PLAN.md) is the controlling scope: one edited A/V
+project must pass composed playback, save/reopen, native H.264/AAC export and
+candidate handover in the existing Windows browser. Reuse prior evidence for
+unchanged components. Add focused regressions for actual workflow blockers;
+run required regression/build checks once per coherent code block and one
+integrated browser scenario. Repeat checks only after relevant changes/failures.
+Do not build or test documentation-only planning changes.
+
+The full TS matrix, DPI/device matrix and performance goals below are the
+broader backlog. They do not all gate this delivery. Data integrity, linked
+edit atomicity, Undo/Redo, current preview identity and valid output do gate it.
+No Windows heavy workloads and no new browsers; use bounded, sequential halo2
+workloads and its shared nonblocking GPU lock. Preserve the dirty main editor.
+
 ## Existing repo quality gate
 
 Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --workspace` where dependencies/GPU exist. Upstream Rust unit tests belong in `crates/<crate>/src/tests/<source path>.rs`, not inline. See root AGENTS/CLAUDE.md and docs/BUILDING.md. Before adding new test harness for frontend, prove pure JS works with `node --test`; UI interactions need browser-level smoke only when necessary.

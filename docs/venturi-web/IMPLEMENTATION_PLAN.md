@@ -1,6 +1,21 @@
-# Implementation plan — bounded milestones and gates
+# Implementation plan — parity backlog and delivery priority
 
-No milestone starts until the previous one has proof. Each PR should do ONE bounded outcome and leave upstream `vv-app` unchanged. Codex must report changed files, tests run, unrun tests and risks.
+## Active objective — 2026-10-22 owner instruction
+
+Follow [DELIVERY_PLAN.md](DELIVERY_PLAN.md): finish one usable editing, composed
+playback, save/reopen and H.264/AAC export workflow, then hand over an accessible
+verified candidate. This takes precedence over the original milestone order
+below. Full native GUI parity and advanced Color/Audio/Review/library work are
+deferred unless they block that workflow. Preserve the protected main editor.
+
+Work in coherent delivery blocks, reuse existing evidence, use focused checks
+during development and one integrated acceptance pass per block. Do not repeat
+full renderer/browser matrices for unrelated edits. Required regression checks
+still apply to the completed code block. All heavy work stays on bounded halo2.
+
+The milestone table below remains the broader backlog, not the active completion
+criterion. Leave upstream `vv-app` unchanged and report delivered behavior,
+checks, remaining defects and deployment state. No upstream PR or merge.
 
 | ID | Outcome | Dependencies | Proof / exit criterion |
 |---|---|---|---|

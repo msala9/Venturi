@@ -2,15 +2,30 @@
 
 2026-10-22 — development branch feat/venturi-web.
 
-## Current completion assessment
+## Active delivery objective
+
+The owner narrowed the objective on 2026-10-22 to one usable editing → composed
+playback with audio → save/reopen → H.264/AAC export workflow. Follow
+[DELIVERY_PLAN.md](DELIVERY_PLAN.md). Full parity is deferred; report workflow
+blocks and actual deployment state instead of a subjective overall percentage.
+
+Blocks A (editing/save), B (playback/export) and C (accessible handover) are
+pending integrated acceptance on the current candidate. Existing component
+proofs are reused. The staged candidate is commit 8a86e0e; the protected main
+editor remains on 84ef827 with five unsaved moves and is not restarted.
+
+## Broader parity ledger — deferred completion assessment
 
 The ledger contains 90 in-scope capabilities: 42 done, 48 partial and none not
 started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus
 46.7% of capability rows have full acceptance; this is not an estimate of
-implementation effort. Many partial rows already have native adapters and
-working browser controls. Overall engineering progress is estimated at 65–70%,
-with substantial uncertainty in remaining interaction and release qualification.
-No completion date is supported by the current evidence.
+implementation effort or the active workflow's completion. Many partial rows
+already have native adapters and working browser controls. The former 65–70%
+engineering estimate is withdrawn because it had no measured remaining-work
+basis. No full-plan completion date is supported by the current evidence.
+
+Historical increments below retain their original scope and limitations; their
+test counts and earlier percentages are not current progress indicators.
 
 Timeline selection now has a persistent Shift-click anchor shared by Canvas
 and accessible clip buttons. Shift replaces the prior range and precedes Ctrl;

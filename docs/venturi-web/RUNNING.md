@@ -2,7 +2,26 @@
 
 ## Current halo1 working instance
 
-After the owner's 2026-10-22 host change, use **http://127.0.0.1:8816/** in the
+Use **http://127.0.0.1:8817/** in the existing Windows browser. Source `ac0ba1a`,
+binary `vv-web-3af3f2e0872a`, runs as unprivileged `halo` in
+`venturi-web-halo1-library-edit-r2.service`, with projects in
+`/home/halo/VenturiWeb-library-edit-20261023`. The Saved
+`Venturi_Library_Edit.vvproj` includes an ordered Library video/compound drop,
+linked video/audio, an independent child timeline and one InsertClips Undo.
+The real Windows drag, new-clip selection, Undo/Redo, R9700 playback through
+the compound to natural EOF and Save pass. See
+`evidence/f5-library-asset-drop-workflow.json`. F5 and the full goal remain partial.
+
+The same-port hidden SSH tunnel forwards 8817 to halo1. The new runtime has
+the same eight-CPU/4-GiB/no-swap/low-priority/shared-GPU-lock limits and canonical
+NAS arguments as the preserved editors below. It has no automatic restart,
+boot enablement or qualification deadline. Save before deliberately stopping it;
+restart reopens saved project data, not its Undo chain or native import cache.
+No new NAS mount, archive migration or browser installation was required.
+
+### Preserved Color/Audio instance
+
+The earlier Color/Audio delivery remains at **http://127.0.0.1:8816/** in the
 existing Windows browser. Source `63f4919`, binary `vv-web-b80a7d0c3bae`, runs as
 `venturi-web-halo1-color-audio-r2.service` with projects in
 `/home/halo/VenturiWeb-color-audio-20261022`. Open the Saved
@@ -45,7 +64,8 @@ adds one Undo entry without changing the timeline. Native/Web concurrent
 coordination on CIFS now passes the actual component/process gate in
 `evidence/f5-native-web-cifs-catalog-gate.json`. Its private owned fixture covers
 assets, folders, attribute and audio presets without editing canonical catalogs.
-Full desktop GUI and asset drag placement acceptance remain open.
+Full desktop GUI acceptance remains open. Direct Library asset placement is
+implemented and qualified by the newer 8817 delivery above.
 
 Build sources are separately bootstrapped at
 `/home/halo/.cache/venturi-build/source`, with Cargo outputs in the adjacent
@@ -135,7 +155,21 @@ Native assets. Select project media in Media, open Library / Native assets and
 save the selection. Each selected item becomes a separate reusable asset;
 compound assets include their nested timelines and file dependencies. Import
 adds the selected asset to the destination project pool with one Undo. Insert
-the imported pool item into a timeline through the existing media controls.
+the imported pool item through the media controls, or drag directly from the
+Library's compact native rows to the timeline. Shift selects a row range;
+Ctrl toggles rows and focused Ctrl+A selects the visible page. Dragging any
+selected row places the whole selection in panel order, sequentially, using
+whole native media ranges and linked audio streams. A ghost shows the target,
+new lanes or a refusal. Hovering performs no preparation or API call.
+
+Release prepares one batch and commits imports plus placement with one native
+Undo. Locked lanes and overlaps are refused; opt in through Timeline > Allow
+overwrite for timeline drags to replace overlapping material. Escape cancels
+preparation. Selection/session/viewport changes invalidate pending drops, and
+stale replies cannot replace a newer selection. Valid repeated imports reuse
+the session's current imported compound, including its edits; metadata refreshes
+after generation changes. Reopening resets that import cache. Preparation keeps
+existing/completed cache files even when canceled or refused.
 
 The server stores native assets in `<projects-root>/.assets` by default. Override
 with `--assets-root DIRECTORY` to reuse an authorized native library. The root
@@ -147,7 +181,9 @@ and removed, and selected assets can be moved between them. Removing a folder
 keeps its media and promotes its direct contents to its parent.
 
 Preparation runs one copy/probe worker, with one queued job, 64 unique files,
-512 MiB per file, 2 GiB per asset and a 512 MiB disk reserve. Files are copied into
+512 MiB per file, 2 GiB per preparation and a 512 MiB disk reserve. A drag batch
+accepts 1–32 assets within the same file/byte bounds and 16 MiB aggregate metadata.
+Files are copied into
 the library and independently into each importing project; cancellation never
 removes existing or completed shared files. Synchronous native probing has
 its own process with one CPU, 512 MiB address space and a 20-second deadline;
@@ -723,9 +759,9 @@ flattening and arbitrary mixer/compositing preservation remain unavailable.
 These increments have native/API and interaction-state tests; real GUI and
 rendered-equivalence qualification remains pending.
 
-## Updated working delivery
+## Earlier halo2 working delivery
 
-The latest working candidate is **http://127.0.0.1:8814/**, source `3952711`,
+The earlier working candidate is **http://127.0.0.1:8814/**, source `3952711`,
 served by the enabled halo2 user unit `venturi-web-current.service`. It uses
 `/home/marco/VenturiWeb-current-20261022/Venturi_Workspace.vvproj` and immutable
 binary `/home/marco/AI-lab/venturi-web/.runtime/vv-web-3f4de7f40dd4` (SHA256

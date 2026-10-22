@@ -1,6 +1,6 @@
 # Test strategy and test IDs
 
-## Active full-plan qualification — 2026-10-22
+## Active full-plan qualification — 2026-10-23
 
 [COMPLETION_PLAN.md](COMPLETION_PLAN.md) controls F1–F7 full-plan completion.
 [DELIVERY_PLAN.md](DELIVERY_PLAN.md) is the accepted workflow baseline. Complete
@@ -15,8 +15,10 @@ release gates below now belong to the active full scope. Encoded-file timing,
 synthetic recording or tiny fixtures do not prove physical-device behavior or
 ordinary-resolution throughput. Keep unverified gates explicit. Data integrity,
 linked edit atomicity, Undo/Redo, current preview identity and valid output remain required.
-No Windows heavy workloads and no new browsers; use bounded, sequential halo2
-workloads and its shared nonblocking GPU lock. Preserve the dirty main editor.
+No Windows heavy workloads and no new browsers; use bounded, sequential halo1
+workloads and the shared nonblocking GPU lock. The owner moved new work to free
+halo1 because halo2 is shared with H3. Preserve every earlier editor and Undo
+chain. Keep the eight-CPU/4-GiB/no-swap/low-priority resource policy.
 
 ## Existing repo quality gate
 
@@ -109,3 +111,16 @@ tests refusal over newer edits, keep-without-open, unchanged current history,
 normal Save and a clean restart. Missing backing file recovery and focused form
 layout are also exercised. This proves periodic recovery, not durability of edits
 after the last checkpoint or survival of render jobs/Undo history.
+
+Library coverage for TS-001/002/004/005/006/007/009/015 now includes
+`evidence/f5-library-asset-drop-workflow.json`:
+an actual Windows multiasset drag from the canonical CIFS Library inserts video
+then an independent compound in panel order, with linked streams, four selected
+new clips and one native Undo. Undo/Redo restore semantic timelines/media;
+native compound hashes and ID counters are derived/monotonic. Playback crosses
+the imported compound to natural EOF and Save retains the result. Focused checks
+cover exact-rate ghosts, default/new/locked tracks, opt-in overwrite, cycles,
+batch budgets, source revisions/cancellation and edited cached compounds.
+Automatic pool renders must not invalidate completion; genuine mouse/keyboard
+selection must invalidate it. Full native desktop physical acceptance and broad
+offline/large-media lifecycle cases remain open.

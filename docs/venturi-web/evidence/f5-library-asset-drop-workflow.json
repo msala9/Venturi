@@ -1,0 +1,269 @@
+{
+  "date": "2026-10-23",
+  "status": "passed for implemented Library placement increment; F5 remains partial",
+  "host": "halo1",
+  "source_commit": "ac0ba1a5a082e9b55d248b5880114900ccc39708",
+  "base_source": "381478a",
+  "scope": "Ordered native Library multiasset drag-to-timeline with one native Undo, metadata-bound ghost, grouped import and current cached-compound reuse",
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "2872186d02983e99f658ab4cbd28f369dad52856ca004b1e4ab5f76ac53d73fd",
+    "crates/vv-web/src/asset_jobs.rs": "408f70c97cdc6586eab28a88ef3adbe47175326ba5b1ec4ba255c3b5245ccb80",
+    "crates/vv-web/src/asset_store.rs": "d9360a6c269ce0f963af7bcfa0f4e2ef988cd386190d0383c019d2dec42e4151",
+    "crates/vv-web/src/commands.rs": "c795de807c284a67cc30fe33f25799be520bd20d241f88f8d6df702dcf9e4e10",
+    "crates/vv-web/src/host.rs": "7e1589b4c885befd000700eaf6ac9815a2c88485a3fbedf194ead1f0fab877c8",
+    "crates/vv-web/src/tests/api.rs": "c98f95a13ccd0df015c61b1e1c2d72feb2ca4de7ac774e4689131e3bcd83f373",
+    "crates/vv-web/src/tests/asset_jobs.rs": "e32840c6fe90f548f2222b838301ebed265e39a0109475b1e6aebbf159e1ba03",
+    "crates/vv-web/src/tests/asset_store.rs": "5977950ac9184d2cdf1ed65bccb35624da58ff59a1e92d96c4ac4923e13e396d",
+    "crates/vv-web/src/tests/commands.rs": "08ab3ef53e1213a55022c19312d7657c57bc0aff3503021e179bc2f1dc580907",
+    "crates/vv-web/src/tests/host.rs": "37de6218479848f38a5a07005dc5ee1453deab76d72ffaca67b11fe07b9ffce8",
+    "web/index.html": "b78d733111c56f74632cc13c1f2fa3e3c84ba921c09f103739103fe01f7d4988",
+    "web/js/main.js": "446ad66f9bbac1af14e71b81b40a183ecc27a82bc2e383da25a806dc831c6b3b",
+    "web/js/native-assets.js": "75a134ed5d69059c5a3816072a63ac69335571c140c6a338674d5f1564ff7683",
+    "web/js/timeline/draw.js": "842102a98f9ae9a981c0b4142996f6fade32df0d547a99b7219454c7152b9a64",
+    "web/js/timeline/index.js": "bfe8212fe6d0b836954893727763df6aa9a53c5432afd83e50dc0f447c905d9c",
+    "web/js/timeline/input.js": "274a7b8c41a83870e08edf356e75bbd1a51ad4626eb0d97cc9241a1b7fa9b3e1",
+    "web/style/native-browser.css": "d61da8eeb6061a4cd8d2b2190919bedd57b15367cc4df142b92456b153d27fe9",
+    "web/test/native-assets-panel.test.js": "eed318bdd255d668c31ae4190348d03b922129acc17f2cee8c35e5a6ad18a42c",
+    "web/test/native-assets.test.js": "dba59d2c374a636b950959af0460ef32556d21e40c36d6da2f12e58c4bd6564c",
+    "web/js/timeline/asset-drop.js": "fae505b90f2ead0a84852dfde59d469f297de2a2b890b7af82697b58b0245edf",
+    "web/test/timeline-asset-drop.test.js": "a7bafb695fc77881257dc06f5243b6821ad5b571dba8dadcd56c6d78d5f36e7d",
+    "web/js/catalog.js": "929545b8eb0d955c6e452544b640bc4f02b33d70d3d5440df47f13168eb3adb3",
+    "web/test/catalog.test.js": "a66e7ef2bd2d99a208e32ddb314b6c8a4225d1d7e307b16622f5056b5f3fb721"
+  },
+  "delivery": {
+    "url": "http://127.0.0.1:8817/",
+    "unit": "venturi-web-halo1-library-edit-r2.service",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-3af3f2e0872a",
+    "sha256": "3af3f2e0872a9e9d1f7c55f07d4fe29e95cd8496fb388ee5741f8a372ef15da2",
+    "project_root": "/home/halo/VenturiWeb-library-edit-20261023",
+    "project": "Venturi_Library_Edit.vvproj",
+    "unit_observation": "ActiveState=active\nMainPID=105609\nResult=success\nMemoryCurrent=140324864\nMemoryPeak=193667072\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n"
+  },
+  "native_reference": [
+    "vv-app/library_ui.rs::import_dragged_assets",
+    "vv-app/pool_view.rs row selection and ordered ItemsDrag",
+    "vv-app/main.rs media drop and resolve_drop_tracks",
+    "vv-core/edit.rs::insert_media"
+  ],
+  "limits": {
+    "selection": 32,
+    "files": 64,
+    "media_bytes": 2147483648,
+    "single_file_bytes": 536870912,
+    "aggregate_metadata_bytes": 16777216,
+    "cpu_quota": "800%",
+    "memory_max": "4 GiB",
+    "swap_max": 0,
+    "one_heavy_workload": true,
+    "windows": "Existing browser only; no local build/render fleet; no new browser installation"
+  },
+  "gate": {
+    "javascript": {
+      "covered_initial": 141,
+      "initial_pass": 140,
+      "initial_fail": 1,
+      "fixture_remedy": "Audio segment was outside the fixture viewport; move viewport origin without changing expectations",
+      "corrected_file_pass": 7,
+      "final_selection_regression_pass": 42
+    },
+    "rust": {
+      "suite_total": 539,
+      "suite_initial_pass": 537,
+      "suite_initial_fail": 2,
+      "test_remedy": "Compare grouped native Undo oracle and explicitly validate monotonic IDs/generations, retaining full Redo and semantic equality",
+      "affected_rerun_pass": 26,
+      "final_covered": 539,
+      "format": "passed",
+      "clippy_all_targets": "passed"
+    },
+    "final_build": {
+      "phase": "passed",
+      "started_unix": 1792707226.1802511,
+      "updated_unix": 1792707262.461985,
+      "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-3af3f2e0872a",
+      "sha256": "3af3f2e0872a9e9d1f7c55f07d4fe29e95cd8496fb388ee5741f8a372ef15da2",
+      "bytes": 77533520
+    },
+    "logs": {
+      "asset-drop.log": {
+        "bytes": 18258,
+        "sha256": "4bfbf192fd8a635c89842b91ed79560ea9a2ee96ec2626c5661201f0ee678cf3"
+      },
+      "asset-drop-r2.log": {
+        "bytes": 2546,
+        "sha256": "f0bb7bbfde897c900914d4397e57f2bc88c99cd31ed5a6dc228d2b318b12405e"
+      },
+      "asset-drop-r3.log": {
+        "bytes": 68068,
+        "sha256": "78d2b945d09dcbaf08d4dc7a2ed1b820bf8c745071ee0fafa5e4f8d4d039fb43"
+      },
+      "asset-drop-r4.log": {
+        "bytes": 3648,
+        "sha256": "401eec80fab2f1150a237effe8ce0ebdd5501c5810498111cc9f4bf147a1e180"
+      },
+      "asset-drop-selection.log": {
+        "bytes": 4939,
+        "sha256": "eff054043786197e3d5d94409b75da87fed99c73836840c3e1f5fd10c723dc56"
+      }
+    },
+    "reused": "Unchanged native/CIFS interprocess F5 gate; no native production source changed"
+  },
+  "workflow": {
+    "canonical_root": "/mnt/madrock-share/madrock-library",
+    "existing_asset_preserved": true,
+    "new_asset": {
+      "id": "50870a9b-d79c-45a6-85dd-0c5f03ada5d6",
+      "name": "Timeline 1",
+      "purpose": "Reusable native compound retaining assembled video/audio and -3.25 dB child track mix"
+    },
+    "drag": {
+      "physical_windows_tab_drag": true,
+      "panel_order": [
+        "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+        "Timeline 1"
+      ],
+      "start_frame": 144,
+      "length_each": 124,
+      "starts": [
+        144,
+        268
+      ],
+      "selected_clip_ids": [
+        "11",
+        "13",
+        "10",
+        "12"
+      ],
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "undo_redo": {
+      "physical_windows": true,
+      "one_entry": true,
+      "semantic_timelines_and_media_restored": true,
+      "derived_compound_content_hashes_advance_under_native_sync": true,
+      "source_code_same_backend": true
+    },
+    "selection_fix": "Programmatic pool render/search reports no user intent, while click and keyboard invalidate stale completions",
+    "playback": {
+      "start_frame": 236,
+      "endOfTimeline": true,
+      "frame": 391,
+      "play": "\u25b6 Play"
+    },
+    "saved_ui": {
+      "frame": 391,
+      "project": "Venturi_Library_Edit.vvproj",
+      "saved": "Saved",
+      "selectedClips": [
+        "13",
+        "12"
+      ]
+    },
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    },
+    "saved_generation": "3",
+    "source_bytes": [
+      {
+        "name": "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+        "bytes": 657278,
+        "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+      },
+      {
+        "name": "asset-53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b-ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+        "bytes": 657278,
+        "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+      }
+    ],
+    "screenshot": "f5-library-asset-drop-halo1.png"
+  },
+  "preservation": {
+    "protected_8813_8816_complete_sessions_equal": true,
+    "protected_pids": {
+      "venturi-web-halo1-nas.service": "84786",
+      "venturi-web-halo1-color-audio-r2.service": "99965",
+      "ds4-console.service": "58396"
+    },
+    "ds4_observation": "ActiveState=active\nMainPID=58396\n",
+    "archive_items": 34,
+    "no_halo2_actions": true,
+    "artifacts": {
+      "files": {
+        "/home/halo/VenturiWeb-library-edit-20261023/Venturi_Library_Edit.vvproj": {
+          "bytes": 44834,
+          "sha256": "0b5e97f66e11ed968879a42c1a644125405c9bb3688407b94d537304789ab2e2"
+        },
+        "/home/halo/VenturiWeb-color-audio-20261022/Venturi_Color_Audio.vvproj": {
+          "bytes": 13930,
+          "sha256": "7c62ae054ca9867f4e40ab777a76a706f43b70dbd6656bae343107f7a9f61ea2"
+        },
+        "/home/halo/VenturiWeb-halo1-20261022/Venturi_Halo1.vvproj": {
+          "bytes": 13914,
+          "sha256": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2"
+        },
+        "/mnt/madrock-share/madrock-library/assets/0823179a-6985-4e4d-af73-a7ffdf9c3523.json": {
+          "bytes": 860,
+          "sha256": "54bd353d81ed4812d080285e29462824870f836303792052cd770235aba16fe7"
+        },
+        "/mnt/madrock-share/madrock-library/assets/50870a9b-d79c-45a6-85dd-0c5f03ada5d6.json": {
+          "bytes": 2991,
+          "sha256": "956d4e578b3fd9305e67c5b17475722ae89e8608332833b7a84737add4204f8d"
+        }
+      },
+      "logs": {
+        "asset-drop.log": {
+          "bytes": 18258,
+          "sha256": "4bfbf192fd8a635c89842b91ed79560ea9a2ee96ec2626c5661201f0ee678cf3"
+        },
+        "asset-drop-r2.log": {
+          "bytes": 2546,
+          "sha256": "f0bb7bbfde897c900914d4397e57f2bc88c99cd31ed5a6dc228d2b318b12405e"
+        },
+        "asset-drop-r3.log": {
+          "bytes": 68068,
+          "sha256": "78d2b945d09dcbaf08d4dc7a2ed1b820bf8c745071ee0fafa5e4f8d4d039fb43"
+        },
+        "asset-drop-r4.log": {
+          "bytes": 3648,
+          "sha256": "401eec80fab2f1150a237effe8ce0ebdd5501c5810498111cc9f4bf147a1e180"
+        },
+        "asset-drop-selection.log": {
+          "bytes": 4939,
+          "sha256": "eff054043786197e3d5d94409b75da87fed99c73836840c3e1f5fd10c723dc56"
+        }
+      },
+      "qualification_units": {
+        "venturi-halo1-asset-drop-20261022.service": "ActiveState=failed\nMainPID=0\nResult=exit-code\n",
+        "venturi-halo1-asset-drop-r2-20261022.service": "ActiveState=failed\nMainPID=0\nResult=exit-code\n",
+        "venturi-halo1-asset-drop-r3-20261022.service": "ActiveState=failed\nMainPID=0\nResult=exit-code\n",
+        "venturi-halo1-asset-drop-r4-20261022.service": "ActiveState=inactive\nMainPID=0\nResult=success\n",
+        "venturi-halo1-asset-drop-selection-20261023.service": "ActiveState=inactive\nMainPID=0\nResult=success\n",
+        "venturi-web-halo1-library-edit.service": "ActiveState=inactive\nMainPID=0\nResult=success\n"
+      },
+      "mount_reused": true
+    }
+  },
+  "limitations": [
+    "F5 full desktop GUI acceptance and broad offline/large-media lifecycle remain open; functional ledger stays 47 done / 43 partial / 2 excluded",
+    "Physical speaker/microphone acceptance and full F4/F7 release remain open",
+    "Prepared project cache files may persist after canceled/rejected preparation; atomicity covers live Session/history/allocations/cache mapping, not filesystem rollback",
+    "Native per-session import cache resets on reopen; existing independent imported media and compound edits persist in the saved project",
+    "Saved project clone paths and native path/size/mtime fingerprints were relocated together before qualification; protected originals remain unchanged"
+  ]
+}

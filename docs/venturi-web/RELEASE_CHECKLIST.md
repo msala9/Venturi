@@ -1,6 +1,6 @@
 # Release checklist
 
-2026-10-22. Baseline source `ec2ba47`; the full F1-F7 goal remains active.
+2026-10-23. Current working source `ac0ba1a`; the full F1-F7 goal remains active.
 This is the release audit required by IMPLEMENTATION_PLAN.md, not a release-ready
 declaration. The ledger currently records 47 done, 43 partial and two excluded
 capabilities. New unqualified source changes do not inherit acceptance from this
@@ -14,7 +14,7 @@ checkpoint.
 | Media, ordinary-resolution playback and export | Partial | f6-verified-take-workflow.json proves full-HD export and native/API parity; ordinary long-running Source/Program playback and cross-window audio still need full acceptance |
 | Effects and advanced timeline | Partial | f3-effects-workflow.json, nativeview-workflow.json, f3-mask-inspector-workflow.json; outstanding row-specific pointer, font, moving-media and hardware scope remains |
 | Color, audio and voiceover | Partial | f4-native-guides-inline-mixer-workflow.json: scope guides/responsive first slot, native inline peaks, retained EOF draft, one-Undo Apply, Solo/Mute and Save pass; edits during playback and physical recording/device/output remain |
-| Shared library and presets | Partial | halo1-workspace-migration.json, f5-nas-readonly-stage-gate.json and f5-native-web-cifs-catalog-gate.json: actual NAS asset publication/reimport and native/Web catalog CAS/lock/recovery pass; direct Library asset placement remains missing production behavior, and full desktop GUI acceptance remains |
+| Shared library and presets | Partial | f5-native-web-cifs-catalog-gate.json and f5-library-asset-drop-workflow.json: native/Web CIFS coordination and actual ordered multiasset drag, linked placement, one Undo/Redo, selection, compound playback and Save pass; full desktop GUI and broader offline/large-media lifecycle acceptance remain |
 | Atomic take replacement | Qualified | f6-verified-take-workflow.json, including stale shown-B refusal, one Undo, exact save/restart, actual R9700 pixels and full-HD exported-file EOF |
 | A/B comparison | Partial | Existing source clocks, stream selection and long-window evidence; sustained full-resolution and physical audio acceptance remain |
 | Safe moves, linked/locked edits and stale commands | Qualified regression baseline | Existing native command/Host tests and workflow evidence; rerun affected cases after relevant implementation changes |
@@ -26,7 +26,7 @@ checkpoint.
 | Rust/JavaScript regression gate | Affected gates pass; final gate open | f6-verified-take-gate.json and f5-shared-audio-presets-gate.json. These do not substitute for the final workspace fmt/Clippy/tests and relevant browser checks in TEST_PLAN.md |
 | Native desktop regression | Affected native gate passes; final gate open | F5's 45 native cases cover changed catalog/Mixer/Settings/recovery paths; full final native regression and physical UX remain |
 | Two-hour typical editing soak | Not passed | m7-two-hour-backend-soak.json is interrupted; m7-halo2-backend-soak-oom.json is failed. Neither qualifies browser memory, hardware or the current candidate. Run once after functionality stabilizes, with bounded halo1 resources; do not repeat failed co-residence or Windows heavy workloads |
-| Deployment and rollback | Preserved baseline; final delivery pending | Current working port8816 targets halo1 source63f4919 with Saved Color/Audio project; halo1 port8813 Session/project/Undo stay unchanged. Older halo2 editors are preserved, including dirty8790/8811. Final version still needs integrated release acceptance, export and reboot/rollback instructions |
+| Deployment and rollback | Preserved baseline; final delivery pending | Current working port8817 targets halo1 sourceac0ba1a with Saved Library montage; halo1 ports8813/8816 complete Sessions/projects/Undo stay unchanged. Older halo2 editors are preserved, including dirty8790/8811. Final version still needs integrated release acceptance, export and reboot/rollback instructions |
 
 ## Scoped source review
 

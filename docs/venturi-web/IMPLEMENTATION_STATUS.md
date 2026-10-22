@@ -1,11 +1,29 @@
 # Implementation status
 
-2026-10-22 â€” development branch feat/venturi-web.
+2026-10-23 - development branch feat/venturi-web.
 
 ## Active completion objective
 
+The current working delivery is **http://127.0.0.1:8817/** on halo1, source
+`ac0ba1a`, binary `3af3f2e0872a`, in
+`venturi-web-halo1-library-edit-r2.service`. Its independent Saved
+`Venturi_Library_Edit.vvproj` uses the canonical NAS. Direct Library drag now
+places selected native assets in panel order with linked streams and one Undo;
+cached compounds retain edits and their current geometry. Actual Windows drag,
+new-clip selection, Undo/Redo, R9700 playback through the imported child to EOF
+and Save pass. Automatic pool refresh no longer invalidates the completed
+selection. See `evidence/f5-library-asset-drop-workflow.json` and screenshot.
+The remote gate covers 141 initial JS cases plus a 42-case client regression,
+539 Rust cases with 26 affected reruns after test-only corrections, formatting,
+all-target Clippy and build. Unchanged native/CIFS evidence is reused.
+Both earlier halo1 editors keep complete Sessions, project hashes, PIDs and
+Undo histories; ds4 keeps its PID and original native asset. One reusable
+Timeline 1 asset was added to the real NAS. Halo2/H3 was untouched. F5 still
+requires full desktop GUI and broader offline/large-media lifecycle acceptance;
+the ledger remains 47 done / 43 partial / 2 excluded and the full goal is active.
+
 The owner moved new execution to free halo1 on 2026-10-22 because halo2 is
-shared with H3 work. The latest working runtime is **http://127.0.0.1:8816/**,
+shared with H3 work. The preserved Color/Audio runtime is **http://127.0.0.1:8816/**,
 source `63f4919`, binary `b80a7d0c3bae`, in
 `venturi-web-halo1-color-audio-r2.service`. Its independent Saved
 `Venturi_Color_Audio.vvproj` uses the canonical NAS. Native scope guides,
@@ -35,8 +53,8 @@ presets, stale writes, locks and durable recovery in an owned fixture on the
 authoritative mount. A journal writer-close timestamp bug found by that gate
 is fixed with read-only reopen, complete-byte and strong identity checks.
 The 98 affected Web cases, formatting, all-target Clippy and build pass.
-Library asset drag-to-timeline remains missing Web production behavior;
-manual Add to project and cached repeated imports already exist. Physical
+Library asset drag-to-timeline is implemented and qualified in the newer
+8817 delivery above; manual Add to project and cached imports remain. Physical
 desktop GUI and the rest of F5 still require acceptance. Existing
 halo2 editors and dirty histories remain preserved. This migration does not
 advance the functional ledger or imply full F1-F7 completion.

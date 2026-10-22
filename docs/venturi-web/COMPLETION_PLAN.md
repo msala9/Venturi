@@ -10,19 +10,20 @@ and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
 
 The owner moved new work to free halo1 on 2026-10-22 because halo2 is shared
 with an H3 agent. The current working runtime serves Windows
-**http://127.0.0.1:8816/** through the same-port SSH tunnel to halo1.
-Source `63f4919` runs as unprivileged `halo` in
-`venturi-web-halo1-color-audio-r2.service`, using
-`/home/halo/VenturiWeb-color-audio-20261022` and the separate Saved project
-`Venturi_Color_Audio.vvproj`. It includes the native scope guides, inline Mixer
-meters/Solo/Mute, retained numeric drafts and CIFS catalog staging fix described
-below. The earlier halo1 editor on **8813**, source `fd9bde4`, remains running
+**http://127.0.0.1:8817/** through the same-port SSH tunnel to halo1.
+Source `ac0ba1a` runs as unprivileged `halo` in
+`venturi-web-halo1-library-edit-r2.service`, using
+`/home/halo/VenturiWeb-library-edit-20261023` and the separate Saved project
+`Venturi_Library_Edit.vvproj`. It adds ordered multiasset Library placement with
+one native Undo to the existing Color/Audio and CIFS fixes. The earlier 8816
+Color/Audio editor (source `63f4919`) retains its complete Session, Saved project
+and Undo chain. The earlier halo1 editor on **8813**, source `fd9bde4`, remains running
 with its complete Session, ImportMedia Undo entry and project bytes unchanged.
-Both use the existing CIFS mount
+All three use the existing CIFS mount
 `/mnt/madrock-share/madrock-library` for native assets and its `presets/`
 subdirectory for presets, and the existing local ds4 API on 8787 for archive
 media. The existing halo2 editors below are preserved historical deliveries;
-ports 8813/8816 on Windows target halo1, not the stopped halo2 qualifications.
+ports 8813/8816/8817 on Windows target halo1, not the stopped halo2 qualifications.
 Use halo1 for subsequent bounded build/render/qualification work. Do not
 start another NAS mount or install browsers on either server.
 
@@ -37,7 +38,7 @@ that asset creates an independent exact-byte project copy with one Undo entry,
 preserves the timeline and saves. See `evidence/halo1-workspace-migration.json`
 and `evidence/f5-nas-readonly-stage-gate.json`. Native/Web interprocess safety
 on CIFS now passes the real native component/Web process gate below. The full
-F5 GUI and placement acceptance remains open.
+F5 desktop GUI acceptance remains open; direct Web placement now passes below.
 
 Complete all remaining in-scope capabilities against the original native GUI,
 the UX specification and M7 release criteria. FUNCTIONAL_PARITY.csv
@@ -320,11 +321,35 @@ and reopens read-only, verifies the same inode/length and all bytes, then pins
 the strong identity. Replacement, symlink and recovery checks remain intact.
 The focused 98 Web asset cases, formatting, all-target Clippy and embedded
 build pass; both real interprocess tests pass on CIFS. This qualifies filesystem
-coordination, not the complete F5 capability. Asset drag from Library directly
-to the timeline remains missing Web production behavior; manual Add to project
-and cached repeated imports already exist. Implement native placement and its
-context guards before calling that gap a qualification-only item. Physical
-desktop GUI acceptance and the remaining release requirements also stay open.
+coordination, not the complete F5 capability.
+
+Source `ac0ba1a` implements direct multiasset Library placement. Compact rows
+retain Shift ranges, Ctrl toggles and owned Ctrl+A. A local ghost follows native
+ordered whole-media placement, rate conversion, track resolution and linked
+streams. One bounded batch prepares files; final actor preflight checks all
+revisions, cancellation, locks, overlaps, cycles and copied-file witnesses before
+native grouped import/insertion. The single Undo preserves native monotonic IDs.
+Valid cached compounds retain their project edits and current duration/roles;
+page metadata carries epoch/generation and refreshes after edits. Existing Web
+file/byte budgets remain, with 32 roots and 16 MiB aggregate metadata per batch.
+
+The actual Windows drag from the canonical NAS places a video and compound at
+frames 144 and 268, creates four linked clips and one independent child timeline,
+and records one InsertClips Undo. Undo/Redo restore semantic timelines/media;
+derived compound hashes advance under native synchronization. The final client
+retains all four newly inserted clip selections: automatic pool refresh no longer
+counts as newer user intent. Program playback crosses into the imported compound
+from frame 236 and reaches natural EOF at 391; Save retains generation 3. See
+`evidence/f5-library-asset-drop-workflow.json` and its Windows screenshot.
+The gate covers 141 initial JavaScript cases and a 42-case client regression;
+539 Rust cases are covered, with 26 affected reruns after test-only corrections,
+plus formatting, all-target Clippy and the embedded build. The unchanged
+native/CIFS interprocess proof is reused. No build/render fleet ran on Windows.
+Both earlier halo1 Sessions, project hashes, PIDs and Undo histories remain
+unchanged, as does ds4's PID. One useful reusable Timeline 1 asset was added to
+the real Library; the original asset is unchanged. Physical desktop GUI and
+broader offline/large-media lifecycle acceptance remain open. F5 stays partial;
+the ledger remains 47 done / 43 partial / 2 excluded.
 
 ### F6 — AI Review
 

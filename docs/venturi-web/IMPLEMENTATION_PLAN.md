@@ -4,7 +4,7 @@
 
 The owner accepted the usable workflow and resumed the full plan. Follow
 [COMPLETION_PLAN.md](COMPLETION_PLAN.md) for the active F1–F7 delivery blocks:
-complete the 48 partial capabilities, preserve the 42 already accepted and finish
+complete the 43 remaining partial capabilities, preserve the 47 already accepted and finish
 M7 release qualification. The two explicitly NOT-PLANNED rows remain excluded.
 [DELIVERY_PLAN.md](DELIVERY_PLAN.md) is the completed regression baseline.
 Preserve the protected editor and any new work in the delivered candidate.
@@ -12,7 +12,11 @@ Preserve the protected editor and any new work in the delivered candidate.
 Work in coherent delivery blocks, reuse existing evidence, use focused checks
 during development and one integrated acceptance pass per block. Do not repeat
 full renderer/browser matrices for unrelated edits. Required regression checks
-still apply to the completed code block. All heavy work stays on bounded halo2.
+still apply to the completed code block. The owner moved new work to free halo1
+because halo2 is shared with an H3 agent. Heavy work runs only on bounded halo1,
+one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
+priority. Use the existing Windows browser. Preserve all earlier halo2 and
+halo1 editors, their projects and Undo chains.
 
 The milestone table below defines the full scope; COMPLETION_PLAN.md groups its
 remaining work into coherent blocks. Leave upstream `vv-app` unchanged and report delivered behavior,

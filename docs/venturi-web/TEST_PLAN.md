@@ -20,7 +20,22 @@ workloads and the shared nonblocking GPU lock. The owner moved new work to free
 halo1 because halo2 is shared with H3. Preserve every earlier editor and Undo
 chain. Keep the eight-CPU/4-GiB/no-swap/low-priority resource policy.
 
-## Native curve viewport checkpoint — 2026-10-23
+## Dedicated Curve window checkpoint — 2026-10-23
+
+`evidence/f1-floating-curves-workflow.json` covers109 focused JS cases,543 Web
+Rust cases, formatting, all-target Clippy and build on bounded halo1. A final
+109-case client rerun/build includes a browser-found CSS expander correction.
+The one existing Windows tab exercises pointer/keyboard move/resize, local
+numeric draft retention and close cancellation, layout after actual reload,
+header mixed Delete/Undo with all timeline clips retained, numeric Undo/Redo/Save,
+native ruler seek and R9700 Program EOF while the nonmodal window remains open.
+Horizontal wheel pan and plain wheel zoom pass. Physical modifier-wheel remains
+unverified because the browser input API cannot hold a modifier during a wheel
+event; source/native-axis modifier regression cases pass. The dedicated window
+gap is closed; global DPI/representative dense timeline and other M7 acceptance
+remain open. Native/catalog/export/persistence matrices are unchanged and reused.
+
+## Historical native curve viewport checkpoint — 2026-10-23
 
 `evidence/f1-native-curve-viewport-workflow.json` covers95 focused JS cases,
 543 vv-web cases with15 affected reruns after a test-only endpoint correction,

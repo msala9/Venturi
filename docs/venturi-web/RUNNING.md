@@ -2,6 +2,29 @@
 
 ## Current halo1 working instance
 
+Use **http://127.0.0.1:8819/** in the existing Windows browser. Source `4e983c2`,
+binary `vv-web-16e283f83538`, runs as unprivileged `halo` in
+`venturi-web-halo1-curve-window-r2.service`, with projects in
+`/home/halo/VenturiWeb-curve-window-20261023`. Open the Saved
+`Venturi_Curve_Window.vvproj`, select the V1 Timeline 1 2 compound, then Curves.
+The nonmodal window moves/resizes with its header/grip; arrows and Shift+arrows
+provide keyboard alternatives. Home restores centered geometry. Position and
+size persist in the browser; ordinary close discards local key-value drafts.
+Key values, View controls and mixed key selection stay in collapsed sections.
+Ctrl+S and Ctrl+Z/Shift+Ctrl+Z work from the window; Delete with selected keys
+targets those keys, while text input keeps its normal editing behavior.
+
+The same-port hidden tunnel forwards8819 to halo1. The runtime uses the canonical
+NAS/ds4 arguments, eight-CPU/4-GiB/no-swap/low-priority limits and nonblocking
+shared GPU lock. It has no automatic restart, boot enablement or qualification
+deadline. Save before deliberately stopping it; saved project data persists,
+while live Undo requires the running server. All prior ports8813/8816/8817/8818
+remain running unchanged. See `evidence/f1-floating-curves-workflow.json` for
+the real Windows lifecycle/edit/Undo/Save/playback proof. Physical modifier-wheel
+and the remaining full-plan/release gates stay explicit.
+
+### Preserved native sampling instance
+
 Use **http://127.0.0.1:8818/** in the existing Windows browser. Source `6a1f020`,
 binary `vv-web-87ef35912694`, runs as unprivileged `halo` in
 `venturi-web-halo1-native-curves.service`, with projects in
@@ -18,7 +41,7 @@ nonblocking shared GPU lock. It has no automatic restart, boot enablement or
 qualification deadline. Save before deliberately stopping it; restart retains
 saved project data, not the live Undo chain. Earlier ports8813/8816/8817 remain
 running and unchanged. No Windows build/render or Linux browser is required.
-The dedicated movable/floating Curves UI and remaining full-plan gates are open.
+This earlier instance retains the inline graph; the current8819 delivery adds the dedicated window. Full-plan gates remain open.
 
 ### Preserved Library instance
 

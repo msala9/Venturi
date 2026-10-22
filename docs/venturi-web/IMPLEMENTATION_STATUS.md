@@ -4,7 +4,37 @@
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8818/**, source `6a1f020`,
+The current halo1 delivery is **http://127.0.0.1:8819/**, source `4e983c2`,
+binary `16e283f83538`, in `venturi-web-halo1-curve-window-r2.service`.
+Its independent Saved `Venturi_Curve_Window.vvproj` retains the animated Library
+montage and changes the final Opacity key from30 to35. Curves now opens a single
+nonmodal movable/resizable window without switching the Edit workspace. The
+170px scalar graph and simultaneous animated lanes share native selection and
+source clock; numeric, view and help controls are folded. The Inspector no
+longer contains duplicate key editors. Paging follows the window, omits a
+single-page pager and recovers stale pages independently of window visibility.
+
+The bounded halo1 gate passes109 JavaScript and543 vv-web cases, formatting,
+all-target Clippy and build. A final109-case client rerun and embedded build
+cover the browser-found expander CSS correction and initial animated-row choice.
+Actual Windows qualification covers pointer/keyboard move/resize, numeric draft
+retention and close cancellation, geometry restored after browser reload,
+three mixed keys deleted from the header with one Undo and all clips retained,
+exact curve restoration, numeric Undo/Redo/Save, R9700 Program EOF with the
+window open and native ruler source47 -> timeline315. Actual horizontal wheel
+pan and plain wheel zoom pass. See `evidence/f1-floating-curves-workflow.json`
+and screenshot. The four prior halo1 editors, project hashes, PIDs and live
+Undo chains are preserved, along with ds4 and both NAS assets; halo2 is untouched.
+
+The dedicated curve-window production gap is closed. Physical modifier-wheel
+remains unverified: the current browser input API cannot hold a modifier across
+wheel input; exact modifier/native-axis regressions pass. Keep that named
+curve acceptance item explicit, alongside global DPI/dense-editing/M7 checks.
+The functional ledger remains47 done /43 partial /2 excluded; full F1-F7 is active.
+
+### Preserved native sampling delivery
+
+The preserved native sampling delivery is **http://127.0.0.1:8818/**, source `6a1f020`,
 binary `87ef35912694`, in `venturi-web-halo1-native-curves.service`.
 Its independent Saved `Venturi_Native_Curves.vvproj` adds Opacity/Position X
 animation to the Library montage. The graph reads fractional visible-range

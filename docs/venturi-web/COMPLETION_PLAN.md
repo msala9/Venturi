@@ -14,32 +14,33 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8818/**, source `6a1f020`,
-binary `87ef35912694`, in `venturi-web-halo1-native-curves.service`.
-Its independent Saved `Venturi_Native_Curves.vvproj` adds Opacity/Position X
-animation to the Library montage. The graph reads fractional visible-range
-samples from Rust; selected keys expose both adjacent segments, including the
-incoming segment of the last key. Tangent edits preserve mixed parameter picks
-and target the segment-start interpolation with one native Undo. Typed rows
-clear the scalar plot while retaining shared lane editing and navigation.
-Accepted samples and pointerdown geometry survive selection/drafts, avoiding
-Bezier overshoot value jumps. Compact viewport labels retain accessible names.
+The current halo1 delivery is **http://127.0.0.1:8819/**, source `4e983c2`,
+binary `16e283f83538`, in `venturi-web-halo1-curve-window-r2.service`.
+Its independent Saved `Venturi_Curve_Window.vvproj` retains the animated Library
+montage and changes the final Opacity key from30 to35. Curves now opens a single
+nonmodal movable/resizable window without switching the Edit workspace. The
+170px scalar graph and simultaneous animated lanes share native selection and
+source clock; numeric, view and help controls are folded. The Inspector no
+longer contains duplicate key editors. Paging follows the window, omits a
+single-page pager and recovers stale pages independently of window visibility.
 
-The bounded halo1 gate passes 95 JavaScript cases and covers all 543 vv-web
-cases: 542 passed initially; 15 affected curve cases pass after correcting the
-new endpoint oracle to native exact endpoint clamping. Formatting, all-target
-Clippy and build pass. Actual Windows editing creates five keys on two animated
-parameters, changes the incoming tangent of source key120, retains three mixed
-picks, restores exact curves with one Undo/Redo, zooms/pans the shared axis,
-saves and plays the compound from frame315 to natural EOF391. Three readonly
-viewport reads preserve the complete Session. See
-`evidence/f1-native-curve-viewport-workflow.json` and its screenshot.
+The bounded halo1 gate passes109 JavaScript and543 vv-web cases, formatting,
+all-target Clippy and build. A final109-case client rerun and embedded build
+cover the browser-found expander CSS correction and initial animated-row choice.
+Actual Windows qualification covers pointer/keyboard move/resize, numeric draft
+retention and close cancellation, geometry restored after browser reload,
+three mixed keys deleted from the header with one Undo and all clips retained,
+exact curve restoration, numeric Undo/Redo/Save, R9700 Program EOF with the
+window open and native ruler source47 -> timeline315. Actual horizontal wheel
+pan and plain wheel zoom pass. See `evidence/f1-floating-curves-workflow.json`
+and screenshot. The four prior halo1 editors, project hashes, PIDs and live
+Undo chains are preserved, along with ds4 and both NAS assets; halo2 is untouched.
 
-The protected halo1 ports8813/8816/8817 retain complete Sessions, project hashes,
-PIDs and Undo chains; ds4 and both canonical native assets remain unchanged.
-Halo2/H3 was untouched. The dedicated movable/floating Curves panel, physical
-modifier-wheel/DPI and representative dense editing acceptance remain open.
-The ledger stays **47 done / 43 partial / 2 excluded**; full F1-F7/M7 is active.
+The dedicated curve-window production gap is closed. Physical modifier-wheel
+remains unverified: the current browser input API cannot hold a modifier across
+wheel input; exact modifier/native-axis regressions pass. Keep that named
+curve acceptance item explicit, alongside global DPI/dense-editing/M7 checks.
+The functional ledger remains47 done /43 partial /2 excluded; full F1-F7 is active.
 
 R9700 Vulkan discovery, real archived-video import, Source preparation,
 timeline insertion, composed preview and project Save pass in the existing
@@ -179,15 +180,18 @@ Physical modifier/DPI and dense 500-clip acceptance remain open. The finite 8813
 qualification instance is stopped Saved. Stable 8812 still runs `f3dcf1c`; none of
 the three live editors was upgraded/reloaded or had client drafts discarded.
 
-The 2026-10-23 native curve block is delivered as `6a1f020` on halo1: see
-`evidence/f1-native-curve-viewport-workflow.json`. Simultaneous animated parameter
-lanes and shared scalar/typed selection already exist; native has one selected
-scalar graph, not simultaneous overlaid scalar graphs. Visible native sampling,
-incoming/outgoing tangent ownership and typed-row graph clearing now pass the
-bounded gate and real Windows tangent/Undo/Redo/Save/playback workflow. Finish
-the dedicated movable/floating curve panel as a coherent UX increment, then the
-remaining modifier/DPI/dense editing acceptance; do not repeat unchanged native
-catalog or export matrices for this Web-only graph change. F1 remains partial.
+The native curve viewport and dedicated floating window are delivered as
+`6a1f020` / `4e983c2` on halo1: see `evidence/f1-native-curve-viewport-workflow.json`
+and `evidence/f1-floating-curves-workflow.json`. Native has one chosen scalar
+graph plus all animated lanes; no simultaneous scalar overlay is missing.
+Visible native sampling, adjacent tangent ownership, typed-row graph clearing,
+shared selection and the complete nonmodal window lifecycle now pass. Actual
+horizontal pan/plain wheel zoom pass. Keep physical modifier-wheel explicit
+because the current browser input API cannot send a held modifier with wheel;
+source/native-axis modifier regressions pass. Global DPI, modifier timeline
+gestures and representative500-clip acceptance remain F1/M7 work. Avoid repeating
+unchanged native catalog/render/export matrices for these Web-only key editor
+changes. Continue remaining functional F2-F7 blocks while preserving this baseline.
 
 ### F2 — media, playback and export
 

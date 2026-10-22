@@ -1,0 +1,278 @@
+{
+  "date": "2026-10-23",
+  "status": "passed for dedicated nonmodal native Curves UI; full F1-F7 remains active",
+  "host": "halo1",
+  "source_commit": "4e983c28d3683192314c76957fa4b4549118c224",
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "a7342934010e573ffd02c0af1a1830368a22bc67419eeb515ae0f92b904ad7e2",
+    "crates/vv-web/src/tests/api.rs": "35e62b47d7245a137d48ef9889ccac1c7904322331c682102ac0bad6836a0414",
+    "web/js/curves.js": "c32e8ada58e0a35c493b840102235119615e4605532a8829b66dd17f1269ccd0",
+    "web/js/inspector.js": "c2300a5235449ee7d2faf721c887daf36606ab418f2fb64b57cc53a446f49669",
+    "web/js/keyframe-navigation.js": "439158f1ba045f7ba8eed78792a52b2c0e98a9bfb0494c9de75ba0ac2f6ca76c",
+    "web/js/keyselection.js": "c4e7e02a7778d7ff3e66862642cec947d214240108d1afb8708c62ad47b64b4f",
+    "web/js/main.js": "35c996025433b6137dd4851326002dcd7cc55edfca83b1b5ae61539066b4a794",
+    "web/style/native-inspector.css": "a4fa2d2a10c71060013ae0f4133e3bd48d1d0ac6f68417a44b09568f241838e4",
+    "web/test/curves.test.js": "9ad240d2410b79cbc2ca16063ba120284044567f9ec078eb1e47ac07169eec84",
+    "web/test/inspector-selection.test.js": "91dfd372d83514cda175d5ea1cd90b72e5f72f1bebe9323fd940c75ad49f1e79",
+    "web/test/inspector.test.js": "1ef9d9a2630a4c30d436316619b5e1cd338972f2371453a704febfc9d67c7257",
+    "web/js/curve-window.js": "9a883489d87001c68ed29dd183ec33c9bbe7889c9376fea1fe5e5470db22a5f2",
+    "web/test/curve-window.test.js": "6de8a5dcd33e3f025ca3156c4422bf48af5c7be5c3e52a79298d944f3c83d104"
+  },
+  "scope": "Dedicated movable/resizable native key editor with shared scalar/typed/mixed selection, paging and keyboard ownership",
+  "native_reference": [
+    "vv-app/src/keyframe_editor.rs::show_keyframe_editor (720x340 default and170px graph)",
+    "vv-app/src/keyframe_editor.rs::owns_delete and remove_selected",
+    "vv-app/src/app_menu.rs Delete ownership",
+    "docs/venturi-web/UX_SPEC.md Inspector and curves"
+  ],
+  "implementation": {
+    "window": "Nonmodal single region, same authoritative Inspector detail and key selection; no new native commands",
+    "geometry": "720x440 initial browser window;170px graph; bounded pointer/keyboard moves/resizes persisted under a scoped browser layout key",
+    "drafts": "Local rectangle drafts cancel on Escape/blur/capture loss; geometry changes never recreate key editors",
+    "lifecycle": "Dispose owned curves/reader/rulers/lanes/shared-key handler before either root is replaced; close removes key UI; late detail replies require current sequence and native identity",
+    "paging": "Pager shares key editor root, stays usable readonly and is omitted for one page; automatic stale-page recovery remains independent of window visibility",
+    "keyboard": "Header/button Delete removes current mixed keys once; text/form/modals retain input, existing canvas handlers do not double dispatch, CtrlS/Z work; empty selection retains native timeline fallback",
+    "layout": "Animated scalar row opens initially; one main scalar graph plus native shared animated lanes, Key values/View controls/help folded; Inspector has no duplicate key editor"
+  },
+  "gate": {
+    "javascript": {
+      "passed": 109,
+      "final_affected_rerun": 109,
+      "new_cases": 10
+    },
+    "rust": {
+      "passed": 543
+    },
+    "format": "passed",
+    "clippy_all_targets": "passed",
+    "build": {
+      "phase": "passed",
+      "started_unix": 1792710552.4386122,
+      "updated_unix": 1792710589.6083066,
+      "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-16e283f83538",
+      "sha256": "16e283f83538c5430bbcc54f54cd62950a3923b5650e35cdde812141a74afe41",
+      "bytes": 77647176
+    },
+    "logs": {
+      "curve-window.log": {
+        "bytes": 72852,
+        "sha256": "66fa0e7e17a86fc90f598f1440c35f624b19690efe46a3863f458cf3468abbea"
+      },
+      "curve-window-r2.log": {
+        "bytes": 12848,
+        "sha256": "6e96e30c0ef63fa9d307077f9d481eee310dd13408254106d283697b4ba86856"
+      }
+    },
+    "qualification_units": {
+      "venturi-halo1-curve-window-20261023.service": "ActiveState=inactive\nMainPID=0\nResult=success\n",
+      "venturi-halo1-curve-window-r2-20261023.service": "ActiveState=inactive\nMainPID=0\nResult=success\n",
+      "venturi-web-halo1-curve-window.service": "ActiveState=inactive\nMainPID=0\nResult=success\n"
+    },
+    "browser_found_fix": "Scope hidden summary to the scalar graph only, preserving typed/shared editor expanders; omit single-page pager and choose first animated row",
+    "reused": "Unchanged native/CIFS, render/export and persistence matrices; no new native production logic"
+  },
+  "delivery": {
+    "url": "http://127.0.0.1:8819/",
+    "unit": "venturi-web-halo1-curve-window-r2.service",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-16e283f83538",
+    "sha256": "16e283f83538c5430bbcc54f54cd62950a3923b5650e35cdde812141a74afe41",
+    "project_root": "/home/halo/VenturiWeb-curve-window-20261023",
+    "project": "Venturi_Curve_Window.vvproj",
+    "project_file": {
+      "bytes": 45703,
+      "sha256": "7353500237ac3d1432d62dbacaf1cc8909afeafed01b2a91685918160b590518"
+    },
+    "session": {
+      "generation": "5",
+      "unsaved": false,
+      "history": {
+        "labels": [
+          "SetKeyframe"
+        ],
+        "position": 1
+      }
+    },
+    "unit_observation": "ActiveState=active\nMainPID=114229\nResult=success\nMemoryCurrent=122527744\nMemoryPeak=178900992\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n"
+  },
+  "workflow": {
+    "existing_windows_browser": true,
+    "no_selection_placeholder": true,
+    "project_loaded_while_window_open": true,
+    "compound_clip_id": "13",
+    "initial_animated_target": "PositionX",
+    "actual_pointer_move_resize": true,
+    "actual_keyboard_move_resize": true,
+    "playhead_unchanged_by_layout": true,
+    "layout_restored_after_actual_reload": true,
+    "local_numeric_draft": {
+      "value": 42,
+      "retained_on_move_resize": true,
+      "discarded_on_close": true,
+      "native_value_after_reopen": 30,
+      "no_command_generation": 0
+    },
+    "mixed_header_delete": {
+      "picks": [
+        {
+          "param": "PositionX",
+          "frame": 0
+        },
+        {
+          "param": "Opacity",
+          "frame": 60
+        },
+        {
+          "param": "Opacity",
+          "frame": 120
+        }
+      ],
+      "one_native_undo": true,
+      "all_timeline_clips_retained": true,
+      "exact_curves_restored": true
+    },
+    "numeric_edit": {
+      "param": "Opacity",
+      "source_frame": 120,
+      "before": 30,
+      "after": 35,
+      "undo_redo_from_window_header": true,
+      "save": true
+    },
+    "actual_program": {
+      "start_frame": 315,
+      "natural_eof_frame": 391,
+      "windowRemainedOpen": true
+    },
+    "native_ruler_seek": {
+      "source_frame": 47,
+      "timeline_frame": 315
+    },
+    "final_ui": {
+      "initial": {
+        "height": 440,
+        "width": 720,
+        "x": 280,
+        "y": 140
+      },
+      "persistedLayout": {
+        "height": 420,
+        "width": 600,
+        "x": 668,
+        "y": 292
+      },
+      "finalLayout": {
+        "height": 420,
+        "width": 600,
+        "x": 668,
+        "y": 292
+      },
+      "workspace": "Edit",
+      "frame": 315,
+      "viewport": "View source 0\u2013124 \u00b7 values 14.00\u201386.00 \u00b7 1 selected keys",
+      "windowEditors": 1,
+      "inlineEditors": 0,
+      "errors": [],
+      "draftRetainedDuringMoveResize": "42",
+      "discardedAfterClose": "30",
+      "editedSavedValue": "35",
+      "playback": {
+        "start_frame": 315,
+        "natural_eof_frame": 391,
+        "windowRemainedOpen": true
+      },
+      "rulerSeek": {
+        "source_frame": 47,
+        "timeline_frame": 315
+      }
+    },
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    },
+    "screenshot": "f1-floating-curves-halo1.png",
+    "screenshot_sha256": "130e700fdcc3903a3d26740d29d2a0cb3a5d5d600bfbaefba20cc65038c9e008",
+    "physical_wheel": {
+      "beforePan": "View source 31\u201393 \u00b7 values 40.80\u201383.56 \u00b7 1 selected keys",
+      "afterPan": "View source 50\u2013112 \u00b7 values 33.26\u201384.25 \u00b7 1 selected keys",
+      "afterPlainWheel": "View source 61\u2013107 \u00b7 values 40.80\u201383.56 \u00b7 1 selected keys \u00b7 reading native viewport",
+      "physicalHorizontalPan": true,
+      "physicalPlainWheelZoom": true,
+      "modifierWheel": "Not available through the current browser input API; exact modifier event/native axis regressions pass"
+    }
+  },
+  "preservation": {
+    "complete_sessions_equal": true,
+    "protected_ports": [
+      8813,
+      8816,
+      8817,
+      8818
+    ],
+    "protected_pids": {
+      "venturi-web-halo1-nas.service": "84786",
+      "venturi-web-halo1-color-audio-r2.service": "99965",
+      "venturi-web-halo1-library-edit-r2.service": "105609",
+      "venturi-web-halo1-native-curves.service": "109843",
+      "ds4-console.service": "58396"
+    },
+    "files": {
+      "/home/halo/VenturiWeb-curve-window-20261023/Venturi_Curve_Window.vvproj": {
+        "bytes": 45703,
+        "sha256": "7353500237ac3d1432d62dbacaf1cc8909afeafed01b2a91685918160b590518"
+      },
+      "/home/halo/VenturiWeb-native-curves-20261023/Venturi_Native_Curves.vvproj": {
+        "bytes": 45704,
+        "sha256": "84d8d4248c848ae6307cd3480af62afb3209ef16513accad2b6dc957f4e86dab"
+      },
+      "/home/halo/VenturiWeb-library-edit-20261023/Venturi_Library_Edit.vvproj": {
+        "bytes": 44834,
+        "sha256": "0b5e97f66e11ed968879a42c1a644125405c9bb3688407b94d537304789ab2e2"
+      },
+      "/home/halo/VenturiWeb-color-audio-20261022/Venturi_Color_Audio.vvproj": {
+        "bytes": 13930,
+        "sha256": "7c62ae054ca9867f4e40ab777a76a706f43b70dbd6656bae343107f7a9f61ea2"
+      },
+      "/home/halo/VenturiWeb-halo1-20261022/Venturi_Halo1.vvproj": {
+        "bytes": 13914,
+        "sha256": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2"
+      },
+      "/mnt/madrock-share/madrock-library/assets/0823179a-6985-4e4d-af73-a7ffdf9c3523.json": {
+        "bytes": 860,
+        "sha256": "54bd353d81ed4812d080285e29462824870f836303792052cd770235aba16fe7"
+      },
+      "/mnt/madrock-share/madrock-library/assets/50870a9b-d79c-45a6-85dd-0c5f03ada5d6.json": {
+        "bytes": 2991,
+        "sha256": "956d4e578b3fd9305e67c5b17475722ae89e8608332833b7a84737add4204f8d"
+      }
+    },
+    "canonical_nas_reused": true,
+    "archive_items": 34,
+    "no_halo2_actions": true,
+    "no_windows_build_render_or_linux_browser": true
+  },
+  "limits": {
+    "cpu_quota": "800%",
+    "memory_max": "4 GiB",
+    "swap_max": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "one_heavy_workload": true,
+    "nonblocking_gpu_lock": "/tmp/HALO_BENCHMARK.lock"
+  },
+  "limitations": [
+    "Physical modifier-wheel remains unverified because the current browser input API does not hold modifiers across wheel input; native modifier/axis regression cases pass. Actual horizontal pan and plain wheel zoom pass. Global DPI and representative dense timeline acceptance remain F1/M7 gates.",
+    "No new export/restart matrix for unchanged native rendering and persistence; browser reload retains the live server Undo chain, not a claim of Undo persistence across server restart",
+    "Full F1-F7 and release criteria remain open"
+  ]
+}

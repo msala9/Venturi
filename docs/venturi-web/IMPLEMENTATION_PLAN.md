@@ -40,14 +40,17 @@ checks, remaining defects and deployment state. No upstream PR or merge.
 
 ## Current F1 delivery checkpoint — 2026-10-23
 
-Source `6a1f020` runs on halo1 port8818 with native fractional curve viewport
-reads, adjacent selected-key tangent editing and typed-row graph activation.
-The integrated Windows compound animation/tangent/Undo/Redo/Save/playback passes;
-see `evidence/f1-native-curve-viewport-workflow.json`. Shared animated lanes are
-implemented; the dedicated movable/floating Curves panel and remaining physical
-modifier/DPI/dense acceptance are still open. Keep this next UX block coherent
-and reuse unchanged native/render evidence. No parity row is promoted by this
-increment; ledger47/43/2 and full F1-F7/M7 scope remain unchanged.
+Source `4e983c2` runs on halo1 port8819 with the native nonmodal Curve window,
+visible Rust sampling and selected-key adjacent tangents. Actual Windows
+window geometry/draft/keyboard ownership, mixed Delete/Undo, numeric Undo/Redo,
+Save, reload layout, native ruler and composed compound EOF pass. See
+`evidence/f1-floating-curves-workflow.json`, supplementing the unchanged previous
+native curve, typed/mixed/dense-page/linked-Zoom evidence. Simultaneous animated
+lanes and the dedicated movable window are implemented. Physical modifier-wheel
+is a named unverified acceptance item (input API limit), while horizontal pan
+and plain wheel zoom pass. Keep global DPI/500-clip/M7 checks separate and
+continue the remaining functional F2-F7 blocks without repeating unchanged
+catalog/render matrices. The ledger47/43/2 and full scope remain active.
 
 ## G0 — work orders (first Codex turn only)
 

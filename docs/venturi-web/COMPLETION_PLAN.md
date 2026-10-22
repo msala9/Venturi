@@ -14,7 +14,24 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8819/**, source `4e983c2`,
+The current halo1 delivery is **http://127.0.0.1:8820/**, source `672b495`,
+binary `7260ae71ec09`, in `venturi-web-halo1-program-lookahead.service`.
+It prepares one adjacent Program window while the current movie plays, reuses
+the existing bounded worker and preserves native DSP origin. A ready future is
+kept alive with a ten-second heartbeat and revalidated at EOF; pending work is
+adopted without another POST. Stop/pause/stale/hidden detach locally, without
+deleting potentially shared native jobs. Resource failures never retry by
+themselves or interrupt the current movie. The bounded halo1 gate passes 113
+JavaScript cases and the embedded build; unchanged native tests are reused.
+The actual Windows scenario imports moving A/V, inserts linked clips into a
+1920×1080/24fps timeline, saves, plays 0–7275 naturally at 1× with 960×540 preview,
+and plays a 75-frame Full HD/AAC export to EOF. Both windows retain audio origin 0.
+See `evidence/f2-program-lookahead-workflow.json` for measured preparation,
+scope and limitations. A project-view CAS warning at EOF remains to fix;
+Saved native project bytes and Undo are unchanged. This closes the speculative
+preparation gap, without claiming gapless playback or physical audio acceptance.
+
+The preserved floating-Curves delivery is **http://127.0.0.1:8819/**, source `4e983c2`,
 binary `16e283f83538`, in `venturi-web-halo1-curve-window-r2.service`.
 Its independent Saved `Venturi_Curve_Window.vvproj` retains the animated Library
 montage and changes the final Opacity key from30 to35. Curves now opens a single
@@ -206,6 +223,19 @@ not solely 64-pixel fixtures. Accept import through composed playback, edits,
 save/reopen and exported-file playback in one workflow. Report preparation
 pauses, throughput limits and actual codec paths honestly; do not imply gapless
 playback or physical output latency from encoded-file timing.
+
+Program lookahead is implemented and qualified in `672b495` on halo1/8820;
+`evidence/f2-program-lookahead-workflow.json` records the ordinary-preview,
+natural 1× five-minute boundary, immutable Saved project and Full HD tail export.
+Preparation is 12.765 s for 7200 preview frames and 0.521 s for the 75-frame future
+with native lineage retained; these measurements use the documented repeated
+864×480 source, not a 4K workload. The brief tail attachment was not directly
+sampled; the uninterrupted run reaches natural EOF at 7274 after the ready future
+remains stable through 7019. Eight focused cases cover ownership, TTL, pending
+adoption, failure, cancellation and fast-audio/recording holds. Next fix the
+project-view CAS warning after EOF, then continue remaining Source/navigation
+and full F2 acceptance. All 43 partial ledger rows and broader physical/M7 gates
+remain active; do not promote them from this scoped result.
 
 ### F3 — advanced timeline and effects
 

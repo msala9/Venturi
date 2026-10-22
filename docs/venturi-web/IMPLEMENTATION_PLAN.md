@@ -18,6 +18,15 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
+Current delivery: halo1/8820, source `672b495`, with one speculative adjacent
+Program window and shared-job-safe local cancellation. The 113-case affected
+JavaScript gate and embedded build pass. `f2-program-lookahead-workflow.json`
+records natural 1× playback beyond five minutes with 960×540 preview on a Full HD
+timeline, native audio-origin retention, Save and actual 75-frame Full HD/AAC
+export playback. The ledger stays 47 done / 43 partial / 2 excluded. Next resolve the
+EOF project-view CAS warning and continue remaining Source/F2 behavior; this
+scope does not qualify physical audio, long 4K or all F2-F7/M7 requirements.
+
 The milestone table below defines the full scope; COMPLETION_PLAN.md groups its
 remaining work into coherent blocks. Leave upstream `vv-app` unchanged and report delivered behavior,
 checks, remaining defects and deployment state. No upstream PR or merge.

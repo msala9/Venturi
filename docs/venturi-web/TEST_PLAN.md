@@ -10,6 +10,19 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F2 lookahead (`672b495`, halo1/8820): 113 affected JavaScript cases and embedded
+build pass, including eight new ownership/TTL/adoption/failure/cancellation and
+fast-tail/recording regressions. Reuse the unchanged 543-case vv-web/fmt/Clippy
+gate from `f1-floating-curves-workflow.json`. The single Windows acceptance run
+imports/inserts/saves 7275 frames, naturally crosses the 7200-frame boundary at 1×
+with 960×540 preview on a 1920×1080 timeline, and plays the 75-frame Full HD/AAC
+export to EOF. No native suites or renderer matrices were repeated. Source is
+the documented 864×480 moving A/V loop. The short second attachment was not
+directly sampled; natural EOF and stable ready future are recorded. Keep
+gapless/physical audio, broader Source/F2 and M7 acceptance open. A project-view
+CAS warning after EOF needs a focused fix; Saved project bytes and Undo are
+unchanged. See `evidence/f2-program-lookahead-workflow.json` and its screenshots.
+
 The TS matrix, applicable DPI/device checks, performance requirements and M7
 release gates below now belong to the active full scope. Encoded-file timing,
 synthetic recording or tiny fixtures do not prove physical-device behavior or

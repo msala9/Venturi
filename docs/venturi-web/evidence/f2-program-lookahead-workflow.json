@@ -1,0 +1,522 @@
+{
+  "date": "2026-10-23",
+  "status": "qualified_program_lookahead_block_full_F2_remains_partial",
+  "source_commit": "672b49517932146b761ec7abc5bfb2a940472ba1",
+  "binary_sha256": "7260ae71ec09e8c71a93b1038e0e16fc0f53fdfbded8a891409aef6e06e4e5c1",
+  "runtime_unit": "venturi-web-halo1-program-lookahead.service",
+  "url": "http://127.0.0.1:8820/",
+  "project": "Venturi_Long_Playback.vvproj",
+  "project_sha256": "5cb04e90bb346ea7c8a23791b3b7b43959a6f21b290b1ce03d1524916ef39a6f",
+  "session_generation": "2",
+  "history": {
+    "labels": [
+      "ImportMedia",
+      "InsertClips"
+    ],
+    "position": 2
+  },
+  "runtime_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "Nice=19",
+    "IOWeight=10",
+    "OOMScoreAdjust=1000",
+    "TasksMax=128",
+    "Restart=no",
+    "TimeoutStopSec=30",
+    "KillMode=control-group",
+    "UMask=0077",
+    "NoNewPrivileges=yes",
+    "WorkingDirectory=/home/halo/VenturiWeb-program-lookahead-20261023",
+    "Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-program-lookahead-20261023/.xdg",
+    "Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json",
+    "Environment=WGPU_BACKEND=vulkan",
+    "Environment=TOKIO_WORKER_THREADS=4",
+    "StandardOutput=append:/home/halo/VenturiWeb-program-lookahead-20261023/.server.log",
+    "StandardError=append:/home/halo/VenturiWeb-program-lookahead-20261023/.server.log"
+  ],
+  "build_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "OOMScoreAdjust=1000",
+    "Nice=19",
+    "IOWeight=10",
+    "TasksMax=128",
+    "RuntimeMaxSec=700",
+    "TimeoutStopSec=20",
+    "KillMode=control-group",
+    "Restart=no",
+    "NoNewPrivileges=yes",
+    "StandardOutput=append:/home/halo/.cache/venturi-build/program-lookahead.log",
+    "StandardError=append:/home/halo/.cache/venturi-build/program-lookahead.log"
+  ],
+  "source_hashes": {
+    "web/js/main.js": "ef14769987f0eafd281f189963625785e1a28d0461d9a0bc787ec8a4ac10b52f",
+    "web/js/program.js": "ddf7845145072fec48a8da8729498a71118af3f24f86d7d58474114c25fd5a4d",
+    "web/test/program.test.js": "d69fd327f87c00a4ea376395385da88bd607d324066b897274198a50d14de0f3"
+  },
+  "javascript_summary": [
+    "\u2139 tests 113",
+    "\u2139 suites 0",
+    "\u2139 pass 113",
+    "\u2139 fail 0",
+    "\u2139 cancelled 0",
+    "\u2139 skipped 0",
+    "\u2139 todo 0",
+    "\u2139 duration_ms 560.807734"
+  ],
+  "reused_native_gate": "543 vv-web cases, fmt and Clippy from unchanged native source in f1-floating-curves-workflow.json; no repeated native suite",
+  "native_program_jobs": {
+    "current": {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": false,
+      "error": null,
+      "export_revision": null,
+      "frames": 0,
+      "id": "1792712052894400649",
+      "previous_state": null,
+      "program": {
+        "audio_origin_frame": 0,
+        "audio_present": true,
+        "end_frame": 7200,
+        "export_settings": null,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "2",
+        "height": 540,
+        "project_epoch": "1792711950022964874:1",
+        "revision": "f8374ab482e11939",
+        "start_frame": 0,
+        "telemetry": {
+          "bin_count": 3516,
+          "bin_frames": 4096,
+          "end_sample": 14400000,
+          "first_bin_sample": 0,
+          "inserts": [],
+          "inserts_available": true,
+          "inserts_error": null,
+          "reason": null,
+          "sample_rate": 48000,
+          "spectrum_frames": 4096,
+          "spectrum_kind": "native_fft_band_maximum",
+          "start_sample": 0,
+          "state": "available"
+        },
+        "width": 960
+      },
+      "progress": {
+        "compose_fps": 1543.8779141314787,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 7200,
+        "decode_fps": 1271.5400522847874,
+        "decoder_fallback": false,
+        "decoders": [
+          {
+            "id": "software",
+            "label": "Software (CPU)"
+          }
+        ],
+        "elapsed_ms": 12764.906455,
+        "encode_fps": 568.1957348970035,
+        "encoder": "X264",
+        "fps": 564.0464366411214,
+        "startup_ms": 64.644379,
+        "total_frames": 7200
+      },
+      "project_epoch": null,
+      "source_asset": null,
+      "source_assets": null,
+      "source_version": null,
+      "source_window": null,
+      "state": "ready"
+    },
+    "next": {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": false,
+      "error": null,
+      "export_revision": null,
+      "frames": 0,
+      "id": "1792712065786630707",
+      "previous_state": null,
+      "program": {
+        "audio_origin_frame": 0,
+        "audio_present": true,
+        "end_frame": 7275,
+        "export_settings": null,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "2",
+        "height": 540,
+        "project_epoch": "1792711950022964874:1",
+        "revision": "f8374ab482e11939",
+        "start_frame": 7200,
+        "telemetry": {
+          "bin_count": 38,
+          "bin_frames": 4096,
+          "end_sample": 14550000,
+          "first_bin_sample": 14397440,
+          "inserts": [],
+          "inserts_available": true,
+          "inserts_error": null,
+          "reason": null,
+          "sample_rate": 48000,
+          "spectrum_frames": 4096,
+          "spectrum_kind": "native_fft_band_maximum",
+          "start_sample": 14400000,
+          "state": "available"
+        },
+        "width": 960
+      },
+      "progress": {
+        "compose_fps": 1088.508371841252,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 75,
+        "decode_fps": 662.0026491051075,
+        "decoder_fallback": false,
+        "decoders": [
+          {
+            "id": "software",
+            "label": "Software (CPU)"
+          }
+        ],
+        "elapsed_ms": 521.431655,
+        "encode_fps": 177.41107271754143,
+        "encoder": "X264",
+        "fps": 143.83476584289843,
+        "startup_ms": 315.803506,
+        "total_frames": 75
+      },
+      "project_epoch": null,
+      "source_asset": null,
+      "source_assets": null,
+      "source_version": null,
+      "source_window": null,
+      "state": "ready"
+    }
+  },
+  "prepared_files": {
+    "first": {
+      "sha256": "c429523d5791752ac17664390792c80b12a1104b8a1d2d9db49c26977fd9e88a",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 960,
+            "height": 540,
+            "r_frame_rate": "24/1",
+            "duration": "300.000000",
+            "nb_frames": "7200"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0",
+            "duration": "300.010000",
+            "nb_frames": "14064"
+          }
+        ],
+        "format": {
+          "duration": "300.010000",
+          "size": "48107058"
+        }
+      }
+    },
+    "next": {
+      "sha256": "4ca67e4dee15327b83dd319050b945ef18cc15a1e5db130a85904d2d12c2e514",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "index": 0,
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 960,
+            "height": 540,
+            "r_frame_rate": "24/1",
+            "duration": "3.125000",
+            "nb_frames": "75"
+          },
+          {
+            "index": 1,
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0",
+            "duration": "3.136000",
+            "nb_frames": "148"
+          }
+        ],
+        "format": {
+          "duration": "3.136000",
+          "size": "552226"
+        }
+      }
+    }
+  },
+  "source_fixture": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 864,
+        "height": 480,
+        "r_frame_rate": "24/1",
+        "duration": "303.107178",
+        "nb_frames": "7230"
+      },
+      {
+        "codec_name": "aac",
+        "codec_type": "audio",
+        "sample_rate": "32000",
+        "channels": 2,
+        "r_frame_rate": "0/0",
+        "duration": "303.028000",
+        "nb_frames": "9502"
+      }
+    ],
+    "format": {
+      "duration": "303.107178",
+      "size": "38193748"
+    }
+  },
+  "browser": {
+    "samples": [
+      {
+        "at": 1792712078878,
+        "hidden": false,
+        "next": "{\"state\":\"ready\",\"range\":{\"project_epoch\":\"1792711950022964874:1\",\"if_generation\":\"2\",\"timeline_id\":\"1\",\"revision\":\"f8374ab482e11939\",\"start_frame\":7200,\"end_frame\":7275,\"width\":960,\"audio_origin_frame\":0,\"fps\":{\"den\":1,\"num\":24}},\"jobId\":\"1792712065786630707\",\"error\":null}",
+        "play": "\u275a\u275a Pause",
+        "position": 333,
+        "status": "CACHED COMPOSED PREVIEW \u00b7 960\u00d7540 \u00b7 revision f8374ab4",
+        "video": {
+          "duration": 300.01,
+          "ended": false,
+          "height": 540,
+          "metrics": "{\"presented_frames\":330,\"total_frames\":334,\"dropped_frames\":0,\"media_time\":13.723014,\"duration\":300.01,\"frame_callback\":true}",
+          "muted": false,
+          "paused": false,
+          "rate": 1,
+          "src": "/api/v1/preview/program/1792712052894400649/program.mp4?project_epoch=1792711950022964874%3A1&if_generation=2&timeline_id=1&revision=f8374ab482e11939&start_frame=0&end_frame=7200&width=960&audio_origin_frame=0",
+          "time": 13.897882,
+          "width": 960
+        }
+      },
+      {
+        "at": 1792712125513,
+        "hidden": false,
+        "next": "{\"state\":\"ready\",\"range\":{\"project_epoch\":\"1792711950022964874:1\",\"if_generation\":\"2\",\"timeline_id\":\"1\",\"revision\":\"f8374ab482e11939\",\"start_frame\":7200,\"end_frame\":7275,\"width\":960,\"audio_origin_frame\":0,\"fps\":{\"den\":1,\"num\":24}},\"jobId\":\"1792712065786630707\",\"error\":null}",
+        "position": 1452,
+        "status": "CACHED COMPOSED PREVIEW \u00b7 960\u00d7540 \u00b7 revision f8374ab4",
+        "video": {
+          "duration": 300.01,
+          "metrics": "{\"presented_frames\":1451,\"total_frames\":1455,\"dropped_frames\":0,\"media_time\":60.478346,\"duration\":300.01,\"frame_callback\":true}",
+          "paused": false,
+          "rate": 1,
+          "src": "/api/v1/preview/program/1792712052894400649/program.mp4?project_epoch=1792711950022964874%3A1&if_generation=2&timeline_id=1&revision=f8374ab482e11939&start_frame=0&end_frame=7200&width=960&audio_origin_frame=0",
+          "time": 60.534103
+        }
+      },
+      {
+        "at": 1792712200505,
+        "hidden": false,
+        "next": "{\"state\":\"ready\",\"range\":{\"project_epoch\":\"1792711950022964874:1\",\"if_generation\":\"2\",\"timeline_id\":\"1\",\"revision\":\"f8374ab482e11939\",\"start_frame\":7200,\"end_frame\":7275,\"width\":960,\"audio_origin_frame\":0,\"fps\":{\"den\":1,\"num\":24}},\"jobId\":\"1792712065786630707\",\"error\":null}",
+        "position": 3251,
+        "status": "CACHED COMPOSED PREVIEW \u00b7 960\u00d7540 \u00b7 revision f8374ab4",
+        "video": {
+          "duration": 300.01,
+          "metrics": "{\"presented_frames\":3249,\"total_frames\":3253,\"dropped_frames\":0,\"media_time\":135.378187,\"duration\":300.01,\"frame_callback\":true}",
+          "paused": false,
+          "rate": 1,
+          "src": "/api/v1/preview/program/1792712052894400649/program.mp4?project_epoch=1792711950022964874%3A1&if_generation=2&timeline_id=1&revision=f8374ab482e11939&start_frame=0&end_frame=7200&width=960&audio_origin_frame=0",
+          "time": 135.526559
+        }
+      },
+      {
+        "at": 1792712369515,
+        "hidden": false,
+        "next": "{\"state\":\"idle\",\"range\":null,\"jobId\":null,\"error\":null}",
+        "position": 7274,
+        "status": "End of timeline",
+        "video": {
+          "duration": null,
+          "ended": false,
+          "height": 0,
+          "metrics": "{\"presented_frames\":0,\"total_frames\":0,\"dropped_frames\":0,\"media_time\":0,\"duration\":null,\"frame_callback\":true}",
+          "muted": false,
+          "paused": true,
+          "rate": 1,
+          "src": null,
+          "time": 0,
+          "width": 0
+        }
+      }
+    ],
+    "scope": "One uninterrupted normal-speed playback from frame 0 to natural EOF; no seek or speed changes. The brief second attachment was not directly sampled."
+  },
+  "export_job": {
+    "cancel_requested": false,
+    "durability_error": false,
+    "durable": true,
+    "error": null,
+    "export_revision": "7ec7714c9d29413ed52d8cf585a939b0039a5e99b9c3b2b514179efef8360fe2",
+    "frames": 0,
+    "id": "1792712418165697838",
+    "previous_state": null,
+    "program": {
+      "audio_present": true,
+      "end_frame": 7275,
+      "export_settings": {
+        "audio": true,
+        "audio_bitrate_kbps": 128,
+        "audio_codec": "aac",
+        "audio_fast_coder": false,
+        "preset": "veryfast",
+        "quality": 18,
+        "scale_percent": 100
+      },
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "2",
+      "height": 1080,
+      "project_epoch": "1792711950022964874:1",
+      "revision": "f8374ab482e11939",
+      "start_frame": 7200,
+      "width": 1920
+    },
+    "progress": {
+      "compose_fps": 507.319593567469,
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "current_frame": 75,
+      "decode_fps": 378.3790440527903,
+      "decoder_fallback": false,
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)"
+        }
+      ],
+      "elapsed_ms": 767.360012,
+      "encode_fps": 130.43171984507592,
+      "encoder": "X264",
+      "fps": 97.73769655330958,
+      "startup_ms": 115.14706299999999,
+      "total_frames": 75
+    },
+    "project_epoch": "1792711950022964874:1",
+    "source_asset": null,
+    "source_assets": null,
+    "source_version": null,
+    "source_window": null,
+    "state": "ready"
+  },
+  "export_file": {
+    "bytes": 1435223,
+    "sha256": "1e747a7a5bd6f416489f5b270991fa5a172418d891aba545034802ccab9dff36",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "24/1",
+          "duration": "3.125000",
+          "nb_frames": "75"
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2,
+          "r_frame_rate": "0/0",
+          "duration": "3.136000",
+          "nb_frames": "148"
+        }
+      ],
+      "format": {
+        "duration": "3.136000",
+        "size": "1435223"
+      }
+    }
+  },
+  "export_browser": {
+    "duration": 3.136,
+    "ended": true,
+    "error": null,
+    "height": 1080,
+    "muted": false,
+    "paused": true,
+    "rate": 1,
+    "src": "/api/v1/exports/1792712418165697838/export.mp4?project_epoch=1792711950022964874%3A1",
+    "time": 3.136,
+    "width": 1920
+  },
+  "protected_project_hashes": {
+    "8813": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2",
+    "8816": "7c62ae054ca9867f4e40ab777a76a706f43b70dbd6656bae343107f7a9f61ea2",
+    "8817": "0b5e97f66e11ed968879a42c1a644125405c9bb3688407b94d537304789ab2e2",
+    "8818": "84d8d4248c848ae6307cd3480af62afb3209ef16513accad2b6dc957f4e86dab",
+    "8819": "7353500237ac3d1432d62dbacaf1cc8909afeafed01b2a91685918160b590518"
+  },
+  "protected_sessions_and_undo_unchanged": true,
+  "halo2_untouched": true,
+  "ds4": "ActiveState=active\nMainPID=58396\n",
+  "final_unit": "ActiveState=active\nMainPID=116676\nResult=success\nMemoryCurrent=350765056\nMemoryPeak=540299264\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+  "final_preview": {
+    "active_programs": 0,
+    "available": true,
+    "backend": "Vulkan",
+    "device_id": "0x7551",
+    "driver": "radv",
+    "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+    "exact_context_resident": false,
+    "frame_rendered": true,
+    "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+    "resident": false,
+    "software": false,
+    "vendor_id": "0x1002"
+  },
+  "production_behavior": [
+    "One speculative adjacent Program range through existing bounded native worker; opt-in writer/visible/idle policy",
+    "One-second pending poll; ten-second ready heartbeat below native 45-second TTL",
+    "EOF adopts pending or revalidates ready future; no foreground query, src, telemetry or recording changes before handoff",
+    "Local detach on Stop/pause/stale/hidden; no automatic DELETE of jobs that may be shared",
+    "Failed speculation leaves current movie playing; visible EOF failure, manual retry, no automatic resource retry"
+  ],
+  "limitations": [
+    "No gapless, physical output latency or physical recording/audio claim",
+    "The 3.125-second second attachment was not directly sampled; uninterrupted 1x advancement from 0 to natural frame7274 EOF was observed after ready future7200-7275 remained stable through frame7019",
+    "First preparation completed in12.765s; a Save/Play overlap paused the UI while its native job completed. The uninterrupted run used that ready cache; this is not a cold-start UI latency measurement",
+    "Source is a remote stream-copy loop of an864x480/24fps moving-river A/V asset; timeline1920x1080, preview960x540, actual full-HD tail export75frames. This does not qualify long4K or full-length full-HD export throughput",
+    "Project-view CAS warning after EOF: The project view changed; read it before remembering this position. Saved native project bytes, generation and Undo remained unchanged; view-position persistence needs follow-up",
+    "Full F2-F7, explicit physical gates and M7 remain active; ledger47done/43partial/2excluded unchanged"
+  ],
+  "no_nas_mount_or_catalog_changes_performed": true
+}

@@ -2,6 +2,29 @@
 
 ## Current halo1 working instance
 
+Use **http://127.0.0.1:8820/** in the existing Windows browser. Source `672b495`,
+binary `vv-web-7260ae71ec09`, runs as unprivileged `halo` in
+`venturi-web-halo1-program-lookahead.service`, with projects in
+`/home/halo/VenturiWeb-program-lookahead-20261023`. Open the Saved
+`Venturi_Long_Playback.vvproj`: linked video/audio spans 7275 frames at 24 fps on a
+1920×1080 timeline. Normal Program playback prepares one next section in advance,
+retains its DSP origin, and adopts it at EOF. A failed future leaves the current
+movie running; failure at its boundary requires manual Play. Stop detaches local
+polling and playback without canceling jobs that may be shared by another editor.
+
+The same-port hidden tunnel forwards 8820 to halo1. Canonical NAS/ds4 roots,
+eight-CPU/4-GiB/no-swap/low-priority limits and the nonblocking shared GPU lock
+remain. There is no automatic restart, boot enablement or qualification deadline.
+The Saved export panel retains job 1792712418165697838: frames 7200–7275,
+1920×1080 H.264/AAC, verified through browser EOF. Save before deliberate stop;
+live Undo requires the running server. Ports8813/8816/8817/8818/8819 retain their
+previous Sessions, project bytes and Undo. The project-view CAS warning after
+natural EOF is an explicit remaining position-persistence defect; native Saved
+project bytes and editing history stay unchanged. See
+`evidence/f2-program-lookahead-workflow.json` for exact scope and remaining gates.
+
+### Preserved floating Curves instance
+
 Use **http://127.0.0.1:8819/** in the existing Windows browser. Source `4e983c2`,
 binary `vv-web-16e283f83538`, runs as unprivileged `halo` in
 `venturi-web-halo1-curve-window-r2.service`, with projects in

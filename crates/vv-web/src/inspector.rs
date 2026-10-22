@@ -445,23 +445,13 @@ pub fn properties(
         bounded(gain, (core::GAIN_DB_MIN, core::GAIN_DB_MAX))?;
         commands.push(Box::new(core::set_clip_gain(id, track, clip_id, gain)));
     }
-    if let Some(blend) = patch.blend {
-        commands.push(Box::new(core::set_clip_blend_mode(
-            id, track, clip_id, blend,
-        )));
-    }
-    if let Some(matte) = &patch.matte {
-        let value = match matte.as_str() {
-            "None" => None,
-            value => Some(
-                core::MatteMode::ALL
-                    .into_iter()
-                    .find(|m| format!("{m:?}") == value)
-                    .ok_or_else(|| ApiError::invalid("Unknown matte mode"))?,
-            ),
-        };
-        commands.push(Box::new(core::set_clip_matte(id, track, clip_id, value)));
-    }
+    commands.extend(compositing_commands(
+        id,
+        track,
+        clip_id,
+        patch.blend,
+        patch.matte.as_deref().map(matte_mode).transpose()?,
+    ));
     if let Some(color) = patch.color {
         if !matches!(clip.source, ClipSource::SolidColor) {
             return Err(ApiError::invalid(
@@ -501,6 +491,95 @@ pub fn properties(
         CommandLabel::Transform,
         commands,
     )));
+    Ok(())
+}
+
+fn matte_mode(value: &str) -> Result<Option<core::MatteMode>> {
+    if value == "None" {
+        return Ok(None);
+    }
+    core::MatteMode::ALL
+        .into_iter()
+        .find(|mode| format!("{mode:?}") == value)
+        .map(Some)
+        .ok_or_else(|| ApiError::invalid("Unknown matte mode"))
+}
+
+fn compositing_commands(
+    id: TimelineId,
+    track: usize,
+    clip: ClipId,
+    blend: Option<core::BlendMode>,
+    matte: Option<Option<core::MatteMode>>,
+) -> Vec<Box<dyn Command>> {
+    let mut commands: Vec<Box<dyn Command>> = Vec::new();
+    if let Some(value) = blend {
+        commands.push(Box::new(core::set_clip_blend_mode(id, track, clip, value)));
+    }
+    if let Some(value) = matte {
+        commands.push(Box::new(core::set_clip_matte(id, track, clip, value)));
+    }
+    commands
+}
+
+pub fn properties_batch(
+    session: &mut Session,
+    id: TimelineId,
+    clip_ids: &[String],
+    patch: &Properties,
+) -> Result<()> {
+    if clip_ids.is_empty() || clip_ids.len() > 4096 {
+        return Err(ApiError::invalid("Choose between 1 and 4096 video clips"));
+    }
+    if !patch.transform.is_empty()
+        || patch.flip.is_some()
+        || patch.gain_db.is_some()
+        || patch.color.is_some()
+        || patch.fade_in.is_some()
+        || patch.fade_out.is_some()
+        || patch.title.is_some()
+        || patch.blend.is_none() && patch.matte.is_none()
+    {
+        return Err(ApiError::invalid(
+            "Batch properties support only blend and matte changes",
+        ));
+    }
+    let matte = patch.matte.as_deref().map(matte_mode).transpose()?;
+    let mut seen = std::collections::HashSet::new();
+    let mut targets = Vec::with_capacity(clip_ids.len());
+    for raw in clip_ids {
+        let (track, clip_id, clip) = find(session, id, raw)?;
+        if !seen.insert(clip_id) {
+            return Err(ApiError::invalid("Duplicate batch property clip"));
+        }
+        writable(session, id, track)?;
+        if session.project.timelines[id].tracks[track].kind != core::TrackKind::Video {
+            return Err(ApiError::invalid(
+                "Batch visual properties require video clips",
+            ));
+        }
+        targets.push((track, clip_id, clip));
+    }
+    let commands = targets
+        .into_iter()
+        .flat_map(|(track, clip_id, clip)| {
+            compositing_commands(
+                id,
+                track,
+                clip_id,
+                patch
+                    .blend
+                    .filter(|value| *value != clip.effects.blend_mode),
+                matte.filter(|value| *value != clip.effects.matte),
+            )
+        })
+        .collect::<Vec<_>>();
+    if !commands.is_empty() {
+        session.apply(Box::new(core::CompositeCommand::new(
+            CommandLabel::Transform,
+            commands,
+        )));
+    }
     Ok(())
 }
 fn keyframe_command(

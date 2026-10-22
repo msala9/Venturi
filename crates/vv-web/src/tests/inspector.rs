@@ -1,5 +1,5 @@
 use super::*;
-use vv_core::{Rational, Timeline, Track, TrackKind};
+use vv_core::{Id, Rational, Timeline, Track, TrackKind};
 
 #[test]
 fn viewer_geometry_uses_native_source_dimensions_instead_of_timeline_dimensions() {
@@ -152,6 +152,186 @@ fn fixture() -> (Session, TimelineId, String) {
     );
     session.project.timelines[id].tracks[0].insert_sorted(clip);
     (session, id, clip_id.0.to_string())
+}
+
+fn batch_compositing_fixture() -> (Session, TimelineId, Vec<String>, String) {
+    let (mut session, timeline, solid) = fixture();
+    session.project.timelines[timeline]
+        .tracks
+        .extend([Track::new(TrackKind::Video), Track::new(TrackKind::Video)]);
+    let mut selected = vec![solid];
+    for (track, source, start) in [(2, ClipSource::Text, 12), (3, ClipSource::Adjustment, 24)] {
+        let mut clip = Clip::from_source_range(
+            session.project.alloc_clip_id(),
+            source,
+            4,
+            28,
+            start,
+            Rational::one(),
+        );
+        if matches!(clip.source, ClipSource::Text) {
+            clip.effects.title = Some(core::TitleParams::default());
+        }
+        clip.fade_in = 2;
+        clip.effects
+            .transform
+            .track_mut(TransformParam::PositionX)
+            .upsert(5, 8.0, core::Interpolation::Linear);
+        selected.push(clip.id.0.to_string());
+        session.project.timelines[timeline].tracks[track].insert_sorted(clip);
+    }
+    let group = session.project.alloc_link_group_id();
+    session.project.timelines[timeline].tracks[0].clips[0].linked_group = Some(group);
+    let mut audio = Clip::from_source_range(
+        session.project.alloc_clip_id(),
+        ClipSource::Media(core::MediaId::from_raw(999)),
+        7,
+        55,
+        100,
+        Rational::one(),
+    );
+    audio.linked_group = Some(group);
+    audio.effects.gain_db.default = -6.0;
+    let peer = audio.id.0.to_string();
+    session.project.timelines[timeline].tracks[1].insert_sorted(audio);
+    session.project.timelines[timeline].tracks[1].locked = true;
+    (session, timeline, selected, peer)
+}
+
+#[test]
+fn batch_compositing_changes_only_explicit_video_targets_as_one_native_undo() {
+    let (mut session, timeline, selected, peer) = batch_compositing_fixture();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    let generation = session.history.generation();
+    let patch = Properties {
+        blend: Some(core::BlendMode::Screen),
+        matte: Some("AlphaInverted".into()),
+        ..Default::default()
+    };
+    let mut expected = session.project.clone();
+    for raw in &selected {
+        let (track, id, _) = find(&session, timeline, raw).unwrap();
+        let clip = expected.timelines[timeline].clip_mut(track, id).unwrap();
+        clip.effects.blend_mode = core::BlendMode::Screen;
+        clip.effects.matte = Some(core::MatteMode::AlphaInverted);
+    }
+    properties_batch(&mut session, timeline, &selected, &patch).unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(session.history.generation(), generation + 1);
+    assert_eq!(
+        session.history.labels().last(),
+        Some(CommandLabel::Transform)
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project).unwrap(),
+        serde_json::to_value(&expected).unwrap()
+    );
+    assert_eq!(
+        find(&session, timeline, &peer)
+            .unwrap()
+            .2
+            .effects
+            .blend_mode,
+        core::BlendMode::Normal
+    );
+    let after = serde_json::to_value(&session.project).unwrap();
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), after);
+    let clear = Properties {
+        matte: Some("None".into()),
+        ..Default::default()
+    };
+    properties_batch(&mut session, timeline, &selected, &clear).unwrap();
+    for raw in &selected {
+        let (_, _, clip) = find(&session, timeline, raw).unwrap();
+        assert_eq!(clip.effects.matte, None);
+        assert_eq!(clip.effects.blend_mode, core::BlendMode::Screen);
+    }
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), after);
+}
+
+#[test]
+fn batch_compositing_rejects_invalid_targets_and_unrelated_properties_atomically() {
+    let (mut session, timeline, selected, peer) = batch_compositing_fixture();
+    let patch = Properties {
+        blend: Some(core::BlendMode::Multiply),
+        ..Default::default()
+    };
+    let mut assert_refused = |ids: &[String], patch: &Properties| {
+        let before = serde_json::to_value(&session.project).unwrap();
+        let generation = session.history.generation();
+        let position = session.history.position();
+        assert!(properties_batch(&mut session, timeline, ids, patch).is_err());
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.generation(), generation);
+        assert_eq!(session.history.position(), position);
+    };
+    for invalid in [
+        vec![],
+        vec![selected[0].clone(); 4097],
+        vec![selected[0].clone(), selected[0].clone()],
+        vec![selected[0].clone(), format!("0{}", selected[0])],
+        vec![selected[0].clone(), "18446744073709551615".into()],
+        vec![selected[0].clone(), "not-an-id".into()],
+        vec![selected[0].clone(), peer.clone()],
+    ] {
+        assert_refused(&invalid, &patch);
+    }
+    for value in [
+        json!({}),
+        json!({"matte":"alpha"}),
+        json!({"blend":"Screen","transform":[{"param":"PositionX","value":1.0}]}),
+        json!({"blend":"Screen","flip":[false,true]}),
+        json!({"blend":"Screen","gain_db":-3.0}),
+        json!({"blend":"Screen","color":{"r":1.0,"g":0.0,"b":0.0,"a":1.0}}),
+        json!({"blend":"Screen","fade_in":0}),
+        json!({"blend":"Screen","fade_out":0}),
+        json!({"blend":"Screen","title":{}}),
+    ] {
+        assert_refused(
+            &selected,
+            &serde_json::from_value::<Properties>(value).unwrap(),
+        );
+    }
+    session.project.timelines[timeline].tracks[2].locked = true;
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    assert_eq!(
+        properties_batch(&mut session, timeline, &selected, &patch)
+            .unwrap_err()
+            .1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+    session.project.timelines[timeline].tracks[1].locked = false;
+    let before = serde_json::to_value(&session.project).unwrap();
+    assert!(
+        properties_batch(&mut session, timeline, &[selected[0].clone(), peer], &patch).is_err()
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+}
+
+#[test]
+fn batch_compositing_dto_preserves_native_enum_and_unknown_field_validation() {
+    for value in [
+        json!({"kind":"set_properties_batch","clip_ids":["0"],"patch":{"blend":"screen"}}),
+        json!({"kind":"set_properties_batch","clip_ids":["0"],"patch":{"blend":"Screen","unknown":true}}),
+        json!({"kind":"set_properties_batch","clip_ids":["0"],"patch":{"blend":"Screen"},"unknown":true}),
+        json!({"kind":"set_properties_batch","clip_ids":[0],"patch":{"matte":"None"}}),
+    ] {
+        assert!(serde_json::from_value::<crate::commands::Operation>(value).is_err());
+    }
+    assert!(
+        serde_json::from_value::<crate::commands::Operation>(
+            json!({"kind":"set_properties","clip_id":"0","patch":{"blend":"Screen"}})
+        )
+        .is_ok()
+    );
 }
 #[test]
 fn viewer_transform_mixes_defaults_and_animated_keys_as_one_native_undo() {

@@ -1,0 +1,1207 @@
+{
+  "status": "passed",
+  "date": "2026-10-22",
+  "scope": "Native Blend/Matte selection semantics, existing Windows browser controls and exact R9700 output",
+  "build": {
+    "phase": "passed",
+    "validation": "native-parity-oracle",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "2e84441f99fc9e1ce452a92452578abc169c6d0dd6e8e2cf97a9ab8f05663eab",
+    "javascript": 854,
+    "native_rust_hashes": {
+      "crates/vv-web/src/commands.rs": "c92bb6a783fe39c26199c80b3edd2eeb0acdd354e7a17c9e28c42677da6b2b10",
+      "crates/vv-web/src/inspector.rs": "7af1fe141afa01a45616d1e530a8aeb53f14b19d742677a7ba514b41a87924ec",
+      "crates/vv-web/src/tests/commands.rs": "43d6549dfe4adc2b8c8b88eafc04073d3109c68c49378ec4b7f649789d961a70",
+      "crates/vv-web/src/tests/inspector.rs": "5bde17205afe74070c46215217a2dbadaf61e26616d990ef682115e465c99cae"
+    },
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)",
+    "updated_unix": 1792650816.4041078,
+    "production_validation": {
+      "phase": "passed",
+      "validation": "batch-compositing-final-frontend",
+      "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+      "sha256": "2e84441f99fc9e1ce452a92452578abc169c6d0dd6e8e2cf97a9ab8f05663eab",
+      "javascript": 854,
+      "native_rust_hashes": {
+        "crates/vv-web/src/commands.rs": "c92bb6a783fe39c26199c80b3edd2eeb0acdd354e7a17c9e28c42677da6b2b10",
+        "crates/vv-web/src/inspector.rs": "7af1fe141afa01a45616d1e530a8aeb53f14b19d742677a7ba514b41a87924ec",
+        "crates/vv-web/src/tests/commands.rs": "43d6549dfe4adc2b8c8b88eafc04073d3109c68c49378ec4b7f649789d961a70",
+        "crates/vv-web/src/tests/inspector.rs": "5bde17205afe74070c46215217a2dbadaf61e26616d990ef682115e465c99cae"
+      },
+      "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+    },
+    "production_state_sha256": "5bf97cddd36e51404da445ea8142c17a129e199d2087450236e51c35ca04c9ab",
+    "example_source_sha256": "0741a0f42dfc9ef11e1c71d166fe03ee67c986041a63211b8850d37ca2383eca",
+    "oracle_binary": "/home/marco/.cache/venturi-build/target/debug/examples/verify_preview",
+    "oracle_sha256": "7adbf07a1943edaade1d8c3282bafd7ae55fd1779d895adb3a9fc55953c5d794"
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/commands.rs": "c92bb6a783fe39c26199c80b3edd2eeb0acdd354e7a17c9e28c42677da6b2b10",
+      "crates/vv-web/src/inspector.rs": "7af1fe141afa01a45616d1e530a8aeb53f14b19d742677a7ba514b41a87924ec",
+      "crates/vv-web/src/tests/commands.rs": "43d6549dfe4adc2b8c8b88eafc04073d3109c68c49378ec4b7f649789d961a70",
+      "crates/vv-web/src/tests/inspector.rs": "5bde17205afe74070c46215217a2dbadaf61e26616d990ef682115e465c99cae",
+      "web/js/inspector.js": "071f383ef2359edc3b3009cd016d9213db40584e236c8366db238d991675bf02",
+      "web/js/main.js": "7aecbc0ba69ad5fc1b089f342ac28efb8ca266d835df5cefb0177b983c5a9d3d",
+      "web/test/inspector-compositing.test.js": "e2a585d8f5e4219c56236a2640286596454abefee4772c20381e03ec1fe5317b"
+    }
+  },
+  "native_ui": {
+    "target_order": "vv-app/src/main.rs: video_targets sorted by (track_index,timeline_start)",
+    "apply": "vv-app/src/properties_panel.rs: ClipChanges blend/matte applied to every video_target"
+  },
+  "web_entrypoint": {
+    "inspector": "web/js/inspector.js: videoPropertySelection and renderBlendMatte",
+    "integration": "web/js/main.js: selected",
+    "api": "Timeline command set_properties_batch {clip_ids,patch}",
+    "native_adapter": "vv-web/src/inspector.rs: properties_batch"
+  },
+  "validation": {
+    "core": 291,
+    "native_pcm": 5,
+    "web_rust": 434,
+    "javascript": 853,
+    "raw_results": [
+      "291 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s",
+      "0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "5 passed; 0 failed; 0 ignored; 0 measured; 100 filtered out; finished in 0.02s",
+      "10 passed; 0 failed; 0 ignored; 0 measured; 118 filtered out; finished in 0.44s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 125 filtered out; finished in 0.15s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 125 filtered out; finished in 0.27s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 127 filtered out; finished in 0.00s",
+      "434 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.03s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 546 filtered out; finished in 0.00s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 548 filtered out; finished in 0.00s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 548 filtered out; finished in 0.00s"
+    ],
+    "fmt": true,
+    "clippy_all_targets_deny_warnings": true,
+    "native_build": true,
+    "final_javascript": 854,
+    "new_rust_tests": 5,
+    "new_javascript_tests": 14,
+    "final_frontend_preserves_verified_rust_hashes": true,
+    "exact_primary_order_regression": true,
+    "test_ids": [
+      "TS-005",
+      "TS-006",
+      "TS-017"
+    ],
+    "native_matrix_projects": 35,
+    "native_matrix_frames": 43,
+    "native_matrix_controls": 38,
+    "analytical_pixels": {
+      "solid_red_exact": true,
+      "solid_black_exact": true,
+      "mask_Rectangle_center_red_corner_blue": true,
+      "mask_Ellipse_center_red_corner_blue": true,
+      "mask_Path_center_red_corner_blue": true,
+      "subtract_inside_hole": true,
+      "intersect_inside_overlap": true,
+      "alpha_matte_half_coverage": true,
+      "inverted_alpha_matte_half_coverage": true,
+      "transition_Push_outer_frames": true,
+      "transition_CrossDissolve_outer_frames": true,
+      "transition_SmoothCut_outer_frames": true
+    },
+    "actual_windows_blend_choices": 15,
+    "actual_windows_matte_choices": 4,
+    "actual_windows_matte_removal": true,
+    "actual_windows_two_video_atomic_undo_redo": true,
+    "save_as_and_reopen": true,
+    "console_errors": [],
+    "all_37_captures_native_exact": true
+  },
+  "adapter": {
+    "active_programs": 0,
+    "available": true,
+    "backend": "Vulkan",
+    "device_id": "0x7551",
+    "driver": "radv",
+    "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+    "exact_context_resident": true,
+    "frame_rendered": true,
+    "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+    "resident": true,
+    "software": false,
+    "vendor_id": "0x1002"
+  },
+  "captures": [
+    {
+      "tag": "blend_before",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "mode": "Normal",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "4caac6ddfcfe39a779d7b30f3a7888a85586636c239e7881a3271e5215a132a2",
+      "rgba_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Add",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "1",
+      "history": {
+        "labels": [
+          "Transform"
+        ],
+        "position": 1
+      },
+      "unsaved": true,
+      "mode": "Add",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "34307e92bb11f9486bbf6d8bef4c59e97a241525b37a57763f97879c808518c1",
+      "rgba_sha256": "57c91ddba9d2dae53a713af191c59529c49a8d6560ec78534228b0fa93fcbdc2",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Multiply",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "2",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform"
+        ],
+        "position": 2
+      },
+      "unsaved": true,
+      "mode": "Multiply",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "7fdf78b88ab1b8d7196379bf3ead807143e51b43a5dda2bf765cef723b950c9a",
+      "rgba_sha256": "17d33f6eba4405d4ab63413c05e6b8c21d23b9c49f4bae35ffc26b169c9a4ea8",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Screen",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "3",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 3
+      },
+      "unsaved": true,
+      "mode": "Screen",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "a6da986f7e4844c1b18710d3b2d953668a15c9a647d6fde4cdd94e016f2cf476",
+      "rgba_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Overlay",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "4",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 4
+      },
+      "unsaved": true,
+      "mode": "Overlay",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "8eebb3976cd9b0a50450aa7e7076060abaed07e4137c943bdf851a1f503e8fc9",
+      "rgba_sha256": "9312fb2b3405bc2fa698537adbbb8dee5bdf957e5d970fd9d8f581fa2b24a600",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Darken",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "5",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 5
+      },
+      "unsaved": true,
+      "mode": "Darken",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "b83c76a54db08534b84da986e8dfd3b7debe5f2ae08aa08e81570fbe9cc71cc2",
+      "rgba_sha256": "7d5216b4a1c16726b2bad486858c8abbdc1019c18c6306706be466528574eab2",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Lighten",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "6",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 6
+      },
+      "unsaved": true,
+      "mode": "Lighten",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "80396726816d7c411a608c7f5457db08ed3d3f37b459627356ad669ffbc8375a",
+      "rgba_sha256": "4b1c0729c5e7dc6481a309997e308e0f4bbba853eb7edf108ad4c062cf88b581",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:ColorDodge",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "7",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 7
+      },
+      "unsaved": true,
+      "mode": "ColorDodge",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "75ce31214a2c642516f950367f9e4037ef97d14b6b9a7fa64df5916e7346dcb4",
+      "rgba_sha256": "f5b84adcff0e02f71eecd5426ecbf97b36b9e8a9aaa67368f4e92c81fae4a9c4",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:ColorBurn",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "8",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 8
+      },
+      "unsaved": true,
+      "mode": "ColorBurn",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "b9d9c4915703e5e7263c3f824252287dbfd5e09e23d2d893b91a55c6de924076",
+      "rgba_sha256": "322578348f1fe9b9c2f52e1a784238c794dd2f700cfd2d4d130052bb7cad9040",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:HardLight",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "9",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 9
+      },
+      "unsaved": true,
+      "mode": "HardLight",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "671feea3daa4b00e017d5ec467babe82513b78cc4b5b588ec65df43fa3e3dd66",
+      "rgba_sha256": "7935eb08dcf77dde6d3739d56c09fb5be7f92262953b7d74b0e44a4942ab7d37",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:SoftLight",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "10",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 10
+      },
+      "unsaved": true,
+      "mode": "SoftLight",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "b4146b5b2908499bbab97ec765dcc9e82e6ea29f47d858eec69b4836f6bf4b81",
+      "rgba_sha256": "bdff287567f93a04d54d7be998e4521de429da8b37dc99435df7d3b2d9d1d2ad",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Difference",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "11",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 11
+      },
+      "unsaved": true,
+      "mode": "Difference",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "95e6410f0da1219be391d9456c040c17b66b70a1efc9263ad6f9faad5f6e361b",
+      "rgba_sha256": "8c3a6560eabac348cd446ea3cad6510de72cd16801ff8deb4c491027a5971926",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Exclusion",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "12",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 12
+      },
+      "unsaved": true,
+      "mode": "Exclusion",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "77118bb52a1c03c7aa13eafb2c2bd8c565c9d3479a4a1e81409395c10dbf800d",
+      "rgba_sha256": "369614ff55f04455e3f906ac0242d29b0dac0f7320d438f97bc3c9aab389ff69",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Subtract",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "13",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 13
+      },
+      "unsaved": true,
+      "mode": "Subtract",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "9588f51f31e3035ff8382d6e73a841d2dbc59ad97d92b724317d2d0ef0659c5a",
+      "rgba_sha256": "751007a7f287646fcd390eb7c8db757c8e9671b4c6f54ba670d7eec0e648b38e",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Divide",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "14",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 14
+      },
+      "unsaved": true,
+      "mode": "Divide",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "5c87989824da6cf19a9766c3a74dce4dadc42ad30c7c4a5b855b88de3487fbb5",
+      "rgba_sha256": "e1861fd70b86117e2babed5f99332bd0b015e55524db3f351f1b2bbae1e4c0ce",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend:Normal",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "15",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 15
+      },
+      "unsaved": true,
+      "mode": "Normal",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "4caac6ddfcfe39a779d7b30f3a7888a85586636c239e7881a3271e5215a132a2",
+      "rgba_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend_undo",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "16",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 14
+      },
+      "unsaved": true,
+      "mode": "Divide",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "5c87989824da6cf19a9766c3a74dce4dadc42ad30c7c4a5b855b88de3487fbb5",
+      "rgba_sha256": "e1861fd70b86117e2babed5f99332bd0b015e55524db3f351f1b2bbae1e4c0ce",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend_redo",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "17",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 15
+      },
+      "unsaved": true,
+      "mode": "Normal",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "4caac6ddfcfe39a779d7b30f3a7888a85586636c239e7881a3271e5215a132a2",
+      "rgba_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend_saved",
+      "project": "Windows_Blend_UI_check.vvproj",
+      "project_sha256": "395e4563660cab4f7bfa8bf484de53ea371e0cfb7fb6df4e86ad41a31696159e",
+      "generation": "17",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 15
+      },
+      "unsaved": false,
+      "mode": "Normal",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "4caac6ddfcfe39a779d7b30f3a7888a85586636c239e7881a3271e5215a132a2",
+      "rgba_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "blend_reopened",
+      "project": "Windows_Blend_UI_check.vvproj",
+      "project_sha256": "395e4563660cab4f7bfa8bf484de53ea371e0cfb7fb6df4e86ad41a31696159e",
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "mode": "Normal",
+      "video_ids": [
+        "2"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "4caac6ddfcfe39a779d7b30f3a7888a85586636c239e7881a3271e5215a132a2",
+      "rgba_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte_before",
+      "project": "matte_Alpha.vvproj",
+      "project_sha256": "1a973b25492ae608ffd2416203caa96269b8f304dbf00f7c91ca927373332424",
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "mode": "Alpha",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "c5e783b981b805d1888b5ec46b143a6442a7364811426f0d47cdcec68d64e179",
+      "rgba_sha256": "a5e6014dd8dfdb1ebe2eb3bc6dd3b865c87778b1a2c4186b1285c7dd7091e7a0",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte:AlphaInverted",
+      "project": "matte_Alpha.vvproj",
+      "project_sha256": "1a973b25492ae608ffd2416203caa96269b8f304dbf00f7c91ca927373332424",
+      "generation": "1",
+      "history": {
+        "labels": [
+          "Transform"
+        ],
+        "position": 1
+      },
+      "unsaved": true,
+      "mode": "AlphaInverted",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "4b0fe6bac74fa8edbbd3f0f79ef18f0d3e805ccefa93a3bcd7fe846f4549ca27",
+      "rgba_sha256": "f3c526698df07af69f2d5f6d9557d6decece321dc4103fcbe07f9223ff3e4aef",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte:Luma",
+      "project": "matte_Alpha.vvproj",
+      "project_sha256": "1a973b25492ae608ffd2416203caa96269b8f304dbf00f7c91ca927373332424",
+      "generation": "2",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform"
+        ],
+        "position": 2
+      },
+      "unsaved": true,
+      "mode": "Luma",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "0b8614476ce2936e5b729876e1f599ce23151beb4537922ab24332c8c1d5ab8c",
+      "rgba_sha256": "198274c468318bb4a73a0b2431fa5ad53747bc78ba250e7a2982829482005c13",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte:LumaInverted",
+      "project": "matte_Alpha.vvproj",
+      "project_sha256": "1a973b25492ae608ffd2416203caa96269b8f304dbf00f7c91ca927373332424",
+      "generation": "3",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 3
+      },
+      "unsaved": true,
+      "mode": "LumaInverted",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "77307fd215b3471a202fd5e27b49f65b83a3fbaeb19ffec214a63b03045a5e95",
+      "rgba_sha256": "52c833c1cb06ab33ea652bec43f1a4fecb8380f9faa0fb3e083b9530d2c19da9",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte:Alpha",
+      "project": "matte_Alpha.vvproj",
+      "project_sha256": "1a973b25492ae608ffd2416203caa96269b8f304dbf00f7c91ca927373332424",
+      "generation": "4",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 4
+      },
+      "unsaved": true,
+      "mode": "Alpha",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "c5e783b981b805d1888b5ec46b143a6442a7364811426f0d47cdcec68d64e179",
+      "rgba_sha256": "a5e6014dd8dfdb1ebe2eb3bc6dd3b865c87778b1a2c4186b1285c7dd7091e7a0",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte_undo",
+      "project": "matte_Alpha.vvproj",
+      "project_sha256": "1a973b25492ae608ffd2416203caa96269b8f304dbf00f7c91ca927373332424",
+      "generation": "5",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 3
+      },
+      "unsaved": true,
+      "mode": "LumaInverted",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "77307fd215b3471a202fd5e27b49f65b83a3fbaeb19ffec214a63b03045a5e95",
+      "rgba_sha256": "52c833c1cb06ab33ea652bec43f1a4fecb8380f9faa0fb3e083b9530d2c19da9",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte_redo",
+      "project": "matte_Alpha.vvproj",
+      "project_sha256": "1a973b25492ae608ffd2416203caa96269b8f304dbf00f7c91ca927373332424",
+      "generation": "6",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 4
+      },
+      "unsaved": true,
+      "mode": "Alpha",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "c5e783b981b805d1888b5ec46b143a6442a7364811426f0d47cdcec68d64e179",
+      "rgba_sha256": "a5e6014dd8dfdb1ebe2eb3bc6dd3b865c87778b1a2c4186b1285c7dd7091e7a0",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte_none",
+      "project": "matte_Alpha.vvproj",
+      "project_sha256": "1a973b25492ae608ffd2416203caa96269b8f304dbf00f7c91ca927373332424",
+      "generation": "7",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 5
+      },
+      "unsaved": true,
+      "mode": "None",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "7ff9b3e70d1184e9fa17e87de4e32e140228f5f403d53f405a66bb30aeb48616",
+      "rgba_sha256": "ab640f2162c3bdd936c3204128a080a646e9b630ee98698491ee449b1995c0e0",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte_none_saved",
+      "project": "Windows_Matte_None_UI_check.vvproj",
+      "project_sha256": "d525a6b554609b6513663d177de6effacbcf3e0da1c8fa13ff5f60fcb1180e55",
+      "generation": "7",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 5
+      },
+      "unsaved": false,
+      "mode": "None",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "7ff9b3e70d1184e9fa17e87de4e32e140228f5f403d53f405a66bb30aeb48616",
+      "rgba_sha256": "ab640f2162c3bdd936c3204128a080a646e9b630ee98698491ee449b1995c0e0",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte_saved",
+      "project": "Windows_Matte_UI_check.vvproj",
+      "project_sha256": "29d06da24a89bf8ddac28ab97aaa58ebf68176b4c5e4705002a996daf3c74beb",
+      "generation": "8",
+      "history": {
+        "labels": [
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform",
+          "Transform"
+        ],
+        "position": 6
+      },
+      "unsaved": false,
+      "mode": "Alpha",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "c5e783b981b805d1888b5ec46b143a6442a7364811426f0d47cdcec68d64e179",
+      "rgba_sha256": "a5e6014dd8dfdb1ebe2eb3bc6dd3b865c87778b1a2c4186b1285c7dd7091e7a0",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "matte_reopened",
+      "project": "Windows_Matte_UI_check.vvproj",
+      "project_sha256": "29d06da24a89bf8ddac28ab97aaa58ebf68176b4c5e4705002a996daf3c74beb",
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "mode": "Alpha",
+      "video_ids": [
+        "3"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "c5e783b981b805d1888b5ec46b143a6442a7364811426f0d47cdcec68d64e179",
+      "rgba_sha256": "a5e6014dd8dfdb1ebe2eb3bc6dd3b865c87778b1a2c4186b1285c7dd7091e7a0",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "batch_before",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "mode": "Normal",
+      "video_ids": [
+        "2",
+        "1"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "4caac6ddfcfe39a779d7b30f3a7888a85586636c239e7881a3271e5215a132a2",
+      "rgba_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "batch_changed",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "1",
+      "history": {
+        "labels": [
+          "Transform"
+        ],
+        "position": 1
+      },
+      "unsaved": true,
+      "mode": "Screen",
+      "video_ids": [
+        "2",
+        "1"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "a6da986f7e4844c1b18710d3b2d953668a15c9a647d6fde4cdd94e016f2cf476",
+      "rgba_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "batch_undo",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "2",
+      "history": {
+        "labels": [
+          "Transform"
+        ],
+        "position": 0
+      },
+      "unsaved": true,
+      "mode": "Normal",
+      "video_ids": [
+        "2",
+        "1"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "4caac6ddfcfe39a779d7b30f3a7888a85586636c239e7881a3271e5215a132a2",
+      "rgba_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "batch_redo",
+      "project": "blend_Normal.vvproj",
+      "project_sha256": "8c81711137c13953dfd1ab0790a6d4bc510dda84f91951dad5de3f9cc5048f5e",
+      "generation": "3",
+      "history": {
+        "labels": [
+          "Transform"
+        ],
+        "position": 1
+      },
+      "unsaved": true,
+      "mode": "Screen",
+      "video_ids": [
+        "2",
+        "1"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "a6da986f7e4844c1b18710d3b2d953668a15c9a647d6fde4cdd94e016f2cf476",
+      "rgba_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1605905
+    },
+    {
+      "tag": "batch_saved",
+      "project": "Windows_Blend_Batch_UI_check.vvproj",
+      "project_sha256": "2f35af6adc9dfcfef75c07b705b6d82ff2d2f77ff38bf6297c584a3f28424f0f",
+      "generation": "1",
+      "history": {
+        "labels": [
+          "Transform"
+        ],
+        "position": 1
+      },
+      "unsaved": false,
+      "mode": "Screen",
+      "video_ids": [
+        "2",
+        "1"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "a6da986f7e4844c1b18710d3b2d953668a15c9a647d6fde4cdd94e016f2cf476",
+      "rgba_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1608953
+    },
+    {
+      "tag": "batch_reopened",
+      "project": "Windows_Blend_Batch_UI_check.vvproj",
+      "project_sha256": "2f35af6adc9dfcfef75c07b705b6d82ff2d2f77ff38bf6297c584a3f28424f0f",
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "unsaved": false,
+      "mode": "Screen",
+      "video_ids": [
+        "2",
+        "1"
+      ],
+      "native_rgba_exact": true,
+      "png_sha256": "a6da986f7e4844c1b18710d3b2d953668a15c9a647d6fde4cdd94e016f2cf476",
+      "rgba_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "repeat_png_exact": true,
+      "finite_ui_pid": 1608953
+    }
+  ],
+  "additional_native_saved_project_comparisons": [
+    {
+      "tag": "batch_changed",
+      "actual_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "reference_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "native_rgba_exact": true
+    },
+    {
+      "tag": "batch_undo",
+      "actual_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "reference_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "native_rgba_exact": true
+    },
+    {
+      "tag": "batch_redo",
+      "actual_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "reference_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "native_rgba_exact": true
+    },
+    {
+      "tag": "batch_saved",
+      "actual_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "reference_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "native_rgba_exact": true
+    },
+    {
+      "tag": "batch_reopened",
+      "actual_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "reference_sha256": "4b805f43a35fac53e4bf0771c4a4d72b28982f634330aad41a5e7818cfb57462",
+      "native_rgba_exact": true
+    },
+    {
+      "tag": "matte_none",
+      "actual_sha256": "ab640f2162c3bdd936c3204128a080a646e9b630ee98698491ee449b1995c0e0",
+      "reference_sha256": "ab640f2162c3bdd936c3204128a080a646e9b630ee98698491ee449b1995c0e0",
+      "native_rgba_exact": true
+    },
+    {
+      "tag": "matte_none_saved",
+      "actual_sha256": "ab640f2162c3bdd936c3204128a080a646e9b630ee98698491ee449b1995c0e0",
+      "reference_sha256": "ab640f2162c3bdd936c3204128a080a646e9b630ee98698491ee449b1995c0e0",
+      "native_rgba_exact": true
+    },
+    {
+      "tag": "batch_before",
+      "actual_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "reference_sha256": "249210d2e1d00ee3b1859756ef4550caea914125548808d2e7e12ca35f75eaf6",
+      "native_rgba_exact": true
+    }
+  ],
+  "images": [
+    {
+      "path": "m4-batch-compositing-windows.jpg",
+      "sha256": "485ed66084fd9cfb2b19c61b33e585178693a7de1149ae372ea08fd2226514f4",
+      "bytes": 84011
+    },
+    {
+      "path": "m4-matte-compositing-windows.jpg",
+      "sha256": "255ee36b93f98e5bc36a4546c8f89bc45040cc85c24e9e9433782161d25bb507",
+      "bytes": 84869
+    }
+  ],
+  "limits": {
+    "cpu": 1,
+    "memory_gib": 4,
+    "swap": 0,
+    "oom_score_adj": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "ui_runtime_seconds": 600,
+    "additional_oracle_runtime_seconds": 90,
+    "shared_gpu_lock": "nonblocking /tmp/HALO_BENCHMARK.lock"
+  },
+  "cleanup": {
+    "own_backend_stopped": true,
+    "own_tunnel_stopped": true,
+    "own_browser_tab_closed": true,
+    "all_35_fixture_and_four_copy_bytes_preserved": true,
+    "main_five_unsaved_moves_preserved": true,
+    "main_binary_and_filesystem_fds_preserved": true,
+    "memory_events_zero": true
+  },
+  "ui_time_limit": {
+    "first_finite_run_expired": true,
+    "resumed_only_final_batch_save_reopen": true,
+    "first_and_resumed_pid": [
+      1605905,
+      1608953
+    ],
+    "saved_project_and_native_reference_hashes_bound": true
+  },
+  "limitations": [
+    "Finite generator-only 64x64 composition verifies native control semantics and pixels, not full-resolution throughput, DPI or release soak.",
+    "This closes Blend/Matte rows only; other visual, audio, Program rollover and release gates remain open.",
+    "The protected main editor is not restarted; this verified candidate is staged separately."
+  ]
+}

@@ -12,7 +12,7 @@ import { buildProgramWindow } from "./program-range.js";
 import { sourceSampleAtFrame } from "./source-clock.js";
 import { createSourceSeek } from "./source-seek.js";
 import { createSourceAssets } from "./source-assets.js";
-import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection } from "./inspector.js";
+import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,renderBlendMatte } from "./inspector.js";
 import { renderMixer } from "./mixer.js";
 import {canRetainAudioPresetDraft} from './audio-presets.js';
 import { createExportPanel } from "./export.js";
@@ -517,6 +517,25 @@ function selected() {
     }
     $("inspector-content").append(section);
   }
+  const getCompositingSelection=()=>videoPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
+  const compositingSelection=getCompositingSelection(),compositingIdentity=JSON.stringify(compositingSelection),compositingFrame=view.playhead;
+  let compositingTarget=null;
+  const compositingCurrent=()=>inspectorSeq===inspectorSequence && view.playhead===compositingFrame && JSON.stringify(getCompositingSelection())===compositingIdentity;
+  const renderCompositing=detail=>{
+    if(!compositingTarget || detail.clip_id!==compositingSelection.clip_ids[0] || !compositingCurrent())return;
+    compositingTarget.replaceChildren();
+    const primary=timeline.tracks.flatMap(track=>track.clips).find(item=>item.id===detail.clip_id);
+    renderBlendMatte(compositingTarget,detail,{selection:compositingSelection,getSelection:getCompositingSelection,primaryName:primary?.name,commit,notice,
+      canInteract:()=>compositingCurrent() && writable && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]')});
+  };
+  if(compositingSelection && timeline.id!=='fixture'){
+    compositingTarget=document.createElement('div');compositingTarget.textContent='Reading selected video compositing…';$('inspector-content').append(compositingTarget);
+    if(compositingSelection.clip_ids[0]!==clip?.id){
+      const end=Math.max(1,...timeline.tracks.flatMap(track=>track.clips.map(item=>item.start_frame+item.length_frames)));
+      const query=new URLSearchParams({project_epoch:compositingSelection.project_epoch,if_generation:compositingSelection.generation,timeline_id:compositingSelection.timeline_id,revision:compositingSelection.revision,frame:Math.min(view.playhead,end-1)});
+      request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(compositingSelection.clip_ids[0])}/keys/0?${query}`).then(renderCompositing).catch(error=>{if(compositingCurrent())compositingTarget.textContent=error.message;});
+    }
+  }
   if (clip && documentState && timeline.id !== "fixture") {
     const target = document.createElement("div"); target.textContent = "Reading native properties…";
     $("inspector-content").append(target);
@@ -532,11 +551,12 @@ function selected() {
     request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(clip.id)}/keys/${state.key_page}?${query}`).then((detail) => {
       if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
       target.replaceChildren();
+      renderCompositing(detail);
       transformDetail={identity,detail};transformOverlay?.invalidate();syncViewerMasks();maskOverlay?.invalidate();
-      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,transitionDefaults:timeline.transition_defaults,
+      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,transitionDefaults:timeline.transition_defaults,compositing:false,
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();},
         canInteract:()=>identity===detailIdentity(inspectorState(clip.id)) && writable && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]') });
-    }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else target.textContent = error.message;} });
+    }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else{target.textContent = error.message;if(compositingTarget && compositingSelection.clip_ids[0]===clip.id && compositingCurrent())compositingTarget.textContent=error.message;}} });
   }
   if (clip)
     for (const [label, value] of [

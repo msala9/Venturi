@@ -8,6 +8,41 @@ export function detailIdentity(state) {
   return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame,state.key_page].join(":") : null;
 }
 export function propertyOperation(clip, patch) { return { kind: "set_properties", clip_id: clip, patch }; }
+export function videoPropertySelection({project_epoch,generation,timeline,selection}={}){
+  if(typeof project_epoch!=='string' || !project_epoch || typeof generation!=='string' || !generation || typeof timeline?.id!=='string' || typeof timeline.revision!=='string' || !Array.isArray(timeline.tracks) || !Array.isArray(selection) || !selection.length || selection.some(id=>typeof id!=='string' || !id) || new Set(selection).size!==selection.length)return null;
+  const all=new Set(timeline.tracks.flatMap(track=>track.clips.map(clip=>clip.id)));
+  if(selection.some(id=>!all.has(id)))return null;
+  const selected=new Set(selection),decimal=id=>/^\d{1,20}$/.test(id) && BigInt(id)<=18446744073709551615n;
+  const clip_ids=timeline.tracks.filter(track=>track.kind==='video' && !track.locked).flatMap(track=>{
+    const clips=track.clips.filter(clip=>selected.has(clip.id));
+    // Native panel targets sort by start, preserving ClipKey order for ties.
+    if(clips.every(clip=>decimal(clip.id)))clips.sort((a,b)=>BigInt(a.id)<BigInt(b.id)?-1:BigInt(a.id)>BigInt(b.id)?1:0);
+    clips.sort((a,b)=>a.start_frame-b.start_frame);
+    return clips.map(clip=>clip.id);
+  });
+  return clip_ids.length && clip_ids.length<=4096?{project_epoch,generation,timeline_id:timeline.id,revision:timeline.revision,selection:[...selection].sort(),clip_ids}:null;
+}
+export function renderBlendMatte(root,detail,{selection,getSelection,canInteract,commit,notice,primaryName=''}){
+  if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || !detail.video || detail.locked)return;
+  const captured=structuredClone(selection),identity=JSON.stringify(captured),section=document.createElement('details'),summary=document.createElement('summary'),note=document.createElement('p');
+  section.open=true;summary.textContent='Selected video compositing';note.className='muted';note.textContent=`Values from ${primaryName || 'the first selected video clip'} · changes apply to ${captured.clip_ids.length} selected unlocked video clip${captured.clip_ids.length===1?'':'s'}.`;section.append(summary,note);
+  let waiting=false;
+  const current=()=>root.isConnected!==false && canInteract() && JSON.stringify(getSelection())===identity;
+  const controls=[];
+  for(const [label,key,value,values] of [['Blend mode','blend',detail.blend,detail.blends],['Track matte','matte',detail.matte,detail.mattes]]){
+    const field=document.createElement('label'),select=document.createElement('select');field.className='field';field.textContent=label;select.setAttribute('aria-label',label);
+    for(const name of values)select.append(new Option(name,name));select.value=value;select.disabled=!current();field.append(select);section.append(field);controls.push(select);
+    select.addEventListener('change',()=>{
+      if(waiting)return;
+      if(!current()){notice('Video selection changed; read its current properties before editing');return;}
+      if(!values.includes(select.value)){notice('Choose an available native compositing value');return;}
+      const operation={kind:'set_properties_batch',clip_ids:[...captured.clip_ids],patch:{[key]:select.value}};
+      waiting=true;for(const control of controls)control.disabled=true;
+      Promise.resolve().then(()=>{if(!current())throw Error('Video selection changed; read its current properties before editing');return commit(operation);}).catch(error=>notice(error.message)).finally(()=>{waiting=false;for(const control of controls)control.disabled=!current();});
+    });
+  }
+  root.append(section);
+}
 export function transformPatch(param,value,linked=false){return {transform:zoomParameters(param,linked).map(param=>({param,value}))};}
 export function keyframeOperation(clip, target, frame, value, interpolation = "Linear",linked=false) {
   if (!Number.isSafeInteger(frame) || frame < 0) throw new Error("Choose an integer timeline frame");
@@ -20,7 +55,7 @@ export function keyPageIndex(value,total) {
   if(!Number.isSafeInteger(page) || page<1 || page>total)throw Error(`Choose a key page from 1 to ${total}`);
   return page-1;
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract,transitionDefaults }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract,transitionDefaults,compositing=true }) {
   const disabled = !writable || detail.locked;
   if(detail.key_page){
     const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
@@ -70,8 +105,10 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
       for (const name of values) select.append(new Option(name, name)); select.value = value;
       select.addEventListener("change", () => report(propertyOperation(detail.clip_id, patch(select.value)))); field.append(select); section.append(field);
     }
-    choice("Blend mode", detail.blend, detail.blends, (blend) => ({ blend }));
-    choice("Track matte", detail.matte, detail.mattes, (matte) => ({ matte }));
+    if(compositing){
+      choice("Blend mode", detail.blend, detail.blends, (blend) => ({ blend }));
+      choice("Track matte", detail.matte, detail.mattes, (matte) => ({ matte }));
+    }
     for (const [index, label] of [[0, "Flip horizontal"], [1, "Flip vertical"]]) {
       const button = document.createElement("button"); button.textContent = label; button.disabled = disabled; button.setAttribute("aria-pressed", detail.flip[index]);
       button.addEventListener("click", () => { const flip = [...detail.flip]; flip[index] = !flip[index]; report(propertyOperation(detail.clip_id, { flip })); }); section.append(button);

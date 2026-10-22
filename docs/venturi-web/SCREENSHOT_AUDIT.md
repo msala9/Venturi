@@ -60,3 +60,15 @@ shows the separate D binding enabled on the selected destination clip after
 one native application. The browser and native snapshots verify exact Undo,
 Remove/previous restore and input/modal/reload guards. This does not exercise
 the original desktop GUI or a shared NAS preset folder.
+
+`evidence/m4-batch-compositing-windows.jpg` (2026-10-22) shows the existing
+Windows browser after Save As/reopen, both video clips selected, Screen and the
+two-target Inspector note. `m4-matte-compositing-windows.jpg` shows the reopened
+Alpha matte and native half-coverage frame. Native references are
+`vv-app/src/main.rs` panel target ordering and `properties_panel.rs` Blend/Matte
+ClipChanges. All 15 Blend/four Matte controls, None removal, one Undo/Redo and
+saved-project persistence have native/API/browser evidence in
+`m4-batch-compositing.json`; all 37 captured RGBA frames match R9700 native
+rendering. The first finite UI service expired at its safety limit; a second
+finite run completed the last batch save/reopen, with both provenance records
+retained. Full-resolution throughput, DPI and release soak remain separate.

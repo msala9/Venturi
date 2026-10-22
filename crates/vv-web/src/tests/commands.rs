@@ -1,5 +1,200 @@
 use super::*;
 
+#[test]
+fn batch_compositing_accepts_500_targets_as_one_undo_and_preserves_redo_on_noop() {
+    let mut session = Session::default();
+    let timeline = session.create_timeline(Timeline {
+        name: "500 native compositing targets".into(),
+        fps: core::Rational::new(24, 1),
+        resolution: (64, 64),
+        tracks: vec![
+            core::Track::new(TrackKind::Video),
+            core::Track::new(TrackKind::Audio),
+            core::Track::new(TrackKind::Video),
+        ],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let mut ids = Vec::new();
+    for index in 0..500 {
+        let clip = core::Clip::from_source_range(
+            session.project.alloc_clip_id(),
+            core::ClipSource::SolidColor,
+            0,
+            1,
+            index * 2,
+            core::Rational::one(),
+        );
+        ids.push(clip.id.0.to_string());
+        session.project.timelines[timeline].tracks[if index % 2 == 0 { 0 } else { 2 }]
+            .insert_sorted(clip);
+    }
+    session.sync_timeline_media(timeline);
+    let original = serde_json::to_value(&session.project.timelines[timeline]).unwrap();
+    let position = session.history.position();
+    let generation = session.history.generation();
+    let noop = Operation::SetPropertiesBatch {
+        clip_ids: ids.clone(),
+        patch: Box::new(crate::inspector::Properties {
+            blend: Some(core::BlendMode::Normal),
+            matte: Some("None".into()),
+            ..Default::default()
+        }),
+    };
+    let before_noop = serde_json::to_value(&session.project).unwrap();
+    apply(&mut session, timeline, &noop).unwrap();
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before_noop);
+    assert_eq!(session.history.generation(), generation);
+    let changed = Operation::SetPropertiesBatch {
+        clip_ids: ids.clone(),
+        patch: Box::new(crate::inspector::Properties {
+            blend: Some(core::BlendMode::Overlay),
+            matte: Some("LumaInverted".into()),
+            ..Default::default()
+        }),
+    };
+    let mut expected = session.project.timelines[timeline].clone();
+    for clip in expected
+        .tracks
+        .iter_mut()
+        .flat_map(|track| &mut track.clips)
+    {
+        clip.effects.blend_mode = core::BlendMode::Overlay;
+        clip.effects.matte = Some(core::MatteMode::LumaInverted);
+    }
+    apply(&mut session, timeline, &changed).unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(session.history.generation(), generation + 1);
+    assert_eq!(
+        session.history.labels().last(),
+        Some(CommandLabel::Transform)
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[timeline]).unwrap(),
+        serde_json::to_value(&expected).unwrap()
+    );
+    apply(&mut session, timeline, &Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[timeline]).unwrap(),
+        original
+    );
+    let before_noop = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    let labels: Vec<_> = session.history.labels().collect();
+    apply(&mut session, timeline, &noop).unwrap();
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before_noop);
+    assert_eq!(session.history.generation(), generation);
+    assert_eq!(session.history.position(), position);
+    assert_eq!(session.history.labels().collect::<Vec<_>>(), labels);
+    apply(&mut session, timeline, &Operation::Redo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[timeline]).unwrap(),
+        serde_json::to_value(&expected).unwrap()
+    );
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    apply(&mut session, timeline, &changed).unwrap();
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+    let too_many = Operation::SetPropertiesBatch {
+        clip_ids: (0..4097)
+            .map(|index| ids[index % ids.len()].clone())
+            .collect(),
+        patch: Box::new(crate::inspector::Properties {
+            blend: Some(core::BlendMode::Screen),
+            ..Default::default()
+        }),
+    };
+    assert!(apply(&mut session, timeline, &too_many).is_err());
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+}
+
+#[test]
+fn batch_compositing_routes_every_native_mode_without_changing_legacy_single_clip_scope() {
+    let (mut session, timeline, ids) = fixture();
+    apply(
+        &mut session,
+        timeline,
+        &Operation::SetProperties {
+            clip_id: ids[0].0.to_string(),
+            patch: Box::new(crate::inspector::Properties {
+                blend: Some(core::BlendMode::Multiply),
+                ..Default::default()
+            }),
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        session.project.timelines[timeline].tracks[0]
+            .clip(ids[0])
+            .unwrap()
+            .effects
+            .blend_mode,
+        core::BlendMode::Multiply
+    );
+    assert_eq!(
+        session.project.timelines[timeline].tracks[0]
+            .clip(ids[1])
+            .unwrap()
+            .effects
+            .blend_mode,
+        core::BlendMode::Normal
+    );
+    let selected: Vec<_> = ids.iter().map(|id| id.0.to_string()).collect();
+    for blend in core::BlendMode::ALL {
+        apply(
+            &mut session,
+            timeline,
+            &Operation::SetPropertiesBatch {
+                clip_ids: selected.clone(),
+                patch: Box::new(crate::inspector::Properties {
+                    blend: Some(blend),
+                    ..Default::default()
+                }),
+            },
+        )
+        .unwrap();
+        for id in &ids {
+            assert_eq!(
+                session.project.timelines[timeline].tracks[0]
+                    .clip(*id)
+                    .unwrap()
+                    .effects
+                    .blend_mode,
+                blend
+            );
+        }
+    }
+    for matte in ["Alpha", "AlphaInverted", "Luma", "LumaInverted", "None"] {
+        apply(
+            &mut session,
+            timeline,
+            &Operation::SetPropertiesBatch {
+                clip_ids: selected.clone(),
+                patch: Box::new(crate::inspector::Properties {
+                    matte: Some(matte.into()),
+                    ..Default::default()
+                }),
+            },
+        )
+        .unwrap();
+        for id in &ids {
+            let value = session.project.timelines[timeline].tracks[0]
+                .clip(*id)
+                .unwrap()
+                .effects
+                .matte;
+            assert_eq!(
+                value
+                    .map(|mode| format!("{mode:?}"))
+                    .unwrap_or_else(|| "None".into()),
+                matte
+            );
+        }
+    }
+}
+
 fn close_gap_fixture(leading: bool) -> (Session, TimelineId, core::MediaId) {
     let mut session = Session::default();
     let id = session.create_timeline(Timeline {

@@ -185,6 +185,10 @@ pub enum Operation {
         clip_id: String,
         patch: Box<crate::inspector::Properties>,
     },
+    SetPropertiesBatch {
+        clip_ids: Vec<String>,
+        patch: Box<crate::inspector::Properties>,
+    },
     EditViewerTransform {
         clip_id: String,
         timeline_frame: FrameIdx,
@@ -990,6 +994,13 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         }
         Operation::SetProperties { clip_id, patch } => {
             crate::inspector::properties(session, id, clip_id, patch)?
+        }
+        Operation::SetPropertiesBatch { clip_ids, patch } => {
+            let generation = session.history.generation();
+            crate::inspector::properties_batch(session, id, clip_ids, patch)?;
+            if session.history.generation() == generation {
+                return Ok(());
+            }
         }
         Operation::EditViewerTransform {
             clip_id,

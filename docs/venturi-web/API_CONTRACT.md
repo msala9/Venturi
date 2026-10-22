@@ -987,6 +987,16 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   supplied properties apply in one undo step after complete validation.
   Viewer handles use `edit_viewer_transform` above to choose native default or
   current-source-frame key changes per axis.
+- Timeline command `set_properties_batch {clip_ids,patch}` accepts 1–4096
+  unique normalized ClipIds, each an explicit unlocked video-track target.
+  Only effective `blend` and `matte` fields are allowed; matte `None` clears
+  the matte. Rust preflights the complete request atomically, without linked
+  expansion, and applies one native `Transform` Undo step. Identical values
+  are a real no-op, preserving generation, Redo and media hashes. Normal writer,
+  project epoch, generation, timeline revision and idempotency guards apply.
+  The browser shows values from the first eligible selected video clip and
+  applies these two choices to all selected unlocked video clips. Other
+  property controls retain their existing single-clip behavior.
 - `set_keyframe {clip_id,edit:{target,timeline_frame,value,interpolation}}`
   targets `{kind:transform,param}` or `{kind:gain}`. Native code converts the
   integer timeline frame into a source frame. Null value removes that keyframe;

@@ -4,13 +4,46 @@
 
 ## Current completion assessment
 
-The ledger contains 90 in-scope capabilities: 40 done, 50 partial and none not
+The ledger contains 90 in-scope capabilities: 42 done, 48 partial and none not
 started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus
-44.4% of capability rows have full acceptance; this is not an estimate of
+46.7% of capability rows have full acceptance; this is not an estimate of
 implementation effort. Many partial rows already have native adapters and
 working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
+
+Blend and Track Matte now pass the original Inspector's multi-selection
+semantics and actual existing-Windows-browser controls in
+`evidence/m4-batch-compositing.json`. Values come from the first unlocked video
+in native track/start order; one validated `set_properties_batch` changes every
+explicit selected unlocked video, without linked audio expansion. Other
+properties keep their single-clip behavior. Full preflight refuses invalid,
+missing, audio, duplicate or locked targets atomically. One Transform Undo
+restores all targets; a matching batch preserves generation, Redo and cache data.
+
+All 15 Blend modes, four Matte modes and Matte removal were selected through
+the real Windows controls. Native history, Undo/Redo, Save As and explicit
+reopen pass. The two-video Screen batch changes both inspector values with one
+history entry. All 37 capture frames match native RGBA exactly on R9700 Vulkan;
+two additional native renders independently verify the saved batch and Matte
+removal. The new binary also repeats the 35-project, 43-frame, 38-control and
+12-pixel-check render matrix. Two Windows screenshots accompany the proof.
+
+Validation passes 434 web Rust, 291 core, five native compound PCM and 854
+JavaScript tests, multimedia and targeted desktop checks, fmt and all-target
+Clippy with denied warnings. Five new Rust tests include 500 targets, 4097
+refusal, all modes, atomic validation and exact Undo/Redo/no-op state; fourteen
+new JavaScript tests include native primary ordering, mixed selections and
+stale/context/pending guards. The final frontend build pins verified Rust hashes.
+
+Only halo2 compiles/renders, one CPU and at most 4 GiB without swap. The first
+finite UI service reached its ten-minute limit after the batch Undo/Redo proof;
+a second finite run completed only the final batch save/reopen. Original and
+resumed capture provenance and saved hashes are retained. All own services,
+the single Windows test tab and its tunnel are closed. The main editor's five
+unsaved moves, binary and filesystem bindings are preserved. Blend/Matte rows
+are now done; full-resolution throughput, DPI and release soak remain separate.
+The verified candidate is staged; the protected main editor is not restarted.
 
 The finite visual render matrix now passes
 `evidence/m4-r9700-visual-parity.json`: 35 native generator-only projects and

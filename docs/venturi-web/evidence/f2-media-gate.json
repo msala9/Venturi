@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-22",
+  "status": "implementation_gate_passed_hardware_pending",
+  "validation": "F2-media-workflow",
+  "binary_sha256": "62cd293d5752b291fc1485151dbd6a8a528031871a7326c0e401dddb6d22b78b",
+  "checks": {
+    "javascript_unique_cases": 957,
+    "javascript_initial_passed": 956,
+    "javascript_initial_failed": 1,
+    "focused_dto_file_rerun_passed": true,
+    "native_browser_proxy": 11,
+    "native_audio_origin": 4,
+    "vv_web": 453,
+    "fmt": true,
+    "clippy_packages": [
+      "vv-media",
+      "vv-session",
+      "vv-web"
+    ],
+    "clippy_all_targets_warnings_denied": true,
+    "native_embedded_build": true
+  },
+  "corrected_failures": [
+    "One JavaScript DTO-key expectation omitted the new audio origin; production code unchanged by correction.",
+    "Three Source admission tests exposed clean inactive linker file cache being counted as unreclaimable process memory; corrected conservative cgroup accounting and reran vv-web."
+  ],
+  "limits": {
+    "host": "halo2",
+    "cpu": 1,
+    "memory_bytes": 4294967296,
+    "swap_bytes": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "tasks": 128,
+    "runtime_seconds": 1800,
+    "cached_tools_only": true,
+    "network_offline": true
+  },
+  "acceptance": {
+    "actual_multistream_container_mix_pending": true,
+    "program_boundary_browser_audio_pending": true,
+    "canvas_drag_scroll_correction_pending": true,
+    "viewer_zoom_browser_pending": true,
+    "ordinary_resolution_throughput_pending": true,
+    "delivered_editor_unchanged": true,
+    "parity_ledger_rows_closed": 0
+  }
+}

@@ -40,6 +40,7 @@ mod silence;
 mod slip;
 mod snapshot;
 mod source;
+mod source_audio;
 mod take;
 mod visual;
 

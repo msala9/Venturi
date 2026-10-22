@@ -1496,6 +1496,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/compound-navigation.js", 200),
         ("/js/export.js", 200),
         ("/js/scopes.js", 200),
+        ("/js/viewer-zoom.js", 200),
         ("/js/balance.js", 200),
         ("/js/silence.js", 200),
         ("/js/library.js", 200),
@@ -1577,6 +1578,28 @@ async fn health_assets_snapshot_and_host_boundary() {
 fn source_prepare_audio_stream_is_an_optional_strict_unsigned_native_index() {
     let legacy: PrepareSource = serde_json::from_value(json!({"project_epoch":"p:1"})).unwrap();
     assert_eq!(legacy.audio_stream_index, 0);
+    assert_eq!(legacy.audio_mode, crate::source_audio::AudioMode::Selected);
+    let all: PrepareSource =
+        serde_json::from_value(json!({"project_epoch":"p:1","audio_mode":"all"})).unwrap();
+    assert_eq!(all.audio_mode, crate::source_audio::AudioMode::All);
+    assert_eq!(all.audio_stream_index, 0);
+    for mode in [json!(null), json!("ALL"), json!("mix"), json!(0)] {
+        assert!(
+            serde_json::from_value::<PrepareSource>(
+                json!({"project_epoch":"p:1","audio_mode":mode})
+            )
+            .is_err()
+        );
+    }
+    let assets: PrepareAssets = serde_json::from_value(json!({"project_epoch":"p:1"})).unwrap();
+    assert_eq!(assets.audio_stream_index, 0);
+    assert!(assets.include_waveform);
+    let assets: PrepareAssets = serde_json::from_value(
+        json!({"project_epoch":"p:1","audio_stream_index":2,"include_waveform":false}),
+    )
+    .unwrap();
+    assert_eq!(assets.audio_stream_index, 2);
+    assert!(!assets.include_waveform);
     let selected: PrepareSource = serde_json::from_value(json!({"project_epoch":"p:1","audio_stream_index":1,"window":{"start_frame":12,"end_frame":24}})).unwrap();
     assert_eq!(selected.audio_stream_index, 1);
     for value in [
@@ -1587,11 +1610,24 @@ fn source_prepare_audio_stream_is_an_optional_strict_unsigned_native_index() {
         json!(4_294_967_296u64),
     ] {
         assert!(
+            serde_json::from_value::<PrepareAssets>(
+                json!({"project_epoch":"p:1","audio_stream_index":value.clone()})
+            )
+            .is_err()
+        );
+        assert!(
             serde_json::from_value::<PrepareSource>(
                 json!({"project_epoch":"p:1","audio_stream_index":value})
             )
             .is_err()
         );
+    }
+    for body in [
+        json!({"project_epoch":"p:1","include_waveform":null}),
+        json!({"project_epoch":"p:1","include_waveform":0}),
+        json!({"project_epoch":"p:1","window":null}),
+    ] {
+        assert!(serde_json::from_value::<PrepareAssets>(body).is_err());
     }
     assert!(
         serde_json::from_value::<PrepareSource>(

@@ -1001,6 +1001,7 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
         revision: "r".into(),
         start_frame: 0,
         end_frame: 48,
+        audio_origin_frame: None,
         width: 960,
     };
     let inputs = jobs.jobs.lock().unwrap()[0].inputs.clone();
@@ -1172,6 +1173,7 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
         revision: "r".into(),
         start_frame: 0,
         end_frame: 24,
+        audio_origin_frame: None,
         width: 640,
     };
     for _ in 0..3 {
@@ -1376,8 +1378,8 @@ fn source_assets_admit_long_metadata_and_separate_full_source_identity_without_m
     };
     assert!(validate_assets_meta(&spec.meta).is_ok());
     let identity = spec.identity().unwrap();
-    let key = assets_key(&spec, &identity);
-    assert!(key.ends_with(":v3-assets:full"));
+    let key = assets_key(&spec, &identity, 0, true);
+    assert!(key.ends_with(":v3-assets:full:audio:0:waveform:true"));
     assert_ne!(
         key,
         source_key(&spec, ProxyQuality::Low, None, &identity, 0)
@@ -1395,7 +1397,7 @@ fn source_assets_admit_long_metadata_and_separate_full_source_identity_without_m
     actual.has_audio = true;
     assert!(!same_assets_meta(&spec.meta, &actual));
     spec.epoch = "a:2".into();
-    assert_ne!(key, assets_key(&spec, &identity));
+    assert_ne!(key, assets_key(&spec, &identity, 0, true));
     spec.meta.fps = vv_core::Rational::new(0, 1);
     assert!(validate_assets_meta(&spec.meta).is_err());
     std::fs::remove_dir_all(root).unwrap();
@@ -1457,6 +1459,8 @@ fn native_full_source_assets_publish_only_thumbnail_and_streamed_waveform_and_re
     );
     assert_eq!(ready["source_assets"]["has_video"], true);
     assert_eq!(ready["source_assets"]["has_audio"], true);
+    assert_eq!(ready["source_assets"]["audio_stream_index"], 0);
+    assert_eq!(ready["source_assets"]["include_waveform"], true);
     assert!(
         service
             .asset(id, &spec, "thumb.png")
@@ -1486,6 +1490,25 @@ fn native_full_source_assets_publish_only_thumbnail_and_streamed_waveform_and_re
     assert_eq!(
         service.prepare_assets(cloned_source(&spec)).unwrap()["id"],
         pending["id"]
+    );
+    let thumbnail = service
+        .prepare_assets_options(cloned_source(&spec), 0, false)
+        .unwrap();
+    assert_ne!(thumbnail["id"], pending["id"]);
+    let thumbnail_id = thumbnail["id"].as_str().unwrap();
+    let thumbnail = wait_for_assets(&service, &spec, thumbnail_id);
+    assert_eq!(thumbnail["source_assets"]["include_waveform"], false);
+    assert_eq!(
+        thumbnail["source_assets"]["source_version"],
+        ready["source_assets"]["source_version"]
+    );
+    assert!(service.asset(thumbnail_id, &spec, "thumb.png").is_ok());
+    assert!(service.asset(thumbnail_id, &spec, "waveform.json").is_err());
+    assert_eq!(
+        std::fs::read_dir(service.root.join(thumbnail_id))
+            .unwrap()
+            .count(),
+        1
     );
     let mut wrong = cloned_source(&spec);
     wrong.epoch = "assets:2".into();
@@ -1523,6 +1546,11 @@ fn native_audio_only_assets_accept_legacy_descriptive_metadata_and_publish_only_
     };
     assert_ne!(spec.meta.file, vv_core::MediaFileInfo::default());
     spec.meta.file = Default::default();
+    assert!(
+        service
+            .prepare_assets_options(cloned_source(&spec), 0, false)
+            .is_err()
+    );
     let pending = service.prepare_assets(cloned_source(&spec)).unwrap();
     let id = pending["id"].as_str().unwrap();
     let ready = wait_for_assets(&service, &spec, id);
@@ -1609,7 +1637,7 @@ fn accepted_foreground_source_preempts_only_running_assets_after_validation_and_
                     .send
                     .try_send((
                         "occupied".into(),
-                        Work::Assets(Box::new(cloned_source(&spec)))
+                        Work::Assets(Box::new(cloned_source(&spec)), 0, true)
                     ))
                     .is_ok()
             );
@@ -1688,6 +1716,7 @@ fn accepted_legacy_source_and_program_work_preempt_assets_without_canceling_fore
                 revision: "r".into(),
                 start_frame: 0,
                 end_frame: 24,
+                audio_origin_frame: None,
                 width: 640,
             };
             service
@@ -1803,13 +1832,134 @@ fn selected_source_audio_validates_before_admission_and_cache_keys_separate_only
     );
     assert_eq!(serde_json::to_value(&spec.meta).unwrap(), metadata);
     assert_eq!(spec.identity().unwrap(), identity);
+    for job in service.jobs.lock().unwrap().iter_mut() {
+        job.state = "ready";
+    }
+    let count = service.jobs.lock().unwrap().len();
+    assert!(
+        service
+            .prepare_assets_selected(cloned_source(&spec), 2)
+            .is_err()
+    );
+    assert_eq!(service.jobs.lock().unwrap().len(), count);
+    let selected_assets = service
+        .prepare_assets_selected(cloned_source(&spec), 1)
+        .unwrap();
+    assert_eq!(selected_assets["source_assets"]["audio_stream_index"], 1);
+    assert_eq!(selected_assets["source_assets"]["include_waveform"], true);
+    assert!(matches!(
+        receiver.try_recv().unwrap().1,
+        Work::Assets(_, 1, true)
+    ));
+    service.jobs.lock().unwrap().back_mut().unwrap().state = "ready";
+    let default_assets = service.prepare_assets(cloned_source(&spec)).unwrap();
+    assert_ne!(default_assets["id"], selected_assets["id"]);
+    assert!(matches!(
+        receiver.try_recv().unwrap().1,
+        Work::Assets(_, 0, true)
+    ));
+    assert_eq!(
+        service
+            .prepare_assets_selected(cloned_source(&spec), 0)
+            .unwrap()["id"],
+        default_assets["id"]
+    );
+    for job in service.jobs.lock().unwrap().iter_mut() {
+        job.state = "ready";
+    }
+    let all = crate::source_audio::AudioMode::All;
+    let selected = crate::source_audio::AudioMode::Selected;
+    assert_eq!(
+        source_audio_key(
+            &spec,
+            ProxyQuality::Low,
+            Some(window),
+            &identity,
+            selected,
+            0
+        ),
+        first
+    );
+    assert_ne!(
+        source_audio_key(&spec, ProxyQuality::Low, Some(window), &identity, all, 0),
+        first
+    );
+    let count = service.jobs.lock().unwrap().len();
+    assert!(
+        service
+            .prepare_audio(cloned_source(&spec), "low", Some(window), all, 1)
+            .is_err()
+    );
+    assert_eq!(service.jobs.lock().unwrap().len(), count);
+    let all_job = service
+        .prepare_audio(cloned_source(&spec), "low", Some(window), all, 0)
+        .unwrap();
+    assert_eq!(all_job["source_window"]["audio_mode"], "all");
+    assert!(all_job["source_window"]["audio_stream_index"].is_null());
+    assert_eq!(all_job["source_window"]["source_version"], identity);
+    assert!(matches!(
+        receiver.try_recv().unwrap().1,
+        Work::SourceAll(_, _, Some(_))
+    ));
+    assert_eq!(
+        service
+            .prepare_audio(cloned_source(&spec), "low", Some(window), all, 0)
+            .unwrap()["id"],
+        all_job["id"]
+    );
     spec.meta.has_audio = false;
     spec.meta.audio_streams = 0;
     assert!(validate_source_audio(&spec.meta, 0).is_ok());
     assert!(validate_source_audio(&spec.meta, 1).is_err());
+    for job in service.jobs.lock().unwrap().iter_mut() {
+        job.state = "ready";
+    }
+    spec.media_id = "silent".into();
+    let silent = service
+        .prepare_audio(cloned_source(&spec), "low", Some(window), all, 0)
+        .unwrap();
+    assert_eq!(silent["source_window"]["audio_mode"], "all");
+    assert!(silent["source_window"]["audio_stream_index"].is_null());
+    assert!(matches!(
+        receiver.try_recv().unwrap().1,
+        Work::SourceAll(_, _, Some(_))
+    ));
     drop(service);
     drop(receiver);
     std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn source_memory_bounds_original_decode_dimensions_and_selected_audio_without_duration_growth() {
+    let mut meta = window_fixture_meta();
+    let tiny = source_working_bytes(&meta, 960, false);
+    meta.width = 3840;
+    meta.height = 2160;
+    let large = source_working_bytes(&meta, 960, false);
+    assert!(large > tiny);
+    assert!(source_working_bytes(&meta, 1920, false) > large);
+    meta.duration_frames *= 100;
+    assert_eq!(source_working_bytes(&meta, 960, false), large);
+    meta.has_audio = true;
+    meta.channels = 1;
+    let selected = source_working_bytes(&meta, 960, false);
+    assert_eq!(selected - large, 64 * 1024 * 1024 * 4);
+    meta.channels = 8;
+    assert_eq!(
+        source_working_bytes(&meta, 960, false),
+        selected,
+        "Best-stream channels cannot bound another selected stream"
+    );
+    assert!(source_working_bytes(&meta, 256, true) < selected);
+    meta.has_audio = false;
+    meta.duration_frames = vv_core::IMAGE_DURATION_FRAMES;
+    assert_eq!(
+        source_working_bytes(&meta, 256, false),
+        3840 * 2160 * 20 + 64 * 1024 * 1024
+    );
+    meta.width = 8192;
+    meta.height = 8192;
+    assert!(source_working_bytes(&meta, 256, false) > 1024 * 1024 * 1024);
 }
 
 #[test]
@@ -1833,6 +1983,13 @@ fn selected_source_worker_refuses_changed_stream_metadata_before_creating_a_prox
         meta: vv_media::probe_media(&input).unwrap(),
     };
     spec.meta.audio_streams = 2;
+    assert_eq!(
+        generate_assets(&spec, &output, &AtomicBool::new(false), 1, true)
+            .unwrap_err()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    assert_eq!(std::fs::read_dir(&output).unwrap().count(), 0);
     assert_eq!(
         generate(
             &spec,
@@ -1864,5 +2021,25 @@ fn selected_source_worker_refuses_changed_stream_metadata_before_creating_a_prox
     )
     .unwrap();
     assert!(output.join("source.mp4").is_file());
+    let all_output = root.join("all");
+    std::fs::create_dir(&all_output).unwrap();
+    spec.meta = vv_media::probe_media(&input).unwrap();
+    generate_audio(
+        &spec,
+        &all_output,
+        ProxyQuality::Low,
+        Some(SourceWindow {
+            start_frame: 0,
+            end_frame: 1,
+        }),
+        (crate::source_audio::AudioMode::All, 0),
+        &AtomicBool::new(false),
+        |_| {},
+    )
+    .unwrap();
+    let all_meta = vv_media::probe_media(&all_output.join("source.mp4")).unwrap();
+    assert!(all_meta.has_audio);
+    assert_eq!(all_meta.channels, 2);
+    assert!(!all_meta.has_video);
     std::fs::remove_dir_all(root).unwrap();
 }

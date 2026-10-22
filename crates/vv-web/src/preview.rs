@@ -488,7 +488,7 @@ impl Preview {
         end: i64,
         settings: &vv_session::export::ExportSettings,
         progress: &Mutex<vv_session::export::ExportProgress>,
-        cancel: &AtomicBool,
+        cancel: &Arc<AtomicBool>,
     ) -> Result<()> {
         use vv_session::export::ExportError;
         let (device, path) = self.config.as_ref().ok_or_else(unavailable)?;
@@ -519,7 +519,7 @@ impl Preview {
                 .map(|_| ())
                 .map_err(|error| ExportError::Failed(error.to_string()))
         };
-        let result = vv_session::export::export_timeline_with_gpu(
+        let result = vv_session::export::export_timeline_with_gpu_cancellable(
             &snapshot.project,
             snapshot.timeline,
             settings,

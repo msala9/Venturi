@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { createSourceAssets } from "../js/source-assets.js";
+import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "../js/source-assets.js";
+import {visibleAssetDemand} from '../js/timeline/draw.js';
 
 function deferred() {
   let resolve, reject;
@@ -21,7 +22,7 @@ function harness(options = {}) {
   let timerId = 0;
   const waveform = { scope: "full_source", duration_seconds: 997.5, peaks: [0, .25, 1] };
   const job = (status = "ready") => ({ id: "job", project_epoch: null, state: status, source_asset: null, source_window: null, program: null,
-    source_assets: { source_version: "fd-version", total_frames: item.duration_frames, fps: { ...item.fps }, has_video: item.has_video, has_audio: item.has_audio } });
+    source_assets: { source_version: "fd-version", total_frames: item.duration_frames, fps: { ...item.fps }, has_video: item.has_video, has_audio: item.has_audio,audio_stream_index:0,include_waveform:true } });
   const loader = createSourceAssets({
     getState: () => state,
     onReady: value => { ready.push(value); return options.onReady?.(value); },
@@ -278,4 +279,90 @@ test("a previously attempted selection cancels a different active selection befo
   assert.equal(await h.load(), null); ack.resolve(h.job()); await pending;
   assert.equal(h.ready.length, 0); assert.equal(h.errors.length, 0); assert.equal(h.calls.length, 2);
   h.loader.dispose();
+});
+
+test('visible derivative preparation establishes a pinned FD version without opening Source or downloading MP4',async()=>{
+  const h=harness({api:(_path,body,_fetcher,job)=>{assert.deepEqual(body,{project_epoch:'epoch',audio_stream_index:0,include_waveform:false});const value=job();value.source_assets.include_waveform=false;return value;}});
+  const result=await h.loader.load(h.item,'epoch',{audioStreamIndex:0,includeWaveform:false});
+  assert.equal(result.sourceVersion,'fd-version');assert.equal(result.waveform,null);assert.equal(result.waveformBytes,0);
+  assert.equal(h.calls.filter(call=>call.kind==='fetch').length,1);assert.ok(h.calls.every(call=>!call.path.includes('source.mp4') && !call.path.includes('waveform.json')));h.loader.dispose();
+});
+
+test('native selected-stream waveform is bound to the descriptor and unavailable streams never enqueue',async()=>{
+  const h=harness({api:(_path,body,_fetcher,job)=>{const value=job();value.source_assets.audio_stream_index=body.audio_stream_index;return value;}});h.item.has_video=false;h.item.audio_stream_count=2;
+  const result=await h.loader.load(h.item,'epoch',{audioStreamIndex:1,includeWaveform:true});assert.equal(result.audioStreamIndex,1);assert.equal(result.thumbnail,null);assert.equal(result.waveform.duration_seconds,997.5);
+  for(const index of [-1,2,1.5])await h.loader.load(h.item,'epoch',{audioStreamIndex:index,force:true});assert.equal(h.calls.filter(call=>call.kind==='api').length,1);h.loader.dispose();
+});
+
+test('mismatched stream, waveform scope and late FD changes cannot publish a cached derivative',async()=>{
+  for(const patch of [{audio_stream_index:0},{include_waveform:false}]){
+    const h=harness({api:(_path,_body,_fetcher,job)=>{const value=job();Object.assign(value.source_assets,{audio_stream_index:1},patch);return value;}});h.item.audio_stream_count=2;
+    await h.loader.load(h.item,'epoch',{audioStreamIndex:1,includeWaveform:true});assert.equal(h.ready.length,0);assert.match(h.errors[0].message,/identity/);h.loader.dispose();
+  }
+  const h=harness({api:(_path,_body,_fetcher,job)=>job('running'),fetcher:(_path,_init,job)=>{const value=job();value.source_assets.source_version='replacement-fd';return Response.json(value);}});
+  const pending=h.loader.load(h.item,'epoch');await flush();h.tick();await pending;assert.equal(h.ready.length,0);assert.match(h.errors[0].message,/identity/);h.loader.dispose();
+});
+
+test('native still sentinel metadata is preserved and default omitted descriptor fields remain compatible',async()=>{
+  const h=harness({api:(_path,_body,_fetcher,job)=>{const value=job();delete value.source_assets.audio_stream_index;delete value.source_assets.include_waveform;return value;}});
+  h.item.is_image=true;h.item.has_audio=false;h.item.duration_frames=1_000_000_000;h.item.fps={num:1,den:1};
+  const result=await h.loader.load(h.item,'epoch');assert.equal(result.item.duration_frames,1_000_000_000);assert.ok(result.thumbnail);assert.equal(result.waveform,null);h.loader.dispose();
+});
+
+function queueHarness({complete=true}={}){
+  const items=Array.from({length:70},(_,index)=>({id:`m${index}`,name:`Media ${index}`,content_hash:`hash${index}`,duration_frames:240,fps:{num:24,den:1},has_video:true,has_audio:true,audio_stream_count:2}));
+  let state={project_epoch:'epoch',media:items},idle=true,timerId=0,cancels=0;
+  const calls=[],cache=new Set(),timers=new Map(),pending=[];
+  const identity=(item,index,wave)=>JSON.stringify([item.id,index,wave]);
+  const loader={load(item,epoch,options){calls.push({item,epoch,options});if(complete){cache.add(identity(item,options.audioStreamIndex,options.includeWaveform));return Promise.resolve({item});}const gate=deferred();pending.push(gate);return gate.promise;},cancel(){cancels++;},dispose(){}};
+  const queue=createSourceAssetQueue({loader,getState:()=>state,isIdle:()=>idle,hasAsset:entry=>cache.has(identity(entry.item,entry.audioStreamIndex,entry.includeWaveform)),setTimer:callback=>{timers.set(++timerId,callback);return timerId;},clearTimer:id=>timers.delete(id)});
+  const entry=(index,stream=0,wave=false)=>({item:items[index],audioStreamIndex:stream,includeWaveform:wave});
+  return {queue,items,calls,pending,cache,timers,entry,get cancels(){return cancels;},setIdle(value){idle=value;queue.refresh();},setState(value){state=value;queue.refresh();},tick(){const next=timers.entries().next().value;assert.ok(next,'One scheduled derivative task');timers.delete(next[0]);next[1]();},clearCache(){cache.clear();},identity};
+}
+
+test('visible pool/timeline derivative demand coalesces and runs exactly one client preparation at a time',async()=>{
+  const h=queueHarness({complete:false});h.queue.demand('pool',[h.entry(0),h.entry(1)]);h.queue.demand('timeline',[h.entry(0,1,true)]);assert.equal(h.timers.size,1);h.tick();await flush();
+  assert.equal(h.calls.length,1);assert.equal(h.calls[0].options.audioStreamIndex,1);assert.equal(h.calls[0].options.includeWaveform,true);assert.equal(h.timers.size,0);
+  h.queue.demand('pool',[h.entry(0),h.entry(1)]);assert.equal(h.calls.length,1);h.pending[0].resolve({item:h.items[0]});await flush();assert.equal(h.timers.size,1);h.tick();await flush();assert.equal(h.calls.length,2);
+  h.pending[1].resolve(null);await flush();h.queue.dispose();
+});
+
+test('foreground playback drops queued work, aborts its active observer and resumes only unattempted visible entries',async()=>{
+  const h=queueHarness({complete:false});h.queue.demand('timeline',[h.entry(0,0,true),h.entry(1,0,true)]);h.tick();await flush();h.setIdle(false);
+  assert.equal(h.cancels,1);assert.equal(h.timers.size,0);h.pending[0].resolve(null);await flush();assert.equal(h.calls.length,1);assert.equal(h.timers.size,0);
+  h.setIdle(true);h.tick();await flush();assert.equal(h.calls.length,2);assert.equal(h.calls[1].item.id,'m1');h.pending[1].resolve(null);await flush();h.queue.dispose();
+});
+
+test('obsolete epoch or removed demand cannot publish another client request and never DELETEs shared jobs',async()=>{
+  const h=queueHarness({complete:false});h.queue.demand('pool',[h.entry(0),h.entry(1)]);h.tick();await flush();h.setState({project_epoch:'new',media:h.items});assert.equal(h.cancels,1);
+  h.pending[0].resolve({item:h.items[0]});await flush();if(h.timers.size){h.tick();await flush();}assert.equal(h.calls.length,1);
+  h.queue.demand('pool',[h.entry(1)],'epoch');if(h.timers.size){h.tick();await flush();}assert.equal(h.calls.length,1);h.queue.dispose();
+});
+
+test('successful eviction cannot thrash a still-visible demand, but a return to view can reload the bounded native cache',async()=>{
+  const h=queueHarness();h.queue.demand('pool',[h.entry(0)]);h.tick();await flush();h.clearCache();h.queue.demand('pool',[h.entry(0)]);h.tick();await flush();assert.equal(h.calls.length,1);
+  h.queue.demand('pool',[]);h.queue.demand('pool',[h.entry(0)]);h.tick();await flush();assert.equal(h.calls.length,2);assert.equal(h.calls[1].options.force,true);h.queue.dispose();
+});
+
+test('failed media is not retried by repaint and an explicit Refresh bypasses even a populated cache',async()=>{
+  const h=queueHarness({complete:false});h.queue.demand('pool',[h.entry(0)]);h.tick();await flush();h.pending[0].resolve(null);await flush();h.queue.demand('pool',[h.entry(0)]);h.tick();await flush();assert.equal(h.calls.length,1);
+  h.cache.add(h.identity(h.items[0],0,false));const refreshed=h.queue.load(h.items[0],'epoch',{includeWaveform:false,force:true});h.tick();await flush();assert.equal(h.calls.length,2);assert.equal(h.calls[1].options.force,true);h.pending[1].resolve({item:h.items[0]});await refreshed;h.queue.dispose();
+});
+
+test('visible demand is bounded and a full waveform upgrades a same-media thumbnail-only request',async()=>{
+  const h=queueHarness();h.queue.demand('pool',h.items.map((_,index)=>h.entry(index)));h.queue.demand('timeline',[h.entry(0,0,true)]);h.tick();await flush();
+  assert.equal(h.calls[0].options.includeWaveform,true);assert.equal(h.calls[0].item.id,'m0');
+  for(let index=1;index<64;index++){h.tick();await flush();}if(h.timers.size){h.tick();await flush();}
+  assert.equal(h.calls.length,64);assert.ok(h.calls.every(call=>Number(call.item.id.slice(1))<64));h.queue.dispose();assert.equal(h.timers.size,0);
+});
+
+test('timeline visible geometry requests only on-screen file derivatives and binds the actual audio stream',()=>{
+  const timeline={id:'t',revision:'r',fps:{num:24,den:1},tracks:[
+    {id:'v',kind:'video',clips:[{id:'v0',media_id:'media',start_frame:0,length_frames:24},{id:'far',media_id:'offscreen',start_frame:1000,length_frames:24},{id:'generated',media_id:null,start_frame:0,length_frames:24}]},
+    {id:'a',kind:'audio',clips:[{id:'a1',media_id:'media',audio_stream_index:1,start_frame:0,length_frames:24},{id:'a0',media_id:'media',audio_stream_index:0,start_frame:24,length_frames:24}]},
+  ]};
+  const entries=visibleAssetDemand(timeline,{origin:0,scale:100,rowHeight:62,videoScroll:0,audioScroll:0},800,400);
+  assert.deepEqual(entries,[{media_id:'media',audio_stream_index:0,include_waveform:true},{media_id:'media',audio_stream_index:1,include_waveform:true}]);
+  assert.deepEqual(visibleAssetDemand(timeline,{},0,400),[]);
+  const assets=new Map([[sourceAssetKey('media',1),{mediaId:'media',thumbnail:{},thumbnailURL:'blob:selected'}]]);assert.equal(mediaThumbnail(assets,'media').thumbnailURL,'blob:selected');assert.equal(assets.get(sourceAssetKey('media',0)),undefined);
 });

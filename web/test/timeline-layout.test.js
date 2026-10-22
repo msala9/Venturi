@@ -128,15 +128,43 @@ test('group move clamps the raw candidate before snapping and clamps again to fo
 });
 
 function harness(){
-  const previous=globalThis.window,handlers=new Map(),captures=new Set(),commands=[],notices=[],timeline=fixture(),view=viewport();
-  let writable=true,modal=false;
+  const previous=globalThis.window,handlers=new Map(),windowHandlers=new Map(),captures=new Set(),commands=[],notices=[],timeline=fixture(),view=viewport();
+  let writable=true,modal=false,selectionChanged=()=>{},rectOverrides={};
   const document={querySelector:()=>modal?{}:null,addEventListener(){},removeEventListener(){}};
-  globalThis.window={document,addEventListener(){},removeEventListener(){}};
-  const canvas={ownerDocument:document,clientWidth:1200,clientHeight:view.viewportHeight,style:{},getBoundingClientRect:()=>({left:0,top:0,width:1200,height:canvas.clientHeight}),addEventListener:(name,handler)=>handlers.set(name,handler),removeEventListener:name=>handlers.delete(name),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
-  const input=createInput({canvas,getTimeline:()=>timeline,getGapContext:()=>({project_epoch:'epoch',generation:'0'}),view,invalidate(){},onSelect(){},onSeek(){},onCommand:async operation=>commands.push(operation),onNotice:message=>notices.push(message),canEdit:()=>writable});
+  globalThis.window={document,devicePixelRatio:1,addEventListener:(name,handler)=>windowHandlers.set(name,handler),removeEventListener:name=>windowHandlers.delete(name)};
+  const canvas={ownerDocument:document,clientWidth:1200,clientHeight:view.viewportHeight,style:{},getBoundingClientRect:()=>({left:0,top:0,width:1200,height:canvas.clientHeight,...rectOverrides}),addEventListener:(name,handler)=>handlers.set(name,handler),removeEventListener:name=>handlers.delete(name),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
+  const input=createInput({canvas,getTimeline:()=>timeline,getGapContext:()=>({project_epoch:'epoch',generation:'0'}),view,invalidate(){},onSelect(){selectionChanged();},onSeek(){},onCommand:async operation=>commands.push(operation),onNotice:message=>notices.push(message),canEdit:()=>writable});
   const send=(type,x,y,extra={})=>handlers.get(type)({clientX:x,clientY:y,pointerId:1,button:0,buttons:1,preventDefault(){},...extra});
-  return {timeline,view,canvas,commands,notices,captures,handlers,input,send,setWritable:value=>writable=value,setModal:value=>modal=value,destroy(){input.destroy();globalThis.window=previous;}};
+  return {timeline,view,canvas,commands,notices,captures,handlers,windowHandlers,input,send,setWritable:value=>writable=value,setModal:value=>modal=value,setRect:value=>rectOverrides=value,setOnSelect:value=>selectionChanged=value,destroy(){input.destroy();globalThis.window=previous;}};
 }
+
+test('Inspector scroll queued by selection preserves a clip drag when fractional Canvas mapping is unchanged',async()=>{
+  const h=harness();try{
+    h.setRect({height:h.canvas.clientHeight-0.2});
+    h.setOnSelect(()=>queueMicrotask(()=>h.windowHandlers.get('scroll')({type:'scroll',target:{id:'inspector-content'}})));
+    const layout=timelineLayout(h.timeline,h.view),x=frameToX(5,h.view,h.timeline.fps),y=(layout.trackTop(0)+30)*(h.canvas.clientHeight-0.2)/h.canvas.clientHeight;
+    h.send('pointerdown',x,y);await Promise.resolve();
+    assert.equal(h.captures.size,1);assert.deepEqual(h.commands,[]);
+    h.send('pointermove',x+120,y);assert.equal(h.view.draft.error,null);
+    h.windowHandlers.get('scroll')({type:'scroll',target:{id:'inspector'}});
+    assert.equal(h.captures.size,1);
+    await h.send('pointerup',x+120,y,{buttons:0});
+    assert.equal(h.commands.length,1);assert.equal(h.commands[0].kind,'safe_move');assert.equal(h.captures.size,0);
+  }finally{h.destroy();}
+});
+
+test('scroll still cancels clip gestures when Canvas mapping changes or a dialog or hidden document blocks them',async()=>{
+  const changes=[h=>h.setRect({left:1}),h=>h.setRect({top:1}),h=>h.setRect({width:1199}),h=>h.setRect({height:h.canvas.clientHeight-0.2}),h=>h.canvas.clientWidth--,h=>h.canvas.clientHeight--,()=>window.devicePixelRatio=2,h=>h.setModal(true),h=>h.canvas.ownerDocument.hidden=true];
+  for(const change of changes){
+    const h=harness();try{
+      const x=frameToX(5,h.view,h.timeline.fps),y=timelineLayout(h.timeline,h.view).trackTop(0)+30;
+      h.send('pointerdown',x,y);h.send('pointermove',x+120,y);assert.ok(h.view.draft);
+      change(h);h.windowHandlers.get('scroll')({type:'scroll',target:{id:'inspector'}});
+      assert.equal(h.captures.size,0);assert.equal(h.view.draft,null);
+      await h.send('pointerup',x+120,y,{buttons:0});assert.deepEqual(h.commands,[]);
+    }finally{h.destroy();}
+  }
+});
 
 test('divider drag is local and independently sized; Escape and capture loss restore the previous split without touching selection',async()=>{
   const h=harness();try{

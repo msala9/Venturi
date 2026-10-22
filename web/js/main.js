@@ -6,12 +6,13 @@ import {createRetimeMenu} from './retime-menu.js';
 import {retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} from './retime-visibility.js';
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import { createViewer } from "./viewer.js";
-import { createSourcePlayer, sourceAssetURL, sourceSelection } from "./source.js";
+import {createViewerZoom,isViewerFullscreenShortcut} from './viewer-zoom.js';
+import { createSourcePlayer, sourceSelection } from "./source.js";
 import { createProgramPlayer } from "./program.js";
 import { buildProgramWindow } from "./program-range.js";
-import { sourceSampleAtFrame } from "./source-clock.js";
+import { sourceSampleAtFrame,sourceAudioQuery } from "./source-clock.js";
 import { createSourceSeek } from "./source-seek.js";
-import { createSourceAssets } from "./source-assets.js";
+import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "./source-assets.js";
 import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain } from "./inspector.js";
 import {createZoomLink} from './curves.js';
 import { renderMixer } from "./mixer.js";
@@ -248,6 +249,10 @@ $("fullscreen").addEventListener("click", async () => {
     notice(error.message);
   }
 });
+document.addEventListener('keydown',event=>{
+  if(!isViewerFullscreenShortcut(event,{dialogOpen:Boolean(document.querySelector('dialog[open]'))}))return;
+  event.preventDefault();event.stopPropagation();$('fullscreen').click();
+});
 for (const name of ["Edit", "Color", "Audio", "Review"]) {
   const button = document.createElement("button");
   button.textContent = `${name} workspace`;
@@ -331,11 +336,11 @@ let commit = async () => {
   throw new Error("Fixture only · no edit was saved");
 };
 let seek = () => {};
-let viewer = null, viewerMode = "program", sourcePlayer = null, programPlayer = null, slipView = null;
+let viewer = null, viewerZoom=null, viewerMode = "program", sourcePlayer = null, programPlayer = null, slipView = null;
 let transformOverlay=null,transformDetail=null,maskOverlay=null,maskChoice=null,maskPickerIdentity=null,maskSelectionSequence=0,maskSelectionIdentity=null;
 let sourceOpenId = null;
 let sourceSeek=null;
-let sourceAssets=null,forceSourceAssets=false;
+let sourceAssets=null,derivativesTransportPending=false;
 const sourceRanges = new Map();
 let programMarkState=markRangeContext(null,null,null);
 const mediaAssets = new Map();
@@ -372,7 +377,8 @@ function viewerModeSet(mode) {
   syncProgramMarks();
   updatePlayAvailability();
   $("viewer-caption").textContent = mode === "source" ? "Source proxy · independent of timeline edits" : "Exact timeline frame";
-  if (mode === "program") { sourcePlayer?.pause(); sourceAssets?.cancel(); updateTime(); seek(); }
+  if (mode === "program") { sourcePlayer?.pause(); sourceAssets?.cancelSource(); updateTime(); seek(); }
+  viewerZoom?.refresh();
 }
 function sourcePosition(allowPreparing=false) {
   const position=sourcePlayer?.current();
@@ -398,16 +404,15 @@ function openSource() {
   }
   const sameSource=sourceOpenId===item.id;
   const startFrame=sameSource ? sourcePosition(true)?.frame ?? 0 : 0;
-  if(sourceOpenId!==item.id)sourceAssets?.cancel();
+  if(sourceOpenId!==item.id)sourceAssets?.cancelSource();
   sourceOpenId = item.id;
-  forceSourceAssets=true;
   const range = (sameSource?sourceRanges.get(item.id):null) || { source_in:0, source_out:item.is_image ? Math.round(5*item.fps.num/item.fps.den) : item.duration_frames };
   sourceRanges.set(item.id,range);
   $("source-in").value = range.source_in; $("source-out").value = range.source_out;
   $("source-mark-in").disabled = !!item.is_image; $("source-mark-out").disabled = !!item.is_image;
   viewerModeSet("source");
   sourceSeek?.reset(startFrame);
-  sourcePlayer.open(item, documentState.project_epoch, $("source-quality").value,startFrame);
+  sourcePlayer.open(item, documentState.project_epoch, $("source-quality").value,startFrame,{audioMode:'all'});
   syncSourcePosition();
 }
 $("source-mode").addEventListener("click", openSource);
@@ -450,8 +455,9 @@ function togglePlayback() {
   audioScrub?.stop();
   if(fastTransport?.cancelPreparation())return;
   if(viewerMode==="program" && timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked)){voiceover?.open();return;}
-  if (viewerMode === "program") { viewer?.invalidate(); programPlayer.toggle().catch((error) => notice(error.message)); }
-  else sourcePlayer.toggle().catch((error) => notice(error.message));
+  derivativesTransportPending=true;sourceAssets?.refresh();
+  if (viewerMode === "program") { viewer?.invalidate(); programPlayer.toggle().catch((error) => notice(error.message)).finally(()=>{derivativesTransportPending=false;sourceAssets?.refresh();}); }
+  else sourcePlayer.toggle().catch((error) => notice(error.message)).finally(()=>{derivativesTransportPending=false;sourceAssets?.refresh();});
 }
 $("play").addEventListener("click", togglePlayback);
 let inspectorSequence = 0;
@@ -695,9 +701,10 @@ const canvasTimeline = createTimeline({
   canNavigate:()=>!busy && !unresolved,
   onOpenCompound:ids=>compoundNavigation?.enter(ids),
   onNavigationIntent:()=>compoundNavigation?.cancel(),
-  onNavigationStateChange:()=>{compoundNavigation?.invalidate();syncClipboardControls();syncSelectionActions();queueMicrotask(syncProgramMarks);},
+  onNavigationStateChange:()=>{compoundNavigation?.invalidate();syncClipboardControls();syncSelectionActions();sourceAssets?.refresh();queueMicrotask(syncProgramMarks);},
   view,
   getAssets: () => mediaAssets,
+  onPaint:(_duration,demand)=>{if(documentState && timeline?.id===demand?.timeline_id && timeline?.revision===demand.revision)sourceAssets?.demand('timeline',assetDemandItems(demand.items),documentState.project_epoch);},
   getCache: () => previewCache?.ranges(),
   onSelect: ()=>{view.transitionSelection=null;selected();},
   onTransitionSelect:selection=>{view.transitionSelection=selection;view.selection=[];view.selectionAnchor=null;view.markerId=null;revealInspector();selected();},
@@ -769,6 +776,7 @@ function installTimeline(next,{transitionSelection=null}={}) {
   canvasTimeline.cancel();
   timeline = next;
   syncProgramMarks();exportPanel?.invalidate?.();
+  viewerZoom?.refresh();
   view.transitionSelection=selectedTransition(next,transitionSelection)?transitionSelection:null;
   updatePlayAvailability();
   view.selection = [];
@@ -887,7 +895,7 @@ compoundNavigation=createCompoundNavigation({
   root:$("compound-breadcrumb"),openButton:$("open-compound"),notice,
   getState:()=>({document:documentState,timeline,frame:view.playhead,selection:[...view.selection],viewport:{scale:view.scale,origin:view.origin,scrollY:view.scrollY,videoScroll:view.videoScroll,audioScroll:view.audioScroll,videoPaneHeight:view.videoPaneHeight,rowHeight:view.rowHeight,selection:[...view.selection],selectionAnchor:view.selectionAnchor}}),
   canNavigate:()=>!busy && !unresolved && canvasTimeline.navigationIdle() && !document.querySelector('dialog[open]'),
-  stop:()=>{fastTransport?.stop();audioScrub?.stop();programPlayer?.stop();sourcePlayer?.pause();sourceAssets?.cancel();slipView?.reset();viewer?.invalidate();},
+  stop:()=>{fastTransport?.stop();audioScrub?.stop();programPlayer?.stop();sourcePlayer?.pause();sourceAssets?.cancelSource();slipView?.reset();viewer?.invalidate();},
   install:(next,frame,viewport)=>{
     view.playhead=frame;view.origin=Number.isFinite(viewport?.origin) && viewport.origin>=0?viewport.origin:0;view.scrollY=Number.isFinite(viewport?.scrollY) && viewport.scrollY>=0?viewport.scrollY:0;
     view.videoScroll=Number.isFinite(viewport?.videoScroll) && viewport.videoScroll>=0?viewport.videoScroll:0;view.audioScroll=Number.isFinite(viewport?.audioScroll) && viewport.audioScroll>=0?viewport.audioScroll:0;
@@ -925,7 +933,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
   }
   if(preserveAudioDrafts)invalidateTimeline();
   const sourceChanged=(id)=>documentState?.media.find((item)=>item.id===id)?.content_hash !== next.media.find((item)=>item.id===id)?.content_hash;
-  for(const [id,asset] of mediaAssets)if(sourceChanged(id)){releaseMediaAsset(asset);mediaAssets.delete(id);}
+  for(const [key,asset] of mediaAssets)if(sourceChanged(asset.mediaId)){releaseMediaAsset(asset);mediaAssets.delete(key);}
   if(sourceOpenId && (!next.media.some((item)=>item.id===sourceOpenId) || sourceChanged(sourceOpenId))){sourcePlayer?.reset();sourceAssets?.cancel();sourceRanges.delete(sourceOpenId);sourceOpenId=null;}
   view.retimeVisible=retimeProjectVisibility(documentState?.project_epoch,next.project_epoch,view.retimeVisible);
   if (documentState?.project_epoch !== next.project_epoch) {
@@ -994,7 +1002,8 @@ async function refresh({preserveAudioDrafts=false}={}) {
   syncSelectionActions();
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
-  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},notice});
+  catalog?.dispose();
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
   nativeAssets?.invalidate();
   mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
   if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
@@ -1002,6 +1011,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
     ? "Seek a timeline frame"
     : "Exact preview is not available on this host";
   updatePlayAvailability();
+  viewerZoom?.refresh();
   if (next.capabilities.preview) seek();
 }
 function commandNotice(receipt) {
@@ -1455,6 +1465,13 @@ maskOverlay=createViewerMaskOverlay({screen:$("screen"),image:$("preview"),toggl
   if(choice && before && selectionSequence===maskSelectionSequence && documentState?.project_epoch===before.project_epoch && timeline?.id===before.timeline_id && clip && view.selection.includes(clip.id))maskChoice={...choice,revision:timeline.revision};
   syncViewerMasks();maskOverlay?.invalidate();return receipt;
 }});
+viewerZoom=createViewerZoom({screen:$('screen'),media:[$('preview'),$('program-video'),$('source-video'),$('source-image')],select:$('viewer-zoom'),status:$('viewer-zoom-status'),
+  getActive:()=>{
+    if(!$('slip-view').hidden)return null;
+    const element=viewerMode==='source'?$('source-image').hidden?$('source-video'):$('source-image'):$('program-view').hidden?$('preview'):$('program-video');
+    return !element.hidden && element.getAttribute('src')?element:null;
+  },getContext:()=>JSON.stringify([documentState?.project_epoch,timeline?.id,viewerMode,sourceOpenId]),
+  onChange:()=>{transformOverlay?.cancel();maskOverlay?.cancel();transformOverlay?.invalidate();maskOverlay?.invalidate();}});
 $("viewer-transform").addEventListener('click',()=>{maskSelectionSequence++;if($("viewer-transform").getAttribute('aria-pressed')==='true')maskOverlay.setEnabled(false);});
 $("viewer-mask").addEventListener('click',()=>{maskSelectionSequence++;if(maskOverlay.enabled() && $("viewer-transform").getAttribute('aria-pressed')==='true')$("viewer-transform").click();});
 $("viewer-mask-pen").addEventListener('click',()=>{maskSelectionSequence++;if(maskOverlay.penActive() && $("viewer-transform").getAttribute('aria-pressed')==='true')$("viewer-transform").click();});
@@ -1478,18 +1495,18 @@ audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-stat
   if(!documentState || fastTransport?.active())return null;
   if(viewerMode==="source") {
     const media=documentState.media.find(m=>m.id===sourceOpenId),position=sourcePosition();
-    return media?.has_audio && position ? {project_epoch:documentState.project_epoch,media_id:media.id,frame:position.frame} : null;
+    return media?.has_audio && position ? {project_epoch:documentState.project_epoch,media_id:media.id,frame:position.frame,...sourceAudioQuery(position)} : null;
   }
   return timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,width:960} : null;
-},getURL:query=>query.media_id ? `/api/v1/media/${encodeURIComponent(query.media_id)}/audio.wav?${new URLSearchParams({project_epoch:query.project_epoch,frame:query.frame})}` : `/api/v1/preview/audio.wav?${new URLSearchParams(query)}`});
+},getURL:query=>query.media_id ? `/api/v1/media/${encodeURIComponent(query.media_id)}/audio.wav?${new URLSearchParams({project_epoch:query.project_epoch,frame:query.frame,audio_mode:query.audio_mode,audio_stream_index:query.audio_stream_index})}` : `/api/v1/preview/audio.wav?${new URLSearchParams(query)}`});
 $("play").addEventListener("click",()=>audioScrub?.stop());
 $("program-video").addEventListener("play",()=>audioScrub?.stop());
 $("source-video").addEventListener("play",()=>audioScrub?.stop());
 programPlayer = createProgramPlayer({
   video: $("program-video"), status: $("program-status"), cancel: $("program-cancel"),
-  getState: (startFrame) => {
+  getState: (startFrame,audioOrigin) => {
     if (!documentState?.capabilities.playback || !timeline || viewerMode !== "program") return null;
-    return buildProgramWindow(documentState,timeline,view.playhead,startFrame);
+    return buildProgramWindow(documentState,timeline,view.playhead,startFrame,audioOrigin);
   },
   beforeWindowChange: async () => {
     if(fastTransport && !await fastTransport.finishWindow($("program-video")))throw new Error("Fast audio did not finish its preview window · press Play to retry");
@@ -1497,7 +1514,7 @@ programPlayer = createProgramPlayer({
   isInternalSeek: () => Boolean(fastTransport?.correcting($("program-video"))),
   isInternalPause: event => Boolean(fastTransport?.pausing($("program-video"),event)),
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); } },
-  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; },
+  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; $("workspace-tools").hidden=active || viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.setVisible(!active && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden); if(active)scopes?.invalidate("PAUSED · scopes update on a stopped frame"); else scopes?.refresh(); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; sourceAssets?.refresh();viewerZoom?.refresh(); },
   onStop:async()=>{await viewer?.seek();scopes?.refresh();previewCache.refresh();},
   onCache:()=>previewCache.refresh(),
   onError: notice,
@@ -1506,13 +1523,13 @@ audioMeters=createAudioMeters({root:$("audio-meters-dialog"),onTransport:()=>{if
   if(!documentState || !timeline || viewerMode!=="program")return null;
   return {query:{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,width:960},channels:[...timeline.tracks.filter(track=>track.kind==="audio").map(track=>({id:track.id,label:track.label || track.id,effects:track.mix.effects})),{id:"master",label:"Master",effects:timeline.master.effects}]};
 }});
-fastTransport=createFastTransport({videos:[$("program-video"),$("source-video")],select:$("playback-rate"),status:$("fast-playback-status"),getVideo:()=>$(viewerMode==="program"?"program-video":"source-video"),notice,onState:state=>{$("play").textContent=state==="preparing"?"Cancel fast audio":state==="playing"?"❚❚ Pause":"▶ Play";},getTarget:video=>{
+fastTransport=createFastTransport({videos:[$("program-video"),$("source-video")],select:$("playback-rate"),status:$("fast-playback-status"),getVideo:()=>$(viewerMode==="program"?"program-video":"source-video"),notice,onState:state=>{$("play").textContent=state==="preparing"?"Cancel fast audio":state==="playing"?"❚❚ Pause":"▶ Play";sourceAssets?.refresh();},getTarget:video=>{
   if(!documentState)return null;
   if(video===$("source-video") && viewerMode==="source") {
     const media=documentState.media.find(item=>item.id===sourceOpenId);
     const position=sourcePosition(true);
     if(!media || media.is_image || !position || !video.getAttribute("src"))return null;
-    return {identity:JSON.stringify([documentState.project_epoch,media.id,video.getAttribute("src")]),audio:media.has_audio,fps:position.fps,origin:sourceSampleAtFrame(position.start_frame,position.fps),end:sourceSampleAtFrame(position.end_frame,position.fps),url:`/api/v1/media/${encodeURIComponent(media.id)}/audio/window`,query:{project_epoch:documentState.project_epoch}};
+    return {identity:JSON.stringify([documentState.project_epoch,media.id,video.getAttribute("src"),position.source_version,position.audio_mode,position.audio_stream_index]),audio:media.has_audio,fps:position.fps,origin:sourceSampleAtFrame(position.start_frame,position.fps),end:sourceSampleAtFrame(position.end_frame,position.fps),url:`/api/v1/media/${encodeURIComponent(media.id)}/audio/window`,query:{project_epoch:documentState.project_epoch,...sourceAudioQuery(position)}};
   }
   const range=programPlayer?.range();
   if(video!==$("program-video") || viewerMode!=="program" || !range || !video.getAttribute("src"))return null;
@@ -1526,55 +1543,54 @@ sourcePlayer = createSourcePlayer({
   },
   isInternalSeek: () => Boolean(fastTransport?.correcting($("source-video"))),
   isInternalPause: event => Boolean(fastTransport?.pausing($("source-video"),event)),
-  onReady: async ({ item, epoch, job, source_window }) => {
+  onStateChange:()=>{sourceAssets?.refresh();viewerZoom?.refresh();},
+  onReady: ({ item, epoch, source_window }) => {
     syncSourcePosition();
-    const force=forceSourceAssets;forceSourceAssets=false;
-    if(source_window){
-      const cached=mediaAssets.get(item.id),changed=cached && cached.sourceVersion!==source_window.source_version;
-      if(changed){
-        releaseMediaAsset(cached);mediaAssets.delete(item.id);canvasTimeline.invalidate();
-        for(const card of document.querySelectorAll(".media-item"))if(card.dataset.mediaId===item.id)card.querySelector("img")?.remove();
-      }
-      if(!cached || changed)void sourceAssets?.load(item,epoch,{sourceVersion:source_window.source_version,force:force || Boolean(changed)});
-      return;
-    }
-    const urls = (name) => sourceAssetURL(item.id, job, name, epoch);
-    const [thumb, wave] = await Promise.allSettled([
-      fetch(urls("thumb.png")).then((r) => { if (!r.ok) throw new Error("No thumbnail"); return r.blob(); }).then(createImageBitmap),
-      item.has_audio === false ? Promise.resolve(null) : fetch(urls("waveform.json")).then((r) => { if (!r.ok) throw new Error("No waveform"); return r.json(); }),
-    ]);
-    if (documentState?.project_epoch !== epoch || documentState.media.find((m)=>m.id===item.id)?.content_hash !== item.content_hash) { if (thumb.status === "fulfilled") thumb.value.close(); return; }
-    const thumbnail = thumb.status === "fulfilled" ? thumb.value : null;
-    const waveform = wave.status === "fulfilled" ? wave.value : null;
-    const bytes = (thumbnail ? thumbnail.width * thumbnail.height * 4 : 0) + (waveform?.peaks.length || 0) * 8;
-    if (bytes > 16 * 1024 * 1024) { thumbnail?.close(); return; }
-    const asset={item,epoch,thumbnail,waveform,bytes,thumbnailURL:urls("thumb.png")};
-    if(!installMediaAsset(asset))releaseMediaAsset(asset);
+    const sourceVersion=source_window?.source_version,changed=sourceVersion && [...mediaAssets.values()].some(asset=>asset.mediaId===item.id && asset.sourceVersion!==sourceVersion);
+    if(changed)removeMediaAssets(item.id);
+    void sourceAssets?.load(item,epoch,{sourceVersion,audioStreamIndex:source_window?.audio_stream_index ?? 0,includeWaveform:Boolean(item.has_audio),force:Boolean(changed)});
   },
 });
+function assetDemandItems(items){
+  const media=new Map(documentState?.media.map(item=>[item.id,item]));
+  return items.flatMap(entry=>{const item=media.get(entry.media_id);return item?[{item,audioStreamIndex:entry.audio_stream_index,includeWaveform:entry.include_waveform}]:[];});
+}
+function updateMediaThumbnail(id){
+  const asset=mediaThumbnail(mediaAssets,id);
+  for(const card of document.querySelectorAll('.media-item'))if(card.dataset.mediaId===id){
+    card.querySelector('img')?.remove();
+    if(asset?.thumbnailURL){const image=document.createElement('img');image.alt='';image.src=asset.thumbnailURL;card.prepend(image);}
+  }
+}
 function releaseMediaAsset(asset) {
   asset?.thumbnail?.close();
   if(asset?.thumbnailURL?.startsWith("blob:"))URL.revokeObjectURL(asset.thumbnailURL);
 }
-function installMediaAsset({item,epoch,thumbnail,waveform,bytes,thumbnailURL,sourceVersion}) {
+function removeMediaAssets(id){
+  for(const [key,asset] of mediaAssets)if(asset.mediaId===id){releaseMediaAsset(asset);mediaAssets.delete(key);}
+  updateMediaThumbnail(id);canvasTimeline.invalidate();
+}
+function installMediaAsset({item,epoch,thumbnail,waveform,waveformBytes=0,bytes,thumbnailURL,sourceVersion,audioStreamIndex=0}) {
   if(documentState?.project_epoch!==epoch || documentState.media.find(media=>media.id===item.id)?.content_hash!==item.content_hash || !Number.isSafeInteger(bytes) || bytes<0 || bytes>16*1024*1024)return false;
-  releaseMediaAsset(mediaAssets.get(item.id));mediaAssets.delete(item.id);
-  mediaAssets.set(item.id,{thumbnail,waveform,bytes,thumbnailURL,sourceVersion,fps:item.fps});
-  if(thumbnail)for(const card of document.querySelectorAll(".media-item")){
-    if(card.dataset.mediaId!==item.id)continue;
-    card.querySelector("img")?.remove();
-    const image=document.createElement("img");image.alt="";image.src=thumbnailURL;card.prepend(image);
-  }
-  while(mediaAssets.size>16 || [...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0)>32*1024*1024){
-    const oldest=mediaAssets.keys().next().value;releaseMediaAsset(mediaAssets.get(oldest));mediaAssets.delete(oldest);
-    for(const card of document.querySelectorAll('.media-item'))if(card.dataset.mediaId===oldest)card.querySelector('img')?.remove();
+  const key=sourceAssetKey(item.id,audioStreamIndex),previous=mediaAssets.get(key),retainedWave=previous?.sourceVersion===sourceVersion && !waveform?previous:null;
+  const total=bytes+(retainedWave?.waveformBytes || 0);if(total>16*1024*1024)return false;
+  if([...mediaAssets.values()].some(asset=>asset.mediaId===item.id && asset.sourceVersion!==sourceVersion))removeMediaAssets(item.id);
+  if(mediaAssets.get(key)===previous)releaseMediaAsset(previous);mediaAssets.delete(key);
+  mediaAssets.set(key,{mediaId:item.id,contentHash:item.content_hash,audioStreamIndex,thumbnail,waveform:waveform || retainedWave?.waveform || null,waveformBytes:waveform?waveformBytes:retainedWave?.waveformBytes || 0,bytes:total,thumbnailURL,sourceVersion,fps:item.fps});
+  updateMediaThumbnail(item.id);
+  while(mediaAssets.size>64 || [...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0)>64*1024*1024){
+    const oldest=mediaAssets.keys().next().value,asset=mediaAssets.get(oldest);releaseMediaAsset(asset);mediaAssets.delete(oldest);updateMediaThumbnail(asset.mediaId);
   }
   canvasTimeline.invalidate();return true;
 }
-sourceAssets=createSourceAssets({getState:()=>documentState,onReady:installMediaAsset,onStatus:message=>{$("source-assets-status").textContent=message;},onError:error=>notice(error.message || String(error))});
+sourceAssets=createSourceAssetQueue({loader:createSourceAssets({getState:()=>documentState,onReady:installMediaAsset,onStatus:message=>{$("source-assets-status").textContent=message;},onError:error=>notice(error.message || String(error))}),getState:()=>documentState,
+  isIdle:()=>Boolean(documentState && !document.hidden && !busy && !unresolved && !derivativesTransportPending && !document.querySelector('dialog[open]') && canvasTimeline.navigationIdle() && programPlayer?.state()!=='preparing' && !sourcePlayer?.preparing() && $('source-video').paused && $('program-video').paused && $('export-preview-video').paused && !fastTransport?.active()),
+  hasAsset:entry=>{const asset=mediaAssets.get(sourceAssetKey(entry.item.id,entry.audioStreamIndex)),thumbnail=mediaThumbnail(mediaAssets,entry.item.id);return Boolean((!entry.item.has_video || thumbnail?.contentHash===entry.item.content_hash && (!entry.sourceVersion || thumbnail.sourceVersion===entry.sourceVersion)) && (!entry.item.has_audio || !entry.includeWaveform || asset?.contentHash===entry.item.content_hash && asset.waveform && (!entry.sourceVersion || asset.sourceVersion===entry.sourceVersion)));}});
+for(const event of ['play','pause','ended'])$('export-preview-video').addEventListener(event,()=>sourceAssets.refresh());
+document.addEventListener('visibilitychange',()=>sourceAssets.refresh());document.addEventListener('toggle',()=>sourceAssets.refresh(),true);
 $("source-assets-refresh").addEventListener("click",()=>{
   const position=sourcePosition(),item=documentState?.media.find(media=>media.id===sourceOpenId);
-  if(position && item)void sourceAssets.load(item,position.epoch,{sourceVersion:position.source_version,force:true});
+  if(item)void sourceAssets.load(item,documentState.project_epoch,{sourceVersion:position?.source_version,audioStreamIndex:position?.audio_stream_index ?? 0,includeWaveform:Boolean(item.has_audio),force:true});
 });
 sourceSeek=createSourceSeek({range:$("source-position"),frame:$("source-seek-frame"),seek:$("source-seek"),status:$("source-position-status"),getMedia:()=>{
   const item=viewerMode==="source" ? documentState?.media.find(media=>media.id===sourceOpenId) : null;
@@ -1592,10 +1608,12 @@ $("source-video").addEventListener("timeupdate", () => {
 for (const event of ["play", "pause", "ended"]) $("source-video").addEventListener(event, () => {
   if(event==='play' && !$("source-video").paused)exportPanel?.stopPreview();
   $("play").textContent = $("source-video").paused ? "▶ Play" : "❚❚ Pause";
+  sourceAssets?.refresh();
 });
 for (const event of ["play", "pause", "ended"]) $("program-video").addEventListener(event, () => {
   if(event==='play' && !$("program-video").paused)exportPanel?.stopPreview();
   if (viewerMode === "program") $("play").textContent = $("program-video").paused ? "▶ Play" : "❚❚ Pause";
+  sourceAssets?.refresh();
 });
 async function diagnostics() {
   try {
@@ -1618,6 +1636,7 @@ $("export-out").addEventListener("click", () => {setProgramMark(true);exportPane
 slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(operation),onVisible:(visible)=>{
   if(visible){slipScopesState={workspace:editor.dataset.workspace,visible:!$("scopes").hidden};scopes?.setVisible(false);}
   else if(slipScopesState){scopes?.setVisible(editor.dataset.workspace==="Color" && (slipScopesState.workspace!==editor.dataset.workspace || slipScopesState.visible));slipScopesState=null;}
+  viewerZoom?.refresh();
 },getTarget:(clip)=>{
   if(!documentState || !timeline || timeline.id==="fixture" || !writable || busy || unresolved || !view.selection.includes(clip))return null;
   const end=Math.max(1,...timeline.tracks.flatMap((track)=>track.clips.map((item)=>item.start_frame+item.length_frames)));

@@ -202,6 +202,67 @@ fn validate_audio_stream(meta: &vv_core::MediaMeta, index: usize) -> Result<(), 
     Ok(())
 }
 
+/// CPU-only video proxy with audio prepared by the caller's native mixer.
+pub fn generate_with_audio(
+    source: &Path,
+    directory: &Path,
+    quality: ProxyQuality,
+    range: Option<Range<vv_core::FrameIdx>>,
+    mut keep_running: impl FnMut(u64) -> bool,
+    prepare_audio: impl FnOnce(&Path, &mut dyn FnMut(u64) -> bool) -> Result<(), MediaError>,
+) -> Result<(), MediaError> {
+    if !keep_running(0) {
+        return Err(MediaError::Cancelled);
+    }
+    let meta = crate::probe_media(source)?;
+    let video = directory.join("video.mp4");
+    let audio = directory.join("audio.m4a");
+    if meta.has_video {
+        if let Some(range) = range {
+            crate::proxy::generate_proxy_range_at(
+                source,
+                &video,
+                quality,
+                range,
+                2,
+                &mut keep_running,
+            )?;
+        } else {
+            crate::proxy::generate_proxy_at(source, &video, quality, &[], 2, &mut keep_running)?;
+        }
+    } else if let Some(range) = &range {
+        crate::proxy::validate_range(range, meta.fps, meta.duration_frames)?;
+    }
+    if meta.has_audio {
+        prepare_audio(&audio, &mut keep_running)?;
+    }
+    let staging = directory.join(format!("source.tmp-{}.mp4", std::process::id()));
+    let publish = (|| {
+        if !keep_running(0) {
+            return Err(MediaError::Cancelled);
+        }
+        match (meta.has_video, meta.has_audio) {
+            (true, true) => mux(&video, &audio, &staging, || keep_running(0))?,
+            (true, false) => std::fs::rename(&video, &staging)?,
+            (false, true) => std::fs::rename(&audio, &staging)?,
+            _ => {
+                return Err(MediaError::NoStream(
+                    "Source has no playable streams".into(),
+                ));
+            }
+        }
+        if !keep_running(0) {
+            return Err(MediaError::Cancelled);
+        }
+        std::fs::rename(&staging, directory.join("source.mp4"))?;
+        Ok(())
+    })();
+    if publish.is_err() {
+        let _ = std::fs::remove_file(&staging);
+    }
+    publish
+}
+
 fn audio_sample_range(
     range: &Range<vv_core::FrameIdx>,
     fps: vv_core::Rational,

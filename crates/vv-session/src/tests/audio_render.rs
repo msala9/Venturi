@@ -131,6 +131,188 @@ fn boosting_eq() -> Equalizer {
     eq
 }
 
+struct OriginAudioFile(PathBuf);
+
+impl Drop for OriginAudioFile {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.0);
+    }
+}
+
+fn origin_audio_file() -> OriginAudioFile {
+    let frames = PROJECT_SAMPLE_RATE as usize;
+    let bytes = (frames * 2) as u32;
+    let mut wav = Vec::with_capacity(bytes as usize + 44);
+    wav.extend_from_slice(b"RIFF");
+    wav.extend_from_slice(&(36 + bytes).to_le_bytes());
+    wav.extend_from_slice(b"WAVEfmt ");
+    wav.extend_from_slice(&16_u32.to_le_bytes());
+    wav.extend_from_slice(&1_u16.to_le_bytes());
+    wav.extend_from_slice(&1_u16.to_le_bytes());
+    wav.extend_from_slice(&PROJECT_SAMPLE_RATE.to_le_bytes());
+    wav.extend_from_slice(&(PROJECT_SAMPLE_RATE * 2).to_le_bytes());
+    wav.extend_from_slice(&2_u16.to_le_bytes());
+    wav.extend_from_slice(&16_u16.to_le_bytes());
+    wav.extend_from_slice(b"data");
+    wav.extend_from_slice(&bytes.to_le_bytes());
+    for frame in 0..frames {
+        let gain = if frame % 5000 < 3000 { 0.35 } else { 0.06 };
+        let sample = gain * ((frame as f32 * 0.071).sin() + 0.4 * (frame as f32 * 0.317).sin());
+        wav.extend_from_slice(&((sample * i16::MAX as f32) as i16).to_le_bytes());
+    }
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let path = std::env::temp_dir().join(format!(
+        "vv-origin-audio-{}-{nonce}.wav",
+        std::process::id()
+    ));
+    std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&path)
+        .unwrap()
+        .write_all(&wav)
+        .unwrap();
+    OriginAudioFile(path)
+}
+
+fn origin_rendered(project: &Project, tl: &Timeline, range: Range<u64>, origin: u64) -> Vec<f32> {
+    let mut out = Vec::new();
+    render_offline_from_origin(
+        project,
+        tl,
+        range,
+        origin,
+        &mut LevelCache {
+            threads: 1,
+            ..Default::default()
+        },
+        |chunk| {
+            out.extend_from_slice(chunk);
+            ControlFlow::Continue(())
+        },
+    )
+    .unwrap();
+    out
+}
+
+#[test]
+fn web_audio_origin_windows_match_whole_native_eq_compressor_and_normalization() {
+    let file = origin_audio_file();
+    let mut project = Project::default();
+    let id = media(&mut project, file.0.clone(), PROJECT_SAMPLE_RATE, 1);
+    project.media_pool[id].meta.duration_frames = 25;
+    for chain in [
+        vec![effect(AudioEffectKind::Equalizer(boosting_eq()))],
+        vec![effect(AudioEffectKind::MultibandCompressor(
+            MultibandCompressor::DEFAULT,
+        ))],
+        vec![
+            effect(AudioEffectKind::Equalizer(boosting_eq())),
+            normalize(NormalizeMode::SamplePeak),
+        ],
+    ] {
+        let mut track = audio_track(vec![clip(1, id, 0, 25, 0)]);
+        track.mix.effects = chain;
+        let tl = timeline(vec![track]);
+        let (origin, split, end) = (FRAME_SAMPLES, 7 * FRAME_SAMPLES, 20 * FRAME_SAMPLES);
+        let whole = rendered(&project, &tl, origin..end);
+        let mut joined = origin_rendered(&project, &tl, origin..split, origin);
+        joined.extend(origin_rendered(&project, &tl, split..end, origin));
+        assert_eq!(joined, whole);
+        let cold = rendered(&project, &tl, split..end);
+        assert!(
+            cold.iter()
+                .zip(&whole[((split - origin) * 2) as usize..])
+                .any(|(a, b)| (a - b).abs() > 1e-7)
+        );
+    }
+}
+
+#[test]
+fn web_audio_origin_nested_fractional_windows_use_absolute_native_sample_boundaries() {
+    let file = origin_audio_file();
+    let mut project = Project::default();
+    let id = media(&mut project, file.0.clone(), PROJECT_SAMPLE_RATE, 1);
+    project.media_pool[id].meta.duration_frames = 25;
+    let mut child = audio_track(vec![clip(1, id, 0, 25, 0)]);
+    child.mix.effects = vec![effect(AudioEffectKind::MultibandCompressor(
+        MultibandCompressor::DEFAULT,
+    ))];
+    let nested = project.timelines.insert(timeline(vec![child]));
+    let compound = project.media_pool.insert(MediaItem {
+        compound: Some(nested),
+        ..project.media_pool[id].clone()
+    });
+    let mut tl = timeline(vec![audio_track(vec![clip(2, compound, 0, 25, 0)])]);
+    tl.fps = Rational::new(30000, 1001);
+    tl.master.effects = vec![
+        effect(AudioEffectKind::Equalizer(boosting_eq())),
+        normalize(NormalizeMode::SamplePeak),
+    ];
+    let sample = |frame| timeline_frame_to_sample(frame, tl.fps.as_f64(), PROJECT_SAMPLE_RATE);
+    let (origin, split, end) = (sample(3), sample(11), sample(20));
+    let whole = rendered(&project, &tl, origin..end);
+    let mut joined = origin_rendered(&project, &tl, origin..split, origin);
+    joined.extend(origin_rendered(&project, &tl, split..end, origin));
+    assert_eq!(joined.len(), ((end - origin) * 2) as usize);
+    assert_eq!(joined, whole);
+}
+
+#[test]
+fn web_audio_origin_prefix_is_cancellable_and_never_sent_to_the_output_sink() {
+    let project = Project::default();
+    let tl = timeline(vec![]);
+    let cancel = Arc::new(AtomicBool::new(true));
+    let mut levels = LevelCache {
+        cancel: Some(cancel.clone()),
+        threads: 1,
+        ..Default::default()
+    };
+    let mut written = 0;
+    let result = render_offline_from_origin(
+        &project,
+        &tl,
+        CHUNK_FRAMES..3 * CHUNK_FRAMES,
+        0,
+        &mut levels,
+        |chunk| {
+            written += chunk.len();
+            ControlFlow::Continue(())
+        },
+    );
+    assert_eq!(result, Err(ExportError::Cancelled));
+    assert_eq!(written, 0);
+    cancel.store(false, Ordering::Relaxed);
+    let result = render_offline_from_origin(
+        &project,
+        &tl,
+        CHUNK_FRAMES + 7..3 * CHUNK_FRAMES,
+        0,
+        &mut levels,
+        |chunk| {
+            written += chunk.len();
+            cancel.store(true, Ordering::Relaxed);
+            ControlFlow::Continue(())
+        },
+    );
+    assert_eq!(result, Err(ExportError::Cancelled));
+    assert_eq!(written, ((CHUNK_FRAMES - 7) * 2) as usize);
+    assert!(
+        render_offline_from_origin(
+            &project,
+            &tl,
+            10..20,
+            11,
+            &mut LevelCache::default(),
+            |_| ControlFlow::Continue(())
+        )
+        .is_err()
+    );
+}
+
 /// Several chunks, through a compressor and an equalizer whose state must
 /// carry from one chunk to the next, over a seekable file used twice, a
 /// resampled one at varispeed and a pitch-corrected clip.

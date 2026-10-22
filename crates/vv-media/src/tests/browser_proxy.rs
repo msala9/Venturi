@@ -1,6 +1,61 @@
 use super::*;
 
 #[test]
+fn browser_proxy_native_audio_callback_remains_cpu_only_and_cancellation_refuses_publication() {
+    let root = std::env::temp_dir().join(format!("vv-browser-native-audio-{}", std::process::id()));
+    std::fs::create_dir_all(&root).unwrap();
+    let input = root.join("input.wav");
+    let output = root.join("ready");
+    let canceled = root.join("canceled");
+    std::fs::create_dir(&output).unwrap();
+    std::fs::create_dir(&canceled).unwrap();
+    write_audio_file(&input, AudioFileFormat::Wav, &vec![0.1; 4800], 48_000, 1).unwrap();
+    let original = std::fs::read(&input).unwrap();
+    let stereo: Vec<f32> = (0..4000).flat_map(|_| [0.1, -0.2]).collect();
+    let mut calls = 0;
+    generate_with_audio(
+        &input,
+        &output,
+        ProxyQuality::Low,
+        Some(0..2),
+        |_| true,
+        |path, keep| {
+            calls += 1;
+            assert!(keep(0));
+            write_audio_file(path, AudioFileFormat::Aac, &stereo, 48_000, 2)
+        },
+    )
+    .unwrap();
+    assert_eq!(calls, 1);
+    let meta = crate::probe_media(&output.join("source.mp4")).unwrap();
+    assert!(!meta.has_video);
+    assert!(meta.has_audio);
+    assert_eq!(meta.channels, 2);
+    let cancel = std::cell::Cell::new(false);
+    let result = generate_with_audio(
+        &input,
+        &canceled,
+        ProxyQuality::Low,
+        Some(0..2),
+        |_| !cancel.get(),
+        |path, _| {
+            write_audio_file(path, AudioFileFormat::Aac, &stereo, 48_000, 2)?;
+            cancel.set(true);
+            Ok(())
+        },
+    );
+    assert!(matches!(result, Err(MediaError::Cancelled)));
+    assert!(!canceled.join("source.mp4").exists());
+    assert!(
+        !canceled
+            .join(format!("source.tmp-{}.mp4", std::process::id()))
+            .exists()
+    );
+    assert_eq!(std::fs::read(&input).unwrap(), original);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn audio_range_boundaries_use_checked_absolute_rational_samples() {
     let fps = vv_core::Rational::new(30_000, 1001);
     assert_eq!(audio_sample_range(&(1..2), fps).unwrap(), 1602..3203);

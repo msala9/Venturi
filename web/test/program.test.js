@@ -17,6 +17,9 @@ test("composed playback identity follows the document and ignores its advancing 
   assert.equal(containsProgramRange(range,{...range,start_frame:12}),true);
   assert.equal(containsProgramRange(range,{...range,start_frame:48}),false);
   assert.equal(containsProgramRange(range,{...range,start_frame:12,end_frame:60}),false);
+  assert.equal(containsProgramRange({...range,audio_origin_frame:0},{...range,start_frame:12,audio_origin_frame:0}),true);
+  assert.equal(containsProgramRange({...range,audio_origin_frame:0},{...range,start_frame:12,audio_origin_frame:12}),false);
+  assert.equal(containsProgramRange(range,{...range,audio_origin_frame:0}),false);
 });
 
 test("stopped movies resume at a seek only after native input validation; changed inputs rebuild",async()=>{
@@ -158,7 +161,7 @@ test("status failure, nonready result and media error release all ready-cache mo
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function settle(){for(let i=0;i<40;i++)await Promise.resolve();}
-function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek}={}){
+function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek,lineage=false}={}){
   class Video extends EventTarget {
     movie="";position=0;readyState=1;seeking=false;paused=true;ended=false;duration=0;plays=0;waitMetadata=false;waitSeek=false;fastPause=false;
     callbacks=new Map();canceled=[];nextCallback=0;
@@ -177,15 +180,42 @@ function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,bef
   }
   const video=new Video(),status={textContent:""},timers=fakeTimers(),requests=[],frames=[],fetches=[];
   let playhead=origin,document={project_epoch:"epoch",if_generation:"1",timeline_id:"timeline",revision:"revision",width:960};
-  const getState=start=>{
+  const getState=(start,audioOrigin)=>{
     if(!document)return null;
     const frame=start===undefined?Math.min(playhead,total-1):start;
-    return Number.isSafeInteger(frame) && frame>=0 && frame<total ? {...document,start_frame:frame,end_frame:Math.min(total,frame+Math.floor(300*fps.num/fps.den))} : null;
+    return Number.isSafeInteger(frame) && frame>=0 && frame<total ? {...document,start_frame:frame,end_frame:Math.min(total,frame+Math.floor(300*fps.num/fps.den)),...(lineage?{audio_origin_frame:audioOrigin===undefined?frame:audioOrigin}:{})} : null;
   };
-  const ready=(range,id=`window${requests.length}`)=>({id,state:"ready",program:{start_frame:range.start_frame,end_frame:range.end_frame,fps,width:960,height:540}});
-  const player=createProgramPlayer({video,status,timers,cancel:new EventTarget(),getState,beforeWindowChange,isInternalSeek,onState(){},onFrame:frame=>{frames.push(frame);playhead=frame;},api:async(path,range)=>{requests.push({...range});return api?api(range,ready):ready(range);},fetcher:async(url,options)=>{fetches.push({url,...options});return fetcher?fetcher(url,options):Response.json({state:"ready"});}});
-  return {video,status,timers,requests,frames,fetches,player,ready,getState,setDocument:value=>{document=value;}};
+  const ready=(range,id=`window${requests.length}`)=>({id,state:"ready",program:{start_frame:range.start_frame,end_frame:range.end_frame,fps,width:960,height:540,...(lineage?{audio_origin_frame:range.audio_origin_frame}:{})}});
+  const player=createProgramPlayer({video,status,timers,cancel:new EventTarget(),getState,beforeWindowChange,isInternalSeek,onState(){},onFrame:frame=>{frames.push(frame);playhead=frame;},api:async(path,range)=>{requests.push({...range});return api?api(range,ready):ready(range);},fetcher:async(url,options)=>{fetches.push({url,...options});return fetcher?fetcher(url,options):Response.json({state:"ready",...(lineage?{program:{audio_origin_frame:Number(new URL(url,'http://host').searchParams.get('audio_origin_frame'))}}:{})});}});
+  return {video,status,timers,requests,frames,fetches,player,ready,getState,setDocument:value=>{document=value;},setPlayhead:value=>{playhead=value;}};
 }
+
+test('native DSP playback origin survives multiple fractional windows; manual seek starts a new lineage instead of covering-cache reuse',async()=>{
+  const fps={num:30000,den:1001},span=Math.floor(300*fps.num/fps.den),origin=137,f=windowFixture({origin,total:origin+2*span+11,fps,lineage:true});
+  try{
+    await f.player.toggle();assert.equal(f.requests[0].audio_origin_frame,origin);
+    f.video.finish(f.player.range());await settle();f.video.finish(f.player.range());await settle();
+    assert.equal(f.player.state(),'ready');assert.deepEqual(f.requests.map(query=>query.audio_origin_frame),[origin,origin,origin]);
+    assert.deepEqual(f.requests.map(query=>query.start_frame),[origin,origin+span,origin+2*span]);
+    f.player.pauseLocal();f.setPlayhead(500);await f.player.toggle();assert.equal(f.requests.length,4);assert.equal(f.requests.at(-1).audio_origin_frame,500);assert.equal(f.requests.at(-1).start_frame,500);
+  }finally{f.player.stop();}
+});
+
+test('a mismatched or missing authoritative DSP origin cannot attach or silently fall back to a cold preview',async()=>{
+  for(const wrong of [undefined,0,8]){
+    const f=windowFixture({origin:7,lineage:true,api:(range,ready)=>{const job=ready(range);job.program.audio_origin_frame=wrong;return job;}});
+    try{await f.player.toggle();assert.equal(f.player.state(),'failed');assert.equal(f.video.plays,0);assert.equal(f.requests.length,1);assert.match(f.status.textContent,/audio origin changed/);}finally{f.player.stop();}
+  }
+});
+
+test('continuation timeout remains visible and never retries with a reset DSP origin',async()=>{
+  let calls=0;
+  const f=windowFixture({origin:17,lineage:true,api:(range,ready)=>{if(++calls>1)throw new Error('PREVIEW_TIMEOUT');return ready(range);}});
+  try{
+    await f.player.toggle();f.video.finish(f.player.range());await settle();
+    assert.equal(f.player.state(),'failed');assert.match(f.status.textContent,/PREVIEW_TIMEOUT/);assert.deepEqual(f.requests.map(query=>query.audio_origin_frame),[17,17]);assert.equal(f.video.plays,1);
+  }finally{f.player.stop();}
+});
 
 test("natural EOF advances exactly three foreground windows including a fractional-fps tail and nonzero origin",async()=>{
   const fps={num:30_000,den:1001},span=Math.floor(300*fps.num/fps.den),origin=137,total=origin+2*span+11;

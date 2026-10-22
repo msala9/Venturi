@@ -1,7 +1,7 @@
 import { request } from "./api.js";
 
 export function sameComposition(a, b) {
-  return !!a && !!b && ["project_epoch", "if_generation", "timeline_id", "revision", "width"].every((key) => a[key] === b[key]);
+  return !!a && !!b && ["project_epoch", "if_generation", "timeline_id", "revision", "width", "audio_origin_frame"].every((key) => a[key] === b[key]);
 }
 export function containsProgramRange(cached, current) {
   return sameComposition(cached, current) && cached.start_frame <= current.start_frame && current.start_frame < cached.end_frame && current.end_frame <= cached.end_frame;
@@ -24,6 +24,8 @@ async function seekMedia(video, seconds, signal, beforeSeek = () => {}) {
 export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onCache, beforeWindowChange = () => {}, isInternalSeek = () => false, isInternalPause = () => false, api = request, fetcher = fetch, timers = globalThis }) {
   let sequence = 0, controller = null, query = null, jobURL = null, state = "stopped", monitor = null, frameCallback = null, suspended = true, presented = 0, cached = null;
   let playbackIntent = false, attached = null, startingPlayback = false, seekingTarget = null, ignoredPauses=0, handoffPause=false;
+  const currentState=expected=>getState(undefined,expected?.audio_origin_frame);
+  const originMatches=(job,expected)=>expected.audio_origin_frame===undefined || job.program?.audio_origin_frame===expected.audio_origin_frame;
   const setState = (next) => { if(next!=="ready")stopMonitor(); state = next; cancel.disabled = next === "stopped"; cancel.textContent = next === "preparing" ? "Cancel preparation" : "Stop playback"; onState(next); };
   function stopMonitor() {
     const previous=monitor;monitor=null;
@@ -57,7 +59,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     if (path) fetcher(path, { method: "DELETE", signal: AbortSignal.timeout(5_000) }).catch(() => {});
   }
   function present(seconds = video.currentTime) {
-    if (suspended || !query || !sameComposition(query, getState())) return;
+    if (suspended || !query || !sameComposition(query, currentState(query))) return;
     const fps = query.fps.num / query.fps.den;
     onFrame(Math.max(query.start_frame, Math.min(query.end_frame - 1, query.start_frame + Math.floor((seconds + 1e-6) * fps))));
   }
@@ -84,14 +86,14 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     const check=async()=>{
       owner.timer=null;
       if(!active()){if(monitor===owner)stopMonitor();return;}
-      if(!sameComposition(owner.query,getState())){fail("STALE_REVISION · reconnect before playback");return;}
+      if(!sameComposition(owner.query,currentState(owner.query))){fail("STALE_REVISION · reconnect before playback");return;}
       try {
         const response=await fetcher(owner.url,{signal:AbortSignal.any([owner.controller.signal,AbortSignal.timeout(5_000)]),cache:"no-store"});
         if(!active())return;
-        if(!sameComposition(owner.query,getState()) || !response.ok){fail("STALE_REVISION · reconnect before playback");return;}
+        if(!sameComposition(owner.query,currentState(owner.query)) || !response.ok){fail("STALE_REVISION · reconnect before playback");return;}
         const job=await response.json();
         if(!active())return;
-        if(!sameComposition(owner.query,getState()) || job.state!=="ready"){fail("Program media unavailable or changed · prepare again");return;}
+        if(!sameComposition(owner.query,currentState(owner.query)) || job.state!=="ready" || !originMatches(job,owner.query)){fail("Program media unavailable or changed · prepare again");return;}
       } catch { if(active())fail("Playback connection lost · reconnect"); }
       finally { if(active())owner.timer=timers.setTimeout(check,2_000);else if(monitor===owner)stopMonitor(); }
     };
@@ -99,7 +101,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   }
   video.addEventListener("timeupdate", () => {present();metrics();});
   video.addEventListener("play", () => {
-    if(video.paused || state!=="ready" || !attached || attached.seq!==sequence || attached.src!==video.src || !sameComposition(query,getState()))return;
+    if(video.paused || state!=="ready" || !attached || attached.seq!==sequence || attached.src!==video.src || !sameComposition(query,currentState(query)))return;
     startingPlayback=true;const owner=attached;
     queueMicrotask(()=>{if(attached===owner)startingPlayback=false;});
     playbackIntent=true;suspended=false;scheduleFrame();
@@ -127,9 +129,9 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     metrics();
     const previous=attached;
     if(!video.ended || !playbackIntent || state!=="ready" || !previous || previous.seq!==sequence || previous.src!==video.src)return;
-    if(!sameComposition(query,getState())){fail("STALE_REVISION · reconnect before playback");return;}
+    if(!sameComposition(query,currentState(query))){fail("STALE_REVISION · reconnect before playback");return;}
     present();
-    const next=getState(query.end_frame);
+    const next=getState(query.end_frame,query.audio_origin_frame);
     if(!next){playbackIntent=false;suspended=true;status.textContent="End of timeline";return;}
     if(!sameComposition(query,next) || next.start_frame!==query.end_frame || !validRange(next)){
       fail("Program window changed · prepare again");return;
@@ -145,11 +147,11 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     cached=null;pauseLocal();status.textContent=message;setState("failed");onError?.(message);
   }
   function validRange(value) {
-    return Number.isSafeInteger(value?.start_frame) && Number.isSafeInteger(value?.end_frame) && value.start_frame>=0 && value.end_frame>value.start_frame;
+    return Number.isSafeInteger(value?.start_frame) && Number.isSafeInteger(value?.end_frame) && value.start_frame>=0 && value.end_frame>value.start_frame && (value.audio_origin_frame===undefined || Number.isSafeInteger(value.audio_origin_frame) && value.audio_origin_frame>=0 && value.audio_origin_frame<=value.start_frame);
   }
   function live(owner) {
     if(owner.seq!==sequence || owner.signal.aborted || !playbackIntent)return false;
-    if(!sameComposition(owner.current,getState())){fail("STALE_REVISION · reconnect before playback");return false;}
+    if(!sameComposition(owner.current,currentState(owner.current))){fail("STALE_REVISION · reconnect before playback");return false;}
     return true;
   }
   async function attach(owner, range, url, src, message, rollover) {
@@ -179,7 +181,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   }
   async function toggle() {
     if (state === "preparing") { stop(); return; }
-    if (state === "ready" && !video.paused && sameComposition(query, getState())) { pauseLocal(); return; }
+    if (state === "ready" && !video.paused && sameComposition(query, currentState(query))) { pauseLocal(); return; }
     stop();
     const current = getState();
     if (!current) return;
@@ -198,7 +200,9 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       if (cached && containsProgramRange(cached.query, current)) {
         const response = await fetcher(cached.url, { signal: AbortSignal.any([signal, AbortSignal.timeout(5_000)]), cache: "no-store" });
         if (!live(owner)) return;
-        if (response.ok && (await response.json()).state === "ready") {
+        const checked=response.ok?await response.json():null;
+        if (checked?.state === "ready") {
+          if(!originMatches(checked,current))throw new Error("Program audio origin changed · prepare again");
           if (!live(owner)) return;
           await attach(owner,cached.query,cached.url,cached.src,"CACHED COMPOSED PREVIEW · inputs verified",rollover);
           return;
@@ -208,6 +212,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       cached = null;
       let job = await api("/preview/program/prepare", current);
       if (!live(owner)) return;
+      if(!originMatches(job,current))throw new Error("Program audio origin changed · prepare again");
       const reused = job.state === "ready";
       const prepared = {...current, start_frame:job.program.start_frame, end_frame:job.program.end_frame};
       // Prepare can return a job shared by another player: obsolete ACKs only detach locally.
@@ -221,6 +226,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
         if (!response.ok) throw new Error("Composition changed or became unavailable");
         job = await response.json();
         if (!live(owner)) return;
+        if(!originMatches(job,current))throw new Error("Program audio origin changed · prepare again");
       }
       if (job.state !== "ready") throw new Error(job.error === "PREVIEW_STORAGE_PRESSURE" ? "Preview stopped to preserve scratch disk space · free space before preparing again" : job.error === "GPU_BUSY" ? "GPU_BUSY · retry after the inference workload releases the GPU" : job.error === "RENDER_BUSY" ? "The CPU compositor is preparing another job · wait or cancel it" : (job.error || `Composition ${job.state}`));
       const range={...prepared,fps:job.program.fps};

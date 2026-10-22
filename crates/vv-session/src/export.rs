@@ -13,7 +13,7 @@ use vv_core::{Clip, ClipId, FrameIdx, Project, Timeline, TimelineId, TrackKind};
 
 use vv_audio::mixer::{PROJECT_SAMPLE_RATE, timeline_frame_to_sample};
 
-use crate::audio_render::{LevelCache, render_offline};
+use crate::audio_render::{LevelCache, render_offline, render_offline_from_origin};
 
 use crate::frame_provider::{
     FrameProvider, GpuCompounds, OwnedLayer, media_source_frame, stack_layers, track_layers_at,
@@ -34,6 +34,8 @@ pub struct ExportSettings {
     pub audio: Option<vv_media::AudioSettings>,
     /// GPU decoders to try, in order; empty decodes on the CPU.
     pub hw_decode: Vec<vv_media::HwDevice>,
+    /// Native DSP playback origin; omitted exports reset at the requested start.
+    pub audio_render_origin: Option<FrameIdx>,
 }
 
 impl ExportSettings {
@@ -46,6 +48,7 @@ impl ExportSettings {
             video: vv_media::VideoSettings::default(),
             audio: Some(vv_media::AudioSettings::default()),
             hw_decode: Vec::new(),
+            audio_render_origin: None,
         }
     }
 
@@ -353,6 +356,58 @@ pub fn export_timeline_with_gpu<G>(
     acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
     cpu_threads: usize,
 ) -> Result<(), ExportError> {
+    export_timeline_configured(
+        project,
+        timeline_id,
+        settings,
+        range,
+        progress,
+        cancel,
+        None,
+        create_compositor,
+        acquire_gpu,
+        cpu_threads,
+    )
+}
+
+/// Shares cancellation with native audio analysis and playback-origin replay.
+pub fn export_timeline_with_gpu_cancellable<G>(
+    project: &Project,
+    timeline_id: TimelineId,
+    settings: &ExportSettings,
+    range: std::ops::Range<FrameIdx>,
+    progress: &Mutex<ExportProgress>,
+    cancel: &Arc<AtomicBool>,
+    create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
+    acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
+    cpu_threads: usize,
+) -> Result<(), ExportError> {
+    export_timeline_configured(
+        project,
+        timeline_id,
+        settings,
+        range,
+        progress,
+        cancel,
+        Some(cancel.clone()),
+        create_compositor,
+        acquire_gpu,
+        cpu_threads,
+    )
+}
+
+fn export_timeline_configured<G>(
+    project: &Project,
+    timeline_id: TimelineId,
+    settings: &ExportSettings,
+    range: std::ops::Range<FrameIdx>,
+    progress: &Mutex<ExportProgress>,
+    cancel: &AtomicBool,
+    audio_cancel: Option<Arc<AtomicBool>>,
+    create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
+    acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
+    cpu_threads: usize,
+) -> Result<(), ExportError> {
     let started = std::time::Instant::now();
     let finish = || {
         let mut p = progress.lock().unwrap();
@@ -369,6 +424,15 @@ pub fn export_timeline_with_gpu<G>(
         .ok_or(ExportError::TimelineNotFound)?;
 
     let range = range.start.max(0)..range.end.min(timeline.total_frames());
+    if settings
+        .audio_render_origin
+        .is_some_and(|origin| origin < 0 || origin > range.start)
+        || settings.audio_render_origin.is_some() && audio_cancel.is_none()
+    {
+        return Err(ExportError::Failed(
+            "invalid or uncancellable audio render origin".into(),
+        ));
+    }
     let total_frames = (range.end - range.start).max(0);
     progress.lock().unwrap().total_frames = total_frames;
     if total_frames <= 0 {
@@ -422,12 +486,36 @@ pub fn export_timeline_with_gpu<G>(
                 if cpu_threads > 0 {
                     levels.threads = cpu_threads;
                 }
-                render_offline(project, timeline, samples, levels, |chunk| {
+                levels.cancel = audio_cancel;
+                let sink = |chunk: &[f32]| {
+                    if cancel.load(Ordering::Relaxed) {
+                        return ControlFlow::Break(());
+                    }
                     match audio_tx.send(chunk.to_vec()) {
                         Ok(()) => ControlFlow::Continue(()),
                         Err(_) => ControlFlow::Break(()),
                     }
-                })
+                };
+                let rendered = match settings.audio_render_origin {
+                    Some(origin) => render_offline_from_origin(
+                        project,
+                        timeline,
+                        samples,
+                        timeline_frame_to_sample(
+                            origin,
+                            timeline.fps.as_f64(),
+                            PROJECT_SAMPLE_RATE,
+                        ),
+                        levels,
+                        sink,
+                    ),
+                    None => render_offline(project, timeline, samples, levels, sink),
+                };
+                rendered?;
+                if cancel.load(Ordering::Relaxed) {
+                    return Err(ExportError::Cancelled);
+                }
+                Ok(())
             })
         });
 

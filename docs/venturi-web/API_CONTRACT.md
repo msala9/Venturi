@@ -4,7 +4,7 @@
 
 The timeline mutation `edit_inspector_selection` accepts
 `{clip_ids,timeline_frame,edit}` under the ordinary writer, project epoch,
-generation, revision and command-ID guards. `clip_ids` names 1–4096 explicit
+generation, revision and command-ID guards. `clip_ids` names 1â€“4096 explicit
 targets of the appropriate native track kind; missing, duplicate normalized
 IDs, locked or wrong-kind targets fail atomically. There is no implicit linked
 expansion. Rust derives the primary in native `(track index,start,ClipId)` order
@@ -79,7 +79,7 @@ receipt, playhead reveal follows the native snapshot only when a clip lands at
 the closed interval's start. Original source bytes are never modified.
 
 `POST /api/v1/media/imports/prepare` accepts strict
-`{project_epoch,if_generation,path_tokens}` for 1–256 unique project-root files.
+`{project_epoch,if_generation,path_tokens}` for 1â€“256 unique project-root files.
 First occurrence order is retained; up to 4096 raw selections may contain
 duplicates. The file list uses native `vv_media::is_media_path`, including native
 AVI/M4V/AAC/BMP/TIF/TIFF extensions. Preparation does not change the project.
@@ -124,7 +124,7 @@ validation still run before no-op detection.
 `edit_mask {clip_id,edit:{action:"add",shape:"Path",path?:MaskPath}}` can add
 a complete pen-drawn path through one native Masks command. Omitted path keeps
 the existing native shape defaults. Supplied geometry is Path-only and must
-satisfy the shared 3–21 vertex, coordinate, eight-mask and flattened-polygon
+satisfy the shared 3â€“21 vertex, coordinate, eight-mask and flattened-polygon
 budgets. Empty and incomplete pen drafts remain client-only.
 Each native Path mask detail exposes `path_navigation` with `on_keyframe` and
 nullable `previous`/`next` `{source_frame,timeline_frame}` destinations. Native
@@ -390,7 +390,7 @@ or timeline dimensions for generated sources. Transform `value` remains native
 evaluation at the reported source frame. The viewer overlay does not interpolate
 in JavaScript. Guarded timeline command
 `edit_viewer_transform{clip_id,timeline_frame,transform:[{param,value}]}` accepts
-1–11 distinct geometric axes: ZoomX/Y, PositionX/Y, Rotation, AnchorX/Y and the
+1â€“11 distinct geometric axes: ZoomX/Y, PositionX/Y, Rotation, AnchorX/Y and the
 four Crop sides. The selected video clip must be unlocked and contain the frame.
 All values and the resulting evaluated crop pairs are validated before mutation;
 each crop axis must retain at least one source pixel. Unchanged f32 values are
@@ -422,7 +422,7 @@ the checkbox itself changes only browser view state.
 `edit_key_selection {clip_id,edit:{picks,link_zoom,action}}` groups keys from
 different parameter rows of one clip. Each pick is
 `{target,source_frame}` using the existing scalar or RGBA/text/direction target
-DTO. Requests contain 1–2048 distinct picks. With `link_zoom:true`, existing
+DTO. Requests contain 1â€“2048 distinct picks. With `link_zoom:true`, existing
 Zoom X/Y twins at the same source frame join the operation; absent twins are
 not created. Values remain under native engine control.
 
@@ -722,7 +722,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 
 ## Implemented M3b source delivery
 
-- POST `/api/v1/media/{id}/prepare` with `{project_epoch, quality, window?, audio_stream_index?}` creates or
+- POST `/api/v1/media/{id}/prepare` with `{project_epoch, quality, window?, audio_mode?, audio_stream_index?}` creates or
   reuses an ephemeral source job. Quality is low/medium/high. This does not edit
   the project or history. Duplicate identity/quality/range/stream requests share
   one job. The optional audio index is a zero-based native audio ordinal, defaults
@@ -731,7 +731,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   Invalid choices refuse admission before cache allocation. Full and ranged
   proxies decode that stream using its own sample rate and channel format;
   legacy proxy waveforms use the same selection. Separate full-source asset
-  analysis retains its documented first-stream scope below.
+  analysis supports explicit stream ordinals as described below.
 - Optional `window:{start_frame,end_frame}` uses absolute, half-open source
   frames. It must be nonempty, inside the full source and at most 60 seconds
   using native rational FPS. The returned `source_window` contains those bounds,
@@ -739,6 +739,17 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   file-identity `source_version`. Stream choice does not change file identity.
   The job key includes range, quality, epoch, media ID, full file identity and
   audio index; omitted and explicit zero share the same entry.
+  `audio_mode` defaults to `selected`; `all` requires the default zero ordinal
+  and sums every native stream through the desktop channel-remap/mixer path,
+  without averaging or an extra limiter. Its descriptor returns
+  `audio_mode:"all",audio_stream_index:null`; cache entries are separate.
+  Main Source uses all-stream audio, while Review retains explicit selection.
+  Source scrub and fast-audio routes accept the same mode/ordinal and bind
+  their PCM identity to that choice. Ordinary Source windows remain 60 seconds.
+  All-stream preparation caps aggregate retained PCM at 256 MiB; unusually
+  large stream counts or explicit full-file requests can be refused.
+  A short stream may require scanning to EOF before all decoders finish;
+  preparation remains cancellable and bounded, without a fast-start claim.
   Ranged jobs publish only the requested zero-based movie and skip whole-source
   thumbnail/waveform scans. Status and asset authorization still bind the full
   original. Omitting `window` retains legacy full-file behavior and its ten-minute
@@ -757,19 +768,24 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   ownership guards refuse obsolete or changed media. AAC padding at natural EOF
   retains the final valid native frame. This does not establish gapless playback
   or arbitrary delayed-stream timestamp parity.
-- POST `/api/v1/media/{id}/assets/prepare` with `{project_epoch}` creates/reuses a
-  separate full-source analysis job. Its `source_assets` descriptor contains
-  `source_version`, `total_frames`, `fps`, `has_video` and `has_audio`;
+- POST `/api/v1/media/{id}/assets/prepare` with `{project_epoch, audio_stream_index?, include_waveform?}` creates/reuses a
+  separate full-source analysis job. Defaults are ordinal zero and waveform true. Its `source_assets` descriptor contains
+  `source_version`, `total_frames`, `fps`, `has_video`, `has_audio`,
+  `audio_stream_index` and `include_waveform`;
   `program`, `source_window`, `source_asset` and the legacy export-only
   `project_epoch` field are null. Authorization still requires the query epoch.
-  It publishes `thumb.png` for video and `waveform.json` for the first audio
-  stream; `source.mp4` is absent. Waveform JSON has `scope:"full_source"`, actual
+  It publishes `thumb.png` for video and, when requested, `waveform.json`
+  for the selected native audio ordinal; `source.mp4` is absent. Waveform JSON has `scope:"full_source"`, actual
   native audio `duration_seconds` and at most 65,536 normalized finite peaks.
   PNG/JSON limits are 1/4 MiB. Critical media metadata and file identity are
   rechecked; descriptive legacy metadata may be absent. Analysis requires an
   idle media worker at admission. Accepted foreground preparation preempts
   running analysis; invalid or rejected requests do not. Cache limits and
-  retention apply. Browser retries are explicit after failure or cancellation.
+  retention apply. The browser serializes demands from visible pool cards and
+  timeline clips; video thumbnails omit waveform analysis. Audio clips request
+  their own stream waveform. The decoded browser cache is capped at 64 entries
+  and 64 MiB; playback, hidden documents and dialogs pause background demand.
+  Browser retries are explicit after failure or cancellation.
 - GET `/api/v1/media/{id}/jobs/{job}?project_epoch=...` returns id, state, frames
   and optional error. States: queued, running, ready, failed, canceled.
 - DELETE the same job URL requests cancellation; it never deletes source media.
@@ -802,7 +818,8 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 ## Implemented Program preparation (hardware acceptance pending)
 
 - POST `/api/v1/preview/program/prepare` takes project_epoch, if_generation,
-  timeline_id, revision, start_frame, end_frame and width (default 960).
+  timeline_id, revision, start_frame, end_frame, width (default 960) and optional
+  `audio_origin_frame`.
   Ranges must be nonempty, inside the native timeline and at most five minutes.
 - GET `/api/v1/preview/program/{job}` with the same query returns job state,
   native stage progress and the actual output dimensions/fps. DELETE requests
@@ -818,10 +835,32 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   replies cannot start an obsolete window. Cached covering ranges retain their
   actual media origin. Fast audio must finish its old bounded tail before the
   next movie is installed; canceled or incomplete tails refuse continuation.
-  This does not establish gapless playback or continuous filter state.
+  Continuation keeps the initial Play frame as `audio_origin_frame`. Native
+  audio replays DSP from that origin to the requested end and discards the
+  prefix, preserving filter state across encoded windows. A manual seek starts
+  a new origin. Cache covering/attachment require matching origins. Replay
+  uses bounded chunk buffers but CPU cost grows with elapsed playback;
+  cancellation and the job deadline refuse excess work without cold-state
+  fallback. This does not establish gapless encoded playback.
 - Native desktop export retains its defaults. Web decoding/x264 use two CPU
   threads and explicit AMD Vulkan composition under the shared hardware lock.
   Hardware busy fails promptly. There is no realtime or hardware-encode claim.
+
+Source and Program jobs check conservative decoded-video/audio memory charges
+against current host and cgroup headroom before queueing and again before work.
+Cgroup admission discounts only clean unmapped inactive file cache, conservatively
+subtracting dirty/writeback, mapped, shared and unevictable pages; missing or
+invalid counters discount nothing. The hard service limit is unchanged. Counter
+semantics follow the [kernel cgroup v2 documentation](https://docs.kernel.org/admin-guide/cgroup-v2.html).
+Ready cache reuse avoids allocation admission. Refusals use
+`SOURCE_MEMORY_PRESSURE` or `PROGRAM_MEMORY_PRESSURE`; service memory limits
+remain required for dynamic codec-size changes and other unmodeled allocations.
+
+The shared Viewer supports Fit, physical-display 100%, pointer-anchored zoom,
+wheel pan and middle-button pan without editing clip Transform. Percentages
+refer to received preview pixels, including proxy resolution, rather than
+claiming original-resolution inspection. Ctrl+F uses the existing fullscreen
+control with text, modal and composition guards.
 
 ## Implemented Inspector commands
 
@@ -860,7 +899,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   `application/octet-stream`. Query fields: `project_epoch`, `client_id`,
   `sample_rate`, `channels`, native `format` ID. A saved project and writer lease
   are required. One upload runs at a time: 64 MiB, five minutes, one/two channels,
-  8–192 kHz and a 120-second body deadline. Native encoding runs off the actor
+  8â€“192 kHz and a 120-second body deadline. Native encoding runs off the actor
   into an exclusive descriptor and publishes without replacing existing files.
   Versioned receipts preserve frame count and raw/encoded SHA-256. Identical
   UUID retries return the same receipt; changed captures/saved files are refused.
@@ -981,7 +1020,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
 - Project commands accept `edit_catalog` with a typed `edit`: `new_folder`,
   `rename_folder`, `move_folder`, `delete_folder`, `move_media`, `remove_media`
   or batch `relink`. Folder IDs and media IDs are canonical strings. Folder
-  creation is bounded to 512; media batches contain 1–64 distinct existing IDs.
+  creation is bounded to 512; media batches contain 1â€“64 distinct existing IDs.
   All changes use native commands and one Undo. Folder deletion lifts contents
   to its parent; media removal leaves clips offline and never deletes files.
   Relink uses listed file tokens, NOFOLLOW descriptor probing/fingerprinting,
@@ -1004,7 +1043,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   lock validation completes before a single native CompositeCommand applies.
   Usual epoch/generation/revision/writer/idempotency guards apply.
 - `edit_curve_keys {clip_id, edit:{target,source_frames,delta_source_frames,
-  delta_value,delete}}` moves or deletes 1–2048 distinct keys on one native scalar
+  delta_value,delete}}` moves or deletes 1â€“2048 distinct keys on one native scalar
   track. Moves preserve each key's outgoing interpolation/Bezier controls and
   use one shared frame/value delta. Every destination/value is validated before
   native commands apply. Selected origins may become selected destinations;
@@ -1016,7 +1055,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   Zoom/pan operate on bounded browser viewport state, never the native project.
 - Clip detail `event_keys` exposes native RGBA, title-content and blur-direction
   tracks with typed defaults, choices, key counts and the first 1024 source/time
-  keys plus outgoing interpolation/control points. RGBA is `{r,g,b,a}` in 0–1;
+  keys plus outgoing interpolation/control points. RGBA is `{r,g,b,a}` in 0â€“1;
   text is literal UTF-8 (4096-byte edit budget); direction uses the native enum.
 - `edit_event_key {clip_id,edit:{target,previous_source_frame,source_frame,value,
   interpolation}}` inserts/edits/moves or deletes (`value:null`) one typed value
@@ -1040,7 +1079,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   supplied properties apply in one undo step after complete validation.
   Viewer handles use `edit_viewer_transform` above to choose native default or
   current-source-frame key changes per axis.
-- Timeline command `set_properties_batch {clip_ids,patch}` accepts 1–4096
+- Timeline command `set_properties_batch {clip_ids,patch}` accepts 1â€“4096
   unique normalized ClipIds, each an explicit unlocked video-track target.
   Only effective `blend` and `matte` fields are allowed; matte `None` clears
   the matte. Rust preflights the complete request atomically, without linked
@@ -1097,7 +1136,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   names return FILE_EXISTS and never replace the current path or source file.
 - Project `new_timeline {name,fps:{num,den},resolution:[width,height]}` creates
   a native timeline and its compound media entry. FPS must be positive and no
-  greater than 240; dimensions are 1–8192, with at most 64 timelines.
+  greater than 240; dimensions are 1â€“8192, with at most 64 timelines.
 - Session media entries expose compound_timeline_id. Native insert_media now
   accepts these entries, validates cycle safety and conforms native source FPS
   to the destination. Source double-click opens that timeline; compound media
@@ -1120,7 +1159,7 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   `{param,value}`. Native defaults, bounds and existing keys remain server-owned.
 - Scalar keyframe targets additionally include grade, filter_radius,
   filter_amount, filter_grow and filter_offset. `set_keyframes {clip_id,edits}`
-  prevalidates 1–64 edits and applies one native composite history step.
+  prevalidates 1â€“64 edits and applies one native composite history step.
 
 ## Native stopped-frame scopes
 
@@ -1164,7 +1203,7 @@ precedence over pending scopes. The browser refuses changed target/frame or
 document identity before committing the returned typed operation.
 
 Timeline `apply_grade_at_frame {clip_id,frame,values:[{param,value}]}` validates
-1–18 distinct native values, frame containment, video kind, track lock and
+1â€“18 distinct native values, frame containment, video kind, track lock and
 combined wheel bounds before one native set_clip_filters command. Constant
 wheel rows change defaults; if any parameter in the wheel is animated, changes
 use native source-frame keys (Linear), matching desktop grading semantics.
@@ -1214,11 +1253,11 @@ the existing maximum-width path remains capped at 1920. An explicit native
 percentage (`100`, `75`, `50`, `25`) uses `ExportSettings::output_size` and the
 captured timeline resolution, independently of that legacy width. Timeline
 snapshots expose `export_scales:[{percent,width,height}]`; the client does not
-reimplement native output rounding. Dimensions must be within 1–8192 pixels.
+reimplement native output rounding. Dimensions must be within 1â€“8192 pixels.
 
 Explicit percentages require memory admission before enqueue and again in the
-worker. The conservative working estimate is native pixels × 64 + output pixels
-× 16 + 256 MiB, with another 4 GiB of host headroom and 256 MiB of effective
+worker. The conservative working estimate is native pixels Ã— 64 + output pixels
+Ã— 16 + 256 MiB, with another 4 GiB of host headroom and 256 MiB of effective
 cgroup headroom. The minimum headroom across cgroup ancestors applies. Missing
 or malformed memory metadata fails closed; a controller-less cgroup v2 root is
 allowed after delegated ancestors are checked. Refusal is 409
@@ -1358,7 +1397,7 @@ requests did not change remaining files or quota. See
 failure qualification remain open.
 
 - Timeline `set_speed {clip_ids,percent,pitch_correction,fit}` uses native
-  SetClipSpeed with percent 1–10000, whole linked groups and fit keep_length,
+  SetClipSpeed with percent 1â€“10000, whole linked groups and fit keep_length,
   resize or ripple. A native trial application validates all resulting clip
   ranges and rejects overlaps before one real history entry. Ripple follows
   the desktop's unlocked-track policy. Native source-offset rounding applies.
@@ -1375,7 +1414,7 @@ failure qualification remain open.
   parameters `[{param,value}]` and native path `{points:[{point,in_handle,
   out_handle}]}` validate before one native set_clip_masks command. Defaults
   retain existing animation. New shapes fit the source's layer at zoom 1,
-  matching desktop mask coordinates. Eight masks maximum; 3–21 Bezier vertices
+  matching desktop mask coordinates. Eight masks maximum; 3â€“21 Bezier vertices
   per path with a conservative shared 256-point tessellation budget, including
   animated endpoints. Keyframe target `{kind:mask,index,param}` reuses native
   source-frame mapping, interpolation, insertion and removal.

@@ -493,6 +493,12 @@ label {
 #source-view[hidden], #program-view[hidden] { display: none; }
 #source-video, #source-image, #program-video { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
 #source-video[hidden], #source-image[hidden] { display: none; }
+.viewer-zoom-viewport { position: relative; flex: 1; min-height: 0; width: 100%; overflow: hidden; }
+#screen > .viewer-zoom-viewport { position: absolute; inset: 0; }
+#screen .viewer-zoom-viewport > :is(img,video) { position: absolute; flex: none; min-height: 0; max-width: none; max-height: none; object-fit: fill; }
+#screen[data-viewer-mode="source"] > .viewer-zoom-viewport,
+#screen[data-program-playback="true"] > .viewer-zoom-viewport { display: none; }
+.viewer-zoom-status { max-width: 290px; font-size: 10px; }
 #source-view > .source-toolbar { flex: 0 1 auto; max-height: 45%; min-height: 0; overflow-y: auto; }
 .source-toolbar { display: flex; gap: 12px; align-items: center; padding: 8px; font-size: 11px; flex-wrap: wrap; }
 .source-toolbar label { display: flex; gap: 6px; align-items: center; }

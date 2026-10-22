@@ -49,6 +49,54 @@ pub fn render_offline(
     render(project, Mix::Timeline(timeline), range, levels, sink)
 }
 
+/// Replays the native mix from its playback origin, emitting only `range`.
+pub fn render_offline_from_origin(
+    project: &Project,
+    timeline: &Timeline,
+    range: Range<u64>,
+    origin: u64,
+    levels: &mut LevelCache,
+    mut sink: impl FnMut(&[f32]) -> ControlFlow<()>,
+) -> Result<(), ExportError> {
+    if origin > range.start || range.start > range.end {
+        return Err(ExportError::Failed("invalid audio render origin".into()));
+    }
+    let mut at = origin;
+    let channels = PROJECT_CHANNELS as usize;
+    let cancel = levels.cancel.clone();
+    let rendered = render(
+        project,
+        Mix::Timeline(timeline),
+        origin..range.end,
+        levels,
+        |chunk| {
+            if cancel
+                .as_ref()
+                .is_some_and(|flag| flag.load(Ordering::Relaxed))
+            {
+                return ControlFlow::Break(());
+            }
+            let frames = (chunk.len() / channels) as u64;
+            let skip = range.start.saturating_sub(at).min(frames) as usize * channels;
+            at += frames;
+            if skip == chunk.len() {
+                ControlFlow::Continue(())
+            } else {
+                sink(&chunk[skip..])
+            }
+        },
+    );
+    rendered?;
+    if cancel
+        .as_ref()
+        .is_some_and(|flag| flag.load(Ordering::Relaxed))
+    {
+        Err(ExportError::Cancelled)
+    } else {
+        Ok(())
+    }
+}
+
 /// The same native render, exposing post-fader peaks and insert taps per chunk.
 pub fn render_offline_metered(
     project: &Project,

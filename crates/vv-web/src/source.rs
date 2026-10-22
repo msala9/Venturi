@@ -185,8 +185,9 @@ pub struct MediaJobs {
 }
 enum Work {
     Source(Box<SourceSpec>, ProxyQuality, Option<SourceWindow>, u32),
+    SourceAll(Box<SourceSpec>, ProxyQuality, Option<SourceWindow>),
     Program(Box<ProgramTask>),
-    Assets(Box<SourceSpec>),
+    Assets(Box<SourceSpec>, u32, bool),
 }
 impl MediaJobs {
     pub fn software_lock_path(&self) -> PathBuf {
@@ -301,7 +302,24 @@ impl MediaJobs {
                                 }
                             },
                         ),
-                        Work::Assets(spec) => generate_assets(&spec, &directory, &cancel),
+                        Work::SourceAll(spec, quality, window) => generate_audio(
+                            &spec,
+                            &directory,
+                            quality,
+                            window,
+                            (crate::source_audio::AudioMode::All, 0),
+                            &cancel,
+                            |frames| {
+                                if let Some(job) =
+                                    owned.lock().unwrap().iter_mut().find(|job| job.id == id)
+                                {
+                                    job.progress = frames;
+                                }
+                            },
+                        ),
+                        Work::Assets(spec, index, waveform) => {
+                            generate_assets(&spec, &directory, &cancel, index, waveform)
+                        }
                         Work::Program(task) => task.generate(
                             &directory,
                             &cancel,
@@ -402,7 +420,24 @@ impl MediaJobs {
         window: Option<SourceWindow>,
         audio_stream_index: u32,
     ) -> Result<Value> {
-        validate_source_audio(&spec.meta, audio_stream_index)?;
+        self.prepare_audio(
+            spec,
+            quality,
+            window,
+            crate::source_audio::AudioMode::Selected,
+            audio_stream_index,
+        )
+    }
+    pub fn prepare_audio(
+        &self,
+        spec: SourceSpec,
+        quality: &str,
+        window: Option<SourceWindow>,
+        mode: crate::source_audio::AudioMode,
+        audio_stream_index: u32,
+    ) -> Result<Value> {
+        crate::source_audio::selection(&spec.meta, mode, audio_stream_index)
+            .map_err(|_| ApiError::invalid("Invalid source audio mode or stream ordinal"))?;
         let quality = ProxyQuality::from_id(quality)
             .ok_or_else(|| ApiError::invalid("Choose low, medium or high proxy quality"))?;
         let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
@@ -425,9 +460,15 @@ impl MediaJobs {
             "source.mp4"
         };
         let identity = spec.identity()?;
-        let key = source_key(&spec, quality, window, &identity, audio_stream_index);
-        let source_window =
-            window.map(|window| window.descriptor(&spec, &identity, audio_stream_index));
+        let key = source_audio_key(&spec, quality, window, &identity, mode, audio_stream_index);
+        let source_window = window.map(|window| {
+            let mut descriptor = window.descriptor(&spec, &identity, audio_stream_index);
+            descriptor["audio_mode"] = json!(mode);
+            if mode == crate::source_audio::AudioMode::All {
+                descriptor["audio_stream_index"] = Value::Null;
+            }
+            descriptor
+        });
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs
             .iter_mut()
@@ -436,6 +477,7 @@ impl MediaJobs {
             job.touch();
             return Ok(job.value());
         }
+        admit_source_audio_memory(&spec.meta, quality.max_width(), window, mode)?;
         if jobs.iter().any(|job| job.state == "queued") {
             return Err(ApiError::conflict(
                 "SOURCE_BUSY",
@@ -472,14 +514,13 @@ impl MediaJobs {
             explicit_cancel: false,
             durability_error: false,
         });
-        if self
-            .send
-            .try_send((
-                id.clone(),
-                Work::Source(Box::new(spec), quality, window, audio_stream_index),
-            ))
-            .is_err()
-        {
+        let work = match mode {
+            crate::source_audio::AudioMode::Selected => {
+                Work::Source(Box::new(spec), quality, window, audio_stream_index)
+            }
+            crate::source_audio::AudioMode::All => Work::SourceAll(Box::new(spec), quality, window),
+        };
+        if self.send.try_send((id.clone(), work)).is_err() {
             reject_ephemeral(&mut jobs);
             return Err(ApiError::conflict(
                 "SOURCE_BUSY",
@@ -490,9 +531,30 @@ impl MediaJobs {
         Ok(jobs.back().unwrap().value())
     }
     pub fn prepare_assets(&self, spec: SourceSpec) -> Result<Value> {
+        self.prepare_assets_selected(spec, 0)
+    }
+    pub fn prepare_assets_selected(
+        &self,
+        spec: SourceSpec,
+        audio_stream_index: u32,
+    ) -> Result<Value> {
+        self.prepare_assets_options(spec, audio_stream_index, true)
+    }
+    pub fn prepare_assets_options(
+        &self,
+        spec: SourceSpec,
+        audio_stream_index: u32,
+        include_waveform: bool,
+    ) -> Result<Value> {
         validate_assets_meta(&spec.meta)?;
+        validate_source_audio(&spec.meta, audio_stream_index)?;
+        if !spec.meta.has_video && !include_waveform {
+            return Err(ApiError::invalid(
+                "Audio-only assets require waveform analysis",
+            ));
+        }
         let identity = spec.identity()?;
-        let key = assets_key(&spec, &identity);
+        let key = assets_key(&spec, &identity, audio_stream_index, include_waveform);
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs.iter_mut().find(|job| {
             job.key == key
@@ -502,6 +564,7 @@ impl MediaJobs {
             job.touch();
             return Ok(job.value());
         }
+        admit_source_memory(&spec.meta, 256, true)?;
         if jobs
             .iter()
             .any(|job| matches!(job.state, "queued" | "running"))
@@ -523,13 +586,16 @@ impl MediaJobs {
             id: id.clone(), key, state: "queued", progress: 0, error: None,
             directory, cancel: Arc::new(AtomicBool::new(false)), bytes: 0,
             touched: Instant::now(), export: None, descriptor: None, source_window: None,
-            source_assets: Some(json!({"source_version":identity,"total_frames":spec.meta.duration_frames,"fps":spec.meta.fps,"has_video":spec.meta.has_video,"has_audio":spec.meta.has_audio})),
+            source_assets: Some(json!({"source_version":identity,"total_frames":spec.meta.duration_frames,"fps":spec.meta.fps,"has_video":spec.meta.has_video,"has_audio":spec.meta.has_audio,"audio_stream_index":audio_stream_index,"include_waveform":include_waveform})),
             inputs: vec![], source_asset: None, export_epoch: None, program_query: None,
             durable: None, explicit_cancel: false, durability_error: false,
         });
         if self
             .send
-            .try_send((id, Work::Assets(Box::new(spec))))
+            .try_send((
+                id,
+                Work::Assets(Box::new(spec), audio_stream_index, include_waveform),
+            ))
             .is_err()
         {
             reject_ephemeral(&mut jobs);
@@ -560,6 +626,7 @@ impl MediaJobs {
             job.touch();
             return Ok(job.value());
         }
+        task.admit_memory()?;
         if jobs.iter().any(|job| job.state == "queued") {
             return Err(ApiError::conflict(
                 "MEDIA_BUSY",
@@ -880,9 +947,14 @@ fn preempt_assets(jobs: &VecDeque<Job>) {
         }
     }
 }
-fn assets_key(spec: &SourceSpec, identity: &str) -> String {
+fn assets_key(
+    spec: &SourceSpec,
+    identity: &str,
+    audio_stream_index: u32,
+    include_waveform: bool,
+) -> String {
     format!(
-        "{}:{}:{}:v3-assets:full",
+        "{}:{}:{}:v3-assets:full:audio:{audio_stream_index}:waveform:{include_waveform}",
         spec.epoch, spec.media_id, identity
     )
 }
@@ -948,8 +1020,16 @@ fn write_asset(directory: &Path, name: &str, bytes: &[u8], limit: usize) -> Resu
     }
     std::fs::write(directory.join(name), bytes).map_err(|_| ApiError::io())
 }
-fn generate_assets(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> Result<()> {
+fn generate_assets(
+    spec: &SourceSpec,
+    directory: &Path,
+    cancel: &AtomicBool,
+    audio_stream_index: u32,
+    include_waveform: bool,
+) -> Result<()> {
     validate_assets_meta(&spec.meta)?;
+    validate_source_audio(&spec.meta, audio_stream_index)?;
+    admit_source_memory(&spec.meta, 256, true)?;
     let started = Instant::now();
     let identity = spec.identity()?;
     let path = PathBuf::from(format!("/proc/self/fd/{}", spec.file.as_raw_fd()));
@@ -984,13 +1064,16 @@ fn generate_assets(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> 
             )?;
         }
     }
-    if spec.meta.has_audio {
+    if spec.meta.has_audio && include_waveform {
         // JSON is larger than the native binary peak cache.
         let num_peaks = vv_media::recommended_num_peaks(seconds).min(65_536);
-        let waveforms = vv_media::waveform::analyze_waveforms(&path, &[0], num_peaks, || {
-            assets_keep_running(directory, cancel, started)
-        })
-        .map_err(|_| budget())?;
+        let selected = usize::try_from(audio_stream_index)
+            .map_err(|_| ApiError::invalid("Invalid source audio stream index"))?;
+        let waveforms =
+            vv_media::waveform::analyze_waveforms(&path, &[selected], num_peaks, || {
+                assets_keep_running(directory, cancel, started)
+            })
+            .map_err(|_| budget())?;
         let waveform = waveforms
             .first()
             .and_then(Option::as_ref)
@@ -1262,6 +1345,85 @@ fn measured_directory_bytes(path: &Path) -> std::io::Result<u64> {
     }
     Ok(bytes)
 }
+fn source_working_bytes(meta: &vv_core::MediaMeta, max_width: u32, assets: bool) -> u64 {
+    let pixels = u64::from(meta.width) * u64::from(meta.height);
+    let width = meta.width.min(max_width).max(1);
+    let height = if meta.width == 0 {
+        0
+    } else {
+        (u64::from(meta.height) * u64::from(width))
+            .div_ceil(u64::from(meta.width))
+            .saturating_add(2)
+    };
+    let video = if meta.is_image() {
+        pixels.saturating_mul(20)
+    } else if meta.has_video {
+        pixels
+            .saturating_mul(16)
+            .saturating_add((u64::from(width) * height).saturating_mul(12))
+    } else {
+        0
+    };
+    // The selected stream can differ from the probe's best-stream channel count.
+    let audio = if meta.has_audio && !assets {
+        64 * 1024 * 1024 * 4
+    } else {
+        0
+    };
+    video.saturating_add(audio).saturating_add(64 * 1024 * 1024)
+}
+fn source_audio_key(
+    spec: &SourceSpec,
+    quality: ProxyQuality,
+    window: Option<SourceWindow>,
+    identity: &str,
+    mode: crate::source_audio::AudioMode,
+    index: u32,
+) -> String {
+    let key = source_key(spec, quality, window, identity, index);
+    match mode {
+        crate::source_audio::AudioMode::Selected => key,
+        crate::source_audio::AudioMode::All => format!("{key}:audio-mode:all"),
+    }
+}
+fn admit_source_memory(meta: &vv_core::MediaMeta, max_width: u32, assets: bool) -> Result<()> {
+    program::admit_memory(
+        source_working_bytes(meta, max_width, assets),
+        64 * 1024 * 1024,
+        ApiError::conflict(
+            "SOURCE_MEMORY_PRESSURE",
+            "Not enough host or process memory headroom for native source preparation; retry when memory is available",
+        ),
+    )
+}
+fn admit_source_audio_memory(
+    meta: &vv_core::MediaMeta,
+    max_width: u32,
+    window: Option<SourceWindow>,
+    mode: crate::source_audio::AudioMode,
+) -> Result<()> {
+    let pressure = || {
+        ApiError::conflict(
+            "SOURCE_MEMORY_PRESSURE",
+            "Not enough native source audio memory budget; choose a shorter window or retry later",
+        )
+    };
+    let mut required = source_working_bytes(meta, max_width, false);
+    if mode == crate::source_audio::AudioMode::All && meta.has_audio {
+        let frames = window.map_or(0..meta.duration_frames, |window| {
+            window.start_frame..window.end_frame
+        });
+        let bounds =
+            crate::source_audio::sample_bounds(frames, meta.fps).map_err(|_| pressure())?;
+        required = required
+            .saturating_add(
+                crate::source_audio::working_bytes(meta.audio_stream_count(), &bounds)
+                    .map_err(|_| pressure())?,
+            )
+            .saturating_add(8 * 1024 * 1024);
+    }
+    program::admit_memory(required, 64 * 1024 * 1024, pressure())
+}
 fn generate(
     spec: &SourceSpec,
     directory: &Path,
@@ -1269,8 +1431,31 @@ fn generate(
     window: Option<SourceWindow>,
     audio_stream_index: u32,
     cancel: &AtomicBool,
+    progress: impl FnMut(u64),
+) -> Result<()> {
+    generate_audio(
+        spec,
+        directory,
+        quality,
+        window,
+        (crate::source_audio::AudioMode::Selected, audio_stream_index),
+        cancel,
+        progress,
+    )
+}
+fn generate_audio(
+    spec: &SourceSpec,
+    directory: &Path,
+    quality: ProxyQuality,
+    window: Option<SourceWindow>,
+    selection: (crate::source_audio::AudioMode, u32),
+    cancel: &AtomicBool,
     mut progress: impl FnMut(u64),
 ) -> Result<()> {
+    let (mode, audio_stream_index) = selection;
+    crate::source_audio::selection(&spec.meta, mode, audio_stream_index)
+        .map_err(|_| ApiError::invalid("Invalid source audio mode or ordinal"))?;
+    admit_source_audio_memory(&spec.meta, quality.max_width(), window, mode)?;
     validate_source_audio(&spec.meta, audio_stream_index)?;
     if spec.meta.is_image() {
         if window.is_some() {
@@ -1293,7 +1478,10 @@ fn generate(
         || actual.height > 8192
         || actual.duration_frames != spec.meta.duration_frames
         || actual.fps != spec.meta.fps
-        || ((window.is_some() || audio_stream_index != 0) && !same_assets_meta(&spec.meta, &actual))
+        || ((window.is_some()
+            || audio_stream_index != 0
+            || mode == crate::source_audio::AudioMode::All)
+            && !same_assets_meta(&spec.meta, &actual))
     {
         return Err(ApiError::conflict(
             "SOURCE_CHANGED",
@@ -1315,22 +1503,55 @@ fn generate(
             && directory_bytes(directory) < MAX_JOB_BYTES
             && disk_headroom(directory)
     };
-    let generated = match window {
-        Some(window) => vv_media::browser_proxy::generate_range_selected(
+    let generated = if mode == crate::source_audio::AudioMode::All {
+        let streams = crate::source_audio::selection(&actual, mode, audio_stream_index)
+            .map_err(|_| ApiError::invalid("Source audio streams changed"))?;
+        let frames = window.map_or(0..actual.duration_frames, |window| {
+            window.start_frame..window.end_frame
+        });
+        let bounds = crate::source_audio::sample_bounds(frames.clone(), actual.fps)
+            .map_err(|_| ApiError::invalid("Invalid source audio mix range"))?;
+        vv_media::browser_proxy::generate_with_audio(
             &path,
             directory,
             quality,
-            window.start_frame..window.end_frame,
-            selected,
+            window.map(|_| frames),
             &mut keep_running,
-        ),
-        None => vv_media::browser_proxy::generate_selected(
-            &path,
-            directory,
-            quality,
-            selected,
-            &mut keep_running,
-        ),
+            |output, keep_running| {
+                let samples =
+                    crate::source_audio::render(&path, &streams, bounds, actual.fps, || {
+                        keep_running(0)
+                    })?;
+                if !keep_running(0) {
+                    return Err(vv_media::MediaError::Cancelled);
+                }
+                vv_media::audio_file::write_audio_file(
+                    output,
+                    vv_media::audio_file::AudioFileFormat::Aac,
+                    &samples,
+                    48_000,
+                    2,
+                )
+            },
+        )
+    } else {
+        match window {
+            Some(window) => vv_media::browser_proxy::generate_range_selected(
+                &path,
+                directory,
+                quality,
+                window.start_frame..window.end_frame,
+                selected,
+                &mut keep_running,
+            ),
+            None => vv_media::browser_proxy::generate_selected(
+                &path,
+                directory,
+                quality,
+                selected,
+                &mut keep_running,
+            ),
+        }
     };
     generated.map_err(|_| {
         ApiError::invalid("Source generation failed, canceled or exceeded its resource budget")
@@ -1348,7 +1569,7 @@ fn generate(
         )
         .map_err(|_| ApiError::io())?;
     }
-    if window.is_none() && spec.meta.has_audio {
+    if window.is_none() && spec.meta.has_audio && mode == crate::source_audio::AudioMode::Selected {
         let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
         let waveforms = vv_media::waveform::analyze_waveforms(
             &path,

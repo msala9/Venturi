@@ -1,4 +1,24 @@
 import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons } from "./geometry.js";
+import {sourceAssetKey,mediaThumbnail} from '../source-assets.js';
+export function visibleAssetDemand(timeline,view,width,height){
+  if(!timeline || width<=HEADER || height<=RULER)return [];
+  const layout=timelineLayout(timeline,view,height),[first,last]=visibleRange(width,view,timeline.fps),entries=new Map();
+  for(const index of layout.rowOrder){
+    const track=timeline.tracks[index],top=layout.trackTop(index),pane=layout.pane(index);
+    if(top+layout.rowHeight<=pane.top || top>=pane.bottom)continue;
+    for(const clip of track.clips){
+      if(!clip.media_id || clip.start_frame+clip.length_frames<first || clip.start_frame>last)continue;
+      const left=frameToX(clip.start_frame,view,timeline.fps),right=Math.max(left+2,frameToX(clip.start_frame+clip.length_frames,view,timeline.fps));
+      if(right<=HEADER || left>=width)continue;
+      const audio=track.kind==='audio',stream=audio?(clip.audio_stream_index ?? 0):0;
+      if(!Number.isSafeInteger(stream) || stream<0)continue;
+      const key=sourceAssetKey(clip.media_id,stream);
+      if(entries.size>=64 && !entries.has(key))continue;
+      if(!entries.has(key) || audio)entries.set(key,{media_id:clip.media_id,audio_stream_index:stream,include_waveform:audio});
+    }
+  }
+  return [...entries.values()];
+}
 export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
@@ -74,7 +94,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         ctx.beginPath();
         ctx.rect(x + 5, top + 7, Math.max(0, right - x - 10), rowHeight - 14);
         ctx.clip();
-        const asset = getAssets().get(clip.media_id);
+        const asset = track.kind==='audio'?getAssets().get(sourceAssetKey(clip.media_id,clip.audio_stream_index ?? 0)):mediaThumbnail(getAssets(),clip.media_id);
         if (asset?.thumbnail && track.kind === "video") {
           ctx.globalAlpha = 0.35;
           ctx.drawImage(asset.thumbnail, x + 2, top + 8, Math.min(right - x - 4, 80), rowHeight - 16);
@@ -277,7 +297,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       const draft=view.draft,label=`Preset ${draft.name} · ${draft.count} clip(s)${draft.error?` · blocked: ${draft.error}`:' · release to apply with one Undo'}`;
       const x=HEADER+8,y=Math.max(RULER+16,height-16);ctx.fillStyle=color('--raised');ctx.fillRect(x-4,y-8,Math.max(1,width-x),17);ctx.fillStyle=draft.error?color('--danger'):color('--text');ctx.fillText(label,x,y,Math.max(1,width-x-4));
     }
-    onPaint?.(performance.now() - started);
+    onPaint?.(performance.now() - started,{timeline_id:timeline.id,revision:timeline.revision,items:visibleAssetDemand(timeline,view,width,height)});
   };
   const invalidate = () => {
     if (!queued) {

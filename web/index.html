@@ -200,7 +200,9 @@
           <label class="muted" for="viewer-mask-select">Mask</label><select id="viewer-mask-select" class="viewer-mask-select" aria-label="Selected viewer mask" disabled><option value="">Choose a mask</option></select>
           <button id="viewer-mask" type="button" aria-pressed="false" aria-controls="screen" title="Edit the selected mask on a current stopped Program frame. Numeric mask controls remain in the Inspector.">Mask handles</button>
           <button id="viewer-mask-pen" type="button" aria-pressed="false" aria-controls="screen" title="Draw a new Bezier mask: click vertices, drag tangents, click the first point or Enter to finish; Escape cancels.">Draw path</button>
-          <button id="fullscreen" aria-label="Fullscreen viewer">⛶</button>
+          <label class="muted" for="viewer-zoom">View zoom</label><select id="viewer-zoom" aria-label="Viewer zoom" title="View only · percentages refer to received preview pixels, not original media pixels"><option value="fit">Fit</option></select>
+          <output id="viewer-zoom-status" class="muted" aria-live="polite"></output>
+          <button id="fullscreen" aria-label="Fullscreen viewer" title="Ctrl+F · fullscreen viewer">⛶</button>
         </div>
         <div id="screen">
           <section id="slip-view" hidden aria-label="Slip source edges">

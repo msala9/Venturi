@@ -240,7 +240,13 @@ async fn source_audition(
         .source_snapshot(id.clone(), source_query.clone())
         .await?;
     let identity = crate::source::file_identity(&spec.file)?;
-    let bytes = render_audition(crate::audition::Task::source(spec, query.frame)?).await?;
+    let bytes = render_audition(crate::audition::Task::source_options(
+        spec,
+        query.frame,
+        query.audio_mode,
+        query.audio_stream_index,
+    )?)
+    .await?;
     let current = state.host.source_snapshot(id, source_query).await?;
     if crate::source::file_identity(&current.file)? != identity {
         return Err(ApiError::conflict(
@@ -290,7 +296,12 @@ async fn source_audio_window(
         .source_snapshot(id.clone(), source_query.clone())
         .await?;
     let identity = crate::source::file_identity(&spec.file)?;
-    let task = crate::audition::Task::source(spec, payload.query.frame)?;
+    let task = crate::audition::Task::source_options(
+        spec,
+        payload.query.frame,
+        payload.query.audio_mode,
+        payload.query.audio_stream_index,
+    )?;
     let window = render_audio(move |cancel| task.window(payload.window, cancel)).await?;
     let current = state.host.source_snapshot(id, source_query).await?;
     if crate::source::file_identity(&current.file)? != identity {
@@ -1350,6 +1361,8 @@ struct PrepareSource {
     window: Option<SourceWindow>,
     #[serde(default)]
     audio_stream_index: u32,
+    #[serde(default)]
+    audio_mode: crate::source_audio::AudioMode,
 }
 fn medium() -> String {
     "medium".into()
@@ -1371,6 +1384,18 @@ async fn prepare_source(
             },
         )
         .await?;
+    if payload.audio_mode == crate::source_audio::AudioMode::All {
+        return state
+            .source
+            .prepare_audio(
+                spec,
+                &payload.quality,
+                payload.window,
+                payload.audio_mode,
+                payload.audio_stream_index,
+            )
+            .map(Json);
+    }
     match (payload.window, payload.audio_stream_index) {
         (Some(window), 0) => state.source.prepare_window(spec, &payload.quality, window),
         (None, 0) => state.source.prepare(spec, &payload.quality),
@@ -1380,16 +1405,47 @@ async fn prepare_source(
     }
     .map(Json)
 }
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct PrepareAssets {
+    project_epoch: String,
+    #[serde(default)]
+    audio_stream_index: u32,
+    #[serde(default = "include_waveform")]
+    include_waveform: bool,
+}
+fn include_waveform() -> bool {
+    true
+}
 async fn prepare_source_assets(
     State(state): State<AppState>,
     Path(id): Path<String>,
-    payload: std::result::Result<Json<SourceQuery>, axum::extract::rejection::JsonRejection>,
+    payload: std::result::Result<Json<PrepareAssets>, axum::extract::rejection::JsonRejection>,
 ) -> Result<Json<Value>> {
     let query = payload
         .map_err(|_| ApiError::invalid("Invalid source assets request"))?
         .0;
-    let spec = state.host.source_snapshot(id, query).await?;
-    state.source.prepare_assets(spec).map(Json)
+    let spec = state
+        .host
+        .source_snapshot(
+            id,
+            SourceQuery {
+                project_epoch: query.project_epoch,
+            },
+        )
+        .await?;
+    if !query.include_waveform {
+        state
+            .source
+            .prepare_assets_options(spec, query.audio_stream_index, false)
+    } else if query.audio_stream_index == 0 {
+        state.source.prepare_assets(spec)
+    } else {
+        state
+            .source
+            .prepare_assets_selected(spec, query.audio_stream_index)
+    }
+    .map(Json)
 }
 async fn source_status(
     State(state): State<AppState>,
@@ -1774,6 +1830,7 @@ async fn assets(request: Request) -> Response {
         "/js/ui.js" => asset!("/web/js/ui.js", "text/javascript"),
         "/js/api.js" => asset!("/web/js/api.js", "text/javascript"),
         "/js/viewer.js" => asset!("/web/js/viewer.js", "text/javascript"),
+        "/js/viewer-zoom.js" => asset!("/web/js/viewer-zoom.js", "text/javascript"),
         "/js/scopes.js" => asset!("/web/js/scopes.js", "text/javascript"),
         "/js/balance.js" => asset!("/web/js/balance.js", "text/javascript"),
         "/js/source.js" => asset!("/web/js/source.js", "text/javascript"),

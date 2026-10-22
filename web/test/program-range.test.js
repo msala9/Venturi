@@ -8,7 +8,7 @@ function fixture(total=20_000,fps={num:24,den:1}){
 
 test('Program windows contain exactly authorized query fields and retain string identities',()=>{
   const {document,timeline}=fixture(),before=structuredClone({document,timeline});
-  assert.deepEqual(buildProgramWindow(document,timeline,15),{project_epoch:'epoch:1',if_generation:'9007199254740993',timeline_id:'9007199254740995',revision:'revision:1',start_frame:15,end_frame:7215,width:960});
+  assert.deepEqual(buildProgramWindow(document,timeline,15),{project_epoch:'epoch:1',if_generation:'9007199254740993',timeline_id:'9007199254740995',revision:'revision:1',start_frame:15,end_frame:7215,width:960,audio_origin_frame:15});
   assert.deepEqual({document,timeline},before);
 });
 
@@ -25,10 +25,10 @@ test('native rational fps must have positive bounded integer components and supp
   assert.equal(buildProgramWindow(document,{...timeline,fps:{num:1,den:300}},0).end_frame,1);
 });
 
-test('fractional fps respects the native 300-second limit without adding DTO fields',()=>{
+test('fractional fps respects the native 300-second limit with an explicit audio origin',()=>{
   for(const [fps,capacity] of [[{num:30_000,den:1001},8991],[{num:24_000,den:1001},7192],[{num:25,den:2},3750]]){
     const {document,timeline}=fixture(30_000,fps),query=buildProgramWindow(document,timeline,0);
-    assert.equal(query.end_frame,capacity);assert.ok((query.end_frame-query.start_frame)/(fps.num/fps.den)<=300);assert.deepEqual(Object.keys(query).sort(),['project_epoch','if_generation','timeline_id','revision','start_frame','end_frame','width'].sort());
+    assert.equal(query.end_frame,capacity);assert.ok((query.end_frame-query.start_frame)/(fps.num/fps.den)<=300);assert.deepEqual(Object.keys(query).sort(),['project_epoch','if_generation','timeline_id','revision','start_frame','end_frame','width','audio_origin_frame'].sort());
   }
 });
 
@@ -50,14 +50,21 @@ test('manual starts clamp to the media timeline while explicit continuation star
 
 test('long Program continuation boundaries cover the timeline once with an exact final tail',()=>{
   const {document,timeline}=fixture(14_501),ranges=[];let query=buildProgramWindow(document,timeline,0);
-  while(query){ranges.push([query.start_frame,query.end_frame]);assert.ok(ranges.length<10);query=buildProgramWindow(document,timeline,0,query.end_frame);}
+  while(query){ranges.push([query.start_frame,query.end_frame]);assert.equal(query.audio_origin_frame,0);assert.ok(ranges.length<10);query=buildProgramWindow(document,timeline,0,query.end_frame,query.audio_origin_frame);}
   assert.deepEqual(ranges,[[0,7200],[7200,14_400],[14_400,14_501]]);assert.equal(ranges.reduce((sum,[start,end])=>sum+end-start,0),14_501);
   assert.equal(buildProgramWindow(document,timeline,0,14_501),null);
 });
 
 test('nonzero and fractional-fps continuation starts retain adjacency and never repeat the final frame',()=>{
   const {document,timeline}=fixture(20_000,{num:30_000,den:1001});
-  const first=buildProgramWindow(document,timeline,500),second=buildProgramWindow(document,timeline,123,first.end_frame),tail=buildProgramWindow(document,timeline,123,second.end_frame);
+  const first=buildProgramWindow(document,timeline,500),second=buildProgramWindow(document,timeline,123,first.end_frame,first.audio_origin_frame),tail=buildProgramWindow(document,timeline,123,second.end_frame,second.audio_origin_frame);
   assert.deepEqual([first.start_frame,first.end_frame,second.start_frame,second.end_frame,tail.start_frame,tail.end_frame],[500,9491,9491,18_482,18_482,20_000]);
   assert.equal(buildProgramWindow(document,timeline,123,tail.end_frame),null);
+});
+
+test('audio render origin is captured on manual Play and bounded across native continuation windows',()=>{
+  const {document,timeline}=fixture(20_000,{num:30000,den:1001});
+  const first=buildProgramWindow(document,timeline,500),next=buildProgramWindow(document,timeline,0,first.end_frame,first.audio_origin_frame);
+  assert.equal(next.audio_origin_frame,500);assert.equal(buildProgramWindow(document,timeline,600).audio_origin_frame,600);
+  for(const invalid of [-1,501,NaN,Infinity,1.5,null,'0'])assert.equal(buildProgramWindow(document,timeline,500,undefined,invalid),null);
 });

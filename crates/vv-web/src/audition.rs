@@ -36,6 +36,10 @@ pub struct MeterRequest {
 pub struct SourceQuery {
     pub project_epoch: String,
     pub frame: i64,
+    #[serde(default)]
+    pub audio_mode: crate::source_audio::AudioMode,
+    #[serde(default)]
+    pub audio_stream_index: u32,
 }
 
 #[derive(Clone, serde::Deserialize)]
@@ -69,6 +73,8 @@ pub struct Task {
     snapshot: FrameSnapshot,
     files: Vec<(File, String)>,
     inputs: crate::program::Inputs,
+    source_streams: Option<Vec<usize>>,
+    source_selection: Option<(crate::source_audio::AudioMode, u32, bool)>,
 }
 pub fn pin(mut snapshot: FrameSnapshot, files: &Files) -> Result<Task> {
     let inputs = crate::program::inputs(&snapshot)?;
@@ -94,6 +100,8 @@ pub fn pin(mut snapshot: FrameSnapshot, files: &Files) -> Result<Task> {
         snapshot,
         files: pinned,
         inputs,
+        source_streams: None,
+        source_selection: None,
     })
 }
 fn changed() -> ApiError {
@@ -175,7 +183,16 @@ impl Task {
         self.check_inputs()?;
         result.ok_or_else(|| ApiError::invalid("Native audio metering returned an invalid window"))
     }
+    #[cfg(test)]
     pub fn source(spec: crate::source::SourceSpec, frame: i64) -> Result<Self> {
+        Self::source_options(spec, frame, crate::source_audio::AudioMode::Selected, 0)
+    }
+    pub fn source_options(
+        spec: crate::source::SourceSpec,
+        frame: i64,
+        audio_mode: crate::source_audio::AudioMode,
+        audio_stream_index: u32,
+    ) -> Result<Self> {
         use vv_core::{
             Clip, ClipId, ClipSource, Id, MediaItem, Project, Rational, Timeline, Track, TrackKind,
         };
@@ -184,6 +201,11 @@ impl Task {
                 "Choose a frame inside a source with audio",
             ));
         }
+        let streams = crate::source_audio::selection(&spec.meta, audio_mode, audio_stream_index)
+            .map_err(|_| {
+                ApiError::invalid("Choose an available source audio stream or all streams")
+            })?;
+        let legacy_selection = spec.meta.audio_streams <= 1;
         let identity = file_identity(&spec.file)?;
         let mut project = Project::default();
         let fps = spec.meta.fps;
@@ -228,6 +250,8 @@ impl Task {
             },
             files: vec![(spec.file, identity)],
             inputs: vec![],
+            source_streams: Some(streams),
+            source_selection: Some((audio_mode, audio_stream_index, legacy_selection)),
         })
     }
     pub fn run(&self, cancel: Arc<AtomicBool>) -> Result<Vec<u8>> {
@@ -239,8 +263,8 @@ impl Task {
         );
         Ok(wav(&self.render(start, FRAMES, cancel)?))
     }
-    pub fn window(&self, params: WindowParams, cancel: Arc<AtomicBool>) -> Result<Window> {
-        let source_version = format!(
+    fn source_version(&self) -> Result<String> {
+        let mut source_version = format!(
             "{:x}",
             Sha256::digest(
                 serde_json::to_vec(&(
@@ -253,6 +277,21 @@ impl Task {
                 .map_err(|_| ApiError::io())?
             )
         );
+        if let Some((mode, index, legacy_selection)) = self.source_selection
+            && (!legacy_selection || mode != crate::source_audio::AudioMode::Selected || index != 0)
+        {
+            source_version = format!(
+                "{:x}",
+                Sha256::digest(
+                    serde_json::to_vec(&(&source_version, mode, index))
+                        .map_err(|_| ApiError::io())?
+                )
+            );
+        }
+        Ok(source_version)
+    }
+    pub fn window(&self, params: WindowParams, cancel: Arc<AtomicBool>) -> Result<Window> {
+        let source_version = self.source_version()?;
         if params
             .source_version
             .as_ref()
@@ -348,20 +387,39 @@ impl Task {
         levels.threads = 1;
         levels.cancel = Some(cancel.clone());
         let mut samples = Vec::with_capacity(frames * 2);
-        render_offline(
-            &self.snapshot.project,
-            timeline,
-            start..start + frames as u64,
-            &mut levels,
-            |chunk| {
-                if cancel.load(Ordering::Relaxed) {
-                    return ControlFlow::Break(());
-                }
-                samples.extend_from_slice(chunk);
-                ControlFlow::Continue(())
-            },
-        )
-        .map_err(|_| ApiError::invalid("Native audio audition failed or was canceled"))?;
+        if let Some(streams) = &self.source_streams {
+            let path = format!("/proc/self/fd/{}", self.files[0].0.as_raw_fd());
+            let result = crate::source_audio::render(
+                std::path::Path::new(&path),
+                streams,
+                start..start + frames as u64,
+                timeline.fps,
+                || !cancel.load(Ordering::Relaxed),
+            );
+            if cancel.load(Ordering::Relaxed) {
+                return Err(ApiError::conflict(
+                    "AUDIO_CANCELED",
+                    "Audio audition was canceled",
+                ));
+            }
+            samples =
+                result.map_err(|_| ApiError::invalid("Native source audio audition failed"))?;
+        } else {
+            render_offline(
+                &self.snapshot.project,
+                timeline,
+                start..start + frames as u64,
+                &mut levels,
+                |chunk| {
+                    if cancel.load(Ordering::Relaxed) {
+                        return ControlFlow::Break(());
+                    }
+                    samples.extend_from_slice(chunk);
+                    ControlFlow::Continue(())
+                },
+            )
+            .map_err(|_| ApiError::invalid("Native audio audition failed or was canceled"))?;
+        }
         if cancel.load(Ordering::Relaxed) {
             return Err(ApiError::conflict(
                 "AUDIO_CANCELED",

@@ -1,6 +1,6 @@
 # Implementation status
 
-2026-10-22 — development branch feat/venturi-web.
+2026-10-22 â€” development branch feat/venturi-web.
 
 ## Active completion objective
 
@@ -14,7 +14,7 @@ Begin F1 with missing native multi-selection Inspector semantics and connected
 timeline interaction gaps. Report delivered functions, remaining defects and
 actual deployment state without subjective percentages.
 
-## F1 implementation — integrated qualification in progress
+## F1 implementation â€” integrated qualification in progress
 
 The selected Inspector now follows native per-property target and clock rules:
 Position deltas, absolute scalar/gain edits, constant versus animated tracks,
@@ -51,6 +51,29 @@ root-timeline view memory, painted pane scrollbars/inertial scrolling and the
 applicable physical pointer/DPI/500-clip acceptance. No ledger row is newly
 closed by the implementation gate alone.
 
+## F2 implementation â€” combined validation pending
+
+Source now has an explicit native all-stream audio mode shared by proxy,
+scrub and fast transport; Review retains selected-stream audition. Derivatives
+accept audio ordinals and thumbnail-only requests. Visible pool/timeline demand
+is serialized with a bounded decoded cache and foreground-playback suspension.
+Source and Program have conservative host/cgroup memory admission before queue
+and execution. Program continuation replays native DSP from its original Play
+origin, discarding the prefix rather than restarting insert state at each movie.
+
+The Viewer adds native Fit/100%/anchored zoom/pan geometry and guarded Ctrl+F.
+100% means received preview pixels; full-resolution source inspection is not
+claimed. The F1 Inspector-scroll drag cancellation correction is in this block.
+The bounded halo2 gate passes 957 unique JavaScript cases (one stale DTO
+expectation corrected with its focused file rerun), 11 native browser-proxy
+cases, four native DSP-origin cases and 453 vv-web tests, plus fmt, three-crate
+all-target Clippy with warnings denied and the embedded native build. Three
+initial memory-admission failures exposed reclaimable linker file cache being
+counted as process working memory; the conservative clean-cache correction
+and its regression pass within the unchanged 4 GiB cap. The implementation
+still awaits integrated Windows-browser qualification; they are not installed in the delivered editor.
+No capability row is newly accepted by this source implementation alone.
+
 ## Accepted usable workflow baseline
 
 Blocks A (editing/save), B (playback/export) and C (accessible handover) are
@@ -72,7 +95,7 @@ The normal candidate service has one CPU, 4 GiB RAM, no swap and low priority;
 final idle memory is recorded in the proof and its GPU context is released.
 The protected main editor remains on 84ef827 with its five unsaved moves intact.
 
-Qualification uses a small 64×64 three-second A/V edit. Physical Canvas/DPI,
+Qualification uses a small 64Ã—64 three-second A/V edit. Physical Canvas/DPI,
 physical output latency, complex high-resolution throughput and browser playback
 across five-minute windows remain explicitly unqualified. Broader native GUI
 parity is the new active objective; these gaps are tracked in COMPLETION_PLAN.md
@@ -84,7 +107,7 @@ The ledger contains 90 in-scope capabilities: 42 done, 48 partial and none not
 started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus
 46.7% of capability rows have full acceptance; this is not an estimate of
 implementation effort or the active workflow's completion. Many partial rows
-already have native adapters and working browser controls. The former 65–70%
+already have native adapters and working browser controls. The former 65â€“70%
 engineering estimate is withdrawn because it had no measured remaining-work
 basis. No full-plan completion date is supported by the current evidence.
 
@@ -484,7 +507,7 @@ proof establish the export path. Native compound export remains explicitly
 unsupported; export child timelines directly. Installing another NLE or proving
 cross-machine font layout was not in the original acceptance requirement.
 This closes these two adapter rows, not the full offline/relink scenario or
-rendered/GPU/physical audio/release qualification. The overall 65–70% engineering
+rendered/GPU/physical audio/release qualification. The overall 65â€“70% engineering
 estimate remains uncertain and unchanged.
 
 Earlier native editing fidelity passes `evidence/m4-native-edit-fidelity.json`.
@@ -494,7 +517,7 @@ groups, internal crossing durations, source-frame animation, speed, freeze and
 pitch retain native behavior; occupied or locked targets still refuse the whole
 paste. The existing Windows browser copied a linked nested video/audio group
 from 24 fps into 25 fps, verified 25 timeline frames against 24 source frames,
-then performed exactly one Undo/Redo. Finite API checks also cover 24→30 fps,
+then performed exactly one Undo/Redo. Finite API checks also cover 24â†’30 fps,
 animation, unchanged source bounds, idempotency, Save/restart and atomic refusal.
 
 Compound guards now distinguish video and audio track multiplicity. Two video
@@ -531,10 +554,10 @@ unavailable FDK refusal and unchanged legacy request identities are covered.
 Explicit scales use native dimensions and conservative host/cgroup memory
 admission; a 4K request was refused before enqueue under the 1 GiB test limit.
 
-The existing Windows browser exported frames 2–10 at 64×36 with AAC 192 kbps
+The existing Windows browser exported frames 2â€“10 at 64Ã—36 with AAC 192 kbps
 Fast, then downloaded bytes matching the native file SHA. Another single export
 was running at frame 9 before refresh and frame 95 afterward with the same job
-ID, then completed all 2400 frames at 640×360. A distinct export was canceled
+ID, then completed all 2400 frames at 640Ã—360. A distinct export was canceled
 at frame 162. Source opposite-bound resets, same-timeline Program mark retention,
 no browser errors and no project/history/source changes were verified. Only the
 isolated test unit was temporarily slowed to 10% CPU to observe reconnect;
@@ -583,9 +606,9 @@ The verified candidate is staged separately while the main editor retains its
 five unsaved MoveClips and Undo.
 
 The existing Windows browser now verifies a functional Source handoff on a real
-601-second, 24 fps, 16×16 input: seek to frame 12960, seek within the same
+601-second, 24 fps, 16Ã—16 input: seek to frame 12960, seek within the same
 60-second job to frame 14352, play through the next job and stop at frame 14423.
-The next descriptor is exactly 14400–14424; the first is 12960–14400, with the
+The next descriptor is exactly 14400â€“14424; the first is 12960â€“14400, with the
 same source version. There were no browser media/console errors, project writes
 or history changes. This is a short boundary check using a 200,058-byte silent
 fixture, not a long wall-clock, high-resolution, physical audio or gapless test.
@@ -705,7 +728,7 @@ halo2 measurements recorded under M3a below.
 
 Subsequent milestones and exact verification results are recorded below.
 
-## M1a — web shell
+## M1a â€” web shell
 
 Implemented native HTML/CSS/ES modules, four workspace layouts, browser tabs,
 honest disabled advanced tool homes, command palette, Projects dialog,
@@ -716,7 +739,7 @@ and compact layout saved under evidence/m1-*.jpg. Keyboard splitter increased
 260 to 276; text input accepted Space without editor transport action;
 command palette focus was verified. No engine capability claimed by shell.
 
-## M1b — Canvas timeline
+## M1b â€” Canvas timeline
 
 Implemented rational frame coordinates, visible-range culling, DPR scaling,
 rAF invalidation, pointer capture, snap, local move/trim ghosts, overlap/lock
@@ -729,7 +752,7 @@ on pointermove and cancellation on Escape/capture loss. Fixture mutations
 are refused explicitly; no browser editing engine/persistence is introduced.
 60 fps and Windows 125/150% scaling benchmarks remain unverified.
 
-## M2a — native HTTP host
+## M2a â€” native HTTP host
 
 Implemented vv-web with Axum/Tokio, embedded first-party assets, normalized
 errors, loopback-only CLI, Host/Origin checks, request limits, CSP/nosniff,
@@ -752,7 +775,7 @@ first check attempt; persistent cache logs and foreground PTY execution were
 used on the successful retry. Clippy found one manual-range style issue,
 which was corrected; the final rerun is recorded below.
 
-## M2b — project/session workflow
+## M2b â€” project/session workflow
 
 The browser is connected to authoritative native session snapshots. Verified
 in the real host: create, save, process restart, reopen the saved RON, import
@@ -768,7 +791,7 @@ for the next milestone, with capability disabled unless an explicit AMD Vulkan
 device initializes. Target GPU acceptance is recorded separately after testing;
 code existence does not imply GPU validation.
 
-## M2c — safe command bridge
+## M2c â€” safe command bridge
 
 Implemented native safe move, linked move/trim, split, lift/global ripple delete,
 undo/redo, safe media/generator insertion and track add/mute/solo/lock. Numeric
@@ -787,7 +810,7 @@ Evidence: m2-native-project-1920.jpg and m2-overlap-rejected.jpg. Pointer drag
 commit and 60fps under load still need real-browser performance validation;
 the gesture state machine is covered by Node tests, not a timing claim.
 
-## M3a — actual headless composed frames
+## M3a â€” actual headless composed frames
 
 Validated on halo2 Ubuntu 26.04.1, AMD Radeon AI PRO R9700 (RADV GFX1201),
 vendor/device 1002:7551, PCI 67:00.0, Vulkan, Mesa 26.0.8-1ubuntu0.3. Strix Halo
@@ -828,7 +851,7 @@ Final local checks: 13 vv-web tests, 10 JavaScript tests, cargo fmt --all
 -- --check, clippy -p vv-web --all-targets -- -D warnings, and build passed.
 The unchanged desktop vv-app check passed; baseline native suites remain
 250 vv-core and 98 vv-session passed, one upstream session test ignored.
-M1 timing/DPI acceptance and M3b–M7 remain open. See PREVIEW_SPIKE.md for
+M1 timing/DPI acceptance and M3bâ€“M7 remain open. See PREVIEW_SPIKE.md for
 the smallest next media increment and measured constraints.
 
 Deployment/browser follow-up: the final embedded UI binary was deployed during
@@ -839,7 +862,7 @@ fixture was saved. Screenshot records CURRENT at frame 12. An external Rust
 test also verifies immediate GPU_BUSY under occupied lock and that the shared
 lock file is preserved.
 
-## M3b — source playback, thumbnails and waveforms
+## M3b â€” source playback, thumbnails and waveforms
 
 Implemented on-demand native all-intra H.264/AAC MP4 source preparation,
 including the first audio stream and audio-only media. The new vv-media
@@ -891,7 +914,7 @@ formatting, native desktop check and vv-web build passed. Program playback,
 export and advanced feature parity remain subsequent work, not completed by
 source playback.
 
-## M3c implementation checkpoint — GPU acceptance pending
+## M3c implementation checkpoint â€” GPU acceptance pending
 
 Program preparation now reuses the native bounded decode/compose/encode and
 offline audio-mix pipeline, with an explicit compositor factory and per-stage
@@ -928,7 +951,7 @@ now drops its compositor after two idle seconds; Program owns its compositor
 only during preparation. Diagnostics report context residency separately from
 hardware capability. Actual device-handle release still needs hardware proof.
 
-## M3b additional Source coverage — PNG/JPEG stills
+## M3b additional Source coverage â€” PNG/JPEG stills
 
 Source now serves a private bounded copy of an imported PNG/JPEG original,
 without transcoding its color profile or alpha. Signature validation, native
@@ -941,7 +964,7 @@ project, screenshot evidence/m3b-still-source-browser.png. Original PNG bytes
 including alpha compare exactly in the native job test. All 20 web Rust tests,
 14 JavaScript tests, formatting and clippy passed.
 
-## M4 independent increment — native properties and scalar keyframes
+## M4 independent increment â€” native properties and scalar keyframes
 
 While shared GPU acceptance is unavailable, CPU-only Edit work adds a guarded
 clip-detail read and atomic native property commands. Inspector covers all 13
@@ -954,7 +977,7 @@ upsert/remove and interpolation. The UI exposes five interpolation presets;
 validated Bezier control points are supported by the API, not a curve editor.
 No JavaScript evaluation of effects or interpolation was added.
 
-Windows browser verification: PositionX 0→48→undo 0; opacity source keyframes
+Windows browser verification: PositionX 0â†’48â†’undo 0; opacity source keyframes
 0=75 Linear and 1=50 EaseInOut persisted with Save. Screenshot:
 evidence/m4-native-inspector-browser.png. All 22 Rust web tests, 16 JavaScript
 tests, formatting, clippy and web build passed. Focused native tests cover
@@ -964,7 +987,7 @@ new edits is pending the shared hardware slot. M4 as a whole remains open:
 transitions, masks, curves, slip, markers, speed, presets and compounds are not
 claimed complete by this increment.
 
-## M4 independent increment — Source range, linked slip and markers
+## M4 independent increment â€” Source range, linked slip and markers
 
 Source In/Out uses exclusive integer source-frame bounds, local I/O buttons
 and numeric fields; insertion still uses native FPS conforming and safe
@@ -978,11 +1001,11 @@ validation and undo. Markers have native palette colors, ruler ranges and
 existing timeline snapping. Inspector provides marker editing and jump; drag
 of a marker is not implemented. Literal note text uses safe DOM/Canvas APIs.
 
-Browser proof: Source 6–18 inserted a linked 12-frame video/audio pair. Slip +1
-changed both source ranges to 7–19 with unchanged start 0 and length 12. Saved
+Browser proof: Source 6â€“18 inserted a linked 12-frame video/audio pair. Slip +1
+changed both source ranges to 7â€“19 with unchanged start 0 and length 12. Saved
 and reloaded the project successfully; the writer ID now persists in tab
 session storage, fixing the reload lease wait found during validation. Marker
-12–18 with note Cut cue applied and saved. Screenshots:
+12â€“18 with note Cut cue applied and saved. Screenshots:
 evidence/m4-source-range-linked-slip-browser.png and
 evidence/m4-native-markers-browser.png. Native tests cover source bounds,
 linked slip/refusal/lock/undo, group disable/unlink/undo and marker CRUD/undo.
@@ -1011,9 +1034,9 @@ not R9700 throughput or physical speaker/browser sync proof. Detailed evidence:
 evidence/m3c-cpu-five-minute-sync.json. Reproduction uses the verify_preview
 fixture_sync/export modes and scripts/venturi-web-validate-sync.py. Full M3c
 GPU/browser acceptance still awaits a shared hardware slot; D41 announced a
-further priority 60–90 minute quality test after the current H3 video.
+further priority 60â€“90 minute quality test after the current H3 video.
 
-## M4 independent increment — title generators and native transitions
+## M4 independent increment â€” title generators and native transitions
 
 Effects now inserts native title and adjustment clips with safe destination
 checks. Inspector title editing covers default text, server font family,
@@ -1042,7 +1065,7 @@ the video-duration correction: media 107 pass / 2 ignored, session 99 pass /
 1 ignored, desktop check pass. GPU/UI rendered title/transition proof awaits
 the shared GPU slot; these rows remain partial.
 
-## M4 independent increment — native history navigation
+## M4 independent increment â€” native history navigation
 
 History displays actual native command positions and jumps with History::go_to.
 Undo/redo/jump also use the project command endpoint with epoch/generation and
@@ -1051,13 +1074,13 @@ The actor serializes the full native jump; browser frames/preparations invalidat
 as on other mutations. A native regression covers jumping through timeline
 creation/removal, invalid positions and exact restoration. Host coverage checks
 project-level jump retries and redo without a timeline precondition.
-Browser: InsertClips + AddTrack → initial state (no clips, redo enabled) →
+Browser: InsertClips + AddTrack â†’ initial state (no clips, redo enabled) â†’
 position 2 restored the solid and V2. Saved successfully. Evidence:
 evidence/m4-native-history-browser.png. All 27 Rust web tests, 18 JavaScript
 tests, formatting, clippy and build pass. History remains process-local like
 the upstream session; saving a project does not serialize undo commands.
 
-## M2b additional persistence coverage — Save As
+## M2b additional persistence coverage â€” Save As
 
 Projects now offers Save As to a new validated root filename. It uses the
 existing atomic no-replace writer, then switches the session path and marks
@@ -1069,7 +1092,7 @@ Evidence: evidence/m2-save-as-existing-file-refused.png. All 27 web Rust tests,
 18 JavaScript tests, formatting, clippy and build pass. Automated crash recovery
 and asynchronous import remain separate outstanding work.
 
-## M2/M4 independent increment — timeline creation and compound insertion
+## M2/M4 independent increment â€” timeline creation and compound insertion
 
 The command palette creates native timelines with validated rational FPS and
 dimensions; each receives native video/audio tracks and a compound pool entry.
@@ -1082,7 +1105,7 @@ This does not implement selection-to-compound, duplicate/rename, or flattened
 compound-copy workflows.
 
 Browser proof: created Nested30 at 30fps, inserted a 150-frame solid, then
-inserted that compound into the 24fps parent: source 0–150 became 120 timeline
+inserted that compound into the 24fps parent: source 0â€“150 became 120 timeline
 frames. A self-reference insertion was rejected, leaving the saved project
 intact. Double-click opened Nested30 at 30fps. Evidence:
 evidence/m4-compound-native-cycle-refused.png. All 29 Rust web tests, 18
@@ -1091,7 +1114,7 @@ rational timeline creation, invalid geometry, native compound FPS conforming,
 self/indirect cycle refusal, undo and malformed project graphs. Rendered
 compound acceptance on R9700 remains pending the shared hardware slot.
 
-## M5 independent increment — native mixer gain and balance
+## M5 independent increment â€” native mixer gain and balance
 
 Audio workspace opens a native mixer Inspector section for every audio track
 and master. Gain/balance edits validate native ranges and track locks before
@@ -1106,7 +1129,7 @@ Native regression checks full-patch validation, one undo step, invalid balance,
 locked-track refusal, master parameters and video-track refusal. Hardware
 Program playback with changed mix remains pending; M5 is not accepted.
 
-## M5 independent increment — native audio inserts and EQ response
+## M5 independent increment â€” native audio inserts and EQ response
 
 Each audio/master strip now edits a bounded ordered native insert chain:
 six-band EQ (enabled/shape/frequency/gain/Q), three-band compressor (crossovers,
@@ -1143,7 +1166,7 @@ Windows speaker validation. D41 acquired the shared GPU slot at 13:48:56 UTC
 for the priority quality panel, with a stated 15:35 UTC hard bound; Venturi
 remains CPU-only until effective release is verified.
 
-## M4/M5 independent increment — visual filters, grading and joint keyframes
+## M4/M5 independent increment â€” visual filters, grading and joint keyframes
 
 Inspector now edits the native ordered ColorCorrection/Exposure/BoxBlur/
 GaussianBlur/DropShadow stack, with add, remove, reorder and bypass. Typed
@@ -1201,7 +1224,7 @@ pending. D41 reacquired the shared slot at 14:38:25 UTC for a short A/B,
 with stated hard bound 14:55 UTC. Venturi returns to CPU-only during that slot;
 the cached file playback itself does not use the server GPU.
 
-## M1/M3 measured acceptance increment — Canvas and five-minute A/V
+## M1/M3 measured acceptance increment â€” Canvas and five-minute A/V
 
 After D41's effective 14:45:08 UTC release and a fresh nonblocking free-lock
 check, the corrected native R9700 Program API rendered the entire range
@@ -1236,7 +1259,7 @@ on the synthetic fixture made old Program status and MP4 return 409
 REVISION_CONFLICT, while DELETE cancellation still returned 200. Undo and Save
 restored the fixture. Evidence: m3c-r9700-stale-revision.json.
 
-## M3 export increment — immutable native H.264/AAC jobs
+## M3 export increment â€” immutable native H.264/AAC jobs
 
 The Export drawer now captures In/exclusive Out (including playhead buttons),
 maximum width, native x264 CRF/preset and optional AAC audio. It submits an
@@ -1256,9 +1279,9 @@ cancellation, not-ready download, HTTP error normalization and exact rational
 range validation. End-to-end Export drawer/R9700 download acceptance is the
 next hardware check.
 
-## M4 independent increment — native linked speed, freeze and clip labels
+## M4 independent increment â€” native linked speed, freeze and clip labels
 
-Inspector now exposes native constant speed 1–10000%, pitch preservation and
+Inspector now exposes native constant speed 1â€“10000%, pitch preservation and
 KeepLength/Resize/Ripple duration policies. Whole linked groups are resolved
 and lock-checked first. Applying the actual native command on a trial project
 validates every resulting bounded clip range and nonoverlap before one real
@@ -1282,7 +1305,7 @@ render/audio acceptance remain open. The Export drawer is now scrollable and
 fits narrow viewports. D41 announced its next shared GPU slot with hard bound
 15:16 UTC; Venturi remains CPU-only until an effective release/free-lock check.
 
-## M4 independent increment — native mask stack and Bezier values
+## M4 independent increment â€” native mask stack and Bezier values
 
 Inspector now adds/removes/reorders native Rectangle/Ellipse/Path masks, with
 enabled/invert, Add/Subtract/Intersect and all applicable native scalar
@@ -1295,7 +1318,7 @@ editing remain open; this is not full mask UX parity.
 
 The actual renderer has eight-mask and 256-polygon-point limits. The adapter
 refuses excess masks and reserves up to 12 subdivisions per Bezier vertex,
-including animated path endpoints, before mutation. Paths are bounded to 3–21
+including animated path endpoints, before mutation. Paths are bounded to 3â€“21
 vertices and finite pixel coordinates; parameter applicability, duplicate
 fields and track locks validate before one native undo step.
 
@@ -1315,7 +1338,7 @@ acquired the lock before the Export job: it safely failed GPU_BUSY at 0/24
 frames (m3-export-gpu-busy-browser.png). Only Venturi was restarted CPU-only;
 the successful R9700 Export drawer/download check still remains open.
 
-## M4 independent increment — guarded native OTIO exchange
+## M4 independent increment â€” guarded native OTIO exchange
 
 Projects now downloads a nonempty timeline through native timeline_to_otio and
 imports a listed .otio into a new no-replace .vvproj. Epoch/generation/revision,
@@ -1349,7 +1372,7 @@ markers/flags, hostile file URLs/symlinks, nonoverwrite, unsaved refusal,
 epoch/idempotent retries, CPU-only OTIO download headers and stale revision
 rejection. GUI was compile-checked, not launched on the headless server.
 
-## M4 independent increment — selected compounds and timeline management
+## M4 independent increment â€” selected compounds and timeline management
 
 Selected clips can now become a named native compound in one undo step.
 Linked groups/locks expand first; unselected material inside the replacement
@@ -1382,7 +1405,7 @@ refusal, compound entity undo, fresh duplicate IDs, rename undo and the exact
 native depth boundary. Unrestricted multitrack compounding and flattening are
 not implemented.
 
-## M3 shared-GPU correction — keep ownership for the native job
+## M3 shared-GPU correction â€” keep ownership for the native job
 
 Program and Export now acquire the laboratory lock once, nonblocking, for the
 complete bounded native preparation. Factory/stage permits duplicate the same
@@ -1399,7 +1422,7 @@ clones and even the job descriptor until the last stage is gone, then becomes
 available nonblocking. Fresh R9700 whole-job/Export acceptance is pending an
 effective free GPU slot; earlier hardware render/file proofs are unchanged.
 
-## M4 independent increment — native project clip clipboard
+## M4 independent increment â€” native project clip clipboard
 
 Copy captures native ClipboardEntry data with complete effects, source ranges,
 animation, labels, linked groups and internal crossings. Locked source tracks
@@ -1424,7 +1447,7 @@ effect/key/mask preservation, fresh groups/IDs, internal crossings, missing
 tracks in one undo, FPS/epoch/cycle rejection and host retry-safe copy/paste.
 This remains bounded Edit parity, not clipboard interchange with other apps.
 
-## Independent increment — explicit isolated software preview and export proof
+## Independent increment â€” explicit isolated software preview and export proof
 
 The opt-in --software-preview launcher selects only the installed lavapipe
 driver before native Vulkan enumeration, bounds renderer/Tokio threads at two,
@@ -1449,7 +1472,7 @@ software driver/privilege/thread guards and private lock behavior. Successful
 R9700 Export and fresh whole-job reservation acceptance still await shared
 hardware availability; M4/M5/M6/M7 remaining parity is unchanged.
 
-## M5 independent increment — two native isolated clip scopes
+## M5 independent increment â€” two native isolated clip scopes
 
 Color now shows any pair of Waveform, RGB Parade, Vectorscope and Histogram
 using vv-render's existing shader measurements. An additive vv-session helper
@@ -1483,7 +1506,7 @@ found no DRI/KFD handles or mapped RADV library while the shared lock was busy.
 Evidence: m3-halo2-software-export* and m3-halo2-software-isolation.json. This
 synthetic fixture is not a general performance benchmark or AMD qualification.
 
-## M5 independent increment — native Auto Balance
+## M5 independent increment â€” native Auto Balance
 
 Auto Balance analyzes the selected clip's isolated native stack, with lower
 tracks for adjustments and opaque black as in the desktop viewer. The bounded
@@ -1509,7 +1532,7 @@ analysis rejection. The native isolated render test now also checks opaque
 Auto Balance pixels. Formatting, web/session clippy, native desktop check and
 web build pass. Curves, presets, live scopes and remaining M5/M6/M7 work are open.
 
-## M5 independent increment — shared native built-in presets
+## M5 independent increment â€” shared native built-in presets
 
 The desktop EQ/compressor preset factories now live in vv-core::presets;
 desktop panels delegate to them. Their function bodies are identical to the
@@ -1534,7 +1557,7 @@ mix-signal behavior test pass. Native desktop check also passes. Web tests cover
 preset key preservation, exact undo, bypass/order, native parameter bounds,
 wrong-kind/unknown/index errors and locked-track refusal.
 
-## M7 independent increment — saved backup recovery and process ownership
+## M7 independent increment â€” saved backup recovery and process ownership
 
 Projects lists regular .vvproj.bak files and recovers them into a new no-replace
 project. Native parsing/media/depth checks, NOFOLLOW reads and the 8 MiB budget
@@ -1562,7 +1585,7 @@ build and the three focused original desktop preset tests. Root ownership/drop,
 backup symlinks/path bounds, dirty/existing-name refusal, retry-safe epochs and
 unchanged source files are covered. Long soak, unsaved-edit autosave, durable
 render queues, full external-edit conflict detection, voiceover/curves/libraries
-and AI Review remain open; M4–M7 are not declared complete.
+and AI Review remain open; M4â€“M7 are not declared complete.
 
 ## Fresh R9700 Export acceptance and final shared-host runtime
 
@@ -1589,9 +1612,9 @@ Evidence: m5-halo2-final-color-browser.png and m7-halo2-final-runtime.json.
 
 No foreign process/port, kernel AMD driver, ROCm or inference configuration
 was modified. Long-form Export limits, hardware encode/decode selection and
-the remaining M4–M7 feature ledger are still open.
+the remaining M4â€“M7 feature ledger are still open.
 
-## M4 independent increment — native scalar curves and Bezier editing
+## M4 independent increment â€” native scalar curves and Bezier editing
 
 The Inspector now has a working Curves panel, also reachable from the Color
 workspace. Its DPR-aware Canvas plots bounded samples evaluated by native
@@ -1628,7 +1651,7 @@ or production-readiness claim. This increment requires no hardware GPU work.
 
 The development branch is deployed on halo2 in explicit software mode. The
 saved CPU_curves_UI_check copy animates the base video's opacity from 30 to 100
-over source frames 0–47 with Bezier interpolation, while the overlay stays
+over source frames 0â€“47 with Bezier interpolation, while the overlay stays
 colored. Windows can open the panel, see the composed native frame and isolated
 scopes, and retain both keys in native history. Evidence:
 m4-halo2-software-curves.json/browser.png. The binary SHA-256 is
@@ -1637,7 +1660,7 @@ Inspection confirms software_preview, two renderer threads, root directory
 ownership, no DRI/KFD handles and no loaded RADV library. Staging and this
 acceptance did not acquire or probe the shared hardware GPU reservation.
 
-## Active completion objective — continue through M4–M7
+## Active completion objective â€” continue through M4â€“M7
 
 The owner explicitly requested autonomous continuation to completion. The active
 goal covers the full planned native GUI parity surface, AI Review, deployment
@@ -1646,7 +1669,7 @@ The shared library must integrate ds4-appliance's authoritative catalog and its
 14 TB network archive. The endpoint is being resolved; independent editing work
 continues. See ARCHITECTURE for the verified sibling API and storage contract.
 
-## M4 increment — native media catalog and safe relink
+## M4 increment â€” native media catalog and safe relink
 
 Media now supports Ctrl/Shift and keyboard range selection, search/type/folder
 filtering, nested project folders, atomic batch moves, folder rename/reparent/
@@ -1672,7 +1695,7 @@ Project folders are editing organization only. Shared assets remain owned by
 ds4-appliance; this increment does not create another shared catalog or modify
 its files, mount, credentials, retention policy or inference services.
 
-## M4 increment — Slip tool and dual source viewer
+## M4 increment â€” Slip tool and dual source viewer
 
 Timeline now offers Move/trim and Slip tools. Slip drags retain clip geometry,
 intersect all linked source handles and commit one native SlipClips operation.
@@ -1709,7 +1732,7 @@ Process inspection again found no DRI/KFD descriptors or loaded RADV library,
 with two renderer threads and project directory ownership. Evidence:
 m4-halo2-software-slip.json/browser.png. No hardware reservation was acquired.
 
-## M5 increment — native speech detection and global silence removal
+## M5 increment â€” native speech detection and global silence removal
 
 Audio now opens a speech-analysis dialog for selected source audio or the audio
 linked to selected video. It uses vv-session's embedded Silero model, native
@@ -1748,7 +1771,7 @@ The Windows browser analyzed the linked half-second A/V edit and proposed
 No DRI/KFD handles or RADV library were present, and the shared hardware lock
 was not acquired or probed. Evidence: m5-halo2-software-silence.json/browser.png.
 
-## M4/M5 increment — native track removal and arming
+## M4/M5 increment â€” native track removal and arming
 
 Track Inspector now exposes explicit removal with its clip count, preserving
 one video and one audio track and refusing locked tracks. The native RemoveTrack
@@ -1770,7 +1793,7 @@ archive configured and reachable at /mnt/madrock-share/madrock-library, seven-da
 SSD retention, sequence 5 and zero items. The older 8788 reference was not the
 active listener. No appliance configuration, mount or inference was changed.
 
-## M4 increment — ds4 shared-media catalog and archive recovery
+## M4 increment â€” ds4 shared-media catalog and archive recovery
 
 The Library tab now consumes ds4-appliance's authoritative catalog through a
 startup-configured server origin. Search covers ID, type, tool, prompt, model and
@@ -1826,7 +1849,7 @@ PNG bytes through their native Source APIs from their persistent project
 copies. No pre-existing library asset was changed or deleted. The redundant
 local offline-test backup was removed only after both copies matched SHA-256.
 
-## Voiceover prerequisite — explicit native audio container
+## Voiceover prerequisite â€” explicit native audio container
 
 The shared audio-file writer now selects the container from AudioFileFormat
 instead of guessing it from the path suffix. Normal desktop take filenames keep
@@ -1837,7 +1860,7 @@ exact mono/stereo sample preservation and extensionless-descriptor output;
 media clippy with warnings denied also passes. This is a recording prerequisite,
 not a completed microphone/placement workflow.
 
-## M5 — browser voiceover and native take placement
+## M5 â€” browser voiceover and native take placement
 
 Audio Voiceover and armed Program transport now open a real capture dialog.
 User Start requests browser input permission and creates a bounded AudioWorklet
@@ -1894,7 +1917,7 @@ DRI/KFD descriptors and no RADV mapping; the shared hardware lock was untouched.
 Evidence: m5-halo2-voiceover.json/browser.png. Physical microphone capture is
 not claimed by this deployment check.
 
-## M6 prerequisite — native Replace Take planner and guarded API
+## M6 prerequisite â€” native Replace Take planner and guarded API
 
 The new vv-core take planner creates one native composite command for explicit
 source replacement. It preserves clip IDs, placement, existing speed and all
@@ -1921,7 +1944,7 @@ shortening/crossings, source changes, explicit effect reset, unchanged source
 bytes and exact Undo/Redo. This is an executable backend prerequisite, not
 completed Review UI, Shot/Take sidecar or A/B acceptance; the goal remains open.
 
-## M6 — A/B source comparison and explicit Replace Take UI
+## M6 â€” A/B source comparison and explicit Replace Take UI
 
 Review now opens two source players using the existing bounded native proxy/
 original-still service. Playback compares elapsed seconds at 1x, holds the
@@ -1975,7 +1998,7 @@ m6-halo2-review.json/browser.png. The detailed local proof retains only the
 relevant native session and complete opacity/crop tracks rather than repeating
 unrelated Inspector catalogs.
 
-## M6 — persistent Shot / Take annotations
+## M6 â€” persistent Shot / Take annotations
 
 Review grouping and metadata tools now open a saved-project annotation editor.
 Users can create/rename/remove shots, assign takes, mark Favorite/Rejected,
@@ -2011,7 +2034,7 @@ caps and absence of DRI/KFD descriptors were verified; the hardware lock was not
 acquired or probed. The global ds4 catalog and NAS were not changed. Evidence:
 m6-halo2-review-annotations.json and m6-halo2-review-annotations-browser.png.
 
-## M4 — shared native property paste
+## M4 â€” shared native property paste
 
 The original desktop attribute conversion now lives in `vv-core::attributes`.
 Desktop uses the same enum, mapping and preset conversion through UI extension
@@ -2048,7 +2071,7 @@ fixture annotations and exact seed remained intact. CPU/lavapipe, two workers,
 no DRI/KFD handles and no hardware-lock probe/acquisition were verified. Evidence:
 m4-halo2-properties.json. Native vv-app test targets also compile successfully.
 
-## M6 — twenty-shot montage acceptance
+## M6 â€” twenty-shot montage acceptance
 
 A separate saved fixture contains 20 shots, each with three synthetic 25/30/50
 fps H.264/AAC sources, for 60 imported takes and 40 linked timeline clips.
@@ -2074,7 +2097,7 @@ m6-twenty-shot-timeline-browser.png and m6-twenty-shot-export-browser.png.
 This closes Shot/Take grouping acceptance; remaining native GUI and release
 work is still tracked in the parity ledger.
 
-## M7 — external project Save conflict protection
+## M7 â€” external project Save conflict protection
 
 The current native project file is bound to its descriptor identity and SHA-256
 after a validated Open or successful Save/Save As. Only one current baseline is
@@ -2106,7 +2129,7 @@ Favorite annotation and exact seed remain available. CPU/lavapipe and two-worker
 caps are retained, with no DRI/KFD handles or hardware-lock probe/acquisition.
 Evidence: m7-halo2-save-conflict.json.
 
-## M4 — selection follows playhead
+## M4 â€” selection follows playhead
 
 The Commands palette has a persisted Selection follows playhead toggle, enabled
 by default like the desktop. It follows the audited native visible-video order:
@@ -2134,7 +2157,7 @@ seed match. CPU/lavapipe and two workers remain isolated from hardware; no
 DRI/KFD handles or GPU-lock probe/acquisition occurred. Evidence:
 m4-halo2-selection-follow.json.
 
-## M7 — validated last-saved project reopen
+## M7 â€” validated last-saved project reopen
 
 Successful project Open/New/Import/Save/Save As/recovery records a bounded,
 versioned root-scoped project token and saved-file SHA-256. The private cursor
@@ -2169,7 +2192,7 @@ CPU/lavapipe, two workers and absence of DRI/KFD handles were verified; the
 hardware lock was not acquired or probed. Evidence:
 m7-halo2-saved-resume.json/browser.png.
 
-## M7 — independent unsaved-edit recovery snapshots
+## M7 â€” independent unsaved-edit recovery snapshots
 
 The serial actor now captures dirty native RON at a two-second interval without
 changing the project, history or saved badge. A bounded versioned record uses
@@ -2217,7 +2240,7 @@ two workers, no DRI/KFD handles and no hardware-lock probe/acquisition are
 verified in m7-halo2-unsaved-recovery.json. No other agent's process or GPU slot
 was used by this deployment.
 
-## M5 — native color range and saturation acceptance
+## M5 â€” native color range and saturation acceptance
 
 The existing ColorCorrection adapter exposes the same native ShadowsSat,
 MidtonesSat, HighlightsSat, global Saturation, LowRange and HighRange controls
@@ -2237,7 +2260,7 @@ share their own full-width row, with actions below. The updated binary was
 built and visually checked after restart. Evidence: m5-color-ranges.json and
 m5-color-ranges-browser.png. No editing/DSP semantics changed in this increment.
 
-## M5 — bounded native audio audition for Program and Source
+## M5 â€” bounded native audio audition for Program and Source
 
 Audio scrub now opts in to an 80 ms native audio fragment after a completed
 timeline seek or a Source frame step. The server uses `audio_render::render_offline`
@@ -2257,7 +2280,7 @@ unchanged project contents, cancellation and changed files. Actual HTTP fragment
 on the synthetic montage measured 660.02 Hz and 879.91 Hz, exact silence in the
 gap and with the track muted, and unchanged native session data/source hashes.
 Frame/epoch/generation refusal paths were checked. Local fragment requests took
-about 3–13 ms for this tiny fixture; this is not a general latency guarantee.
+about 3â€“13 ms for this tiny fixture; this is not a general latency guarantee.
 The actual browser reached its running audio output path in Program and Source.
 Physical loudspeaker output was not measured. Continuous Source pointer scrub
 and native fast-forward audio remain open.
@@ -2288,7 +2311,7 @@ media suppress output. The request uses the same source frame as the readout and
 In mark. 80 JavaScript tests pass, including several seeks during one held pointer,
 late completion, cancellation and playing/hidden Source refusal. Actual browser
 acceptance dragged the paused Source bar from zero to 1.37181 seconds, showed
-Source 00:00:01:11 and reached Native audio · 80 ms with the native project Saved.
+Source 00:00:01:11 and reached Native audio Â· 80 ms with the native project Saved.
 The audio scrub parity row is now complete for the required release-based web
 interaction. Evidence: m5-source-pointer-scrub.png and m5-audio-scrub.json.
 
@@ -2298,7 +2321,7 @@ The embedded module hash, saved shared project, exact provenance seed, Favorite,
 native silent fragment and CPU-only isolation were checked again in
 m5-halo2-audio-scrub.json. No hardware lock was probed or acquired.
 
-## M4 — close stale Source range and clip-disable ledger entries
+## M4 â€” close stale Source range and clip-disable ledger entries
 
 The Source In/Out row still referred to a missing dual-frame Slip viewer despite
 the later native-slip acceptance. The ledger now links that evidence together
@@ -2318,7 +2341,7 @@ preserved by native Undo/Redo. The core command is unchanged. Evidence:
 m4-clip-disable.json and m4-clip-disable-browser.png. Rendering was CPU/lavapipe;
 no hardware acceptance is implied by this check.
 
-## M5 — pitch-preserving 2x/4x/8x Source and Program transport
+## M5 â€” pitch-preserving 2x/4x/8x Source and Program transport
 
 The transport Speed control now supports 1x/2x/4x/8x. Fast audio renders through
 the shared native mixer and `vv_audio::stretch_samples`; it retains the desktop's
@@ -2373,7 +2396,7 @@ and Favorite remain intact. CPU/lavapipe, two workers, no DRI/KFD handles and no
 shared hardware-lock probe/acquisition are recorded in m5-halo2-fast-transport.json
 and m5-halo2-fast-transport-browser.png. No shared archive content was modified.
 
-## M3b/M5 — cache ruler and reusable composed movies
+## M3b/M5 â€” cache ruler and reusable composed movies
 
 The timeline ruler now displays actual cached composed frames in violet and
 ready composed movie ranges in green, with counts and a footer legend. Native
@@ -2411,7 +2434,7 @@ Favorite, source hash, saved session and CPU-only isolation are recorded in
 m5-halo2-preview-cache.json and m5-halo2-preview-cache-browser.png. No shared
 hardware-lock probe/acquisition or archive write occurred.
 
-## M5 — native audio window meters and insert spectra
+## M5 â€” native audio window meters and insert spectra
 
 Audio workspace, Mixer and Commands now open a nonmodal audio inspection window.
 It displays post-fader stereo peaks for audio tracks/master, native master FFT,
@@ -2461,7 +2484,7 @@ five-second movie at 8x with both audio windows completed and clock drift below
 remain intact. Evidence: m5-halo2-audio-meters.json and its browser screenshot.
 No shared hardware lock, inference process or archive content was touched.
 
-## M3/M7 — export duration independent of Program preview windows
+## M3/M7 â€” export duration independent of Program preview windows
 
 Export now accepts any valid exclusive-out range inside the captured timeline;
 the five-minute duration check applies only to Program preview preparation.
@@ -2509,7 +2532,7 @@ Review hashes, original PNG hash, exact seed and Favorite. CPU isolation and no
 hardware-lock acquisition are recorded in m3-halo2-six-minute-export.json and
 its browser screenshot. Shared archive content and inference were untouched.
 
-## M7 — bounded command receipt rotation without editor restart
+## M7 â€” bounded command receipt rotation without editor restart
 
 The hard 4096-command/8 MiB request-fingerprint stop is replaced by a bounded
 4096-receipt window with fixed SHA-256 request identities. At capacity the host
@@ -2547,7 +2570,7 @@ source hashes, exact seed and Favorite flag were preserved. The service remains
 explicit software preview with no hardware handles or GPU-lock acquisition.
 Evidence: m7-halo2-command-receipts.json and browser screenshot.
 
-## M7 — synced command receipts and acknowledgment checkpoints
+## M7 â€” synced command receipts and acknowledgment checkpoints
 
 Successful command acknowledgments now have a bounded root-local JSONL journal:
 4096 successes / 8 MiB, SHA-256 request identities and record checksums, fsync
@@ -2591,7 +2614,7 @@ Evidence: m7-halo2-durable-command-receipts.json and browser screenshot. Explici
 software preview remains enabled; no GPU lock, AMD driver or inference work was
 involved.
 
-## M4 — marker lane gestures and native MoveMarker history
+## M4 â€” marker lane gestures and native MoveMarker history
 
 The Canvas now separates ruler ticks, markers and the two native-cache stripes.
 Point/range markers can be moved directly, range edges resized, and Alt+drag can
@@ -2612,7 +2635,7 @@ Undo, bounds, local drafts, both range edges, Alt extension, cancellation and
 read-only behavior.
 
 Actual browser acceptance on the isolated GPU-disabled host moved a point from
-6 to 12, moved a 24–36 range so its far end snapped to the clip end at 48, resized
+6 to 12, moved a 24â€“36 range so its far end snapped to the clip end at 48, resized
 the end to 44 and the start to 32. Each release advanced history once, using the
 native MoveMarker label. Four Undo restored the original timeline revision;
 four Redo restored the final one. Double-click selected marker 1 with start 32,
@@ -2633,7 +2656,7 @@ The separate marker test copy is retained. Evidence:
 m4-halo2-marker-gestures.json and m4-halo2-marker-gestures-browser.png. Renderer
 remains software-only with no hardware handles or shared GPU-lock acquisition.
 
-## M4 — scalar curve group editing and two-axis view controls
+## M4 â€” scalar curve group editing and two-axis view controls
 
 The curve editor now supports box/additive key selection and an accessible native
 multi-select, with shared frame/value deltas, pointer group moves and group Delete.
@@ -2678,7 +2701,7 @@ remain unchanged. Evidence: m4-halo2-curve-groups.json and browser PNG. The test
 copy is retained. Preview is still explicitly CPU-only; no hardware lock, AMD
 driver or inference work was touched.
 
-## M4 — native RGBA, text and direction key tracks
+## M4 â€” native RGBA, text and direction key tracks
 
 The inspector now exposes typed RGBA, title-content and blur-direction key tracks,
 including exact source/timeline positions, native interpolation/Bezier controls,
@@ -2741,7 +2764,7 @@ handles or shared lock were used. Evidence: m4-halo2-value-keys.json and browser
 PNG. Port 8790 remains on 84ef827 until its live edits can be preserved through
 the editor; staging the newer binary does not mean the main service was upgraded.
 
-## M7 — interrupted local CPU soak and remote build limits
+## M7 â€” interrupted local CPU soak and remote build limits
 
 The owner reported an unresponsive workstation while local build/test processes
 and preview instances were running. Local compilation and the finite backend
@@ -2763,7 +2786,7 @@ MemoryMax=4G, MemorySwapMax=0, one Cargo job, Nice=19 and IOWeight=10. Software
 Vulkan is forced for tests. It does not take the hardware GPU lock or modify
 the running editor. A running build is not a passed validation result.
 
-## M4 — cross-parameter native key selection
+## M4 â€” cross-parameter native key selection
 
 The inspector now has a bounded multi-select list combining scalar and typed
 RGBA/text/direction rows. It moves, deletes or changes interpolation for keys
@@ -2824,7 +2847,7 @@ co-residency. This corroborates a shared-host incident; the attribution is a
 relayed report, not an independently correlated ComfyUI trace. Venturi's long
 soak remains stopped. No foreign service or configuration was changed here.
 
-## M4 — linked Zoom properties and scalar curve edits
+## M4 â€” linked Zoom properties and scalar curve edits
 
 One browser view setting now links Zoom X/Y across property defaults, playhead
 keys, the scalar curve graph and cross-parameter selection. Defaults and paired
@@ -2852,7 +2875,7 @@ scoped to its keys. Dense-key paging remains open; the bounded first-page key
 lists do not yet provide full native key access. This increment does not close
 full GUI parity or the failed duration qualification.
 
-## M4 — dense native key pages and selection across pages
+## M4 â€” dense native key pages and selection across pages
 
 The inspector now reads explicit pages of up to 256 native keys per parameter.
 First/last page bounds and overflowing offsets are validated under the normal
@@ -2891,7 +2914,7 @@ editor's five unsaved moves were preserved. The temporary browser tab was closed
 No hardware lock was acquired/probed and no long soak was resumed. Full hardware,
 browser-memory and duration qualification remain open.
 
-## M4 — native attribute preset capture/application API
+## M4 â€” native attribute preset capture/application API
 
 The web adapter now captures the earliest selected video/audio source clips,
 including linked members, using the desktop's native v1 preset JSON fields.
@@ -2925,7 +2948,7 @@ hardware lock use or long soak was started. This closes the native API adapter;
 saved/shared library CRUD, preset GUI, shortcut activation and desktop import
 acceptance remain open. Native JSON capture alone is not the completed library.
 
-## M4 — saved native presets and explicit shortcut activation
+## M4 â€” saved native presets and explicit shortcut activation
 
 The Presets panel now exposes native attribute preset capture, page/search,
 import/export, application, settings changes, previous-settings restore and
@@ -2966,7 +2989,7 @@ and the main editor's generation 5/five unsaved moves were preserved. Evidence:
 application import, NAS preset sharing and concurrent desktop/web writes remain
 unqualified. The ds4 media-catalog NAS evidence does not qualify preset sharing.
 
-## M4 — timeline fades, static viewer handles and neutral multitrack compounds
+## M4 â€” timeline fades, static viewer handles and neutral multitrack compounds
 
 The timeline now draws draggable fade handles in each clip's top band, leaving
 lower edge trim targets and the Slip tool available. Existing fades are visible;
@@ -3016,7 +3039,7 @@ were preserved. No local browser/build, hardware probe or long soak was started.
 GUI/rendered-equivalence/hardware acceptance remains open; affected ledger rows
 remain partial.
 
-## M3/M4 — animated native viewer handles and persistent export history
+## M3/M4 â€” animated native viewer handles and persistent export history
 
 Viewer gestures now support move, scale, rotation, anchor and crop using native
 evaluated values. One guarded EditViewerTransform command chooses a static
@@ -3056,7 +3079,7 @@ software Vulkan and no hardware GPU/shared-lock descriptors. No local browser,
 build or long soak was started. GUI/hardware acceptance and broader release
 qualification remain open; affected capability rows remain partial.
 
-## M3 — explicit saved-export discard
+## M3 â€” explicit saved-export discard
 
 Saved terminal exports can be removed through an exact-job confirmation. Fresh
 epoch/revision/UUID checks prevent stale targeting. Active jobs, uncertain
@@ -3083,7 +3106,7 @@ no swap, OOMScoreAdjust=1000 and 60-second runtime caps. Browser confirmation,
 real filesystem failure recovery, hardware codecs and full GUI parity remain
 unqualified. No local build/browser/render/soak or new export render was started.
 
-## M4 — mask viewer handles and explicit Bezier path keys
+## M4 â€” mask viewer handles and explicit Bezier path keys
 
 Rectangle/ellipse masks have native layer-space move, corner/side resize and
 rotation gestures. Path masks expose vertices, selected incoming/outgoing
@@ -3119,7 +3142,7 @@ OOMScoreAdjust=1000 and 60-second runtime caps. No GPU, render, export, local
 browser/build or soak was started. Browser/DPI/rendered/hardware acceptance stays
 open and affected ledger rows remain partial.
 
-## M4 — transition duration pointer handles
+## M4 â€” transition duration pointer handles
 
 Existing edge/crossing transitions expose bottom-band duration handles. The full
 native crossing payload is included in snapshots; drafts retain kind, direction,
@@ -3142,7 +3165,7 @@ remained intact. CPU1/512 MiB/no swap/OOMScoreAdjust=1000/60-second API caps wer
 used; no render/export/GPU/local browser/build/soak was started. GUI/DPI/rendered
 and hardware acceptance remain open; affected ledger rows remain partial.
 
-## M4 — exact native speed pointer handles
+## M4 â€” exact native speed pointer handles
 
 An explicit Speed handles mode (Ctrl/Cmd+R outside text inputs/dialogs) shows
 eligible media endpoints in the upper clip strip. Native snapshots supply the
@@ -3179,7 +3202,7 @@ OOMScoreAdjust=1000 and 60 seconds per instance. No render/export/GPU/local
 browser/build/soak is used. Native strip preset menu, browser/DPI/rendered
 playback and hardware acceptance remain open; affected ledger rows stay partial.
 
-## M4 — native completed-path pen and full path-key navigation
+## M4 â€” native completed-path pen and full path-key navigation
 
 Draw path uses the existing bounded viewer overlay. Clicks place vertices and
 drags pull Bezier tangents; Alt keeps the incoming tangent independent. Clicking
@@ -3218,7 +3241,7 @@ and the primary editor's five unsaved moves are preserved. The same one-CPU,
 browser/build, render/export, GPU or soak is used. Browser/DPI/rendered/hardware
 acceptance remains open; ledger rows stay partial.
 
-## M4 — native transition selection, placement and duplication
+## M4 â€” native transition selection, placement and duplication
 
 Clicking the lower marker body selects a canonical edge or left-anchored crossing
 and clears clip selection. Both crossing halves identify the same transition.
@@ -3263,7 +3286,7 @@ no swap, OOMScoreAdjust=1000 and 60-second instance caps. No local browser/build
 render/export, GPU or soak is started.
 
 
-## M3 — preview cache admission and live media retention
+## M3 â€” preview cache admission and live media retention
 
 Ephemeral Source/Program admission now reserves the full 512 MiB budget of each
 queued/running job against 2 GiB and at most 32 entries, with a 1 GiB scratch
@@ -3300,7 +3323,7 @@ primary editor's five unsaved moves remain intact. The candidate is staged
 without restarting that editor.
 
 
-## M3 — foreground Program window continuation
+## M3 â€” foreground Program window continuation
 
 Program continues from the acknowledged movie's actual exclusive end, using one
 foreground window of at most five minutes at a time. A preparation pause is
@@ -3327,7 +3350,7 @@ state, GPU or gapless behavior. Source segmentation remains open. Evidence:
 `evidence/m3-program-rollover.json`.
 
 
-## M3 — bounded native Source windows and absolute navigation
+## M3 â€” bounded native Source windows and absolute navigation
 
 Main Source prepares explicit windows of at most 60 seconds rather than an
 entire long file. Native proxy APIs preserve their legacy full-file entry
@@ -3373,7 +3396,7 @@ was started. Own API units stopped and port 8811 closed; the main editor's five
 unsaved moves remain intact. Browser/DPI, large-file pressure/startup performance,
 physical/continuous audio and hardware qualification remain open.
 
-## M3 — independent full-source thumbnails and waveforms
+## M3 â€” independent full-source thumbnails and waveforms
 
 Windowed Source now requests a separate native full-source analysis job. The
 job publishes a thumbnail and streaming waveform without encoding a whole-file
@@ -3407,7 +3430,7 @@ and DPI interaction, large-media startup/pressure, all audio stream layouts,
 physical audio, GPU and soak qualification remain open. This increment does not
 change the count of fully accepted capability rows or establish full GUI parity.
 
-## M4 — exact native speed strip presets
+## M4 â€” exact native speed strip presets
 
 The speed strip now has separate percentage-menu, close and endpoint hit areas.
 The menu offers the native ten presets, an Advanced Inspector entry and per-clip
@@ -3444,7 +3467,7 @@ still differs: the web mode toggles all eligible strips, while desktop toggles
 selected media. Selection-only visibility, browser/DPI/rendered playback and
 hardware qualification remain open. No capability row is promoted to done.
 
-## M4 — native selected-only speed-strip visibility and Windows UI acceptance
+## M4 â€” native selected-only speed-strip visibility and Windows UI acceptance
 
 Ctrl+R and Selected speed handles now collect existing selected media IDs only,
 without expanding linked groups for visibility. If all are already visible,
@@ -3564,7 +3587,7 @@ last-frame start, continuation beyond 60 seconds, Pause and synchronized seek
 to 600 seconds. A then held native frame 14423 while B advanced at frame 18054;
 both stopped at their exact native final frames. Native job metadata and byte
 ranges confirm every requested window is at most 60 seconds; observed assets
-were 2,108–43,172 bytes. This is functional long-source acceptance, not a
+were 2,108â€“43,172 bytes. This is functional long-source acceptance, not a
 full-resolution throughput or sustained duration benchmark.
 
 The fixture was saved and restarted exactly; the browser comparison did not
@@ -3673,7 +3696,7 @@ stopped; the main editor still has its five unsaved MoveClips and Undo history.
 Evidence: `evidence/m3-native-codec-selectors.json` and its CPU/R9700 screenshots.
 The two selector rows are done for the verified native R9700 behavior. Other
 GPU vendors, long-source/format combinations and sustained resource qualification
-remain separate release work. The broader engineering estimate remains 65–70%.
+remain separate release work. The broader engineering estimate remains 65â€“70%.
 
 ## M4 - modal cancellation of captured duration gestures
 
@@ -3743,7 +3766,7 @@ editor still retains its five unsaved MoveClips and Undo history.
 
 Evidence: `evidence/m6-frozen-take-policies.json` and its Windows screenshot.
 The broader Replace Take row stays partial pending rendered/hardware acceptance.
-Ledger totals and the uncertain 65–70% engineering estimate are unchanged.
+Ledger totals and the uncertain 65â€“70% engineering estimate are unchanged.
 
 ## M4 - native preset shortcut assignment and cold-open selection
 

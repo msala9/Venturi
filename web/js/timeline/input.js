@@ -81,6 +81,11 @@ export function createInput({
     return layout;
   };
   syncLayout();
+  const canvasMapping=()=>{
+    const rect=canvas.getBoundingClientRect();
+    return JSON.stringify([rect.left,rect.top,rect.width,rect.height,canvas.clientWidth,canvas.clientHeight,window.devicePixelRatio ?? 1]);
+  };
+  let viewportMapping=canvasMapping();
   const point = (event) => {
     const rect = canvas.getBoundingClientRect();
     syncLayout();
@@ -109,6 +114,7 @@ export function createInput({
   const projectEpoch=()=>getGapContext()?.project_epoch ?? null;
   const checkSelectionAnchor=()=>view.selectionAnchor=reconcileSelectionAnchor(getTimeline(),view.selectionAnchor,projectEpoch());
   const cancel = (notify=true) => {
+    viewportMapping=canvasMapping();
     const previous=gesture;
     const slipping = gesture?.kind === "slip";
     const pointerId=gesture?.pointerId;
@@ -269,6 +275,7 @@ export function createInput({
     onNavigationIntent();
     canvas.focus();
     const [x, y] = point(event);
+    viewportMapping=canvasMapping();
     const hit = hitTest(x, y, timeline, view,canvas.getBoundingClientRect().width);
     if(event.button===0 && hit.kind==='divider'){
       const layout=syncLayout();
@@ -643,7 +650,13 @@ export function createInput({
     if(!active && view.transitionSelection){view.transitionSelection=null;onTransitionSelect(null);invalidate();}
   };
   const pointerAbort=event=>{if(!gesture || (gesture.pointerId!==undefined && event?.pointerId!==undefined && event.pointerId!==gesture.pointerId))return;cancel();};
-  const viewportChanged=()=>{if(presetDrop?.active() || transitionDrag || gesture)cancel();syncLayout();invalidate();};
+  const viewportChanged=event=>{
+    const mapping=canvasMapping();
+    // Inspector rebuilds can scroll a separate pane without changing Canvas coordinates.
+    if(event?.type==='scroll' && mapping===viewportMapping && !modal() && !documentRef?.hidden)return;
+    if(presetDrop?.active() || transitionDrag || gesture)cancel();
+    viewportMapping=mapping;syncLayout();invalidate();
+  };
   const documentRef=canvas.ownerDocument ?? window.document;
   const visibilityChanged=()=>{if(documentRef?.hidden)viewportChanged();};
   const catalogTransition=(timeline,kind)=>['Push','CrossDissolve','SmoothCut'].includes(kind)?timeline?.transition_defaults?.find(item=>item.kind===kind):null;

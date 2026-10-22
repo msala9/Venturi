@@ -26,6 +26,8 @@ pub struct ProgramQuery {
     pub revision: String,
     pub start_frame: i64,
     pub end_frame: i64,
+    #[serde(default)]
+    pub audio_origin_frame: Option<i64>,
     #[serde(default = "width")]
     pub width: u32,
 }
@@ -35,6 +37,7 @@ fn width() -> u32 {
 impl ProgramQuery {
     pub fn contains(&self, other: &Self) -> bool {
         self.frame().same_composition(&other.frame())
+            && self.audio_origin_frame == other.audio_origin_frame
             && self.start_frame <= other.start_frame
             && other.start_frame < self.end_frame
             && other.end_frame <= self.end_frame
@@ -50,7 +53,7 @@ impl ProgramQuery {
         }
     }
     pub fn key(&self) -> String {
-        format!(
+        let key = format!(
             "program:{}:{}:{}:{}:{}:{}:{}:v1",
             self.project_epoch,
             self.if_generation,
@@ -59,7 +62,11 @@ impl ProgramQuery {
             self.start_frame,
             self.end_frame,
             self.width
-        )
+        );
+        match self.audio_origin_frame {
+            Some(origin) => format!("{key}:audio-origin:{origin}"),
+            None => key,
+        }
     }
 }
 pub struct ProgramTask {
@@ -103,7 +110,7 @@ impl AudioEncoder {
 }
 const AUDIO_BITRATES: [u32; 6] = [96, 128, 160, 192, 256, 320];
 pub fn audio_catalog() -> Value {
-    let codecs = [(AudioEncoder::Aac,"aac","AAC – FFmpeg"),(AudioEncoder::FdkAac,"fdk_aac","AAC – FDK")].map(|(codec,id,label)| {
+    let codecs = [(AudioEncoder::Aac,"aac","AAC â€“ FFmpeg"),(AudioEncoder::FdkAac,"fdk_aac","AAC â€“ FDK")].map(|(codec,id,label)| {
         // Native availability only looks up the registered encoder, without opening it.
         json!({"id":id,"label":label,"status":if codec.native().is_available(){"available"}else{"unavailable"}})
     });
@@ -219,6 +226,31 @@ fn available_host_memory(meminfo: &str) -> Option<u64> {
         kib.checked_mul(1024)
     })
 }
+fn clean_inactive_file(stat: &str) -> u64 {
+    let counter = |name: &str| -> Option<u64> {
+        let mut values = stat.lines().filter_map(|line| {
+            let mut fields = line.split_whitespace();
+            (fields.next()? == name).then_some(fields)
+        });
+        let mut fields = values.next()?;
+        let value = fields.next()?.parse().ok()?;
+        (fields.next().is_none() && values.next().is_none()).then_some(value)
+    };
+    let clean = || -> Option<u64> {
+        let inactive = counter("inactive_file")?.min(counter("file")?);
+        let protected = [
+            "file_dirty",
+            "file_writeback",
+            "file_mapped",
+            "shmem",
+            "unevictable",
+        ]
+        .into_iter()
+        .try_fold(0u64, |total, key| total.checked_add(counter(key)?))?;
+        Some(inactive.saturating_sub(protected))
+    };
+    clean().unwrap_or(0)
+}
 fn cgroup_headroom(root: &Path, membership: &str) -> Option<u64> {
     let relative = membership
         .lines()
@@ -256,7 +288,11 @@ fn cgroup_headroom(root: &Path, membership: &str) -> Option<u64> {
                 .trim()
                 .parse::<u64>()
                 .ok()?;
-            available = available.min(max.saturating_sub(current));
+            // Unmapped clean inactive file pages are reclaimable within the same cap.
+            let reclaimable = read_small(&path.join("memory.stat"), 64 * 1024)
+                .map_or(0, |stat| clean_inactive_file(&stat))
+                .min(current);
+            available = available.min(max.saturating_sub(current.saturating_sub(reclaimable)));
         }
         if path == root {
             return Some(available);
@@ -267,11 +303,18 @@ fn cgroup_headroom(root: &Path, membership: &str) -> Option<u64> {
     }
     None
 }
-fn memory_fits(required: u64, host: u64, process: u64) -> bool {
-    host >= required.saturating_add(4 * 1024 * 1024 * 1024)
-        && process >= required.saturating_add(256 * 1024 * 1024)
+fn memory_fits(required: u64, host: u64, process: u64, reserve: u64) -> bool {
+    required
+        .checked_add(4 * 1024 * 1024 * 1024)
+        .zip(required.checked_add(reserve))
+        .is_some_and(|(host_required, process_required)| {
+            host >= host_required && process >= process_required
+        })
 }
 fn admit_export_memory(required: u64) -> Result<()> {
+    admit_memory(required, 256 * 1024 * 1024, memory_pressure())
+}
+pub(crate) fn admit_memory(required: u64, reserve: u64, error: ApiError) -> Result<()> {
     let host = read_small(Path::new("/proc/meminfo"), 64 * 1024)
         .as_deref()
         .and_then(available_host_memory);
@@ -280,12 +323,149 @@ fn admit_export_memory(required: u64) -> Result<()> {
         .and_then(|membership| cgroup_headroom(Path::new("/sys/fs/cgroup"), membership));
     if host
         .zip(process)
-        .is_some_and(|(host, process)| memory_fits(required, host, process))
+        .is_some_and(|(host, process)| memory_fits(required, host, process, reserve))
     {
         Ok(())
     } else {
-        Err(memory_pressure())
+        Err(error)
     }
+}
+fn timeline_decode_pixels(
+    project: &vv_core::Project,
+    id: vv_core::TimelineId,
+    known: &mut std::collections::HashMap<vv_core::TimelineId, u64>,
+    visiting: &mut std::collections::HashSet<vv_core::TimelineId>,
+) -> u64 {
+    if let Some(pixels) = known.get(&id) {
+        return *pixels;
+    }
+    if visiting.len() >= vv_core::MAX_COMPOUND_DEPTH as usize || !visiting.insert(id) {
+        return u64::MAX;
+    }
+    let Some(timeline) = project.timelines.get(id) else {
+        return u64::MAX;
+    };
+    let native = u64::from(timeline.resolution.0) * u64::from(timeline.resolution.1);
+    let mut pixels = 0u64;
+    for (_, track) in timeline.visible_video_tracks() {
+        let mut largest = [0u64; 2];
+        for clip in track
+            .clips
+            .iter()
+            .filter(|clip| !clip.disabled || !track.crossings.is_empty())
+        {
+            let decoded = match clip.source {
+                vv_core::ClipSource::Media(media) => {
+                    project.media_pool.get(media).map_or(0, |item| {
+                        if let Some(child) = item.compound {
+                            let child_pixels = project.timelines.get(child).map_or(0, |nested| {
+                                u64::from(nested.resolution.0) * u64::from(nested.resolution.1)
+                            });
+                            timeline_decode_pixels(project, child, known, visiting)
+                                .saturating_add(child_pixels)
+                        } else if item.meta.has_video {
+                            u64::from(item.meta.width) * u64::from(item.meta.height)
+                        } else {
+                            0
+                        }
+                    })
+                }
+                _ => native,
+            };
+            if decoded > largest[0] {
+                largest = [decoded, largest[0]];
+            } else {
+                largest[1] = largest[1].max(decoded);
+            }
+        }
+        // A crossing may decode both neighbours outside their nominal spans.
+        let active = if track.crossings.is_empty() {
+            largest[0]
+        } else {
+            largest[0].saturating_add(largest[1])
+        };
+        pixels = pixels.saturating_add(active);
+    }
+    visiting.remove(&id);
+    known.insert(id, pixels);
+    pixels
+}
+fn program_working_bytes(snapshot: &FrameSnapshot, output: (u32, u32)) -> u64 {
+    let timeline = &snapshot.project.timelines[snapshot.timeline];
+    let native = u64::from(timeline.resolution.0) * u64::from(timeline.resolution.1);
+    let decoded = timeline_decode_pixels(
+        &snapshot.project,
+        snapshot.timeline,
+        &mut Default::default(),
+        &mut Default::default(),
+    );
+    decoded
+        .saturating_mul(64)
+        .saturating_add(native.saturating_mul(16))
+        .saturating_add((u64::from(output.0) * u64::from(output.1)).saturating_mul(16))
+        .saturating_add(stretched_working_bytes(
+            &snapshot.project,
+            snapshot.timeline,
+            &mut Default::default(),
+            &mut Default::default(),
+        ))
+        .saturating_add(128 * 1024 * 1024)
+}
+fn stretched_working_bytes(
+    project: &vv_core::Project,
+    id: vv_core::TimelineId,
+    known: &mut std::collections::HashMap<vv_core::TimelineId, u64>,
+    visiting: &mut std::collections::HashSet<vv_core::TimelineId>,
+) -> u64 {
+    if let Some(bytes) = known.get(&id) {
+        return *bytes;
+    }
+    if visiting.len() >= vv_core::MAX_COMPOUND_DEPTH as usize || !visiting.insert(id) {
+        return u64::MAX;
+    }
+    let Some(timeline) = project.timelines.get(id) else {
+        return u64::MAX;
+    };
+    if timeline.fps.num <= 0 || timeline.fps.den <= 0 {
+        return u64::MAX;
+    }
+    let mut bytes = 0u64;
+    for (_, track) in timeline.audible_tracks() {
+        for clip in track
+            .clips
+            .iter()
+            .filter(|clip| !clip.disabled && clip.freeze.is_none())
+        {
+            let vv_core::ClipSource::Media(media) = clip.source else {
+                continue;
+            };
+            let Some(item) = project.media_pool.get(media) else {
+                continue;
+            };
+            if let Some(child) = item.compound {
+                bytes =
+                    bytes.saturating_add(stretched_working_bytes(project, child, known, visiting));
+            }
+            if clip.pitch_correction && !clip.speed().is_one() {
+                let speed = clip.speed();
+                if speed.num <= 0 || speed.den <= 0 || clip.timeline_len <= 0 {
+                    return u64::MAX;
+                }
+                let numerator =
+                    i128::from(clip.timeline_len) * i128::from(timeline.fps.den) * 48_000;
+                let denominator = i128::from(timeline.fps.num);
+                let output = (numerator + denominator - 1) / denominator + 2;
+                let input = (output * i128::from(speed.num) + i128::from(speed.den) - 1)
+                    / i128::from(speed.den);
+                // Native pitch correction retains the whole result, with filter buffers.
+                let charge = u64::try_from((input + output) * 16).unwrap_or(u64::MAX);
+                bytes = bytes.saturating_add(charge);
+            }
+        }
+    }
+    visiting.remove(&id);
+    known.insert(id, bytes);
+    bytes
 }
 pub type Inputs = Vec<(PathBuf, String)>;
 struct MonitorDone<'a>(&'a AtomicBool);
@@ -401,15 +581,28 @@ impl ProgramTask {
                 "Choose a nonempty range inside the timeline",
             ));
         }
+        if self
+            .query
+            .audio_origin_frame
+            .is_some_and(|origin| origin < 0 || origin > self.query.start_frame)
+        {
+            return Err(ApiError::invalid(
+                "Program audio origin must precede or equal its window start",
+            ));
+        }
+        if self.export.is_some() && self.query.audio_origin_frame.is_some() {
+            return Err(ApiError::invalid(
+                "Audio continuation origins apply only to Program preview",
+            ));
+        }
         if self.export.is_none() && count as f64 / tl.fps.as_f64() > 300.0 {
             return Err(ApiError::invalid(
                 "Program preview ranges are limited to five minutes",
             ));
         }
-        self.admit_scale()?;
         Ok(())
     }
-    fn admit_scale(&self) -> Result<()> {
+    pub fn admit_memory(&self) -> Result<()> {
         if self
             .export
             .as_ref()
@@ -421,6 +614,17 @@ impl ProgramTask {
             validate_export_size(resolution, output)?;
             admit_export_memory(export_working_bytes(resolution, output))?;
         }
+        let output = self
+            .settings(Path::new(""))
+            .output_size(self.snapshot.project.timelines[self.snapshot.timeline].resolution);
+        admit_memory(
+            program_working_bytes(&self.snapshot, output),
+            64 * 1024 * 1024,
+            ApiError::conflict(
+                "PROGRAM_MEMORY_PRESSURE",
+                "Not enough host or process memory headroom for the native composition; choose fewer layers or retry later",
+            ),
+        )?;
         Ok(())
     }
     fn settings(&self, directory: &Path) -> ExportSettings {
@@ -431,6 +635,9 @@ impl ProgramTask {
         .clamp(1, 100)) as u32;
         settings.video.preset = "veryfast".into();
         settings.video.quality = 18;
+        if self.export.is_none() {
+            settings.audio_render_origin = self.query.audio_origin_frame;
+        }
         if let Some(options) = &self.export {
             if let Some(scale) = options.scale_percent {
                 settings.scale_percent = scale;
@@ -460,7 +667,11 @@ impl ProgramTask {
         let tl = &self.snapshot.project.timelines[self.snapshot.timeline];
         let settings = self.settings(directory);
         let size = settings.output_size(tl.resolution);
-        json!({"start_frame":self.query.start_frame,"end_frame":self.query.end_frame,"width":size.0,"height":size.1,"fps":tl.fps,"revision":self.query.revision,"project_epoch":self.query.project_epoch,"generation":self.query.if_generation,"export_settings":self.export,"audio_present":settings.audio_for_timeline(tl).is_some()})
+        let mut descriptor = json!({"start_frame":self.query.start_frame,"end_frame":self.query.end_frame,"width":size.0,"height":size.1,"fps":tl.fps,"revision":self.query.revision,"project_epoch":self.query.project_epoch,"generation":self.query.if_generation,"export_settings":self.export,"audio_present":settings.audio_for_timeline(tl).is_some()});
+        if let Some(origin) = self.query.audio_origin_frame {
+            descriptor["audio_origin_frame"] = json!(origin);
+        }
+        descriptor
     }
     pub fn generate(
         &self,
@@ -470,8 +681,14 @@ impl ProgramTask {
         inputs: &Inputs,
         durable: bool,
     ) -> Result<()> {
+        if !unchanged(inputs) {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Media changed before Program generation",
+            ));
+        }
         // A queued job must still fit when the sole media worker starts it.
-        self.admit_scale()?;
+        self.admit_memory()?;
         let done = AtomicBool::new(false);
         let budget = AtomicBool::new(false);
         let storage_pressure = AtomicBool::new(false);

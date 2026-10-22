@@ -1,6 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {folderPaths, mediaSelection} from "../js/catalog.js";
+import {folderPaths, mediaSelection,visibleMediaDemand} from "../js/catalog.js";
+
+test('pool derivative demand contains only intersecting native video/still thumbnails, never hidden, offline or compound media',()=>{
+  const items=[{id:'video',has_video:true},{id:'still',has_video:true,is_image:true},{id:'audio',has_audio:true},{id:'hidden',has_video:true},{id:'offline',has_video:true,offline:true},{id:'compound',has_video:true,compound_timeline_id:'nested'}];
+  assert.deepEqual(visibleMediaDemand(items,new Set(['video','still','audio','offline','compound'])),[{media_id:'video',audio_stream_index:0,include_waveform:false},{media_id:'still',audio_stream_index:0,include_waveform:false}]);
+  assert.deepEqual(visibleMediaDemand(items,new Set()),[]);
+});
 
 test("media selection supports toggle, anchored ranges and stale IDs without project edits", () => {
   const items = ["a", "b", "c", "d"].map((id) => ({id}));

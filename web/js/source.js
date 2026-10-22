@@ -32,8 +32,8 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     stateContext={...context,state,reason,frame};
     onStateChange({...stateContext});
   }
-  function beginState(item,epoch,frame,reason,audioStreamIndex=0){
-    stateContext={item,epoch,frame,sequence,reason,state:'preparing',audio_stream_index:audioStreamIndex};
+  function beginState(item,epoch,frame,reason,audio={index:0,mode:'selected'}){
+    stateContext={item,epoch,frame,sequence,reason,state:'preparing',audio_mode:audio.mode,audio_stream_index:audio.mode==='all'?null:audio.index};
     notify('preparing');
   }
   const sourceAsset=job=>job.source_asset ?? 'source.mp4';
@@ -75,7 +75,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       const job=await response.json();
       if(!attached(value))return;
       if(job.state!=='ready' || job.id!==value.job || sourceAsset(job)!==value.asset || (job.project_epoch!=null && job.project_epoch!==value.epoch))throw Error('Source cache changed; reopen Source');
-      if(value.window && !sameWindow(value.window,job.source_window,value.audioSelection.explicit))throw Error('Source window changed; reopen Source');
+      if(value.window && !sameWindow(value.window,job.source_window,value.audioSelection))throw Error('Source window changed; reopen Source');
     }catch(error){
       if(attached(value) && !attempt.signal.aborted)detach(error.message?.includes('reopen Source')?error.message:'Source cache verification failed; reopen Source');
     }finally{
@@ -83,7 +83,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       if(attached(value))scheduleHeartbeat(value);
     }
   }
-  async function openLegacy(item, epoch, quality = "medium",audioSelection={index:0,explicit:false}) {
+  async function openLegacy(item, epoch, quality = "medium",audioSelection={index:0,explicit:false,mode:'selected'}) {
     if(disposed)return;
     const resetSequence=sequence+1;
     reset();
@@ -94,7 +94,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     preparing=true;
     status.textContent = `${item.name} · Preparing ${item.is_image ? "original image" : `${quality} source proxy`}`;
     try {
-      beginState(item,epoch,0,'open',audioSelection.index);
+      beginState(item,epoch,0,'open',audioSelection);
       if(seq!==sequence || signal.aborted)return;
       const prepareFetch=(path,options={})=>fetcher(path,{...options,signal:AbortSignal.any([signal,options.signal].filter(Boolean))});
       let job = await api(`/media/${encodeURIComponent(item.id)}/prepare`, { project_epoch: epoch, quality,...audioPayload(item,audioSelection) },prepareFetch);
@@ -127,23 +127,25 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       } else video.src=url;
       ready = !still;
       cancel.disabled = true;
-      status.textContent = still ? `${item.name} · ORIGINAL STILL · embedded color profile and transparency preserved` : `${item.name} · SOURCE PROXY · ${quality} · ${audioSelection.explicit?`audio stream ${audioSelection.index} (zero-based)`:'first audio stream'}`;
+      status.textContent = still ? `${item.name} · ORIGINAL STILL · embedded color profile and transparency preserved` : `${item.name} · SOURCE PROXY · ${quality} · ${audioSelection.mode==='all'?'all audio streams':audioSelection.explicit?`audio stream ${audioSelection.index} (zero-based)`:'first audio stream'}`;
       binding={sequence:seq,path:jobPath,signal,job:id,asset,epoch,url,element:still?image:video,item,audioSelection};preparing=false;scheduleHeartbeat(binding);
       const completed=binding;notify('ready');
-      if(current(completed))onReady?.({ item, epoch, job:id,audio_stream_index:audioSelection.index });
+      if(current(completed))onReady?.({ item, epoch, job:id,audio_mode:audioSelection.mode,audio_stream_index:audioSelection.mode==='all'?null:audioSelection.index });
     } catch (error) {
       if(seq===sequence && !signal.aborted)detach(error.message?.includes('reopen Source')?error.message:`${error.message} · reopen Source`);
     }
   }
   const validFPS=fps=>Number.isSafeInteger(fps?.num) && fps.num>0 && Number.isSafeInteger(fps?.den) && fps.den>0;
   function selectedAudio(item,options){
-    const explicit=options?.audioStreamIndex!==undefined,index=explicit?options.audioStreamIndex:0,count=item.audio_stream_count;
+    const explicit=options?.audioStreamIndex!==undefined,index=explicit?options.audioStreamIndex:0,count=item.audio_stream_count,mode=options?.audioMode===undefined?'selected':options.audioMode;
+    if(!['selected','all'].includes(mode) || mode==='all' && index!==0)throw Error('Choose selected or all Source audio streams; all streams cannot have a nonzero stream index');
     if(!Number.isSafeInteger(index) || index<0 || index>0xffffffff || (index>0 && (item.is_image || item.has_audio===false || !Number.isSafeInteger(count) || count<=index)))throw Error('Choose an available native Source audio stream index (zero-based)');
-    return {index,explicit:explicit && !item.is_image};
+    return {index,explicit:explicit && !item.is_image,mode:item.is_image?'selected':mode,explicitMode:options?.audioMode!==undefined && !item.is_image};
   }
-  const audioPayload=(item,audio)=>!item.is_image && audio.explicit?{audio_stream_index:audio.index}:{};
-  const descriptorAudio=(value,explicit)=>value?.audio_stream_index===undefined && !explicit?0:value?.audio_stream_index;
-  const sameWindow=(a,b,explicit=false)=>!!a && !!b && ['start_frame','end_frame','total_frames','source_version'].every(key=>a[key]===b[key]) && a.fps.num===b.fps?.num && a.fps.den===b.fps?.den && a.audio_stream_index===descriptorAudio(b,explicit);
+  const audioPayload=(item,audio)=>item.is_image?{}:{...(audio.explicitMode?{audio_mode:audio.mode}:{}),...(audio.explicit?{audio_stream_index:audio.index}:{})};
+  const descriptorMode=value=>value?.audio_mode===undefined?'selected':value.audio_mode;
+  const descriptorAudio=(value,audio)=>value?.audio_stream_index===undefined && !audio.explicit && audio.mode!=='all'?0:value?.audio_stream_index;
+  const sameWindow=(a,b,audio)=>!!a && !!b && ['start_frame','end_frame','total_frames','source_version'].every(key=>a[key]===b[key]) && a.fps.num===b.fps?.num && a.fps.den===b.fps?.den && descriptorMode(b)===a.audio_mode && a.audio_stream_index===descriptorAudio(b,audio);
   function requestedWindow(item,start){
     if(!validFPS(item.fps) || !Number.isSafeInteger(item.duration_frames) || item.duration_frames<=0 || !Number.isSafeInteger(start) || start<0 || start>=item.duration_frames)throw Error('Source frame must be inside the media');
     const span=Number(60n*BigInt(item.fps.num)/BigInt(item.fps.den));
@@ -152,8 +154,8 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   }
   function checkedWindow(value,item,requested,version,audio){
     if(!value || !validFPS(value.fps) || value.fps.num!==item.fps.num || value.fps.den!==item.fps.den || value.total_frames!==item.duration_frames || !Number.isSafeInteger(value.start_frame) || !Number.isSafeInteger(value.end_frame) || value.start_frame<0 || value.start_frame>requested.start_frame || value.end_frame<requested.end_frame || value.end_frame>value.total_frames || value.end_frame<=value.start_frame || BigInt(value.end_frame-value.start_frame)*BigInt(value.fps.den)>60n*BigInt(value.fps.num) || typeof value.source_version!=='string' || !value.source_version.length || value.source_version.length>256 || (version!==undefined && value.source_version!==version))throw Error('Source window metadata changed or is invalid; reopen Source');
-    if(descriptorAudio(value,audio.explicit)!==audio.index)throw Error('Source audio stream changed or is invalid; reopen Source');
-    return {...value,audio_stream_index:audio.index,fps:{...value.fps}};
+    if(descriptorMode(value)!==audio.mode || descriptorAudio(value,audio)!==(audio.mode==='all'?null:audio.index))throw Error('Source audio stream changed or is invalid; reopen Source');
+    return {...value,audio_mode:audio.mode,audio_stream_index:audio.mode==='all'?null:audio.index,fps:{...value.fps}};
   }
   function pauseVideo(){if(video.paused===false)ignoredPauses++;internalPause=true;try{video.pause();}finally{internalPause=false;}}
   function hold(){playbackIntent=false;pauseVideo();}
@@ -179,7 +181,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     const value=binding;
     if(!ready || !value?.window || !value.verified || !attached(value) || (video.seeking && !isInternalSeek()))return null;
     const frame=localFrame(value);if(frame===null)return null;
-    return {epoch:value.epoch,media_id:value.item.id,job:value.job,fps:{...value.window.fps},start_frame:value.window.start_frame,end_frame:value.window.end_frame,frame,source_version:value.window.source_version,audio_stream_index:value.window.audio_stream_index};
+    return {epoch:value.epoch,media_id:value.item.id,job:value.job,fps:{...value.window.fps},start_frame:value.window.start_frame,end_frame:value.window.end_frame,frame,source_version:value.window.source_version,audio_mode:value.window.audio_mode,audio_stream_index:value.window.audio_stream_index};
   }
   async function seekMedia(seconds,signal){
     const wait=(event,complete)=>{
@@ -199,7 +201,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     startingPlayback=true;queueMicrotask(()=>{if(binding===value)startingPlayback=false;});
     try{await video.play();}catch(error){if(attached(value) && error.name!=='AbortError'){playbackIntent=false;status.textContent+=' · press Play';}}
   }
-  async function prepareWindow(item,epoch,quality,startFrame,{continuation=false,autoplay=false,version,audioSelection={index:0,explicit:false},reason=continuation?'window':'open'}={}){
+  async function prepareWindow(item,epoch,quality,startFrame,{continuation=false,autoplay=false,version,audioSelection={index:0,explicit:false,mode:'selected'},reason=continuation?'window':'open'}={}){
     if(disposed)return;
     let requested;
     try{requested=requestedWindow(item,startFrame);}catch(error){status.textContent=error.message;return;}
@@ -212,7 +214,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     windowContext={item,epoch,quality,startFrame,version,audioSelection};
     const active=()=>!disposed && seq===sequence && !signal.aborted;
     try{
-      beginState(item,epoch,startFrame,reason,audioSelection.index);
+      beginState(item,epoch,startFrame,reason,audioSelection);
       if(!active())return;
       pauseVideo();status.textContent=continuation?`${item.name} · Paused · preparing next Source window…`:`${item.name} · Preparing ${quality} Source window…`;
       const prepareFetch=(path,options={})=>fetcher(path,{...options,signal:AbortSignal.any([signal,options.signal].filter(Boolean))});
@@ -241,10 +243,10 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       if(localFrame(binding)!==startFrame)throw Error('Source seek did not reach the requested absolute frame');
       binding.verified=true;ready=true;preparing=false;pendingPath=null;seekingTarget=null;cancel.disabled=true;
       windowContext={item,epoch,quality,startFrame,version:range.source_version,audioSelection};
-      status.textContent=`${item.name} · SOURCE WINDOW · ${range.start_frame}–${range.end_frame} / ${range.total_frames} frames · ${quality}${item.has_audio?` · audio stream ${audioSelection.index} (zero-based)`:''}`;
+      status.textContent=`${item.name} · SOURCE WINDOW · ${range.start_frame}–${range.end_frame} / ${range.total_frames} frames · ${quality}${item.has_audio?audioSelection.mode==='all'?' · all audio streams':` · audio stream ${audioSelection.index} (zero-based)`:''}`;
       const completed=binding;scheduleHeartbeat(completed);notify('ready',stateContext?.reason,startFrame);
       if(!active() || binding!==completed)return;
-      onReady?.({item,epoch,job:id,audio_stream_index:audioSelection.index,source_window:{...range,fps:{...range.fps}}});
+      onReady?.({item,epoch,job:id,audio_mode:audioSelection.mode,audio_stream_index:audioSelection.mode==='all'?null:audioSelection.index,source_window:{...range,fps:{...range.fps}}});
       if(autoplay && active() && binding===completed)await play(completed);
     }catch(error){if(active() && error.name!=='AbortError'){const retry=windowContext;detach(`${error.message} · reopen Source`,'error',stateContext?.reason,retry);}}
   }
@@ -262,7 +264,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     const seq=++sequence;controller?.abort();stopHeartbeat();controller=new AbortController();const signal=controller.signal;
     binding={...value,sequence:seq,signal,verified:false};ready=false;preparing=true;nativeSeeking=false;seekingTarget=null;startingPlayback=false;
     try{
-      beginState(context.item,context.epoch,frame,'seek',context.audioSelection.index);
+      beginState(context.item,context.epoch,frame,'seek',context.audioSelection);
       if(seq!==sequence || signal.aborted)return;
       pauseVideo();
       await seekMedia((frame-value.window.start_frame)*value.window.fps.den/value.window.fps.num,signal);
@@ -302,7 +304,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     playbackIntent=false;binding.verified=false;ready=false;nativeSeeking=true;
     const value=binding,frame=localFrame(value);
     if(frame!==null && windowContext)windowContext={...windowContext,startFrame:frame};
-    beginState(value.item,value.epoch,frame,'native_seek',value.audioSelection.index);
+    beginState(value.item,value.epoch,frame,'native_seek',value.audioSelection);
     if(binding===value && nativeSeeking)pauseVideo();
   };
   const seeked=()=>{

@@ -22,6 +22,16 @@ test("native window positions follow the rational sample clock and refuse unsafe
   assert.equal(payload.query.frame,59);assert.equal(payload.window.source_version,version);
   assert.throws(()=>windowPayload(target,Number.MAX_SAFE_INTEGER+1,2,2,null));
 });
+
+test('fast Source windows retain the native all-stream or selected-stream query through every continuation',()=>{
+  for(const audio of [{audio_mode:'all',audio_stream_index:0},{audio_mode:'selected',audio_stream_index:1}]){
+    const target={fps:{num:24,den:1},end:480_000,query:{project_epoch:'epoch',...audio}};
+    for(const [start,hash] of [[0,null],[96_000,version]]){
+      const payload=windowPayload(target,start,2,2,hash);
+      assert.deepEqual(payload.query,{project_epoch:'epoch',...audio,frame:start/2_000});assert.equal(payload.window.source_version,hash);assert.equal(payload.window.end_sample,480_000);
+    }
+  }
+});
 test("fast playback waits for native audio, binds subsequent windows and keeps the queue bounded",async()=>{
   const f=fixture();await f.play();await turn();assert.equal(f.video.paused,true);assert.equal(f.pending.length,1);assert.equal(f.buffers.length,0);
   f.reply(0,0,96000);await turn();assert.equal(f.buffers[0].when,.05);assert.equal(f.pending.length,2);

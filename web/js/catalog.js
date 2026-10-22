@@ -1,3 +1,5 @@
+import {mediaThumbnail} from './source-assets.js';
+export function visibleMediaDemand(items,ids){return items.filter(item=>ids.has(item.id) && item.has_video && !item.offline && !item.compound_timeline_id).slice(0,64).map(item=>({media_id:item.id,audio_stream_index:0,include_waveform:false}));}
 export function mediaSelection(items, selected, anchor, id, {toggle = false, extend = false} = {}) {
   if (!items.some((item) => item.id === id)) return {selected: [], anchor: null};
   if (extend && anchor && items.some((item) => item.id === anchor)) {
@@ -16,7 +18,7 @@ export function folderPaths(folders) {
   }).sort((a, b) => a.path.localeCompare(b.path));
 }
 
-export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice}) {
+export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice,onDemand=()=>{},intersectionObserver=globalThis.IntersectionObserver}) {
   root.replaceChildren();
   state.selected = (state.selected || []).filter((id) => documentState.media.some((item) => item.id === id));
   const folders = folderPaths(documentState.folders || []);
@@ -30,7 +32,12 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   kind.value = state.kind || "all"; toolbar.append(filter, kind); root.append(toolbar);
   const count = document.createElement("p"); count.className = "muted"; count.setAttribute("aria-live", "polite"); root.append(count);
   const list = document.createElement("div"); list.setAttribute("role", "group"); list.setAttribute("aria-label", "Project media"); list.tabIndex=0;list.dataset.clipboardOwner='pool';root.append(list);
-  let visible = [];
+  let visible = [],disposed=false;
+  const intersecting=new Set(),observer=intersectionObserver?new intersectionObserver(entries=>{
+    if(disposed || root.isConnected===false)return;
+    for(const entry of entries){if(entry.target.parentElement!==list)continue;if(entry.isIntersecting)intersecting.add(entry.target.dataset.mediaId);else intersecting.delete(entry.target.dataset.mediaId);}
+    onDemand(visibleMediaDemand(visible,intersecting));
+  },{root}):null;
   const button = (text, parent, action, disabled = !writable) => {
     const node = document.createElement("button"); node.type = "button"; node.textContent = text; node.disabled = disabled;
     node.addEventListener("click", action); parent.append(node); return node;
@@ -78,14 +85,16 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     onSelection(state.selected.at(-1) || null, [...state.selected]);
   }
   function render() {
+    observer?.disconnect();intersecting.clear();onDemand([]);
     state.folder = filter.value; state.kind = kind.value; list.replaceChildren();
     visible = documentState.media.filter((item) => (!state.query || item.name.toLowerCase().includes(state.query)) && (filter.value === "*" || (item.folder || "") === filter.value) && (kind.value === "all" || (kind.value === "compound" ? !!item.compound_timeline_id : kind.value === "offline" ? item.offline : kind.value === "image" ? item.is_image : kind.value === "audio" ? item.has_audio && !item.has_video : item.has_video && !item.is_image && !item.compound_timeline_id)));
     for (const item of visible) {
       const card = document.createElement("button"); card.className = "media-item"; card.dataset.mediaId = item.id; card.textContent = `${item.name}${item.offline ? " · OFFLINE" : ""}`;
       card.addEventListener("click", (event) => { const selection = mediaSelection(visible, state.selected, state.anchor, item.id, {toggle: event.ctrlKey || event.metaKey, extend: event.shiftKey}); Object.assign(state, selection); update(); });
       card.addEventListener("dblclick", () => onOpen(item.id));
-      if (assets.has(item.id)) { const image = document.createElement("img"); image.alt = ""; image.src = assets.get(item.id).thumbnailURL; card.prepend(image); }
+      const thumbnail=mediaThumbnail(assets,item.id);if(thumbnail?.thumbnailURL){const image = document.createElement("img"); image.alt = ""; image.src = thumbnail.thumbnailURL; card.prepend(image);}
       list.append(card);
+      observer?.observe(card);
     }
     update();
   }
@@ -99,5 +108,5 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     list.querySelectorAll(".media-item")[next]?.focus(); update();
   });
   filter.addEventListener("change", render); kind.addEventListener("change", render); render();
-  return {search(query) {state.query = query; render();}};
+  return {search(query) {if(disposed)return;state.query = query; render();},dispose(){disposed=true;observer?.disconnect();intersecting.clear();onDemand([]);}};
 }

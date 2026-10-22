@@ -3,6 +3,51 @@ use vv_core::ClipSource;
 use vv_core::{Clip, Keyframed, Rgba, Track, TrackKind};
 
 #[test]
+fn web_audio_origin_invalid_lineage_is_rejected_before_encoder_or_compositor_creation() {
+    let mut project = Project::default();
+    let mut track = Track::new(TrackKind::Video);
+    track.insert_sorted(solid_color_clip(1, 0, 10, red()));
+    let id = project.timelines.insert(timeline_with(vec![track]));
+    let mut settings =
+        ExportSettings::new(std::env::temp_dir().join("vv-audio-origin-invalid.mp4"));
+    assert_eq!(settings.audio_render_origin, None);
+    let progress = Mutex::new(ExportProgress::default());
+    let cancel = Arc::new(AtomicBool::new(false));
+    for origin in [-1, 6] {
+        settings.audio_render_origin = Some(origin);
+        assert!(
+            export_timeline_with_gpu_cancellable(
+                &project,
+                id,
+                &settings,
+                5..10,
+                &progress,
+                &cancel,
+                || panic!("invalid audio origin must not create a compositor"),
+                |_| Ok(()),
+                1,
+            )
+            .is_err()
+        );
+    }
+    settings.audio_render_origin = Some(0);
+    assert!(
+        export_timeline_with_gpu(
+            &project,
+            id,
+            &settings,
+            5..10,
+            &progress,
+            &cancel,
+            || panic!("origin replay requires shared cancellation before any GPU work"),
+            |_| Ok(()),
+            1,
+        )
+        .is_err()
+    );
+}
+
+#[test]
 fn scope_isolation_ignores_covering_tracks_and_keeps_adjustment_inputs() {
     let mut project = Project::default();
     let mut lower = Track::new(TrackKind::Video);

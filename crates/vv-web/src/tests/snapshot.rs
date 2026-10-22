@@ -14,7 +14,7 @@ fn native_timeline_gaps_include_leading_and_internal_ranges_only_on_unlocked_lan
         master: Default::default(),
     });
     for (track, start, length) in [(0, 12, 6), (0, 30, 6), (1, 0, 6), (1, 18, 6), (3, 24, 6)] {
-        let clip = vv_core::Clip::from_source_range(
+        let mut clip = vv_core::Clip::from_source_range(
             editor.project.alloc_clip_id(),
             vv_core::ClipSource::SolidColor,
             0,
@@ -22,6 +22,7 @@ fn native_timeline_gaps_include_leading_and_internal_ranges_only_on_unlocked_lan
             start,
             vv_core::Rational::one(),
         );
+        clip.audio_stream_index = track + 1;
         editor.project.timelines[id].tracks[track].insert_sorted(clip);
     }
     editor.project.timelines[id].tracks[3].locked = true;
@@ -29,6 +30,12 @@ fn native_timeline_gaps_include_leading_and_internal_ranges_only_on_unlocked_lan
     let generation = editor.history.generation();
     let position = editor.history.position();
     let revision = editor.timeline_revision(id);
+    let snapshot = timeline(&editor, id);
+    for (index, track) in snapshot["tracks"].as_array().unwrap().iter().enumerate() {
+        for clip in track["clips"].as_array().unwrap() {
+            assert_eq!(clip["audio_stream_index"], index + 1);
+        }
+    }
     assert_eq!(
         timeline(&editor, id)["gaps"],
         json!([

@@ -188,10 +188,21 @@ fn explicit_scale_memory_admission_reserves_host_and_process_headroom_without_re
     assert!(memory_fits(
         required,
         16 * 1024 * 1024 * 1024,
-        8 * 1024 * 1024 * 1024
+        8 * 1024 * 1024 * 1024,
+        256 * 1024 * 1024
     ));
-    assert!(!memory_fits(required, 8 * 1024 * 1024 * 1024, u64::MAX));
-    assert!(!memory_fits(required, u64::MAX, 2 * 1024 * 1024 * 1024));
+    assert!(!memory_fits(
+        required,
+        8 * 1024 * 1024 * 1024,
+        u64::MAX,
+        256 * 1024 * 1024
+    ));
+    assert!(!memory_fits(
+        required,
+        u64::MAX,
+        2 * 1024 * 1024 * 1024,
+        256 * 1024 * 1024
+    ));
     assert!(
         export_working_bytes((4096, 2160), (2048, 1080))
             < export_working_bytes((4096, 2160), (4096, 2160))
@@ -303,6 +314,7 @@ fn task() -> ProgramTask {
         revision: "r".into(),
         start_frame: 0,
         end_frame: 48,
+        audio_origin_frame: None,
         width: 960,
     };
     ProgramTask {
@@ -342,6 +354,219 @@ fn program_bounds_and_cache_identity_include_native_revision_and_output_range() 
     assert!(task.validate().is_err());
     task.query.end_frame = 0;
     assert!(task.validate().is_err());
+}
+#[test]
+fn program_audio_origin_is_explicit_in_native_settings_and_covering_cache_identity() {
+    let mut task = task();
+    let legacy = task.query.key();
+    assert_eq!(legacy, "program:p:1:0:1:r:0:48:960:v1");
+    assert!(
+        task.settings(Path::new("/tmp"))
+            .audio_render_origin
+            .is_none()
+    );
+    assert!(
+        task.descriptor(Path::new("/tmp"))
+            .get("audio_origin_frame")
+            .is_none()
+    );
+    task.query.audio_origin_frame = Some(0);
+    assert!(task.validate().is_ok());
+    assert_ne!(task.query.key(), legacy);
+    assert_eq!(
+        task.settings(Path::new("/tmp")).audio_render_origin,
+        Some(0)
+    );
+    assert_eq!(task.descriptor(Path::new("/tmp"))["audio_origin_frame"], 0);
+    let mut inside = task.query.clone();
+    inside.start_frame = 12;
+    assert!(task.query.contains(&inside));
+    inside.audio_origin_frame = Some(12);
+    assert!(!task.query.contains(&inside));
+    inside.audio_origin_frame = None;
+    assert!(!task.query.contains(&inside));
+    task.query.start_frame = 12;
+    for origin in [-1, 13, i64::MAX] {
+        task.query.audio_origin_frame = Some(origin);
+        assert!(task.validate().is_err());
+    }
+    task.query.audio_origin_frame = Some(0);
+    task.export = Some(export_options());
+    assert!(task.validate().is_err());
+    assert!(
+        task.settings(Path::new("/tmp"))
+            .audio_render_origin
+            .is_none()
+    );
+    for value in [json!("0"), json!(0.5), json!(true)] {
+        assert!(serde_json::from_value::<ProgramQuery>(json!({"project_epoch":"p:1","if_generation":"0","timeline_id":"1","revision":"r","start_frame":0,"end_frame":48,"audio_origin_frame":value})).is_err());
+    }
+}
+
+#[test]
+fn composition_memory_counts_native_sources_crossings_nested_layers_and_existing_reserves() {
+    let mut task = task();
+    let id = task.snapshot.timeline;
+    let initial = program_working_bytes(&task.snapshot, (960, 540));
+    let media = task.snapshot.project.media_pool.insert(vv_core::MediaItem {
+        path: "memory-only.mp4".into(),
+        meta: vv_core::MediaMeta {
+            width: 4096,
+            height: 2160,
+            duration_frames: 480,
+            fps: Rational::new(24, 1),
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    });
+    task.snapshot.project.timelines[id].tracks[0].clips[0].source = ClipSource::Media(media);
+    let source = program_working_bytes(&task.snapshot, (960, 540));
+    assert!(source > initial);
+    let mut later = task.snapshot.project.timelines[id].tracks[0].clips[0].clone();
+    later.id = ClipId(2);
+    later.timeline_start = 48;
+    task.snapshot.project.timelines[id].tracks[0].insert_sorted(later);
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540)),
+        source,
+        "Sequential clips do not retain one decode queue each"
+    );
+    task.snapshot.project.timelines[id].tracks[0]
+        .crossings
+        .push(vv_core::CrossTransition {
+            left_clip: ClipId(1),
+            right_clip: ClipId(2),
+            transition: vv_core::Transition {
+                kind: vv_core::TransitionKind::CrossDissolve,
+                duration: 8,
+                direction: vv_core::PushDirection::Left,
+                ease: vv_core::Ease::InOut,
+                curve: 0.5,
+            },
+        });
+    let crossing = program_working_bytes(&task.snapshot, (960, 540));
+    assert!(crossing > source);
+    let child_track = task.snapshot.project.timelines[id].tracks[0].clone();
+    let child = task.snapshot.project.timelines.insert(Timeline {
+        name: "Native child".into(),
+        fps: Rational::new(24, 1),
+        resolution: (1920, 1080),
+        tracks: vec![child_track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let compound = task.snapshot.project.media_pool.insert(vv_core::MediaItem {
+        path: "Nested memory".into(),
+        meta: vv_core::MediaMeta {
+            width: 1920,
+            height: 1080,
+            duration_frames: 96,
+            fps: Rational::new(24, 1),
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 2,
+        compound: Some(child),
+        folder: None,
+    });
+    let mut nested_track = Track::new(TrackKind::Video);
+    nested_track.insert_sorted(Clip::from_source_range(
+        ClipId(3),
+        ClipSource::Media(compound),
+        0,
+        96,
+        0,
+        Rational::one(),
+    ));
+    task.snapshot.project.timelines[id]
+        .tracks
+        .push(nested_track);
+    let nested = program_working_bytes(&task.snapshot, (960, 540));
+    assert!(nested > crossing);
+    let reserve = 64 * 1024 * 1024;
+    assert!(memory_fits(
+        nested,
+        nested + 4 * 1024 * 1024 * 1024,
+        nested + reserve,
+        reserve
+    ));
+    assert!(!memory_fits(
+        nested,
+        nested + 4 * 1024 * 1024 * 1024,
+        nested + reserve - 1,
+        reserve
+    ));
+    assert!(!memory_fits(
+        nested,
+        nested + 4 * 1024 * 1024 * 1024 - 1,
+        u64::MAX,
+        reserve
+    ));
+    task.snapshot.project.timelines[id].tracks[1].muted = true;
+    assert_eq!(program_working_bytes(&task.snapshot, (960, 540)), crossing);
+    task.snapshot.project.timelines[id].tracks[1].muted = false;
+    task.snapshot.project.timelines[child].tracks[0].clips[0].source = ClipSource::Media(compound);
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540)),
+        u64::MAX,
+        "Invalid recursive media fails closed within the native depth bound"
+    );
+}
+
+#[test]
+fn composition_memory_accounts_for_native_whole_clip_pitch_correction_results() {
+    let mut task = task();
+    let id = task.snapshot.timeline;
+    let media = task.snapshot.project.media_pool.insert(vv_core::MediaItem {
+        path: "pitch-memory.wav".into(),
+        meta: vv_core::MediaMeta {
+            width: 0,
+            height: 0,
+            duration_frames: 48_000,
+            fps: Rational::new(24, 1),
+            has_video: false,
+            has_audio: true,
+            sample_rate: 48_000,
+            channels: 2,
+            audio_streams: 1,
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    });
+    let mut track = Track::new(TrackKind::Audio);
+    let mut clip = Clip::from_source_range(
+        ClipId(2),
+        ClipSource::Media(media),
+        0,
+        24_000,
+        0,
+        Rational::one(),
+    );
+    clip.set_speed(Rational::new(2, 1), Rational::one());
+    clip.pitch_correction = true;
+    track.insert_sorted(clip);
+    task.snapshot.project.timelines[id].tracks.push(track);
+    let corrected = program_working_bytes(&task.snapshot, (960, 540));
+    task.snapshot.project.timelines[id].tracks[1].clips[0].pitch_correction = false;
+    let plain = program_working_bytes(&task.snapshot, (960, 540));
+    assert!(corrected > plain + 512 * 1024 * 1024);
+    task.snapshot.project.timelines[id].tracks[1].clips[0].pitch_correction = true;
+    task.snapshot.project.timelines[id].tracks[1].clips[0].freeze = Some(0);
+    assert_eq!(program_working_bytes(&task.snapshot, (960, 540)), plain);
+    assert!(!memory_fits(u64::MAX, u64::MAX, u64::MAX, 0));
 }
 #[test]
 fn generated_preview_identity_detects_source_replacement_without_timeline_edits() {
@@ -492,4 +717,40 @@ fn export_accepts_full_long_timelines_while_preview_keeps_its_duration_budget() 
     task.query.end_frame = 8640;
     task.query.start_frame = -1;
     assert!(task.validate().is_err());
+}
+
+#[test]
+fn cgroup_admission_counts_only_clean_unmapped_inactive_file_cache_as_reclaimable() {
+    let stat = "file 5000\ninactive_file 4000\nfile_dirty 200\nfile_writeback 100\nfile_mapped 300\nshmem 400\nunevictable 500\n";
+    assert_eq!(clean_inactive_file(stat), 2500);
+    assert_eq!(
+        clean_inactive_file(&stat.replace("inactive_file 4000", "inactive_file 9000")),
+        3500
+    );
+    assert_eq!(
+        clean_inactive_file(&stat.replace("file_dirty 200", "file_dirty 9000")),
+        0
+    );
+    for broken in [
+        String::new(),
+        stat.replace("shmem 400\n", ""),
+        format!("{stat}file 1\n"),
+        stat.replace("file_mapped 300", "file_mapped nope"),
+    ] {
+        assert_eq!(clean_inactive_file(&broken), 0);
+    }
+    let root = std::env::temp_dir().join(format!(
+        "venturi-clean-cgroup-{}",
+        crate::asset_jobs::nonce()
+    ));
+    std::fs::create_dir_all(root.join("worker")).unwrap();
+    for path in [&root, &root.join("worker")] {
+        std::fs::write(path.join("memory.max"), "10000").unwrap();
+        std::fs::write(path.join("memory.current"), "9500").unwrap();
+        std::fs::write(path.join("memory.stat"), stat).unwrap();
+    }
+    assert_eq!(cgroup_headroom(&root, "0::/worker\n"), Some(3000));
+    std::fs::write(root.join("memory.stat"), "invalid").unwrap();
+    assert_eq!(cgroup_headroom(&root, "0::/worker\n"), Some(500));
+    std::fs::remove_dir_all(root).unwrap();
 }

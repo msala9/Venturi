@@ -3,6 +3,141 @@ use crate::preview::FrameQuery;
 use vv_core::{Clip, ClipSource, Id, MediaItem, Rational, Timeline, Track, TrackKind};
 
 #[test]
+fn source_audition_selection_dto_is_explicit_strict_and_backwards_compatible() {
+    use crate::source_audio::AudioMode;
+    let legacy: SourceQuery =
+        serde_json::from_value(json!({"project_epoch":"test","frame":3})).unwrap();
+    assert_eq!(legacy.audio_mode, AudioMode::Selected);
+    assert_eq!(legacy.audio_stream_index, 0);
+    let all: SourceQuery = serde_json::from_value(
+        json!({"project_epoch":"test","frame":3,"audio_mode":"all","audio_stream_index":0}),
+    )
+    .unwrap();
+    assert_eq!(all.audio_mode, AudioMode::All);
+    for invalid in [
+        json!({"project_epoch":"test","frame":3,"audio_mode":"automatic"}),
+        json!({"project_epoch":"test","frame":3,"audio_stream_index":-1}),
+        json!({"project_epoch":"test","frame":3,"audio_stream_index":null}),
+        json!({"project_epoch":"test","frame":3,"audio_mode":"all","extra":true}),
+    ] {
+        assert!(serde_json::from_value::<SourceQuery>(invalid).is_err());
+    }
+}
+
+#[test]
+fn source_audition_and_fast_windows_share_native_pcm_and_bind_selection_identity() {
+    use crate::source_audio::AudioMode;
+    let root = std::env::temp_dir().join(format!(
+        "vv-audition-selection-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let files = Files::new(&root).unwrap();
+    let path = root.join("tone.wav");
+    let samples: Vec<_> = (0..48_000)
+        .map(|sample| (sample as f32 * std::f32::consts::TAU * 440.0 / 48_000.0).sin() * 0.25)
+        .collect();
+    vv_media::audio_file::write_audio_file(
+        &path,
+        vv_media::audio_file::AudioFileFormat::Wav,
+        &samples,
+        48_000,
+        1,
+    )
+    .unwrap();
+    let meta = files.probe("tone.wav").unwrap().1;
+    let spec = || crate::source::SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "test".into(),
+        media_id: "1".into(),
+        meta: meta.clone(),
+    };
+    let selected = Task::source_options(spec(), 3, AudioMode::Selected, 0).unwrap();
+    let all = Task::source_options(spec(), 3, AudioMode::All, 0).unwrap();
+    let timeline = &selected.snapshot.project.timelines[selected.snapshot.timeline];
+    let start = timeline_frame_to_sample(3, timeline.fps.as_f64(), PROJECT_SAMPLE_RATE);
+    let mut native = Vec::new();
+    let mut levels = LevelCache::on_disk();
+    levels.threads = 1;
+    render_offline(
+        &selected.snapshot.project,
+        timeline,
+        start..start + FRAMES as u64,
+        &mut levels,
+        |chunk| {
+            native.extend_from_slice(chunk);
+            ControlFlow::Continue(())
+        },
+    )
+    .unwrap();
+    let bytes = selected.run(Arc::new(AtomicBool::new(false))).unwrap();
+    assert_eq!(bytes, wav(&native));
+    assert_eq!(all.run(Arc::new(AtomicBool::new(false))).unwrap(), bytes);
+    assert!(Task::source_options(spec(), 3, AudioMode::Selected, 1).is_err());
+    assert!(Task::source_options(spec(), 3, AudioMode::All, 1).is_err());
+    let legacy = format!(
+        "{:x}",
+        Sha256::digest(
+            serde_json::to_vec(&(
+                &selected.inputs,
+                selected
+                    .files
+                    .iter()
+                    .map(|(_, identity)| identity)
+                    .collect::<Vec<_>>()
+            ))
+            .unwrap()
+        )
+    );
+    assert_eq!(selected.source_version().unwrap(), legacy);
+    assert_ne!(all.source_version().unwrap(), legacy);
+    let mut multi_spec = spec();
+    multi_spec.meta.audio_streams = 2;
+    let multi_zero = Task::source_options(multi_spec, 3, AudioMode::Selected, 0).unwrap();
+    let mut multi_spec = spec();
+    multi_spec.meta.audio_streams = 2;
+    let multi_one = Task::source_options(multi_spec, 3, AudioMode::Selected, 1).unwrap();
+    // Old source audition mixed every stream; its identity cannot represent selected stream zero.
+    assert_ne!(multi_zero.source_version().unwrap(), legacy);
+    assert_ne!(
+        multi_zero.source_version().unwrap(),
+        multi_one.source_version().unwrap()
+    );
+    let params = |version| WindowParams {
+        start_sample: start,
+        seconds: 2,
+        tempo: 2,
+        source_version: version,
+        end_sample: Some(start + 2400),
+    };
+    let window = all
+        .window(params(None), Arc::new(AtomicBool::new(false)))
+        .unwrap();
+    assert_eq!(window.bytes.len(), 44 + 1200 * 4);
+    assert_eq!(window.source_version, all.source_version().unwrap());
+    assert_eq!(
+        all.window(params(Some(legacy)), Arc::new(AtomicBool::new(false)))
+            .err()
+            .unwrap()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    assert_eq!(
+        selected
+            .run(Arc::new(AtomicBool::new(true)))
+            .err()
+            .unwrap()
+            .1,
+        "AUDIO_CANCELED"
+    );
+    drop((selected, all, multi_zero, multi_one, files));
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_the_project() {
     let root = std::env::temp_dir().join(format!(
         "vv-audition-{}-{}",

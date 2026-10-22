@@ -7,8 +7,12 @@ every agent, not just Claude: read it before making changes.
 
 The owner reported that local builds, preview servers and concurrent tests made
 the Windows PC unusable. Keep heavy compilation, rendering and soak tests off
-this workstation. The owner explicitly authorized up to eight CPUs on halo2 on
-2026-10-22. Use bounded build concurrency, explicit RAM/I/O limits and low
+this workstation. On 2026-10-22 the owner requested moving work to free halo1
+because halo2 is shared with an H3 agent; halo1 already mounts the NAS.
+Prefer halo1 for new development/qualification after its prerequisites are ready.
+Preserve existing halo2 editors and artifacts; do not migrate their dirty state.
+The owner explicitly authorized up to eight CPUs on halo2 earlier that day.
+Retain bounded build concurrency on halo1, with explicit RAM/I/O limits and low
 priority; retain the no-swap and one-heavy-workload-at-a-time policy. Local file
 edits, Git and short SSH orchestration remain appropriate.
 Do not restart local test fleets or reopen multiple browser test tabs. Preserve
@@ -22,7 +26,7 @@ Use existing remote build artifacts and incremental source transfers. Resuming
 development does not authorize resuming workstation qualification workloads.
 The owner clarified that browser checks must use the existing Windows browser
 environment, one tab at a time. Do not download or install browsers on halo2.
-Keep compilation, rendering and heavy test workloads on resource-limited halo2;
+Keep compilation, rendering and heavy test workloads on resource-limited halo1;
 small browser interaction checks on Windows are authorized.
 Check shared-host memory headroom before heavy tests/builds. Make disposable
 test/build processes sacrificial with OOMScoreAdjust=1000; never protect them

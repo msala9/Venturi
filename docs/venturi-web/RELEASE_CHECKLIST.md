@@ -14,7 +14,7 @@ checkpoint.
 | Media, ordinary-resolution playback and export | Partial | f6-verified-take-workflow.json proves full-HD export and native/API parity; ordinary long-running Source/Program playback and cross-window audio still need full acceptance |
 | Effects and advanced timeline | Partial | f3-effects-workflow.json, nativeview-workflow.json, f3-mask-inspector-workflow.json; outstanding row-specific pointer, font, moving-media and hardware scope remains |
 | Color, audio and voiceover | Partial | Existing M5 evidence and F4 plan; physical recording/device/output and remaining workspace acceptance are not replaced by synthetic WAVs |
-| Shared library and presets | Partial | f5-shared-native-library-gate.json, f5-approved-folders-workflow.json, f5-shared-audio-presets-gate.json and f5-shared-audio-presets-workflow.json; authoritative NAS root/access and native/Web interprocess workflow remain |
+| Shared library and presets | Partial | Existing F5 gates plus halo1-workspace-migration.json and f5-nas-readonly-stage-gate.json: actual NAS archive import and native publication/reimport pass, with exact bytes and Session/Undo semantics; CIFS native/Web concurrency and physical acceptance remain |
 | Atomic take replacement | Qualified | f6-verified-take-workflow.json, including stale shown-B refusal, one Undo, exact save/restart, actual R9700 pixels and full-HD exported-file EOF |
 | A/B comparison | Partial | Existing source clocks, stream selection and long-window evidence; sustained full-resolution and physical audio acceptance remain |
 | Safe moves, linked/locked edits and stale commands | Qualified regression baseline | Existing native command/Host tests and workflow evidence; rerun affected cases after relevant implementation changes |
@@ -26,7 +26,7 @@ checkpoint.
 | Rust/JavaScript regression gate | Affected gates pass; final gate open | f6-verified-take-gate.json and f5-shared-audio-presets-gate.json. These do not substitute for the final workspace fmt/Clippy/tests and relevant browser checks in TEST_PLAN.md |
 | Native desktop regression | Affected native gate passes; final gate open | F5's 45 native cases cover changed catalog/Mixer/Settings/recovery paths; full final native regression and physical UX remain |
 | Two-hour typical editing soak | Not passed | m7-two-hour-backend-soak.json is interrupted; m7-halo2-backend-soak-oom.json is failed. Neither qualifies browser memory, hardware or the current candidate. Run once after functionality stabilizes, with bounded halo2 resources; do not repeat failed co-residence or Windows heavy workloads |
-| Deployment and rollback | Preserved baseline; final delivery pending | Current port8814 stays on its existing immutable binary. Ports8790/8811 contain dirty user sessions; preserve them and all client drafts. Final version needs its own verified immutable binary, URL, saved project, export and rollback instructions |
+| Deployment and rollback | Preserved baseline; final delivery pending | Current working port8813 now targets separate halo1 runtime fd9bde4, Saved project and actual R9700/NAS asset workflow. Older halo2 editors stay unchanged, including dirty8790/8811. Final version still needs integrated release acceptance, export and reboot/rollback instructions |
 
 ## Scoped source review
 
@@ -53,6 +53,6 @@ Complete the coherent missing functionality blocks, qualify their affected
 native/Web paths and update the ledger only with matching workflow evidence.
 Resolve the canonical NAS configuration and physical acceptance requirements.
 Then run the final bounded regression gate and one two-hour realistic editing
-soak on halo2, preserving every protected editor and the shared GPU lock. Publish
+soak on halo1, preserving every protected editor and the shared GPU lock. Publish
 the verified final candidate, rollback procedure and artifact paths only after
 those gates pass.

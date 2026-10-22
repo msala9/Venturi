@@ -1,0 +1,182 @@
+{
+  "date": "2026-10-22",
+  "status": "passed",
+  "host": "halo1",
+  "scope": "Close and pin copied native media read-only before isolated probe on CIFS; preserve exact inode/size, SHA and strong source/stage identity checks",
+  "base_source": "d13567c087175608716cfc18ebbe3b599256044c",
+  "source_hashes": {
+    "crates/vv-web/src/asset_jobs.rs": "30ccf1c2eb7ae1c20cfa08bdab175c7f67a672f271dbc7ea32fb8ceef0d81f9e",
+    "crates/vv-web/src/tests/asset_jobs.rs": "086c3edcb2541629c473a05b89fbb9f6d13fa9188922babee81e022b2a19a411"
+  },
+  "gate": {
+    "state": {
+      "phase": "passed",
+      "started_unix": 1792700440.893578,
+      "updated_unix": 1792701050.646711,
+      "binary": "/home/halo/.cache/venturi-build/target/debug/vv-web",
+      "sha256": "f4d3a77a4901ae7e4f26fcb0590cd91afc1c904f5551f36d3a560b92d25f6c1a",
+      "bytes": 281454488
+    },
+    "test_count": 45,
+    "log_sha256": "8de7577e21237451069df39684abe580f33273e3f5836f72bcfd50a58aeef225",
+    "unit": "ActiveState=inactive\nMainPID=0\nResult=success\nMemoryPeak=[not set]\nCPUQuotaPerSecUSec=infinity\nMemoryMax=infinity\nMemorySwapMax=infinity\n"
+  },
+  "diagnosed_failure": {
+    "service_pid": 69019,
+    "bytes": 657278,
+    "cleanup": true,
+    "thread_environment": {
+      "OPENBLAS_NUM_THREADS": null,
+      "OMP_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "TOKIO_WORKER_THREADS": "4"
+    },
+    "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b",
+    "before": {
+      "st_dev": 56,
+      "st_ino": 89915474,
+      "st_size": 657278,
+      "st_mtime_ns": 1792700138190637800,
+      "st_ctime_ns": 1792700138190637800
+    },
+    "offset_before": 657278,
+    "probe_exit": 1,
+    "elapsed_seconds": 0.153,
+    "probe_stdout": "",
+    "probe_stderr": "Error: \"Asset probe input changed\"\n",
+    "stdout_bytes": 0,
+    "stderr_bytes": 35,
+    "after": {
+      "st_dev": 56,
+      "st_ino": 89915474,
+      "st_size": 657278,
+      "st_mtime_ns": 1792700138301309300,
+      "st_ctime_ns": 1792700138301309300
+    },
+    "offset_after": 657278
+  },
+  "verified_remedy": {
+    "service_pid": 69019,
+    "bytes": 657278,
+    "cleanup": true,
+    "thread_environment": {
+      "OPENBLAS_NUM_THREADS": null,
+      "OMP_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "TOKIO_WORKER_THREADS": "4"
+    },
+    "writer_closed_before_probe": true,
+    "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b",
+    "before": {
+      "st_dev": 56,
+      "st_ino": 89915474,
+      "st_size": 657278,
+      "st_mtime_ns": 1792700182479044900,
+      "st_ctime_ns": 1792700182479044900
+    },
+    "offset_before": 0,
+    "probe_exit": 0,
+    "elapsed_seconds": 0.149,
+    "probe_stdout": "{\"metadata\":{\"duration_frames\":124,\"fps\":{\"num\":24,\"den\":1},\"width\":864,\"height\":480,\"has_video\":true,\"has_audio\":true,\"sample_rate\":32000,\"channels\":2,\"audio_streams\":1,\"file\":{\"size_bytes\":657278,\"video_codec\":\"h264\",\"audio_codec\":\"aac\"}}}",
+    "probe_stderr": "",
+    "stdout_bytes": 241,
+    "stderr_bytes": 0,
+    "after": {
+      "st_dev": 56,
+      "st_ino": 89915474,
+      "st_size": 657278,
+      "st_mtime_ns": 1792700182479044900,
+      "st_ctime_ns": 1792700182479044900
+    },
+    "offset_after": 0
+  },
+  "source_bootstrap": {
+    "status": "passed",
+    "destination": "/home/halo/.cache/venturi-build/source",
+    "commit": "d13567c087175608716cfc18ebbe3b599256044c",
+    "files": 539,
+    "source_bytes": 10582013,
+    "archive_bytes": 11028480,
+    "archive_sha256": "15316625f1adb4847d1d121dbdfc33a1978f97e7b1a1d11858ea880998443954"
+  },
+  "build_headers": {
+    "phase": "passed",
+    "updated_unix": 1792700058.5988047,
+    "packages": [
+      {
+        "name": "libasound2-dev",
+        "version": "1.2.15.3-1ubuntu1.1"
+      },
+      {
+        "name": "libavutil-dev",
+        "version": "7:8.0.1-3ubuntu2"
+      },
+      {
+        "name": "libswresample-dev",
+        "version": "7:8.0.1-3ubuntu2"
+      },
+      {
+        "name": "libavcodec-dev",
+        "version": "7:8.0.1-3ubuntu2"
+      },
+      {
+        "name": "libavformat-dev",
+        "version": "7:8.0.1-3ubuntu2"
+      },
+      {
+        "name": "libswscale-dev",
+        "version": "7:8.0.1-3ubuntu2"
+      },
+      {
+        "name": "libavfilter-dev",
+        "version": "7:8.0.1-3ubuntu2"
+      },
+      {
+        "name": "libavdevice-dev",
+        "version": "7:8.0.1-3ubuntu2"
+      },
+      {
+        "name": "libvulkan-dev",
+        "version": "1.4.341.0-1"
+      }
+    ],
+    "upgraded": 0,
+    "removed": 0,
+    "ds4_pid": "58396",
+    "unit": "ActiveState=inactive\nMainPID=0\nResult=success\n"
+  },
+  "limits": {
+    "cpu_quota": 8,
+    "compiler_jobs": 2,
+    "memory_bytes": 4294967296,
+    "swap": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "runtime_seconds": 1800
+  },
+  "remaining": [
+    "Native desktop/Web concurrency and recovery on the CIFS filesystem, plus full F5/physical acceptance"
+  ],
+  "source_commit": "fd9bde42c6a8e3e8aa8ae4db7371b7ded9fa0da9",
+  "launch_properties": [
+    "User=halo",
+    "Group=halo",
+    "RuntimeMaxSec=1800",
+    "TimeoutStopSec=30",
+    "KillMode=control-group",
+    "Restart=no",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "Nice=19",
+    "IOWeight=10",
+    "OOMScoreAdjust=1000",
+    "TasksMax=128",
+    "NoNewPrivileges=yes",
+    "StandardOutput=append:/home/halo/.cache/venturi-build/build.log",
+    "StandardError=append:/home/halo/.cache/venturi-build/build.log"
+  ],
+  "unit_lifetime_note": "The successful transient build unit was garbage-collected; terminal show output clears resource properties. Configured launch limits and active observations were recorded during compilation.",
+  "windows_workflow": "halo1-workspace-migration.json"
+}

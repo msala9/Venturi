@@ -1,0 +1,403 @@
+{
+  "date": "2026-10-22",
+  "status": "Halo1 runtime available; actual Windows NAS native publication/import passed; full F5 and release acceptance remain incomplete",
+  "source_commit": "fd9bde42c6a8e3e8aa8ae4db7371b7ded9fa0da9",
+  "artifact": {
+    "status": "passed",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-11fd31925c23",
+    "sha256": "11fd31925c23e18599e597d70ea02206d24ddb106776293fe83150a6ef10fced",
+    "bytes": 77369848,
+    "source_hashes": {
+      "crates/vv-web/src/asset_jobs.rs": "30ccf1c2eb7ae1c20cfa08bdab175c7f67a672f271dbc7ea32fb8ceef0d81f9e",
+      "crates/vv-web/src/tests/asset_jobs.rs": "086c3edcb2541629c473a05b89fbb9f6d13fa9188922babee81e022b2a19a411"
+    },
+    "build": {
+      "phase": "passed",
+      "started_unix": 1792700440.893578,
+      "updated_unix": 1792701050.646711,
+      "binary": "/home/halo/.cache/venturi-build/target/debug/vv-web",
+      "sha256": "f4d3a77a4901ae7e4f26fcb0590cd91afc1c904f5551f36d3a560b92d25f6c1a",
+      "bytes": 281454488
+    }
+  },
+  "runtime_dependencies": {
+    "phase": "passed",
+    "updated_unix": 1792699057.909042,
+    "package_count": 145,
+    "upgraded": 0,
+    "removed": 0,
+    "ds4_pid": "58396",
+    "scope": "Multimedia and Vulkan userspace only; no kernel/AMD/ROCm package or service changes"
+  },
+  "service": {
+    "status": "started",
+    "unit": "venturi-web-halo1-nas.service",
+    "previous_unit": "venturi-web-halo1.service",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-11fd31925c23",
+    "sha256": "11fd31925c23e18599e597d70ea02206d24ddb106776293fe83150a6ef10fced",
+    "saved_project_sha256": "4b50c0419259818596d4defa6d086d7c022d31d375e3d1ae514b3071a4e51d37",
+    "previous_history": {
+      "labels": [
+        "ImportMedia",
+        "InsertClips"
+      ],
+      "position": 2
+    },
+    "previous_generation": "2",
+    "ds4": "ActiveState=active\nMainPID=58396\n",
+    "args": [
+      "/home/halo/.local/share/venturi-web/.runtime/vv-web-11fd31925c23",
+      "--listen",
+      "127.0.0.1:8813",
+      "--projects-root",
+      "/home/halo/VenturiWeb-halo1-20261022",
+      "--assets-root",
+      "/mnt/madrock-share/madrock-library",
+      "--presets-root",
+      "/mnt/madrock-share/madrock-library/presets",
+      "--library-url",
+      "http://127.0.0.1:8787",
+      "--gpu-device",
+      "0x7551",
+      "--gpu-lock",
+      "/tmp/HALO_BENCHMARK.lock"
+    ],
+    "properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=800%",
+      "MemoryMax=4G",
+      "MemorySwapMax=0",
+      "Nice=19",
+      "IOWeight=10",
+      "OOMScoreAdjust=1000",
+      "TasksMax=128",
+      "Restart=no",
+      "TimeoutStopSec=30",
+      "KillMode=control-group",
+      "UMask=0077",
+      "NoNewPrivileges=yes",
+      "WorkingDirectory=/home/halo/VenturiWeb-halo1-20261022",
+      "Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-halo1-20261022/.xdg",
+      "Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json",
+      "Environment=WGPU_BACKEND=vulkan",
+      "Environment=TOKIO_WORKER_THREADS=4",
+      "StandardOutput=append:/home/halo/VenturiWeb-halo1-20261022/.server.log",
+      "StandardError=append:/home/halo/VenturiWeb-halo1-20261022/.server.log"
+    ]
+  },
+  "url": "http://127.0.0.1:8813/",
+  "tunnel_pid": 30012,
+  "project": {
+    "name": "Venturi_Halo1.vvproj",
+    "generation": "1",
+    "unsaved": false,
+    "history": {
+      "labels": [
+        "ImportMedia"
+      ],
+      "position": 1
+    },
+    "sha256": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2",
+    "resolution": {
+      "height": 1080,
+      "width": 1920
+    },
+    "fps": {
+      "den": 1,
+      "num": 24
+    },
+    "linked_clip_count": 2,
+    "pool_media_count": 3
+  },
+  "preview": {
+    "active_programs": 0,
+    "available": true,
+    "backend": "Vulkan",
+    "device_id": "0x7551",
+    "driver": "radv",
+    "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+    "exact_context_resident": false,
+    "frame_rendered": true,
+    "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+    "resident": false,
+    "software": false,
+    "vendor_id": "0x1002"
+  },
+  "archive": {
+    "configured": true,
+    "archive": {
+      "configured": true,
+      "reachable": true,
+      "retention_days": 7
+    },
+    "observed_items": 34,
+    "imported_asset_id": "f3923115fe638051",
+    "imported_bytes": 657278,
+    "imported_sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b",
+    "original_archived": true
+  },
+  "native_library": {
+    "root": "/mnt/madrock-share/madrock-library",
+    "presets_root": "/mnt/madrock-share/madrock-library/presets",
+    "asset_read": {
+      "archived": false,
+      "folder": null,
+      "folders_revision": "absent",
+      "items": [
+        {
+          "archived": false,
+          "can_restore_previous": false,
+          "effective_folder": null,
+          "file_count": 1,
+          "folder": null,
+          "id": "0823179a-6985-4e4d-af73-a7ffdf9c3523",
+          "media_count": 1,
+          "missing_count": 0,
+          "name": "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+          "offline_files": [
+            {
+              "missing": false,
+              "name": "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4"
+            }
+          ],
+          "revision": "54bd353d81ed4812d080285e29462824870f836303792052cd770235aba16fe7"
+        }
+      ],
+      "page": 0,
+      "page_size": 32,
+      "pages": 1,
+      "project_epoch": "1792701104733815486:1",
+      "total": 1
+    },
+    "preset_read": {
+      "archived": false,
+      "items": [],
+      "page": 0,
+      "page_size": 32,
+      "pages": 1,
+      "project_epoch": "1792701104733815486:1",
+      "total": 0
+    },
+    "audio_preset_read": {
+      "compressor_presets": [],
+      "eq_presets": [],
+      "project_epoch": "1792701104733815486:1",
+      "revision": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "publication": "passed in actual Windows browser using rebuilt source fd9bde4",
+    "roundtrip": {
+      "project_sha256": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2",
+      "files": [
+        {
+          "name": "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+          "bytes": 657278,
+          "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+        },
+        {
+          "name": "asset-53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b-ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+          "bytes": 657278,
+          "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+        }
+      ],
+      "asset": {
+        "path": "/mnt/madrock-share/madrock-library/assets/0823179a-6985-4e4d-af73-a7ffdf9c3523.json",
+        "bytes": 860,
+        "revision": "54bd353d81ed4812d080285e29462824870f836303792052cd770235aba16fe7",
+        "keys": [
+          "version",
+          "name",
+          "folder",
+          "payload"
+        ]
+      },
+      "shared_file": {
+        "path": "/mnt/madrock-share/madrock-library/media/53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b/ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+        "bytes": 657278,
+        "sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+      },
+      "service_pid": 84786,
+      "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-11fd31925c23",
+      "binary_sha256": "11fd31925c23e18599e597d70ea02206d24ddb106776293fe83150a6ef10fced",
+      "ds4": "ActiveState=active\nMainPID=58396\n",
+      "library_save_preserved_complete_session": true,
+      "native_import_added_one_media": true,
+      "native_import_preserved_timeline": true,
+      "native_import_one_undo": true,
+      "project_saved": true
+    }
+  },
+  "unit_observation": "ActiveState=active\nMainPID=84786\nResult=success\nMemoryCurrent=106582016\nMemoryPeak=122118144\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+  "ds4_after": "ActiveState=active\nMainPID=58396\n",
+  "protected_halo2": {
+    "8790": {
+      "project_name": "CPU_shared_library_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "5",
+      "history": {
+        "labels": [
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips"
+        ],
+        "position": 5
+      }
+    },
+    "8811": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "unsaved": true,
+      "generation": "1",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "8812": {
+      "project_name": "Venturi_Native_UI.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    },
+    "8814": {
+      "project_name": "Venturi_Workspace.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  },
+  "windows": [
+    "Existing Windows browser, one new work tab53; prior tabs39/47 untouched",
+    "Create project; import one 657278-byte NAS-archived video; Source prepared",
+    "Insert linked video/audio for124frames at24fps; composed preview",
+    "Program playback reached last frame123 / timecode00:00:05:03 naturally; project Saved",
+    "No workstation build/render/server or binary file copy; streaming relay64KiB RAM",
+    "Rebuilt candidate reopens the Saved project; only the owned halo1 browser tab reloads",
+    "Native asset Save on actual CIFS publishes1asset and leaves entire Session unchanged",
+    "Native asset Import adds1independent657278-byte project copy and one ImportMedia Undo entry; exact timeline unchanged; File/Save returnsSaved"
+  ],
+  "screenshot": "halo1-workspace-preview.png",
+  "screenshot_sha256": "e58b59a9053d878a01a6c85a3129a0ed4ff2dc0b497e55c1e35ad6d1e349303d",
+  "remaining": [
+    "Native desktop/Web concurrency and recovery on the CIFS filesystem, plus full F5 acceptance",
+    "F1 Windows mixed animated-lane acceptance and remaining F1-F7/release criteria",
+    "Physical desktop/audio/recording acceptance and final bounded release soak",
+    "Final reboot-enabled delivery; current working unit is transient and not enabled on boot"
+  ],
+  "ledger": "47 done / 43 partial / 2 excluded; unchanged by migration",
+  "initial_runtime": {
+    "artifact": {
+      "status": "passed",
+      "source_commit": "d13567c087175608716cfc18ebbe3b599256044c",
+      "source_binary": "/home/marco/AI-lab/venturi-web/.runtime/vv-web-5615f3825555",
+      "destination": "/home/halo/.local/share/venturi-web/.runtime/vv-web-5615f3825555",
+      "sha256": "5615f382555550d770ef295425288500377a9471107c621463790f5651fd2eac",
+      "size": 77069248,
+      "reused": false
+    },
+    "source_commit": "d13567c087175608716cfc18ebbe3b599256044c",
+    "project": {
+      "name": "Venturi_Halo1.vvproj",
+      "generation": "2",
+      "unsaved": false,
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips"
+        ],
+        "position": 2
+      },
+      "resolution": {
+        "height": 1080,
+        "width": 1920
+      },
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "linked_clip_count": 2
+    },
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    }
+  },
+  "development": {
+    "source_bootstrap": {
+      "status": "passed",
+      "destination": "/home/halo/.cache/venturi-build/source",
+      "commit": "d13567c087175608716cfc18ebbe3b599256044c",
+      "files": 539,
+      "source_bytes": 10582013,
+      "archive_bytes": 11028480,
+      "archive_sha256": "15316625f1adb4847d1d121dbdfc33a1978f97e7b1a1d11858ea880998443954"
+    },
+    "headers": {
+      "phase": "passed",
+      "updated_unix": 1792700058.5988047,
+      "packages": [
+        {
+          "name": "libasound2-dev",
+          "version": "1.2.15.3-1ubuntu1.1"
+        },
+        {
+          "name": "libavutil-dev",
+          "version": "7:8.0.1-3ubuntu2"
+        },
+        {
+          "name": "libswresample-dev",
+          "version": "7:8.0.1-3ubuntu2"
+        },
+        {
+          "name": "libavcodec-dev",
+          "version": "7:8.0.1-3ubuntu2"
+        },
+        {
+          "name": "libavformat-dev",
+          "version": "7:8.0.1-3ubuntu2"
+        },
+        {
+          "name": "libswscale-dev",
+          "version": "7:8.0.1-3ubuntu2"
+        },
+        {
+          "name": "libavfilter-dev",
+          "version": "7:8.0.1-3ubuntu2"
+        },
+        {
+          "name": "libavdevice-dev",
+          "version": "7:8.0.1-3ubuntu2"
+        },
+        {
+          "name": "libvulkan-dev",
+          "version": "1.4.341.0-1"
+        }
+      ],
+      "upgraded": 0,
+      "removed": 0,
+      "ds4_pid": "58396",
+      "unit": "ActiveState=inactive\nMainPID=0\nResult=success\n"
+    },
+    "toolchain": "Existing Rust1.99.1 with matching rustfmt and Clippy added; Node pending",
+    "build_gate": "f5-nas-readonly-stage-gate.json"
+  }
+}

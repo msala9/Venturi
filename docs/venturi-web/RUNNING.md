@@ -1,5 +1,56 @@
 # Running the implemented host
 
+## Current halo1 working instance
+
+After the owner's 2026-10-22 host change, use **http://127.0.0.1:8813/** in the
+existing Windows browser. The hidden SSH tunnel forwards the same port to
+`halo@192.168.1.153`. The server validates its configured Host, so preserve
+port 8813 on both ends. No Windows build, preview server or Linux browser is
+required.
+
+The unprivileged `venturi-web-halo1-nas.service` runs source `fd9bde4` from
+`/home/halo/.local/share/venturi-web/.runtime/vv-web-11fd31925c23` and uses
+`/home/halo/VenturiWeb-halo1-20261022` for projects. Native library arguments
+are `--assets-root /mnt/madrock-share/madrock-library --presets-root
+/mnt/madrock-share/madrock-library/presets`; ds4 remains on local port 8787.
+The existing NAS mount is reused. Only multimedia and Vulkan userspace
+dependencies were added, with zero existing package upgrades/removals.
+
+The service caps CPU at eight cores and memory at 4 GiB, disables swap and uses
+low CPU/I/O priority and OOMScoreAdjust 1000. GPU access retains the shared
+nonblocking `/tmp/HALO_BENCHMARK.lock`. This separate working editor has no
+qualification deadline, no automatic restart and no boot enablement or linger
+change; save before deliberately stopping it. Its transient service survives
+SSH disconnection but must be recreated after a host reboot. Restarting it
+does not restore its Undo history. Preserve the older halo2 editors and their
+unsaved work; the migration does not transfer their live Undo chains.
+
+The existing ds4 archive, real archived-video import, linked timeline insertion,
+R9700 preview and Save were checked in Windows. Actual native asset publication
+and reimport also pass on CIFS: the shared and independent project copies have
+identical SHA-256 bytes, library Save preserves the entire Session and Import
+adds one Undo entry without changing the timeline. Native/Web concurrent
+coordination on CIFS remains an explicit acceptance item.
+
+Build sources are separately bootstrapped at
+`/home/halo/.cache/venturi-build/source`, with Cargo outputs in the adjacent
+`target/`. The transfer contains 539 tracked source files (about 10 MiB), the
+required native icon and embedded VAD model; it excludes project media,
+evidence, Git history and build caches. The nine FFmpeg/ALSA/Vulkan development
+packages are installed without upgrading or removing existing packages.
+Use the cached Rust 1.99.1 toolchain, with matching rustfmt/Clippy components.
+Node is not yet bootstrapped on halo1; unchanged JavaScript gates remain the
+previous qualified proofs. Do not launch a Windows build as a workaround.
+
+The initial immutable halo1 binary `vv-web-5615f3825555` (source `d13567c`) is
+retained for rollback, but its native asset Save has the diagnosed CIFS staging
+timestamp failure. The earlier halo2 candidates remain preserved separately.
+Before replacing the current halo1 process, inspect its Saved/Unsaved state,
+history and client drafts. Its source bootstrap is not a project migration:
+the earlier dirty halo2 projects and live Undo chains were never copied.
+
+## General host setup
+
 Venturi Web currently provides native project/timeline editing over loopback.
 It is an incremental editor with exact composed GPU frames and Source playback
 with audio, stills, thumbnails and waveforms. Inspector properties, scalar

@@ -4,6 +4,23 @@
 
 ## Active completion objective
 
+The owner moved new execution to free halo1 on 2026-10-22 because halo2 is
+shared with H3 work. The current halo1 runtime is **http://127.0.0.1:8813/**,
+source `fd9bde4`, with a separate Saved `Venturi_Halo1.vvproj`. It uses the
+existing NAS root `/mnt/madrock-share/madrock-library` for native assets,
+`presets/` for presets and local ds4 on 8787 for the shared archive. Windows
+created the project, imported a real archived video, inserted linked video/
+audio, displayed a composed R9700 preview and saved. The CIFS staging timestamp
+fix passes 45 asset-job cases, formatting, all-target Web Clippy and the embedded
+build entirely on halo1. Windows then publishes one native asset on the actual
+NAS without changing the complete Session, imports an independent exact-byte
+copy with one Undo entry, preserves the timeline and saves. See
+`evidence/halo1-workspace-migration.json` and
+`evidence/f5-nas-readonly-stage-gate.json`. Native/Web concurrent coordination
+on CIFS and the rest of F5 still require their own acceptance. Existing
+halo2 editors and dirty histories remain preserved. This migration does not
+advance the functional ledger or imply full F1-F7 completion.
+
 The connected verified-take implementation and Windows/R9700 workflow pass;
 see `evidence/f6-verified-take-gate.json` and
 `evidence/f6-verified-take-workflow.json`.
@@ -41,7 +58,7 @@ qualification service is stopped Saved. Canonical NAS/native-Web filesystem
 coordination and physical desktop acceptance remain open; F5 stays partial.
 This increment is committed and qualified separately from protected port8814.
 
-The updated working candidate is delivered at **http://127.0.0.1:8814/**,
+The previous halo2 working candidate remains at **http://127.0.0.1:8814/**,
 source `3952711`; see `evidence/current-workspace-delivery.json`. The enabled
 resource-limited halo2 service serves a separate Saved project, active R9700
 preview, native Library and the configured 33-item ds4 HTTP archive. Actual

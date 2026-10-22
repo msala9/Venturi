@@ -6,6 +6,32 @@ and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
 
 ## Goal and baseline
 
+### Current execution host — halo1
+
+The owner moved new work to free halo1 on 2026-10-22 because halo2 is shared
+with an H3 agent. The working runtime now serves Windows
+**http://127.0.0.1:8813/** through an SSH tunnel to halo1's loopback port 8813.
+Source `fd9bde4` runs as unprivileged `halo` in `venturi-web-halo1-nas.service`,
+using `/home/halo/VenturiWeb-halo1-20261022`. It uses the existing CIFS mount
+`/mnt/madrock-share/madrock-library` for native assets and its `presets/`
+subdirectory for presets, and the existing local ds4 API on 8787 for archive
+media. The existing halo2 editors below are preserved historical deliveries;
+port 8813 on Windows now targets halo1, not the stopped halo2 qualification.
+Use halo1 for subsequent bounded build/render/qualification work. Do not
+start another NAS mount or install browsers on either server.
+
+R9700 Vulkan discovery, real archived-video import, Source preparation,
+timeline insertion, composed preview and project Save pass in the existing
+Windows browser. Source `fd9bde4` also fixes delayed CIFS writer timestamps:
+close the staged writer, pin the same file read-only and verify its full SHA
+before the isolated probe. The bounded halo1 gate passes 45 asset-job cases,
+formatting, all-target Web Clippy and the embedded build. Actual Windows native
+asset publication on the NAS leaves the complete Session unchanged; importing
+that asset creates an independent exact-byte project copy with one Undo entry,
+preserves the timeline and saves. See `evidence/halo1-workspace-migration.json`
+and `evidence/f5-nas-readonly-stage-gate.json`. Native/Web interprocess safety
+on CIFS and the remaining full F5 acceptance still need qualification.
+
 Complete all remaining in-scope capabilities against the original native GUI,
 the UX specification and M7 release criteria. FUNCTIONAL_PARITY.csv
 started with 42 done and 48 partial capabilities. The current accepted source
@@ -28,14 +54,14 @@ currently code df50859. Do not disturb the protected port-8790 editor or its
 five unsaved MoveClips operations and Undo history. Re-read every live editor's
 state before deployment; the owner may have begun new work in the candidate.
 
-The updated working delivery is now **http://127.0.0.1:8814/**, source `3952711`;
+The previous halo2 working delivery remains **http://127.0.0.1:8814/**, source `3952711`;
 see `evidence/current-workspace-delivery.json`. Its enabled
 `venturi-web-current.service` uses `/home/marco/VenturiWeb-current-20261022` and
 the immutable qualified binary. The actual Windows page has a completed R9700
 preview, compact Library and the existing ds4 HTTP archive (33 items observed).
 Preserve this editor and its browser tab alongside 8790/8811/8812. Read all live
-sessions and preserve client drafts before any future deployment. Use isolated
-port8813 for qualification. The full F1–F7 completion scope remains unchanged.
+sessions and preserve client drafts before any future deployment. Use a separate
+unused port for qualification. The full F1–F7 completion scope remains unchanged.
 
 ## Current owner priority — native UI and UX
 
@@ -53,7 +79,7 @@ side drawers without horizontal page overflow. Preserve accessible controls,
 keyboard actions, drafts and native command ownership. Qualify the actual
 Windows browser at desktop sizes and its observed 544-pixel side-panel width,
 then guard any delivered-service upgrade against unsaved work. Build/render
-checks remain on bounded halo2; no new browser installation or local server.
+checks now move to bounded halo1; no new browser installation or local server.
 
 
 The native UI block is delivered at **http://127.0.0.1:8812/**, code
@@ -183,6 +209,18 @@ the authoritative 14 TB library arrangement. Confirm the applicable service or
 mount on each host; never assume a halo1 mount exists on halo2. Use explicit small
 assets and indexed API access, not archive scans or unsolicited mount changes.
 
+The owner explicitly selected `//192.168.1.200/shared/madrock-library` as the
+common root for ds4 media and native Venturi assets/presets on 2026-10-22.
+Use `L=/mnt/madrock-share/madrock-library` on hosts with that mounted share,
+`VENTURI_LIBRARY_ROOT=L` for desktop and Web `--assets-root L
+--presets-root L/presets`. Preserve the existing ds4 monthly media layout and
+service. Halo2 currently has no mount/client credential handle. The owner then
+requested moving work to free halo1 because halo2 is shared with an H3 agent.
+Halo1 already mounts the authoritative share; use that access for F5 rather than
+adding a second mount. Its Venturi multimedia runtime is now prepared.
+The filesystem's actual locking/atomic publication must be qualified before
+calling F5 complete. Do not substitute a separate library root or disturb ds4.
+
 Source `2cc447d` completes the connected catalog coordination/relink increment:
 compatible native desktop/web locks, stale-record checks, native recovery,
 media reference retention, desktop Refresh/root configuration, and cancellable
@@ -291,7 +329,7 @@ or close the remaining F1-F7 goal.
 
 Finish M7 from IMPLEMENTATION_PLAN.md: scoped security/threat-model and license
 review, recoverability, deployment/rollback documentation and the bounded
-two-hour editing soak on halo2. Reuse the final working candidate and realistic
+two-hour editing soak on halo1. Reuse the final working candidate and realistic
 project; no workstation soak, resource pressure/filling tests or foreign-process
 crash experiments. Preserve all dirty sessions. Deliver an accessible verified
 version, source commit, running instructions, saved project and output artifact.
@@ -317,7 +355,11 @@ block is difficult or requires outside input.
 
 ## Resource and session rules
 
-All builds, renders, heavy tests and prolonged qualification run on halo2, one
+The owner's latest direction is to move work to free halo1 and reuse its NAS
+mount, avoiding contention with the H3 agent on halo2. The runtime is now ready;
+prepare build prerequisites there before starting new heavy work. Preserve all earlier
+halo2 editor services, projects, Undo histories and qualified artifacts.
+All builds, renders, heavy tests and prolonged qualification run remotely, one
 workload at a time. Check at least 8 GiB memory headroom before heavy work. Use
 up to eight CPUs (owner authorization on 2026-10-22), at most 4 GiB RAM, no swap,
 OOMScoreAdjust=1000, low CPU/I/O priority,

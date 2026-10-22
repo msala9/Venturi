@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {timelineClipSelection,frameToX,RULER} from '../js/timeline/geometry.js';
+import {timelineClipSelection,frameToX,RULER,timelineLayout} from '../js/timeline/geometry.js';
 import {createInput,timelineSelectionAction,timelineSelectionFocus} from '../js/timeline/input.js';
 
 const sourceTimeline=()=>({id:'timeline',revision:'revision',fps:{num:24,den:1},markers:[],gaps:[],transition_defaults:[{kind:'Push',duration:4,direction:'Left',ease:'None',curve:0.5}],tracks:[
@@ -17,7 +17,7 @@ function harness(options={}){
   const canvas={ownerDocument:document,style:{},clientWidth:1000,clientHeight:400,getBoundingClientRect:()=>({left:0,top:0,width:1000,height:400}),addEventListener:(key,fn)=>handlers.set(key,fn),removeEventListener:key=>handlers.delete(key),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
   const view={selection:[],selectedGap:null,transitionSelection:null,playhead:10,origin:2,scale:240,scrollY:3,snap:false,tool:'move',retimeVisible:new Set(),draft:null,lasso:null};
   const input=createInput({canvas,getTimeline:()=>timeline,getGapContext:()=>context,getPresetContext:()=>({...context,timeline_id:timeline.id,revision:timeline.revision}),view,invalidate(){},onSelect(){selections++;},onSeek:()=>seeks.push(view.playhead),onCommand:async operation=>{commands.push(operation);return options.commit?.(operation);},onNavigationIntent:()=>options.intent?.(),onNotice(){},canNavigate:()=>navigable,canEdit:()=>editable});
-  return {input,view,handlers,commands,seeks,captures,get timeline(){return timeline;},selections:()=>selections,setTimeline:value=>timeline=value,setContext:value=>context=value,setModal:value=>modal=value,setNavigable:value=>navigable=value,setEditable:value=>editable=value,pointer(type,frame){return handlers.get(type)({clientX:frameToX(frame,view,timeline.fps),clientY:RULER+30,button:0,buttons:1,pointerId:1,preventDefault(){}});},key(event){handlers.get('keydown')(event);},destroy(){input.destroy();globalThis.window=original;}};
+  return {input,view,handlers,commands,seeks,captures,get timeline(){return timeline;},selections:()=>selections,setTimeline:value=>timeline=value,setContext:value=>context=value,setModal:value=>modal=value,setNavigable:value=>navigable=value,setEditable:value=>editable=value,pointer(type,frame){return handlers.get(type)({clientX:frameToX(frame,view,timeline.fps),clientY:timelineLayout(timeline,view).trackTop(0)+30,button:0,buttons:1,pointerId:1,preventDefault(){}});},key(event){handlers.get('keydown')(event);},destroy(){input.destroy();globalThis.window=original;}};
 }
 
 test('native all-selection covers unlocked lanes including muted, disabled, frozen and generator clips in native ID order',()=>{

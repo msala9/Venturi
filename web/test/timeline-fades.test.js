@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {fadeHandles,fadeDraft,frameToX,hitTest,RULER,clipSelectionAnchor} from '../js/timeline/geometry.js';
+import {fadeHandles,fadeDraft,frameToX,hitTest,RULER,clipSelectionAnchor,timelineLayout} from '../js/timeline/geometry.js';
 import {createInput} from '../js/timeline/input.js';
 
 function fixture(){
@@ -47,7 +47,8 @@ test('video and audio fade drags commit one local native property edit only at r
     assert.deepEqual(s.view.selection,['9007199254740995']);assert.deepEqual(s.view.selectionAnchor,anchor);
     await s.handlers.get('pointerup')(s.event(37));
     assert.deepEqual(s.commands,[{kind:'set_properties',clip_id:s.clip.id,patch:{fade_in:17}}]);assert.equal(s.view.draft,null);
-    s.handlers.get('pointerdown')(s.event(100,RULER+62+14));s.handlers.get('pointermove')(s.event(105,RULER+62+14));await s.handlers.get('pointerup')(s.event(105,RULER+62+14));
+    const audioY=timelineLayout(s.timeline,s.view).trackTop(1)+14;
+    s.handlers.get('pointerdown')(s.event(100,audioY));s.handlers.get('pointermove')(s.event(105,audioY));await s.handlers.get('pointerup')(s.event(105,audioY));
     assert.deepEqual(s.commands[1],{kind:'set_properties',clip_id:'9007199254740995',patch:{fade_out:15}});
   }finally{s.destroy();}
 });

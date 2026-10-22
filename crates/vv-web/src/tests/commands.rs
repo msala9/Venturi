@@ -1696,6 +1696,345 @@ fn safe_move_rejects_overlap_and_restores_in_one_undo() {
     apply(&mut s, id, &Operation::Undo).unwrap();
     assert_eq!(s.timeline_revision(id), before);
 }
+
+fn new_track_move_fixture() -> (Session, TimelineId, Vec<TrackMove>) {
+    let (mut session, id, _) = close_gap_fixture(false);
+    let video = &mut session.project.timelines[id].tracks[0];
+    let first = video
+        .clips
+        .iter_mut()
+        .find(|clip| clip.linked_group.is_some())
+        .unwrap();
+    first.id = ClipId(9_007_199_254_740_993);
+    first.freeze = Some(8);
+    let first_id = first.id;
+    let last = video.clips.last().unwrap().id;
+    let audio = session.project.timelines[id].tracks[1]
+        .clips
+        .last()
+        .unwrap()
+        .id;
+    let moves = vec![
+        TrackMove {
+            clip_id: first_id.0.to_string(),
+            to_track: MoveTrack::New { depth: 2 },
+            to_start_frame: 72,
+        },
+        TrackMove {
+            clip_id: audio.0.to_string(),
+            to_track: MoveTrack::New { depth: 2 },
+            to_start_frame: 80,
+        },
+        TrackMove {
+            clip_id: last.0.to_string(),
+            to_track: MoveTrack::New { depth: 1 },
+            to_start_frame: 120,
+        },
+    ];
+    (session, id, moves)
+}
+
+#[test]
+fn move_clips_creates_native_role_depths_atomically_with_exact_undo_redo() {
+    let (mut session, id, moves) = new_track_move_fixture();
+    let before = session.project.clone();
+    let steps = session.history.position();
+    let generation = session.history.generation();
+    let mut oracle = Session::default();
+    oracle.project = before.clone();
+    for kind in [
+        TrackKind::Video,
+        TrackKind::Video,
+        TrackKind::Audio,
+        TrackKind::Audio,
+    ] {
+        edit::add_track(&mut oracle.project, &mut oracle.history, id, kind);
+    }
+    let native_moves = moves
+        .iter()
+        .enumerate()
+        .map(|(index, movement)| {
+            let (from, clip_id) = clip_ref(&before.timelines[id], &movement.clip_id).unwrap();
+            (clip_id, from, [4, 6, 3][index], movement.to_start_frame)
+        })
+        .collect();
+    edit::move_clips(&mut oracle.project, &mut oracle.history, id, native_moves);
+    oracle.sync_timeline_media(id);
+    apply(
+        &mut session,
+        id,
+        &Operation::MoveClips {
+            new_video_tracks: 2,
+            new_audio_tracks: 2,
+            moves: moves.clone(),
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(session.history.generation(), generation + 1);
+    assert_eq!(
+        session.history.labels().last(),
+        Some(CommandLabel::MoveClips)
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project).unwrap(),
+        serde_json::to_value(&oracle.project).unwrap()
+    );
+    assert!(session.project.timelines[id].tracks[5].clips.is_empty());
+    assert_eq!(
+        session.project.timelines[id].tracks[4].clips[0].id.0,
+        9_007_199_254_740_993
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[4].clips[0].freeze,
+        Some(8)
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id].tracks[2]).unwrap(),
+        serde_json::to_value(&before.timelines[id].tracks[2]).unwrap()
+    );
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    oracle.history.go_to(&mut oracle.project, 0);
+    oracle.sync_timeline_media(id);
+    assert_eq!(
+        serde_json::to_value(&session.project).unwrap(),
+        serde_json::to_value(&oracle.project).unwrap()
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        serde_json::to_value(&before.timelines[id]).unwrap()
+    );
+    let unchanged = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    let noop = moves
+        .iter()
+        .map(|movement| {
+            let (track, clip_id) =
+                clip_ref(&session.project.timelines[id], &movement.clip_id).unwrap();
+            TrackMove {
+                clip_id: movement.clip_id.clone(),
+                to_track: MoveTrack::Existing {
+                    track_id: track.to_string(),
+                },
+                to_start_frame: session.project.timelines[id]
+                    .clip(track, clip_id)
+                    .unwrap()
+                    .timeline_start,
+            }
+        })
+        .collect();
+    apply(
+        &mut session,
+        id,
+        &Operation::MoveClips {
+            new_video_tracks: 0,
+            new_audio_tracks: 0,
+            moves: noop,
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.generation(), generation);
+    assert_eq!(session.history.position(), steps);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), unchanged);
+    apply(&mut session, id, &Operation::Redo).unwrap();
+    let end = oracle.history.labels().count();
+    oracle.history.go_to(&mut oracle.project, end);
+    oracle.sync_timeline_media(id);
+    assert_eq!(
+        serde_json::to_value(&session.project).unwrap(),
+        serde_json::to_value(&oracle.project).unwrap()
+    );
+}
+
+#[test]
+fn move_clips_rejects_invalid_late_destinations_and_linked_plans_before_any_add_track() {
+    let (mut session, id, moves) = new_track_move_fixture();
+    let operation = |moves, video, audio| Operation::MoveClips {
+        new_video_tracks: video,
+        new_audio_tracks: audio,
+        moves,
+    };
+    let mut cases = Vec::new();
+    let mut bad = moves.clone();
+    bad[2].to_track = MoveTrack::Existing {
+        track_id: "2".into(),
+    };
+    cases.push((operation(bad, 2, 2), "TRACK_LOCKED"));
+    let mut bad = moves.clone();
+    bad[2].to_track = MoveTrack::Existing {
+        track_id: "1".into(),
+    };
+    cases.push((operation(bad, 2, 2), "INVALID_OPERATION"));
+    let mut bad = moves.clone();
+    bad[1].to_start_frame += 1;
+    cases.push((operation(bad, 2, 2), "INVALID_OPERATION"));
+    let mut bad = moves.clone();
+    bad[2].to_track = MoveTrack::New { depth: 0 };
+    cases.push((operation(bad, 2, 2), "INVALID_OPERATION"));
+    let mut bad = moves.clone();
+    bad[2].to_track = MoveTrack::New { depth: 3 };
+    cases.push((operation(bad, 2, 2), "INVALID_OPERATION"));
+    let mut bad = moves.clone();
+    bad[2].clip_id = format!("0{}", bad[0].clip_id);
+    cases.push((operation(bad, 2, 2), "INVALID_OPERATION"));
+    let mut bad = moves.clone();
+    bad.remove(1);
+    cases.push((operation(bad, 2, 0), "INVALID_OPERATION"));
+    let mut bad = moves.clone();
+    bad[2].to_start_frame = -1;
+    cases.push((operation(bad, 2, 2), "INVALID_OPERATION"));
+    let mut bad = moves.clone();
+    bad[2].to_track = MoveTrack::New { depth: 2 };
+    bad[2].to_start_frame = 75;
+    cases.push((operation(bad, 2, 2), "OVERLAP"));
+    cases.push((operation(moves.clone(), 3, 2), "INVALID_OPERATION"));
+    cases.push((operation(moves.clone(), usize::MAX, 2), "INVALID_OPERATION"));
+    cases.push((operation(moves.clone(), 126, 2), "INVALID_OPERATION"));
+    for (request, code) in cases {
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let generation = session.history.generation();
+        assert_eq!(
+            apply(&mut session, id, &request).unwrap_err().1,
+            code,
+            "{request:?}"
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            before,
+            "{request:?}"
+        );
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.history.generation(), generation);
+    }
+    session.project.timelines[id].tracks[1].locked = true;
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    assert_eq!(
+        apply(&mut session, id, &operation(moves, 2, 2))
+            .unwrap_err()
+            .1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+}
+
+#[test]
+fn move_clips_strict_dto_and_existing_collision_preserve_legacy_safe_move() {
+    let request = serde_json::json!({"kind":"move_clips","new_video_tracks":1,"new_audio_tracks":0,
+        "moves":[{"clip_id":"1","to_track":{"kind":"new","depth":1},"to_start_frame":0}]});
+    assert_eq!(
+        serde_json::to_value(serde_json::from_value::<Operation>(request.clone()).unwrap())
+            .unwrap(),
+        request
+    );
+    let mut invalid = Vec::new();
+    for destination in [
+        serde_json::json!({"kind":"new","depth":0.5}),
+        serde_json::json!({"kind":"new","depth":-1}),
+        serde_json::json!({"kind":"new","depth":1,"audio":true}),
+        serde_json::json!({"kind":"existing","track_id":"0","depth":1}),
+        serde_json::json!({"kind":"new"}),
+    ] {
+        let mut bad = request.clone();
+        bad["moves"][0]["to_track"] = destination;
+        invalid.push(bad);
+    }
+    let mut bad = request.clone();
+    bad["new_audio_tracks"] = serde_json::json!(-1);
+    invalid.push(bad);
+    for bad in invalid {
+        assert!(
+            serde_json::from_value::<Operation>(bad.clone()).is_err(),
+            "{bad}"
+        );
+    }
+    let (mut session, id, clips) = fixture();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    let movement = TrackMove {
+        clip_id: clips[0].0.to_string(),
+        to_track: MoveTrack::Existing {
+            track_id: "0".into(),
+        },
+        to_start_frame: 48,
+    };
+    assert_eq!(
+        apply(
+            &mut session,
+            id,
+            &Operation::MoveClips {
+                new_video_tracks: 0,
+                new_audio_tracks: 0,
+                moves: vec![movement],
+            }
+        )
+        .unwrap_err()
+        .1,
+        "OVERLAP"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+    let legacy = serde_json::json!({"kind":"safe_move","moves":[{"clip_id":clips[0].0.to_string(),"to_track":"0","to_start_frame":24}]});
+    let operation = serde_json::from_value::<Operation>(legacy.clone()).unwrap();
+    assert_eq!(serde_json::to_value(&operation).unwrap(), legacy);
+    apply(&mut session, id, &operation).unwrap();
+    assert_eq!(session.project.timelines[id].tracks.len(), 2);
+    assert_eq!(
+        session.project.timelines[id].tracks[0]
+            .clip(clips[0])
+            .unwrap()
+            .timeline_start,
+        24
+    );
+    let (mut session, id, moves) = new_track_move_fixture();
+    let first = moves[0].clip_id.clone();
+    let audio = moves[1].clip_id.clone();
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let steps = session.history.position();
+    apply(
+        &mut session,
+        id,
+        &Operation::MoveClips {
+            new_video_tracks: 1,
+            new_audio_tracks: 0,
+            moves: vec![
+                TrackMove {
+                    clip_id: first.clone(),
+                    to_track: MoveTrack::New { depth: 1 },
+                    to_start_frame: 36,
+                },
+                TrackMove {
+                    clip_id: audio,
+                    to_track: MoveTrack::Existing {
+                        track_id: "1".into(),
+                    },
+                    to_start_frame: 44,
+                },
+            ],
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(session.project.timelines[id].tracks.len(), 4);
+    assert_eq!(
+        session.project.timelines[id].tracks[3].clips[0]
+            .id
+            .0
+            .to_string(),
+        first
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[3].clips[0].timeline_start,
+        36
+    );
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+}
 #[test]
 fn trim_cannot_overwrite_neighbor_and_split_delete_roundtrip() {
     let (mut s, id, clips) = fixture();

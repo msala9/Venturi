@@ -14,6 +14,34 @@ Begin F1 with missing native multi-selection Inspector semantics and connected
 timeline interaction gaps. Report delivered functions, remaining defects and
 actual deployment state without subjective percentages.
 
+## F1 implementation — integrated qualification in progress
+
+The selected Inspector now follows native per-property target and clock rules:
+Position deltas, absolute scalar/gain edits, constant versus animated tracks,
+row diamonds, full-track previous/next metadata, resets and independent Flip
+axes. Viewer transform handles use the same multi-selection bridge. Dedicated
+scalar, value and cross-parameter key editors reject detached or obsolete
+contexts and recheck live editing permission before dispatch.
+
+Timeline paint, hit testing, Shift/marquee and effect drops share native reversed
+video/ascending audio rows, separate scroll panes, a divider and row zoom.
+Header flags retain native track IDs. Existing/new-track group movement keeps
+opposite audio/video row offsets, native group frame bounds, ten-pixel endpoint
+snapping and locked-destination fallback. New-track creation and linked movement
+preflight atomically and produce one Undo. Safe edits still reject overwrite.
+
+One bounded cached halo2 gate passes 924 JavaScript tests, 443 vv-web Rust tests,
+27 native Inspector/timeline oracle tests, vv-web all-target Clippy with warnings
+denied, and the embedded native build. These are implementation checks, not full
+F1 acceptance or a production-service upgrade. The existing delivered editor
+and protected unsaved main remain unchanged. Browser/save/reopen qualification
+of this block is next, on an isolated root and port.
+
+F1 residuals remain explicit: native key-editor ruler/playhead navigation,
+root-timeline view memory, painted pane scrollbars/inertial scrolling and the
+applicable physical pointer/DPI/500-clip acceptance. No ledger row is newly
+closed by the implementation gate alone.
+
 ## Accepted usable workflow baseline
 
 Blocks A (editing/save), B (playback/export) and C (accessible handover) are

@@ -10,12 +10,17 @@ const rotate=(point,degrees)=>{
 
 export function viewerTransformIdentity(context){
   if(!context)return null;
-  return JSON.stringify([context.project_epoch,context.if_generation,context.timeline_id,context.revision,context.frame,context.clip_id,context.detail?.source_frame]);
+  return JSON.stringify([context.project_epoch,context.if_generation,context.timeline_id,context.revision,context.frame,context.clip_id,context.detail?.source_frame,context.clip_ids,Array.isArray(context.selection)?[...context.selection].sort():context.selection ?? null]);
 }
 
 export function viewerTransformAvailability(context){
   if(!context || !context.preview_current)return 'Wait for a current stopped Program frame';
-  if(!context.clip_id || context.detail?.clip_id!==context.clip_id)return 'Select one video clip';
+  if(!context.clip_id || context.detail?.clip_id!==context.clip_id)return 'Read the first selected video clip';
+  if(context.clip_ids!==undefined){
+    const ids=context.clip_ids,selection=context.selection;
+    if(!Array.isArray(ids) || !ids.length || ids.length>4096 || ids.some(id=>typeof id!=='string' || !id) || new Set(ids).size!==ids.length || ids[0]!==context.clip_id || !Array.isArray(selection) || selection.some(id=>typeof id!=='string' || !id) || new Set(selection).size!==selection.length)return 'Read the current selected video targets';
+    const selected=new Set(selection);if(ids.some(id=>!selected.has(id)))return 'Read the current selected video targets';
+  }
   if(!context.detail.video || context.detail.locked)return 'Select an unlocked video clip';
   if(context.detail.timeline_frame!==context.frame || !Number.isSafeInteger(context.detail.source_frame))return 'Read native clip properties at the current frame';
   if(!dimensions(context.timeline_size) || !dimensions(context.detail.source_size))return 'Native source and timeline dimensions are required for viewer handles';
@@ -122,7 +127,9 @@ export function viewerTransformDraft(context,viewport,handle,startPoint,point,{f
   if(raw.some(value=>!Number.isFinite(value)))throw Error('The gesture exceeds native transform limits');
   const values=raw.map((value,axis)=>Math.fround(Math.max(Math.fround(metadata[axis].min),Math.min(Math.fround(metadata[axis].max),value))));
   if(handle.kind==='move')transform.position=values;else if(handle.kind==='anchor')transform.anchor=values;else if(handle.kind==='rotate')transform.rotation=values[0];else if(handle.kind==='crop')transform.crop[['CropLeft','CropTop','CropRight','CropBottom'].indexOf(parameters[0])]=values[0];else transform.zoom=values;
-  return {transform,operation:{kind:'edit_viewer_transform',clip_id:context.clip_id,timeline_frame:context.frame,transform:parameters.map((param,axis)=>({param,value:values[axis]}))},geometry:viewerTransformGeometry(context,viewport,transform)};
+  const edits=parameters.map((param,axis)=>({param,value:values[axis]}));
+  const operation=context.clip_ids?{kind:'edit_inspector_selection',clip_ids:[...context.clip_ids],timeline_frame:context.frame,edit:{action:'transform',parameters:edits}}:{kind:'edit_viewer_transform',clip_id:context.clip_id,timeline_frame:context.frame,transform:edits};
+  return {transform,operation,geometry:viewerTransformGeometry(context,viewport,transform)};
 }
 
 export function createViewerTransformGesture({getContext,getViewport,canCommit,commit,onGhost,notice}){
@@ -155,7 +162,7 @@ export function createViewerTransformGesture({getContext,getViewport,canCommit,c
     async end(point,options){
       if(!drag)return null;
       const draft=move(point,options);if(!draft)return null;
-      const context=drag.context,changed=draft.operation.transform.some(parameter=>parameter.value!==Math.fround(context.detail.transform.find(value=>value.param===parameter.param).value));
+      const context=drag.context,parameters=draft.operation.edit?.parameters || draft.operation.transform,changed=parameters.some(parameter=>parameter.value!==Math.fround(context.detail.transform.find(value=>value.param===parameter.param).value));
       if(!changed){cancel();return null;}
       pending=true;drag=null;onGhost(null);
       try{return await commit(draft.operation);}

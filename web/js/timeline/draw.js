@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons } from "./geometry.js";
 export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
@@ -22,27 +22,30 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
     ctx.fillRect(0, 0, width, height);
     const timeline = getTimeline();
     if (!timeline) return;
+    view.viewportHeight=height;
+    const layout=timelineLayout(timeline,view,height),rowHeight=layout.rowHeight;
+    view.videoScroll=layout.videoScroll;view.audioScroll=layout.audioScroll;
     const gap=selectedGap(timeline,view);
     const [first, last] = visibleRange(width, view, timeline.fps);
     ctx.font = '11px "Segoe UI", sans-serif';
     ctx.textBaseline = "middle";
-    for (const [index, track] of timeline.tracks.entries()) {
-      const top = RULER + index * TRACK - view.scrollY;
-      if (top + TRACK < RULER || top > height) continue;
+    for (const index of layout.rowOrder) {
+      const track=timeline.tracks[index],top=layout.trackTop(index),pane=layout.pane(index);
+      if (top + rowHeight <= pane.top || top >= pane.bottom) continue;
       ctx.save();
       ctx.beginPath();
-      ctx.rect(0, RULER, width, height - RULER);
+      ctx.rect(0, pane.top, width, pane.bottom-pane.top);
       ctx.clip();
       ctx.fillStyle = color("--surface");
-      ctx.fillRect(0, top, width, TRACK - 1);
+      ctx.fillRect(0, top, width, rowHeight - 1);
       ctx.save();
       ctx.beginPath();
-      ctx.rect(HEADER, top, width - HEADER, TRACK);
+      ctx.rect(HEADER, top, width - HEADER, rowHeight);
       ctx.clip();
       if(gap?.track_id===track.id){
         const left=frameToX(gap.start_frame,view,timeline.fps),right=frameToX(gap.start_frame+gap.length_frames,view,timeline.fps);
-        ctx.fillStyle=color('--raised');ctx.fillRect(left+1,top+7,Math.max(0,right-left-2),TRACK-14);
-        ctx.strokeStyle=color('--primary');ctx.lineWidth=2;ctx.strokeRect(left+1,top+7,Math.max(0,right-left-2),TRACK-14);ctx.lineWidth=1;
+        ctx.fillStyle=color('--raised');ctx.fillRect(left+1,top+7,Math.max(0,right-left-2),rowHeight-14);
+        ctx.strokeStyle=color('--primary');ctx.lineWidth=2;ctx.strokeRect(left+1,top+7,Math.max(0,right-left-2),rowHeight-14);ctx.lineWidth=1;
       }
       const speedStrips=new Map(retimeStrips(track,view,timeline.fps,width).map(strip=>[strip.clip_id,strip])),speedIds=new Set(speedStrips.keys());
       for (const clip of track.clips) {
@@ -52,29 +55,29 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         )
           continue;
         const x = frameToX(clip.start_frame, view, timeline.fps),
-          right = frameToX(
+          right = Math.max(x+2,frameToX(
             clip.start_frame + clip.length_frames,
             view,
             timeline.fps,
-          );
+          ));
         ctx.fillStyle = clip.display_rgb ? `rgb(${clip.display_rgb.join(",")})` : track.kind === "audio" ? "#285247" : "#383554";
-        ctx.fillRect(x + 1, top + 7, right - x - 2, TRACK - 14);
+        ctx.fillRect(x + 1, top + 2, Math.max(1,right-x-2), rowHeight - 4);
         ctx.strokeStyle = view.selection.includes(clip.id)
           ? color("--primary")
           : color("--border");
-        ctx.strokeRect(x + 1.5, top + 7.5, right - x - 3, TRACK - 15);
+        ctx.strokeRect(x + 0.5, top + 2.5, Math.max(2,right-x)-1, rowHeight - 5);
         ctx.fillStyle = color("--violet");
-        if (clip.transition_in) ctx.fillRect(x+2,top+8,Math.min(right-x-4,clip.transition_in.duration*view.scale*timeline.fps.den/timeline.fps.num),3);
-        if (clip.transition_out) {const span=Math.min(right-x-4,clip.transition_out.duration*view.scale*timeline.fps.den/timeline.fps.num);ctx.fillRect(right-span-2,top+8,span,3);}
-        if (clip.disabled) {ctx.fillStyle="#00000088";ctx.fillRect(x+2,top+8,right-x-4,TRACK-16);}
+        if (clip.transition_in) ctx.fillRect(x+2,top+8,Math.min(Math.max(0,right-x-4),clip.transition_in.duration*view.scale*timeline.fps.den/timeline.fps.num),3);
+        if (clip.transition_out) {const span=Math.min(Math.max(0,right-x-4),clip.transition_out.duration*view.scale*timeline.fps.den/timeline.fps.num);ctx.fillRect(right-span-2,top+8,span,3);}
+        if (clip.disabled) {ctx.fillStyle="#00000088";ctx.fillRect(x+2,top+8,Math.max(0,right-x-4),rowHeight-16);}
         ctx.save();
         ctx.beginPath();
-        ctx.rect(x + 5, top + 7, Math.max(0, right - x - 10), TRACK - 14);
+        ctx.rect(x + 5, top + 7, Math.max(0, right - x - 10), rowHeight - 14);
         ctx.clip();
         const asset = getAssets().get(clip.media_id);
         if (asset?.thumbnail && track.kind === "video") {
           ctx.globalAlpha = 0.35;
-          ctx.drawImage(asset.thumbnail, x + 2, top + 8, Math.min(right - x - 4, 80), TRACK - 16);
+          ctx.drawImage(asset.thumbnail, x + 2, top + 8, Math.min(right - x - 4, 80), rowHeight - 16);
           ctx.globalAlpha = 1;
         }
         if (asset?.waveform && track.kind === "audio") {
@@ -116,21 +119,21 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           if(!handle.frames && !fading && !view.selection.includes(clip.id) && view.hoverFadeClip!==clip.id)continue;
           const active=fading && view.draft.edge===handle.edge;
           ctx.strokeStyle=active?color('--primary'):color('--text');ctx.fillStyle=ctx.strokeStyle;
-          if(handle.frames){ctx.save();ctx.globalAlpha=0.65;ctx.beginPath();ctx.moveTo(handle.edge==='in'?x:right,top+TRACK-8);ctx.lineTo(handle.end,top+8);ctx.stroke();ctx.restore();}
+          if(handle.frames){ctx.save();ctx.globalAlpha=0.65;ctx.beginPath();ctx.moveTo(handle.edge==='in'?x:right,top+rowHeight-8);ctx.lineTo(handle.end,top+8);ctx.stroke();ctx.restore();}
           ctx.beginPath();ctx.arc(handle.x,top+14,active?5:4,0,Math.PI*2);ctx.fill();
-          if(active){ctx.fillStyle=color('--text');ctx.fillText(`Fade ${handle.edge} ${handle.frames}f`,Math.max(x+8,HEADER+4),top+TRACK-13);}
+          if(active){ctx.fillStyle=color('--text');ctx.fillText(`Fade ${handle.edge} ${handle.frames}f`,Math.max(x+8,HEADER+4),top+rowHeight-13);}
         }
       }
       for (const crossing of track.crossings || []) {
         const left=frameToX(crossing.start_frame,view,timeline.fps),right=frameToX(crossing.end_frame,view,timeline.fps);
         if (right<HEADER || left>width) continue;
-        ctx.fillStyle=color("--violet");ctx.globalAlpha=0.6;ctx.fillRect(left,top+TRACK-12,right-left,5);ctx.globalAlpha=1;
+        ctx.fillStyle=color("--violet");ctx.globalAlpha=0.6;ctx.fillRect(left,top+rowHeight-12,right-left,5);ctx.globalAlpha=1;
       }
       if(!track.locked && view.tool!=='slip'){
         for(const body of transitionBodies(track,view,timeline.fps)){
           if(body.right_x<HEADER || body.left_x>width)continue;
           const selection=view.transitionSelection,selected=selection?.track_id===track.id && selection.clip_id===body.clip_id && selection.slot===body.slot;
-          ctx.save();ctx.fillStyle=selected?color('--primary'):color('--violet');ctx.globalAlpha=selected?0.45:0.18;ctx.fillRect(body.left_x,top+TRACK-21,Math.max(1,body.right_x-body.left_x),14);ctx.restore();
+          ctx.save();ctx.fillStyle=selected?color('--primary'):color('--violet');ctx.globalAlpha=selected?0.45:0.18;ctx.fillRect(body.left_x,top+rowHeight-21,Math.max(1,body.right_x-body.left_x),14);ctx.restore();
         }
         const draft=view.draft?.kind==='transition' && view.draft.track_id===track.id?view.draft:null;
         let handles=transitionHandles(track,view,timeline.fps);
@@ -142,15 +145,15 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           const selection=view.transitionSelection,selected=selection?.track_id===track.id && selection.clip_id===handle.clip_id && selection.slot===handle.slot;
           ctx.strokeStyle=active || selected?color('--primary'):color('--violet');ctx.fillStyle=ctx.strokeStyle;
           if(!windows.has(key)){
-            windows.add(key);ctx.save();ctx.globalAlpha=active?0.8:0.55;ctx.fillRect(handle.start_x,top+TRACK-15,Math.max(1,handle.end_x-handle.start_x),3);ctx.restore();
-            if(active){const label=`${handle.slot==='cut_after'?'Cross transition':`Transition ${handle.slot}`} ${handle.duration}f`,labelX=Math.max(HEADER+4,handle.start_x+5);ctx.fillStyle=color('--raised');ctx.fillRect(labelX-3,top+TRACK-34,190,15);ctx.fillStyle=color('--text');ctx.fillText(label,labelX,top+TRACK-26);}
+            windows.add(key);ctx.save();ctx.globalAlpha=active?0.8:0.55;ctx.fillRect(handle.start_x,top+rowHeight-15,Math.max(1,handle.end_x-handle.start_x),3);ctx.restore();
+            if(active){const label=`${handle.slot==='cut_after'?'Cross transition':`Transition ${handle.slot}`} ${handle.duration}f`,labelX=Math.max(HEADER+4,handle.start_x+5);ctx.fillStyle=color('--raised');ctx.fillRect(labelX-3,top+rowHeight-34,190,15);ctx.fillStyle=color('--text');ctx.fillText(label,labelX,top+rowHeight-26);}
           }
-          ctx.fillStyle=active || selected?color('--primary'):color('--text');ctx.beginPath();ctx.arc(handle.x,top+TRACK-14,active || selected?5:4,0,Math.PI*2);ctx.fill();
+          ctx.fillStyle=active || selected?color('--primary'):color('--text');ctx.beginPath();ctx.arc(handle.x,top+rowHeight-14,active || selected?5:4,0,Math.PI*2);ctx.fill();
         }
       }
       if(view.draft?.kind==='transition_placement' && view.draft.track_id===track.id){
-        const draft=view.draft;ctx.save();ctx.fillStyle=draft.error?color('--danger'):color('--primary');ctx.globalAlpha=0.45;ctx.fillRect(draft.start_x,top+TRACK-21,Math.max(1,draft.end_x-draft.start_x),14);ctx.globalAlpha=1;ctx.strokeStyle=ctx.fillStyle;ctx.setLineDash([4,3]);ctx.strokeRect(draft.start_x,top+TRACK-21,Math.max(1,draft.end_x-draft.start_x),14);ctx.setLineDash([]);
-        for(const handle of draft.handles){ctx.beginPath();ctx.arc(handle.x,top+TRACK-14,5,0,Math.PI*2);ctx.fill();}ctx.restore();
+        const draft=view.draft;ctx.save();ctx.fillStyle=draft.error?color('--danger'):color('--primary');ctx.globalAlpha=0.45;ctx.fillRect(draft.start_x,top+rowHeight-21,Math.max(1,draft.end_x-draft.start_x),14);ctx.globalAlpha=1;ctx.strokeStyle=ctx.fillStyle;ctx.setLineDash([4,3]);ctx.strokeRect(draft.start_x,top+rowHeight-21,Math.max(1,draft.end_x-draft.start_x),14);ctx.setLineDash([]);
+        for(const handle of draft.handles){ctx.beginPath();ctx.arc(handle.x,top+rowHeight-14,5,0,Math.PI*2);ctx.fill();}ctx.restore();
       }
       if(view.draft?.kind==='preset_application'){
         ctx.save();ctx.strokeStyle=view.draft.error?color('--danger'):color('--primary');ctx.lineWidth=3;
@@ -166,39 +169,50 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
               timeline.fps,
             );
           ctx.fillStyle = view.draft.error ? "#ff627440" : "#ff673d50";
-          ctx.fillRect(x, top + 5, end - x, TRACK - 10);
+          ctx.fillRect(x, top + 5, end - x, rowHeight - 10);
           ctx.strokeStyle = view.draft.error
             ? color("--danger")
             : color("--primary");
-          ctx.strokeRect(x, top + 5, end - x, TRACK - 10);
-          if(view.draft.kind === "slip"){ctx.fillStyle=color("--text");ctx.fillText(`Slip ${view.draft.target>=0?"+":""}${view.draft.target}f`,x+6,top+TRACK-15);}
+          ctx.strokeRect(x, top + 5, end - x, rowHeight - 10);
+          if(view.draft.kind === "slip"){ctx.fillStyle=color("--text");ctx.fillText(`Slip ${view.draft.target>=0?"+":""}${view.draft.target}f`,x+6,top+rowHeight-15);}
           if(view.draft.kind==='retime'){
             const label=`Speed length ${draft.length_frames}f · end ${view.draft.end_frame}f${view.draft.validation_pending?' · linked validation on release':''}${view.draft.operation.overwrite?' · OVERWRITE':''}${view.draft.error?` · ${view.draft.error}`:''}`,labelX=Math.max(HEADER+5,x+6);
-            ctx.fillStyle=color('--raised');ctx.fillRect(labelX-3,top+TRACK-33,Math.max(180,Math.min(width-labelX,label.length*7)),15);ctx.fillStyle=color('--text');ctx.fillText(label,labelX,top+TRACK-25);
+            ctx.fillStyle=color('--raised');ctx.fillRect(labelX-3,top+rowHeight-33,Math.max(180,Math.min(width-labelX,label.length*7)),15);ctx.fillStyle=color('--text');ctx.fillText(label,labelX,top+rowHeight-25);
           }
         }
       for (const [start,end] of view.silencePreview || []) {
         const x=Math.max(HEADER,frameToX(start,view,timeline.fps)),right=Math.min(width,frameToX(end,view,timeline.fps));
         if(right<=x)continue;
-        ctx.fillStyle=color("--danger");ctx.globalAlpha=0.28;ctx.fillRect(x,top,right-x,TRACK-1);ctx.globalAlpha=1;
-        ctx.strokeStyle=color("--danger");ctx.strokeRect(x,top+1,right-x,TRACK-3);
+        ctx.fillStyle=color("--danger");ctx.globalAlpha=0.28;ctx.fillRect(x,top,right-x,rowHeight-1);ctx.globalAlpha=1;
+        ctx.strokeStyle=color("--danger");ctx.strokeRect(x,top+1,right-x,rowHeight-3);
       }
       if(view.recording?.tracks.includes(track.id)) {
         const x=frameToX(view.recording.start_frame,view,timeline.fps),end=frameToX(view.recording.start_frame+view.recording.length_frames,view,timeline.fps);
-        ctx.fillStyle=color("--danger");ctx.globalAlpha=0.4;ctx.fillRect(x,top+5,Math.max(2,end-x),TRACK-10);ctx.globalAlpha=1;ctx.fillStyle=color("--text");ctx.fillText("REC",x+6,top+22);
+        ctx.fillStyle=color("--danger");ctx.globalAlpha=0.4;ctx.fillRect(x,top+5,Math.max(2,end-x),rowHeight-10);ctx.globalAlpha=1;ctx.fillStyle=color("--text");ctx.fillText("REC",x+6,top+22);
       }
       ctx.restore();
       ctx.fillStyle = color("--surface");
-      ctx.fillRect(0, top, HEADER, TRACK - 1);
+      ctx.fillRect(0, top, HEADER, rowHeight - 1);
       ctx.fillStyle = color("--muted");
-      ctx.fillText(track.label || track.id, 16, top + 22);
-      ctx.fillText(
-        `${track.kind}${track.locked ? " · LOCKED" : ""}${track.armed ? " · REC" : ""}`,
-        16,
-        top + 41,
-      );
+      ctx.fillText(track.label || track.id, 6, top + rowHeight/2, 24);
+      for(const button of trackHeaderButtons(track)){
+        const active=Boolean(track[button.flag]),buttonTop=top+rowHeight/2-13;
+        ctx.fillStyle=active?color('--primary'):color('--raised');ctx.fillRect(button.left,buttonTop,button.right-button.left,26);
+        ctx.fillStyle=color('--text');ctx.fillText(button.flag==='muted' && track.kind==='video'?(active?'–':'V'):button.label,button.left+8,buttonTop+13);
+      }
       ctx.restore();
     }
+    for(const draft of view.draft?.changes || [])if(draft.to_new_track){
+      const target=draft.to_new_track,pane=target.kind==='video'?layout.videoPane:layout.audioPane,top=layout.newTrackTop(target.kind,target.depth);
+      if(top>=pane.bottom || top+rowHeight<=pane.top)continue;
+      const left=frameToX(draft.to_start_frame,view,timeline.fps),right=Math.max(left+2,frameToX(draft.to_start_frame+draft.length_frames,view,timeline.fps));
+      ctx.save();ctx.beginPath();ctx.rect(HEADER,pane.top,width-HEADER,pane.bottom-pane.top);ctx.clip();
+      ctx.fillStyle=view.draft.error?color('--danger'):color('--primary');ctx.globalAlpha=0.35;ctx.fillRect(left,top+2,right-left,rowHeight-4);ctx.globalAlpha=1;
+      ctx.strokeStyle=ctx.fillStyle;ctx.strokeRect(left+0.5,top+2.5,right-left-1,rowHeight-5);
+      ctx.fillStyle=color('--text');ctx.fillText(`New ${target.kind} track ${target.depth}${view.draft.error?` · ${view.draft.error}`:''}`,Math.max(HEADER+5,left+5),top+rowHeight/2);
+      ctx.restore();
+    }
+    if(layout.divider.bottom>layout.divider.top){ctx.fillStyle=color('--border');ctx.fillRect(0,layout.divider.top,width,layout.divider.bottom-layout.divider.top);}
     ctx.fillStyle = color("--raised");
     ctx.fillRect(0, 0, width, RULER);
     ctx.fillStyle = color("--muted");

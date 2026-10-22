@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {transitionBodies,selectedTransition,transitionPlacement,hitTest,frameToX,RULER,TRACK} from '../js/timeline/geometry.js';
+import {transitionBodies,selectedTransition,transitionPlacement,hitTest,frameToX,RULER,TRACK,timelineLayout} from '../js/timeline/geometry.js';
 
 const fps={num:24,den:1},view={scale:240,origin:0,scrollY:0,tool:'select'},band=RULER+TRACK-14;
 const native=(duration=5)=>({kind:'Push',duration,direction:'Down',ease:'InOut',curve:Math.fround(.37)});
@@ -65,7 +65,7 @@ test('drop zones use 40 CSS pixels, half-width ties choose In, and gaps or clip 
   assert.equal(transitionPlacement(f.timeline,view,at(10),native()).operation,null);
   f.right.start_frame=25;assert.equal(transitionPlacement(f.timeline,view,at(22),native()).operation,null);
   f.track.clips=[{...f.left,length_frames:4}];const midpoint=transitionPlacement(f.timeline,view,at(2),native());assert.equal(midpoint.slot,'in');assert.equal(midpoint.duration,4);
-  assert.equal(transitionPlacement(f.timeline,view,[frameToX(1,view,fps),RULER+3],native()).operation,null);
+  assert.equal(transitionPlacement(f.timeline,view,[frameToX(1,view,fps),RULER+1],native()).operation,null);
 });
 
 test('only unlocked eligible video targets accept drops and an adjustment neighbor blocks both sides',()=>{
@@ -113,7 +113,8 @@ test('incomplete single-edge snapshots never become destructive replacement targ
 });
 
 test('fractional fps, scrolling and pan change hit coordinates but never native IDs or frame duration',()=>{
-  const f=fixture(),scrolled={...view,scale:120,origin:3,scrollY:TRACK},fractional={num:24000,den:1001};
+  const f=fixture(),scrolled={...view,scale:120,origin:3,videoScroll:TRACK,viewportHeight:RULER+80},fractional={num:24000,den:1001};
   f.timeline.fps=fractional;f.timeline.tracks.unshift({id:'empty',kind:'audio',clips:[]});
-  const draft=transitionPlacement(f.timeline,scrolled,[frameToX(19,scrolled,fractional),RULER+30],native());assert.equal(draft.track,1);assert.equal(draft.clip_id,'9007199254740993');assert.equal(draft.duration,5);assert.equal(draft.start_frame,17);assert.equal(draft.end_frame,22);
+  const visible=timelineLayout(f.timeline,scrolled).clipRect(1,f.left,true);
+  const draft=transitionPlacement(f.timeline,scrolled,[frameToX(19,scrolled,fractional),(visible.top+visible.bottom)/2],native());assert.equal(draft.track,1);assert.equal(draft.clip_id,'9007199254740993');assert.equal(draft.duration,5);assert.equal(draft.start_frame,17);assert.equal(draft.end_frame,22);
 });

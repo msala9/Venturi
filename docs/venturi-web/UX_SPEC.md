@@ -40,8 +40,12 @@ Special **Slip viewer**: when using Slip tool, split viewer into clip's new In a
 
 Implemented Canvas geometry in CSS pixels: track header 150; ruler 48 high
 (24 tick band, 18 marker lane, 6 cache stripes); track height 62; trim hit zone 8;
-snap threshold 8 screen px, not time units; playhead 2px. Variable video/audio and
-collapsed track heights remain a separate layout requirement.
+snap threshold 10 screen px, rounded to native frame units; playhead 2px.
+Video lanes display in reverse native order and audio lanes in native order.
+The 8px divider separates independently scrolling panes; video rows anchor
+above it and audio rows below it. Shift+wheel adjusts row height (40–160px);
+wheel scrolls the pane under the pointer and horizontal wheel pans time.
+Painted scrollbars and inertial scrolling remain separate requirements.
 
 Marker lane: click seeks to the marker, drag moves it, range ends resize, and
 Alt+drag extends a point into a range in either direction. Moving a range can

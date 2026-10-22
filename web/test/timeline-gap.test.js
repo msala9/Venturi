@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {nativeGapAt,selectedGap,frameToX,RULER,TRACK,HEADER} from '../js/timeline/geometry.js';
+import {nativeGapAt,selectedGap,frameToX,RULER,TRACK,HEADER,timelineLayout} from '../js/timeline/geometry.js';
 import {createInput,isCloseGapShortcut} from '../js/timeline/input.js';
 import {createDraw} from '../js/timeline/draw.js';
 
@@ -15,7 +15,7 @@ function harness(options={}){
   const view={origin:0,scale:240,scrollY:0,playhead:7,selection:[],transitionSelection:null,selectedGap:null,tool:'move',snap:false,draft:null,lasso:null,retimeVisible:new Set()};
   const canvas={ownerDocument:document,style:{},clientWidth:1200,clientHeight:300,getBoundingClientRect:()=>({left:12,top:8,width:1200,height:300}),addEventListener:(type,fn)=>handlers.set(type,fn),removeEventListener:type=>handlers.delete(type),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
   const input=createInput({canvas,getTimeline:()=>timeline,getGapContext:()=>context,view,invalidate(){},onSelect(){},onSeek:final=>seeks.push({frame:view.playhead,final}),canEdit:()=>editable,onCommand:async operation=>{commands.push(operation);return options.commit?.(operation);},onNotice:message=>notices.push(message)});
-  const event=(frame,track=0,extra={})=>({clientX:12+frameToX(frame,view,timeline.fps),clientY:8+RULER+track*TRACK+30,button:0,buttons:1,pointerId:1,preventDefault(){this.defaultPrevented=true;},stopPropagation(){},...extra});
+  const event=(frame,track=0,extra={})=>({clientX:12+frameToX(frame,view,timeline.fps),clientY:8+timelineLayout(timeline,view).trackTop(track)+30,button:0,buttons:1,pointerId:1,preventDefault(){this.defaultPrevented=true;},stopPropagation(){},...extra});
   return {input,view,canvas,handlers,commands,notices,seeks,captures,get timeline(){return timeline;},setTimeline:value=>timeline=value,setContext:value=>context=value,setModal:value=>modal=value,setEditable:value=>editable=value,event,send(type,frame,track=0,extra={}){return handlers.get(type)(event(frame,track,extra));},async click(frame,track=0){this.send('pointerdown',frame,track);await this.send('pointerup',frame,track,{buttons:0});},destroy(){input.destroy();globalThis.window=original;}};
 }
 
@@ -120,12 +120,15 @@ test('a successfully closed offscreen accessible gap reveals its native landing 
 });
 test('gap highlight follows native frames, viewport scroll and DPR while stale revisions stop painting it',()=>{
   const original={document:globalThis.document,getComputedStyle:globalThis.getComputedStyle,devicePixelRatio:globalThis.devicePixelRatio,ResizeObserver:globalThis.ResizeObserver,requestAnimationFrame:globalThis.requestAnimationFrame};
-  let callback;const strokes=[],ctx={setTransform(){},fillRect(){},save(){},restore(){},beginPath(){},rect(){},clip(){},fillText(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},strokeRect(...args){strokes.push({args,color:this.strokeStyle});}};
+  let callback;const strokes=[],fills=[],ctx={setTransform(){},fillRect(...args){fills.push(args);},save(){},restore(){},beginPath(){},rect(){},clip(){},fillText(){},moveTo(){},lineTo(){},stroke(){},arc(){},fill(){},strokeRect(...args){strokes.push({args,color:this.strokeStyle});}};
   globalThis.document={documentElement:{}};globalThis.getComputedStyle=()=>({getPropertyValue:name=>name});globalThis.devicePixelRatio=2;globalThis.ResizeObserver=class{observe(){}disconnect(){}};globalThis.requestAnimationFrame=fn=>{callback=fn;};
   try{
     const timeline=nativeTimeline(),view={origin:5,scale:240,scrollY:TRACK/2,selection:[],transitionSelection:null,selectedGap:{...timeline.gaps[1],timeline_id:'1',revision:'revision',frame:25},retimeVisible:new Set()};
     const canvas={clientWidth:1000,clientHeight:200,width:0,height:0,getContext:()=>ctx},draw=createDraw(canvas,()=>timeline,view);callback();assert.equal(canvas.width,2000);assert.equal(canvas.height,400);
-    const left=frameToX(20,view,timeline.fps),right=frameToX(30,view,timeline.fps);assert.ok(strokes.some(stroke=>stroke.color==='--primary' && JSON.stringify(stroke.args)===JSON.stringify([left+1,RULER-TRACK/2+7,right-left-2,TRACK-14])));
-    strokes.length=0;timeline.revision='new';draw.invalidate();callback();assert.equal(strokes.some(stroke=>stroke.color==='--primary'),false);draw.destroy();assert.equal(selectedGap(timeline,view),null);assert.ok(left>=HEADER);
+    const left=frameToX(20,view,timeline.fps),right=frameToX(30,view,timeline.fps),top=timelineLayout(timeline,view,200).trackTop(0);assert.ok(strokes.some(stroke=>stroke.color==='--primary' && JSON.stringify(stroke.args)===JSON.stringify([left+1,top+7,right-left-2,TRACK-14])));
+    strokes.length=0;timeline.revision='new';draw.invalidate();callback();assert.equal(strokes.some(stroke=>stroke.color==='--primary'),false);assert.equal(selectedGap(timeline,view),null);assert.ok(left>=HEADER);
+    timeline.tracks[0].clips=[clip('tiny',10,1)];view.origin=0;view.scale=2.4;fills.length=0;strokes.length=0;draw.invalidate();callback();
+    const tiny=timelineLayout(timeline,view).clipRect(0,timeline.tracks[0].clips[0]);assert.equal(tiny.right-tiny.left,2);
+    assert.ok(fills.some(args=>args[0]===tiny.left+1 && args[1]===tiny.top && args[2]===1));assert.ok(strokes.some(stroke=>stroke.args[0]===tiny.left+0.5 && stroke.args[2]===1));draw.destroy();
   }finally{Object.assign(globalThis,original);}
 });

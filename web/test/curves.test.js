@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {bindCurveGesture, curveGeometry, curveHandles, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport,createZoomLink,zoomParameters} from "../js/curves.js";
+import {bindCurveGesture, curveGeometry, curveHandles, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport,createZoomLink,zoomParameters,createKeyEditorGuard} from "../js/curves.js";
 
 test("zoom link synchronizes all visible toggles without a native mutation and leaves other parameters independent",()=>{
   const state=new Map(),link=createZoomLink(state);
@@ -112,4 +112,46 @@ test("Bezier handle coordinates use native controls and one command per complete
   events.pointermove(point(g.x(10), g.y(5))); events.pointermove(point(g.x(11), g.y(8)));
   assert.equal(commits.length, 0); assert.equal(drafts.length, 2);
   events.pointerup(point(g.x(11), g.y(8))); assert.equal(commits.length, 1);
+});
+
+test('dedicated key editor ownership rejects detached, disposed, read-only and changed Inspector scopes',async()=>{
+  const root={isConnected:true},section={isConnected:true},commands=[];let scope='captured';
+  const owner=createKeyEditorGuard({root,section,disabled:false,canInteract:()=>scope==='captured',commit:async operation=>commands.push(operation)});
+  const operation=curveKeyOperation('clip',{kind:'transform',param:'Opacity'},12,13,75,'EaseOut',[]);
+  for(const change of [()=>{root.isConnected=false;},()=>{section.isConnected=false;},()=>{scope='playback/modal/busy/selection/epoch changed';}]){
+    root.isConnected=section.isConnected=true;scope='captured';change();await assert.rejects(owner.commit(operation),/context changed/);
+  }
+  root.isConnected=section.isConnected=true;scope='captured';owner.dispose();await assert.rejects(owner.commit(operation),/context changed/);
+  const readOnly=createKeyEditorGuard({root,section,disabled:true,canInteract:()=>true,commit:async operation=>commands.push(operation)});await assert.rejects(readOnly.commit(operation),/context changed/);assert.deepEqual(commands,[]);
+});
+
+test('key editor rechecks its captured owner before committing, including cancellation between dispatch and microtask',async()=>{
+  let current=true;const commands=[],root={isConnected:true},section={isConnected:true};
+  const owner=createKeyEditorGuard({root,section,disabled:false,canInteract:()=>current,commit:async operation=>commands.push(operation)});
+  const operation=curveGroupOperation('clip',{kind:'gain'},[3,12],2,-1);
+  const pending=owner.commit(operation);current=false;await assert.rejects(pending,/context changed/);assert.deepEqual(commands,[]);
+  current=true;const canceled=owner.commit(operation);owner.dispose();await assert.rejects(canceled,/context changed/);assert.deepEqual(commands,[]);
+});
+
+test('dedicated key editor permits one exact native request at a time and never replays an unknown result',async()=>{
+  let resolve,current=true;const commands=[],root={isConnected:true},section={isConnected:true};
+  const operation=curveKeyOperation('clip',{kind:'transform',param:'Rotation'},40,41,35,'Bezier',[.2,-.5,.8,1.5]);
+  const owner=createKeyEditorGuard({root,section,disabled:false,canInteract:()=>current,commit:request=>{commands.push(request);return new Promise(done=>{resolve=done;});}});
+  const pending=owner.commit(operation);await assert.rejects(owner.commit(operation),/context changed/);assert.deepEqual(commands,[operation]);resolve({command_id:'ack'});assert.deepEqual(await pending,{command_id:'ack'});
+  const uncertain=createKeyEditorGuard({root,section,disabled:false,canInteract:()=>current,commit:async request=>{commands.push(request);current=false;throw Error('Command outcome unknown');}});
+  await assert.rejects(uncertain.commit(operation),/outcome unknown/);await assert.rejects(uncertain.commit(operation),/context changed/);assert.equal(commands.length,2);
+});
+
+test('key pointer begin, drafts and release are scoped to live ownership and release capture on cancellation',()=>{
+  const events={},commits=[],drafts=[],captures=[],releases=[];let current=true,busy=false;
+  const canvas={isConnected:true,addEventListener:(name,handler)=>events[name]=handler,focus(){},setPointerCapture:id=>captures.push(id),releasePointerCapture(id){releases.push(id);events.lostpointercapture();},getBoundingClientRect:()=>({left:0,top:0})};
+  bindCurveGesture(canvas,{getCurve:()=>({keys:[{source_frame:10,value:20}]}),getGeometry:()=>({x:x=>x,y:y=>y,frame:Math.round,value:y=>y}),isBusy:()=>busy,canEdit:()=>true,canInteract:()=>current,select(){},draft:point=>drafts.push(point),draftBox:box=>drafts.push(box),pan:point=>drafts.push(point),finish:point=>commits.push(point),reset(){}});
+  const point=(x,y,extra={})=>({button:0,pointerId:1,clientX:x,clientY:y,...extra});
+  current=false;events.pointerdown(point(10,20));assert.deepEqual(captures,[]);
+  for(const origin of [point(10,20),point(0,0),point(0,0,{button:1})]){
+    current=true;events.pointerdown(origin);current=false;events.pointermove(point(25,35));events.pointerup(point(25,35));
+  }
+  current=true;events.pointerdown(point(10,20));events.pointermove(point(25,35));const draftsBefore=drafts.length;canvas.isConnected=false;events.pointerup(point(25,35));assert.equal(drafts.length,draftsBefore);
+  canvas.isConnected=true;events.pointerdown(point(10,20));busy=true;events.pointerup(point(25,35));
+  assert.deepEqual(commits,[]);assert.equal(releases.length,captures.length);
 });

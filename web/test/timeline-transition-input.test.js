@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createInput} from '../js/timeline/input.js';
-import {frameToX,RULER,TRACK,transitionHandles} from '../js/timeline/geometry.js';
+import {frameToX,RULER,TRACK,transitionHandles,timelineLayout} from '../js/timeline/geometry.js';
 
 function fixture(crossing=false){
   const transition={kind:'Push',duration:20,direction:'Up',ease:'InOut',curve:0.375};
@@ -17,7 +17,7 @@ function harness(crossing=false){
   globalThis.window={document,addEventListener:(name,callback)=>windowHandlers.set(name,callback),removeEventListener:name=>windowHandlers.delete(name)};
   const canvas={ownerDocument:document,style:{},addEventListener:(name,callback)=>canvasHandlers.set(name,callback),removeEventListener:name=>canvasHandlers.delete(name),focus(){},getBoundingClientRect:()=>({...rect}),setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);canvasHandlers.get('lostpointercapture')?.({pointerId:id});}};
   const input=createInput({canvas,getTimeline:()=>timeline,view:state.view,invalidate(){},onSelect:()=>selections++,onSeek(){},onCommand:async operation=>commands.push(operation),onNotice:message=>notices.push(message),canEdit:()=>writable});
-  function event(frame,extra={}){return {clientX:rect.left+frameToX(frame,state.view,timeline.fps),clientY:rect.top+RULER+TRACK-14,pointerId:1,button:0,buttons:1,preventDefault(){},stopPropagation(){},...extra};}
+  function event(frame,extra={}){return {clientX:rect.left+frameToX(frame,state.view,timeline.fps),clientY:rect.top+timelineLayout(timeline,state.view).trackTop(0)+TRACK-14,pointerId:1,button:0,buttons:1,preventDefault(){},stopPropagation(){},...extra};}
   return {...state,input,commands,notices,canvasHandlers,windowHandlers,documentHandlers,document,canvas,event,send:(name,frame,extra={})=>canvasHandlers.get(name)(event(frame,extra)),captured:id=>captures.has(id),selected:()=>selections,setWritable:value=>writable=value,setDialog:value=>dialog=value,
     replaceTimeline(){timeline={...timeline,revision:'r2'};},changeRect(){rect={...rect,left:rect.left+1};},destroy(){input.destroy();globalThis.window=originalWindow;}};
 }
@@ -111,8 +111,8 @@ test('Alt keeps transition handle priority and pans outside markers; fade, Slip 
   try{
     h.send('pointerdown',30,{altKey:true});h.send('pointermove',37,{altKey:true});await h.send('pointerup',37,{altKey:true,buttons:0});assert.equal(h.commands[0].kind,'set_transition');assert.equal(h.commands[0].transition.duration,17);
     h.send('pointerdown',60,{altKey:true});h.send('pointermove',67,{altKey:true});await h.send('pointerup',67,{altKey:true,buttons:0});assert.equal(h.commands.length,1);
-    h.view.origin=0;h.send('pointerdown',30,{clientY:8+RULER+14});h.send('pointermove',35,{clientY:8+RULER+14});await h.send('pointerup',35,{clientY:8+RULER+14,buttons:0});assert.equal(h.commands[1].kind,'set_properties');assert.equal(h.commands[1].patch.fade_in,15);
+    h.view.origin=0;h.send('pointerdown',30,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+14});h.send('pointermove',35,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+14});await h.send('pointerup',35,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+14,buttons:0});assert.equal(h.commands[1].kind,'set_properties');assert.equal(h.commands[1].patch.fade_in,15);
     h.view.tool='slip';assert.deepEqual(transitionHandles(h.timeline.tracks[0],h.view,h.timeline.fps),[]);
-    h.view.tool='select';h.send('pointerdown',20,{clientY:8+RULER+TRACK-3});h.send('pointermove',21,{clientY:8+RULER+TRACK-3});await h.send('pointerup',21,{clientY:8+RULER+TRACK-3,buttons:0});assert.equal(h.commands[2].kind,'trim');
+    h.view.tool='select';h.send('pointerdown',20,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+TRACK-3});h.send('pointermove',21,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+TRACK-3});await h.send('pointerup',21,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+TRACK-3,buttons:0});assert.equal(h.commands[2].kind,'trim');
   }finally{h.destroy();}
 });

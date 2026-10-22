@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {clickTimelineSelection,clipSelectionAnchor,reconcileSelectionAnchor,firstSelectionAnchor,playheadSelectionAnchor,unlockedLinkedSelection,selectedGap,frameToX,RULER,TRACK} from '../js/timeline/geometry.js';
+import {clickTimelineSelection,clipSelectionAnchor,reconcileSelectionAnchor,firstSelectionAnchor,playheadSelectionAnchor,unlockedLinkedSelection,selectedGap,frameToX,RULER,TRACK,timelineLayout} from '../js/timeline/geometry.js';
 import {createInput} from '../js/timeline/input.js';
 
 const clip=(id,start,length=10,linked_group=null)=>({id,start_frame:start,length_frames:length,linked_group});
@@ -22,7 +22,7 @@ function harness(){
   const view={...geometry,playhead:17,selection:[],selectionAnchor:null,selectedGap:null,transitionSelection:null,tool:'move',snap:false,retimeVisible:new Set(),draft:null,lasso:null};
   const publish=()=>{selected++;published=structuredClone({ids:view.selection,anchor:view.selectionAnchor,gap:view.selectedGap,transition:view.transitionSelection});};
   const input=createInput({canvas,getTimeline:()=>timeline,getGapContext:()=>context,getPresetContext:()=>({...context,timeline_id:timeline.id,revision:timeline.revision}),view,invalidate(){},onSelect:publish,onTransitionSelect:publish,onSeek:()=>seeks.push(view.playhead),onCommand:async operation=>commands.push(operation),onNotice:message=>notices.push(message),canNavigate:()=>navigable,canEdit:()=>editable});
-  const event=(frame,track=0,extra={})=>({clientX:frameToX(frame,view,timeline.fps),clientY:RULER+track*TRACK+30,button:0,buttons:1,pointerId:1,preventDefault(){},...extra});
+  const event=(frame,track=0,extra={})=>({clientX:frameToX(frame,view,timeline.fps),clientY:timelineLayout(timeline,view).trackTop(track)+30,button:0,buttons:1,pointerId:1,preventDefault(){},...extra});
   return {input,view,commands,seeks,notices,captures,selected:()=>selected,published:()=>published,get timeline(){return timeline;},setTimeline:value=>timeline=value,setContext:value=>context=value,setModal:value=>modal=value,setNavigable:value=>navigable=value,setEditable:value=>editable=value,send:(type,frame,track=0,extra={})=>handlers.get(type)(event(frame,track,extra)),key:event=>handlers.get('keydown')(event),async click(frame,track=0,extra={}){this.send('pointerdown',frame,track,extra);await this.send('pointerup',frame,track,{...extra,buttons:0});},destroy(){input.destroy();globalThis.window=original;}};
 }
 
@@ -47,9 +47,10 @@ test('Ctrl/Meta toggles the clicked key before unlocked linked expansion, retain
   assert.equal(select(timeline,state,'7'),null);assert.deepEqual(unlockedLinkedSelection(timeline,['3','7']),['3','6']);
 });
 
-test('range rows follow the actual web display order including the intermediate video lane',()=>{
+test('range rows follow reversed native video lanes without reordering native track identities',()=>{
   const timeline=fixture(),state={ids:['1'],anchor:clipSelectionAnchor(timeline,'1','epoch')};
-  assert.deepEqual(select(timeline,state,'5',{shift:true}).ids,['1','4','5']);
+  assert.deepEqual(select(timeline,state,'5',{shift:true}).ids,['1','5']);
+  assert.deepEqual(select(timeline,{ids:['4'],anchor:clipSelectionAnchor(timeline,'4','epoch')},'5',{shift:true}).ids,['1','4','5']);
   assert.deepEqual(timeline.tracks.map(track=>track.id),['v1','v2','a1','a2']);
 });
 

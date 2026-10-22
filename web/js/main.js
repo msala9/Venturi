@@ -12,7 +12,8 @@ import { buildProgramWindow } from "./program-range.js";
 import { sourceSampleAtFrame } from "./source-clock.js";
 import { createSourceSeek } from "./source-seek.js";
 import { createSourceAssets } from "./source-assets.js";
-import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,renderBlendMatte } from "./inspector.js";
+import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain } from "./inspector.js";
+import {createZoomLink} from './curves.js';
 import { renderMixer } from "./mixer.js";
 import {canRetainAudioPresetDraft} from './audio-presets.js';
 import { createExportPanel } from "./export.js";
@@ -310,6 +311,10 @@ const view = {
   origin: 0,
   scale: 100,
   scrollY: 0,
+  videoScroll:0,
+  audioScroll:0,
+  videoPaneHeight:null,
+  rowHeight:62,
   playhead: 0,
   selection: [],
   selectionAnchor:null,
@@ -494,9 +499,13 @@ function selected() {
     if (node.open) mixerPaths.add(node.dataset.mixerPath); else mixerPaths.delete(node.dataset.mixerPath);
   }
   mixerDetail=null;
+  const getVideoSelection=()=>videoPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
+  const getAudioSelection=()=>audioPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
+  const videoSelection=getVideoSelection(),audioSelection=getAudioSelection();
+  const primaryId=videoSelection?.clip_ids[0] || audioSelection?.clip_ids[0];
   const clip = timeline?.tracks
     .flatMap((track) => track.clips)
-    .find((item) => view.selection.includes(item.id));
+    .find((item) => primaryId?item.id===primaryId:view.selection.includes(item.id));
   $("inspector-content").replaceChildren();
   const transition=selectedTransition(timeline,view.transitionSelection);
   syncSelectionActions();
@@ -519,23 +528,28 @@ function selected() {
     }
     $("inspector-content").append(section);
   }
-  const getCompositingSelection=()=>videoPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
-  const compositingSelection=getCompositingSelection(),compositingIdentity=JSON.stringify(compositingSelection),compositingFrame=view.playhead;
-  let compositingTarget=null;
-  const compositingCurrent=()=>inspectorSeq===inspectorSequence && view.playhead===compositingFrame && JSON.stringify(getCompositingSelection())===compositingIdentity;
-  const renderCompositing=detail=>{
-    if(!compositingTarget || detail.clip_id!==compositingSelection.clip_ids[0] || !compositingCurrent())return;
-    compositingTarget.replaceChildren();
-    const primary=timeline.tracks.flatMap(track=>track.clips).find(item=>item.id===detail.clip_id);
-    renderBlendMatte(compositingTarget,detail,{selection:compositingSelection,getSelection:getCompositingSelection,primaryName:primary?.name,commit,notice,
-      canInteract:()=>compositingCurrent() && writable && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]')});
-  };
-  if(compositingSelection && timeline.id!=='fixture'){
-    compositingTarget=document.createElement('div');compositingTarget.textContent='Reading selected video compositing…';$('inspector-content').append(compositingTarget);
-    if(compositingSelection.clip_ids[0]!==clip?.id){
+  const inspectorFrame=view.playhead,selectionIdentity=JSON.stringify([...view.selection].sort()),zoomLink=createZoomLink(visualState);
+  const inspectorCurrent=()=>inspectorSeq===inspectorSequence && view.playhead===inspectorFrame && JSON.stringify([...view.selection].sort())===selectionIdentity;
+  const canEditInspector=()=>inspectorCurrent() && writable && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]');
+  const selectionTargets=[];
+  for(const [selection,getSelection,video] of [[videoSelection,getVideoSelection,true],[audioSelection,getAudioSelection,false]]){
+    if(!selection || timeline.id==='fixture')continue;
+    const target=document.createElement('div'),identity=JSON.stringify(selection);target.textContent=video?'Reading selected video properties…':'Reading selected audio gain…';$('inspector-content').append(target);
+    const current=()=>inspectorCurrent() && JSON.stringify(getSelection())===identity;
+    const render=detail=>{
+      if(!current() || detail.clip_id!==selection.clip_ids[0])return;
+      target.replaceChildren();
+      const primary=timeline.tracks.flatMap(track=>track.clips).find(item=>item.id===detail.clip_id);
+      const options={selection,getSelection,frame:inspectorFrame,getFrame:()=>view.playhead,canInteract:()=>current() && canEditInspector(),commit,notice,primaryName:primary?.name,visualState,zoomLink,
+        seek:frame=>{maskOverlay?.cancel();view.playhead=frame;updateTime();seek();selected();}};
+      if(video){renderSelectedVideoProperties(target,detail,options);renderBlendMatte(target,detail,options);}
+      else renderSelectedAudioGain(target,detail,options);
+    };
+    const entry={id:selection.clip_ids[0],target,current,render};selectionTargets.push(entry);
+    if(entry.id!==clip?.id){
       const end=Math.max(1,...timeline.tracks.flatMap(track=>track.clips.map(item=>item.start_frame+item.length_frames)));
-      const query=new URLSearchParams({project_epoch:compositingSelection.project_epoch,if_generation:compositingSelection.generation,timeline_id:compositingSelection.timeline_id,revision:compositingSelection.revision,frame:Math.min(view.playhead,end-1)});
-      request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(compositingSelection.clip_ids[0])}/keys/0?${query}`).then(renderCompositing).catch(error=>{if(compositingCurrent())compositingTarget.textContent=error.message;});
+      const query=new URLSearchParams({project_epoch:selection.project_epoch,if_generation:selection.generation,timeline_id:selection.timeline_id,revision:selection.revision,frame:Math.min(inspectorFrame,end-1)});
+      request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(entry.id)}/keys/0?${query}`).then(render).catch(error=>{if(current())target.textContent=error.message;});
     }
   }
   if (clip && documentState && timeline.id !== "fixture") {
@@ -553,12 +567,12 @@ function selected() {
     request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(clip.id)}/keys/${state.key_page}?${query}`).then((detail) => {
       if (inspectorSeq !== inspectorSequence || identity !== detailIdentity(inspectorState(clip.id))) return;
       target.replaceChildren();
-      renderCompositing(detail);
+      selectionTargets.find(entry=>entry.id===clip.id)?.render(detail);
       transformDetail={identity,detail};transformOverlay?.invalidate();syncViewerMasks();maskOverlay?.invalidate();
-      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,transitionDefaults:timeline.transition_defaults,compositing:false,
+      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,transitionDefaults:timeline.transition_defaults,compositing:false,transformControls:false,gainControls:false,zoomLink,
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();},
-        canInteract:()=>identity===detailIdentity(inspectorState(clip.id)) && writable && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]') });
-    }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else{target.textContent = error.message;if(compositingTarget && compositingSelection.clip_ids[0]===clip.id && compositingCurrent())compositingTarget.textContent=error.message;}} });
+        canInteract:()=>identity===detailIdentity(inspectorState(clip.id)) && canEditInspector() });
+    }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else{target.textContent = error.message;const entry=selectionTargets.find(entry=>entry.id===clip.id);if(entry?.current())entry.target.textContent=error.message;}} });
   }
   if (clip)
     for (const [label, value] of [
@@ -711,7 +725,7 @@ function retimeContext(target){
   const rect=$("timeline").getBoundingClientRect();
   return {project_epoch:documentState.project_epoch,generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,track_id:track.id,clip,linked,overwrite:view.retimeOverwrite===true,
     editable:writable && !busy && !unresolved && timeline.id!=='fixture' && view.tool!=='slip' && view.retimeVisible.has(clip.id) && !linked.some(item=>item.locked),
-    viewIdentity:JSON.stringify([view.origin,view.scale,view.scrollY,view.tool,view.snap,[...view.retimeVisible].sort(),view.selection,view.transitionSelection,rect.left,rect.top,rect.width,rect.height])};
+    viewIdentity:JSON.stringify([view.origin,view.scale,view.scrollY,view.videoScroll,view.audioScroll,view.videoPaneHeight,view.rowHeight,view.tool,view.snap,[...view.retimeVisible].sort(),view.selection,view.transitionSelection,rect.left,rect.top,rect.width,rect.height])};
 }
 retimeMenu=createRetimeMenu({getContext:retimeContext,commit:operation=>commit(operation),notice,
   onHide:target=>{view.retimeVisible.delete(target.clip_id);updateRetimeControls();notice('Speed strip hidden for this clip');},
@@ -871,11 +885,13 @@ let documentState = null,
 const clientId = persistentClientId();
 compoundNavigation=createCompoundNavigation({
   root:$("compound-breadcrumb"),openButton:$("open-compound"),notice,
-  getState:()=>({document:documentState,timeline,frame:view.playhead,selection:[...view.selection],viewport:{scale:view.scale,origin:view.origin,scrollY:view.scrollY,selection:[...view.selection],selectionAnchor:view.selectionAnchor}}),
+  getState:()=>({document:documentState,timeline,frame:view.playhead,selection:[...view.selection],viewport:{scale:view.scale,origin:view.origin,scrollY:view.scrollY,videoScroll:view.videoScroll,audioScroll:view.audioScroll,videoPaneHeight:view.videoPaneHeight,rowHeight:view.rowHeight,selection:[...view.selection],selectionAnchor:view.selectionAnchor}}),
   canNavigate:()=>!busy && !unresolved && canvasTimeline.navigationIdle() && !document.querySelector('dialog[open]'),
   stop:()=>{fastTransport?.stop();audioScrub?.stop();programPlayer?.stop();sourcePlayer?.pause();sourceAssets?.cancel();slipView?.reset();viewer?.invalidate();},
   install:(next,frame,viewport)=>{
     view.playhead=frame;view.origin=Number.isFinite(viewport?.origin) && viewport.origin>=0?viewport.origin:0;view.scrollY=Number.isFinite(viewport?.scrollY) && viewport.scrollY>=0?viewport.scrollY:0;
+    view.videoScroll=Number.isFinite(viewport?.videoScroll) && viewport.videoScroll>=0?viewport.videoScroll:0;view.audioScroll=Number.isFinite(viewport?.audioScroll) && viewport.audioScroll>=0?viewport.audioScroll:0;
+    view.videoPaneHeight=Number.isFinite(viewport?.videoPaneHeight) && viewport.videoPaneHeight>=0?viewport.videoPaneHeight:null;view.rowHeight=Number.isFinite(viewport?.rowHeight)?Math.max(40,Math.min(160,viewport.rowHeight)):62;
     if(Number.isFinite(viewport?.scale) && viewport.scale>0)view.scale=viewport.scale;
     installTimeline(next);view.selection=(viewport?.selection || []).filter(id=>next.tracks.some(track=>!track.locked && track.clips.some(clip=>clip.id===id)));view.selectionAnchor=reconcileSelectionAnchor(next,viewport?.selectionAnchor,documentState?.project_epoch ?? null);
     $("timeline-select").value=next.id;$("revision").textContent=`Revision ${next.revision.slice(0,8)}`;viewerModeSet('program');selected();canvasTimeline.invalidate();
@@ -890,7 +906,7 @@ document.addEventListener('keydown',event=>{
   event.preventDefault();event.stopImmediatePropagation();if(action==='enter')compoundNavigation.enter();else if(action==='exit')compoundNavigation.exit();
 },true);
 function openTimelineRoot(next){
-  compoundNavigation?.reset();programPlayer?.stop();sourcePlayer?.pause();viewer?.invalidate();view.playhead=0;view.origin=0;view.scrollY=0;$("timeline-select").value=next.id;installTimeline(next);viewerModeSet('program');compoundNavigation?.invalidate();
+  compoundNavigation?.reset();programPlayer?.stop();sourcePlayer?.pause();viewer?.invalidate();view.playhead=0;view.origin=0;view.scrollY=0;view.videoScroll=0;view.audioScroll=0;view.videoPaneHeight=null;view.rowHeight=62;$("timeline-select").value=next.id;installTimeline(next);viewerModeSet('program');compoundNavigation?.invalidate();
 }
 async function refresh({preserveAudioDrafts=false}={}) {
   const invalidateTimeline=()=>{
@@ -918,7 +934,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
     sourcePlayer?.reset();
     sourceAssets?.cancel();
     sourceOpenId = null; sourceRanges.clear();
-    view.playhead=0;view.origin=0;view.scrollY=0;view.selection=[];view.selectionAnchor=null;
+    view.playhead=0;view.origin=0;view.scrollY=0;view.videoScroll=0;view.audioScroll=0;view.videoPaneHeight=null;view.rowHeight=62;view.selection=[];view.selectionAnchor=null;
     selectedMedia = null;
     mediaState.selected=[];mediaState.anchor=null;mediaState.folder="*";
     for (const asset of mediaAssets.values()) releaseMediaAsset(asset);
@@ -936,6 +952,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
   const active =
     next.timelines.find((t) => t.id === previousId) || next.timelines[0];
   if (active) {
+    if(previousId!==active.id){view.videoScroll=0;view.audioScroll=0;view.videoPaneHeight=null;view.rowHeight=62;}
     $("timeline-select").value = active.id;
     installTimeline(active,{transitionSelection:previousId===active.id?transitionSelection:null});
     view.selection = selection.filter((id) =>
@@ -1169,7 +1186,7 @@ function clipboardContext(){
     clip_ids:[...view.selection],media_ids:[...mediaState.selected],clipboard_revision:documentState.clipboard_revision,
     clipboard_count:documentState.clipboard_count || 0,clipboard_media_count:documentState.clipboard_media_count || 0,
     overwrite:clipboardFocus==='timeline' && clipboardOverwrite?.checked===true,
-    view_stamp:JSON.stringify([view.origin,view.scale,view.scrollY,view.tool,view.transitionSelection,Boolean(view.draft),Boolean(view.lasso),clipboardFocusSequence,rect.left,rect.top,rect.width,rect.height]),
+    view_stamp:JSON.stringify([view.origin,view.scale,view.scrollY,view.videoScroll,view.audioScroll,view.videoPaneHeight,view.rowHeight,view.tool,view.transitionSelection,Boolean(view.draft),Boolean(view.lasso),clipboardFocusSequence,rect.left,rect.top,rect.width,rect.height]),
     source_stamp:JSON.stringify([viewerMode,sourceOpenId])};
 }
 function clipboardWritable(){return writable && !busy && !unresolved && !clipboardImages?.busy() && !document.querySelector('dialog[open]') && canvasTimeline.navigationIdle();}
@@ -1405,6 +1422,14 @@ function currentViewerContext(){
   if(!clip || clip.disabled || clip.kind==="adjustment" || view.playhead<clip.start_frame || view.playhead>=clip.start_frame+clip.length_frames || transformDetail?.identity!==detailIdentity(inspectorState(clip.id)))return null;
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,clip_id:clip.id,preview_current:Boolean(current),timeline_size:[timeline.resolution.width,timeline.resolution.height],detail:transformDetail.detail};
 }
+function currentViewerTransformContext(){
+  if(!documentState || !timeline || viewerMode!=='program' || !$('program-view').hidden || !$('slip-view').hidden || programPlayer?.state()!=='stopped' || document.querySelector('dialog[open]'))return null;
+  const selection=videoPropertySelection({project_epoch:documentState.project_epoch,generation:documentState.generation,timeline,selection:view.selection});
+  if(!selection)return null;
+  const clip=timeline.tracks.flatMap(track=>track.clips).find(clip=>clip.id===selection.clip_ids[0]);
+  if(!clip || view.playhead<clip.start_frame || view.playhead>=clip.start_frame+clip.length_frames || transformDetail?.identity!==detailIdentity(inspectorState(clip.id)))return null;
+  return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,clip_id:clip.id,clip_ids:[...selection.clip_ids],selection:[...selection.selection],preview_current:Boolean(viewer?.current()),timeline_size:[timeline.resolution.width,timeline.resolution.height],detail:transformDetail.detail};
+}
 function maskScope(context){return context?`${context.project_epoch}:${context.timeline_id}:${context.clip_id}`:null;}
 function trackViewerSelection(){
   const identity=JSON.stringify([documentState?.project_epoch,timeline?.id,view.playhead,[...view.selection].sort()]);
@@ -1419,7 +1444,7 @@ function syncViewerMasks(){
   $("viewer-mask-select").replaceChildren(new Option('Choose a mask',''),...items.map(item=>new Option(`${item.index+1} · ${item.name?`${item.name} · `:''}${item.shape}${item.enabled?'':' · disabled'}`,String(item.index))));
   $("viewer-mask-select").value=selected===null?'':String(selected);$("viewer-mask-select").disabled=!items.length;
 }
-transformOverlay=createViewerTransformOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-transform"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:currentViewerContext});
+transformOverlay=createViewerTransformOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-transform"),canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),commit,notice,getContext:currentViewerTransformContext});
 maskOverlay=createViewerMaskOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-mask"),penToggle:$("viewer-mask-pen"),getPenContext:currentViewerContext,canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),notice,getContext:()=>{
   const context=currentViewerContext();if(!context)return null;
   const index=maskChoice?.scope===maskScope(context) && maskChoice.revision===context.revision?maskChoice.index:null;

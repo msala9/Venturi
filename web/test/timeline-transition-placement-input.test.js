@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createInput,TRANSITION_DRAG_TYPE} from '../js/timeline/input.js';
 import {createDraw} from '../js/timeline/draw.js';
-import {frameToX,RULER,TRACK,transitionPlacement} from '../js/timeline/geometry.js';
+import {frameToX,RULER,TRACK,transitionPlacement,timelineLayout} from '../js/timeline/geometry.js';
 
 function harness({crossing=false,occupied=false,commit}={}){
   const transition={kind:'Push',duration:20,direction:'Up',ease:'InOut',curve:0.375};
@@ -17,7 +17,7 @@ function harness({crossing=false,occupied=false,commit}={}){
   globalThis.window={document,addEventListener:(name,fn)=>windowHandlers.set(name,fn),removeEventListener:name=>windowHandlers.delete(name)};
   const canvas={style:{},ownerDocument:document,addEventListener:(name,fn)=>handlers.set(name,fn),removeEventListener:name=>handlers.delete(name),focus(){},getBoundingClientRect:()=>({...rect}),setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
   const input=createInput({canvas,getTimeline:()=>timeline,view,invalidate(){},onSelect:()=>selections++,onTransitionSelect:value=>selected.push(structuredClone(value)),onSeek(){},onCommand:async operation=>{commands.push(operation);return commit?.(operation);},onNotice:message=>notices.push(message),canEdit:()=>writable});
-  const event=(frame,extra={})=>({clientX:rect.left+frameToX(frame,view,timeline.fps),clientY:rect.top+RULER+TRACK-14,pointerId:1,button:0,buttons:1,preventDefault(){this.prevented=true;},stopPropagation(){},...extra});
+  const event=(frame,extra={})=>({clientX:rect.left+frameToX(frame,view,timeline.fps),clientY:rect.top+timelineLayout(timeline,view).trackTop(0)+TRACK-14,pointerId:1,button:0,buttons:1,preventDefault(){this.prevented=true;},stopPropagation(){},...extra});
   const transfer=(kind,types=[TRANSITION_DRAG_TYPE])=>({types,dropEffect:'none',getData(type){assert.equal(type,TRANSITION_DRAG_TYPE);return kind;}});
   return {source,neighbor,target,track,transition,view,input,canvas,handlers,windowHandlers,documentHandlers,document,commands,notices,selected,event,transfer,timeline:()=>timeline,selections:()=>selections,captured:id=>captures.has(id),send:(name,frame,extra={})=>handlers.get(name)(event(frame,extra)),setWritable:value=>writable=value,replaceTimeline(){timeline={...timeline,revision:'r2'};},moveCanvas(){rect={...rect,left:rect.left+1};},destroy(){input.destroy();globalThis.window=priorWindow;}};
 }
@@ -159,8 +159,8 @@ test('draw shows blocked and explicit replacement ghost cues without a renderer 
   try{
     globalThis.document={documentElement:{}};globalThis.getComputedStyle=()=>({getPropertyValue:name=>name});globalThis.devicePixelRatio=1;globalThis.requestAnimationFrame=fn=>frames.push(fn);globalThis.ResizeObserver=class{observe(){}disconnect(){}};
     const context=new Proxy({},{get:(_,method)=>(...args)=>calls.push({method,args})}),canvas={clientWidth:4000,clientHeight:300,getContext:()=>context};
-    h.view.draft=transitionPlacement(h.timeline(),h.view,[frameToX(241,h.view,h.timeline().fps),RULER+30],h.transition);draw=createDraw(canvas,h.timeline,h.view);frames.shift()();
+    h.view.draft=transitionPlacement(h.timeline(),h.view,[frameToX(241,h.view,h.timeline().fps),timelineLayout(h.timeline(),h.view).trackTop(0)+30],h.transition);draw=createDraw(canvas,h.timeline,h.view);frames.shift()();
     assert.ok(calls.some(call=>call.method==='fillText' && /Transition blocked.*Replace explicitly/.test(call.args[0])));
-    h.view.transitionReplace=true;h.view.draft=transitionPlacement(h.timeline(),h.view,[frameToX(241,h.view,h.timeline().fps),RULER+30],h.transition,{replace:true});draw.invalidate();frames.shift()();assert.ok(calls.some(call=>call.method==='fillText' && /REPLACE enabled.*Undo restores/.test(call.args[0])));assert.deepEqual(h.commands,[]);
+    h.view.transitionReplace=true;h.view.draft=transitionPlacement(h.timeline(),h.view,[frameToX(241,h.view,h.timeline().fps),timelineLayout(h.timeline(),h.view).trackTop(0)+30],h.transition,{replace:true});draw.invalidate();frames.shift()();assert.ok(calls.some(call=>call.method==='fillText' && /REPLACE enabled.*Undo restores/.test(call.args[0])));assert.deepEqual(h.commands,[]);
   }finally{draw?.destroy();Object.assign(globalThis,previous);h.destroy();}
 });

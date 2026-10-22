@@ -4,6 +4,107 @@ export const HEADER = 150,
   MARKER_BOTTOM = 42,
   TRACK = 62,
   MAX_FRAME = 1_000_000_000;
+export function timelineLayout(timeline,view={},height=view.viewportHeight){
+  const tracks=timeline?.tracks || [],video=tracks.flatMap((track,index)=>track.kind==='video'?[index]:[]).reverse(),audio=tracks.flatMap((track,index)=>track.kind==='audio'?[index]:[]);
+  const rowOrder=[...video,...audio],rowOfTrack=new Map(rowOrder.map((index,row)=>[index,row]));
+  const rowHeight=Number.isFinite(view.rowHeight)?Math.max(40,Math.min(160,view.rowHeight)):TRACK;
+  const dividerHeight=video.length && audio.length?8:0;
+  height=Number.isFinite(height)?Math.max(RULER,height):RULER+rowOrder.length*rowHeight+dividerHeight;
+  const available=Math.max(0,height-RULER-dividerHeight),videoRows=video.length*rowHeight,audioRows=audio.length*rowHeight;
+  const defaultVideo=videoRows+audioRows<=available?(available-videoRows-audioRows)/2+videoRows:available*video.length/Math.max(1,rowOrder.length);
+  const minimum=dividerHeight?Math.min(20,available/2):0;
+  const videoHeight=dividerHeight && Number.isFinite(view.videoPaneHeight)?Math.max(minimum,Math.min(available-minimum,view.videoPaneHeight)):defaultVideo;
+  const videoPane={top:RULER,bottom:RULER+videoHeight},audioPane={top:videoPane.bottom+dividerHeight,bottom:height};
+  const maxScroll=(rows,pane)=>rows>pane?rows+24-pane:0;
+  const videoMaxScroll=maxScroll(videoRows,videoHeight),audioMaxScroll=maxScroll(audioRows,available-videoHeight);
+  const videoScroll=Math.max(0,Math.min(videoMaxScroll,Number.isFinite(view.videoScroll)?view.videoScroll:0)),audioScroll=Math.max(0,Math.min(audioMaxScroll,Number.isFinite(view.audioScroll)?view.audioScroll:0));
+  const videoTop=videoPane.bottom-videoRows+videoScroll,audioTop=audioPane.top-audioScroll;
+  const pane=index=>tracks[index]?.kind==='video'?videoPane:audioPane;
+  const trackTop=index=>{const row=rowOfTrack.get(index);return row===undefined?NaN:row<video.length?videoTop+row*rowHeight:audioTop+(row-video.length)*rowHeight;};
+  const paneAtY=y=>video.length && y>=videoPane.top && y<videoPane.bottom?'video':audio.length && y>=audioPane.top && y<audioPane.bottom?'audio':null;
+  const trackAtY=y=>{
+    const kind=paneAtY(y),indices=kind==='video'?video:kind==='audio'?audio:[],top=kind==='video'?videoTop:audioTop,row=Math.floor((y-top)/rowHeight);
+    return row>=0 && row<indices.length?indices[row]:null;
+  };
+  const dragTarget=(y,kind)=>{
+    if(kind==='video'){
+      if(y>=videoPane.bottom)return null;
+      y=Math.max(y,videoPane.top);
+      if(y<videoTop)return {depth:1};
+      if(y<videoTop+videoRows){const row=Math.max(0,Math.min(video.length-1,Math.floor((y-videoTop)/rowHeight)));return {track:video[row]};}
+    }else if(kind==='audio'){
+      if(y<audioPane.top)return null;
+      y=Math.min(y,audioPane.bottom-1);
+      if(y>=audioTop+audioRows)return {depth:1};
+      if(y>=audioTop){const row=Math.max(0,Math.min(audio.length-1,Math.floor((y-audioTop)/rowHeight)));return {track:audio[row]};}
+    }
+    return null;
+  };
+  const newTrackTop=(kind,depth)=>kind==='video'?videoTop-depth*rowHeight:audioTop+audioRows+(depth-1)*rowHeight;
+  const clipRect=(index,clip,visible=false)=>{
+    const left=frameToX(clip.start_frame,view,timeline.fps),top=trackTop(index)+2;
+    const rect={left,right:left+Math.max(2,clip.length_frames*pixelsPerFrame(view,timeline.fps)),top,bottom:top+rowHeight-4};
+    if(visible){const box=pane(index);rect.top=Math.max(rect.top,box.top);rect.bottom=Math.min(rect.bottom,box.bottom);}
+    return rect;
+  };
+  return {rowOrder,rowOfTrack,rowHeight,height,videoPane,audioPane,divider:{top:videoPane.bottom,bottom:audioPane.top},videoHeight,videoHeightRange:[minimum,available-minimum],videoScroll,audioScroll,videoMaxScroll,audioMaxScroll,trackTop,trackAtY,dragTarget,newTrackTop,paneAtY,pane,clipRect};
+}
+export function timelineLayoutStamp(view){return [view.viewportHeight,view.rowHeight,view.videoPaneHeight,view.videoScroll,view.audioScroll];}
+export function clipsInTimelineRect(timeline,view,box,{visible=true}={}){
+  const layout=timelineLayout(timeline,view);
+  return timeline.tracks.flatMap((track,index)=>track.locked?[]:track.clips.filter(clip=>{
+    const rect=layout.clipRect(index,clip,visible);
+    return rect.bottom>rect.top && rect.left<=box.right && rect.right>=box.left && rect.top<=box.bottom && rect.bottom>=box.top;
+  }).map(clip=>clip.id));
+}
+export function moveTrackTargets(timeline,view,primaryTrack,y,ids){
+  const layout=timelineLayout(timeline,view),primaryKind=timeline.tracks[primaryTrack]?.kind,target=layout.dragTarget(y,primaryKind);
+  const selected=new Set(ids),unchanged=new Map(timeline.tracks.flatMap((track,index)=>track.clips.filter(clip=>selected.has(clip.id)).map(clip=>[clip.id,index])));
+  if(target===null)return unchanged;
+  const targetRow=target.depth?(primaryKind==='video'?-1:layout.rowOrder.length):layout.rowOfTrack.get(target.track);
+  const delta=targetRow-layout.rowOfTrack.get(primaryTrack),videoCount=timeline.tracks.filter(track=>track.kind==='video').length;
+  let newVideoTracks=0,newAudioTracks=0;
+  const result=new Map([...unchanged].map(([id,index])=>{
+    const video=timeline.tracks[index].kind==='video',shift=timeline.tracks[index].kind===primaryKind?delta:-delta,row=layout.rowOfTrack.get(index)+shift;
+    if(video && row<0){newVideoTracks=Math.max(newVideoTracks,-row);return [id,{kind:'video',depth:-row}];}
+    if(!video && row>=layout.rowOrder.length){const depth=row-layout.rowOrder.length+1;newAudioTracks=Math.max(newAudioTracks,depth);return [id,{kind:'audio',depth}];}
+    const bounded=video?Math.max(0,Math.min(videoCount-1,row)):Math.max(videoCount,Math.min(layout.rowOrder.length-1,row));
+    return [id,layout.rowOrder[bounded]];
+  }));
+  if([...result.values()].some(index=>typeof index==='number' && timeline.tracks[index].locked))return unchanged;
+  result.new_video_tracks=newVideoTracks;result.new_audio_tracks=newAudioTracks;
+  if(timeline.tracks.length+newVideoTracks+newAudioTracks>128)result.error='The group move exceeds the 128-track limit';
+  return result;
+}
+export function dragRangeAt(timeline,track,exclude,reference,length){
+  let lower=0,upper=MAX_FRAME;
+  for(const clip of timeline.tracks[track]?.clips || [])if(!exclude.has(clip.id)){
+    if(clip.start_frame+clip.length_frames<=reference)lower=Math.max(lower,clip.start_frame+clip.length_frames);
+    if(clip.start_frame>=reference+length)upper=Math.min(upper,clip.start_frame);
+  }
+  return [lower,Math.max(lower,upper-length)];
+}
+export function groupDragBounds(timeline,primaryId,targets,reference){
+  const clips=new Map(timeline.tracks.flatMap(track=>track.clips.map(clip=>[clip.id,clip]))),primary=clips.get(primaryId),exclude=new Set(targets.keys());
+  const bound=(id,start)=>{const target=targets.get(id),length=clips.get(id).length_frames;return typeof target==='number'?dragRangeAt(timeline,target,exclude,start,length):[0,MAX_FRAME-length];};
+  let [minimum,maximum]=bound(primaryId,reference);
+  for(const id of targets.keys())if(id!==primaryId){
+    const offset=clips.get(id).start_frame-primary.start_frame,[lower,upper]=bound(id,reference+offset);
+    minimum=Math.max(minimum,lower-offset);maximum=Math.min(maximum,upper-offset);
+  }
+  return [minimum,Math.max(minimum,maximum)];
+}
+export function groupMoveStart(timeline,view,primaryId,targets,reference){
+  const [minimum,maximum]=groupDragBounds(timeline,primaryId,targets,reference),clamp=frame=>Math.max(minimum,Math.min(maximum,frame)),candidate=clamp(reference),exclude=new Set(targets.keys());
+  if(!view.snap)return candidate;
+  const edges=timeline.tracks.flatMap(track=>track.clips.filter(clip=>!exclude.has(clip.id)).flatMap(clip=>[clip.start_frame,clip.start_frame+clip.length_frames]));
+  edges.push(view.playhead);
+  const primary=timeline.tracks.flatMap(track=>track.clips).find(clip=>clip.id===primaryId);
+  return clamp(snapFrame(candidate,edges,view,timeline.fps,10,primary.length_frames));
+}
+export function trackHeaderButtons(track){
+  return [{flag:'locked',label:'L',left:34,right:58},...(track.kind==='video'?[{flag:'muted',label:'V',left:62,right:86}]:[{flag:'solo',label:'S',left:62,right:86},{flag:'muted',label:'M',left:90,right:114},{flag:'armed',label:'R',left:118,right:142}])];
+}
 export function nativeGapAt(timeline,trackId,frame){
   const track=timeline?.tracks.find(item=>item.id===trackId);
   if(!track || track.locked || !Number.isSafeInteger(frame) || frame<0 || frame>MAX_FRAME || !Array.isArray(timeline.gaps))return null;
@@ -48,9 +149,8 @@ export function clickTimelineSelection(timeline,{ids,anchor},clickedId,{shift=fa
   let next=new Set(ids),nextAnchor=clicked;
   if(shift){
     nextAnchor=reconcileSelectionAnchor(timeline,anchor,projectEpoch) || clicked;
-    const scale=pixelsPerFrame(view,timeline.fps),rect=(index,clip)=>({id:clip.id,left:clip.start_frame*scale,right:clip.start_frame*scale+Math.max(2,clip.length_frames*scale),top:index*TRACK+2,bottom:(index+1)*TRACK-2});
-    // Range selection follows the displayed rows, without reordering the renderer.
-    const rectangles=timeline.tracks.flatMap((track,index)=>track.clips.map(clip=>({...rect(index,clip),locked:track.locked})));
+    const layout=timelineLayout(timeline,view);
+    const rectangles=timeline.tracks.flatMap((track,index)=>track.clips.map(clip=>({id:clip.id,...layout.clipRect(index,clip),locked:track.locked})));
     const a=rectangles.find(item=>item.id===nextAnchor.clip_id),b=rectangles.find(item=>item.id===clickedId);
     const union={left:Math.min(a.left,b.left),right:Math.max(a.right,b.right),top:Math.min(a.top,b.top),bottom:Math.max(a.bottom,b.bottom)};
     next=new Set(rectangles.filter(item=>!item.locked && item.left<=union.right && item.right>=union.left && item.top<=union.bottom && item.bottom>=union.top).map(item=>item.id));
@@ -76,7 +176,7 @@ export function pixelsPerFrame(view, fps) {
   return (view.scale * fps.den) / fps.num;
 }
 export const frameToX = (frame, view, fps) =>
-  HEADER + (frame - view.origin) * pixelsPerFrame(view, fps);
+  HEADER + (frame - (view.origin ?? 0)) * pixelsPerFrame(view, fps);
 export const xToFrame = (x, view, fps) =>
   Math.max(
     0,
@@ -89,15 +189,13 @@ export const visibleRange = (width, view, fps) => [
   view.origin,
   xToFrame(width, view, fps),
 ];
-export function snapFrame(frame, candidates, view, fps, threshold = 8) {
-  const limit = threshold / pixelsPerFrame(view, fps);
+export function snapFrame(frame, candidates, view, fps, threshold = 10, length = 0) {
+  const limit = Math.round(threshold / pixelsPerFrame(view, fps));
+  if(limit<=0)return Math.max(0,frame);
   let best = frame,
-    distance = limit + Number.EPSILON;
+    distance = Infinity;
   for (const candidate of candidates) {
-    if (Math.abs(candidate - frame) <= distance) {
-      best = candidate;
-      distance = Math.abs(candidate - frame);
-    }
+    for(const point of [frame,frame+length])if(Math.abs(candidate-point)<=limit && Math.abs(candidate-point)<distance){best=frame+candidate-point;distance=Math.abs(candidate-point);}
   }
   return Math.max(0, best);
 }
@@ -192,8 +290,8 @@ export function transitionPlacement(timeline,view,point,transition,{replace=fals
   const blocked=error=>({kind:'transition_placement',error,noop:false,replacement:false,operation:null,handles:[]});
   const [x,y]=Array.isArray(point)?point:[point?.x,point?.y];
   if(!Number.isFinite(x) || !Number.isFinite(y) || x<HEADER || y<RULER || view.tool==='slip')return blocked('Drop a transition near a video clip edge');
-  const trackIndex=Math.floor((y-RULER+view.scrollY)/TRACK),track=timeline?.tracks?.[trackIndex],top=RULER+trackIndex*TRACK-view.scrollY;
-  if(track?.kind!=='video' || track.locked || y<top+7 || y>top+TRACK-7)return blocked('Choose an unlocked video clip');
+  const layout=timelineLayout(timeline,view),trackIndex=layout.trackAtY(y),track=timeline?.tracks?.[trackIndex],top=layout.trackTop(trackIndex);
+  if(track?.kind!=='video' || track.locked || y<top+2 || y>top+layout.rowHeight-2)return blocked('Choose an unlocked video clip');
   const payload=typeof transition==='string'?(timeline.transition_defaults || []).find(candidate=>candidate.kind===transition):transition;
   if(!nativeTransition(payload))return blocked('A complete native transition is required');
   if(source){
@@ -270,10 +368,15 @@ export function hitTest(x, y, timeline, view, width=Infinity) {
     }
   }
   if (y < RULER) return { kind: "scrub" };
-  const track = Math.floor((y - RULER + view.scrollY) / TRACK);
-  if (!timeline.tracks[track]) return { kind: "blank" };
-  if (x < HEADER) return { kind: "header", track };
-  const top=RULER+track*TRACK-view.scrollY;
+  const layout=timelineLayout(timeline,view);
+  if(layout.divider.bottom>layout.divider.top && y>=layout.divider.top && y<layout.divider.bottom)return {kind:'divider'};
+  const track = layout.trackAtY(y);
+  if (track===null) return { kind: "blank" };
+  const top=layout.trackTop(track),rowHeight=layout.rowHeight;
+  if (x < HEADER){
+    const button=Math.abs(y-top-rowHeight/2)<=13?trackHeaderButtons(timeline.tracks[track]).find(button=>x>=button.left && x<=button.right):null;
+    return button?{kind:'header_flag',track,flag:button.flag}:{kind:'header',track};
+  }
   const speedStrips=y>=top+7 && y<=top+21?retimeStrips(timeline.tracks[track],view,timeline.fps,width):[];
   if(y>=top+7 && y<=top+21){
     const retime=speedStrips.find(handle=>handle.interactive && x>=handle.left && x<=handle.right && handle.right-x<8);
@@ -282,7 +385,7 @@ export function hitTest(x, y, timeline, view, width=Infinity) {
     if(strip?.close && x>=strip.close.left && x<=strip.close.right)return {...strip,kind:'retime_close',track};
     if(strip && x>=strip.menu.left && x<=strip.menu.right)return {...strip,kind:'retime_menu',track};
   }
-  if(y>=top+TRACK-21 && y<=top+TRACK-7){
+  if(y>=top+rowHeight-21 && y<=top+rowHeight-7){
     const transition=transitionHandles(timeline.tracks[track],view,timeline.fps).find(handle=>x>=frameToX(handle.clip.start_frame,view,timeline.fps) && x<=frameToX(handle.clip.start_frame+handle.clip.length_frames,view,timeline.fps) && Math.abs(x-handle.x)<=9);
     if(transition)return {...transition,track};
     const body=transitionBodies(timeline.tracks[track],view,timeline.fps).find(body=>x>=body.left_x && x<=body.right_x);
@@ -295,8 +398,7 @@ export function hitTest(x, y, timeline, view, width=Infinity) {
       view,
       timeline.fps,
     );
-    if (x >= left && x <= right){
-      const top=RULER+track*TRACK-view.scrollY;
+    if (x >= left && x <= Math.max(right,left+2) && y>=top+2 && y<=top+rowHeight-2){
       if(!timeline.tracks[track].locked && view.tool!=='slip' && !speedStrips.some(strip=>strip.clip_id===clip.id) && y>=top+7 && y<=top+21){
         const handle=fadeHandles(clip,view,timeline.fps).filter(handle=>Math.abs(x-handle.x)<=9).sort((a,b)=>Math.abs(x-a.x)-Math.abs(x-b.x))[0];
         if(handle)return {kind:'fade',edge:handle.edge,track,clip};
@@ -345,12 +447,13 @@ export function linkedSelection(timeline, ids) {
 export function validateDraft(timeline, changes) {
   const ids = new Set(changes.map((change) => change.clip_id));
   for (const change of changes) {
-    const target = timeline.tracks.find(
+    let target = timeline.tracks.find(
       (track) => track.id === change.to_track,
     );
     const source = timeline.tracks.find((track) =>
       track.clips.some((clip) => clip.id === change.clip_id),
     );
+    if(change.to_new_track && Number.isSafeInteger(change.to_new_track.depth) && change.to_new_track.depth>=1 && change.to_new_track.depth<=128 && change.to_new_track.kind===source?.kind)target={kind:source.kind,locked:false,clips:[]};
     if (
       !target ||
       !source ||
@@ -381,7 +484,7 @@ export function validateDraft(timeline, changes) {
       changes.some(
         (other) =>
           other !== change &&
-          other.to_track === change.to_track &&
+          (change.to_new_track?other.to_new_track?.kind===change.to_new_track.kind && other.to_new_track.depth===change.to_new_track.depth:!other.to_new_track && other.to_track===change.to_track) &&
           start < other.to_start_frame + other.length_frames &&
           start + length > other.to_start_frame,
       )

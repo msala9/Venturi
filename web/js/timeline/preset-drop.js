@@ -1,15 +1,15 @@
-import {HEADER,RULER,TRACK,MAX_FRAME,frameToX,linkedSelection} from './geometry.js';
+import {HEADER,RULER,MAX_FRAME,frameToX,linkedSelection,timelineLayout,timelineLayoutStamp} from './geometry.js';
 
 export const PRESET_DRAG_TYPE='application/x-venturi-preset';
 const nativeClip=clip=>typeof clip?.id==='string' && clip.id.length>0 && Number.isSafeInteger(clip.start_frame) && clip.start_frame>=0 && Number.isSafeInteger(clip.length_frames) && clip.length_frames>0 && clip.start_frame+clip.length_frames<=MAX_FRAME;
 const metadata=item=>item && typeof item.id==='string' && /^[A-Za-z0-9_-]{1,80}$/.test(item.id) && typeof item.revision==='string' && item.revision.length>0 && item.revision.length<=256 && !/[\u0000-\u001f\u007f]/.test(item.revision) && typeof item.name==='string' && item.name.trim().length>0 && new TextEncoder().encode(item.name).length<=128 && !/[\u0000-\u001f\u007f]/.test(item.name) && typeof item.video==='boolean' && typeof item.audio==='boolean' && (item.video || item.audio) && item.archived!==true && item.error==null;
 
 export function presetApplication(timeline,view,[x,y],width,height,item){
-  if(!metadata(item) || !Array.isArray(timeline?.tracks) || ![x,y,width,height,view.scale,view.origin,view.scrollY].every(Number.isFinite) || width<=HEADER || height<=RULER || x<HEADER || x>=width || y<RULER || y>=height || view.scale<=0 || !Number.isSafeInteger(timeline.fps?.num) || !Number.isSafeInteger(timeline.fps?.den) || timeline.fps.num<=0 || timeline.fps.den<=0)return null;
-  const index=Math.floor((y-RULER+view.scrollY)/TRACK),track=timeline.tracks[index];
+  if(!metadata(item) || !Array.isArray(timeline?.tracks) || ![x,y,width,height,view.scale,view.origin].every(Number.isFinite) || width<=HEADER || height<=RULER || x<HEADER || x>=width || y<RULER || y>=height || view.scale<=0 || !Number.isSafeInteger(timeline.fps?.num) || !Number.isSafeInteger(timeline.fps?.den) || timeline.fps.num<=0 || timeline.fps.den<=0)return null;
+  const layout=timelineLayout(timeline,view,height),index=layout.trackAtY(y),track=timeline.tracks[index];
   if(!track || !['video','audio'].includes(track.kind))return null;
-  const top=RULER+index*TRACK-view.scrollY;
-  if(y<Math.max(RULER,top+7) || y>=Math.min(height,top+TRACK-7))return null;
+  const rect=layout.pane(index),top=layout.trackTop(index);
+  if(y<Math.max(rect.top,top+2) || y>=Math.min(rect.bottom,top+layout.rowHeight-2))return null;
   const clip=track.clips.find(clip=>nativeClip(clip) && x>=Math.max(HEADER,frameToX(clip.start_frame,view,timeline.fps)+1) && x<Math.min(width,frameToX(clip.start_frame+clip.length_frames,view,timeline.fps)-1));
   if(!clip)return null;
   const selection=Array.isArray(view.selection)?view.selection:[],clip_ids=selection.includes(clip.id)?[...selection]:[clip.id];
@@ -19,7 +19,7 @@ export function presetApplication(timeline,view,[x,y],width,height,item){
   else if(track.locked || affected.some(({track})=>track.locked))error='The target or a selected or linked track is locked';
   else if(!affected.some(({track})=>item[track.kind]===true))error='This preset has no matching video or audio source for these clips';
   const outlines=affected.flatMap(({track,index,clip})=>{
-    const left=Math.max(HEADER,frameToX(clip.start_frame,view,timeline.fps)+1),right=Math.min(width,frameToX(clip.start_frame+clip.length_frames,view,timeline.fps)-1),top=Math.max(RULER,RULER+index*TRACK-view.scrollY+7),bottom=Math.min(height,RULER+(index+1)*TRACK-view.scrollY-7);
+    const rect=layout.clipRect(index,clip,true),left=Math.max(HEADER,rect.left+1),right=Math.min(width,rect.right-1),top=rect.top,bottom=rect.bottom;
     return right>left && bottom>top?[{clip_id:clip.id,track_id:track.id,left,right,top,bottom}]:[];
   });
   return {kind:'preset_application',preset_id:item.id,name:item.name,target_clip_id:clip.id,clip_ids,affected_ids,outlines,count:affected_ids.length,error};
@@ -39,7 +39,7 @@ export function createPresetDrop({canvas,getTimeline,getPresetContext=()=>null,v
       if(!context || !timeline || ![rect.left,rect.top,rect.width,rect.height,rect.localWidth,rect.localHeight].every(Number.isFinite) || rect.width<=0 || rect.height<=0 || rect.localWidth<=HEADER || rect.localHeight<=RULER)return null;
       const epoch=context.epoch ?? context.project_epoch,generation=context.generation ?? context.if_generation,id=context.timeline ?? context.timeline_id;
       if(![epoch,generation,id,context.revision].every(value=>typeof value==='string' && value.length>0) || timeline.id!==id || timeline.revision!==context.revision || !Number.isSafeInteger(timeline.fps?.num) || !Number.isSafeInteger(timeline.fps?.den) || timeline.fps.num<=0 || timeline.fps.den<=0)return null;
-      return JSON.stringify([context,timeline.fps,view.scale,view.origin,view.scrollY,view.playhead,view.tool,view.snap,view.selection,view.transitionSelection,view.transitionReplace,view.retimeOverwrite,[...(view.retimeVisible || [])].sort(),rect]);
+      return JSON.stringify([context,timeline.fps,view.scale,view.origin,view.scrollY,timelineLayoutStamp(view),view.playhead,view.tool,view.snap,view.selection,view.transitionSelection,view.transitionReplace,view.retimeOverwrite,[...(view.retimeVisible || [])].sort(),rect]);
     }catch{return null;}
   };
   function end(){

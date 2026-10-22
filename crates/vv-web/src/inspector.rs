@@ -45,6 +45,351 @@ pub struct Parameter {
     pub param: TransformParam,
     pub value: f32,
 }
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
+pub enum InspectorEdit {
+    Transform {
+        parameters: Vec<Parameter>,
+    },
+    Flip {
+        axis: usize,
+        enabled: bool,
+    },
+    ToggleTransformKeys {
+        params: Vec<TransformParam>,
+    },
+    ResetTransform {
+        params: Vec<TransformParam>,
+        reset_flip: bool,
+    },
+    Gain {
+        value: f32,
+    },
+    ToggleGainKey {},
+    ResetGain {},
+    ResetCompositing {},
+}
+
+fn inspector_params(params: &[TransformParam], allow_empty: bool) -> Result<()> {
+    let mut seen = std::collections::HashSet::new();
+    if (!allow_empty && params.is_empty())
+        || params.len() > TransformParam::ALL.len()
+        || params.iter().any(|param| !seen.insert(*param))
+    {
+        return Err(ApiError::invalid("Choose distinct native Inspector axes"));
+    }
+    Ok(())
+}
+
+fn inspector_crop(size: (u32, u32), clip: &Clip, frame: i64, values: &[Parameter]) -> Result<()> {
+    let params = [
+        TransformParam::CropLeft,
+        TransformParam::CropTop,
+        TransformParam::CropRight,
+        TransformParam::CropBottom,
+    ];
+    if !values.iter().any(|value| params.contains(&value.param)) {
+        return Ok(());
+    }
+    let crop = params.map(|param| {
+        values
+            .iter()
+            .find(|value| value.param == param)
+            .map_or_else(
+                || clip.effects.transform.track(param).value_at(frame),
+                |value| value.value,
+            )
+    });
+    if size.0 == 0
+        || size.1 == 0
+        || crop.iter().any(|value| !value.is_finite() || *value < 0.0)
+        || crop[0] + crop[2] > size.0.saturating_sub(1) as f32
+        || crop[1] + crop[3] > size.1.saturating_sub(1) as f32
+    {
+        return Err(ApiError::invalid(
+            "Inspector crop must retain at least one source pixel per axis",
+        ));
+    }
+    Ok(())
+}
+
+pub fn edit_selection(
+    session: &mut Session,
+    id: TimelineId,
+    clip_ids: &[String],
+    timeline_frame: i64,
+    edit: &InspectorEdit,
+) -> Result<()> {
+    if clip_ids.is_empty()
+        || clip_ids.len() > 4096
+        || !(0..=crate::commands::MAX_FRAME).contains(&timeline_frame)
+    {
+        return Err(ApiError::invalid(
+            "Choose 1 to 4096 Inspector clips and a bounded timeline frame",
+        ));
+    }
+    let audio = matches!(
+        edit,
+        InspectorEdit::Gain { .. } | InspectorEdit::ToggleGainKey {} | InspectorEdit::ResetGain {}
+    );
+    let mut seen = std::collections::HashSet::new();
+    let mut targets = Vec::with_capacity(clip_ids.len());
+    for raw in clip_ids {
+        if raw.is_empty() || raw.len() > 20 || !raw.bytes().all(|value| value.is_ascii_digit()) {
+            return Err(ApiError::invalid("Invalid Inspector clip ID"));
+        }
+        let (track, clip_id, clip) = find(session, id, raw)?;
+        if !seen.insert(clip_id) {
+            return Err(ApiError::invalid("Duplicate Inspector clip"));
+        }
+        writable(session, id, track)?;
+        if (session.project.timelines[id].tracks[track].kind == core::TrackKind::Audio) != audio {
+            return Err(ApiError::invalid(
+                "Inspector targets must match the selected property tab",
+            ));
+        }
+        let end = clip
+            .timeline_start
+            .checked_add(clip.timeline_len)
+            .filter(|_| clip.timeline_len > 0)
+            .ok_or_else(|| ApiError::invalid("Invalid Inspector clip range"))?;
+        let frame = clip.source_frame_at(timeline_frame.clamp(clip.timeline_start, end - 1));
+        if !(0..=crate::commands::MAX_FRAME).contains(&frame) {
+            return Err(ApiError::invalid("Inspector source frame is out of range"));
+        }
+        targets.push((track, clip_id, clip, frame));
+    }
+    targets.sort_by_key(|(track, clip_id, clip, _)| (*track, clip.timeline_start, *clip_id));
+    let (_, _, primary, primary_frame) = targets[0];
+    let mut commands: Vec<Box<dyn Command>> = Vec::new();
+    match edit {
+        InspectorEdit::Transform { parameters } => {
+            let params: Vec<_> = parameters.iter().map(|value| value.param).collect();
+            inspector_params(&params, false)?;
+            for parameter in parameters {
+                bounded(
+                    parameter.value,
+                    limits(parameter.param, size(session, id, primary)),
+                )?;
+            }
+            let changed: Vec<_> = parameters
+                .iter()
+                .filter(|parameter| {
+                    parameter.value
+                        != primary
+                            .effects
+                            .transform
+                            .track(parameter.param)
+                            .value_at(primary_frame)
+                })
+                .collect();
+            for &(track, clip_id, clip, frame) in &targets {
+                let mut values = Vec::with_capacity(changed.len());
+                for parameter in &changed {
+                    let current = clip.effects.transform.track(parameter.param);
+                    let value = match parameter.param {
+                        TransformParam::PositionX | TransformParam::PositionY => {
+                            current.value_at(frame) + parameter.value
+                                - primary
+                                    .effects
+                                    .transform
+                                    .track(parameter.param)
+                                    .value_at(primary_frame)
+                        }
+                        _ => parameter.value,
+                    };
+                    bounded(value, limits(parameter.param, size(session, id, clip)))?;
+                    values.push(Parameter {
+                        param: parameter.param,
+                        value,
+                    });
+                    commands.push(if current.is_constant() {
+                        Box::new(core::set_clip_transform_param(
+                            id,
+                            track,
+                            clip_id,
+                            parameter.param,
+                            value,
+                        )) as Box<dyn Command>
+                    } else {
+                        Box::new(core::UpsertKeyframe::new(
+                            id,
+                            track,
+                            clip_id,
+                            frame,
+                            core::KeyframeValue::TransformParam(parameter.param, value),
+                            core::Interpolation::Linear,
+                        ))
+                    });
+                }
+                inspector_crop(size(session, id, clip), clip, frame, &values)?;
+            }
+        }
+        InspectorEdit::Flip { axis, enabled } => {
+            if *axis > 1 {
+                return Err(ApiError::invalid("Choose horizontal or vertical flip"));
+            }
+            if primary.effects.transform.flip[*axis] != *enabled {
+                for &(track, clip_id, clip, _) in &targets {
+                    let mut flip = clip.effects.transform.flip;
+                    flip[*axis] = *enabled;
+                    commands.push(Box::new(core::set_clip_flip(id, track, clip_id, flip)));
+                }
+            }
+        }
+        InspectorEdit::ToggleTransformKeys { params } => {
+            inspector_params(params, false)?;
+            let remove = params.iter().any(|param| {
+                primary
+                    .effects
+                    .transform
+                    .track(*param)
+                    .keyframe_at(primary_frame)
+                    .is_some()
+            });
+            for &(track, clip_id, clip, frame) in &targets {
+                let mut values = Vec::with_capacity(params.len());
+                for &param in params {
+                    let current = clip.effects.transform.track(param);
+                    let value = if remove {
+                        let mut reduced = current.clone();
+                        reduced.remove_at(frame);
+                        reduced.value_at(frame)
+                    } else {
+                        current.value_at(frame)
+                    };
+                    bounded(value, limits(param, size(session, id, clip)))?;
+                    values.push(Parameter { param, value });
+                    commands.push(if remove {
+                        Box::new(core::RemoveKeyframe::new(
+                            id,
+                            track,
+                            clip_id,
+                            core::KeyframeTarget::TransformParam(param),
+                            frame,
+                        )) as Box<dyn Command>
+                    } else {
+                        Box::new(core::UpsertKeyframe::new(
+                            id,
+                            track,
+                            clip_id,
+                            frame,
+                            core::KeyframeValue::TransformParam(param, value),
+                            core::Interpolation::Linear,
+                        ))
+                    });
+                }
+                inspector_crop(size(session, id, clip), clip, frame, &values)?;
+            }
+        }
+        InspectorEdit::ResetTransform { params, reset_flip } => {
+            inspector_params(params, *reset_flip)?;
+            let defaults = core::Transform::default();
+            let values: Vec<_> = params
+                .iter()
+                .map(|param| Parameter {
+                    param: *param,
+                    value: param.of(&defaults),
+                })
+                .collect();
+            for &(track, clip_id, clip, frame) in &targets {
+                inspector_crop(size(session, id, clip), clip, frame, &values)?;
+                commands.push(Box::new(core::ResetTransformParams::new(
+                    id,
+                    track,
+                    clip_id,
+                    params.clone(),
+                    *reset_flip,
+                )));
+            }
+        }
+        InspectorEdit::Gain { value } => {
+            bounded(*value, (core::GAIN_DB_MIN, core::GAIN_DB_MAX))?;
+            if primary.effects.gain_db.value_at(primary_frame) != *value {
+                for &(track, clip_id, clip, frame) in &targets {
+                    commands.push(if clip.effects.gain_db.is_constant() {
+                        Box::new(core::set_clip_gain(id, track, clip_id, *value))
+                            as Box<dyn Command>
+                    } else {
+                        Box::new(core::UpsertKeyframe::new(
+                            id,
+                            track,
+                            clip_id,
+                            frame,
+                            core::KeyframeValue::Gain(*value),
+                            core::Interpolation::Linear,
+                        ))
+                    });
+                }
+            }
+        }
+        InspectorEdit::ToggleGainKey {} => {
+            let remove = primary.effects.gain_db.keyframe_at(primary_frame).is_some();
+            for &(track, clip_id, clip, frame) in &targets {
+                let value = if remove {
+                    let mut reduced = clip.effects.gain_db.clone();
+                    reduced.remove_at(frame);
+                    reduced.value_at(frame)
+                } else {
+                    clip.effects.gain_db.value_at(frame)
+                };
+                bounded(value, (core::GAIN_DB_MIN, core::GAIN_DB_MAX))?;
+                commands.push(if remove {
+                    Box::new(core::RemoveKeyframe::new(
+                        id,
+                        track,
+                        clip_id,
+                        core::KeyframeTarget::Gain,
+                        frame,
+                    )) as Box<dyn Command>
+                } else {
+                    Box::new(core::UpsertKeyframe::new(
+                        id,
+                        track,
+                        clip_id,
+                        frame,
+                        core::KeyframeValue::Gain(value),
+                        core::Interpolation::Linear,
+                    ))
+                });
+            }
+        }
+        InspectorEdit::ResetGain {} => {
+            for &(track, clip_id, _, _) in &targets {
+                commands.push(Box::new(core::reset_clip_gain(id, track, clip_id)));
+            }
+        }
+        InspectorEdit::ResetCompositing {} => {
+            for &(track, clip_id, _, _) in &targets {
+                commands.push(Box::new(core::set_clip_blend_mode(
+                    id,
+                    track,
+                    clip_id,
+                    core::BlendMode::Normal,
+                )));
+            }
+            for &(track, clip_id, _, _) in &targets {
+                commands.push(Box::new(core::set_clip_matte(id, track, clip_id, None)));
+            }
+            for &(track, clip_id, _, _) in &targets {
+                commands.push(Box::new(core::ResetTransformParams::new(
+                    id,
+                    track,
+                    clip_id,
+                    vec![TransformParam::Opacity],
+                    false,
+                )));
+            }
+        }
+    }
+    if let Some(first) = commands.first() {
+        session.apply(Box::new(core::CompositeCommand::new(
+            first.label(),
+            commands,
+        )));
+    }
+    Ok(())
+}
 #[derive(Clone, Debug, PartialEq, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Target {
@@ -765,6 +1110,14 @@ pub fn keyframes(
 pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64) -> Result<Value> {
     detail_page(session, id, raw, timeline_frame, None)
 }
+fn inspector_keyframe_info(values: &core::Keyframed<f32>, clip: &Clip, frame: i64) -> Value {
+    let in_trim = |value: &i64| (clip.source_in()..clip.source_out()).contains(value);
+    json!({
+        "on_keyframe":values.keyframe_at(frame).is_some(),
+        "previous_frame":values.keyframe_before(frame).filter(in_trim).map(|source| clip.timeline_frame_at(source)),
+        "next_frame":values.keyframe_after(frame).filter(in_trim).map(|source| clip.timeline_frame_at(source))
+    })
+}
 pub fn detail_page(
     session: &Session,
     id: TimelineId,
@@ -782,7 +1135,7 @@ pub fn detail_page(
     let parameters: Vec<_> = TransformParam::ALL.into_iter().map(|param| {
         let values = clip.effects.transform.track(param);
         let bounds = limits(param, size(session, id, clip));
-        json!({"param":param,"default":values.default,"value":values.value_at(frame),"keyframes":values.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":values.keyframes().len(),"min":bounds.0,"max":bounds.1})
+        json!({"param":param,"default":values.default,"value":values.value_at(frame),"on_keyframe":values.keyframe_at(frame).is_some(),"keyframe_info":inspector_keyframe_info(values,clip,frame),"keyframes":values.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":values.keyframes().len(),"min":bounds.0,"max":bounds.1})
     }).collect();
     let lane = &session.project.timelines[id].tracks[track];
     let right = lane
@@ -791,6 +1144,8 @@ pub fn detail_page(
         .find(|c| c.timeline_start == clip.timeline_end() && c.id != clip.id && !c.is_adjustment());
     let mut result = json!({"clip_id":raw,"source_frame":frame,"timeline_frame":timeline_frame,"locked":session.project.timelines[id].tracks[track].locked,"video":session.project.timelines[id].tracks[track].kind == core::TrackKind::Video,"transform":parameters,"flip":clip.effects.transform.flip,"blend":clip.effects.blend_mode,"blends":core::BlendMode::ALL,"matte":clip.effects.matte.map(|m|format!("{m:?}")).unwrap_or_else(||"None".into()),"mattes":["None","Alpha","AlphaInverted","Luma","LumaInverted"],"gain":{"default":clip.effects.gain_db.default,"value":clip.effects.gain_db.value_at(frame),"keyframes":clip.effects.gain_db.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":clip.effects.gain_db.keyframes().len()},"color":clip.effects.color.as_ref().map(|c|c.default),"fade_in":clip.fade_in,"fade_out":clip.fade_out,"length_frames":clip.timeline_len});
     result["source_size"] = json!(size(session, id, clip));
+    result["gain"]["on_keyframe"] = json!(clip.effects.gain_db.keyframe_at(frame).is_some());
+    result["gain"]["keyframe_info"] = inspector_keyframe_info(&clip.effects.gain_db, clip, frame);
     result["transitions"] = json!({"in":clip.effects.transition_in,"out":clip.effects.transition_out,"cut_after":lane.crossing_from(clip.id).map(|c|&c.transition),"cut_max_frames":right.map(|r|2*r.timeline_len.min(clip.timeline_len))});
     result["title"] = clip.effects.title.as_ref().map(|title|json!({"content":{"default":title.content.default,"keyframes":title.content.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":title.content.keyframes().len()},"font_family":title.font_family,"font_weight":title.font_weight,"italic":title.italic,"color":title.color,"size":title.size,"tracking":title.tracking,"line_spacing":title.line_spacing,"underline":title.underline,"strikethrough":title.strikethrough,"case":title.case,"align":title.align,"anchor":title.anchor,"position":title.position,"background":title.background})).unwrap_or(Value::Null);
     result["masks"] = crate::masks::detail(clip, frame);

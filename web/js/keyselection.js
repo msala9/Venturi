@@ -1,4 +1,4 @@
-import {curveInterpolation} from "./curves.js";
+import {curveInterpolation,createKeyEditorGuard} from "./curves.js";
 
 const identity=pick=>JSON.stringify([pick.target,pick.source_frame]);
 export function keySelectionOperation(clip,picks,action,linkZoom=false) {
@@ -18,7 +18,7 @@ export function mergeCrossSelection(stored,visible,chosen) {
   if(result.length>2048)throw Error("Select at most 2048 keys across all pages");
   return result;
 }
-export function renderKeySelection(root,detail,{disabled,commit,notice,openState,scope=detail.clip_id,zoomLink,reload}) {
+export function renderKeySelection(root,detail,{disabled,commit,notice,openState,scope=detail.clip_id,zoomLink,reload,canInteract}) {
   const rows=[...(detail.curves?.tracks || []),...(detail.event_keys || [])];
   const total=rows.reduce((sum,row)=>sum+row.key_count,0);
   if(!total)return null;
@@ -50,6 +50,7 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   const interpolate=document.createElement("button");interpolate.type="button";interpolate.textContent="Set selected keys interpolation";form.append(interpolate);
   const remove=document.createElement("button");remove.type="button";remove.textContent="Delete keys across parameters";form.append(remove);section.append(form);root.append(section);
   let waiting=false,disposed=false;
+  const owner=createKeyEditorGuard({root,section,disabled,canInteract,commit});
   if(stored?.focus && !disabled && section.open){
     remember({ids:selectedIds,focus:false});
     queueMicrotask(()=>{if(!disposed && list.isConnected && document.activeElement===document.body)list.focus({preventScroll:true});});
@@ -61,14 +62,14 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
     picks=shown.map(({target,source_frame})=>({target,source_frame}));const ids=new Set(selectedIds);list.replaceChildren(...shown.map((key,index)=>{const option=new Option(`${key.name} · source ${key.source_frame} · timeline ${key.timeline}`,String(index));option.selected=ids.has(identity(picks[index]));return option;}));update();
   }
   async function send(action){
-    if(disabled || waiting || !selectedIds.length || action.kind==="move" && !delta.reportValidity())return;
+    if(!owner.current() || waiting || !selectedIds.length || action.kind==="move" && !delta.reportValidity())return;
     const before=selected();
     try{
       const operation=keySelectionOperation(detail.clip_id,before,action,linked.checked);
       waiting=true;form.inert=true;update();
       const after=action.kind==="delete"?[]:before.map(pick=>({...pick,source_frame:pick.source_frame+(action.kind==="move"?action.delta_source_frames:0)}));
       selectedIds=after.map(identity);remember({ids:selectedIds,focus:true});
-      await commit(operation);
+      await owner.commit(operation);
     }catch(error){selectedIds=before.map(identity);remember({ids:selectedIds,focus:true});notice(error.message);if(disposed)reload?.();else if(list.isConnected)list.focus({preventScroll:true});}
     finally{waiting=false;form.inert=false;if(!disposed)show();}
   }
@@ -83,6 +84,6 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   remove.addEventListener("click",()=>send({kind:"delete"}));show();
   return {cancel(){
     if(document.activeElement===list)remember({ids:selectedIds,focus:true});
-    disposed=true;
+    owner.dispose();disposed=true;
   }};
 }

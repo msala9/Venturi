@@ -8,12 +8,12 @@ export function detailIdentity(state) {
   return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame,state.key_page].join(":") : null;
 }
 export function propertyOperation(clip, patch) { return { kind: "set_properties", clip_id: clip, patch }; }
-export function videoPropertySelection({project_epoch,generation,timeline,selection}={}){
+function propertySelection({project_epoch,generation,timeline,selection}={},kind){
   if(typeof project_epoch!=='string' || !project_epoch || typeof generation!=='string' || !generation || typeof timeline?.id!=='string' || typeof timeline.revision!=='string' || !Array.isArray(timeline.tracks) || !Array.isArray(selection) || !selection.length || selection.some(id=>typeof id!=='string' || !id) || new Set(selection).size!==selection.length)return null;
   const all=new Set(timeline.tracks.flatMap(track=>track.clips.map(clip=>clip.id)));
   if(selection.some(id=>!all.has(id)))return null;
   const selected=new Set(selection),decimal=id=>/^\d{1,20}$/.test(id) && BigInt(id)<=18446744073709551615n;
-  const clip_ids=timeline.tracks.filter(track=>track.kind==='video' && !track.locked).flatMap(track=>{
+  const clip_ids=timeline.tracks.filter(track=>track.kind===kind && !track.locked).flatMap(track=>{
     const clips=track.clips.filter(clip=>selected.has(clip.id));
     // Native panel targets sort by start, preserving ClipKey order for ties.
     if(clips.every(clip=>decimal(clip.id)))clips.sort((a,b)=>BigInt(a.id)<BigInt(b.id)?-1:BigInt(a.id)>BigInt(b.id)?1:0);
@@ -22,6 +22,8 @@ export function videoPropertySelection({project_epoch,generation,timeline,select
   });
   return clip_ids.length && clip_ids.length<=4096?{project_epoch,generation,timeline_id:timeline.id,revision:timeline.revision,selection:[...selection].sort(),clip_ids}:null;
 }
+export function videoPropertySelection(state){return propertySelection(state,'video');}
+export function audioPropertySelection(state){return propertySelection(state,'audio');}
 export function renderBlendMatte(root,detail,{selection,getSelection,canInteract,commit,notice,primaryName=''}){
   if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || !detail.video || detail.locked)return;
   const captured=structuredClone(selection),identity=JSON.stringify(captured),section=document.createElement('details'),summary=document.createElement('summary'),note=document.createElement('p');
@@ -43,6 +45,91 @@ export function renderBlendMatte(root,detail,{selection,getSelection,canInteract
   }
   root.append(section);
 }
+const TRANSFORM_ROWS=[['Zoom',['ZoomX','ZoomY']],['Position',['PositionX','PositionY']],['Rotation',['Rotation']],['Anchor',['AnchorX','AnchorY']]];
+const CROP_ROWS=[['Crop left',['CropLeft']],['Crop right',['CropRight']],['Crop top',['CropTop']],['Crop bottom',['CropBottom']],['Crop softness',['CropSoftness']]];
+const CROP_PARAMS=['CropLeft','CropTop','CropRight','CropBottom','CropSoftness'];
+function selectedPropertyControls(root,detail,{selection,getSelection,frame,getFrame,canInteract,commit,notice,seek},video){
+  if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || detail.video!==video || detail.locked || !Number.isSafeInteger(frame) || frame<0)return null;
+  const captured=structuredClone(selection),identity=JSON.stringify(captured),controls=[],section=document.createElement('details');section.open=true;
+  if(getFrame()!==frame || JSON.stringify(getSelection())!==identity)return null;
+  let waiting=false;
+  const current=()=>root.isConnected!==false && section.isConnected!==false && getFrame()===frame && canInteract() && JSON.stringify(getSelection())===identity;
+  const sync=()=>{for(const [control,available] of controls)control.disabled=waiting || !current() || !available();};
+  const register=(control,available=()=>true)=>{controls.push([control,available]);control.disabled=waiting || !current() || !available();return control;};
+  const submit=edit=>{
+    if(waiting)return;
+    if(!current()){notice('Inspector selection changed; read its current properties before editing');return;}
+    const operation={kind:'edit_inspector_selection',clip_ids:[...captured.clip_ids],timeline_frame:frame,edit};
+    waiting=true;sync();
+    Promise.resolve().then(()=>{if(!current())throw Error('Inspector selection changed; read its current properties before editing');return commit(operation);}).catch(error=>notice(error.message)).finally(()=>{waiting=false;sync();});
+  };
+  const button=(label,edit,parent)=>{const node=register(document.createElement('button'));node.type='button';node.textContent=label;node.setAttribute('aria-label',label);node.addEventListener('click',()=>submit(typeof edit==='function'?edit():edit));parent.append(node);return node;};
+  const localButton=(label,frame,parent)=>{
+    const node=register(document.createElement('button'),()=>typeof seek==='function' && Number.isSafeInteger(frame) && frame>=0);node.type='button';node.textContent=label;node.setAttribute('aria-label',label);
+    node.addEventListener('click',()=>{if(!waiting && current() && typeof seek==='function' && Number.isSafeInteger(frame) && frame>=0)seek(frame);});parent.append(node);
+  };
+  const heading=document.createElement('summary');heading.textContent=video?'Selected video properties':'Selected audio gain';section.append(heading);
+  root.append(section);
+  return {section,register,button,localButton,submit,current};
+}
+function selectedNumber(parent,label,parameter,controls,apply){
+  const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));
+  form.className='property-row';field.className='field';field.textContent=label;
+  input.type='number';input.step='any';input.required=true;input.value=parameter.value;input.min=parameter.min;input.max=parameter.max;input.setAttribute('aria-label',label);field.append(input);
+  const button=controls.register(document.createElement('button'));button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(field,button);
+  form.addEventListener('submit',event=>{event.preventDefault();const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && form.reportValidity())apply(value);});parent.append(form);
+  return input;
+}
+function keyDiamond(parent,label,parameters,controls,edit){
+  const button=controls.button(`Toggle ${label} keyframes at playhead`,edit,parent);button.textContent='◆';
+  const known=parameters.every(parameter=>typeof parameter.keyframe_info?.on_keyframe==='boolean');
+  if(known)button.setAttribute('aria-pressed',String(parameters.some(parameter=>parameter.keyframe_info.on_keyframe)));
+  const previous=known?parameters.map(parameter=>parameter.keyframe_info.previous_frame).filter(Number.isSafeInteger):[],next=known?parameters.map(parameter=>parameter.keyframe_info.next_frame).filter(Number.isSafeInteger):[];
+  controls.localButton(`Previous ${label} keyframe`,previous.length?Math.max(...previous):null,parent);
+  controls.localButton(`Next ${label} keyframe`,next.length?Math.min(...next):null,parent);
+}
+export function renderSelectedVideoProperties(root,detail,options){
+  const rows=[...TRANSFORM_ROWS,...CROP_ROWS,['Opacity',['Opacity']]],parameters=new Map(detail.transform?.map(parameter=>[parameter.param,parameter]));
+  if(rows.some(([,params])=>params.some(param=>!Number.isFinite(parameters.get(param)?.value))) || !Array.isArray(detail.flip) || detail.flip.length!==2 || detail.flip.some(value=>typeof value!=='boolean'))return;
+  const controls=selectedPropertyControls(root,detail,options,true);if(!controls)return;
+  const {section}=controls,zoomLink=options.zoomLink || createZoomLink(options.visualState),note=document.createElement('p');note.className='muted';
+  note.textContent=`Values from ${options.primaryName || 'the first selected video clip'} · edits apply to ${options.selection.clip_ids.length} selected unlocked video clip${options.selection.clip_ids.length===1?'':'s'}. Apply changes a constant default or writes a native key at each clip's clamped playhead. Position moves by the same delta; other axes use the shown value.`;section.append(note);
+  function group(label,groupRows,resetFlip=false){
+    const group=document.createElement('details'),heading=document.createElement('summary');group.open=true;heading.textContent=label;group.append(heading);section.append(group);
+    const groupParams=label==='Crop'?CROP_PARAMS:groupRows.flatMap(([,params])=>params);
+    if(label!=='Opacity')controls.button(`Reset ${label.toLowerCase()}`,{action:'reset_transform',params:groupParams,reset_flip:resetFlip},group);
+    for(const [rowLabel,params] of groupRows){
+      const row=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent=rowLabel;row.append(legend);group.append(row);
+      for(const param of params)selectedNumber(row,param,parameters.get(param),controls,value=>{
+        const changed=zoomParameters(param,zoomLink.get()).filter(axis=>parameters.get(axis).value!==value).map(param=>({param,value}));
+        if(changed.length)controls.submit({action:'transform',parameters:changed});
+      });
+      if(rowLabel==='Zoom'){
+        const field=document.createElement('label'),link=controls.register(document.createElement('input'));link.type='checkbox';link.setAttribute('aria-label','Link selected Zoom X/Y');zoomLink.register(link);field.append(link,' Link Zoom X/Y');row.append(field);
+        link.addEventListener('change',()=>{if(link.checked && parameters.get('ZoomY').value!==parameters.get('ZoomX').value)controls.submit({action:'transform',parameters:[{param:'ZoomY',value:parameters.get('ZoomX').value}]});});
+      }
+      keyDiamond(row,rowLabel,params.map(param=>parameters.get(param)),controls,{action:'toggle_transform_keys',params});
+      controls.button(`Reset ${rowLabel.toLowerCase()} row`,{action:'reset_transform',params,reset_flip:false},row);
+    }
+    return group;
+  }
+  const transform=group('Transform',TRANSFORM_ROWS,true);
+  for(const [axis,label] of [[0,'Flip horizontal'],[1,'Flip vertical']]){
+    const button=controls.button(label,{action:'flip',axis,enabled:!detail.flip[axis]},transform);button.setAttribute('aria-pressed',String(detail.flip[axis]));
+  }
+  controls.button('Reset flip',{action:'reset_transform',params:[],reset_flip:true},transform);
+  group('Crop',CROP_ROWS);
+  group('Opacity',[['Opacity',['Opacity']]]);
+  controls.button('Reset compositing',{action:'reset_compositing'},section);
+}
+export function renderSelectedAudioGain(root,detail,options){
+  if(!Number.isFinite(detail.gain?.value))return;
+  const controls=selectedPropertyControls(root,detail,options,false);if(!controls)return;
+  const note=document.createElement('p');note.className='muted';note.textContent=`Values from ${options.primaryName || 'the first selected audio clip'} · edits apply to ${options.selection.clip_ids.length} selected unlocked audio clip${options.selection.clip_ids.length===1?'':'s'}. Apply changes a constant default or writes a native gain key at each clip's clamped playhead.`;controls.section.append(note);
+  selectedNumber(controls.section,'Selected gain dB',{...detail.gain,min:-100,max:30},controls,value=>{if(value!==detail.gain.value)controls.submit({action:'gain',value});});
+  keyDiamond(controls.section,'gain',[detail.gain],controls,{action:'toggle_gain_key'});
+  controls.button('Reset gain',{action:'reset_gain'},controls.section);
+}
 export function transformPatch(param,value,linked=false){return {transform:zoomParameters(param,linked).map(param=>({param,value}))};}
 export function keyframeOperation(clip, target, frame, value, interpolation = "Linear",linked=false) {
   if (!Number.isSafeInteger(frame) || frame < 0) throw new Error("Choose an integer timeline frame");
@@ -55,7 +142,7 @@ export function keyPageIndex(value,total) {
   if(!Number.isSafeInteger(page) || page<1 || page>total)throw Error(`Choose a key page from 1 to ${total}`);
   return page-1;
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract,transitionDefaults,compositing=true }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract,transitionDefaults,compositing=true,transformControls=true,gainControls=true,zoomLink:sharedZoomLink }) {
   const disabled = !writable || detail.locked;
   if(detail.key_page){
     const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
@@ -65,17 +152,17 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     note.className="muted";note.textContent=`Page ${page.index+1} of ${page.total_pages} · up to ${page.page_size} keys per parameter. Curve and value-key selections apply to this page; cross-parameter selection retains keys from other pages.`;form.append(label,previous,next,go,note);root.append(form);
     if(visualState?.get("key-page-focus")===scope){visualState.delete("key-page-focus");queueMicrotask(()=>{if(input.isConnected)input.focus({preventScroll:true});});}
   }
-  const zoomLink=createZoomLink(visualState);
+  const zoomLink=sharedZoomLink || createZoomLink(visualState);
   const report = (operation) => commit(operation).catch((error) => notice(error.message));
   const section = document.createElement("details"); section.open = true;
-  const heading = document.createElement("summary"); heading.textContent = "Properties and keyframes"; section.append(heading);
+  const heading = document.createElement("summary"); heading.textContent = transformControls && gainControls ? "Properties and keyframes" : "Clip properties and key editors"; section.append(heading);
   const note = document.createElement("p"); note.className = "muted";
-  note.textContent = `Native evaluation at timeline frame ${detail.timeline_frame} / source frame ${detail.source_frame}. Apply sets the default; ◆ writes at the playhead.`;
+  note.textContent = `Native evaluation at timeline frame ${detail.timeline_frame} / source frame ${detail.source_frame}. ${transformControls && gainControls?'Apply sets the default; ◆ writes at the playhead.':'Fade lengths remain local to this clip. Dedicated key and curve editors below use this clip’s source frames.'}`;
   section.append(note);
   const refresh = document.createElement("button"); refresh.textContent = "Read at playhead"; refresh.addEventListener("click", reload); section.append(refresh);
   const interpolation = document.createElement("select"); interpolation.setAttribute("aria-label", "Keyframe interpolation");
   for (const name of ["Linear", "Hold", "EaseInOut", "EaseIn", "EaseOut"]) interpolation.append(new Option(name, name));
-  section.append(interpolation);
+  if(detail.video?transformControls:gainControls)section.append(interpolation);
   function number(label, value, min, max, patch, target = null, keys = [],keyCount=keys.length) {
     const form = document.createElement("form"); form.className = "property-row";
     const field = document.createElement("label"); field.className = "field"; field.textContent = label;
@@ -97,8 +184,10 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     }
   }
   if (detail.video) {
+    if(transformControls){
     const linkLabel=document.createElement("label"),linkInput=document.createElement("input");linkInput.type="checkbox";linkInput.disabled=disabled;zoomLink.register(linkInput);linkLabel.append(linkInput," Link Zoom X/Y");section.append(linkLabel);
     for (const parameter of detail.transform) number(parameter.param, parameter.value, parameter.min, parameter.max, (value) => transformPatch(parameter.param,value,zoomLink.get()), { kind: "transform", param: parameter.param }, parameter.keyframes,parameter.key_count);
+    }
     function choice(label, value, values, patch) {
       const field = document.createElement("label"); field.className = "field"; field.textContent = label;
       const select = document.createElement("select"); select.disabled = disabled;
@@ -109,7 +198,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
       choice("Blend mode", detail.blend, detail.blends, (blend) => ({ blend }));
       choice("Track matte", detail.matte, detail.mattes, (matte) => ({ matte }));
     }
-    for (const [index, label] of [[0, "Flip horizontal"], [1, "Flip vertical"]]) {
+    if(transformControls)for (const [index, label] of [[0, "Flip horizontal"], [1, "Flip vertical"]]) {
       const button = document.createElement("button"); button.textContent = label; button.disabled = disabled; button.setAttribute("aria-pressed", detail.flip[index]);
       button.addEventListener("click", () => { const flip = [...detail.flip]; flip[index] = !flip[index]; report(propertyOperation(detail.clip_id, { flip })); }); section.append(button);
     }
@@ -123,15 +212,15 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
       const apply = document.createElement("button"); apply.textContent = "Apply RGBA"; apply.disabled = disabled; form.append(apply);
       form.addEventListener("submit", (event) => { event.preventDefault(); report(propertyOperation(detail.clip_id, { color: Object.fromEntries(Object.entries(fields).map(([key,input]) => [key,Number(input.value)])) })); }); section.append(form);
     }
-  } else number("Gain dB", detail.gain.value, -100, 30, (gain_db) => ({ gain_db }), { kind: "gain" }, detail.gain.keyframes,detail.gain.key_count);
+  } else if(gainControls)number("Gain dB", detail.gain.value, -100, 30, (gain_db) => ({ gain_db }), { kind: "gain" }, detail.gain.keyframes,detail.gain.key_count);
   number("Fade in frames", detail.fade_in, 0, detail.length_frames, (fade_in) => ({ fade_in }));
   number("Fade out frames", detail.fade_out, 0, detail.length_frames, (fade_out) => ({ fade_out }));
   root.append(section);
   renderRetime(root,detail,disabled,getFrame,report,visualState,canInteract);
   const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
-  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink});if(curves)controls.push(curves);
-  const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope});if(eventKeys)controls.push(eventKeys);
-  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload});if(keySelection)controls.push(keySelection);
+  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract});if(curves)controls.push(curves);
+  const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope,canInteract});if(eventKeys)controls.push(eventKeys);
+  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload,canInteract});if(keySelection)controls.push(keySelection);
   if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState,seek,canInteract});
   if (detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report,transitionDefaults,notice);

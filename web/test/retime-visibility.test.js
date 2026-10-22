@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {selectedRetimeClips,retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} from '../js/retime-visibility.js';
-import {retimeHandles,retimeStrips,hitTest,frameToX,RULER,TRACK} from '../js/timeline/geometry.js';
+import {retimeHandles,retimeStrips,hitTest,frameToX,RULER,TRACK,timelineLayout} from '../js/timeline/geometry.js';
 
 function fixture(){
   const media=(id,start,group=null)=>({id,kind:'media',start_frame:start,length_frames:100,linked_group:group,fade_in:5,fade_out:5,
@@ -48,7 +48,7 @@ test('locked selected media retains native local visibility toggling while edit 
   assert.deepEqual(retimeHandles(timeline.tracks[2],view,timeline.fps),[]);
   const [strip]=retimeStrips(timeline.tracks[2],view,timeline.fps);assert.equal(strip.interactive,false);assert.equal(strip.metadata.speed_percent,100);
   for(const x of [(strip.menu.left+strip.menu.right)/2,(strip.close.left+strip.close.right)/2,strip.right]){
-    assert.equal(['retime','retime_menu','retime_close'].includes(hitTest(x,RULER+2*TRACK+14,timeline,view).kind),false);
+    assert.equal(['retime','retime_menu','retime_close'].includes(hitTest(x,timelineLayout(timeline,view).trackTop(2)+14,timeline,view).kind),false);
   }
   assert.equal(toggleRetimeVisibility(timeline,['locked'],visible).size,0);
 });
@@ -59,9 +59,9 @@ test('selection changes preserve shown strips and hidden clips restore their fad
   assert.deepEqual(retimeHandles(timeline.tracks[0],view,timeline.fps).map(handle=>handle.clip_id),[primary.id]);
   view.selection=[other.id];assert.equal(retimeVisibilityState(timeline,view.selection,view.retimeVisible).pressed,false);
   assert.deepEqual(retimeHandles(timeline.tracks[0],view,timeline.fps).map(handle=>handle.clip_id),[primary.id]);
-  assert.equal(hitTest(frameToX(other.start_frame+5,view,timeline.fps),RULER+14,timeline,view).kind,'fade');
+  assert.equal(hitTest(frameToX(other.start_frame+5,view,timeline.fps),timelineLayout(timeline,view).trackTop(0)+14,timeline,view).kind,'fade');
   view.retimeVisible=toggleRetimeVisibility(timeline,[primary.id],view.retimeVisible);
-  assert.equal(hitTest(frameToX(5,view,timeline.fps),RULER+14,timeline,view).kind,'fade');
+  assert.equal(hitTest(frameToX(5,view,timeline.fps),timelineLayout(timeline,view).trackTop(0)+14,timeline,view).kind,'fade');
 });
 
 test('other timeline visibility remains stored without manufacturing handles in the active timeline',()=>{

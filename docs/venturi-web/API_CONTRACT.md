@@ -1,5 +1,58 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Native selected Inspector edits
+
+The timeline mutation `edit_inspector_selection` accepts
+`{clip_ids,timeline_frame,edit}` under the ordinary writer, project epoch,
+generation, revision and command-ID guards. `clip_ids` names 1–4096 explicit
+targets of the appropriate native track kind; missing, duplicate normalized
+IDs, locked or wrong-kind targets fail atomically. There is no implicit linked
+expansion. Rust derives the primary in native `(track index,start,ClipId)` order
+and independently clamps the playhead inside each target before calling native
+source/timeline clock helpers. The browser never computes target source frames.
+
+`edit` is a strict object tagged by `action`:
+
+| Action | Fields | Native behavior |
+|---|---|---|
+| `transform` | `parameters:[{param,value}]` | Only primary-changed axes apply. Position X/Y adds the primary delta to each target's evaluated value; other axes use the new absolute value. Constant scalar tracks change defaults; animated ones receive a Linear key at their own source frame. |
+| `flip` | `axis`, `enabled` | The changed primary axis is applied to each video target; its other flip axis is preserved. |
+| `toggle_transform_keys` | `params` | If any primary row axis has a key, remove the row keys from every target at its own frame. Otherwise pin each target's own evaluated scalar values. |
+| `reset_transform` | `params`, `reset_flip` | Native ResetTransformParams replaces only the chosen scalar tracks with constant defaults and optionally resets Flip. |
+| `reset_compositing` | none | Native section reset: Blend Normal, Matte None and an Opacity scalar-track reset, grouped once with the native first-command label. |
+| `gain` | `value` | Absolute audio gain; each target independently changes its default or receives a native Linear key. |
+| `toggle_gain_key` | none | The primary decides removal versus pinning each audio target's own current gain. |
+| `reset_gain` | none | Native constant gain reset for the explicit audio targets. |
+
+All derived commands are planned and validated before mutation, then grouped
+into one native Undo step. Invalid ranges/crops are rejected without silently
+clamping peers. A primary-unchanged numeric edit preserves history, Redo and
+cache identity. Explicit native resets retain their native history behavior.
+Legacy `set_properties`, keyframe/curve APIs and the accepted Blend/Matte-only
+`set_properties_batch` keep their contracts. Fades remain local single-clip
+edits; this operation does not broaden fade, title, filter or curve-editor scope.
+
+Transform rows and gain in clip detail include full-track
+`keyframe_info:{on_keyframe,previous_frame,next_frame}`. Neighbor frames are
+timeline positions derived in Rust from strict source neighbors inside the
+clip's source trim; null means no eligible neighbor. This metadata is independent
+of the truncated/paged key arrays. Linked row axes combine primary key presence
+with OR, previous positions with max and next positions with min.
+
+## Timeline gap and edit contracts
+
+`move_clips` extends safe movement to newly created lanes while preserving the
+legacy `safe_move` payload. It accepts `new_video_tracks`, `new_audio_tracks`
+and `moves:[{clip_id,to_start_frame,to_track}]`. A destination is either
+`{kind:"existing",track_id}` or `{kind:"new",depth}` with a one-based depth;
+the clip's native source track determines the new lane's kind. Explicit new
+counts must match the deepest referenced lane and the resulting timeline has
+at most 128 tracks. All linked members must be included with the same time
+delta. The complete native trial is checked before one CompositeCommand adds
+the lanes and moves the clips. Undo restores both tracks and clips together.
+Safe overlap and lock checks remain in force; this operation does not silently
+overwrite existing material.
+
 Timeline snapshots include native `gaps:[{track_id,start_frame,length_frames}]`
 for leading/internal empty intervals on unlocked lanes. Empty lanes and trailing
 space are omitted. The shared core helper sorts/scans each lane once; this

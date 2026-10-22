@@ -35,8 +35,8 @@ test("marker lane has independent point/range hits and move/resize/extend previe
   assert.deepEqual(markerDraft(marker,"end",15,30,[],view,fps),{...marker,duration_frames:0});
   assert.deepEqual(markerDraft({...marker,duration_frames:0},"extend",12,20,[],view,fps),{...marker,start_frame:12,duration_frames:8});
   assert.equal(markerDraft(marker,"move",0,25,[],view,fps).start_frame,0);
-  assert.equal(markerDraft(marker,"move",27,25,[38],{...view,snap:true},fps).start_frame,22,"Outside eight CSS pixels stays unsnapped");
-  assert.equal(markerDraft(marker,"move",32,25,[38],{...view,snap:true},fps).start_frame,27);
+  assert.equal(markerDraft(marker,"move",27,25,[38],{...view,snap:true},fps).start_frame,22,"Outside ten CSS pixels stays unsnapped");
+  assert.equal(markerDraft(marker,"move",32,25,[38],{...view,snap:true},fps).start_frame,28);
   assert.equal(markerDraft(marker,"move",32,25,[38],{...view,snap:true,scale:120},fps).start_frame,28,"Moving ranges can snap their far end");
 });
 for (const fps of [

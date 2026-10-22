@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createInput,TRANSITION_DRAG_TYPE} from '../js/timeline/input.js';
 import {PRESET_DRAG_TYPE,presetApplication} from '../js/timeline/preset-drop.js';
 import {createDraw} from '../js/timeline/draw.js';
-import {HEADER,RULER,TRACK,frameToX} from '../js/timeline/geometry.js';
+import {HEADER,RULER,TRACK,frameToX,timelineLayout} from '../js/timeline/geometry.js';
 
 function harness({linked=false,commit}={}){
   const clip=(id,start_frame,length_frames,linked_group=null)=>({id,kind:'media',start_frame,length_frames,linked_group,fade_in:10,fade_out:10});
@@ -18,7 +18,7 @@ function harness({linked=false,commit}={}){
   const input=createInput({canvas,getTimeline:()=>timeline,getPresetContext:()=>({...context,clip_ids:[...view.selection],roles:{video:true,audio:true}}),view,invalidate(){},onSelect:()=>selections++,onSeek(){},onCommand:async command=>{commands.push(command);return commit?.(command);},onNotice:message=>notices.push(message),canEdit:()=>writable});
   let item={id:'preset_9007199254740999',revision:'preset-r1',name:'Native look <literal>',video:true,audio:false};
   const current=snapshot=>sourceValid && item.id===snapshot.id && item.revision===snapshot.revision && item.name===snapshot.name && item.video===snapshot.video && item.audio===snapshot.audio;
-  const event=(frame,{track=0,y=RULER+track*TRACK+30,x=frameToX(frame,view,timeline.fps),...extra}={})=>({clientX:rect.left+x*rect.width/canvas.clientWidth,clientY:rect.top+y*rect.height/canvas.clientHeight,preventDefault(){this.prevented=true;},stopPropagation(){this.stopped=true;},...extra});
+  const event=(frame,{track=0,y=timelineLayout(timeline,view,canvas.clientHeight).trackTop(track)+30,x=frameToX(frame,view,timeline.fps),...extra}={})=>({clientX:rect.left+x*rect.width/canvas.clientWidth,clientY:rect.top+y*rect.height/canvas.clientHeight,preventDefault(){this.prevented=true;},stopPropagation(){this.stopped=true;},...extra});
   const transfer=(payload,types=[PRESET_DRAG_TYPE])=>({types,dropEffect:'none',getData(type){assert.equal(type,PRESET_DRAG_TYPE);return payload;}});
   const start=()=>input.presetDnd.start(item,current);
   const over=(payload,frame=30,extra={})=>{const e=event(frame,{dataTransfer:transfer(payload),...extra});handlers.get('dragover')(e);return e;};
@@ -48,16 +48,16 @@ test('dropping on an already selected clip targets the whole selection and expan
 });
 
 test('release coordinates choose the actual clip beneath fade speed and transition handles',async()=>{
-  for(const y of [RULER+10,RULER+TRACK-14]){
+  for(const offset of [10,TRACK-14]){
     const h=harness();
-    try{const payload=h.start();h.over(payload,30,{y});await h.drop(payload,105,{y});assert.deepEqual(h.commands[0].clip_ids,[h.b.id]);}finally{h.destroy();}
+    try{const y=timelineLayout(h.timeline(),h.view).trackTop(0)+offset,payload=h.start();h.over(payload,30,{y});await h.drop(payload,105,{y});assert.deepEqual(h.commands[0].clip_ids,[h.b.id]);}finally{h.destroy();}
   }
 });
 
 test('header ruler gaps inset margins outside canvas and clipped areas never become preset targets',async()=>{
-  for(const extra of [{x:HEADER-1},{y:RULER-1},{y:RULER+2},{y:RULER+TRACK-2},{x:-1},{x:1500},{y:220},{y:-1}]){
+  for(const extra of [{x:HEADER-1},{y:RULER-1},{y:RULER+2},{edge:'clipBottom'},{x:-1},{x:1500},{y:220},{y:-1}]){
     const h=harness();
-    try{const payload=h.start();h.over(payload,30,extra);assert.equal(h.view.draft,null);await h.drop(payload,30,extra);assert.deepEqual(h.commands,[]);}finally{h.destroy();}
+    try{const point=extra.edge?{y:timelineLayout(h.timeline(),h.view).trackTop(0)+TRACK-1}:extra,payload=h.start();h.over(payload,30,point);assert.equal(h.view.draft,null);await h.drop(payload,30,point);assert.deepEqual(h.commands,[]);}finally{h.destroy();}
   }
   const h=harness();
   try{
@@ -159,7 +159,7 @@ test('preset draft drawing outlines linked targets and presents literal name cou
   try{
     globalThis.document={documentElement:{}};globalThis.getComputedStyle=()=>({getPropertyValue:name=>name});globalThis.devicePixelRatio=1.5;globalThis.requestAnimationFrame=fn=>frames.push(fn);globalThis.ResizeObserver=class{observe(){}disconnect(){}};
     const context=new Proxy({},{get:(_,method)=>(...args)=>calls.push({method,args})}),canvas={clientWidth:1500,clientHeight:220,getContext:()=>context};
-    h.timeline().tracks[1].locked=true;h.view.draft=presetApplication(h.timeline(),h.view,[frameToX(30,h.view,h.timeline().fps),RULER+30],1500,220,h.item());
+    h.timeline().tracks[1].locked=true;h.view.draft=presetApplication(h.timeline(),h.view,[frameToX(30,h.view,h.timeline().fps),timelineLayout(h.timeline(),h.view).trackTop(0)+30],1500,220,h.item());
     draw=createDraw(canvas,h.timeline,h.view);frames.shift()();
     assert.ok(calls.some(call=>call.method==='fillText' && /Preset Native look <literal>.*2 clip.*blocked.*locked/.test(call.args[0])));
     assert.ok(calls.some(call=>call.method==='strokeRect' && call.args[1]>RULER+TRACK));assert.deepEqual(h.commands,[]);

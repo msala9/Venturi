@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createInput} from '../js/timeline/input.js';
-import {frameToX,RULER,MARKER_TOP} from '../js/timeline/geometry.js';
+import {frameToX,RULER,MARKER_TOP,timelineLayout} from '../js/timeline/geometry.js';
 
 function harness({commit=async()=>{}}={}){
   const clip={id:'compound',media_id:'nested',kind:'media',start_frame:20,length_frames:100,linked_group:null,fade_in:10,fade_out:10};
@@ -12,7 +12,7 @@ function harness({commit=async()=>{}}={}){
   globalThis.window={document,addEventListener(){},removeEventListener(){}};
   const canvas={ownerDocument:document,clientWidth:1600,clientHeight:200,style:{},getBoundingClientRect:()=>({left:12,top:8,width:1600,height:200}),addEventListener:(name,fn)=>handlers.set(name,fn),removeEventListener:name=>handlers.delete(name),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
   const input=createInput({canvas,getTimeline:()=>timeline,getPresetContext:()=>({epoch:'epoch',generation:'0',timeline:'t',revision:'r'}),view,invalidate(){},onSelect(){},onSeek(){},onCommand:operation=>{commands.push(operation);return commit(operation);},onNotice(){},canEdit:()=>editable,canNavigate:()=>navigable,onOpenCompound:ids=>opened.push(ids),onMarkerEdit:id=>markers.push(id),onNavigationIntent:()=>intents++});
-  const event=(frame=60,extra={})=>({clientX:12+frameToX(frame,view,timeline.fps),clientY:8+RULER+32,button:0,buttons:1,pointerId:1,preventDefault(){this.prevented=true;},...extra});
+  const event=(frame=60,extra={})=>({clientX:12+frameToX(frame,view,timeline.fps),clientY:8+timelineLayout(timeline,view).trackTop(0)+32,button:0,buttons:1,pointerId:1,preventDefault(){this.prevented=true;},...extra});
   return {timeline,clip,view,input,canvas,opened,markers,commands,handlers,captures,intents:()=>intents,setEditable:value=>editable=value,setNavigable:value=>navigable=value,setModal:value=>modal=value,event,send(type,frame,extra){const e=event(frame,extra);const result=handlers.get(type)(e);return {event:e,result};},destroy(){input.destroy();globalThis.window=originalWindow;}};
 }
 
@@ -21,7 +21,7 @@ test('double-click opens the hit compound in read-only mode without moving the c
 });
 
 test('double-click marker editing survives compound navigation and clip handles retain their hit clip',()=>{
-  const h=harness();try{h.send('dblclick',20,{clientY:8+MARKER_TOP+2});assert.deepEqual(h.markers,['marker']);assert.deepEqual(h.opened,[]);h.send('dblclick',30,{clientY:8+RULER+14});assert.deepEqual(h.opened,[['compound']]);assert.equal(h.view.playhead,777);assert.deepEqual(h.commands,[]);}finally{h.destroy();}
+  const h=harness();try{h.send('dblclick',20,{clientY:8+MARKER_TOP+2});assert.deepEqual(h.markers,['marker']);assert.deepEqual(h.opened,[]);h.send('dblclick',30,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+14});assert.deepEqual(h.opened,[['compound']]);assert.equal(h.view.playhead,777);assert.deepEqual(h.commands,[]);}finally{h.destroy();}
 });
 
 test('compound double-click refuses modals, prevented events, modifiers, wrong button and unavailable navigation',()=>{

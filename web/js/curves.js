@@ -3,6 +3,16 @@ export function createZoomLink(openState){
   let value=Boolean(openState?.get("zoom-link"));const inputs=new Set();
   return {get:()=>value,register(input){input.checked=value;inputs.add(input);input.addEventListener("change",()=>{value=input.checked;openState?.set("zoom-link",value);for(const other of inputs)other.checked=value;});}};
 }
+export function createKeyEditorGuard({root,section,disabled,canInteract=()=>true,commit}){
+  let disposed=false,pending=false;
+  const current=()=>!disposed && !disabled && root.isConnected!==false && section.isConnected!==false && canInteract();
+  return {current,dispose(){disposed=true;},async commit(operation){
+    if(pending || !current())throw Error('Key editor context changed; read its current native keys before editing');
+    pending=true;
+    try{await Promise.resolve();if(!current())throw Error('Key editor context changed; read its current native keys before editing');return await commit(operation);}
+    finally{pending=false;}
+  }};
+}
 export function curveKeyOperation(clip, target, previous, frame, value, mode, handles,linkZoom=false) {
   if (!Number.isSafeInteger(frame) || (value !== null && frame < 0)) throw new Error("Choose a nonnegative integer source frame for a new or moved key");
   if (value !== null && !Number.isFinite(value)) throw new Error("Choose a finite keyframe value");
@@ -68,11 +78,12 @@ export function curveGeometry(curve, range, width, height, selected = null) {
     control: (handle, x, y) => [Math.max(0, Math.min(1, (range.source_start + (x - left) / plotWidth * (range.source_end - range.source_start) - handle.start.source_frame) / (handle.end.source_frame - handle.start.source_frame))), Math.max(-10, Math.min(10, handle.end.value === handle.start.value ? handle.point[1] : (max - (y - top) / plotHeight * (max - min) - handle.start.value) / (handle.end.value - handle.start.value)))]};
 }
 
-export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = () => [], getSelection=()=>null, isBusy, canEdit, select, selectBox=()=>{}, draftBox=()=>{}, pan=()=>{}, draft, draftHandle, finish, reset}) {
+export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = () => [], getSelection=()=>null, isBusy, canEdit,canInteract=()=>true, select, selectBox=()=>{}, draftBox=()=>{}, pan=()=>{}, draft, draftHandle, finish, reset}) {
   let gesture = null;
-  const cancel = () => { if (gesture) { gesture = null; reset(); } };
+  const available=()=>canvas.isConnected!==false && !isBusy() && canInteract();
+  const cancel = () => { if (gesture) { const before=gesture;gesture = null; reset();try{canvas.releasePointerCapture(before.id);}catch{} } };
   canvas.addEventListener("pointerdown", (event) => {
-    const g = getGeometry(); if (isBusy() || ![0,1].includes(event.button) || !g) return;
+    const g = getGeometry(); if (gesture || !available() || event.isPrimary===false || ![0,1].includes(event.button) || !g) return;
     const box = canvas.getBoundingClientRect(), x = event.clientX - box.left, y = event.clientY - box.top;
     if(event.button===1 || event.altKey){canvas.focus();canvas.setPointerCapture(event.pointerId);gesture={id:event.pointerId,pan:true,g,x,y,moved:false,point:{x,y}};return;}
     const handle = getHandles().find((h) => Math.hypot(g.x(h.frame) - x, g.y(h.value) - y) <= 9);
@@ -90,6 +101,7 @@ export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = ()
   });
   canvas.addEventListener("pointermove", (event) => {
     if (!gesture || event.pointerId !== gesture.id) return;
+    if(!available() || !gesture.box && !gesture.pan && !canEdit()){cancel();return;}
     const box = canvas.getBoundingClientRect(), x = event.clientX - box.left, y = event.clientY - box.top;
     if (!gesture.moved && Math.hypot(x - gesture.x, y - gesture.y) < 3) return;
     gesture.moved = true;
@@ -99,6 +111,7 @@ export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = ()
   });
   canvas.addEventListener("pointerup", (event) => {
     if (!gesture || event.pointerId !== gesture.id) return;
+    if(!available() || !gesture.box && !gesture.pan && !canEdit()){cancel();return;}
     const before = gesture; gesture = null; canvas.releasePointerCapture(event.pointerId);
     if(before.pan){pan({final:true});return;}
     if(before.box){selectBox({start:before.g.frame(Math.min(before.x,before.point.x)),end:before.g.frame(Math.max(before.x,before.point.x)),min:Math.min(before.g.value(before.y),before.g.value(before.point.y)),max:Math.max(before.g.value(before.y),before.g.value(before.point.y)),append:before.append,moved:before.moved});return;}
@@ -110,7 +123,7 @@ export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = ()
   return {cancel};
 }
 
-export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id,zoomLink=createZoomLink(openState)}) {
+export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id,zoomLink=createZoomLink(openState),canInteract}) {
   const range = detail.curves;
   if (!range?.tracks.length) return null;
   const fullViewport=()=>({source_start:range.source_start,source_end:range.source_end});
@@ -171,6 +184,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   const groupApply=document.createElement("button");groupApply.textContent="Move selected keys";groupForm.append(groupApply);
   const groupRemove=document.createElement("button");groupRemove.type="button";groupRemove.textContent="Delete selected keys";groupForm.append(groupRemove);section.append(groupForm);
   let drafting = false, handleDraft = null, geometry = null, waiting = false, disposed = false;
+  const owner=createKeyEditorGuard({root,section,disabled,canInteract,commit});
   let selectedFrames=new Set(),groupDraft=null,boxDraft=null,viewRange=fullViewport(),panOrigin=null;
   const events = new AbortController();
   const current = () => range.tracks[Number(tracks.value)];
@@ -255,31 +269,31 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
     if (current().key_count > current().keys.length) status.textContent += ` · ${current().keys.length} of ${current().key_count} keys on this page`;
   }
   async function save(deleting = false) {
-    if (waiting || disabled || (!deleting && !form.reportValidity())) return;
+    if (waiting || !owner.current() || (!deleting && !form.reportValidity())) return;
     const before=previous()===null?[]:[previous()];
     try {
       const operation = curveKeyOperation(detail.clip_id, current().target, previous(), Number(frame.value), deleting ? null : Number(value.value), mode.value, ["c1x", "c1y", "c2x", "c2y"].map((key) => Number(fields[key].value)),zoomLink.get());
       waiting = true; form.inert = true; tracks.disabled = select.disabled = true;
       openState?.set("curves-key", deleting ? "" : frame.value);
       remember(selectionKey(),{before,after:deleting?[]:[Number(frame.value)],focus:true});
-      await commit(operation);
+      await owner.commit(operation);
     } catch (error) { notice(error.message);if(!disposed)load();remember(selectionKey(),{before,after:before,focus:true});if(!disposed && canvas.isConnected)canvas.focus({preventScroll:true}); }
     finally { waiting = false; form.inert = false; tracks.disabled = select.disabled = false; }
   }
   async function saveGroup(deleting=false,deltaFrame=Number(groupFields.frame.value),deltaValue=Number(groupFields.value.value)){
-    if(waiting || disabled || !selectedFrames.size || (!deleting && !groupForm.reportValidity()))return;
+    if(waiting || !owner.current() || !selectedFrames.size || (!deleting && !groupForm.reportValidity()))return;
     const before=[...selectedFrames];
     try{
       const operation=curveGroupOperation(detail.clip_id,current().target,before,deleting?0:deltaFrame,deleting?0:deltaValue,deleting,zoomLink.get());
       waiting=true;groupForm.inert=form.inert=true;tracks.disabled=select.disabled=true;
       remember(selectionKey(),{before,after:deleting?[]:before.map(frame=>frame+deltaFrame),focus:true});
-      await commit(operation);
+      await owner.commit(operation);
     }catch(error){remember(selectionKey(),{before,after:before,focus:true});notice(error.message);if(!disposed && canvas.isConnected)canvas.focus({preventScroll:true});}
     finally{waiting=false;groupForm.inert=form.inert=false;tracks.disabled=select.disabled=false;}
   }
   const drag = bindCurveGesture(canvas, {
     getCurve: () => ({keys: current().keys.filter((k) => k.source_frame >= viewRange.source_start && k.source_frame <= viewRange.source_end)}),
-    getGeometry: () => geometry, isBusy: () => waiting, canEdit: () => !disabled,
+    getGeometry: () => geometry, isBusy: () => waiting, canEdit: () => owner.current(),canInteract:()=>owner.current(),
     getHandles: () => selectedFrames.size>1?[]:curveHandles(current(), previous()).filter((h) => h.start.source_frame >= viewRange.source_start && h.end.source_frame <= viewRange.source_end),
     getSelection:()=>[...selectedFrames],
     select: (key,{toggle}) => { if(toggle){if(selectedFrames.has(key.source_frame))selectedFrames.delete(key.source_frame);else selectedFrames.add(key.source_frame);}else if(!selectedFrames.has(key.source_frame))selectedFrames=new Set([key.source_frame]);select.value=String(key.source_frame);load(); },
@@ -303,6 +317,6 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   duplicate.addEventListener("click", () => { select.value = "";selectedFrames.clear();updateGroup(); frame.value = Math.min(range.source_end, Number(frame.value) + 1); remove.disabled = duplicate.disabled = true; status.textContent = "Duplicate draft · choose a free source frame and Apply"; draw(); });
   window.addEventListener("blur", drag.cancel, {signal: events.signal});
   section.addEventListener("toggle", draw);
-  const observer = new ResizeObserver(draw); observer.observe(canvas); chooseCurve();
-  return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
+  const observer = new ResizeObserver(()=>{drag.cancel();draw();}); observer.observe(canvas); chooseCurve();
+  return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}owner.dispose();drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
 }

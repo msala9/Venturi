@@ -154,6 +154,665 @@ fn fixture() -> (Session, TimelineId, String) {
     (session, id, clip_id.0.to_string())
 }
 
+fn selection_fixture() -> (Session, TimelineId, Vec<String>) {
+    let (mut session, id, first) = fixture();
+    let mut peer = Clip::from_source_range(
+        session.project.alloc_clip_id(),
+        ClipSource::SolidColor,
+        40,
+        60,
+        200,
+        Rational::new(2, 1),
+    );
+    let second = peer.id.0.to_string();
+    peer.freeze = Some(7);
+    peer.effects
+        .transform
+        .track_mut(TransformParam::PositionX)
+        .default = 50.0;
+    peer.effects
+        .transform
+        .track_mut(TransformParam::ZoomX)
+        .default = 2.0;
+    peer.effects
+        .transform
+        .track_mut(TransformParam::PositionY)
+        .upsert(40, 8.0, core::Interpolation::Hold);
+    peer.effects
+        .transform
+        .track_mut(TransformParam::PositionY)
+        .upsert(50, 18.0, core::Interpolation::Hold);
+    peer.effects.transform.flip = [false, true];
+    let primary = &mut session.project.timelines[id].tracks[0].clips[0];
+    primary
+        .effects
+        .transform
+        .track_mut(TransformParam::PositionX)
+        .default = 5.0;
+    primary
+        .effects
+        .transform
+        .track_mut(TransformParam::PositionY)
+        .default = 12.0;
+    primary
+        .effects
+        .transform
+        .track_mut(TransformParam::AnchorX)
+        .default = 2.0;
+    session.project.timelines[id]
+        .tracks
+        .push(Track::new(TrackKind::Video));
+    session.project.timelines[id].tracks[2].insert_sorted(peer);
+    (session, id, vec![second, first])
+}
+
+fn selected_edit(
+    session: &mut Session,
+    id: TimelineId,
+    ids: &[String],
+    frame: i64,
+    edit: InspectorEdit,
+) -> Result<()> {
+    crate::commands::apply(
+        session,
+        id,
+        &crate::commands::Operation::EditInspectorSelection {
+            clip_ids: ids.to_vec(),
+            timeline_frame: frame,
+            edit,
+        },
+    )
+}
+
+#[test]
+fn selected_inspector_uses_native_primary_delta_own_clamped_clocks_and_one_undo_without_touching_unchanged_axes()
+ {
+    use TransformParam as P;
+    let (mut session, id, ids) = selection_fixture();
+    let original = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let position = session.history.position();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Transform {
+            parameters: vec![
+                Parameter {
+                    param: P::PositionX,
+                    value: 15.0,
+                },
+                Parameter {
+                    param: P::PositionY,
+                    value: 100.0,
+                },
+                Parameter {
+                    param: P::AnchorX,
+                    value: 8.0,
+                },
+                Parameter {
+                    param: P::ZoomX,
+                    value: 1.0,
+                },
+            ],
+        },
+    )
+    .unwrap();
+    let tl = &session.project.timelines[id];
+    let first = &tl.tracks[0].clips[0];
+    let peer = &tl.tracks[2].clips[0];
+    assert_eq!(first.source_frame_at(108), 20);
+    assert_eq!(peer.source_frame_at(peer.timeline_start), 40);
+    assert_eq!(first.effects.transform.track(P::PositionX).default, 15.0);
+    assert_eq!(peer.effects.transform.track(P::PositionX).default, 60.0);
+    assert_eq!(peer.effects.transform.track(P::PositionY).default, 0.0);
+    assert_eq!(
+        peer.effects.transform.track(P::PositionY).keyframe_at(40),
+        Some((96.0, core::Interpolation::Linear))
+    );
+    assert_eq!(
+        peer.effects.transform.track(P::PositionY).keyframe_at(50),
+        Some((18.0, core::Interpolation::Hold))
+    );
+    assert_eq!(first.effects.transform.track(P::AnchorX).default, 8.0);
+    assert_eq!(peer.effects.transform.track(P::AnchorX).default, 8.0);
+    assert_eq!(peer.effects.transform.track(P::ZoomX).default, 2.0);
+    assert_eq!(peer.freeze, Some(7));
+    assert_eq!(session.history.position(), position + 1);
+    let changed = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        original
+    );
+    let project = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Transform {
+            parameters: vec![Parameter {
+                param: P::PositionX,
+                value: 5.0,
+            }],
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.generation(), generation);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), project);
+    session.history.redo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        changed
+    );
+}
+
+#[test]
+fn selected_inspector_row_diamond_uses_primary_any_axis_and_preserves_peer_values_and_interpolation_on_undo()
+ {
+    use TransformParam as P;
+    let (mut session, id, ids) = selection_fixture();
+    let original = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ToggleTransformKeys {
+            params: vec![P::PositionX, P::PositionY],
+        },
+    )
+    .unwrap();
+    let first = &session.project.timelines[id].tracks[0].clips[0];
+    let peer = &session.project.timelines[id].tracks[2].clips[0];
+    for (clip, frame, values) in [(first, 20, [5.0, 12.0]), (peer, 40, [50.0, 8.0])] {
+        for (param, value) in [P::PositionX, P::PositionY].into_iter().zip(values) {
+            assert_eq!(
+                clip.effects.transform.track(param).keyframe_at(frame),
+                Some((value, core::Interpolation::Linear))
+            );
+        }
+    }
+    let pinned = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(P::PositionY)
+        .remove_at(20);
+    let mixed = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ToggleTransformKeys {
+            params: vec![P::PositionX, P::PositionY],
+        },
+    )
+    .unwrap();
+    for (track, frame) in [(0, 20), (2, 40)] {
+        for param in [P::PositionX, P::PositionY] {
+            assert!(
+                session.project.timelines[id].tracks[track].clips[0]
+                    .effects
+                    .transform
+                    .track(param)
+                    .keyframe_at(frame)
+                    .is_none()
+            );
+        }
+    }
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        mixed
+    );
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(P::PositionY)
+        .upsert(20, 12.0, core::Interpolation::Linear);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        pinned
+    );
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        original
+    );
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        500,
+        InspectorEdit::ToggleTransformKeys {
+            params: vec![P::Rotation],
+        },
+    )
+    .unwrap();
+    for track in [0, 2] {
+        let clip = &session.project.timelines[id].tracks[track].clips[0];
+        let frame = clip.source_frame_at(clip.timeline_end() - 1);
+        assert!(
+            clip.effects
+                .transform
+                .track(P::Rotation)
+                .keyframe_at(frame)
+                .is_some()
+        );
+    }
+}
+
+#[test]
+fn selected_inspector_flip_and_resets_preserve_unrelated_axes_and_restore_exact_tracks() {
+    use TransformParam as P;
+    let (mut session, id, ids) = selection_fixture();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Flip {
+            axis: 0,
+            enabled: true,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .flip,
+        [true, false]
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .transform
+            .flip,
+        [true, true]
+    );
+    let generation = session.history.generation();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Flip {
+            axis: 1,
+            enabled: false,
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.generation(), generation);
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .transform
+            .flip,
+        [true, true]
+    );
+    let original = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ResetTransform {
+            params: vec![P::PositionX, P::PositionY],
+            reset_flip: true,
+        },
+    )
+    .unwrap();
+    for track in [0, 2] {
+        let transform = &session.project.timelines[id].tracks[track].clips[0]
+            .effects
+            .transform;
+        assert_eq!(transform.flip, [false, false]);
+        for param in [P::PositionX, P::PositionY] {
+            assert!(transform.track(param).is_constant());
+            assert_eq!(transform.track(param).default, 0.0);
+        }
+    }
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .transform
+            .track(P::ZoomX)
+            .default,
+        2.0
+    );
+    let reset = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        original
+    );
+    session.history.redo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        reset
+    );
+    let position = session.history.position();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ResetTransform {
+            params: vec![P::PositionX, P::PositionY],
+            reset_flip: true,
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    for track in [0, 2] {
+        let effects = &mut session.project.timelines[id].tracks[track].clips[0].effects;
+        effects
+            .transform
+            .track_mut(P::Opacity)
+            .upsert(40, 30.0, core::Interpolation::Hold);
+        effects.blend_mode = core::BlendMode::Screen;
+        effects.matte = Some(core::MatteMode::Luma);
+    }
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let position = session.history.position();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ResetCompositing {},
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(
+        session.history.labels().last(),
+        Some(core::CommandLabel::BlendMode)
+    );
+    for track in [0, 2] {
+        let effects = &session.project.timelines[id].tracks[track].clips[0].effects;
+        assert!(effects.transform.track(P::Opacity).is_constant());
+        assert_eq!(effects.transform.track(P::Opacity).default, 100.0);
+        assert_eq!(effects.blend_mode, core::BlendMode::Normal);
+        assert_eq!(effects.matte, None);
+    }
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+}
+
+#[test]
+fn selected_inspector_gain_uses_audio_primary_and_own_values_for_keys_then_native_reset() {
+    let (mut session, id, ids) = selection_fixture();
+    for track in [0, 2] {
+        session.project.timelines[id].tracks[track].kind = TrackKind::Audio;
+    }
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .gain_db
+        .default = -4.0;
+    session.project.timelines[id].tracks[2].clips[0]
+        .effects
+        .gain_db
+        .upsert(40, -9.0, core::Interpolation::Hold);
+    let original = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    selected_edit(&mut session, id, &ids, 108, InspectorEdit::ToggleGainKey {}).unwrap();
+    assert_eq!(
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .gain_db
+            .keyframe_at(20),
+        Some((-4.0, core::Interpolation::Linear))
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .gain_db
+            .keyframe_at(40),
+        Some((-9.0, core::Interpolation::Linear))
+    );
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        original
+    );
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Gain { value: -12.0 },
+    )
+    .unwrap();
+    assert_eq!(
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .gain_db
+            .default,
+        -12.0
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .gain_db
+            .default,
+        0.0
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .gain_db
+            .keyframe_at(40),
+        Some((-12.0, core::Interpolation::Linear))
+    );
+    selected_edit(&mut session, id, &ids, 108, InspectorEdit::ResetGain {}).unwrap();
+    for track in [0, 2] {
+        let values = &session.project.timelines[id].tracks[track].clips[0]
+            .effects
+            .gain_db;
+        assert!(values.is_constant());
+        assert_eq!(values.default, 0.0);
+    }
+}
+
+#[test]
+fn selected_inspector_rejects_later_invalid_target_and_malformed_edits_without_any_mutation() {
+    use TransformParam as P;
+    for case in 0..11 {
+        let (mut session, id, mut ids) = selection_fixture();
+        let mut frame = 108;
+        let edit = match case {
+            0 => {
+                session.project.timelines[id].tracks[2].locked = true;
+                InspectorEdit::Flip {
+                    axis: 0,
+                    enabled: true,
+                }
+            }
+            1 => {
+                session.project.timelines[id].tracks[2].kind = TrackKind::Audio;
+                InspectorEdit::Flip {
+                    axis: 0,
+                    enabled: true,
+                }
+            }
+            2 => {
+                ids.push(format!("0{}", ids[1]));
+                InspectorEdit::Flip {
+                    axis: 0,
+                    enabled: true,
+                }
+            }
+            3 => InspectorEdit::Transform {
+                parameters: vec![
+                    Parameter {
+                        param: P::PositionX,
+                        value: 15.0,
+                    },
+                    Parameter {
+                        param: P::PositionX,
+                        value: 20.0,
+                    },
+                ],
+            },
+            4 => InspectorEdit::Flip {
+                axis: 2,
+                enabled: true,
+            },
+            5 => {
+                frame = -1;
+                InspectorEdit::ResetCompositing {}
+            }
+            6 => InspectorEdit::ResetTransform {
+                params: vec![],
+                reset_flip: false,
+            },
+            7 => {
+                session.project.timelines[id].tracks[2].clips[0]
+                    .effects
+                    .transform
+                    .track_mut(P::PositionX)
+                    .default = 999_999.0;
+                InspectorEdit::Transform {
+                    parameters: vec![Parameter {
+                        param: P::PositionX,
+                        value: 7.0,
+                    }],
+                }
+            }
+            8 => {
+                session.project.timelines[id].tracks[2].clips[0]
+                    .effects
+                    .transform
+                    .track_mut(P::CropRight)
+                    .default = 600.0;
+                InspectorEdit::Transform {
+                    parameters: vec![Parameter {
+                        param: P::CropLeft,
+                        value: 50.0,
+                    }],
+                }
+            }
+            9 => InspectorEdit::Transform {
+                parameters: vec![Parameter {
+                    param: P::PositionX,
+                    value: f32::NAN,
+                }],
+            },
+            _ => {
+                session.project.timelines[id].tracks[0].clips[0]
+                    .effects
+                    .transform
+                    .track_mut(P::CropLeft)
+                    .upsert(20, 0.0, core::Interpolation::Linear);
+                let peer = &mut session.project.timelines[id].tracks[2].clips[0];
+                peer.effects.transform.track_mut(P::CropRight).default = 600.0;
+                for (frame, value) in [(30, 50.0), (40, 0.0), (50, 50.0)] {
+                    peer.effects.transform.track_mut(P::CropLeft).upsert(
+                        frame,
+                        value,
+                        core::Interpolation::Linear,
+                    );
+                }
+                InspectorEdit::ToggleTransformKeys {
+                    params: vec![P::CropLeft],
+                }
+            }
+        };
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let generation = session.history.generation();
+        assert!(
+            selected_edit(&mut session, id, &ids, frame, edit).is_err(),
+            "case {case}"
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            before,
+            "case {case}"
+        );
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.history.generation(), generation);
+    }
+    for value in [
+        json!({"action":"toggle_gain_key","value":1}),
+        json!({"action":"reset_gain","extra":true}),
+        json!({"action":"reset_compositing","params":[]}),
+        json!({"action":"flip","axis":"horizontal","enabled":true}),
+        json!({"action":"gain","value":1,"extra":false}),
+    ] {
+        assert!(
+            serde_json::from_value::<InspectorEdit>(value.clone()).is_err(),
+            "{value}"
+        );
+    }
+}
+
+#[test]
+fn inspector_key_flags_use_actual_current_keys_after_the_truncated_summary() {
+    let (mut session, id, raw) = fixture();
+    let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+    *clip = Clip::from_source_range(
+        clip.id,
+        ClipSource::SolidColor,
+        12,
+        60,
+        100,
+        Rational::new(2, 1),
+    );
+    clip.freeze = Some(7);
+    for frame in 12..50 {
+        clip.effects
+            .transform
+            .track_mut(TransformParam::Opacity)
+            .upsert(frame, 80.0, core::Interpolation::Hold);
+        clip.effects
+            .gain_db
+            .upsert(frame, -3.0, core::Interpolation::Hold);
+    }
+    for frame in [10, 100] {
+        clip.effects
+            .transform
+            .track_mut(TransformParam::Opacity)
+            .upsert(frame, 70.0, core::Interpolation::Hold);
+        clip.effects
+            .gain_db
+            .upsert(frame, -2.0, core::Interpolation::Hold);
+    }
+    let current = detail(&session, id, &raw, 160).unwrap();
+    assert_eq!(current["source_frame"], 42);
+    let opacity = current["transform"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|value| value["param"] == "Opacity")
+        .unwrap();
+    assert_eq!(opacity["keyframes"].as_array().unwrap().len(), 16);
+    assert_eq!(opacity["on_keyframe"], true);
+    assert_eq!(current["gain"]["on_keyframe"], true);
+    assert_eq!(
+        opacity["keyframe_info"],
+        json!({"on_keyframe":true,"previous_frame":158,"next_frame":162})
+    );
+    assert_eq!(current["gain"]["keyframe_info"], opacity["keyframe_info"]);
+    let first = detail(&session, id, &raw, 0).unwrap();
+    assert_eq!(
+        first["gain"]["keyframe_info"],
+        json!({"on_keyframe":true,"previous_frame":null,"next_frame":102})
+    );
+    let last = detail(&session, id, &raw, 1_000).unwrap();
+    assert_eq!(
+        last["gain"]["keyframe_info"],
+        json!({"on_keyframe":false,"previous_frame":174,"next_frame":null})
+    );
+}
+
 fn batch_compositing_fixture() -> (Session, TimelineId, Vec<String>, String) {
     let (mut session, timeline, solid) = fixture();
     session.project.timelines[timeline]

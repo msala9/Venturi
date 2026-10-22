@@ -146,3 +146,43 @@ test('cancel, no movement, changed source frame and resized viewer never submit'
   context=fixture();gesture.begin([500,500]);view={...viewport,width:900};gesture.move([520,480]);await gesture.end([520,480]);
   assert.deepEqual(commands,[]);assert.equal(gesture.active(),false);
 });
+
+function selectedFixture(){
+  const context=fixture();context.clip_ids=[context.clip_id,'video-peer'];context.selection=[...context.clip_ids,'audio-peer','locked-selected'];return context;
+}
+
+test('multi-selected viewer uses only primary geometry and forwards each handle through one native selected-target transform',()=>{
+  const context=selectedFixture(),before=structuredClone(context);
+  const gestures=[{kind:'move'},{kind:'anchor'},{kind:'rotate'},{kind:'scale',corner:[1,1]},{kind:'crop',side:[0,1]}];
+  for(const handle of gestures){
+    const draft=viewerTransformDraft(context,viewport,handle,[600,400],[620,380]);
+    assert.equal(draft.operation.kind,'edit_inspector_selection');assert.deepEqual(draft.operation.clip_ids,context.clip_ids);assert.equal(draft.operation.timeline_frame,24);
+    assert.equal(draft.operation.edit.action,'transform');assert.ok(draft.operation.edit.parameters.length>0);
+    assert.equal(draft.operation.clip_id,undefined);assert.equal(draft.operation.source_frame,undefined);
+  }
+  assert.deepEqual(viewerTransformGeometry(context,viewport),viewerTransformGeometry(fixture(),viewport));assert.deepEqual(context,before);
+});
+
+test('multi-selected pointer drafts remain local and one release captures complete explicit targets without audio/locked expansion',async()=>{
+  const context=selectedFixture(),commands=[];
+  const gesture=createViewerTransformGesture({getContext:()=>context,getViewport:()=>viewport,canCommit:()=>true,commit:async operation=>commands.push(operation),onGhost:()=>{},notice:message=>assert.fail(message)});
+  assert.equal(gesture.begin([600,500]).kind,'move');gesture.move([610,490]);gesture.move([620,480]);assert.deepEqual(commands,[]);
+  await gesture.end([630,470]);await gesture.end([640,460]);
+  assert.deepEqual(commands,[{kind:'edit_inspector_selection',clip_ids:[context.clip_id,'video-peer'],timeline_frame:24,edit:{action:'transform',parameters:[{param:'PositionX',value:Math.fround(57.6)},{param:'PositionY',value:Math.fround(57.6)}]}}]);
+});
+
+test('same-primary peer changes and session/CAS changes cancel captured multi-viewer edits',async()=>{
+  let context;const commands=[],gesture=createViewerTransformGesture({getContext:()=>context,getViewport:()=>viewport,canCommit:()=>true,commit:async operation=>commands.push(operation),onGhost:()=>{},notice:message=>assert.fail(message)});
+  const changes=[current=>{current.clip_ids[1]='new-video';current.selection[1]='new-video';},current=>{current.selection=current.selection.filter(id=>id!=='audio-peer');},current=>{current.selection.push('another-locked-peer');},...['project_epoch','if_generation','timeline_id','revision','frame'].map(key=>current=>{current[key]=key==='frame'?25:'changed';})];
+  for(const change of changes){context=selectedFixture();assert.ok(gesture.begin([600,500]));change(context);await gesture.end([630,470]);assert.equal(gesture.active(),false);}
+  assert.deepEqual(commands,[]);
+});
+
+test('multi-viewer rejects malformed target bindings and stops for modal/read-only/busy state or explicit cancellation',async()=>{
+  const context=selectedFixture();
+  for(const patch of [{clip_ids:[]},{clip_ids:[context.clip_id,context.clip_id]},{clip_ids:['another',context.clip_id]},{selection:[context.clip_id]},{selection:null}])assert.match(viewerTransformAvailability({...context,...patch}),/selected video targets/);
+  let allowed=true;const commands=[],gesture=createViewerTransformGesture({getContext:()=>context,getViewport:()=>viewport,canCommit:()=>allowed,commit:async operation=>commands.push(operation),onGhost:()=>{},notice:message=>assert.fail(message)});
+  assert.ok(gesture.begin([600,500]));allowed=false;await gesture.end([630,470]);assert.deepEqual(commands,[]);
+  allowed=true;assert.ok(gesture.begin([600,500]));gesture.cancel();await gesture.end([630,470]);assert.deepEqual(commands,[]);
+  context.clip_ids=[context.clip_id];context.selection=[context.clip_id];assert.equal(viewerTransformDraft(context,viewport,{kind:'move'},[600,500],[610,490]).operation.kind,'edit_inspector_selection');
+});

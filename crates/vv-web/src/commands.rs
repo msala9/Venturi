@@ -132,6 +132,11 @@ pub enum Operation {
     SafeMove {
         moves: Vec<Move>,
     },
+    MoveClips {
+        new_video_tracks: usize,
+        new_audio_tracks: usize,
+        moves: Vec<TrackMove>,
+    },
     Trim {
         clip_id: String,
         edge: Edge,
@@ -188,6 +193,11 @@ pub enum Operation {
     SetPropertiesBatch {
         clip_ids: Vec<String>,
         patch: Box<crate::inspector::Properties>,
+    },
+    EditInspectorSelection {
+        clip_ids: Vec<String>,
+        timeline_frame: FrameIdx,
+        edit: crate::inspector::InspectorEdit,
     },
     EditViewerTransform {
         clip_id: String,
@@ -386,6 +396,19 @@ pub struct MarkerEdit {
 pub struct Move {
     pub clip_id: String,
     pub to_track: String,
+    pub to_start_frame: FrameIdx,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum MoveTrack {
+    Existing { track_id: String },
+    New { depth: usize },
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct TrackMove {
+    pub clip_id: String,
+    pub to_track: MoveTrack,
     pub to_start_frame: FrameIdx,
 }
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
@@ -1002,6 +1025,17 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 return Ok(());
             }
         }
+        Operation::EditInspectorSelection {
+            clip_ids,
+            timeline_frame,
+            edit,
+        } => {
+            let generation = session.history.generation();
+            crate::inspector::edit_selection(session, id, clip_ids, *timeline_frame, edit)?;
+            if session.history.generation() == generation {
+                return Ok(());
+            }
+        }
         Operation::EditViewerTransform {
             clip_id,
             timeline_frame,
@@ -1096,6 +1130,17 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 *start_frame,
                 tracks,
             );
+        }
+        Operation::MoveClips {
+            new_video_tracks,
+            new_audio_tracks,
+            moves,
+        } => {
+            let generation = session.history.generation();
+            move_to_tracks(session, id, *new_video_tracks, *new_audio_tracks, moves)?;
+            if session.history.generation() == generation {
+                return Ok(());
+            }
         }
         Operation::SafeMove { moves } => {
             if moves.is_empty() || moves.len() > 4096 {
@@ -1346,6 +1391,141 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         }
     }
     session.sync_timeline_media(id);
+    Ok(())
+}
+fn move_to_tracks(
+    session: &mut Session,
+    id: TimelineId,
+    new_video_tracks: usize,
+    new_audio_tracks: usize,
+    moves: &[TrackMove],
+) -> Result<()> {
+    let tl = &session.project.timelines[id];
+    let track_count = tl.tracks.len();
+    let total = track_count
+        .checked_add(new_video_tracks)
+        .and_then(|count| count.checked_add(new_audio_tracks));
+    if moves.is_empty() || moves.len() > 4096 || total.is_none_or(|count| count > 128) {
+        return Err(ApiError::invalid("Move 1 to 4096 clips within 128 tracks"));
+    }
+    let mut seen = HashSet::new();
+    let mut deltas = HashMap::new();
+    let mut plan = Vec::with_capacity(moves.len());
+    let mut video_depth = 0;
+    let mut audio_depth = 0;
+    for movement in moves {
+        if movement.clip_id.is_empty()
+            || movement.clip_id.len() > 20
+            || !movement.clip_id.bytes().all(|byte| byte.is_ascii_digit())
+        {
+            return Err(ApiError::invalid(
+                "Clip IDs must be unsigned decimal strings",
+            ));
+        }
+        let (from, clip_id) = clip_ref(tl, &movement.clip_id)?;
+        unlocked(tl, from)?;
+        if !seen.insert(clip_id) {
+            return Err(ApiError::invalid("A clip cannot be moved twice"));
+        }
+        let kind = tl.tracks[from].kind;
+        let to = match &movement.to_track {
+            MoveTrack::Existing { track_id } => {
+                let to = track_index(tl, track_id)?;
+                if tl.tracks[to].kind != kind {
+                    return Err(ApiError::invalid("Track types must match"));
+                }
+                to
+            }
+            MoveTrack::New { depth } => {
+                let (count, maximum, offset) = match kind {
+                    TrackKind::Video => (new_video_tracks, &mut video_depth, track_count),
+                    TrackKind::Audio => (
+                        new_audio_tracks,
+                        &mut audio_depth,
+                        track_count + new_video_tracks,
+                    ),
+                };
+                if *depth == 0 || *depth > count {
+                    return Err(ApiError::invalid(
+                        "New track depth exceeds its declared count",
+                    ));
+                }
+                *maximum = (*maximum).max(*depth);
+                offset + *depth - 1
+            }
+        };
+        let clip = tl.clip(from, clip_id).unwrap();
+        range(movement.to_start_frame, clip.timeline_len)?;
+        if let Some(group) = clip.linked_group {
+            let delta = movement.to_start_frame - clip.timeline_start;
+            if deltas.insert(group, delta).is_some_and(|old| old != delta) {
+                return Err(ApiError::invalid(
+                    "Linked clips must move by the same frame delta",
+                ));
+            }
+        }
+        plan.push((clip_id, from, to, movement.to_start_frame));
+    }
+    if video_depth != new_video_tracks || audio_depth != new_audio_tracks {
+        return Err(ApiError::invalid(
+            "New track counts must match referenced depths",
+        ));
+    }
+    let expanded = refs(
+        tl,
+        &moves
+            .iter()
+            .map(|movement| movement.clip_id.clone())
+            .collect::<Vec<_>>(),
+    )?;
+    if expanded.len() != seen.len() {
+        return Err(ApiError::invalid(
+            "Every linked clip must be included in the move",
+        ));
+    }
+    let mut trial = session.project.clone();
+    for kind in std::iter::repeat_n(TrackKind::Video, new_video_tracks)
+        .chain(std::iter::repeat_n(TrackKind::Audio, new_audio_tracks))
+    {
+        core::AddTrack::new(id, kind).apply(&mut trial);
+    }
+    let target = &trial.timelines[id];
+    let mut destinations = Vec::with_capacity(plan.len());
+    for &(clip_id, from, to, start) in &plan {
+        let len = tl.clip(from, clip_id).unwrap().timeline_len;
+        free(target, to, start, len, &seen)?;
+        destinations.push((to, start, start + len));
+    }
+    destinations.sort_unstable();
+    if destinations
+        .windows(2)
+        .any(|pair| pair[0].0 == pair[1].0 && pair[0].2 > pair[1].1)
+    {
+        return Err(ApiError::conflict(
+            "OVERLAP",
+            "Selected destinations overlap",
+        ));
+    }
+    core::MoveClips::new(id, plan.clone()).apply(&mut trial);
+    crate::files::validate_project(&trial)?;
+    if new_video_tracks == 0
+        && new_audio_tracks == 0
+        && plan.iter().all(|&(clip_id, from, to, start)| {
+            from == to && tl.clip(from, clip_id).unwrap().timeline_start == start
+        })
+    {
+        return Ok(());
+    }
+    let mut commands: Vec<Box<dyn Command>> =
+        std::iter::repeat_n(TrackKind::Video, new_video_tracks)
+            .chain(std::iter::repeat_n(TrackKind::Audio, new_audio_tracks))
+            .map(|kind| Box::new(core::AddTrack::new(id, kind)) as Box<dyn Command>)
+            .collect();
+    commands.push(Box::new(core::MoveClips::new(id, plan)));
+    session.apply(Box::new(CompositeCommand::new(
+        CommandLabel::MoveClips,
+        commands,
+    )));
     Ok(())
 }
 fn close_gap(session: &mut Session, id: TimelineId, track: &str, frame: FrameIdx) -> Result<()> {

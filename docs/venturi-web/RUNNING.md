@@ -2,13 +2,25 @@
 
 ## Current halo1 working instance
 
-After the owner's 2026-10-22 host change, use **http://127.0.0.1:8813/** in the
-existing Windows browser. The hidden SSH tunnel forwards the same port to
-`halo@192.168.1.153`. The server validates its configured Host, so preserve
-port 8813 on both ends. No Windows build, preview server or Linux browser is
-required.
+After the owner's 2026-10-22 host change, use **http://127.0.0.1:8816/** in the
+existing Windows browser. Source `63f4919`, binary `vv-web-b80a7d0c3bae`, runs as
+`venturi-web-halo1-color-audio-r2.service` with projects in
+`/home/halo/VenturiWeb-color-audio-20261022`. Open the Saved
+`Venturi_Color_Audio.vvproj`; it includes a real archived clip and verified
+track gain of -3.25 dB. Mixer exposes native prepared peaks and Solo/Mute;
+View > Scopes exposes native plot guides. Numeric gain/pan drafts survive EOF.
+The full Color/Audio scope remains partial, including edits during playback
+and physical device/output acceptance. See
+`evidence/f4-native-guides-inline-mixer-workflow.json`.
 
-The unprivileged `venturi-web-halo1-nas.service` runs source `fd9bde4` from
+The hidden SSH tunnel forwards the same port to `halo@192.168.1.153`.
+The server validates its configured Host, so preserve 8816 on both ends.
+No Windows build, preview server or Linux browser is required. The earlier
+halo1 editor on **8813** remains available, with its original project, Session
+and ImportMedia Undo chain intact. Its configuration below is retained as the
+migration baseline; both instances use the same canonical NAS arguments.
+
+The preserved unprivileged `venturi-web-halo1-nas.service` runs source `fd9bde4` from
 `/home/halo/.local/share/venturi-web/.runtime/vv-web-11fd31925c23` and uses
 `/home/halo/VenturiWeb-halo1-20261022` for projects. Native library arguments
 are `--assets-root /mnt/madrock-share/madrock-library --presets-root
@@ -16,7 +28,7 @@ are `--assets-root /mnt/madrock-share/madrock-library --presets-root
 The existing NAS mount is reused. Only multimedia and Vulkan userspace
 dependencies were added, with zero existing package upgrades/removals.
 
-The service caps CPU at eight cores and memory at 4 GiB, disables swap and uses
+Both services cap CPU at eight cores and memory at 4 GiB, disable swap and use
 low CPU/I/O priority and OOMScoreAdjust 1000. GPU access retains the shared
 nonblocking `/tmp/HALO_BENCHMARK.lock`. This separate working editor has no
 qualification deadline, no automatic restart and no boot enablement or linger

@@ -9,14 +9,20 @@ and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
 ### Current execution host — halo1
 
 The owner moved new work to free halo1 on 2026-10-22 because halo2 is shared
-with an H3 agent. The working runtime now serves Windows
-**http://127.0.0.1:8813/** through an SSH tunnel to halo1's loopback port 8813.
-Source `fd9bde4` runs as unprivileged `halo` in `venturi-web-halo1-nas.service`,
-using `/home/halo/VenturiWeb-halo1-20261022`. It uses the existing CIFS mount
+with an H3 agent. The current working runtime serves Windows
+**http://127.0.0.1:8816/** through the same-port SSH tunnel to halo1.
+Source `63f4919` runs as unprivileged `halo` in
+`venturi-web-halo1-color-audio-r2.service`, using
+`/home/halo/VenturiWeb-color-audio-20261022` and the separate Saved project
+`Venturi_Color_Audio.vvproj`. It includes the native scope guides, inline Mixer
+meters/Solo/Mute, retained numeric drafts and CIFS catalog staging fix described
+below. The earlier halo1 editor on **8813**, source `fd9bde4`, remains running
+with its complete Session, ImportMedia Undo entry and project bytes unchanged.
+Both use the existing CIFS mount
 `/mnt/madrock-share/madrock-library` for native assets and its `presets/`
 subdirectory for presets, and the existing local ds4 API on 8787 for archive
 media. The existing halo2 editors below are preserved historical deliveries;
-port 8813 on Windows now targets halo1, not the stopped halo2 qualification.
+ports 8813/8816 on Windows target halo1, not the stopped halo2 qualifications.
 Use halo1 for subsequent bounded build/render/qualification work. Do not
 start another NAS mount or install browsers on either server.
 
@@ -199,6 +205,25 @@ and Audio workflows. Preserve native DSP ordering and normalization semantics.
 Qualify actual output, meter/scope context, track arming, record/stop/retry and
 placement together. Physical microphone/device and output checks remain explicit;
 synthetic input or file construction alone cannot close those requirements.
+
+Source `63f4919` adds native graticules to the existing isolated scope PNGs:
+Waveform/Parade scales, Histogram divisions and Vectorscope circle, skin line
+and six 75% targets. Narrow panels uniformly show the first slot and retain
+the second choice. The Mixer now shows native prepared stereo peaks for every
+track/master, with Solo/Mute on tracks, through one shared bounded reader.
+Numeric gain/pan drafts survive same-context EOF/readonly Inspector rebuilds;
+real generation/timeline changes invalidate them. The final EOF read is
+protected from the regular pause timer. No browser DSP is introduced.
+
+The 35 focused JavaScript cases and embedded build pass on halo1; unchanged
+Rust/CIFS evidence is reused. Actual Windows checks cover both wide plots,
+520-pixel first-slot layout, live peaks, draft retention through EOF, one-entry
+Apply, exact Undo/Redo, Solo/Mute and Save. The candidate on 8816 retains the
+verified Saved project; 8813 remains untouched. See
+`evidence/f4-native-guides-inline-mixer-workflow.json`. Mix/effect edits still
+stop the prepared Program, and inline displays clear on pause/end. Implement
+the remaining native live-edit behavior and physical audio/recording acceptance
+before advancing the full F4 rows. The ledger remains 47/43/2.
 
 ### F5 — shared media and presets
 

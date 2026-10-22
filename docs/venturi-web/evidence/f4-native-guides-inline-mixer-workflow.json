@@ -1,0 +1,162 @@
+{
+  "date": "2026-10-22",
+  "code_commit": "63f4919175cf5b643117b56de73dc5e155b60665",
+  "host": "halo1",
+  "url": "http://127.0.0.1:8816/",
+  "unit": "venturi-web-halo1-color-audio-r2.service",
+  "project": "Venturi_Color_Audio.vvproj",
+  "root": "/home/halo/VenturiWeb-color-audio-20261022",
+  "artifact": {
+    "project_sha256": "7c62ae054ca9867f4e40ab777a76a706f43b70dbd6656bae343107f7a9f61ea2",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-b80a7d0c3bae",
+    "sha256": "b80a7d0c3bae474d25ac572cb1ecf837e79e5ee704b21de911c9dd9e8efc9d43",
+    "pid": "99965",
+    "protected_original_project_sha256": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2",
+    "canonical_asset_revision_unchanged": "54bd353d81ed4812d080285e29462824870f836303792052cd770235aba16fe7",
+    "memory_available_kib": 124239396,
+    "build_disk_free_bytes": 121470795776
+  },
+  "source_sha256": {
+    "web/js/scopes.js": "89dd6a864d5d8026a1f032539adeb924fc5514b2da4c83828e1f204b736cd9b3",
+    "web/js/audio-meters.js": "f0bba036fdae505f6f19d6ba87477e683167c2e1234064808f8ba50489aea85f",
+    "web/js/mixer.js": "69af3ae2cf74f71f0064a76d268c82cb99c91dec27f93ea5aa983e10506a9f6f",
+    "web/js/main.js": "79b52418b87d524dbe03e826c215e0dc1cc01436ea5c0beca83dc01ea9e91506",
+    "web/index.html": "0280f40ab537e09c4975cc67bfea6f665217dc892c3fc4081d441af3b50f5d1a",
+    "web/style/app.css": "6298d655dd917b512f649a40b71bf48354813b5522c9a723cb14c3f00e3d8abc",
+    "web/test/scopes.test.js": "4b629316fd16042532bcc21a0e586651b83ac84d693902dfc93833182b5828cd",
+    "web/test/audio-meters.test.js": "836605e52188248d41e036c0e528edcd65b7a736ef990db34ae258ef08565e6e",
+    "web/test/mixer.test.js": "320015dc70af49185813bab904013f349fde097688479fe245372ba5653f77e0",
+    "crates/vv-web/src/asset_journal.rs": "09fff8ecd49deda99bd314d67e4beea8aa5674b10744cd32e9f59bef324b7c9f",
+    "crates/vv-web/src/tests/asset_journal.rs": "71128e9426fcffc6fa8cfc8a51d61eda20128a1d75fe76f967b8e6d859b24ae1"
+  },
+  "gate": {
+    "javascript_cases": 35,
+    "javascript_failed": 0,
+    "embedded_build": "passed",
+    "terminal_main_pid": 0,
+    "reused_unchanged_rust_cifs_gate": "f5-native-web-cifs-catalog-gate.json",
+    "initial_connected_gate": {
+      "javascript_cases": 33,
+      "web_asset_cases": 98,
+      "formatting": "passed",
+      "all_target_web_clippy": "passed",
+      "embedded_build": "passed",
+      "native_cifs_interop_tests": 2
+    }
+  },
+  "workflow": {
+    "actual_windows_browser_one_work_tab": true,
+    "actual_r9700": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    },
+    "native_waveform_parade_guides": true,
+    "native_vectorscope_histogram_guides": true,
+    "wide_scope_slots": 2,
+    "narrow": {
+      "viewport_width": 520,
+      "scope_slots": 1,
+      "stage_width": 360,
+      "stage_height": 180,
+      "second_choice_retained": "Histogram",
+      "second_control_hidden": true,
+      "guides_visible": true,
+      "horizontal_overflow": false
+    },
+    "viewport_544_horizontal_overflow": false,
+    "viewport_reset": true,
+    "live_meter_observation": {
+      "status": "LIVE \u00c2\u00b7 native prepared audio \u00c2\u00b7 sample 8192",
+      "strips": [
+        {
+          "gain": "-3.25",
+          "label": "A1",
+          "readout": "-25.3 / -26.6 dBFS"
+        },
+        {
+          "gain": "0",
+          "label": "Master",
+          "readout": "-25.3 / -26.6 dBFS"
+        }
+      ]
+    },
+    "draft_gain_db": -3.25,
+    "draft_retained_through_actual_eof": true,
+    "eof_frame": 123,
+    "eof_timecode": "00:00:05:03",
+    "apply_one_undo": true,
+    "undo_exact_timeline": true,
+    "redo_exact_timeline": true,
+    "source_media_unchanged": true,
+    "solo_and_mute_native_history": {
+      "labels": [
+        "MixerGain",
+        "SoloTrack",
+        "MuteTrack"
+      ],
+      "position": 3
+    },
+    "solo_mute_undone": true,
+    "saved": true,
+    "final_generation": "7",
+    "final_history": {
+      "labels": [
+        "MixerGain",
+        "SoloTrack",
+        "MuteTrack"
+      ],
+      "position": 1
+    },
+    "final_paused": true,
+    "final_client_draft_matches_committed_mix": true
+  },
+  "resources": {
+    "cpu_quota": 8,
+    "compiler_jobs": 2,
+    "memory_max_gib": 4,
+    "swap_max_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "one_heavy_job_at_a_time": true,
+    "windows": "small source/Git/SSH orchestration and existing browser only",
+    "gpu_lock": "nonblocking /tmp/HALO_BENCHMARK.lock",
+    "ds4_pid": "58396",
+    "protected_8813_pid": "84786",
+    "protected_8813_complete_session_unchanged": true,
+    "protected_8813_undo_preserved": true,
+    "halo2_editors_not_restarted": true
+  },
+  "screenshots": [
+    {
+      "path": "f4-native-guides-halo1.png",
+      "sha256": "c18a66889c6ac44d8190a81b009b353f2a30b162ff29de6a51bae6ca7dd7d773"
+    },
+    {
+      "path": "f4-native-guides-narrow-halo1.png",
+      "sha256": "7cd0e59c59110c5b610d6e24908cb6f13c2bab94e02ea8103d670ce29a6b35ce"
+    },
+    {
+      "path": "f4-native-inline-mixer-halo1.png",
+      "sha256": "39dfcb7aed89a5d35af472ae51cbf3f6c607dd213093e1865acf65cb65cfa686"
+    }
+  ],
+  "limits": [
+    "Mix and effect edits still stop the prepared Program; this does not implement live DSP graph editing.",
+    "Inline display clears on pause/end; it is not a physical hardware-output meter. Physical audio, microphone and full F4 acceptance remain open.",
+    "Narrow scopes display the first existing native slot uniformly; the bounded native PNG still renders both slots.",
+    "Scopes screenshots use e17997c36672; unchanged scope source and tests are reused in final b80a7d0c3bae. Final inline Mixer screenshot uses b80a7d0c3bae.",
+    "Services are transient, not boot-enabled. Preserve Saved state and Undo before stopping.",
+    "Full ledger stays 47 done / 43 partial / 2 excluded; no full-goal completion claim."
+  ]
+}

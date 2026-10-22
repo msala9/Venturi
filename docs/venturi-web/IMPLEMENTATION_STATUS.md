@@ -5,7 +5,19 @@
 ## Active completion objective
 
 The owner moved new execution to free halo1 on 2026-10-22 because halo2 is
-shared with H3 work. The current halo1 runtime is **http://127.0.0.1:8813/**,
+shared with H3 work. The latest working runtime is **http://127.0.0.1:8816/**,
+source `63f4919`, binary `b80a7d0c3bae`, in
+`venturi-web-halo1-color-audio-r2.service`. Its independent Saved
+`Venturi_Color_Audio.vvproj` uses the canonical NAS. Native scope guides,
+responsive first-slot display, shared inline Mixer peaks and Solo/Mute are
+implemented. Gain/pan drafts survive actual Program EOF; native Apply uses one
+Undo, exact Undo/Redo and Solo/Mute work, and Save retains the final mix.
+The 35 focused JavaScript cases and embedded build pass; unchanged Rust/CIFS
+gates are reused. See `evidence/f4-native-guides-inline-mixer-workflow.json`.
+Mix/effect edits still stop Program; physical audio/recording and full F4
+acceptance remain open. No ledger row advances from this bounded increment.
+
+The migration baseline remains running at **http://127.0.0.1:8813/**,
 source `fd9bde4`, with a separate Saved `Venturi_Halo1.vvproj`. It uses the
 existing NAS root `/mnt/madrock-share/madrock-library` for native assets,
 `presets/` for presets and local ds4 on 8787 for the shared archive. Windows

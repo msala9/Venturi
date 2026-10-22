@@ -7,6 +7,11 @@ The separate halo2 service is `venturi-web-delivery.service`, listening only on
 127.0.0.1:8811. It has one CPU, 4 GiB memory, no swap and low CPU/I/O priority.
 GPU operations require the shared nonblocking /tmp/HALO_BENCHMARK.lock.
 
+Deployed code commit: `df508593a311d80e37e57af97022c7fdb443b06e`.
+Deployed binary SHA-256:
+`b44a6174036c0291676bc493a0992d52c668f25f0cf3d3313212b9aa9536ae64`.
+Integrated evidence: [evidence/delivery-workflow.json](evidence/delivery-workflow.json).
+
 The protected editor on port 8790 retains its five unsaved moves and original
 Undo history. This delivery uses a separate project root and service.
 
@@ -37,7 +42,10 @@ The Windows browser downloaded the same result as
 4. Save, then explicitly reopen from Projects. Select the intended Active
    timeline when the project contains multiple timelines.
 5. Export the whole timeline or an explicit frame range with audio enabled.
-   Wait for READY, then download the MP4. Saved outputs survive candidate restart.
+   Wait for READY, then download the MP4 or choose **Preview exported video**
+   and use its native playback controls. Preview is explicit, with no autoplay;
+   closing the drawer releases it. Program, Source and result playback stop
+   each other to avoid overlapping audio. Saved outputs survive candidate restart.
 
 ## Verified scope and remaining limits
 
@@ -71,3 +79,7 @@ has exited, the existing workstation helper
 `python K:\AI-lab\venturi\start-windows-ui-tunnel.py` restores port 8811 using
 the already configured halo2 access; do not run it while that port is occupied.
 No browser installation, Windows build or local rendering is needed.
+
+Use the delivered candidate tab when available. A second tab may be read-only
+while the first holds its writer lease. Close the other candidate tab and use
+Reconnect after its lease expires; the protected port-8790 editor is independent.

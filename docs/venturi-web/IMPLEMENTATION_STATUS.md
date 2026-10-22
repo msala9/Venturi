@@ -10,9 +10,28 @@ playback with audio → save/reopen → H.264/AAC export workflow. Follow
 blocks and actual deployment state instead of a subjective overall percentage.
 
 Blocks A (editing/save), B (playback/export) and C (accessible handover) are
-pending integrated acceptance on the current candidate. Existing component
-proofs are reused. The staged candidate is commit 8a86e0e; the protected main
-editor remains on 84ef827 with five unsaved moves and is not restarted.
+accepted in `evidence/delivery-workflow.json`. The actual existing Windows
+browser imports a source and assembles three linked A/V segments, trims, splits,
+moves by Cut/Paste, closes gaps and uses Undo/Redo. Saved native timeline/media
+state and project bytes match after explicit reopen and candidate restart.
+Composed playback completes before and after a further edit; a native GUI
+export contains all 72 H.264 frames and stereo AAC with the expected source cuts.
+The downloaded file hash matches halo2; the exported file also plays to its end
+inside the new Export result player without overlapping Program/Source audio.
+
+Code commit df50859 is deployed on `venturi-web-delivery.service` at Windows
+http://127.0.0.1:8811/. See `DELIVERY_HANDOVER.md` for project/output locations.
+One cached halo2 frontend gate passes 881 JavaScript checks, including four
+result-player cases, and the embedded native build; Rust remains unchanged from
+its earlier verified baseline. No repeated native renderer matrix was needed.
+The normal candidate service has one CPU, 4 GiB RAM, no swap and low priority;
+final idle memory is recorded in the proof and its GPU context is released.
+The protected main editor remains on 84ef827 with its five unsaved moves intact.
+
+Qualification uses a small 64×64 three-second A/V edit. Physical Canvas/DPI,
+physical output latency, complex high-resolution throughput and browser playback
+across five-minute windows remain explicitly unqualified. Broader native GUI
+parity remains deferred and its ledger counts below are unchanged.
 
 ## Broader parity ledger — deferred completion assessment
 

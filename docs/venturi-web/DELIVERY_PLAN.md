@@ -15,9 +15,14 @@ or the original implementation plan is complete.
 
 | Block | Work | Exit condition | Current state |
 |---|---|---|---|
-| A — editing and persistence | Reuse the verified candidate and existing small A/V sources. Import/place linked clips, move, trim, split, remove a gap, Undo/Redo, save and reopen. Fix workflow blockers together. | One project retains clip positions, links, sources and audio after reopen; ordinary editing is usable in the existing Windows browser. | Components have prior evidence; one current-candidate workflow remains to be completed. |
-| B — playback and export | Use that same edited project for composed Play/Pause/seek with audio and native export. Fix integration defects as a batch. | Current images after edits; no obsolete autoplay; complete playback and a decodable H.264/AAC export with the expected duration, picture and audio. | Prior native/GPU/browser proofs exist; integrated current-candidate acceptance remains open. |
-| C — handover | Keep the verified candidate accessible, with its project/source/output locations and concise running instructions. | A working URL and exact deployed commit, saved project and export are reported; candidate restart reopens the saved project. | Latest candidate is staged; the protected main editor remains on its older binary. |
+| A — editing and persistence | Reuse the verified candidate and existing small A/V sources. Import/place linked clips, move, trim, split, remove a gap, Undo/Redo, save and reopen. Fix workflow blockers together. | One project retains clip positions, links, sources and audio after reopen; ordinary editing is usable in the existing Windows browser. | Accepted: three linked segments, numeric trims, split, Cut/Paste move, gap closure, Undo/Redo and exact saved native state after reopen/restart. |
+| B — playback and export | Use that same edited project for composed Play/Pause/seek with audio and native export. Fix integration defects as a batch. | Current images after edits; no obsolete autoplay; complete playback and a decodable H.264/AAC export with the expected duration, picture and audio. | Accepted: composed playback before/after edit, 72-frame H.264/AAC GUI export, full decode, source-cut audio comparison, download and actual exported-file browser playback. |
+| C — handover | Keep the verified candidate accessible, with its project/source/output locations and concise running instructions. | A working URL and exact deployed commit, saved project and export are reported; candidate restart reopens the saved project. | Accepted: df50859 runs on bounded venturi-web-delivery.service at Windows port 8811; project/output retained, handover documented, protected main unchanged. |
+
+Accepted evidence: [evidence/delivery-workflow.json](evidence/delivery-workflow.json).
+Use [DELIVERY_HANDOVER.md](DELIVERY_HANDOVER.md) for the URL, deployed code commit,
+saved project, export and operational instructions. This completes the narrowed
+workflow, with the explicit qualification boundaries below.
 
 Use a short multi-clip project first. Reuse existing fixtures, media and helpers;
 do not create another test framework or start with a broad effects matrix.

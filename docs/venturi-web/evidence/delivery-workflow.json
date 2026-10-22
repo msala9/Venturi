@@ -1,6 +1,6 @@
 {
-  "status": "in_progress",
-  "scope": "Usable editing workflow; final exported-video browser preview pending",
+  "status": "passed",
+  "scope": "Usable editing, playback, save/reopen, H.264/AAC export and accessible candidate handover",
   "workflow_base_commit": "8a86e0ec6fbb31a6e011a3433cc6159af65b366f",
   "build": {
     "phase": "passed",
@@ -26,7 +26,17 @@
     },
     "javascript_tests": 881,
     "new_focused_tests": 4,
-    "native_rust_unchanged": true
+    "native_rust_unchanged": true,
+    "blocks": {
+      "A": "accepted",
+      "B": "accepted",
+      "C": "accepted"
+    },
+    "browser_console_errors": [],
+    "screenshots": [
+      "delivery-edit-export-windows.jpg",
+      "delivery-export-preview-windows.jpg"
+    ]
   },
   "workflow": {
     "project": "Venturi_Editing_Delivery.vvproj",
@@ -500,6 +510,58 @@
           "saved": "Saved",
           "timeline": "Editing delivery"
         }
+      },
+      {
+        "step": "exported-file-browser-playback",
+        "dom": {
+          "currentTime": 3.008,
+          "download": "/api/v1/exports/1792655870910606546/export.mp4?project_epoch=1792655531734560571%3A2",
+          "duration": 3.008,
+          "ended": true,
+          "muted": false,
+          "programPaused": true,
+          "sourcePaused": true,
+          "src": "/api/v1/exports/1792655870910606546/export.mp4?project_epoch=1792655531734560571%3A2",
+          "status": "Exported video ready \u00c2\u00b7 use the video controls to play"
+        }
+      },
+      {
+        "step": "exported-file-native-pause",
+        "dom": {
+          "paused": true,
+          "programPaused": true,
+          "sourcePaused": true
+        }
+      },
+      {
+        "step": "close-export-releases-player",
+        "dom": {
+          "hidden": true,
+          "paused": true,
+          "src": null
+        }
+      },
+      {
+        "step": "program-play-stops-export-preview",
+        "dom": {
+          "programDuration": 3.008,
+          "programPaused": false,
+          "programTime": 0.017501,
+          "resultHidden": true,
+          "resultPaused": true,
+          "resultSrc": null
+        }
+      },
+      {
+        "step": "final-delivered-view",
+        "dom": {
+          "notice": "Connected to native Venturi session",
+          "previewStatus": "Exported video ready \u00c2\u00b7 use the video controls to play",
+          "resultDuration": 3.008,
+          "resultPaused": true,
+          "save": "Saved",
+          "timeline": "Editing delivery"
+        }
       }
     ],
     "export_validation": {
@@ -554,17 +616,1122 @@
       "output_sha256": "938570ba4db7c32d2decc6e27c0e33bcd6d8f05d04254915aeadd5567e74e51e",
       "output": "/home/marco/VenturiWeb-delivery-20261022/.exports/1792655870910606546/program.mp4"
     },
-    "windows_download_sha256": "938570ba4db7c32d2decc6e27c0e33bcd6d8f05d04254915aeadd5567e74e51e"
+    "windows_download_sha256": "938570ba4db7c32d2decc6e27c0e33bcd6d8f05d04254915aeadd5567e74e51e",
+    "native_history_before_reopen": {
+      "labels": [
+        "ImportMedia",
+        "NewTimeline",
+        "InsertClips",
+        "TrimClips",
+        "SplitClips",
+        "InsertClips",
+        "TrimClips",
+        "RippleDelete",
+        "RippleDelete",
+        "DeleteClips",
+        "PasteClips",
+        "RippleDelete",
+        "TrimClips"
+      ],
+      "position": 13
+    },
+    "exported_file_browser_playback": true,
+    "native_state_after_final_upgrade_identical": true
   },
   "runtime": {
     "unit": "venturi-web-delivery.service",
     "root": "/home/marco/VenturiWeb-delivery-20261022",
     "local_url": "http://127.0.0.1:8811",
-    "main_editor_preserved": true
+    "main_editor_preserved": true,
+    "pid": 1629388,
+    "unit_config": "[Unit]\nDescription=Venturi Web usable editing delivery\nAfter=network-online.target\n\n[Service]\nType=exec\nExecStart=/home/marco/AI-lab/venturi-web/.runtime/vv-web-b44a6174036c --listen 127.0.0.1:8811 --projects-root /home/marco/VenturiWeb-delivery-20261022 --gpu-device 0x7551 --gpu-lock /tmp/HALO_BENCHMARK.lock --library-url http://192.168.1.153:8787\nEnvironment=VK_DRIVER_FILES=/usr/share/vulkan/icd.d/radeon_icd.json\nEnvironment=TOKIO_WORKER_THREADS=2 RAYON_NUM_THREADS=1 LP_NUM_THREADS=1 OMP_NUM_THREADS=1\nEnvironment=XDG_RUNTIME_DIR=/run/user/1000\nCPUQuota=100%\nMemoryMax=4G\nMemorySwapMax=0\nOOMScoreAdjust=1000\nOOMPolicy=stop\nNice=19\nIOWeight=10\nTasksMax=128\nTimeoutStopSec=5\nKillMode=control-group\nRestart=no\n\n[Install]\nWantedBy=default.target\n",
+    "actual": {
+      "session": {
+        "api_version": 1,
+        "audio_effects": {
+          "compressor": {
+            "attack_ms": [
+              0.10000000149011612,
+              200.0
+            ],
+            "crossovers_hz": [
+              20.0,
+              20000.0
+            ],
+            "makeup_db": [
+              -12.0,
+              24.0
+            ],
+            "ratio": [
+              1.0,
+              20.0
+            ],
+            "release_ms": [
+              5.0,
+              2000.0
+            ],
+            "threshold_db": [
+              -60.0,
+              0.0
+            ]
+          },
+          "defaults": {
+            "Equalizer": {
+              "enabled": true,
+              "kind": {
+                "Equalizer": {
+                  "bands": [
+                    {
+                      "enabled": false,
+                      "freq_hz": 80.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighPass"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 120.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowShelf"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 2500.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "Peak"
+                    },
+                    {
+                      "enabled": true,
+                      "freq_hz": 8000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "HighShelf"
+                    },
+                    {
+                      "enabled": false,
+                      "freq_hz": 18000.0,
+                      "gain_db": 0.0,
+                      "q": 0.7071067690849304,
+                      "shape": "LowPass"
+                    }
+                  ]
+                }
+              }
+            },
+            "Mono": {
+              "enabled": true,
+              "kind": "Mono"
+            },
+            "MultibandCompressor": {
+              "enabled": true,
+              "kind": {
+                "MultibandCompressor": {
+                  "bands": [
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    },
+                    {
+                      "attack_ms": 10.0,
+                      "makeup_db": 0.0,
+                      "ratio": 3.0,
+                      "release_ms": 150.0,
+                      "threshold_db": -24.0
+                    }
+                  ],
+                  "crossovers_hz": [
+                    200.0,
+                    2000.0
+                  ]
+                }
+              }
+            },
+            "Normalize": {
+              "enabled": true,
+              "kind": {
+                "Normalize": {
+                  "mode": "SamplePeak",
+                  "set_level": "Relative",
+                  "target_db": -1.0
+                }
+              }
+            }
+          },
+          "eq": {
+            "freq_hz": [
+              20.0,
+              20000.0
+            ],
+            "gain_db": [
+              -24.0,
+              24.0
+            ],
+            "q": [
+              0.10000000149011612,
+              18.0
+            ],
+            "shapes": [
+              "HighPass",
+              "LowShelf",
+              "Peak",
+              "HighShelf",
+              "LowPass"
+            ]
+          },
+          "normalization": [
+            {
+              "default": -1.0,
+              "mode": "SamplePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -1.0,
+              "mode": "TruePeak",
+              "range": [
+                -30.0,
+                0.0
+              ]
+            },
+            {
+              "default": -23.0,
+              "mode": "Loudness",
+              "range": [
+                -40.0,
+                -5.0
+              ]
+            }
+          ],
+          "presets": {
+            "Equalizer": [
+              "mixer.eq_preset_flat",
+              "mixer.eq_preset_voice",
+              "mixer.eq_preset_warm",
+              "mixer.eq_preset_bright",
+              "mixer.eq_preset_mud",
+              "mixer.eq_preset_rumble",
+              "mixer.eq_preset_telephone"
+            ],
+            "MultibandCompressor": [
+              "mixer.preset_default",
+              "mixer.preset_glue",
+              "mixer.preset_voice",
+              "mixer.preset_deesser",
+              "mixer.preset_low_end",
+              "mixer.preset_broadcast",
+              "mixer.preset_master"
+            ]
+          }
+        },
+        "autosave": {
+          "base_changed": true,
+          "created_unix_ms": 1792655809182,
+          "pending": false,
+          "project_token": "Venturi_Editing_Delivery.vvproj",
+          "resolved_to": "Venturi_Editing_Delivery.vvproj",
+          "revision": "9c2fe0e1525da08a4aa3873026ecc309f04b23f51e54ec29a3663a7f3d492acb",
+          "state": "saved"
+        },
+        "capabilities": {
+          "editing": true,
+          "export": true,
+          "media_imports": true,
+          "native_assets": true,
+          "playback": true,
+          "preview": true,
+          "scopes": true,
+          "software_preview": false,
+          "source_playback": true
+        },
+        "clipboard_count": 0,
+        "clipboard_current_project": false,
+        "clipboard_media_count": 0,
+        "clipboard_revision": null,
+        "command_epoch": "0",
+        "folders": [],
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "import_warnings": [],
+        "media": [
+          {
+            "audio_stream_count": 0,
+            "compound_timeline_id": "1",
+            "content_hash": "11",
+            "duration_frames": 0,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": false,
+            "has_video": false,
+            "id": "1",
+            "is_image": false,
+            "name": "Timeline 1",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": null,
+            "content_hash": "8777126629142247050",
+            "duration_frames": 48,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": true,
+            "has_video": true,
+            "id": "2",
+            "is_image": false,
+            "name": "venturi-smoke.mp4",
+            "offline": false
+          },
+          {
+            "audio_stream_count": 1,
+            "compound_timeline_id": "2",
+            "content_hash": "17",
+            "duration_frames": 72,
+            "folder": null,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "has_audio": true,
+            "has_video": true,
+            "id": "3",
+            "is_image": false,
+            "name": "Editing delivery",
+            "offline": false
+          }
+        ],
+        "persistence_notice": null,
+        "project_epoch": "1792658069069360514:1",
+        "project_name": "Venturi_Editing_Delivery.vvproj",
+        "recording_formats": [
+          {
+            "id": "mp3",
+            "label": "MP3"
+          },
+          {
+            "id": "wav",
+            "label": "WAV"
+          },
+          {
+            "id": "flac",
+            "label": "FLAC"
+          },
+          {
+            "id": "aac",
+            "label": "AAC (.m4a)"
+          },
+          {
+            "id": "opus",
+            "label": "Opus"
+          },
+          {
+            "id": "vorbis",
+            "label": "Ogg Vorbis"
+          }
+        ],
+        "timelines": [
+          {
+            "api_version": 1,
+            "export_scales": [
+              {
+                "height": 1080,
+                "percent": 100,
+                "width": 1920
+              },
+              {
+                "height": 810,
+                "percent": 75,
+                "width": 1440
+              },
+              {
+                "height": 540,
+                "percent": 50,
+                "width": 960
+              },
+              {
+                "height": 270,
+                "percent": 25,
+                "width": 480
+              }
+            ],
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "gaps": [],
+            "id": "1",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Timeline 1",
+            "resolution": {
+              "height": 1080,
+              "width": 1920
+            },
+            "revision": "d1215a762e8d85aa",
+            "timeline_id": "1",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          },
+          {
+            "api_version": 1,
+            "export_scales": [
+              {
+                "height": 64,
+                "percent": 100,
+                "width": 64
+              },
+              {
+                "height": 48,
+                "percent": 75,
+                "width": 48
+              },
+              {
+                "height": 32,
+                "percent": 50,
+                "width": 32
+              },
+              {
+                "height": 16,
+                "percent": 25,
+                "width": 16
+              }
+            ],
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "gaps": [],
+            "id": "2",
+            "marker_colors": [
+              "Red",
+              "Orange",
+              "Yellow",
+              "Green",
+              "Cyan",
+              "Blue",
+              "Indigo",
+              "Purple",
+              "Magenta",
+              "Rose",
+              "Slate",
+              "Gray"
+            ],
+            "markers": [],
+            "master": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "name": "Editing delivery",
+            "resolution": {
+              "height": 64,
+              "width": 64
+            },
+            "revision": "e412b0f4cad7978f",
+            "timeline_id": "2",
+            "tracks": [
+              {
+                "armed": false,
+                "clips": [
+                  {
+                    "disabled": false,
+                    "display_color": null,
+                    "display_rgb": null,
+                    "fade_in": 0,
+                    "fade_out": 0,
+                    "freeze_source_frame": null,
+                    "id": "1",
+                    "kind": "media",
+                    "length_frames": 12,
+                    "linked_group": "0",
+                    "media_id": "2",
+                    "name": "venturi-smoke.mp4",
+                    "retime": {
+                      "max_length": 1200,
+                      "min_length": 1,
+                      "pitch_correction": true,
+                      "source_span": 12,
+                      "speed_percent": 100.0
+                    },
+                    "slip_range": [
+                      0,
+                      36
+                    ],
+                    "source_in_frames": 0,
+                    "source_out_frames": 12,
+                    "speed_percent": 100.0,
+                    "start_frame": 0,
+                    "transition_in": null,
+                    "transition_out": null
+                  },
+                  {
+                    "disabled": false,
+                    "display_color": null,
+                    "display_rgb": null,
+                    "fade_in": 0,
+                    "fade_out": 0,
+                    "freeze_source_frame": null,
+                    "id": "2",
+                    "kind": "media",
+                    "length_frames": 18,
+                    "linked_group": "1",
+                    "media_id": "2",
+                    "name": "venturi-smoke.mp4",
+                    "retime": {
+                      "max_length": 1800,
+                      "min_length": 1,
+                      "pitch_correction": true,
+                      "source_span": 18,
+                      "speed_percent": 100.0
+                    },
+                    "slip_range": [
+                      -18,
+                      12
+                    ],
+                    "source_in_frames": 18,
+                    "source_out_frames": 36,
+                    "speed_percent": 100.0,
+                    "start_frame": 12,
+                    "transition_in": null,
+                    "transition_out": null
+                  },
+                  {
+                    "disabled": false,
+                    "display_color": null,
+                    "display_rgb": null,
+                    "fade_in": 0,
+                    "fade_out": 0,
+                    "freeze_source_frame": null,
+                    "id": "6",
+                    "kind": "media",
+                    "length_frames": 42,
+                    "linked_group": "3",
+                    "media_id": "2",
+                    "name": "venturi-smoke.mp4",
+                    "retime": {
+                      "max_length": 4200,
+                      "min_length": 1,
+                      "pitch_correction": true,
+                      "source_span": 42,
+                      "speed_percent": 100.0
+                    },
+                    "slip_range": [
+                      0,
+                      6
+                    ],
+                    "source_in_frames": 0,
+                    "source_out_frames": 42,
+                    "speed_percent": 100.0,
+                    "start_frame": 30,
+                    "transition_in": null,
+                    "transition_out": null
+                  }
+                ],
+                "crossings": [],
+                "id": "0",
+                "kind": "video",
+                "label": "V1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              },
+              {
+                "armed": false,
+                "clips": [
+                  {
+                    "disabled": false,
+                    "display_color": null,
+                    "display_rgb": null,
+                    "fade_in": 0,
+                    "fade_out": 0,
+                    "freeze_source_frame": null,
+                    "id": "0",
+                    "kind": "media",
+                    "length_frames": 12,
+                    "linked_group": "0",
+                    "media_id": "2",
+                    "name": "venturi-smoke.mp4",
+                    "retime": {
+                      "max_length": 1200,
+                      "min_length": 1,
+                      "pitch_correction": true,
+                      "source_span": 12,
+                      "speed_percent": 100.0
+                    },
+                    "slip_range": [
+                      0,
+                      36
+                    ],
+                    "source_in_frames": 0,
+                    "source_out_frames": 12,
+                    "speed_percent": 100.0,
+                    "start_frame": 0,
+                    "transition_in": null,
+                    "transition_out": null
+                  },
+                  {
+                    "disabled": false,
+                    "display_color": null,
+                    "display_rgb": null,
+                    "fade_in": 0,
+                    "fade_out": 0,
+                    "freeze_source_frame": null,
+                    "id": "3",
+                    "kind": "media",
+                    "length_frames": 18,
+                    "linked_group": "1",
+                    "media_id": "2",
+                    "name": "venturi-smoke.mp4",
+                    "retime": {
+                      "max_length": 1800,
+                      "min_length": 1,
+                      "pitch_correction": true,
+                      "source_span": 18,
+                      "speed_percent": 100.0
+                    },
+                    "slip_range": [
+                      -18,
+                      12
+                    ],
+                    "source_in_frames": 18,
+                    "source_out_frames": 36,
+                    "speed_percent": 100.0,
+                    "start_frame": 12,
+                    "transition_in": null,
+                    "transition_out": null
+                  },
+                  {
+                    "disabled": false,
+                    "display_color": null,
+                    "display_rgb": null,
+                    "fade_in": 0,
+                    "fade_out": 0,
+                    "freeze_source_frame": null,
+                    "id": "7",
+                    "kind": "media",
+                    "length_frames": 42,
+                    "linked_group": "3",
+                    "media_id": "2",
+                    "name": "venturi-smoke.mp4",
+                    "retime": {
+                      "max_length": 4200,
+                      "min_length": 1,
+                      "pitch_correction": true,
+                      "source_span": 42,
+                      "speed_percent": 100.0
+                    },
+                    "slip_range": [
+                      0,
+                      6
+                    ],
+                    "source_in_frames": 0,
+                    "source_out_frames": 42,
+                    "speed_percent": 100.0,
+                    "start_frame": 30,
+                    "transition_in": null,
+                    "transition_out": null
+                  }
+                ],
+                "crossings": [],
+                "id": "1",
+                "kind": "audio",
+                "label": "A1",
+                "locked": false,
+                "mix": {
+                  "effects": [],
+                  "gain_db": 0.0,
+                  "pan": 0.0
+                },
+                "muted": false,
+                "solo": false
+              }
+            ],
+            "transition_defaults": [
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "InOut",
+                "kind": "Push"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 11,
+                "ease": "None",
+                "kind": "CrossDissolve"
+              },
+              {
+                "curve": 0.5,
+                "direction": "Right",
+                "duration": 4,
+                "ease": "None",
+                "kind": "SmoothCut"
+              }
+            ]
+          }
+        ],
+        "unsaved": false
+      },
+      "timeline": {
+        "api_version": 1,
+        "export_scales": [
+          {
+            "height": 64,
+            "percent": 100,
+            "width": 64
+          },
+          {
+            "height": 48,
+            "percent": 75,
+            "width": 48
+          },
+          {
+            "height": 32,
+            "percent": 50,
+            "width": 32
+          },
+          {
+            "height": 16,
+            "percent": 25,
+            "width": 16
+          }
+        ],
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "gaps": [],
+        "id": "2",
+        "marker_colors": [
+          "Red",
+          "Orange",
+          "Yellow",
+          "Green",
+          "Cyan",
+          "Blue",
+          "Indigo",
+          "Purple",
+          "Magenta",
+          "Rose",
+          "Slate",
+          "Gray"
+        ],
+        "markers": [],
+        "master": {
+          "effects": [],
+          "gain_db": 0.0,
+          "pan": 0.0
+        },
+        "name": "Editing delivery",
+        "resolution": {
+          "height": 64,
+          "width": 64
+        },
+        "revision": "e412b0f4cad7978f",
+        "timeline_id": "2",
+        "tracks": [
+          {
+            "armed": false,
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "1",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "retime": {
+                  "max_length": 1200,
+                  "min_length": 1,
+                  "pitch_correction": true,
+                  "source_span": 12,
+                  "speed_percent": 100.0
+                },
+                "slip_range": [
+                  0,
+                  36
+                ],
+                "source_in_frames": 0,
+                "source_out_frames": 12,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              },
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "2",
+                "kind": "media",
+                "length_frames": 18,
+                "linked_group": "1",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "retime": {
+                  "max_length": 1800,
+                  "min_length": 1,
+                  "pitch_correction": true,
+                  "source_span": 18,
+                  "speed_percent": 100.0
+                },
+                "slip_range": [
+                  -18,
+                  12
+                ],
+                "source_in_frames": 18,
+                "source_out_frames": 36,
+                "speed_percent": 100.0,
+                "start_frame": 12,
+                "transition_in": null,
+                "transition_out": null
+              },
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "6",
+                "kind": "media",
+                "length_frames": 42,
+                "linked_group": "3",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "retime": {
+                  "max_length": 4200,
+                  "min_length": 1,
+                  "pitch_correction": true,
+                  "source_span": 42,
+                  "speed_percent": 100.0
+                },
+                "slip_range": [
+                  0,
+                  6
+                ],
+                "source_in_frames": 0,
+                "source_out_frames": 42,
+                "speed_percent": 100.0,
+                "start_frame": 30,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "0",
+            "kind": "video",
+            "label": "V1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          },
+          {
+            "armed": false,
+            "clips": [
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "0",
+                "kind": "media",
+                "length_frames": 12,
+                "linked_group": "0",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "retime": {
+                  "max_length": 1200,
+                  "min_length": 1,
+                  "pitch_correction": true,
+                  "source_span": 12,
+                  "speed_percent": 100.0
+                },
+                "slip_range": [
+                  0,
+                  36
+                ],
+                "source_in_frames": 0,
+                "source_out_frames": 12,
+                "speed_percent": 100.0,
+                "start_frame": 0,
+                "transition_in": null,
+                "transition_out": null
+              },
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "3",
+                "kind": "media",
+                "length_frames": 18,
+                "linked_group": "1",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "retime": {
+                  "max_length": 1800,
+                  "min_length": 1,
+                  "pitch_correction": true,
+                  "source_span": 18,
+                  "speed_percent": 100.0
+                },
+                "slip_range": [
+                  -18,
+                  12
+                ],
+                "source_in_frames": 18,
+                "source_out_frames": 36,
+                "speed_percent": 100.0,
+                "start_frame": 12,
+                "transition_in": null,
+                "transition_out": null
+              },
+              {
+                "disabled": false,
+                "display_color": null,
+                "display_rgb": null,
+                "fade_in": 0,
+                "fade_out": 0,
+                "freeze_source_frame": null,
+                "id": "7",
+                "kind": "media",
+                "length_frames": 42,
+                "linked_group": "3",
+                "media_id": "2",
+                "name": "venturi-smoke.mp4",
+                "retime": {
+                  "max_length": 4200,
+                  "min_length": 1,
+                  "pitch_correction": true,
+                  "source_span": 42,
+                  "speed_percent": 100.0
+                },
+                "slip_range": [
+                  0,
+                  6
+                ],
+                "source_in_frames": 0,
+                "source_out_frames": 42,
+                "speed_percent": 100.0,
+                "start_frame": 30,
+                "transition_in": null,
+                "transition_out": null
+              }
+            ],
+            "crossings": [],
+            "id": "1",
+            "kind": "audio",
+            "label": "A1",
+            "locked": false,
+            "mix": {
+              "effects": [],
+              "gain_db": 0.0,
+              "pan": 0.0
+            },
+            "muted": false,
+            "solo": false
+          }
+        ],
+        "transition_defaults": [
+          {
+            "curve": 0.5,
+            "direction": "Right",
+            "duration": 11,
+            "ease": "InOut",
+            "kind": "Push"
+          },
+          {
+            "curve": 0.5,
+            "direction": "Right",
+            "duration": 11,
+            "ease": "None",
+            "kind": "CrossDissolve"
+          },
+          {
+            "curve": 0.5,
+            "direction": "Right",
+            "duration": 4,
+            "ease": "None",
+            "kind": "SmoothCut"
+          }
+        ]
+      },
+      "service": {
+        "ActiveState": "active",
+        "MainPID": "1629388",
+        "MemoryCurrent": "71241728",
+        "MemoryPeak": "79011840",
+        "CPUQuotaPerSecUSec": "1s",
+        "IOWeight": "10",
+        "MemoryMax": "4294967296",
+        "MemorySwapMax": "0",
+        "TasksMax": "128",
+        "OOMScoreAdjust": "1000",
+        "Nice": "19"
+      },
+      "enabled": true,
+      "preview": {
+        "active_programs": 0,
+        "available": true,
+        "backend": "Vulkan",
+        "device_id": "0x7551",
+        "driver": "radv",
+        "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+        "exact_context_resident": false,
+        "frame_rendered": true,
+        "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "resident": false,
+        "software": false,
+        "vendor_id": "0x1002"
+      },
+      "stopped_qualification_units": {
+        "venturi-build-20261021.service": 0,
+        "venturi-delivery-20261022.service": 0,
+        "venturi-delivery-file-check-20261022.service": 0,
+        "venturi-windows-ui-20261021.service": 0,
+        "venturi-windows-codec-gpu-20261021.service": 0
+      },
+      "main_editor_preserved": true,
+      "main_binary_unchanged": true,
+      "source_bytes_preserved": true,
+      "export_download_after_restart_sha256": "938570ba4db7c32d2decc6e27c0e33bcd6d8f05d04254915aeadd5567e74e51e",
+      "source_sha256": "2a89d0065a00ffed3db76e6aae2d05a298932813e52209b5897d4218b9385938"
+    },
+    "windows_tab": "39",
+    "windows_tunnel_pid": 40872
   },
   "limits": [
     "64x64 three-second integrated fixture; no complex high-resolution throughput claim",
     "Move qualified by native Cut/Paste; physical Canvas drag/DPI remains deferred",
     "Five-minute browser window continuation and physical A/V latency remain unqualified"
-  ]
+  ],
+  "deployed_source_commit": "df508593a311d80e37e57af97022c7fdb443b06e",
+  "deployed_binary_sha256": "b44a6174036c0291676bc493a0992d52c668f25f0cf3d3313212b9aa9536ae64"
 }

@@ -106,5 +106,21 @@
     "Recursive folder relink search and metadata-incompatible substitution semantics",
     "Native/web audio preset settings synchronization"
   ],
-  "acceptance": "Implementation gate only. shared_library/shared_presets remain partial; accepted ledger stays46done/44partial and full F1-F7 goal stays active."
+  "acceptance": "Implementation gate only. shared_library/shared_presets remain partial; accepted ledger stays46done/44partial and full F1-F7 goal stays active.",
+  "staged_candidate": {
+    "pending_binary": "/home/marco/AI-lab/venturi-web/.runtime/vv-web-64cfd30eb1db",
+    "pending_sha256": "64cfd30eb1dbd137fca3a92efc22221c8fd08da45242ab9f2233ef765a615824",
+    "pending_source_commit": "1fd89f0eafb43196ee2c1fa54bc772ab3706ba56"
+  },
+  "post_gate_gpu_state": {
+    "status": "busy",
+    "holders": [
+      {
+        "pid": 1718629,
+        "command": "python3",
+        "path": "/tmp/HALO_BENCHMARK.lock"
+      }
+    ],
+    "qualification_started": false
+  }
 }

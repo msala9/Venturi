@@ -1,6 +1,8 @@
 import { request } from "./api.js";
+import {renderAudioPresets} from './audio-presets.js';
 
-export function renderMixer(root, timeline, { writable, commit, notice, open = false, catalog, openPaths = new Set(), query, onMeters }) {
+export function renderMixer(root, timeline, { writable, commit, notice, open = false, catalog, openPaths = new Set(), query, onMeters, audioPresets }) {
+  const customPresets=audioPresets?{...audioPresets,expectedContext:{...audioPresets.getContext()}}:null;
   const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Audio mixer";section.open=open;section.append(summary);
   const tracks=timeline.tracks.filter((track)=>track.kind === "audio").map((track)=>({channel:track.id,label:track.label || track.id,locked:track.locked,...track.mix}));
   tracks.push({channel:"master",label:"Master",locked:false,...timeline.master});
@@ -15,7 +17,7 @@ export function renderMixer(root, timeline, { writable, commit, notice, open = f
     const button=document.createElement("button");button.textContent=`Apply ${track.label} mix`;button.disabled=!writable || track.locked;form.append(button);
     form.addEventListener("submit",(event)=>{event.preventDefault();if(form.reportValidity())commit({kind:"set_mixer",channel:track.channel,gain_db:Number(inputs.gain_db.value),pan:Number(inputs.pan.value)}).catch((error)=>notice(error.message));});
     section.append(form);
-    if(catalog) renderEffects(section,track,catalog,!writable || track.locked,commit,notice,openPaths,timeline.id,query);
+    if(catalog) renderEffects(section,track,catalog,!writable || track.locked,commit,notice,openPaths,timeline.id,query,customPresets);
   }
   if(onMeters){const meters=document.createElement("button");meters.textContent="Open native meters / spectrum";meters.addEventListener("click",onMeters);section.append(meters);}
   const note=document.createElement("p");note.className="muted";note.textContent="Native timeline mix. Source playback uses the original source audio.";section.append(note);
@@ -23,7 +25,7 @@ export function renderMixer(root, timeline, { writable, commit, notice, open = f
 }
 export function effectName(effect) {return typeof effect.kind === "string" ? effect.kind : Object.keys(effect.kind)[0];}
 export function chainOperation(channel,effects) {return {kind:"set_audio_effects",channel,effects};}
-function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timeline,query) {
+function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timeline,query,audioPresets) {
   const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.mixerPath=`${track.channel}:effects`;section.open=openPaths.has(section.dataset.mixerPath);summary.textContent=`${track.label} inserts (${track.effects.length})`;section.append(summary);root.append(section);
   let built=false;
   section.addEventListener("toggle",()=>{
@@ -56,6 +58,7 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
         check(`${track.label} insert ${index+1} enabled`,draft,"enabled");
         const kind=effectName(effect),data=typeof draft.kind === "string" ? null : draft.kind[kind];
         if(catalog.presets?.[kind]) {
+          const heading=document.createElement('p');heading.className='muted';heading.textContent='Built-in presets';form.append(heading);
           const presets=document.createElement("select");presets.setAttribute("aria-label",`${track.label} ${kind} preset`);presets.disabled=disabled;
           presets.append(new Option("Choose a preset…",""));
           for(const name of catalog.presets[kind])presets.append(new Option(name.split("preset_")[1].replaceAll("_"," "),name));
@@ -74,6 +77,12 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
         if(kind === "MultibandCompressor") {
           for(const index of [0,1])number(`${track.label} crossover ${index+1} Hz`,data.crossovers_hz,index,catalog.compressor.crossovers_hz);
           for(const [bandIndex,band] of data.bands.entries()) for(const key of ["threshold_db","ratio","attack_ms","release_ms","makeup_db"])number(`${track.label} compressor band ${bandIndex+1} ${key}`,band,key,catalog.compressor[key]);
+        }
+        if(audioPresets && ['Equalizer','MultibandCompressor'].includes(kind)){
+          const visible=()=>card.isConnected && card.open && section.open && root.open && section.isConnected;
+          const custom=renderAudioPresets(form,{...audioPresets,kind,channel:track.channel,index,label:`${track.label} insert ${index+1}`,getParameters:()=>draft.kind,validateDraft:()=>form.reportValidity(),isCurrent:visible,canCommit:()=>!disabled && audioPresets.canCommit(),commit,notice});
+          const refresh=()=>{if(visible())void custom.load().catch(error=>{if(custom.current())notice(error.message);});else custom.suspend();};
+          for(const details of [card,section,root])details.addEventListener('toggle',refresh);
         }
         if(kind === "Normalize") {
           const mode=select(`${track.label} normalization mode`,data,"mode",catalog.normalization.map((value)=>value.mode));

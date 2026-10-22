@@ -12,6 +12,36 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Custom EQ/compressor parameter presets now pass
+`evidence/m5-custom-audio-presets.json`. Cards provide named Save, explicit
+same-name Replace, Apply and Delete alongside the existing built-in presets.
+Save captures the uncommitted parameter draft; library changes preserve the
+draft and create no project edit, generation change or Undo entry. An
+authoritative unchanged-session check retains the existing card and transport;
+ordinary edits and changed sessions retain normal invalidation. Apply uses one
+native SetAudioEffect and preserves bypass, chain order and other inserts.
+
+The bounded global sidecar uses the original desktop Settings preset arrays;
+a targeted test loads it through the original Settings reader. It does not
+overwrite desktop preferences. Revision/file witnesses, a nonblocking lock,
+atomic publication, strict native validation and durable command receipts
+cover stale writes and retries. Finite API acceptance proves both effect kinds
+on master and track, exact Undo/Redo, library sharing across projects and
+Save/restart. The existing Windows browser proves Save/Replace with draft
+retention, Apply/Undo/Redo/Delete, unchanged saved project bytes and no console
+errors. Metadata-only checks do not qualify audible output or live meters.
+
+Cached halo2 validation passes 416 web Rust, 281 core and 783 JavaScript tests,
+targeted multimedia and five desktop compatibility tests, fmt, Clippy with
+warnings denied and native build. After the transport-only JavaScript fix,
+Rust source hashes were verified unchanged; fmt, all JavaScript tests and the
+embedded native build passed again, followed by the final API/browser proof.
+One bounded remote workload ran at a time, with no browser installation, local
+build or hardware GPU use. Temporary browser/server/tunnel resources are
+closed and the main editor's five unsaved edits remain intact. The audio rows
+stay partial for continuous meters and hardware playback; counts remain
+39 done and 51 partial.
+
 Native bitmap clipboard import now passes evidence/m4-bitmap-clipboard.json.
 The existing Windows browser proves an explicit system image read, actual Ctrl+V,
 Cancel, editable collision/rename, Add, Source display and one native Undo/Redo.

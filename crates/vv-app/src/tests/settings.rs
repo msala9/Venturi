@@ -178,6 +178,54 @@ fn shift_is_ignored_on_symbols_but_not_on_letters() {
 }
 
 #[test]
+fn web_audio_parameter_presets_load_as_native_settings_without_effect_wrappers() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-web-audio-parameter-settings-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    let path = root.join("settings.json");
+    let mut voice = vv_core::Equalizer::DEFAULT;
+    voice.bands[2].gain_db = -4.5;
+    voice.bands[2].q = 1.7;
+    let mut music = vv_core::Equalizer::DEFAULT;
+    music.bands[4].gain_db = 3.0;
+    let mut compressor = vv_core::MultibandCompressor::DEFAULT;
+    compressor.crossovers_hz = [320.0, 2800.0];
+    compressor.bands[1].ratio = 5.0;
+    let fixture = serde_json::json!({
+        "eq_presets":[{"name":"Voice", "params":voice.clone()}, {"name":"Music", "params":music.clone()}],
+        "compressor_presets":[{"name":"Voice", "params":compressor.clone()}],
+    });
+    assert_eq!(fixture.as_object().unwrap().len(), 2);
+    let bytes = serde_json::to_vec(&fixture).unwrap();
+    std::fs::write(&path, &bytes).unwrap();
+    let loaded = Settings::load(&path);
+    let mut expected = Settings::default();
+    expected.eq_presets = vec![
+        Preset {
+            name: "Voice".into(),
+            params: voice,
+        },
+        Preset {
+            name: "Music".into(),
+            params: music,
+        },
+    ];
+    expected.compressor_presets = vec![Preset {
+        name: "Voice".into(),
+        params: compressor,
+    }];
+    assert_eq!(loaded, expected);
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn effect_presets_are_saved_and_a_broken_one_is_dropped_alone() {
     let path = std::env::temp_dir()
         .join(format!("vv-settings-presets-{}", std::process::id()))

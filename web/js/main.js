@@ -14,6 +14,7 @@ import { createSourceSeek } from "./source-seek.js";
 import { createSourceAssets } from "./source-assets.js";
 import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection } from "./inspector.js";
 import { renderMixer } from "./mixer.js";
+import {canRetainAudioPresetDraft} from './audio-presets.js';
 import { createExportPanel } from "./export.js";
 import { createScopes, scopeTarget } from "./scopes.js";
 import { balanceSelected } from "./balance.js";
@@ -627,7 +628,7 @@ function selected() {
     const markerTarget=`${documentState.project_epoch}:${timeline.id}`;
     renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,selectedId:view.markerTarget===markerTarget?view.markerId:null,onSelect:id=>{view.markerTarget=markerTarget;view.markerId=id;},openState:visualState,seek:(frame)=>{view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();}});
     const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
-    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open()});
+    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open(),audioPresets:{getContext:()=>({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline_id:timeline?.id,timeline_revision:timeline?.revision}),canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),libraryCommit:operation=>mutate(operation,true,'/audio/presets/commands')}});
   }
 }
 function syncPlayheadSelection(render) {
@@ -848,14 +849,22 @@ document.addEventListener('keydown',event=>{
 function openTimelineRoot(next){
   compoundNavigation?.reset();programPlayer?.stop();sourcePlayer?.pause();viewer?.invalidate();view.playhead=0;view.origin=0;view.scrollY=0;$("timeline-select").value=next.id;installTimeline(next);viewerModeSet('program');compoundNavigation?.invalidate();
 }
-async function refresh() {
-  compoundNavigation?.cancel();
-  fastTransport?.stop();
-  audioScrub?.stop();
-  slipView?.reset();
-  programPlayer?.stop();
-  viewer?.invalidate();
+async function refresh({preserveAudioDrafts=false}={}) {
+  const invalidateTimeline=()=>{
+    compoundNavigation?.cancel();fastTransport?.stop();audioScrub?.stop();
+    slipView?.reset();programPlayer?.stop();viewer?.invalidate();
+  };
+  if(!preserveAudioDrafts)invalidateTimeline();
   const next = await request("/session");
+  if(preserveAudioDrafts && writable && !unresolved && canRetainAudioPresetDraft(documentState,next,timeline?.id)) {
+    documentState=next;timeline=next.timelines.find(item=>item.id===timeline.id);
+    $("project-persistence-notice").textContent=next.persistence_notice || "";
+    recoveryPanel?.update(next.autosave);
+    $("connection").textContent="Connected · writer";
+    mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
+    return;
+  }
+  if(preserveAudioDrafts)invalidateTimeline();
   const sourceChanged=(id)=>documentState?.media.find((item)=>item.id===id)?.content_hash !== next.media.find((item)=>item.id===id)?.content_hash;
   for(const [id,asset] of mediaAssets)if(sourceChanged(id)){releaseMediaAsset(asset);mediaAssets.delete(id);}
   if(sourceOpenId && (!next.media.some((item)=>item.id===sourceOpenId) || sourceChanged(sourceOpenId))){sourcePlayer?.reset();sourceAssets?.cancel();sourceRanges.delete(sourceOpenId);sourceOpenId=null;}
@@ -945,12 +954,11 @@ function commandNotice(receipt) {
       : "Command applied";
 }
 async function mutate(operation, project = false,route=null) {
-  fastTransport?.stop();
-  audioScrub?.stop();
+  const libraryOnly=operation.kind==='edit_audio_preset_library';
+  if(!libraryOnly){fastTransport?.stop();audioScrub?.stop();}
   if (!writable || busy || unresolved)
     throw new Error("Editing is read only or a command is pending");
-  programPlayer?.stop();
-  slipView?.reset();
+  if(!libraryOnly){programPlayer?.stop();slipView?.reset();}
   if (!project && (!timeline || timeline.id === "fixture"))
     throw new Error("Open a real project before editing");
   const body = {
@@ -988,7 +996,7 @@ async function mutate(operation, project = false,route=null) {
     throw error;
   } finally {
     busy = false;
-    await refresh().catch(() => {
+    await refresh({preserveAudioDrafts:operation.kind==='edit_audio_preset_library'}).catch(() => {
       $("connection").textContent = "Disconnected";
     });
   }

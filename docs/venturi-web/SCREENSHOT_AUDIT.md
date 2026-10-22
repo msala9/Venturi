@@ -14,6 +14,16 @@ on 2026-10-20. They are focused crops, not a complete desktop tour.
 Other panels were audited through source; no screenshot evidence is claimed
 for the absent complete desktop, color, masks, curves, library or export views.
 
+`evidence/m5-custom-audio-presets.jpg` (2026-10-22) shows the existing Windows
+browser's custom audio preset chooser, Apply/Delete and named Replace warning
+after one native application and Redo. Save/Replace retain the numeric draft;
+Save/Delete leave project history unchanged. The sidecar uses the original
+EQ/compressor Settings arrays and is tested through the desktop reader.
+Finite native snapshots prove bypass/order, one Undo/Redo and unchanged saved
+project bytes. This closes the custom parameter preset controls visible in
+eq.png and multiband-compressor.png; continuous spectrum/output and hardware
+audio qualification remain separate.
+
 Web voiceover proof (2026-10-21): `evidence/m5-voiceover-browser.png` shows
 the Audio workspace entry and armed track with always-visible capture actions.
 `m5-voiceover-overlap-browser.png` shows a retained synthetic take after overlap

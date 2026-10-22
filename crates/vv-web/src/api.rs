@@ -57,6 +57,11 @@ pub fn router(state: AppState) -> Router {
             get(otio_import_status).delete(cancel_otio_import),
         )
         .route("/api/v1/review", get(review_metadata))
+        .route("/api/v1/audio/presets", get(audio_presets))
+        .route(
+            "/api/v1/audio/presets/commands",
+            post(audio_preset_library_command),
+        )
         .route("/api/v1/media/imports/prepare", post(prepare_media_import))
         .route(
             "/api/v1/media/imports/{job}",
@@ -859,6 +864,37 @@ async fn preset_item(
                 .map_err(|_| ApiError::invalid("Invalid preset query"))?
                 .0,
         ))
+        .await
+        .map(Json)
+}
+async fn audio_presets(
+    State(state): State<AppState>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid audio preset query"))?
+        .0;
+    let value = state.host.call(Action::AudioPresets(query)).await?;
+    Ok(([(header::CACHE_CONTROL, "no-store")], Json(value)).into_response())
+}
+async fn audio_preset_library_command(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<Mutation>, axum::extract::rejection::JsonRejection>,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid audio preset mutation"))?
+        .0;
+    if !matches!(
+        request.operation,
+        crate::commands::Operation::EditAudioPresetLibrary { .. }
+    ) {
+        return Err(ApiError::invalid(
+            "This route accepts only audio preset library edits",
+        ));
+    }
+    state
+        .host
+        .call(Action::Mutation(None, request))
         .await
         .map(Json)
 }
@@ -1755,6 +1791,7 @@ async fn assets(request: Request) -> Response {
         "/js/keyselection.js" => asset!("/web/js/keyselection.js", "text/javascript"),
         "/js/presets.js" => asset!("/web/js/presets.js", "text/javascript"),
         "/js/preset-shortcuts.js" => asset!("/web/js/preset-shortcuts.js", "text/javascript"),
+        "/js/audio-presets.js" => asset!("/web/js/audio-presets.js", "text/javascript"),
         "/js/viewer-transform.js" => asset!("/web/js/viewer-transform.js", "text/javascript"),
         "/js/viewer-transform-overlay.js" => {
             asset!("/web/js/viewer-transform-overlay.js", "text/javascript")

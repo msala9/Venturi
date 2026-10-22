@@ -6,6 +6,202 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn audio_preset_http_library_is_native_strict_retry_safe_and_project_independent() {
+    use sha2::Digest;
+    let root = std::env::temp_dir().join(format!(
+        "vv-audio-preset-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let host = Host::start(&root).unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let make = |method: &str, path: &str, body: Option<&Value>| {
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("content-type", "application/json")
+            .body(body.map_or_else(Body::empty, |value| Body::from(value.to_string())))
+            .unwrap()
+    };
+    let initial = host.call(Action::Session).await.unwrap();
+    assert!(initial["project_name"].is_null());
+    let query = format!(
+        "/api/v1/audio/presets?project_epoch={}",
+        initial["project_epoch"].as_str().unwrap()
+    );
+    let response = app
+        .clone()
+        .oneshot(make("GET", &query, None))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let blank: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    assert_eq!(blank["project_epoch"], initial["project_epoch"]);
+    assert_eq!(blank["eq_presets"], json!([]));
+    assert_eq!(blank["compressor_presets"], json!([]));
+    assert_eq!(
+        blank["revision"],
+        json!(format!("{:x}", sha2::Sha256::digest([])))
+    );
+    for (path, expected) in [
+        (
+            "/api/v1/audio/presets".to_owned(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            format!("{query}&extra=true"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "/api/v1/audio/presets?project_epoch=foreign-project".to_owned(),
+            StatusCode::CONFLICT,
+        ),
+    ] {
+        assert_eq!(
+            app.clone()
+                .oneshot(make("GET", &path, None))
+                .await
+                .unwrap()
+                .status(),
+            expected
+        );
+    }
+    let lease = json!({"client_id":"audio-preset-browser"});
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", "/api/v1/lease", Some(&lease)))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK
+    );
+    let before = host.call(Action::Session).await.unwrap();
+    let mutation = |id: &str, operation: Value| {
+        json!({
+            "command_id":id, "client_id":"audio-preset-browser", "command_epoch":before["command_epoch"],
+            "project_epoch":before["project_epoch"], "if_generation":before["generation"],
+            "if_revision":null, "operation":operation,
+        })
+    };
+    let mut eq = vv_core::Equalizer::DEFAULT;
+    eq.bands[2].gain_db = -4.0;
+    let save = mutation(
+        "audio-http-save",
+        json!({"kind":"edit_audio_preset_library","edit":{
+            "action":"save","name":"  Mine / α  ","revision":blank["revision"],
+            "parameters":vv_core::AudioEffectKind::Equalizer(eq.clone()),
+        }}),
+    );
+    let path = "/api/v1/audio/presets/commands";
+    let mut original_ack = None;
+    for _ in 0..2 {
+        let response = app
+            .clone()
+            .oneshot(make("POST", path, Some(&save)))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let ack: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+        if let Some(first) = &original_ack {
+            assert_eq!(first, &ack);
+        } else {
+            original_ack = Some(ack);
+        }
+        assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    }
+    let response = app
+        .clone()
+        .oneshot(make("GET", &query, None))
+        .await
+        .unwrap();
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let listed: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    assert_eq!(
+        listed["eq_presets"],
+        json!([{"name":"Mine / α","params":eq}])
+    );
+    assert_eq!(listed["compressor_presets"], json!([]));
+    assert_ne!(listed["revision"], blank["revision"]);
+    let preset_file = root.join(".presets/.venturi-audio-presets.json");
+    let bytes = std::fs::read(&preset_file).unwrap();
+    let mut malformed = save.clone();
+    malformed["command_id"] = json!("audio-http-malformed");
+    malformed["operation"]["edit"]["revision"] = listed["revision"].clone();
+    malformed["operation"]["edit"]["parameters"]["Equalizer"]["bands"][0]["freq_hz"] = json!(-1.0);
+    let mut unknown = save.clone();
+    unknown["command_id"] = json!("audio-http-unknown");
+    unknown["operation"]["edit"]["extra"] = json!(true);
+    for body in [
+        malformed,
+        unknown,
+        mutation("audio-http-wrong-operation", json!({"kind":"save"})),
+    ] {
+        assert_eq!(
+            app.clone()
+                .oneshot(make("POST", path, Some(&body)))
+                .await
+                .unwrap()
+                .status(),
+            StatusCode::UNPROCESSABLE_ENTITY
+        );
+        assert_eq!(std::fs::read(&preset_file).unwrap(), bytes);
+        assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    }
+    let valid = mutation(
+        "audio-http-origin",
+        json!({"kind":"edit_audio_preset_library","edit":{
+            "action":"save","name":"Blocked","revision":listed["revision"],
+            "parameters":vv_core::AudioEffectKind::Equalizer(vv_core::Equalizer::DEFAULT),
+        }}),
+    );
+    let mut foreign_origin = make("POST", path, Some(&valid));
+    foreign_origin
+        .headers_mut()
+        .insert(header::ORIGIN, "https://evil.example".parse().unwrap());
+    assert_eq!(
+        app.clone().oneshot(foreign_origin).await.unwrap().status(),
+        StatusCode::FORBIDDEN
+    );
+    let mut foreign_writer = valid;
+    foreign_writer["command_id"] = json!("audio-http-other-writer");
+    foreign_writer["client_id"] = json!("other-browser");
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", path, Some(&foreign_writer)))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::CONFLICT
+    );
+    assert_eq!(std::fs::read(preset_file).unwrap(), bytes);
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    assert_eq!(
+        app.clone()
+            .oneshot(make("GET", "/js/audio-presets.js", None))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK
+    );
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn bitmap_clipboard_http_checks_saved_binding_mime_body_limit_and_typed_cancel_before_import()
 {
     let root = std::env::temp_dir().join(format!("vv-image-http-{}", crate::asset_jobs::nonce()));

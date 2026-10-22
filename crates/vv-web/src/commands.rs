@@ -252,6 +252,16 @@ pub enum Operation {
         index: usize,
         preset: String,
     },
+    EditAudioPresetLibrary {
+        edit: crate::audio_presets::Edit,
+    },
+    ApplySavedAudioPreset {
+        channel: String,
+        index: usize,
+        preset_kind: crate::audio_presets::Kind,
+        name: String,
+        revision: String,
+    },
     Slip {
         clip_ids: Vec<String>,
         delta_frames: FrameIdx,

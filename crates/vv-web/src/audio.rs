@@ -144,6 +144,54 @@ pub fn catalog() -> Value {
     json!({"presets":{"Equalizer":core::presets::equalizer_presets().map(|(key,_)|key),"MultibandCompressor":core::presets::compressor_presets().map(|(key,_)|key)},"defaults":defaults,"eq":{"freq_hz":core::EqBand::FREQ_RANGE_HZ,"gain_db":core::EqBand::GAIN_RANGE_DB,"q":core::EqBand::Q_RANGE,"shapes":core::EqShape::ALL},"compressor":{"crossovers_hz":core::MultibandCompressor::CROSSOVER_RANGE_HZ,"threshold_db":core::CompressorBand::THRESHOLD_RANGE_DB,"ratio":core::CompressorBand::RATIO_RANGE,"attack_ms":core::CompressorBand::ATTACK_RANGE_MS,"release_ms":core::CompressorBand::RELEASE_RANGE_MS,"makeup_db":core::CompressorBand::MAKEUP_RANGE_DB},"normalization":core::NormalizeMode::ALL.map(|mode|{let range=mode.target_range();json!({"mode":mode,"range":[range.start(),range.end()],"default":mode.default_target()})})})
 }
 
+pub fn apply_saved_kind(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    index: usize,
+    kind: &core::AudioEffectKind,
+) -> Result<()> {
+    let timeline = session
+        .project
+        .timelines
+        .get(id)
+        .ok_or_else(ApiError::missing)?;
+    let channel = channel(timeline, raw)?;
+    let strip = match channel {
+        core::MixerChannel::Master => &timeline.master,
+        core::MixerChannel::Track(track) => &timeline.tracks[track].mix,
+    };
+    let mut effect = strip
+        .effects
+        .get(index)
+        .ok_or_else(ApiError::missing)?
+        .clone();
+    if !matches!(
+        (&effect.kind, kind),
+        (
+            core::AudioEffectKind::Equalizer(_),
+            core::AudioEffectKind::Equalizer(_)
+        ) | (
+            core::AudioEffectKind::MultibandCompressor(_),
+            core::AudioEffectKind::MultibandCompressor(_)
+        )
+    ) {
+        return Err(ApiError::invalid(
+            "Choose a saved preset matching this audio insert kind",
+        ));
+    }
+    effect.kind = kind.clone();
+    validate(std::slice::from_ref(&effect))?;
+    session.apply(Box::new(core::SetAudioEffect::new(
+        id,
+        channel,
+        index,
+        effect,
+        core::CommandLabel::EditAudioEffect,
+    )));
+    Ok(())
+}
+
 pub fn apply_preset(
     session: &mut Session,
     id: TimelineId,

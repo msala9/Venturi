@@ -38,6 +38,7 @@ pub enum Action {
     Review(SourceQuery),
     CapturePreset(crate::presets::Capture),
     PresetList(usize, crate::preset_store::Query),
+    AudioPresets(SourceQuery),
     PresetItem(String, SourceQuery),
     PresetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
     PrepareNativeAsset(NativeAssetRequest),
@@ -165,6 +166,7 @@ pub struct Editor {
     autosave: crate::autosave::Store,
     receipts: Option<crate::receipts::Store>,
     presets: crate::preset_store::Store,
+    audio_presets: crate::audio_presets::Store,
     assets: crate::asset_store::Store,
     asset_jobs: crate::asset_jobs::Jobs,
     asset_imports: HashMap<(u64, String, String), ImportedAsset>,
@@ -185,6 +187,7 @@ impl Editor {
     fn with_libraries(root: &Path, preset_root: &Path, asset_root: &Path) -> std::io::Result<Self> {
         let files = Files::new(root)?;
         let presets = crate::preset_store::Store::new(preset_root)?;
+        let audio_presets = crate::audio_presets::Store::new(preset_root)?;
         let assets = crate::asset_store::Store::new(asset_root)?;
         let asset_jobs = crate::asset_jobs::Jobs::new(
             assets.clone(),
@@ -230,6 +233,7 @@ impl Editor {
         };
         let mut editor = Self {
             presets,
+            audio_presets,
             assets,
             asset_jobs,
             asset_imports: HashMap::new(),
@@ -547,6 +551,24 @@ impl Editor {
                 ));
             }
             return match &request.operation {
+                Operation::ApplySavedAudioPreset {
+                    channel,
+                    index,
+                    preset_kind,
+                    name,
+                    revision,
+                } => {
+                    let parameters = self.audio_presets.resolve(*preset_kind, name, revision)?;
+                    crate::audio::apply_saved_kind(
+                        &mut self.session,
+                        id,
+                        channel,
+                        *index,
+                        &parameters,
+                    )?;
+                    self.session.sync_timeline_media(id);
+                    Ok(())
+                }
                 Operation::SaveAttributePreset { clip_ids, options } => self.presets.create(
                     &request.command_id,
                     &crate::presets::capture(&self.session, id, clip_ids, options)?,
@@ -722,6 +744,7 @@ impl Editor {
             Operation::EditPresetLibrary { edit } => {
                 self.presets.edit(&request.command_id, edit)?
             }
+            Operation::EditAudioPresetLibrary { edit } => self.audio_presets.edit(edit)?,
             Operation::RecoverAutosave {
                 revision,
                 name,
@@ -1877,6 +1900,12 @@ impl Editor {
                 )
             }
             Action::CheckFrame(query) => self.validate_frame(&query).map(|_| Value::Null),
+            Action::AudioPresets(query) => {
+                self.validate_asset_epoch(&query.project_epoch, None)?;
+                let mut value = self.audio_presets.list()?;
+                value["project_epoch"] = json!(query.project_epoch);
+                Ok(value)
+            }
             Action::PresetList(page, query) => {
                 if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
                     return Err(ApiError::conflict(

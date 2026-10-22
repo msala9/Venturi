@@ -1,5 +1,150 @@
 use super::*;
 
+#[test]
+fn saved_audio_presets_are_library_only_retry_safe_and_apply_with_one_native_undo() {
+    use crate::audio_presets::{Edit, Kind};
+    use vv_core::{AudioEffect, AudioEffectKind, Equalizer, Id};
+    let root = std::env::temp_dir().join(format!(
+        "vv-audio-preset-host-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Audio_parameters".into(),
+        },
+        "audio-preset-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let route = Some(id.raw().to_string());
+    let mut eq = AudioEffect::new(AudioEffectKind::Equalizer(Equalizer::DEFAULT));
+    eq.enabled = false;
+    let effects = vec![
+        AudioEffect::new(AudioEffectKind::Mono),
+        eq,
+        AudioEffect::new(AudioEffectKind::Mono),
+    ];
+    let chain = request(
+        &editor,
+        Operation::SetAudioEffects {
+            channel: "master".into(),
+            effects,
+        },
+        "audio-preset-chain",
+        Some(id),
+    );
+    editor.mutation(route.clone(), chain).unwrap();
+    let save = request(&editor, Operation::Save, "audio-preset-baseline-save", None);
+    editor.mutation(None, save).unwrap();
+    let baseline = editor.snapshot();
+    let epoch = baseline["project_epoch"].as_str().unwrap().to_owned();
+    let catalog = editor
+        .handle(Action::AudioPresets(SourceQuery {
+            project_epoch: epoch.clone(),
+        }))
+        .unwrap();
+    let mut parameters = Equalizer::DEFAULT;
+    parameters.bands[2].gain_db = -3.5;
+    parameters.bands[2].q = 1.7;
+    let store = request(
+        &editor,
+        Operation::EditAudioPresetLibrary {
+            edit: Edit::Save {
+                name: "  Personal voice  ".into(),
+                revision: catalog["revision"].as_str().unwrap().into(),
+                parameters: AudioEffectKind::Equalizer(parameters.clone()),
+            },
+        },
+        "audio-preset-store",
+        None,
+    );
+    let acknowledged = editor.mutation(None, store.clone()).unwrap();
+    assert_eq!(editor.mutation(None, store.clone()).unwrap(), acknowledged);
+    assert_eq!(editor.snapshot(), baseline);
+    let catalog = editor
+        .handle(Action::AudioPresets(SourceQuery {
+            project_epoch: epoch.clone(),
+        }))
+        .unwrap();
+    assert_eq!(catalog["eq_presets"][0]["name"], "Personal voice");
+    assert_eq!(catalog["eq_presets"][0]["params"], json!(parameters));
+    let apply = |revision: String| Operation::ApplySavedAudioPreset {
+        channel: "master".into(),
+        index: 1,
+        preset_kind: Kind::Equalizer,
+        name: "Personal voice".into(),
+        revision,
+    };
+    let stale = request(
+        &editor,
+        apply("0".repeat(64)),
+        "audio-preset-stale",
+        Some(id),
+    );
+    assert_eq!(
+        editor.mutation(route.clone(), stale).unwrap_err().1,
+        "AUDIO_PRESETS_CHANGED"
+    );
+    assert_eq!(editor.snapshot(), baseline);
+    let before = json!(editor.session.project.timelines[id]);
+    let position = editor.session.history.position();
+    let change = request(
+        &editor,
+        apply(catalog["revision"].as_str().unwrap().into()),
+        "audio-preset-apply",
+        Some(id),
+    );
+    let ack = editor.mutation(route.clone(), change.clone()).unwrap();
+    assert_eq!(editor.mutation(route.clone(), change).unwrap(), ack);
+    assert_eq!(editor.session.history.position(), position + 1);
+    let mut expected: Timeline = serde_json::from_value(before.clone()).unwrap();
+    expected.master.effects[1].kind = AudioEffectKind::Equalizer(parameters);
+    assert_eq!(json!(editor.session.project.timelines[id]), json!(expected));
+    assert!(!editor.session.project.timelines[id].master.effects[1].enabled);
+    let undo = request(&editor, Operation::Undo, "audio-preset-undo", None);
+    editor.mutation(None, undo).unwrap();
+    assert_eq!(json!(editor.session.project.timelines[id]), before);
+    let redo = request(&editor, Operation::Redo, "audio-preset-redo", None);
+    editor.mutation(None, redo).unwrap();
+    assert_eq!(json!(editor.session.project.timelines[id]), json!(expected));
+    let save = request(&editor, Operation::Save, "audio-preset-applied-save", None);
+    editor.mutation(None, save).unwrap();
+    let revision = catalog["revision"].clone();
+    drop(editor);
+    let mut reopened = Editor::new(&root).unwrap();
+    assert_eq!(
+        json!(reopened.session.project.timelines[id]),
+        json!(expected)
+    );
+    let epoch = reopened.snapshot()["project_epoch"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let catalog = reopened
+        .handle(Action::AudioPresets(SourceQuery {
+            project_epoch: epoch,
+        }))
+        .unwrap();
+    assert_eq!(catalog["revision"], revision);
+    let mut restored_receipt = reopened.mutation(None, store).unwrap();
+    assert_eq!(restored_receipt["server_restarted"], true);
+    restored_receipt
+        .as_object_mut()
+        .unwrap()
+        .remove("server_restarted");
+    assert_eq!(restored_receipt, acknowledged);
+    assert_eq!(reopened.audio_presets.list().unwrap()["revision"], revision);
+    let missing = reopened.handle(Action::AudioPresets(SourceQuery {
+        project_epoch: "old-project".into(),
+    }));
+    assert_eq!(missing.unwrap_err().1, "REVISION_CONFLICT");
+    drop(reopened);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn clipboard_image_bytes() -> Vec<u8> {
     let mut bytes = Vec::new();
     {

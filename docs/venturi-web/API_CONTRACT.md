@@ -1445,6 +1445,44 @@ metadata editing remain available. No foreign workload is stopped.
   preset FPS/resolution conversion. Original source IDs are excluded only in the
   same project; numerically equal IDs from a foreign snapshot are valid targets.
 
+### Custom audio parameter presets
+
+- GET `/audio/presets?project_epoch=...` returns `project_epoch`, the SHA-256
+  `revision` of the exact library bytes, and native `eq_presets` and
+  `compressor_presets` arrays of `{name,params}`. Missing storage is an empty
+  catalog with SHA-256 of empty bytes. Responses use `no-store`.
+- POST `/audio/presets/commands` accepts only project operation
+  `edit_audio_preset_library {edit}` with the existing writer lease, project
+  epoch, generation and durable command identity. Save uses
+  `edit:{action:"save",name,revision,parameters}` where `parameters` is a native
+  `AudioEffectKind::Equalizer` or `MultibandCompressor`. Delete uses
+  `edit:{action:"delete",kind,name,revision}`, with `kind` equal to `equalizer`
+  or `multiband_compressor`. Names are trimmed, case-sensitive, scoped to the
+  effect kind and limited to 256 UTF-8 bytes without control characters.
+  Same-name Save replaces in place; identical Save preserves the revision.
+- The bounded `.venturi-audio-presets.json` sidecar under `--presets-root`
+  contains the original desktop Settings envelope, with at most 256 presets
+  per kind and 1 MiB total. Only native parameters are stored; bypass, insert
+  order and project state are excluded. Desktop settings are not overwritten.
+  Pinned roots/files, a separate nonblocking advisory lock and revision/file
+  witnesses guard atomic publication. Corrupt storage refuses library access
+  without preventing editor startup. `AUDIO_PRESETS_CHANGED` and
+  `AUDIO_PRESETS_BUSY` require refresh; `AUDIO_PRESETS_UNCERTAIN` means publication
+  occurred but durable directory synchronization could not be confirmed.
+- Timeline operation `apply_saved_audio_preset {channel,index,preset_kind,name,
+  revision}` also requires the current timeline revision. It resolves the
+  captured library version, validates the native parameters and matching
+  insert kind, then applies one native `SetAudioEffect`. It preserves bypass,
+  slot, chain order and other inserts. Undo/Redo use the native project history.
+  Save/Delete affect only the global library and create no project Undo entry.
+- EQ/compressor cards keep built-in and custom choosers separate. Save captures
+  the current uncommitted numeric draft; same-name replacement is explicit.
+  A library-only acknowledgement retains the card and its draft only after an
+  authoritative session read confirms unchanged project, history, media and
+  timeline revisions. Apply follows the normal authoritative editor refresh.
+  Changed context, detached/closed cards and uncertain outcomes cannot replay
+  a mutation or update a stale panel.
+
 ### Bitmap clipboard import
 
 - POST `/clipboard/images/prepare?project_epoch=...&if_generation=...` accepts

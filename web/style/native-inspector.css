@@ -74,3 +74,17 @@
 @container (max-width: 480px) {
   #inspector .grade-wheels { grid-template-columns: repeat(2,minmax(0,1fr)); }
 }
+#inspector .inspector-mask { padding: 0 3px 5px; border-top: 1px solid var(--border); }
+#inspector .inspector-mask-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 2px 0; }
+#inspector .inspector-mask-toolbar > select { flex: 1 1 90px; min-width: 0; }
+#inspector .inspector-mask-toolbar > label { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; }
+#inspector .inspector-mask-toolbar input[type="checkbox"] { margin: 0; }
+#inspector .inspector-mask-actions { display: inline-block; margin-left: auto; }
+#inspector .inspector-mask-actions > summary { padding: 3px 5px; font-size: 11px; font-weight: 400; }
+#inspector .inspector-mask-actions[open] { flex-basis: 100%; }
+#inspector .inspector-mask-parameter { gap: 2px; }
+#inspector .inspector-mask-parameter > .field { grid-template-columns: minmax(50px,1fr) minmax(42px,76px); font-size: 11px; }
+#inspector .inspector-mask-parameter input[type="number"] { min-height: 22px; padding: 1px 3px; }
+#inspector .inspector-mask-parameter .inspector-key-controls > button { width: 18px; min-width: 18px; min-height: 22px; }
+#inspector .inspector-mask-parameter > .inspector-reset { width: 18px; min-width: 18px; min-height: 22px; }
+#inspector .inspector-mask-path-keys { font-size: 11px; }

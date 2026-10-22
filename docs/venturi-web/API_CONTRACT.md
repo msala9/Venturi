@@ -1826,3 +1826,61 @@ locked state and each native clamped Inspector source clock, video first and
 then audio in track/start order. As in the desktop Inspector, this clock is
 independent of the held render frame on frozen media. No media probe, file read,
 GPU work or history mutation is performed for this table.
+
+
+### Native mask Inspector editing
+
+`edit_mask` accepts the additive `inspector` action:
+
+```json
+{"kind":"edit_mask","clip_id":"10","edit":{"action":"inspector","timeline_frame":368,"edit":{"kind":"set","index":0,"param":"Width","value":400}}}
+```
+
+The inner edit supports `set {index,param,value}`, `set_path {index,path}`,
+`toggle_key {index,param}`, `toggle_path_key {index}`,
+`reset_parameter {index,param}`, `reset_path {index}`, `reset_mode {index}`,
+`reset_mask {index}` and `reset_all {}`. Unknown fields, invalid indices,
+inapplicable parameters and out-of-range values fail before mutation. The
+normal writer, epoch, generation, timeline revision and idempotency guards apply.
+Legacy `set`/`path_key` actions retain their original wire semantics.
+
+Inspector values follow native source-clock rules: clamp the timeline playhead
+to the selected clip, convert through its native rate/offset, and ignore image
+Freeze when choosing the editor clock. A constant track changes its default;
+an animated track receives a Linear key at that source frame. Toggle removes
+an exact key or inserts the evaluated value. Resets restore tracks/path from
+`ClipMask::new` at the native fitted layer size. Reset mask preserves only its
+enabled flag; reset mode selects Add; reset all clears the mask list. One
+native SetClipMasks command owns the complete changed result. An unchanged
+result preserves generation/history/Redo.
+
+Each scalar mask parameter adds `keyframe_info` with `on_keyframe`,
+`previous_frame` and `next_frame` timeline destinations from the complete
+native track, filtered to the clip source range. Navigation does not derive
+from the first 16 summarized keys. Existing `path_navigation` remains available.
+The compact Inspector uses one diamond, previous/next controls and a row reset,
+and retires pending/draft callbacks when the selected detail is disposed.
+
+
+Add Path in the Inspector starts the existing Viewer pen; incomplete vertices
+remain local and only a closed path becomes a native mask command. Add selects
+the new mask, move/remove remap its view-local focus, scalar/reset edits retain
+it and reset all clears it. The shared guarded mask commit bridge preserves a
+newer user selection across an asynchronous response.
+
+### Native Slip interaction
+
+The numeric `slip` delta contract is unchanged. Pointer Slip reverses the drag
+before applying native f32 rounding and linked source limits: dragging right
+brings earlier media. Canvas outlines each linked clip's available source
+extent from that clip's own native `slip_range` and the current draft delta.
+These outlines and pointer drafts do not mutate the project.
+
+The dual-edge viewer coalesces missing-map/window drafts after 120 ms, admits
+one foreground preparation at a time and reuses existing bounded Source movies.
+It retains the last verified images with an explicit SEEKING state while
+replacement windows decode offscreen. Pointer events themselves only update
+local drafts and schedule the coalesced work. Numeric input remains local until
+change; Apply still commits one guarded native Slip command. Cancel/disposal
+releases local media/URLs and prevents late publication; it never deletes a
+shared preparation job. Each downloaded Slip movie remains limited to 32 MiB.

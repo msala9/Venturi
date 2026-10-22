@@ -70,10 +70,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             OpenOptions::new().create_new(true).write(true).open(&args[3])?.write_all(text.as_bytes())?;
             println!("fixture_timeline={} frames={frames}",id.raw());
         }
-        Some("render") if args.len()==6=>{
+        Some("render") if (6..=7).contains(&args.len())=>{
             let project=vv_core::load_project(std::path::Path::new(&args[2]))?;
             let frame=args[3].parse()?;let width:u32=args[4].parse()?;
-            let id=project.timelines.keys().next().ok_or("No timeline")?;let tl=&project.timelines[id];
+            let id=if let Some(raw)=args.get(6){
+                let raw:u64=raw.parse()?;
+                project.timelines.keys().find(|id|id.raw()==raw).ok_or("Timeline not found")?
+            }else{project.timelines.keys().next().ok_or("No timeline")?};let tl=&project.timelines[id];
             let height=(u64::from(tl.resolution.1)*u64::from(width)/u64::from(tl.resolution.0)).max(1) as u32;
             let lock=OpenOptions::new().create(true).truncate(false).read(true).write(true).open("/tmp/HALO_BENCHMARK.lock")?;
             rustix::fs::flock(&lock,rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
@@ -83,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             OpenOptions::new().create_new(true).write(true).open(&args[5])?.write_all(&rgba)?;
             println!("native_adapter={} frame={frame} size={width}x{height} bytes={}",compositor.adapter_name(),rgba.len());
         }
-        _=>return Err("Usage: verify_preview fixture_parity NEW_OUTPUT_DIR | fixture|fixture_av|fixture_sync SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba | export PROJECT OUTPUT.mp4".into()),
+        _=>return Err("Usage: verify_preview fixture_parity NEW_OUTPUT_DIR | fixture|fixture_av|fixture_sync SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba [TIMELINE_ID] | export PROJECT OUTPUT.mp4".into()),
     }
     Ok(())
 }

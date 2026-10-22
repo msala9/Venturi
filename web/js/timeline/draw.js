@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,gainLine,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons,paneScrollbars } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,gainLine,slipMediaExtents,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons,paneScrollbars } from "./geometry.js";
 import {sourceAssetKey,mediaThumbnail} from '../source-assets.js';
 export function timelineTimecode(frame,fps){
   const nominal=Math.max(1,Math.round(fps.num/fps.den)),value=Math.max(0,Math.round(frame));
@@ -50,6 +50,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
     const layout=timelineLayout(timeline,view,height),rowHeight=layout.rowHeight;
     view.videoScroll=layout.videoScroll;view.audioScroll=layout.audioScroll;
     const gap=selectedGap(timeline,view);
+    const slipExtents=slipMediaExtents(timeline,view);
     const [first, last] = visibleRange(width, view, timeline.fps);
     ctx.font = '11px "Segoe UI", sans-serif';
     ctx.textBaseline = "middle";
@@ -214,6 +215,11 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
             ctx.fillStyle=color('--raised');ctx.fillRect(labelX-3,top+rowHeight-33,Math.max(180,Math.min(width-labelX,label.length*7)),15);ctx.fillStyle=color('--text');ctx.fillText(label,labelX,top+rowHeight-25);
           }
         }
+      if(slipExtents.length){
+        ctx.save();ctx.strokeStyle='#ffffff';ctx.lineWidth=1.5;
+        for(const extent of slipExtents)if(extent.track_id===track.id)ctx.strokeRect(extent.left,extent.top,extent.right-extent.left,extent.bottom-extent.top);
+        ctx.restore();
+      }
       for (const [start,end] of view.silencePreview || []) {
         const x=Math.max(HEADER,frameToX(start,view,timeline.fps)),right=Math.min(width,frameToX(end,view,timeline.fps));
         if(right<=x)continue;

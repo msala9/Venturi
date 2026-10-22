@@ -32,6 +32,44 @@ pub enum MaskEdit {
         timeline_frame: i64,
         path: Option<core::MaskPath>,
     },
+    Inspector {
+        timeline_frame: i64,
+        edit: MaskInspectorEdit,
+    },
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum MaskInspectorEdit {
+    Set {
+        index: usize,
+        param: MaskParam,
+        value: f32,
+    },
+    SetPath {
+        index: usize,
+        path: core::MaskPath,
+    },
+    ToggleKey {
+        index: usize,
+        param: MaskParam,
+    },
+    TogglePathKey {
+        index: usize,
+    },
+    ResetParameter {
+        index: usize,
+        param: MaskParam,
+    },
+    ResetPath {
+        index: usize,
+    },
+    ResetMode {
+        index: usize,
+    },
+    ResetMask {
+        index: usize,
+    },
+    ResetAll {},
 }
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -99,6 +137,110 @@ fn validate(masks: &[core::ClipMask]) -> Result<()> {
     }
     Ok(())
 }
+
+fn layer_size(session: &Session, id: TimelineId, clip: &core::Clip) -> (u32, u32) {
+    let timeline_size = session.project.timelines[id].resolution;
+    let source_size = if let core::ClipSource::Media(media) = clip.source {
+        session
+            .project
+            .media_pool
+            .get(media)
+            .map(|m| (m.meta.width, m.meta.height))
+            .unwrap_or(timeline_size)
+    } else {
+        timeline_size
+    };
+    let (sw, sh) = (source_size.0.max(1) as f32, source_size.1.max(1) as f32);
+    let scale = (timeline_size.0 as f32 / sw).min(timeline_size.1 as f32 / sh);
+    ((sw * scale).round() as u32, (sh * scale).round() as u32)
+}
+
+fn set_value<T: Clone + PartialEq + core::Lerp>(
+    track: &mut core::Keyframed<T>,
+    frame: i64,
+    value: T,
+) {
+    if track.value_at(frame) != value {
+        if track.is_constant() {
+            track.default = value;
+        } else {
+            track.upsert(frame, value, core::Interpolation::Linear);
+        }
+    }
+}
+
+fn toggle_key<T: Clone + core::Lerp>(track: &mut core::Keyframed<T>, frame: i64) {
+    if track.remove_at(frame).is_none() {
+        let value = track.value_at(frame);
+        track.upsert(frame, value, core::Interpolation::Linear);
+    }
+}
+
+fn inspector_edit(
+    masks: &mut Vec<core::ClipMask>,
+    edit: &MaskInspectorEdit,
+    frame: i64,
+    size: (u32, u32),
+) -> Result<()> {
+    if matches!(edit, MaskInspectorEdit::ResetAll {}) {
+        masks.clear();
+        return Ok(());
+    }
+    let index = match edit {
+        MaskInspectorEdit::Set { index, .. }
+        | MaskInspectorEdit::SetPath { index, .. }
+        | MaskInspectorEdit::ToggleKey { index, .. }
+        | MaskInspectorEdit::TogglePathKey { index }
+        | MaskInspectorEdit::ResetParameter { index, .. }
+        | MaskInspectorEdit::ResetPath { index }
+        | MaskInspectorEdit::ResetMode { index }
+        | MaskInspectorEdit::ResetMask { index } => *index,
+        MaskInspectorEdit::ResetAll {} => unreachable!(),
+    };
+    let mask = masks.get_mut(index).ok_or_else(ApiError::missing)?;
+    match edit {
+        MaskInspectorEdit::Set { param, .. }
+        | MaskInspectorEdit::ToggleKey { param, .. }
+        | MaskInspectorEdit::ResetParameter { param, .. } => {
+            if !param.applies_to(mask.shape) {
+                return Err(ApiError::invalid("Choose an applicable mask parameter"));
+            }
+            match edit {
+                MaskInspectorEdit::Set { value, .. } => {
+                    bounded(*value, limits(*param))?;
+                    set_value(mask.track_mut(*param), frame, *value);
+                }
+                MaskInspectorEdit::ToggleKey { .. } => toggle_key(mask.track_mut(*param), frame),
+                _ => {
+                    *mask.track_mut(*param) =
+                        core::ClipMask::new(mask.shape, size).track(*param).clone()
+                }
+            }
+        }
+        MaskInspectorEdit::SetPath { .. }
+        | MaskInspectorEdit::TogglePathKey { .. }
+        | MaskInspectorEdit::ResetPath { .. } => {
+            if mask.shape != MaskShape::Path {
+                return Err(ApiError::invalid("Bezier vertices require a Path mask"));
+            }
+            match edit {
+                MaskInspectorEdit::SetPath { path, .. } => {
+                    set_value(&mut mask.path, frame, path.clone())
+                }
+                MaskInspectorEdit::TogglePathKey { .. } => toggle_key(&mut mask.path, frame),
+                _ => mask.path = core::ClipMask::new(mask.shape, size).path,
+            }
+        }
+        MaskInspectorEdit::ResetMode { .. } => mask.mode = core::MaskMode::Add,
+        MaskInspectorEdit::ResetMask { .. } => {
+            let enabled = mask.enabled;
+            *mask = core::ClipMask::new(mask.shape, size);
+            mask.enabled = enabled;
+        }
+        MaskInspectorEdit::ResetAll {} => unreachable!(),
+    }
+    Ok(())
+}
 pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &MaskEdit) -> Result<()> {
     let (track, clip_id, clip) = inspector::find(session, id, raw)?;
     inspector::writable(session, id, track)?;
@@ -111,23 +253,7 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &MaskEdit) -
             if path.is_some() && *shape != MaskShape::Path {
                 return Err(ApiError::invalid("Bezier vertices require a Path mask"));
             }
-            let timeline_size = session.project.timelines[id].resolution;
-            let source_size = if let core::ClipSource::Media(media) = clip.source {
-                session
-                    .project
-                    .media_pool
-                    .get(media)
-                    .map(|m| (m.meta.width, m.meta.height))
-                    .unwrap_or(timeline_size)
-            } else {
-                timeline_size
-            };
-            let (sw, sh) = (source_size.0.max(1) as f32, source_size.1.max(1) as f32);
-            let scale = (timeline_size.0 as f32 / sw).min(timeline_size.1 as f32 / sh);
-            let mut mask = core::ClipMask::new(
-                *shape,
-                ((sw * scale).round() as u32, (sh * scale).round() as u32),
-            );
+            let mut mask = core::ClipMask::new(*shape, layer_size(session, id, clip));
             if let Some(path) = path {
                 mask.path.default = path.clone();
             }
@@ -196,9 +322,31 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &MaskEdit) -
                 mask.path.remove_at(source_frame);
             }
         }
+        MaskEdit::Inspector {
+            timeline_frame,
+            edit,
+        } => {
+            if !(0..=crate::commands::MAX_FRAME).contains(timeline_frame) {
+                return Err(ApiError::invalid(
+                    "Choose a bounded nonnegative timeline frame",
+                ));
+            }
+            let end = clip
+                .timeline_start
+                .checked_add(clip.timeline_len)
+                .filter(|_| clip.timeline_len > 0)
+                .ok_or_else(|| ApiError::invalid("Invalid clip timing"))?;
+            let frame = clip.source_frame_at((*timeline_frame).clamp(clip.timeline_start, end - 1));
+            if !(0..=crate::commands::MAX_FRAME).contains(&frame) {
+                return Err(ApiError::invalid("Invalid mask animation clock"));
+            }
+            inspector_edit(&mut masks, edit, frame, layer_size(session, id, clip))?;
+        }
     }
     validate(&masks)?;
-    if matches!(edit, MaskEdit::PathKey { .. }) && masks == clip.effects.masks {
+    if matches!(edit, MaskEdit::PathKey { .. } | MaskEdit::Inspector { .. })
+        && masks == clip.effects.masks
+    {
         return Ok(());
     }
     session.apply(Box::new(core::set_clip_masks(id, track, clip_id, masks)));
@@ -276,7 +424,14 @@ pub fn viewer_edit(
     Ok(())
 }
 pub fn detail(clip: &core::Clip, frame: i64) -> Value {
-    json!({"shapes":MaskShape::ALL,"modes":core::MaskMode::ALL,"items":clip.effects.masks.iter().enumerate().map(|(index,mask)|json!({"index":index,"shape":mask.shape,"enabled":mask.enabled,"invert":mask.invert,"mode":mask.mode,"path":mask.path.default,"evaluated_path":mask.path.value_at(frame),"path_keyframes":mask.path.keyframes().len(),"path_keys":mask.path.keyframes().iter().take(16).collect::<Vec<_>>(),"path_navigation":(mask.shape==MaskShape::Path).then(||path_navigation(clip,mask,frame)),"parameters":MaskParam::ALL.into_iter().filter(|p|p.applies_to(mask.shape)).map(|param|{let track=mask.track(param);let (min,max)=limits(param);json!({"param":param,"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":track.keyframes().len(),"min":min,"max":max})}).collect::<Vec<_>>() })).collect::<Vec<_>>()})
+    json!({"shapes":MaskShape::ALL,"modes":core::MaskMode::ALL,"items":clip.effects.masks.iter().enumerate().map(|(index,mask)|json!({"index":index,"shape":mask.shape,"enabled":mask.enabled,"invert":mask.invert,"mode":mask.mode,"path":mask.path.default,"evaluated_path":mask.path.value_at(frame),"path_keyframes":mask.path.keyframes().len(),"path_keys":mask.path.keyframes().iter().take(16).collect::<Vec<_>>(),"path_navigation":(mask.shape==MaskShape::Path).then(||path_navigation(clip,mask,frame)),"parameters":MaskParam::ALL.into_iter().filter(|p|p.applies_to(mask.shape)).map(|param|{let track=mask.track(param);let (min,max)=limits(param);json!({"param":param,"default":track.default,"value":track.value_at(frame),"keyframes":track.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":track.keyframes().len(),"keyframe_info":keyframe_info(clip,track,frame),"min":min,"max":max})}).collect::<Vec<_>>() })).collect::<Vec<_>>()})
+}
+
+fn keyframe_info(clip: &core::Clip, track: &core::Keyframed<f32>, frame: i64) -> Value {
+    let visible = clip.source_in()..clip.source_out();
+    json!({"on_keyframe":track.keyframe_at(frame).is_some(),
+        "previous_frame":track.keyframe_before(frame).filter(|at|visible.contains(at)).map(|at|clip.timeline_frame_at(at)),
+        "next_frame":track.keyframe_after(frame).filter(|at|visible.contains(at)).map(|at|clip.timeline_frame_at(at))})
 }
 
 fn path_navigation(clip: &core::Clip, mask: &core::ClipMask, frame: i64) -> Value {

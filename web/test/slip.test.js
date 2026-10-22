@@ -18,8 +18,8 @@ test("Slip timeline gesture clamps linked handles, commits once and cancels with
   const view={tool:"slip",origin:0,scale:100,scrollY:0,selection:[],playhead:0,snap:false};
   const input=createInput({canvas,getTimeline:()=>timeline,view,invalidate(){},onSelect(){},onSeek(){},onCommand:async(operation)=>commands.push(operation),onNotice(){},onSlip:(event)=>events.push(event)});
   const point=(x)=>({button:0,pointerId:1,clientX:x,clientY:50,preventDefault(){}});
-  handlers.pointerdown(point(180));handlers.pointermove(point(0));assert.equal(view.draft.target,-3);handlers.pointermove(point(1000));assert.equal(view.draft.target,20);assert.equal(commands.length,0);
-  await handlers.pointerup(point(1000));assert.deepEqual(commands,[{kind:"slip",clip_ids:["1","2"],delta_frames:20}]);
+  handlers.pointerdown(point(180));handlers.pointermove(point(0));assert.equal(view.draft.target,20);handlers.pointermove(point(1000));assert.equal(view.draft.target,-3);assert.equal(commands.length,0);
+  await handlers.pointerup(point(1000));assert.deepEqual(commands,[{kind:"slip",clip_ids:["1","2"],delta_frames:-3}]);
   handlers.pointerdown(point(180));handlers.pointermove(point(190));handlers.keydown({key:"Escape"});await handlers.pointerup(point(190));assert.equal(commands.length,1);
   assert.equal(events.filter((e)=>e.phase==="begin").length,2);assert.ok(events.some((e)=>e.phase==="cancel"));input.destroy();delete globalThis.window;
 });
@@ -34,11 +34,13 @@ function slipHarness(options={}){
   class Element extends EventTarget{
     constructor(){super();this.hidden=false;this.disabled=false;this.value='0';this.textContent='';this.readyState=options.deferredMedia?0:1;this.currentTime=0;this.currentSrc='';this.seeking=false;this.src='';this.loads=0;}
     get currentTime(){return this.time??0;}set currentTime(value){this.time=value;if(options.deferredSeek && this.src)this.seeking=true;}
-    pause(){}load(){this.loads++;if(!this.src){this.currentSrc='';this.readyState=0;this.currentTime=0;this.seeking=false;}else if(!options.deferredMedia){this.currentSrc=this.src;this.readyState=1;}}
+    pause(){}load(){this.loads++;if(!this.src){this.currentSrc='';this.readyState=0;this.currentTime=0;this.seeking=false;}else if(!options.deferredMedia && !this.deferMetadata){this.currentSrc=this.src;this.readyState=1;}}
+    cloneNode(){const video=new Element();video.deferMetadata=!!options.deferredStage;stageVideos.push(video);return video;}
+    replaceWith(video){const index=videos.indexOf(this);assert.ok(index>=0);videos[index]=video;}
     removeAttribute(name){if(name==='src')this.src='';}reportValidity(){return true;}
     fire(name){this.dispatchEvent(new Event(name));}
   }
-  const videos=[new Element(),new Element()],labels=[new Element(),new Element()],nodes={output:new Element(),input:new Element(),'[data-slip-apply]':new Element(),'[data-slip-refresh]':new Element(),'[data-slip-close]':new Element()};
+  const stageVideos=[],videos=[new Element(),new Element()],labels=[new Element(),new Element()],nodes={output:new Element(),input:new Element(),'[data-slip-apply]':new Element(),'[data-slip-refresh]':new Element(),'[data-slip-close]':new Element()};
   const root={hidden:true,parentElement:{dataset:{}},querySelectorAll:selector=>selector==='video'?videos:labels,querySelector:selector=>nodes[selector]};
   let target=targetValue(),jobCount=0;const calls=[],downloads=[],created=[],revoked=[],commits=[],notices=[],timers=new Map();let timerID=0;
   const api=async(path,body)=>{
@@ -47,7 +49,7 @@ function slipHarness(options={}){
     const m=options.manifest?options.manifest(0):manifestValue(0,options.far);return {id:`job${++jobCount}`,state:'ready',project_epoch:null,source_asset:'source.mp4',source_window:{...body.window,total_frames:m.total_frames,fps:m.fps,source_version:m.source_version,audio_stream_index:0}};
   };
   const control=createSlipView({root,getTarget:()=>target,api,fetcher:async(url,init)=>{downloads.push({url,init});return options.fetcher?options.fetcher(url,init):new Response(new Uint8Array([1,2,3]));},createURL:blob=>{const url=`blob:slip-${created.length}`;created.push({url,blob});return url;},revokeURL:url=>revoked.push(url),setTimer:(callback,ms)=>{const id=++timerID;timers.set(id,{callback,ms});return id;},clearTimer:id=>timers.delete(id),commit:async operation=>{commits.push(operation);return options.commit?.(operation);},notice:message=>notices.push(message)});
-  return {control,root,videos,labels,nodes,calls,downloads,created,revoked,commits,notices,timers,setTarget:value=>target=value};
+  return {control,root,videos,stageVideos,labels,nodes,calls,downloads,created,revoked,commits,notices,timers,setTarget:value=>target=value,fireTimers(ms){for(const [id,timer] of [...timers])if(timer.ms===ms){timers.delete(id);timer.callback();}}};
 }
 
 test('far-separated edges beyond 600 seconds get independent bounded local windows prepared sequentially',async()=>{
@@ -105,7 +107,7 @@ test('failure on second independent window releases the first owned Blob and lea
 });
 test('numeric input remains local and committed change recenters only outside the local/native map',async()=>{
   const h=slipHarness();await h.control.open('1');h.nodes.input.value='1';h.nodes.input.fire('input');h.nodes.input.fire('change');assert.equal(h.calls.length,2);
-  h.nodes.input.value='1500';h.nodes.input.fire('input');assert.equal(h.calls.length,2);assert.match(h.nodes.output.textContent,/Refresh/);h.nodes.input.fire('change');await settle();
+  h.nodes.input.value='1500';h.nodes.input.fire('input');assert.equal(h.calls.length,2);assert.match(h.nodes.output.textContent,/SEEKING/);h.nodes.input.fire('change');await settle();
   assert.ok(h.calls[2].path.includes('/slip/1500?'));assert.equal(h.calls[3].body.window.start_frame<=2500,true);h.control.destroy();
 });
 test('late video events preserve invalid numeric text and cannot re-enable or submit the previous delta',async()=>{
@@ -128,6 +130,60 @@ test('numeric committed change also recenters an edge outside its proxy but insi
   const m=manifestValue();m.window_start=-1000;m.window_end=2000;m.frames=Array.from({length:3001},(_,index)=>{const delta=index-1000;return [delta,1000+delta,1011+delta];});
   const h=slipHarness({manifest:()=>m});await h.control.open('1');h.nodes.input.value='1000';h.nodes.input.fire('input');assert.equal(h.calls.length,2);assert.match(h.nodes.output.textContent,/outside local windows/);
   h.nodes.input.fire('change');await settle();assert.ok(h.calls[2].path.includes('/slip/1000?'));assert.equal(h.calls.length,4);assert.ok(h.videos.every(video=>!video.hidden));h.control.destroy();
+});
+
+test('pointer drafts coalesce missing native maps into one latest recenter while holding the displayed edges',async()=>{
+  const h=slipHarness();await h.control.open('1');const old=h.videos.map(video=>video.src);
+  for(const delta of [1200,1300,1500])h.control.draft({phase:'draft',clip_id:'1',delta});
+  assert.equal(h.calls.length,2);assert.equal([...h.timers.values()].filter(timer=>timer.ms===120).length,1);
+  assert.deepEqual(h.videos.map(video=>video.src),old);assert.ok(h.videos.every(video=>!video.hidden));assert.match(h.nodes.output.textContent,/SEEKING.*last verified/);
+  h.fireTimers(120);await settle();assert.equal(h.calls.length,4);assert.ok(h.calls[2].path.includes('/slip/1500?'));assert.ok(h.videos.every(video=>!video.hidden));
+  assert.notDeepEqual(h.videos.map(video=>video.src),old);assert.equal(h.downloads.length,2);assert.deepEqual(h.revoked,[old[0]]);assert.equal(h.commits.length,0);h.control.destroy();
+});
+
+test('a pending recenter admits no second foreground preparation and drains only the latest queued draft',async()=>{
+  const pending=deferred();let count=0;const h=slipHarness({fetcher:()=>++count===2?pending.promise:Promise.resolve(new Response(new Uint8Array([1])))});
+  await h.control.open('1');h.control.draft({phase:'draft',delta:1200});h.fireTimers(120);await settle();
+  assert.equal(h.calls.length,4);h.control.draft({phase:'draft',delta:1500});h.fireTimers(120);h.control.draft({phase:'draft',delta:1800});h.fireTimers(120);
+  assert.equal(h.calls.length,4);assert.equal(h.created.length,1);assert.ok(h.videos.every(video=>!video.hidden));
+  pending.resolve(new Response(new Uint8Array([2])));await settle();
+  const centers=h.calls.filter(call=>call.path.includes('/slip/')).map(call=>Number(call.path.match(/\/slip\/(-?\d+)\?/)[1]));
+  assert.deepEqual(centers,[0,1200,1800]);assert.equal(h.created.length,2);assert.equal(h.downloads.length,3);assert.ok(h.labels[0].textContent.includes('2800'));h.control.destroy();
+});
+
+test('a superseded native job settles before the newest pointer draft is admitted',async()=>{
+  let prepared=0,running;
+  const h=slipHarness({api:async(path,body)=>{
+    if(path.includes('/slip/'))return manifestValue(Number(path.match(/\/slip\/(-?\d+)\?/)[1]));
+    if(body){const job={id:`serial-${++prepared}`,state:'ready',source_asset:'source.mp4',source_window:{...body.window,total_frames:100000,fps:{num:24,den:1},source_version:'fd:identity'}};if(prepared===2){running=job;return {...job,state:'running'};}return job;}
+    return running;
+  }});
+  await h.control.open('1');h.control.draft({phase:'draft',delta:1200});h.fireTimers(120);await settle();assert.equal(prepared,2);
+  h.control.draft({phase:'draft',delta:1800});h.fireTimers(120);await settle();assert.equal(prepared,2);assert.equal(h.downloads.length,1);
+  h.fireTimers(300);await settle();assert.equal(prepared,3);assert.equal(h.downloads.length,2);assert.ok(h.labels[0].textContent.includes('2800'));assert.equal(h.calls.filter(call=>call.path.includes('/jobs/')).length,1);h.control.destroy();
+});
+
+test('recentering a native map reuses the existing bounded Blob when its edge frames still fit',async()=>{
+  const h=slipHarness();await h.control.open('1');const old=h.videos.map(video=>video.src);
+  h.control.draft({phase:'draft',delta:2});assert.equal(h.calls.length,2);h.fireTimers(120);await settle();
+  assert.equal(h.calls.length,3);assert.ok(h.calls[2].path.includes('/slip/2?'));assert.equal(h.downloads.length,1);assert.deepEqual(h.videos.map(video=>video.src),old);assert.deepEqual(h.revoked,[]);
+  assert.match(h.nodes.output.textContent,/DRAFT.*\+2/);h.control.destroy();
+});
+
+test('replacement video seeks are staged until native src and local time verify, retaining the last visible frames',async()=>{
+  const h=slipHarness({deferredStage:true});await h.control.open('1');const shown=[...h.videos],old=shown[0].src;
+  h.control.draft({phase:'draft',delta:1500});h.fireTimers(120);await settle();assert.equal(h.stageVideos.length,2);assert.deepEqual(h.videos,shown);assert.ok(shown.every(video=>!video.hidden));
+  for(const video of h.stageVideos){video.currentSrc=old;video.readyState=1;video.fire('loadedmetadata');video.fire('seeked');}
+  assert.deepEqual(h.videos,shown);assert.equal(h.revoked.length,0);
+  for(const video of h.stageVideos){video.currentSrc=video.src;video.fire('loadedmetadata');video.fire('seeked');}await settle();
+  assert.ok(h.videos.every((video,index)=>video!==shown[index] && !video.hidden));assert.ok(shown.every(video=>!video.src && video.hidden));assert.deepEqual(h.revoked,[old]);h.control.destroy();
+});
+
+test('canceling a debounced or staged pointer draft releases all local owners without late publication or shared-job DELETE',async()=>{
+  const h=slipHarness({deferredStage:true});await h.control.open('1');h.control.draft({phase:'draft',delta:1200});h.control.draft({phase:'cancel'});h.fireTimers(120);assert.equal(h.calls.length,2);assert.equal(h.timers.size,0);
+  await h.control.open('1');h.control.draft({phase:'draft',delta:1500});h.fireTimers(120);await settle();const stages=[...h.stageVideos];assert.equal(stages.length,2);
+  h.control.reset();for(const video of stages){video.currentSrc=video.src;video.readyState=1;video.fire('loadedmetadata');video.fire('seeked');}await settle();
+  assert.ok(h.videos.every(video=>!video.src && video.hidden));assert.ok(stages.every(video=>!video.src && video.hidden));assert.equal(h.timers.size,0);assert.equal(h.revoked.length,h.created.length);assert.equal(new Set(h.revoked).size,h.revoked.length);assert.ok(h.calls.every(call=>!call.path.includes('DELETE')));h.control.destroy();
 });
 test('old loadedmetadata and seeked events cannot show a replacement source before matching src/time are ready',async()=>{
   const h=slipHarness({deferredMedia:true,deferredSeek:true});const first=h.control.open('1');await settle();h.control.reset();await first;

@@ -43,108 +43,147 @@ export async function boundedProxy(url,signal,fetcher=fetch){
 
 export function createSlipView({root,getTarget,commit,notice,onVisible=()=>{},api=request,fetcher=fetch,createURL=blob=>URL.createObjectURL(blob),revokeURL=url=>URL.revokeObjectURL(url),setTimer=setTimeout,clearTimer=clearTimeout}){
   const videos=[...root.querySelectorAll('video')],labels=[...root.querySelectorAll('[data-slip-label]')],status=root.querySelector('output'),input=root.querySelector('input'),apply=root.querySelector('[data-slip-apply]'),refresh=root.querySelector('[data-slip-refresh]'),close=root.querySelector('[data-slip-close]');
-  let controller=null,sequence=0,manifest=null,target=null,delta=0,numericValid=false,ready=false,previewReady=false,disposed=false,applying=false;
-  const urls=new Set(),bindings=[null,null],listeners=[];
+  let controller=null,sequence=0,manifest=null,target=null,delta=0,numericValid=false,ready=false,disposed=false,applying=false,flight=null,queued=null,draftTimer=null;
+  const urls=new Set(),bindings=[null,null],listeners=[],videoListeners=new Map(),staged=new Map(),seekCancels=new Set();
   const current=()=>!disposed && target && slipIdentity(target)===slipIdentity(getTarget(target.clip_id));
-  const active=(seq,signal)=>seq===sequence && !signal.aborted && current();
+  const active=(seq,signal)=>seq===sequence && !signal.aborted && !applying && current();
   const on=(node,type,handler)=>{node.addEventListener(type,handler);listeners.push(()=>node.removeEventListener?.(type,handler));};
   function show(visible){if(root.hidden===!visible)return;root.hidden=!visible;root.parentElement.dataset.slipPreview=String(visible);onVisible(visible);}
+  function detach(video){video.pause();video.hidden=true;video.removeAttribute('src');video.load();}
+  function cleanURLs(){const used=new Set(bindings.filter(Boolean).map(binding=>binding.url));for(const url of urls)if(!used.has(url)){revokeURL(url);urls.delete(url);}}
   function release(){
-    bindings.fill(null);previewReady=false;
-    for(const video of videos){video.pause();video.hidden=true;video.removeAttribute('src');video.load();}
+    for(const cancel of [...seekCancels])cancel();
+    bindings.fill(null);for(const video of videos)detach(video);for(const video of staged.keys())detach(video);staged.clear();
     for(const url of urls)revokeURL(url);urls.clear();
   }
+  function missing(){const frames=manifest && slipFrames(manifest,delta);return !frames || (manifest.preview_available && bindings.some((binding,index)=>!binding || binding.seq!==sequence || frames[index+1]<binding.range.start_frame || frames[index+1]>=binding.range.end_frame));}
   function paint(){
     apply.disabled=applying || !numericValid || !ready || !current() || manifest?.locked || delta===0;
     if(!manifest)return;
     if(!current()){status.textContent='STALE · reopen Slip after the project or selection changes';controller?.abort();release();return;}
     if(!numericValid){status.textContent='Choose an integer delta inside the native linked source handles';return;}
     const frames=slipFrames(manifest,delta);
-    if(!frames){status.textContent='Draft outside cached native frame map · Refresh edges to inspect this range';videos.forEach(video=>video.hidden=true);return;}
+    if(!frames){status.textContent='SEEKING · outside cached native frame map · last verified edges held';return;}
     labels.forEach((label,index)=>label.textContent=`${index?'Last':'First'} source frame ${frames[index+1]}`);
     if(!manifest.preview_available){status.textContent='Native slip handles ready · dual video preview is available for movie sources';return;}
-    if(!previewReady)return;
-    for(const [index,video] of videos.entries()){
-      const binding=bindings[index],frame=frames[index+1];
-      if(!binding || binding.seq!==sequence || video.src!==binding.url || frame<binding.range.start_frame || frame>=binding.range.end_frame){videos.forEach(item=>item.hidden=true);status.textContent='Source edge outside local windows · Refresh edges to inspect this range';return;}
-    }
+    if(missing()){status.textContent='SEEKING · source edge outside local windows · last verified edges held';return;}
     let seeking=false;
     for(const [index,video] of videos.entries()){
       const binding=bindings[index],time=(frames[index+1]-binding.range.start_frame)*manifest.fps.den/manifest.fps.num;
-      if(video.readyState<1 || video.currentSrc!==binding.url){video.hidden=true;seeking=true;continue;}
+      if(video.src!==binding.url || video.readyState<1 || video.currentSrc!==binding.url){seeking=true;continue;}
       if(Math.abs(video.currentTime-time)>1e-6){binding.time=time;video.currentTime=time;}
-      const verified=!video.seeking && Math.abs(video.currentTime-time)<1e-6;video.hidden=!verified;seeking ||= !verified;
+      const verified=!video.seeking && Math.abs(video.currentTime-time)<1e-6;if(verified)binding.shown=true;video.hidden=!binding.shown;seeking ||= !verified;
     }
-    status.textContent=seeking?'SEEKING · local Source edges':`DRAFT · ${delta>=0?'+':''}${delta} timeline frames · raw source edges · Apply commits one Undo`;
+    status.textContent=seeking?'SEEKING · local Source edges · last verified edges held':`DRAFT · ${delta>=0?'+':''}${delta} timeline frames · raw source edges · Apply commits one Undo`;
   }
   function reset(message='Slip closed'){
-    sequence++;controller?.abort();controller=null;manifest=null;target=null;numericValid=false;ready=false;release();apply.disabled=true;refresh.disabled=false;
+    sequence++;clearTimer(draftTimer);draftTimer=null;queued=null;flight=null;controller?.abort();controller=null;manifest=null;target=null;numericValid=false;ready=false;release();apply.disabled=true;refresh.disabled=false;
     labels.forEach(label=>label.textContent='Preparing source edge…');show(false);status.textContent=message;
   }
   const delay=signal=>new Promise((resolve,reject)=>{
     const cancel=()=>{clearTimer(timer);reject(new DOMException('Canceled','AbortError'));};
     const timer=setTimer(()=>{signal.removeEventListener('abort',cancel);resolve();},300);signal.addEventListener('abort',cancel,{once:true});if(signal.aborted)cancel();
   });
-  async function attach(video,index,binding,seq,signal){
-    bindings[index]=binding;video.src=binding.url;video.load();
+  async function attach(video,binding,seq,signal,center){
+    staged.set(video,binding);video.src=binding.url;video.load();
     await new Promise((resolve,reject)=>{
       let timer;
-      const cleanup=()=>{clearTimer(timer);for(const type of ['loadedmetadata','seeked','error'])video.removeEventListener(type,event);signal.removeEventListener('abort',cancel);};
+      const cleanup=()=>{clearTimer(timer);seekCancels.delete(cancel);if(binding.cancel===cancel)delete binding.cancel;for(const type of ['loadedmetadata','seeked','error'])video.removeEventListener(type,event);signal.removeEventListener('abort',cancel);};
       const cancel=()=>{cleanup();reject(new DOMException('Canceled','AbortError'));};
       const event=value=>{
-        if(!active(seq,signal) || bindings[index]!==binding || video.src!==binding.url)return cancel();
+        if(!active(seq,signal) || delta!==center || !numericValid || video.src!==binding.url)return cancel();
         if(video.currentSrc!==binding.url)return;
         if(value?.type==='error'){cleanup();reject(Error('Slip Source window could not be decoded'));return;}
         if(video.readyState<1)return;
         if(Math.abs(video.currentTime-binding.time)>1e-6){video.currentTime=binding.time;if(video.seeking)return;}
         if(!video.seeking && Math.abs(video.currentTime-binding.time)<1e-6){cleanup();resolve();}
       };
-      for(const type of ['loadedmetadata','seeked','error'])video.addEventListener(type,event);signal.addEventListener('abort',cancel,{once:true});
+      binding.cancel=cancel;for(const type of ['loadedmetadata','seeked','error'])video.addEventListener(type,event);signal.addEventListener('abort',cancel,{once:true});seekCancels.add(cancel);
       timer=setTimer(()=>{cleanup();reject(Error('Slip Source window seek timed out; Refresh edges'));},10000);event();
     });
   }
+  function watch(video,index){
+    const event=value=>{
+      const binding=bindings[index];if(!binding || videos[index]!==video || binding.seq!==sequence || video.src!==binding.url || video.currentSrc!==binding.url || !current())return;
+      if(value.type==='error'){status.textContent='Slip Source window could not be decoded · Refresh edges';binding.shown=false;video.hidden=true;}else paint();
+    };
+    for(const type of ['loadedmetadata','seeked','error'])video.addEventListener(type,event);
+    videoListeners.set(video,()=>{for(const type of ['loadedmetadata','seeked','error'])video.removeEventListener(type,event);});
+  }
+  async function load(center,seq,signal){
+    const wanted={...target},localStages=[];
+    const apiCall=(path,body)=>api(path,body,(url,init={})=>fetcher(url,{...init,signal:AbortSignal.any([signal,init.signal].filter(Boolean))}));
+    try{
+      const {clip_id,...query}=wanted;status.textContent='SEEKING · reading native linked Slip handles · last verified edges held';
+      const value=await apiCall(`/timelines/${encodeURIComponent(wanted.timeline_id)}/clips/${encodeURIComponent(clip_id)}/slip/${center}?${new URLSearchParams(query)}`);
+      if(!active(seq,signal))return;
+      const next=checkedSlipManifest(value,wanted,center);
+      if(manifest && (manifest.source_version!==next.source_version || manifest.media_id!==next.media_id || manifest.total_frames!==next.total_frames || manifest.fps.num!==next.fps.num || manifest.fps.den!==next.fps.den)){release();throw Error('Slip source file changed · reopen Slip');}
+      manifest=next;ready=true;input.min=manifest.min_delta;input.max=manifest.max_delta;paint();
+      if(center!==delta || !numericValid || !manifest.preview_available)return;
+      const frames=slipFrames(manifest,center),windows=slipWindows(manifest,center),assets=bindings.filter(Boolean),edgeAssets=[];
+      for(const [index,range] of windows.entries()){
+        const frame=frames[index+1],cached=assets.find(asset=>frame>=asset.range.start_frame && frame<asset.range.end_frame);
+        if(cached){edgeAssets.push(cached);continue;}
+        let job=await apiCall(`/media/${encodeURIComponent(manifest.media_id)}/prepare`,{project_epoch:wanted.project_epoch,quality:'low',window:range});
+        if(!active(seq,signal))return;
+        const id=job.id;if(typeof id!=='string' || !id || job.source_asset!=='source.mp4')throw Error('Slip preparation returned an invalid Source window job');
+        const path=`/media/${encodeURIComponent(manifest.media_id)}/jobs/${encodeURIComponent(id)}?${new URLSearchParams({project_epoch:wanted.project_epoch})}`;
+        while(['queued','running'].includes(job.state)){status.textContent=`SEEKING · preparing bounded Slip Source window · ${job.state} · last verified edges held`;await delay(signal);if(!active(seq,signal))return;job=await apiCall(path);if(!active(seq,signal))return;if(job.id!==id)throw Error('Slip Source window job changed');}
+        if(job.state!=='ready')throw Error(job.error || `Slip Source window ${job.state}`);
+        if(center!==delta || !numericValid)return;
+        const actual=checkedSlipWindow(job,manifest,range,wanted.project_epoch);status.textContent='SEEKING · caching bounded Slip Source window · last verified edges held';
+        const blob=await boundedProxy(sourceAssetURL(manifest.media_id,id,'source.mp4',wanted.project_epoch),signal,fetcher);if(!active(seq,signal) || center!==delta || !numericValid)return;
+        const asset={url:createURL(blob),range:actual};urls.add(asset.url);assets.push(asset);edgeAssets.push(asset);
+      }
+      if(!active(seq,signal) || center!==delta || !numericValid)return;
+      const replacements=[];
+      for(const [index,asset] of edgeAssets.entries()){
+        if(bindings[index]?.url===asset.url)continue;
+        const old=videos[index],video=bindings[index]?old.cloneNode(false):old;video.muted=true;video.hidden=true;
+        const binding={...asset,seq,time:(frames[index+1]-asset.range.start_frame)*manifest.fps.den/manifest.fps.num,shown:true};localStages.push({video,binding});
+        replacements.push({index,old,video,binding});
+      }
+      await Promise.all(replacements.map(({video,binding})=>attach(video,binding,seq,signal,center)));
+      if(!active(seq,signal) || center!==delta || !numericValid)return;
+      for(const {index,old,video,binding} of replacements){
+        if(video!==old){videoListeners.get(old)?.();videoListeners.delete(old);old.replaceWith(video);detach(old);videos[index]=video;watch(video,index);}
+        bindings[index]=binding;staged.delete(video);
+      }
+      paint();
+    }catch(error){
+      if(seq===sequence && error.name!=='AbortError'){
+        if(!current())release();else if(!bindings.some(Boolean))release();
+        status.textContent=error.message;ready=!!manifest && current();apply.disabled=!numericValid || !ready || !delta || manifest.locked;
+      }
+    }finally{
+      for(const {video,binding} of localStages){binding.cancel?.();if(staged.get(video)===binding){staged.delete(video);detach(video);}}
+      if(seq===sequence){cleanURLs();if(!current() && !disposed){release();status.textContent='STALE · reopen Slip after the project or selection changes';}}
+    }
+  }
+  function drain(){
+    if(flight)return flight.promise;
+    if(!current() || queued===null || !controller)return Promise.resolve();
+    const token={seq:sequence,promise:null},signal=controller.signal;flight=token;refresh.disabled=true;
+    token.promise=(async()=>{while(queued!==null && active(token.seq,signal)){const center=queued;queued=null;await load(center,token.seq,signal);}})().finally(()=>{if(flight===token){flight=null;refresh.disabled=applying;}});return token.promise;
+  }
+  function recenter(){if(applying || !current() || !numericValid)return Promise.resolve();clearTimer(draftTimer);draftTimer=null;queued=delta;return drain();}
+  function schedule(){
+    clearTimer(draftTimer);draftTimer=null;
+    if(applying || !numericValid || !current() || !missing())return;
+    draftTimer=setTimer(()=>{draftTimer=null;if(numericValid && current() && missing()){queued=delta;void drain();}},120);
+  }
   async function open(clip,center=0){
     if(disposed || applying)return;reset();target=getTarget(clip);if(!target)return notice('Select a writable source clip first');
-    const wanted={...target},seq=sequence;target=wanted;delta=center;numericValid=Number.isSafeInteger(center);input.value=center;show(true);controller=new AbortController();const signal=controller.signal;
-    const apiCall=(path,body)=>api(path,body,(url,init={})=>fetcher(url,{...init,signal:AbortSignal.any([signal,init.signal].filter(Boolean))}));
-    status.textContent='Reading native linked Slip handles…';refresh.disabled=true;
-    try{
-      const {clip_id,...query}=wanted;
-      const value=await apiCall(`/timelines/${encodeURIComponent(wanted.timeline_id)}/clips/${encodeURIComponent(clip)}/slip/${center}?${new URLSearchParams(query)}`);
-      if(!active(seq,signal))return;manifest=checkedSlipManifest(value,wanted,center);ready=true;input.min=manifest.min_delta;input.max=manifest.max_delta;paint();
-      if(manifest.preview_available){
-        const windows=slipWindows(manifest,center),assets=new Map(),edgeAssets=[];
-        for(const range of windows){
-          const key=JSON.stringify(range);if(assets.has(key)){edgeAssets.push(assets.get(key));continue;}
-          let job=await apiCall(`/media/${encodeURIComponent(manifest.media_id)}/prepare`,{project_epoch:wanted.project_epoch,quality:'low',window:range});
-          if(!active(seq,signal))return;
-          const id=job.id;if(typeof id!=='string' || !id || job.source_asset!=='source.mp4')throw Error('Slip preparation returned an invalid Source window job');
-          const path=`/media/${encodeURIComponent(manifest.media_id)}/jobs/${encodeURIComponent(id)}?${new URLSearchParams({project_epoch:wanted.project_epoch})}`;
-          while(['queued','running'].includes(job.state)){status.textContent=`Preparing bounded Slip Source window · ${job.state}`;await delay(signal);if(!active(seq,signal))return;job=await apiCall(path);if(!active(seq,signal))return;if(job.id!==id)throw Error('Slip Source window job changed');}
-          if(job.state!=='ready')throw Error(job.error || `Slip Source window ${job.state}`);
-          const actual=checkedSlipWindow(job,manifest,range,wanted.project_epoch);status.textContent='Caching bounded local Slip Source window…';
-          const blob=await boundedProxy(sourceAssetURL(manifest.media_id,id,'source.mp4',wanted.project_epoch),signal,fetcher);if(!active(seq,signal))return;
-          const asset={url:createURL(blob),range:actual};urls.add(asset.url);assets.set(key,asset);edgeAssets.push(asset);
-        }
-        if(!active(seq,signal))return;
-        const frames=slipFrames(manifest,center);
-        await Promise.all(videos.map((video,index)=>attach(video,index,{...edgeAssets[index],seq,time:(frames[index+1]-edgeAssets[index].range.start_frame)*manifest.fps.den/manifest.fps.num},seq,signal)));
-        if(!active(seq,signal))return;previewReady=true;paint();
-      }
-    }catch(error){if(seq===sequence && error.name!=='AbortError'){controller?.abort();release();status.textContent=error.message;ready=!!manifest && current();apply.disabled=!numericValid || !ready || !delta || manifest.locked;}}
-    finally{if(seq===sequence){refresh.disabled=false;if(!current() && !disposed){release();status.textContent='STALE · reopen Slip after the project or selection changes';}}}
+    target={...target};delta=center;numericValid=Number.isSafeInteger(center);input.value=String(center);show(true);controller=new AbortController();queued=center;await drain();
   }
-  for(const [index,video] of videos.entries())for(const type of ['loadedmetadata','seeked','error'])on(video,type,event=>{
-    const binding=bindings[index];if(!binding || binding.seq!==sequence || video.src!==binding.url || video.currentSrc!==binding.url || !current())return;
-    if(event.type==='error'){previewReady=false;videos.forEach(item=>item.hidden=true);status.textContent='Slip Source window could not be decoded · Refresh edges';}else if(previewReady)paint();
-  });
-  on(input,'input',()=>{const value=Number(input.value);numericValid=input.value.trim()!=='' && Number.isSafeInteger(value) && !!manifest && value>=manifest.min_delta && value<=manifest.max_delta;if(numericValid){delta=value;paint();}else{apply.disabled=true;status.textContent='Choose an integer delta inside the native linked source handles';}});
-  on(input,'change',()=>{
-    if(!numericValid || !current() || !manifest || !Number.isSafeInteger(Number(input.value)) || Number(input.value)!==delta || delta<manifest.min_delta || delta>manifest.max_delta)return;
-    const frames=slipFrames(manifest,delta);
-    if(!frames || (manifest.preview_available && (!previewReady || bindings.some((binding,index)=>!binding || frames[index+1]<binding.range.start_frame || frames[index+1]>=binding.range.end_frame))))void open(target.clip_id,delta);
-  });
-  on(refresh,'click',()=>{if(target && numericValid)void open(target.clip_id,delta);});on(close,'click',()=>reset());
+  for(const [index,video] of videos.entries())watch(video,index);
+  on(input,'input',()=>{clearTimer(draftTimer);draftTimer=null;queued=null;for(const cancel of [...seekCancels])cancel();const value=Number(input.value);numericValid=String(input.value).trim()!=='' && Number.isSafeInteger(value) && !!manifest && value>=manifest.min_delta && value<=manifest.max_delta;if(numericValid){delta=value;paint();}else{apply.disabled=true;status.textContent='Choose an integer delta inside the native linked source handles';}});
+  on(input,'change',()=>{if(numericValid && current() && manifest && Number(input.value)===delta && missing())void recenter();});
+  on(refresh,'click',()=>{if(target && numericValid)void recenter();});on(close,'click',()=>reset());
   on(apply,'click',async()=>{if(applying || !numericValid || !ready || !current() || manifest.locked || !delta || Number(input.value)!==delta || !input.reportValidity())return;applying=true;apply.disabled=true;refresh.disabled=true;try{await commit({kind:'slip',clip_ids:[...manifest.clip_ids],delta_frames:delta});reset();}catch(error){notice(error.message);reset();}finally{applying=false;}});
-  return {open,reset,invalidate(){if(target && !current())reset('STALE · reopen Slip after the project or selection changes');else paint();},draft(event){if(event.phase==='begin')void open(event.clip_id,event.delta);else if(event.phase==='draft'){delta=event.delta;numericValid=Number.isSafeInteger(delta) && (!manifest || (delta>=manifest.min_delta && delta<=manifest.max_delta));input.value=String(delta);paint();}else reset();},destroy(){reset();disposed=true;for(const remove of listeners)remove();}};
+  return {open,reset,invalidate(){if(target && !current())reset('STALE · reopen Slip after the project or selection changes');else paint();},draft(event){if(event.phase==='begin')void open(event.clip_id,event.delta);else if(event.phase==='draft'){
+    if(!target || (event.clip_id!=null && event.clip_id!==target.clip_id))return;
+    queued=null;for(const cancel of [...seekCancels])cancel();delta=event.delta;numericValid=Number.isSafeInteger(delta) && (!manifest || (delta>=manifest.min_delta && delta<=manifest.max_delta));input.value=String(delta);paint();schedule();
+  }else reset();},destroy(){reset();disposed=true;for(const remove of listeners)remove();for(const remove of videoListeners.values())remove();videoListeners.clear();}};
 }

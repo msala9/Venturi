@@ -932,6 +932,8 @@ fn path_navigation_uses_full_native_track_source_range_and_retimed_clock_indepen
         for source_frame in first - 1..=last + 1 {
             mask.path
                 .upsert(source_frame, path.clone(), core::Interpolation::Hold);
+            mask.track_mut(MaskParam::Feather)
+                .upsert(source_frame, 5.0, core::Interpolation::Hold);
         }
         clip.effects.masks.push(mask);
         session.project.timelines[id].tracks[0].clips[0] = clip;
@@ -951,6 +953,29 @@ fn path_navigation_uses_full_native_track_source_range_and_retimed_clock_indepen
             "previous":{"source_frame":frame-1,"timeline_frame":clip.timeline_frame_at(frame-1)},
             "next":{"source_frame":frame+1,"timeline_frame":clip.timeline_frame_at(frame+1)}})
         );
+        let scalar = item["parameters"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|p| p["param"] == "Feather")
+            .unwrap();
+        assert_eq!(scalar["keyframes"].as_array().unwrap().len(), 16);
+        assert_eq!(
+            scalar["keyframe_info"],
+            json!({"on_keyframe":true,
+            "previous_frame":clip.timeline_frame_at(frame-1),
+            "next_frame":clip.timeline_frame_at(frame+1)})
+        );
+        for (at, field) in [(first, "previous_frame"), (last - 1, "next_frame")] {
+            let summary = detail(clip, at);
+            let scalar = summary["items"][0]["parameters"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .find(|p| p["param"] == "Feather")
+                .unwrap();
+            assert_eq!(scalar["keyframe_info"][field], Value::Null);
+        }
         let first_navigation = &detail(clip, first)["items"][0]["path_navigation"];
         assert_eq!(first_navigation["previous"], Value::Null);
         let last_navigation = &detail(clip, last - 1)["items"][0]["path_navigation"];
@@ -987,4 +1012,407 @@ fn path_navigation_is_strict_and_excludes_outside_and_exclusive_end_keys() {
         .masks
         .push(core::ClipMask::new(MaskShape::Rectangle, (640, 360)));
     assert_eq!(detail(clip, 12)["items"][1]["path_navigation"], Value::Null);
+}
+
+#[test]
+fn mask_inspector_autokeys_native_clamped_animation_clock_and_preserves_constant_defaults() {
+    for rate in [
+        core::Rational::one(),
+        core::Rational::new(2, 1),
+        core::Rational::new(1, 2),
+    ] {
+        for playhead in [0, 108, 1_000] {
+            let (mut session, id, raw) = fixture();
+            let clip_id = session.project.timelines[id].tracks[0].clips[0].id;
+            let mut clip = core::Clip::from_source_range(
+                clip_id,
+                core::ClipSource::SolidColor,
+                12,
+                60,
+                100,
+                core::Rational::one(),
+            );
+            clip.conform(rate);
+            clip.freeze = Some(3);
+            let mut mask = core::ClipMask::new(MaskShape::Path, (640, 360));
+            let path = drawn_path();
+            for at in [0, 200] {
+                mask.path
+                    .upsert(at, path.clone(), core::Interpolation::Hold);
+                mask.track_mut(MaskParam::CenterX)
+                    .upsert(at, 0.0, core::Interpolation::Hold);
+            }
+            clip.effects.masks.push(mask);
+            let frame =
+                clip.source_frame_at(playhead.clamp(clip.timeline_start, clip.timeline_end() - 1));
+            let mut expected = clip.effects.masks.clone();
+            expected[0].track_mut(MaskParam::CenterX).upsert(
+                frame,
+                45.0,
+                core::Interpolation::Linear,
+            );
+            expected[0].track_mut(MaskParam::Feather).default = 13.0;
+            let mut changed = path;
+            changed.points[0].point[0] += 15.0;
+            expected[0]
+                .path
+                .upsert(frame, changed.clone(), core::Interpolation::Linear);
+            session.project.timelines[id].tracks[0].clips[0] = clip;
+            let before = timeline_value(&session, id);
+            let steps = session.history.position();
+            for change in [
+                MaskInspectorEdit::Set {
+                    index: 0,
+                    param: MaskParam::CenterX,
+                    value: 45.0,
+                },
+                MaskInspectorEdit::Set {
+                    index: 0,
+                    param: MaskParam::Feather,
+                    value: 13.0,
+                },
+                MaskInspectorEdit::SetPath {
+                    index: 0,
+                    path: changed,
+                },
+            ] {
+                edit(
+                    &mut session,
+                    id,
+                    &raw,
+                    &MaskEdit::Inspector {
+                        timeline_frame: playhead,
+                        edit: change,
+                    },
+                )
+                .unwrap();
+            }
+            let clip = &session.project.timelines[id].tracks[0].clips[0];
+            assert_eq!(clip.effects.masks, expected);
+            assert_eq!(clip.freeze, Some(3));
+            assert_eq!(session.history.position(), steps + 3);
+            assert_eq!(
+                session.history.labels().last(),
+                Some(core::CommandLabel::Masks)
+            );
+            let after = timeline_value(&session, id);
+            for _ in 0..3 {
+                session.history.undo(&mut session.project);
+            }
+            assert_eq!(timeline_value(&session, id), before);
+            for _ in 0..3 {
+                session.history.redo(&mut session.project);
+            }
+            assert_eq!(timeline_value(&session, id), after);
+        }
+    }
+}
+
+#[test]
+fn mask_inspector_toggles_evaluated_native_values_and_noops_preserve_redo_and_interpolation() {
+    let (mut session, id, raw) = fixture();
+    let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+    let mut mask = core::ClipMask::new(MaskShape::Path, (640, 360));
+    let path = drawn_path();
+    mask.path.default = path.clone();
+    mask.track_mut(MaskParam::Feather)
+        .upsert(0, 0.0, core::Interpolation::Linear);
+    mask.track_mut(MaskParam::Feather)
+        .upsert(24, 24.0, core::Interpolation::Hold);
+    clip.effects.masks.push(mask);
+    let before = timeline_value(&session, id);
+    let changes = [
+        MaskInspectorEdit::ToggleKey {
+            index: 0,
+            param: MaskParam::Feather,
+        },
+        MaskInspectorEdit::TogglePathKey { index: 0 },
+    ];
+    for change in &changes {
+        edit(
+            &mut session,
+            id,
+            &raw,
+            &MaskEdit::Inspector {
+                timeline_frame: 12,
+                edit: change.clone(),
+            },
+        )
+        .unwrap();
+    }
+    let mask = &session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .masks[0];
+    assert_eq!(
+        mask.track(MaskParam::Feather).keyframe_at(12),
+        Some((12.0, core::Interpolation::Linear))
+    );
+    assert_eq!(
+        mask.path.keyframe_at(12),
+        Some((path.clone(), core::Interpolation::Linear))
+    );
+    for change in &changes {
+        edit(
+            &mut session,
+            id,
+            &raw,
+            &MaskEdit::Inspector {
+                timeline_frame: 12,
+                edit: change.clone(),
+            },
+        )
+        .unwrap();
+    }
+    assert_eq!(timeline_value(&session, id), before);
+    // Leave a real redo entry, then issue a value equal to the evaluated native track.
+    session.history.undo(&mut session.project);
+    let steps = session.history.position();
+    let unchanged = timeline_value(&session, id);
+    let generation = session.history.generation();
+    for change in [
+        MaskInspectorEdit::Set {
+            index: 0,
+            param: MaskParam::Feather,
+            value: 12.0,
+        },
+        MaskInspectorEdit::SetPath { index: 0, path },
+        MaskInspectorEdit::ResetMode { index: 0 },
+    ] {
+        edit(
+            &mut session,
+            id,
+            &raw,
+            &MaskEdit::Inspector {
+                timeline_frame: 12,
+                edit: change,
+            },
+        )
+        .unwrap();
+    }
+    assert_eq!(timeline_value(&session, id), unchanged);
+    assert_eq!(session.history.position(), steps);
+    assert_eq!(session.history.generation(), generation);
+    session.history.redo(&mut session.project);
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(timeline_value(&session, id), before);
+}
+
+#[test]
+fn mask_inspector_resets_native_fitted_geometry_rows_mode_and_stack_with_exact_undo() {
+    for action in 0..5 {
+        let (mut session, id, raw) = fixture();
+        let media = session.project.media_pool.insert(core::MediaItem {
+            path: "portrait.mp4".into(),
+            meta: core::MediaMeta {
+                width: 100,
+                height: 200,
+                duration_frames: 48,
+                fps: core::Rational::new(24, 1),
+                has_video: true,
+                has_audio: false,
+                sample_rate: 0,
+                channels: 0,
+                audio_streams: 0,
+                file: Default::default(),
+            },
+            content_hash: 0,
+            compound: None,
+            folder: None,
+        });
+        let clip_id = session.project.timelines[id].tracks[0].clips[0].id;
+        let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+        clip.source = core::ClipSource::Media(media);
+        let mut mask = core::ClipMask::new(MaskShape::Path, (640, 360));
+        mask.enabled = false;
+        mask.invert = true;
+        mask.mode = core::MaskMode::Subtract;
+        mask.path.default = drawn_path();
+        mask.path
+            .upsert(12, drawn_path(), core::Interpolation::Hold);
+        mask.track_mut(MaskParam::Opacity)
+            .upsert(12, 25.0, core::Interpolation::Hold);
+        mask.track_mut(MaskParam::CenterX).default = 17.0;
+        clip.effects.masks = vec![mask, core::ClipMask::new(MaskShape::Ellipse, (640, 360))];
+        let mut expected = clip.effects.masks.clone();
+        let defaults = core::ClipMask::new(MaskShape::Path, (180, 360));
+        let change = match action {
+            0 => {
+                *expected[0].track_mut(MaskParam::Opacity) =
+                    defaults.track(MaskParam::Opacity).clone();
+                MaskInspectorEdit::ResetParameter {
+                    index: 0,
+                    param: MaskParam::Opacity,
+                }
+            }
+            1 => {
+                expected[0].path = defaults.path;
+                MaskInspectorEdit::ResetPath { index: 0 }
+            }
+            2 => {
+                expected[0].mode = core::MaskMode::Add;
+                MaskInspectorEdit::ResetMode { index: 0 }
+            }
+            3 => {
+                expected[0] = defaults;
+                expected[0].enabled = false;
+                MaskInspectorEdit::ResetMask { index: 0 }
+            }
+            _ => {
+                expected.clear();
+                MaskInspectorEdit::ResetAll {}
+            }
+        };
+        let before = timeline_value(&session, id);
+        let mut oracle = session.project.clone();
+        use vv_core::Command;
+        core::set_clip_masks(id, 0, clip_id, expected.clone()).apply(&mut oracle);
+        let steps = session.history.position();
+        edit(
+            &mut session,
+            id,
+            &raw,
+            &MaskEdit::Inspector {
+                timeline_frame: 12,
+                edit: change.clone(),
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            session.project.timelines[id].tracks[0].clips[0]
+                .effects
+                .masks,
+            expected
+        );
+        assert_eq!(session.history.position(), steps + 1);
+        let after = timeline_value(&session, id);
+        session.history.undo(&mut session.project);
+        assert_eq!(timeline_value(&session, id), before);
+        session.history.redo(&mut session.project);
+        assert_eq!(timeline_value(&session, id), after);
+        assert_eq!(serde_json::to_value(&oracle.timelines[id]).unwrap(), after);
+        let generation = session.history.generation();
+        edit(
+            &mut session,
+            id,
+            &raw,
+            &MaskEdit::Inspector {
+                timeline_frame: 12,
+                edit: change,
+            },
+        )
+        .unwrap();
+        assert_eq!(session.history.position(), steps + 1);
+        assert_eq!(session.history.generation(), generation);
+    }
+}
+
+#[test]
+fn mask_inspector_rejects_invalid_actions_atomically_and_keeps_legacy_wire_bytes() {
+    for case in 0..12 {
+        let (mut session, id, raw) = fixture();
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .masks = vec![core::ClipMask::new(MaskShape::Rectangle, (640, 360))];
+        let mut frame = 12;
+        let mut change = MaskInspectorEdit::Set {
+            index: 0,
+            param: MaskParam::Opacity,
+            value: 50.0,
+        };
+        match case {
+            0 => frame = -1,
+            1 => frame = crate::commands::MAX_FRAME + 1,
+            2 => {
+                change = MaskInspectorEdit::Set {
+                    index: 0,
+                    param: MaskParam::Feather,
+                    value: f32::NAN,
+                }
+            }
+            3 => {
+                change = MaskInspectorEdit::Set {
+                    index: 0,
+                    param: MaskParam::Opacity,
+                    value: 101.0,
+                }
+            }
+            4 => {
+                change = MaskInspectorEdit::ToggleKey {
+                    index: 8,
+                    param: MaskParam::Opacity,
+                }
+            }
+            5 => {
+                change = MaskInspectorEdit::SetPath {
+                    index: 0,
+                    path: drawn_path(),
+                }
+            }
+            6 => change = MaskInspectorEdit::ResetPath { index: 0 },
+            7 => session.project.timelines[id].tracks[0].locked = true,
+            8 => session.project.timelines[id].tracks[0].kind = core::TrackKind::Audio,
+            9 => {
+                session.project.timelines[id].tracks[0].clips[0]
+                    .effects
+                    .masks[0]
+                    .shape = MaskShape::Path;
+                change = MaskInspectorEdit::ResetParameter {
+                    index: 0,
+                    param: MaskParam::Width,
+                };
+            }
+            _ => {
+                session.project.timelines[id].tracks[0].clips[0]
+                    .effects
+                    .masks[0] = core::ClipMask::new(MaskShape::Path, (640, 360));
+                let mut path = drawn_path();
+                if case == 10 {
+                    path.points.truncate(2);
+                } else {
+                    path.points[0].out_handle[0] = f32::INFINITY;
+                }
+                change = MaskInspectorEdit::SetPath { index: 0, path };
+            }
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let steps = session.history.position();
+        assert!(
+            edit(
+                &mut session,
+                id,
+                &raw,
+                &MaskEdit::Inspector {
+                    timeline_frame: frame,
+                    edit: change
+                }
+            )
+            .is_err(),
+            "case {case}"
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            before,
+            "case {case}"
+        );
+        assert_eq!(session.history.position(), steps);
+    }
+    for value in [
+        json!({"action":"inspector","timeline_frame":12,"extra":0,"edit":{"kind":"reset_all"}}),
+        json!({"action":"inspector","timeline_frame":12,"edit":{"kind":"reset_all","index":0}}),
+        json!({"action":"inspector","timeline_frame":12,"edit":{"kind":"toggle_key","index":0,"param":"Opacity","value":50}}),
+    ] {
+        assert!(
+            serde_json::from_value::<MaskEdit>(value.clone()).is_err(),
+            "{value}"
+        );
+    }
+    let legacy = MaskEdit::PathKey {
+        index: 0,
+        timeline_frame: 12,
+        path: None,
+    };
+    assert_eq!(
+        serde_json::to_string(&legacy).unwrap(),
+        "{\"action\":\"path_key\",\"index\":0,\"timeline_frame\":12,\"path\":null}"
+    );
 }

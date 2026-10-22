@@ -32,6 +32,7 @@ import {
   kineticScrollStep,
   trimGroupDraft,
   gainDraft,
+  slipPointerDelta,
 } from "./geometry.js";
 import {isTextTarget} from '../ui.js';
 import {createPresetDrop} from './preset-drop.js';
@@ -473,7 +474,7 @@ export function createInput({
       };
     } else if(g.kind === "slip") {
       if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
-      const delta=Math.max(g.min,Math.min(g.max,Math.round((x-g.x)*timeline.fps.num/(view.scale*timeline.fps.den))));
+      const delta=slipPointerDelta(x-g.x,view,timeline.fps,g.min,g.max);
       const ids=linkedSelection(timeline,[g.clip.id]);
       view.draft={kind:"slip",target:delta,error:null,changes:timeline.tracks.flatMap((track)=>track.clips.filter((clip)=>ids.includes(clip.id)).map((clip)=>({clip_id:clip.id,to_track:track.id,to_start_frame:clip.start_frame,length_frames:clip.length_frames})))};
       onSlip({phase:"draft",clip_id:g.clip.id,delta});

@@ -15,6 +15,7 @@ import { createSourceSeek } from "./source-seek.js";
 import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "./source-assets.js";
 import { inspectorGroup,editingShortcutAllowed,selectionInspectorRows,renderInspectorSelection, detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,retimePropertySelection,compoundSelectionOperation,renderRetime,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
 import {createZoomLink} from './curves.js';
+import {maskFocusAfterEdit} from './masks.js';
 import { renderMixer } from "./mixer.js";
 import {canRetainAudioPresetDraft} from './audio-presets.js';
 import { createExportPanel } from "./export.js";
@@ -640,6 +641,12 @@ function selected() {
           if(identity!==detailIdentity(inspectorState(clip.id)) || !canNavigateInspector())throw Error('The keyframe navigation context changed');
           const payload={query:{project_epoch:state.project_epoch,if_generation:state.generation,timeline_id:state.timeline,revision:state.revision,frame:inspectorFrame,width:960},source_frame:sourceFrame};
           return request(`/timelines/${encodeURIComponent(state.timeline)}/clips/${encodeURIComponent(clip.id)}/keyframe-navigation`,payload,(url,options)=>fetch(url,{...options,signal:AbortSignal.any([signal,AbortSignal.timeout(5000)].filter(Boolean))}));
+        },
+        maskCommit:commitMask,
+        drawMaskPath:()=>{
+          if(identity!==detailIdentity(inspectorState(clip.id)) || !canEditInspector())return;
+          const context=currentViewerContext();if(!context || context.clip_id!==detail.clip_id){notice('Seek a current Program frame before drawing a path mask');return;}
+          maskSelectionSequence++;if($("viewer-transform").getAttribute('aria-pressed')==='true')$("viewer-transform").click();maskOverlay?.startPen();
         },
         canInteract:()=>identity===detailIdentity(inspectorState(clip.id)) && canEditInspector() }));
       for(const child of target.children)if(!child.dataset.inspectorGroup)inspectorGroup(child,detail.video?'video':'audio');
@@ -1567,17 +1574,25 @@ function syncViewerMasks(){
   $("viewer-mask-select").replaceChildren(new Option('Choose a mask',''),...items.map(item=>new Option(`${item.index+1} · ${item.name?`${item.name} · `:''}${item.shape}${item.enabled?'':' · disabled'}`,String(item.index))));
   $("viewer-mask-select").value=selected===null?'':String(selected);$("viewer-mask-select").disabled=!items.length;
 }
+async function commitMask(operation){
+  const before=currentViewerContext(),scope=maskScope(before),selected=before && maskChoice?.scope===scope && maskChoice.revision===before.revision?maskChoice.index:null;
+  const index=before && operation.kind==='edit_mask'?maskFocusAfterEdit(selected,operation.edit,before.detail.masks.items.length):selected,selectionSequence=maskSelectionSequence;
+  const receipt=await commit(operation),clip=timeline?.tracks.flatMap(track=>track.clips).find(clip=>clip.id===operation.clip_id);
+  if(before && operation.clip_id===before.clip_id && selectionSequence===maskSelectionSequence && documentState?.project_epoch===before.project_epoch && timeline?.id===before.timeline_id && clip && view.selection.includes(clip.id)){
+    maskChoice=index===null?null:{scope,revision:timeline.revision,index};
+    if(index===null)maskOverlay?.setEnabled(false);
+    else if(operation.kind==='edit_mask' && operation.edit.action==='add'){
+      if($("viewer-transform").getAttribute('aria-pressed')==='true')$("viewer-transform").click();maskOverlay?.setEnabled(true);
+    }
+  }
+  syncViewerMasks();maskOverlay?.invalidate();return receipt;
+}
 transformOverlay=createViewerTransformOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-transform"),canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),commit,notice,getContext:currentViewerTransformContext});
 maskOverlay=createViewerMaskOverlay({screen:$("screen"),image:$("preview"),toggle:$("viewer-mask"),penToggle:$("viewer-mask-pen"),getPenContext:currentViewerContext,canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),notice,getContext:()=>{
   const context=currentViewerContext();if(!context)return null;
   const index=maskChoice?.scope===maskScope(context) && maskChoice.revision===context.revision?maskChoice.index:null;
   return {...context,mask_index:index};
-},commit:async operation=>{
-  const before=currentViewerContext(),choice=operation.kind==='edit_mask' && operation.edit.action==='add' && before?{scope:maskScope(before),revision:before.revision,index:before.detail.masks.items.length}:maskChoice?{...maskChoice}:null,selectionSequence=maskSelectionSequence,receipt=await commit(operation);
-  const clip=timeline?.tracks.flatMap(track=>track.clips).find(clip=>clip.id===operation.clip_id);
-  if(choice && before && selectionSequence===maskSelectionSequence && documentState?.project_epoch===before.project_epoch && timeline?.id===before.timeline_id && clip && view.selection.includes(clip.id))maskChoice={...choice,revision:timeline.revision};
-  syncViewerMasks();maskOverlay?.invalidate();return receipt;
-}});
+},commit:commitMask});
 viewerZoom=createViewerZoom({screen:$('screen'),media:[$('preview'),$('program-video'),$('source-video'),$('source-image')],select:$('viewer-zoom'),status:$('viewer-zoom-status'),
   getActive:()=>{
     if(!$('slip-view').hidden)return null;

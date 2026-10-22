@@ -283,6 +283,22 @@ export function fadeDraft(clip,edge,delta){
   const original=clip[`fade_${edge}`],frames=Math.max(0,Math.min(clip.length_frames,original+(edge==='in'?delta:-delta)));
   return {kind:'fade',clip_id:clip.id,edge,frames,original};
 }
+export function slipPointerDelta(pixelDelta,view,fps,minimum,maximum){
+  const scale=Math.fround(view.scale),rate=Math.fround(Math.max(1,fps.num/fps.den)),pixels=Math.fround(scale/rate),raw=Math.fround(Math.fround(pixelDelta)/pixels);
+  if(!Number.isFinite(raw) || pixels<=0 || !Number.isSafeInteger(minimum) || !Number.isSafeInteger(maximum) || minimum>maximum)throw Error('Native Slip pointer bounds are invalid');
+  const frames=raw<0?-Math.round(-raw):Math.round(raw);
+  return Math.max(minimum,Math.min(maximum,-frames)) || 0;
+}
+export function slipMediaExtents(timeline,view){
+  const draft=view.draft;if(draft?.kind!=='slip' || !Number.isSafeInteger(draft.target))return [];
+  const selected=new Set((draft.changes || []).map(change=>change.clip_id)),layout=timelineLayout(timeline,view);
+  return timeline.tracks.flatMap((track,index)=>track.locked?[]:track.clips.flatMap(clip=>{
+    const range=clip.slip_range;
+    if(!selected.has(clip.id) || !Array.isArray(range) || range.length!==2 || !range.every(Number.isSafeInteger) || draft.target<range[0] || draft.target>range[1])return [];
+    const start=clip.start_frame+range[0]-draft.target,end=clip.start_frame+clip.length_frames+range[1]-draft.target,top=layout.trackTop(index);
+    return [{track_id:track.id,clip_id:clip.id,start_frame:start,end_frame:end,left:frameToX(start,view,timeline.fps),right:frameToX(end,view,timeline.fps),top:top+1,bottom:top+layout.rowHeight-1}];
+  }));
+}
 const transitionClip=clip=>typeof clip?.id==='string' && clip.id.length>0 && clip.kind!=='adjustment' && Number.isSafeInteger(clip.start_frame) && clip.start_frame>=0 && Number.isSafeInteger(clip.length_frames) && clip.length_frames>0 && clip.start_frame+clip.length_frames<=MAX_FRAME;
 const nativeTransition=transition=>transition && !Array.isArray(transition) && ['Push','CrossDissolve','SmoothCut'].includes(transition.kind) && ['Left','Right','Up','Down'].includes(transition.direction) && ['None','In','Out','InOut'].includes(transition.ease) && Number.isSafeInteger(transition.duration) && transition.duration>=1 && Number.isFinite(transition.curve) && transition.curve>=0 && transition.curve<=1;
 function transitionGeometry(base,duration,view,fps){

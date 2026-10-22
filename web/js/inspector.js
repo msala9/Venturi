@@ -259,7 +259,7 @@ export function keyPageIndex(value,total) {
   if(!Number.isSafeInteger(page) || page<1 || page>total)throw Error(`Choose a key page from 1 to ${total}`);
   return page-1;
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,retimeControls=true,zoomLink:sharedZoomLink }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,retimeControls=true,zoomLink:sharedZoomLink,drawMaskPath,maskCommit }) {
   const disabled = !writable || detail.locked;
   if(detail.key_page){
     const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
@@ -342,7 +342,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract,seek,canNavigate,navigateSource,keySelection:selectedKeys});if(curves)controls.push(curves);
   const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope,canInteract,seek,canNavigate,navigateSource,keySelection:selectedKeys});if(eventKeys)controls.push(eventKeys);
   const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload,canInteract,keySelection:selectedKeys});if(keySelection)controls.push(keySelection);
-  if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState,seek,canInteract});
+  if(detail.video){const masks=renderMasks(root,detail,{disabled,getFrame,commit:maskCommit || commit,notice,openState:visualState,seek,canInteract,drawPath:drawMaskPath});if(masks)controls.push(masks);}
   if (titleControls && detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report,transitionDefaults,notice);
   return controls;

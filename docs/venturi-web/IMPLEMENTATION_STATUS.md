@@ -12,6 +12,30 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+The finite visual render matrix now passes
+`evidence/m4-r9700-visual-parity.json`: 35 native generator-only projects and
+43 actual 64x64 frames on AMD Radeon AI PRO R9700 (RADV GFX1201), Vulkan.
+Every decoded HTTP preview matches the original native export renderer's RGBA
+byte for byte. All repeated cached PNGs match and 38 effect/control comparisons
+pass, alongside 12 independent solid/mask/matte/transition pixel checks.
+
+Coverage includes all 15 native blend modes, all four matte modes, native
+solids and default-font title, Rectangle/Ellipse/curved Bezier masks, animated
+Rectangle placement, Subtract/Intersect and feather, plus Push/CrossDissolve/
+solid SmoothCut before, during and after the crossing. Four original 64x64 PNG
+samples accompany the evidence. The fixture generator extends the existing
+native verification example with create-new files; its cached build, Clippy
+with denied warnings and fmt check pass. Production runtime bytes are unchanged.
+
+One sacrificial halo2 unit used one CPU, 4 GiB RAM, no swap, low priority and
+a 180-second limit, with shared memory admission and the nonblocking GPU lock.
+Native oracle processes finish before the HTTP renderer starts. All own
+children are reaped, port 8811 is closed, fixture bytes are unchanged and the
+main editor's five unsaved moves, binary and filesystem bindings are preserved.
+This qualifies finite native/API GPU rendering. Browser controls, Canvas/DPI,
+full-resolution throughput, foreign-font layout, moving-media optical flow and
+release soak remain separate; parity counts remain 40 done/50 partial.
+
 Master Normalize during multibus compound formation is now qualified against
 the original desktop in `evidence/m4-compound-master-normalize.json`. Two
 disjoint impulse clips on separate buses pass through native low-pass EQ and

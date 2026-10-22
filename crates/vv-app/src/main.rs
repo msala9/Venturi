@@ -7,6 +7,7 @@ extern crate rust_i18n;
 rust_i18n::i18n!("locales", fallback = "en");
 
 mod app_menu;
+mod audio_preset_library;
 mod color_window;
 mod compressor_panel;
 mod eq_panel;
@@ -277,6 +278,7 @@ struct VenturiApp {
     media_pool_state: media_pool::MediaPoolState,
     keyframe_editor: keyframe_editor::KeyframeEditorState,
     mixer_panel: mixer_panel::MixerPanelState,
+    audio_presets: audio_preset_library::AudioPresetLibrary,
     take: Option<voiceover::ActiveTake>,
     /// Media or elements not imported, shown in a separate window
     /// until the user closes it.
@@ -508,6 +510,7 @@ impl Default for VenturiApp {
             media_pool_state: media_pool::MediaPoolState::default(),
             keyframe_editor: keyframe_editor::KeyframeEditorState::default(),
             mixer_panel: mixer_panel::MixerPanelState::default(),
+            audio_presets: Default::default(),
             take: None,
             import_warnings: Vec::new(),
             preview_meta: None,
@@ -4380,10 +4383,6 @@ impl VenturiApp {
             pending_playhead = editor.playhead.or(pending_playhead);
         }
         if self.settings.panels.mixer_open {
-            let presets_before = (
-                self.settings.compressor_presets.clone(),
-                self.settings.eq_presets.clone(),
-            );
             pending_effects.extend(mixer_panel::show_mixer(
                 ui.ctx(),
                 &mut self.settings.panels.mixer_open,
@@ -4391,17 +4390,8 @@ impl VenturiApp {
                 &self.session.project,
                 self.timeline_id,
                 self.timeline_audio.as_ref().map(TimelineAudio::meters),
-                mixer_panel::EffectPresets {
-                    compressor: &mut self.settings.compressor_presets,
-                    eq: &mut self.settings.eq_presets,
-                },
+                &mut self.audio_presets,
             ));
-            // Saved at once: a preset must not wait for the periodic save.
-            if (&self.settings.compressor_presets, &self.settings.eq_presets)
-                != (&presets_before.0, &presets_before.1)
-            {
-                self.persist_settings();
-            }
         }
 
         if self.settings.panels.color_window_open {
@@ -4833,6 +4823,10 @@ fn main() -> eframe::Result<()> {
                 .set_waker(vv_session::Waker::new(move || egui_ctx.request_repaint()));
             app.settings_path = settings_path;
             if let Some(root) = library::Library::default_root() {
+                app.audio_presets = audio_preset_library::AudioPresetLibrary::open(
+                    root.join("presets"),
+                    settings.audio_preset_values(),
+                );
                 app.library = library::Library::open(root);
             }
             app.settings = settings;

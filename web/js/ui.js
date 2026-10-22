@@ -4,6 +4,21 @@ export function isTextTarget(target) {
   );
 }
 
+export function installClipListDismissal(menu, {documentRef=globalThis.document}={}) {
+  const close=()=>{if(menu)menu.open=false;};
+  const outside=event=>{if(menu?.open && !menu.contains(event.target))close();};
+  const escape=event=>{
+    if(event.key!=='Escape' || event.defaultPrevented || !menu?.open)return;
+    const owned=menu.contains(event.target) && !isTextTarget(event.target);
+    close();
+    if(owned){event.preventDefault();event.stopPropagation();menu.querySelector('summary')?.focus();}
+  };
+  const dialog=event=>{if(event.target?.matches?.('dialog') && event.target.open)close();};
+  const listeners=[['pointerdown',outside],['focusin',outside],['keydown',escape],['toggle',dialog]];
+  for(const [name,callback] of listeners)documentRef.addEventListener(name,callback,true);
+  return {close,dispose(){for(const [name,callback] of listeners)documentRef.removeEventListener(name,callback,true);}};
+}
+
 export function installSplitter(
   element,
   editor,

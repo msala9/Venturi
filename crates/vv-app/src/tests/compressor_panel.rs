@@ -94,15 +94,74 @@ fn smoothing_spreads_a_spike_by_its_power_and_keeps_a_flat_run() {
 
 #[test]
 fn saving_a_preset_under_an_existing_name_replaces_it() {
-    let mut presets = Vec::new();
+    let root = std::env::temp_dir().join(format!(
+        "vv-compressor-presets-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let mut library = AudioPresetLibrary::open(
+        root.clone(),
+        serde_json::json!({"eq_presets":[],"compressor_presets":[]}),
+    );
     let mut params = MultibandCompressor::DEFAULT;
-    save_preset(&mut presets, "A", &params);
+    library.bank().save("A", &params).unwrap();
     params.bands[0].ratio = 8.0;
-    save_preset(&mut presets, "B", &params);
-    save_preset(&mut presets, "A", &params);
+    library.bank().save("B", &params).unwrap();
+    library.bank().save("A", &params).unwrap();
+    let bank = library.bank::<MultibandCompressor>();
+    let presets = bank.entries();
     let names: Vec<&str> = presets.iter().map(|p| p.name.as_str()).collect();
     assert_eq!(names, ["A", "B"]);
     assert_eq!(presets[0].params, params);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn shared_preset_save_preserves_the_name_draft_on_conflict_and_refresh_allows_retry() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-compressor-draft-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    let empty = || serde_json::json!({"eq_presets":[],"compressor_presets":[]});
+    let mut writer = AudioPresetLibrary::open(root.clone(), empty());
+    let mut stale = AudioPresetLibrary::open(root.clone(), empty());
+    let mut state = EffectPanelState {
+        preset_name: "  My draft  ".into(),
+        ..Default::default()
+    };
+    writer
+        .bank()
+        .save("Peer", &MultibandCompressor::DEFAULT)
+        .unwrap();
+    let before = std::fs::read(root.join(crate::library::io::AUDIO_PRESET_FILE)).unwrap();
+    assert!(!save_named_preset(
+        &mut stale.bank(),
+        &mut state,
+        &MultibandCompressor::DEFAULT
+    ));
+    assert_eq!(state.preset_name, "  My draft  ");
+    assert!(stale.error().is_some());
+    assert_eq!(
+        std::fs::read(root.join(crate::library::io::AUDIO_PRESET_FILE)).unwrap(),
+        before
+    );
+    stale.refresh().unwrap();
+    assert_eq!(state.preset_name, "  My draft  ");
+    assert!(save_named_preset(
+        &mut stale.bank(),
+        &mut state,
+        &MultibandCompressor::DEFAULT
+    ));
+    assert!(state.preset_name.is_empty());
+    assert_eq!(stale.bank::<MultibandCompressor>().entries().len(), 2);
+    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[test]

@@ -18,7 +18,7 @@ use crate::settings::Shortcut;
 const VERSION: u32 = 1;
 
 #[path = "library_io.rs"]
-mod io;
+pub(crate) mod io;
 use io::{Guard, Kind, Record, Target};
 type CatalogRecords = BTreeMap<String, Record>;
 type AssetCatalog = (Vec<Asset>, Vec<LibraryFolder>, CatalogRecords);

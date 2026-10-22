@@ -11,12 +11,13 @@ fn root(label: &str) -> PathBuf {
 
 #[test]
 fn native_library_locks_match_web_names_and_readers_do_not_observe_pending_transactions() {
-    for kind in [Kind::Assets, Kind::Presets] {
+    for kind in [Kind::Assets, Kind::Presets, Kind::AudioPresets] {
         let root = root("locks");
         let directory = Directory::open(&root, false).unwrap();
         let name = match kind {
             Kind::Assets => ".venturi-assets-catalog.lock",
             Kind::Presets => ".venturi-presets.lock",
+            Kind::AudioPresets => ".venturi-audio-presets.lock",
         };
         let reader = directory.lock(name, true).unwrap();
         let other_reader = Guard::snapshot(&root, kind).unwrap();
@@ -37,6 +38,107 @@ fn native_library_locks_match_web_names_and_readers_do_not_observe_pending_trans
                 b"not ours"
             );
         }
+    }
+}
+
+#[test]
+fn native_audio_presets_recover_the_single_shared_file_and_refuse_foreign_or_invalid_intent() {
+    for applied in [false, true] {
+        let root = root("audio-recovery");
+        let guard = Guard::write(&root, Kind::AudioPresets).unwrap();
+        let before = "{\"eq_presets\":[],\"compressor_presets\":[]}";
+        let after = serde_json::to_string(&serde_json::json!({"eq_presets":[{
+            "name":"Recovered", "params":vv_core::Equalizer::DEFAULT,
+        }],"compressor_presets":[]}))
+        .unwrap();
+        guard
+            .commit(vec![Target {
+                path: AUDIO_PRESET_FILE.into(),
+                before: None,
+                after: Some(before.into()),
+            }])
+            .unwrap();
+        let journal = Journal {
+            version: 1,
+            targets: vec![Target {
+                path: AUDIO_PRESET_FILE.into(),
+                before: guard.read(AUDIO_PRESET_FILE).unwrap(),
+                after: Some(after.clone()),
+            }],
+        };
+        guard
+            .directory
+            .atomic(
+                AUDIO_PRESET_PENDING,
+                &serde_json::to_vec(&journal).unwrap(),
+                false,
+            )
+            .unwrap();
+        if applied {
+            guard
+                .directory
+                .atomic(AUDIO_PRESET_FILE, after.as_bytes(), true)
+                .unwrap();
+        }
+        drop(guard);
+        let recovered = Guard::snapshot(&root, Kind::AudioPresets).unwrap();
+        assert_eq!(
+            recovered.read(AUDIO_PRESET_FILE).unwrap().unwrap().bytes,
+            after
+        );
+        assert!(!root.join(AUDIO_PRESET_PENDING).exists());
+        assert!(
+            recovered
+                .commit(vec![Target {
+                    path: "other.json".into(),
+                    before: None,
+                    after: Some("{}".into())
+                }])
+                .is_err()
+        );
+        assert!(
+            recovered
+                .commit(vec![Target {
+                    path: AUDIO_PRESET_FILE.into(),
+                    before: recovered.read(AUDIO_PRESET_FILE).unwrap(),
+                    after: Some(" ".repeat(MAX_AUDIO_PRESET_BYTES + 1))
+                }])
+                .is_err()
+        );
+        drop(recovered);
+        let writer = Guard::write(&root, Kind::AudioPresets).unwrap();
+        let journal = Journal {
+            version: 1,
+            targets: vec![Target {
+                path: AUDIO_PRESET_FILE.into(),
+                before: writer.read(AUDIO_PRESET_FILE).unwrap(),
+                after: Some(before.into()),
+            }],
+        };
+        writer
+            .directory
+            .atomic(
+                AUDIO_PRESET_PENDING,
+                &serde_json::to_vec(&journal).unwrap(),
+                false,
+            )
+            .unwrap();
+        std::fs::write(root.join(AUDIO_PRESET_FILE), b"foreign").unwrap();
+        drop(writer);
+        assert!(Guard::snapshot(&root, Kind::AudioPresets).is_err());
+        assert_eq!(
+            std::fs::read(root.join(AUDIO_PRESET_FILE)).unwrap(),
+            b"foreign"
+        );
+        assert!(root.join(AUDIO_PRESET_PENDING).exists());
+        std::fs::remove_file(root.join(AUDIO_PRESET_PENDING)).unwrap();
+        std::fs::write(root.join(AUDIO_PRESET_PENDING), b"malformed").unwrap();
+        assert!(Guard::snapshot(&root, Kind::AudioPresets).is_err());
+        assert_eq!(
+            std::fs::read(root.join(AUDIO_PRESET_PENDING)).unwrap(),
+            b"malformed"
+        );
+        std::fs::remove_dir_all(root).unwrap();
     }
 }
 

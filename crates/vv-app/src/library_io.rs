@@ -11,23 +11,27 @@ const MAX_METADATA: usize = 16 * 1024 * 1024;
 const MAX_JOURNAL: usize = 32 * 1024 * 1024;
 pub(super) const ASSET_PENDING: &str = ".venturi-native-assets-pending.json";
 pub(super) const PRESET_PENDING: &str = ".venturi-native-presets-pending.json";
+pub(crate) const AUDIO_PRESET_FILE: &str = ".venturi-audio-presets.json";
+pub(crate) const AUDIO_PRESET_PENDING: &str = ".venturi-native-audio-presets-pending.json";
+pub(crate) const MAX_AUDIO_PRESET_BYTES: usize = 1024 * 1024;
 
 #[derive(Clone, Copy)]
-pub(super) enum Kind {
+pub(crate) enum Kind {
     Assets,
     Presets,
+    AudioPresets,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Record {
+pub(crate) struct Record {
     identity: String,
     pub bytes: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Target {
+pub(crate) struct Target {
     pub path: String,
     pub before: Option<Record>,
     pub after: Option<String>,
@@ -324,7 +328,7 @@ impl Directory {
     }
 }
 
-pub(super) struct Guard {
+pub(crate) struct Guard {
     directory: Directory,
     kind: Kind,
     _locks: Vec<File>,
@@ -337,6 +341,7 @@ impl Guard {
             match kind {
                 Kind::Assets => ".venturi-assets-catalog.lock",
                 Kind::Presets => ".venturi-presets.lock",
+                Kind::AudioPresets => ".venturi-audio-presets.lock",
             },
             true,
         )?;
@@ -364,6 +369,7 @@ impl Guard {
                 directory.lock(".venturi-assets-catalog.lock", false)?,
             ],
             Kind::Presets => vec![directory.lock(".venturi-presets.lock", false)?],
+            Kind::AudioPresets => vec![directory.lock(".venturi-audio-presets.lock", false)?],
         };
         let result = Self {
             directory,
@@ -382,6 +388,7 @@ impl Guard {
         match self.kind {
             Kind::Assets => ASSET_PENDING,
             Kind::Presets => PRESET_PENDING,
+            Kind::AudioPresets => AUDIO_PRESET_PENDING,
         }
     }
     fn target(&self, path: &str) -> Result<(Directory, String), String> {
@@ -398,16 +405,28 @@ impl Guard {
                 valid_name(path)?;
                 Ok((self.directory.duplicate()?, path.into()))
             }
+            Kind::AudioPresets if path == AUDIO_PRESET_FILE => {
+                Ok((self.directory.duplicate()?, path.into()))
+            }
+            Kind::AudioPresets => Err(changed()),
         }
     }
     pub fn read(&self, path: &str) -> Result<Option<Record>, String> {
         let (directory, name) = self.target(path)?;
-        directory.read(&name, MAX_BYTES)
+        directory.read(
+            &name,
+            if matches!(self.kind, Kind::AudioPresets) {
+                MAX_AUDIO_PRESET_BYTES
+            } else {
+                MAX_BYTES
+            },
+        )
     }
     pub fn records(&self, archived: bool) -> Result<Vec<(String, Record)>, String> {
         let directory = match self.kind {
             Kind::Assets => self.directory.child("assets", true)?,
             Kind::Presets => self.directory.duplicate()?,
+            Kind::AudioPresets => return Err("Use the single audio preset catalog".into()),
         };
         let mut result = Vec::new();
         let mut total = 0;
@@ -488,8 +507,17 @@ impl Guard {
                 .into_iter()
                 .chain(target.after.iter())
             {
-                if bytes.len() > MAX_BYTES {
-                    return Err("Native library entries are limited to 4 MiB".into());
+                let limit = if matches!(self.kind, Kind::AudioPresets) {
+                    MAX_AUDIO_PRESET_BYTES
+                } else {
+                    MAX_BYTES
+                };
+                if bytes.len() > limit {
+                    return Err(if matches!(self.kind, Kind::AudioPresets) {
+                        "Audio presets are limited to 1 MiB".into()
+                    } else {
+                        "Native library entries are limited to 4 MiB".into()
+                    });
                 }
                 total = total.saturating_add(bytes.len());
                 if total > MAX_METADATA {

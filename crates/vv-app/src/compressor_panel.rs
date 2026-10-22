@@ -7,9 +7,9 @@ use vv_audio::mixer::PROJECT_SAMPLE_RATE;
 use vv_audio::spectrum::{SpectrumTap, magnitudes_db};
 use vv_core::{AudioEffectKind, CompressorBand, MultibandCompressor};
 
+use crate::audio_preset_library::{AudioPresetLibrary, Parameters, PresetBank};
 use crate::mixer_panel::{knob, paint_fader_handle};
 use crate::properties_panel::drag_field;
-use crate::settings::Preset;
 
 /// As wide as the three band strips below it, frames and gaps included.
 const GRAPH_SIZE: egui::Vec2 = egui::vec2(3.0 * (STRIP_WIDTH + 18.0) + 16.0, 230.0);
@@ -188,18 +188,6 @@ pub(crate) fn builtin_presets() -> [(&'static str, MultibandCompressor); 7] {
     vv_core::presets::compressor_presets()
 }
 
-/// Adds `params` as `name`, or replaces the preset already called so.
-pub(crate) fn save_preset<P: Clone>(presets: &mut Vec<Preset<P>>, name: &str, params: &P) {
-    let preset = Preset {
-        name: name.to_owned(),
-        params: params.clone(),
-    };
-    match presets.iter_mut().find(|p| p.name == name) {
-        Some(existing) => *existing = preset,
-        None => presets.push(preset),
-    }
-}
-
 /// The edited parameters, if changed. `presets`: the user's own, saved and
 /// deleted here.
 pub(crate) fn show(
@@ -207,7 +195,7 @@ pub(crate) fn show(
     params: &MultibandCompressor,
     activity: &BandActivity,
     state: &mut EffectPanelState,
-    presets: &mut Vec<Preset<MultibandCompressor>>,
+    presets: &mut AudioPresetLibrary,
 ) -> Option<AudioEffectKind> {
     let mut params = params.clone();
     let builtin = builtin_presets();
@@ -217,7 +205,7 @@ pub(crate) fn show(
         &mut params,
         &builtin,
         state,
-        presets,
+        &mut presets.bank(),
     );
     ui.add_space(6.0);
     changed |= graph(ui, &mut params, activity, &state.spectrum);
@@ -232,13 +220,13 @@ pub(crate) fn show(
 
 /// Choosing a preset, and saving the current settings as one. `builtin`:
 /// translation key and settings.
-pub(crate) fn preset_bar<P: Clone + PartialEq>(
+pub(crate) fn preset_bar<P: Parameters>(
     ui: &mut egui::Ui,
     id_salt: &str,
     params: &mut P,
     builtin: &[(&'static str, P)],
     state: &mut EffectPanelState,
-    presets: &mut Vec<Preset<P>>,
+    presets: &mut PresetBank<'_, P>,
 ) -> bool {
     let current = builtin
         .iter()
@@ -246,6 +234,7 @@ pub(crate) fn preset_bar<P: Clone + PartialEq>(
         .map(|(key, _)| t!(*key).into_owned())
         .or_else(|| {
             presets
+                .entries()
                 .iter()
                 .find(|p| p.params == *params)
                 .map(|p| p.name.clone())
@@ -265,32 +254,39 @@ pub(crate) fn preset_bar<P: Clone + PartialEq>(
                         changed = true;
                     }
                 }
-                if !presets.is_empty() {
+                if !presets.entries().is_empty() {
                     ui.separator();
                 }
-                for (index, preset) in presets.iter().enumerate() {
+                let mut apply = None;
+                for preset in presets.entries() {
                     ui.horizontal(|ui| {
                         let delete_button = ui
                             .small_button("×")
                             .on_hover_text(t!("mixer.preset_delete"));
                         if delete_button.clicked() {
-                            delete = Some(index);
+                            delete = Some(preset.name.clone());
                         }
                         let selected = preset.params == *params;
                         if ui.selectable_label(selected, &preset.name).clicked() {
-                            *params = preset.params.clone();
-                            changed = true;
+                            apply = Some(preset.name.clone());
                         }
                     });
                 }
+                if let Some(name) = apply
+                    && let Ok(value) = presets.resolve(&name)
+                {
+                    *params = value;
+                    changed = true;
+                }
             });
-        if let Some(index) = delete {
-            presets.remove(index);
+        if let Some(name) = delete {
+            let _ = presets.delete(&name);
         }
 
         let save = ui.button(t!("mixer.preset_save"));
-        if save.clicked() {
+        if save.clicked() && state.preset_name.is_empty() {
             state.preset_name = presets
+                .entries()
                 .iter()
                 .find(|p| p.params == *params)
                 .map(|p| p.name.clone())
@@ -306,7 +302,7 @@ pub(crate) fn preset_bar<P: Clone + PartialEq>(
                     edit.request_focus();
                 }
                 let name = state.preset_name.trim().to_owned();
-                if presets.iter().any(|p| p.name == name) {
+                if presets.entries().iter().any(|p| p.name == name) {
                     ui.weak(t!("mixer.preset_replaces"));
                 }
                 let entered = edit.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
@@ -316,13 +312,50 @@ pub(crate) fn preset_bar<P: Clone + PartialEq>(
                         egui::Button::new(t!("mixer.preset_save_confirm")),
                     )
                     .clicked();
-                if (confirm || entered) && !name.is_empty() {
-                    save_preset(presets, &name, params);
+                if (confirm || entered) && save_named_preset(presets, state, params) {
                     ui.close();
                 }
+                if ui.small_button("Cancel name draft").clicked() {
+                    state.preset_name.clear();
+                    ui.close();
+                }
+                if presets.error().is_some() && ui.small_button("Refresh presets").clicked() {
+                    let _ = presets.refresh();
+                }
+                if let Some(error) = presets.error() {
+                    ui.colored_label(egui::Color32::LIGHT_RED, error);
+                }
             });
+        if ui.small_button("Refresh presets").clicked() {
+            let _ = presets.refresh();
+        }
+        if presets.legacy_available() && ui.small_button("Import legacy presets").clicked() {
+            let _ = presets.import_legacy();
+        }
+        if presets.can_start_empty() && ui.small_button("Start empty shared catalog").clicked() {
+            let _ = presets.start_empty();
+        }
     });
+    if let Some(error) = presets.error() {
+        ui.colored_label(egui::Color32::LIGHT_RED, error);
+    }
+    if let Some(error) = presets.legacy_error() {
+        ui.weak(format!("Legacy audio presets remain in Settings: {error}"));
+    }
     changed
+}
+
+fn save_named_preset<P: Parameters>(
+    presets: &mut PresetBank<'_, P>,
+    state: &mut EffectPanelState,
+    params: &P,
+) -> bool {
+    let name = state.preset_name.trim();
+    if name.is_empty() || presets.save(name, params).is_err() {
+        return false;
+    }
+    state.preset_name.clear();
+    true
 }
 
 fn graph(

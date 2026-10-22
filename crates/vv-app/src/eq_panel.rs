@@ -5,12 +5,12 @@ use vv_audio::eq::EqResponse;
 use vv_audio::mixer::PROJECT_SAMPLE_RATE;
 use vv_core::{AudioEffectKind, EqBand, EqShape, Equalizer};
 
+use crate::audio_preset_library::AudioPresetLibrary;
 use crate::compressor_panel::{
     CURVE_POINTS, EffectPanelState, KNOB_CELL_WIDTH, KnobScale, curve_freq, format_freq,
     fraction_freq, freq_fraction, paint_freq_grid, paint_spectrum, paint_spectrum_scale,
     param_knob, preset_bar,
 };
-use crate::settings::Preset;
 
 const BANDS: usize = 6;
 const STRIP_WIDTH: f32 = 96.0;
@@ -70,11 +70,18 @@ pub(crate) fn show(
     ui: &mut egui::Ui,
     params: &Equalizer,
     state: &mut EffectPanelState,
-    presets: &mut Vec<Preset<Equalizer>>,
+    presets: &mut AudioPresetLibrary,
 ) -> Option<AudioEffectKind> {
     let mut params = params.clone();
     let builtin = builtin_presets();
-    let mut changed = preset_bar(ui, "eq_preset", &mut params, &builtin, state, presets);
+    let mut changed = preset_bar(
+        ui,
+        "eq_preset",
+        &mut params,
+        &builtin,
+        state,
+        &mut presets.bank(),
+    );
     ui.add_space(6.0);
     changed |= graph(ui, &mut params, state);
     ui.weak(t!("mixer.eq_graph_hint"));

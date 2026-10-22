@@ -17,6 +17,7 @@ use vv_core::{self as core, AudioEffectKind};
 
 const FILE_NAME: &str = ".venturi-audio-presets.json";
 const LOCK_NAME: &str = ".venturi-audio-presets.lock";
+const NATIVE_PENDING: &str = ".venturi-native-audio-presets-pending.json";
 const MAX_BYTES: u64 = 1024 * 1024;
 const MAX_PRESETS: usize = 256;
 
@@ -259,7 +260,18 @@ impl Store {
         if !same_entry(&self.dir, LOCK_NAME, &file) {
             return Err(changed());
         }
+        self.no_native_pending()?;
         Ok(file)
+    }
+
+    fn no_native_pending(&self) -> Result<()> {
+        match statat(&self.dir, NATIVE_PENDING, AtFlags::SYMLINK_NOFOLLOW) {
+            Err(rustix::io::Errno::NOENT) => Ok(()),
+            _ => Err(ApiError::conflict(
+                "LIBRARY_RECOVERY_REQUIRED",
+                "A desktop audio preset transaction is pending; reopen the desktop library to recover it",
+            )),
+        }
     }
 
     fn raw(&self) -> Result<Raw> {
@@ -391,6 +403,7 @@ impl Store {
     }
 
     fn publish(&self, bytes: &[u8], expected: &Raw, lock: &File) -> Result<()> {
+        self.no_native_pending()?;
         let mut temp = Temporary::new(&self.dir)?;
         temp.file.write_all(bytes).map_err(|_| ApiError::io())?;
         temp.file.sync_all().map_err(|_| ApiError::io())?;

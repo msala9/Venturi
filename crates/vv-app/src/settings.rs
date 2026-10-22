@@ -620,6 +620,8 @@ pub struct Settings {
     /// Saved by the user, in the order they were first saved.
     pub compressor_presets: Vec<Preset<vv_core::MultibandCompressor>>,
     pub eq_presets: Vec<Preset<vv_core::Equalizer>>,
+    legacy_compressor_values: Option<Vec<serde_json::Value>>,
+    legacy_eq_values: Option<Vec<serde_json::Value>>,
     /// Microphone of the voiceover, by name; `None` is the system's default.
     pub input_device: Option<String>,
     /// Of the takes; `None`, or one this FFmpeg lacks, is
@@ -695,6 +697,8 @@ impl Default for Settings {
             panels: PanelLayout::default(),
             compressor_presets: Vec::new(),
             eq_presets: Vec::new(),
+            legacy_compressor_values: None,
+            legacy_eq_values: None,
             input_device: None,
             recording_format: None,
             recording_dir: None,
@@ -808,6 +812,12 @@ struct PanelLayoutFile {
 }
 
 impl Settings {
+    pub(crate) fn audio_preset_values(&self) -> serde_json::Value {
+        serde_json::json!({
+            "eq_presets": self.legacy_eq_values.clone().unwrap_or_else(|| preset_values(&self.eq_presets)),
+            "compressor_presets": self.legacy_compressor_values.clone().unwrap_or_else(|| preset_values(&self.compressor_presets)),
+        })
+    }
     pub fn default_path() -> Option<PathBuf> {
         let config = std::env::var_os("XDG_CONFIG_HOME")
             .filter(|d| !d.is_empty())
@@ -879,6 +889,9 @@ impl Settings {
             .as_deref()
             .and_then(AudioFileFormat::from_id);
         settings.recording_dir = file.recording_dir;
+        settings.legacy_compressor_values =
+            preserve_legacy_values::<vv_core::MultibandCompressor>(&file.compressor_presets);
+        settings.legacy_eq_values = preserve_legacy_values::<vv_core::Equalizer>(&file.eq_presets);
         settings.compressor_presets = readable_presets(file.compressor_presets);
         settings.eq_presets = readable_presets(file.eq_presets);
         settings.mcp_enabled = file.mcp_enabled.unwrap_or(false);
@@ -981,8 +994,14 @@ impl Settings {
                 media_pool_layout: Some(self.panels.media_pool_layout),
                 library_layout: Some(self.panels.library_layout),
             },
-            compressor_presets: preset_values(&self.compressor_presets),
-            eq_presets: preset_values(&self.eq_presets),
+            compressor_presets: self
+                .legacy_compressor_values
+                .clone()
+                .unwrap_or_else(|| preset_values(&self.compressor_presets)),
+            eq_presets: self
+                .legacy_eq_values
+                .clone()
+                .unwrap_or_else(|| preset_values(&self.eq_presets)),
             input_device: self.input_device.clone(),
             recording_format: self.recording_format.map(|f| f.id().to_owned()),
             recording_dir: self.recording_dir.clone(),
@@ -993,6 +1012,44 @@ impl Settings {
             std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
         }
         std::fs::write(path, text).map_err(|e| e.to_string())
+    }
+}
+
+fn preserve_legacy_values<P: serde::de::DeserializeOwned + Serialize>(
+    values: &[serde_json::Value],
+) -> Option<Vec<serde_json::Value>> {
+    values
+        .iter()
+        .any(|value| {
+            let Ok(parsed) = serde_json::from_value::<Preset<P>>(value.clone()) else {
+                return true;
+            };
+            let Ok(known) = serde_json::to_value(parsed) else {
+                return true;
+            };
+            different_fields(value, &known)
+        })
+        .then(|| values.to_vec())
+}
+
+fn different_fields(raw: &serde_json::Value, known: &serde_json::Value) -> bool {
+    match (raw, known) {
+        (serde_json::Value::Object(raw), serde_json::Value::Object(known)) => {
+            raw.len() != known.len()
+                || raw.iter().any(|(key, value)| {
+                    known
+                        .get(key)
+                        .is_none_or(|expected| different_fields(value, expected))
+                })
+        }
+        (serde_json::Value::Array(raw), serde_json::Value::Array(known)) => {
+            raw.len() != known.len()
+                || raw
+                    .iter()
+                    .zip(known)
+                    .any(|(raw, known)| different_fields(raw, known))
+        }
+        _ => false,
     }
 }
 

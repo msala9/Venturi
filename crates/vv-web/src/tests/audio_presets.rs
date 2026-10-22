@@ -234,6 +234,157 @@ fn audio_preset_busy_or_replaced_lock_refuses_without_mutation() {
 }
 
 #[test]
+fn native_audio_preset_pending_entries_block_reads_and_edits_without_touching_any_file() {
+    use std::os::unix::fs::PermissionsExt;
+    for shape in [
+        "malformed",
+        "unreadable",
+        "directory",
+        "dangling_link",
+        "foreign_link",
+    ] {
+        let fixture = Fixture::new();
+        fixture.save("Original", eq(1.0));
+        let revision = fixture.revision();
+        let before = fixture.bytes();
+        let marker = fixture.root.join(NATIVE_PENDING);
+        let foreign = fixture.root.join("foreign-native.json");
+        std::fs::write(&foreign, b"unrelated native data").unwrap();
+        match shape {
+            "directory" => std::fs::create_dir(&marker).unwrap(),
+            "dangling_link" => {
+                std::os::unix::fs::symlink("missing-native-transaction", &marker).unwrap()
+            }
+            "foreign_link" => std::os::unix::fs::symlink(&foreign, &marker).unwrap(),
+            _ => std::fs::write(&marker, b"malformed pending transaction").unwrap(),
+        }
+        if shape == "unreadable" {
+            std::fs::set_permissions(&marker, std::fs::Permissions::from_mode(0o0)).unwrap();
+        }
+        let witness = std::fs::symlink_metadata(&marker).unwrap();
+        let entries = std::fs::read_dir(&fixture.root).unwrap().count();
+        let errors = [
+            fixture.store.list().unwrap_err(),
+            fixture
+                .store
+                .resolve(Kind::Equalizer, "Original", &revision)
+                .unwrap_err(),
+            fixture
+                .store
+                .edit(&Edit::Save {
+                    name: "New".into(),
+                    revision: revision.clone(),
+                    parameters: eq(2.0),
+                })
+                .unwrap_err(),
+            fixture
+                .store
+                .edit(&Edit::Delete {
+                    kind: Kind::Equalizer,
+                    name: "Original".into(),
+                    revision: revision.clone(),
+                })
+                .unwrap_err(),
+        ];
+        for error in errors {
+            assert_eq!(error.0, axum::http::StatusCode::CONFLICT, "{shape}");
+            assert_eq!(error.1, "LIBRARY_RECOVERY_REQUIRED", "{shape}");
+            assert!(error.2.contains("desktop library"));
+        }
+        let retained = std::fs::symlink_metadata(&marker).unwrap();
+        assert_eq!(retained.ino(), witness.ino());
+        assert_eq!(retained.file_type(), witness.file_type());
+        assert_eq!(retained.permissions().mode(), witness.permissions().mode());
+        assert_eq!(fixture.bytes(), before);
+        assert_eq!(std::fs::read(&foreign).unwrap(), b"unrelated native data");
+        assert_eq!(std::fs::read_dir(&fixture.root).unwrap().count(), entries);
+        match shape {
+            "directory" => assert_eq!(std::fs::read_dir(&marker).unwrap().count(), 0),
+            "dangling_link" => assert_eq!(
+                std::fs::read_link(&marker).unwrap(),
+                PathBuf::from("missing-native-transaction")
+            ),
+            "foreign_link" => assert_eq!(std::fs::read_link(&marker).unwrap(), foreign),
+            _ => {
+                std::fs::set_permissions(&marker, std::fs::Permissions::from_mode(0o600)).unwrap();
+                assert_eq!(
+                    std::fs::read(&marker).unwrap(),
+                    b"malformed pending transaction"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn native_audio_preset_recovery_releases_failed_locks_and_rereads_the_recovered_revision() {
+    let fixture = Fixture::new();
+    fixture.save("Original", eq(1.0));
+    let revision = fixture.revision();
+    let before = fixture.bytes();
+    let lock = fixture.store.lock(true).unwrap();
+    let raw = fixture.store.raw().unwrap();
+    let marker = fixture.root.join(NATIVE_PENDING);
+    std::fs::write(&marker, b"desktop recovery owns this transaction").unwrap();
+    assert_eq!(
+        fixture.store.publish(&before, &raw, &lock).unwrap_err().1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    assert_eq!(fixture.bytes(), before);
+    drop(lock);
+    assert_eq!(
+        fixture.store.list().unwrap_err().1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    let mut recovered: NativeFile = serde_json::from_slice(&before).unwrap();
+    recovered.eq_presets.push(Preset {
+        name: "Recovered".into(),
+        params: core::Equalizer::DEFAULT,
+    });
+    let recovered_bytes = serde_json::to_vec_pretty(&recovered).unwrap();
+    std::fs::write(fixture.root.join(FILE_NAME), &recovered_bytes).unwrap();
+    std::fs::remove_file(marker).unwrap();
+    let catalog = fixture.store.list().unwrap();
+    let current = catalog["revision"].as_str().unwrap();
+    assert_eq!(current, format!("{:x}", Sha256::digest(&recovered_bytes)));
+    assert_ne!(current, revision);
+    assert_eq!(
+        fixture
+            .store
+            .resolve(Kind::Equalizer, "Recovered", current)
+            .unwrap(),
+        eq(0.0)
+    );
+    assert_eq!(
+        fixture
+            .store
+            .edit(&Edit::Delete {
+                kind: Kind::Equalizer,
+                name: "Recovered".into(),
+                revision
+            })
+            .unwrap_err()
+            .1,
+        "AUDIO_PRESETS_CHANGED"
+    );
+    fixture
+        .store
+        .edit(&Edit::Delete {
+            kind: Kind::Equalizer,
+            name: "Recovered".into(),
+            revision: current.into(),
+        })
+        .unwrap();
+    assert_eq!(
+        fixture.store.list().unwrap()["eq_presets"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+}
+
+#[test]
 fn audio_preset_name_parameter_and_capacity_bounds_are_atomic() {
     let fixture = Fixture::new();
     fixture.save(&"é".repeat(128), eq(0.0));

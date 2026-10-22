@@ -1,0 +1,52 @@
+{
+  "date": "2026-10-22",
+  "status": "implementation gate passed; integrated native/web and Windows workflow pending",
+  "scope": "Shared native/Web EQ and compressor catalog, durable native journal recovery, legacy migration preservation and clip-list dismissal before global panels",
+  "javascript": 9,
+  "web_rust": 11,
+  "native_rust": {
+    "audio_preset_library": 5,
+    "library_io": 6,
+    "settings": 13,
+    "mixer": 7,
+    "compressor": 10,
+    "equalizer": 4
+  },
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792696879.1435654,
+    "validation": "shared-native-audio-presets",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "0c697650de3e5abccad45fd3f2ea7b9a6989df7d61afa551de06bfe01d3d856f",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "source_files": 120,
+  "source_manifest_sha256": "74e978867ad23735410edbdac888b0353a33f4f7b212a94598bf8eb8dd85617e",
+  "log_sha256": "d2d6183eb7cf9c9d1a2d289111fc77647316a3eaefc60de345ebb3fb0e775cc9",
+  "limits": {
+    "cpu_quota": 8,
+    "compiler_jobs": 2,
+    "memory_bytes": 4294967296,
+    "swap": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "tasks": 128,
+    "runtime_seconds": 1800
+  },
+  "checks": [
+    "JavaScript syntax and affected UI/shortcut tests",
+    "Native shared-schema exact no-op/restart, stale apply/save/delete, nonblocking locks, absent-only legacy migration, explicit legacy merge and invalid legacy empty-start CAS",
+    "Native durable failure/recovery and Settings preservation; native one Undo effect application retains bypass/order",
+    "Web native-pending marker fail-closed handling for files, directories and links; recovered revision invalidates old CAS",
+    "All-target vv-web and vv-app Clippy with warnings denied; offline embedded Web build"
+  ],
+  "reuse": [
+    "Previously qualified unchanged F6 gate and native/API R9700 renderer parity",
+    "Existing unchanged DSP and preset serialization"
+  ],
+  "remaining": [
+    "Integrated actual shared native/Web catalog workflow and Windows Export popover interaction",
+    "Canonical NAS deployment/filesystem transaction qualification and physical/native desktop UX acceptance"
+  ]
+}

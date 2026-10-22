@@ -11,8 +11,8 @@ use vv_core::{
     SetLevel, SetMixerParam, SetTrackFlag, Timeline, TimelineId, TrackFlag, TrackKind,
 };
 
+use crate::audio_preset_library::AudioPresetLibrary;
 use crate::properties_panel::{BoxedCommand, drag_field, slider_field};
-use crate::settings::Preset;
 
 const STRIP_WIDTH: f32 = 84.0;
 const FADER_HEIGHT: f32 = 230.0;
@@ -91,12 +91,6 @@ pub(crate) struct MixerPanelState {
     effect_panel: crate::compressor_panel::EffectPanelState,
 }
 
-/// The user's own presets of each effect.
-pub(crate) struct EffectPresets<'a> {
-    pub(crate) compressor: &'a mut Vec<Preset<vv_core::MultibandCompressor>>,
-    pub(crate) eq: &'a mut Vec<Preset<vv_core::Equalizer>>,
-}
-
 impl MixerPanelState {
     /// The settings window opened by `edit`, or following the removal of an
     /// effect above it in the same chain.
@@ -137,7 +131,7 @@ pub(crate) fn show_mixer(
     project: &Project,
     timeline_id: Option<TimelineId>,
     meters: Option<&MixMeters>,
-    presets: EffectPresets,
+    presets: &mut AudioPresetLibrary,
 ) -> Vec<BoxedCommand> {
     let mut commands: Vec<BoxedCommand> = Vec::new();
     egui::Window::new(t!("mixer.title"))
@@ -346,7 +340,7 @@ fn effect_window(
     timeline_id: TimelineId,
     timeline: &Timeline,
     meters: Option<&MixMeters>,
-    presets: EffectPresets,
+    presets: &mut AudioPresetLibrary,
 ) -> Vec<BoxedCommand> {
     let mut commands: Vec<BoxedCommand> = Vec::new();
     let Some((open_timeline, channel, index)) = state.open_effect else {
@@ -426,30 +420,45 @@ fn effect_window(
                     params,
                     &activity,
                     &mut state.effect_panel,
-                    presets.compressor,
+                    presets,
                 ),
                 AudioEffectKind::Equalizer(params) => {
-                    crate::eq_panel::show(ui, params, &mut state.effect_panel, presets.eq)
+                    crate::eq_panel::show(ui, params, &mut state.effect_panel, presets)
                 }
             };
             if let Some(kind) = edited {
-                let edited = AudioEffect {
-                    kind,
-                    ..effect.clone()
-                };
-                commands.push(Box::new(SetAudioEffect::new(
+                commands.push(effect_parameter_command(
                     timeline_id,
                     channel,
                     index,
-                    edited,
-                    CommandLabel::EditAudioEffect,
-                )));
+                    &effect,
+                    kind,
+                ));
             }
         });
     if !open {
         state.open_effect = None;
     }
     commands
+}
+
+fn effect_parameter_command(
+    timeline: TimelineId,
+    channel: MixerChannel,
+    index: usize,
+    effect: &AudioEffect,
+    kind: AudioEffectKind,
+) -> BoxedCommand {
+    Box::new(SetAudioEffect::new(
+        timeline,
+        channel,
+        index,
+        AudioEffect {
+            kind,
+            ..effect.clone()
+        },
+        CommandLabel::EditAudioEffect,
+    ))
 }
 
 #[derive(Default)]

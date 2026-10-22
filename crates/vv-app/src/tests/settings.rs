@@ -265,6 +265,24 @@ fn effect_presets_are_saved_and_a_broken_one_is_dropped_alone() {
     assert_eq!(loaded.compressor_presets, settings.compressor_presets);
     assert_eq!(loaded.eq_presets, settings.eq_presets);
     assert!(!loaded.kinetic_scroll, "the rest of the file still reads");
+    let legacy = loaded.audio_preset_values();
+    loaded.save(&path).unwrap();
+    let saved: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    assert_eq!(saved["compressor_presets"], json["compressor_presets"]);
+    assert_eq!(saved["eq_presets"], json["eq_presets"]);
+    assert_eq!(
+        legacy["eq_presets"], json["eq_presets"],
+        "Migration must not silently discard unreadable legacy entries"
+    );
+    json["eq_presets"] = serde_json::json!([json["eq_presets"][0].clone()]);
+    json["eq_presets"][0]["legacy_note"] = serde_json::json!("Keep original fields");
+    std::fs::write(&path, json.to_string()).unwrap();
+    let loaded = Settings::load(&path);
+    loaded.save(&path).unwrap();
+    let saved: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    assert_eq!(saved["eq_presets"], json["eq_presets"]);
     let _ = std::fs::remove_dir_all(path.parent().unwrap());
 }
 

@@ -1,4 +1,4 @@
-import { isTextTarget, installSplitter } from "./ui.js";
+import { isTextTarget, installSplitter, installClipListDismissal } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
 import { linkedSelection, playheadSelection,selectedTransition,selectedGap,nativeGapAt,clipSelectionAnchor,reconcileSelectionAnchor,firstSelectionAnchor,playheadSelectionAnchor,MIN_TIMELINE_SCALE,MAX_TIMELINE_SCALE,timelineScrollBounds,timelineOriginForFrame } from "./timeline/geometry.js";
 import {isRetimeShortcut,timelineSelectionFocus} from './timeline/input.js';
@@ -49,6 +49,7 @@ import {resolveMarkRange,setMarkIn,setMarkOut,markRangeContext,markRangeAction} 
 
 const $ = (id) => document.getElementById(id);
 const editor = $("editor");
+const clipListDismissal=installClipListDismissal(document.querySelector('.timeline-list-menu'));
 let scopes = null, scopesWanted=false, scopePlayback = false, scopesSuspended = false, previewCache = null, audioMeters = null;
 let slipScopesState = null;
 let catalog = null;
@@ -60,6 +61,7 @@ const clipboardButtons=[];
 let clipboardStatus=null,clipboardRetry=null,clipboardCancel=null,clipboardOverwrite=null;
 const sharedLibraryRoot=document.createElement('div'),nativeAssetsRoot=document.createElement('div');
 function openLibraryPanel(mode=libraryMode){
+  clipListDismissal.close();
   libraryMode=mode;void sharedLibrary?.cancel();nativeAssets?.hide();
   const sources=document.createElement('div');sources.className='tools';sources.setAttribute('role','group');sources.setAttribute('aria-label','Library source');
   sources.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});
@@ -89,12 +91,14 @@ function updateBrowserToggle(){for(const button of document.querySelectorAll('#w
 let inspectorSelectionRead=null;
 function setInspectorTab(tab){
   if(!['video','audio','selection'].includes(tab))return;
+  clipListDismissal.close();
   $('inspector').dataset.inspectorTab=tab;
   for(const button of document.querySelectorAll('button[data-inspector-tab]'))button.setAttribute('aria-selected',String(button.dataset.inspectorTab===tab));
   if(tab==='selection')inspectorSelectionRead?.read();else inspectorSelectionRead?.cancel();
 }
 function globalEditingShortcut(event,{allowRepeat=false}={}){return editingShortcutAllowed(event,{dialogOpen:Boolean(document.querySelector('dialog[open]')),allowRepeat}) && !isTextTarget(event.target);}
 function revealBrowser(name){
+  clipListDismissal.close();
   const same=($('browser').dataset.browserPanel || 'Media')===name;
   if(innerWidth<=760){const open=!(same && editor.classList.contains('browser-drawer-open') && ['Media','Effects'].includes(name));editor.classList.toggle('browser-drawer-open',open);if(open)editor.classList.remove('inspector-drawer-open');}
   else if(same && ['Media','Effects'].includes(name))editor.classList.toggle('browser-collapsed');else editor.classList.remove('browser-collapsed');
@@ -105,7 +109,7 @@ function workspaceTool(workspace,label){
   const action=[...$('workspace-tools').querySelectorAll('button')].find(button=>button.textContent===label);
   if(action && !action.disabled)action.click();
 }
-function revealInspector(){if(innerWidth<=760)editor.classList.remove('browser-drawer-open');editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");updateBrowserToggle();updateInspectorToggle();}
+function revealInspector(){clipListDismissal.close();if(innerWidth<=760)editor.classList.remove('browser-drawer-open');editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");updateBrowserToggle();updateInspectorToggle();}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
   if(catalog){catalog.search(query);return;}
@@ -162,6 +166,7 @@ function revealNativeFilters(){
   section.scrollIntoView({block:'start'});
 }
 function showWorkspace(name) {
+  clipListDismissal.close();
   editor.dataset.workspace = name;
   scopes?.setVisible(scopesWanted && name === "Color" && !scopesSuspended && $("screen").dataset.viewerMode !== "source" && $("slip-view").hidden);
   document.querySelectorAll("[data-workspace]").forEach((button) => {
@@ -267,9 +272,10 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
     }
   }),
 );
-$("projects-button").addEventListener("click", () => $("projects").showModal());
-$("palette-button").addEventListener("click", () => $("palette").showModal());
+$("projects-button").addEventListener("click", () => {clipListDismissal.close();$("projects").showModal();});
+$("palette-button").addEventListener("click", () => {clipListDismissal.close();$("palette").showModal();});
 $("export-button").addEventListener("click", () => {
+  clipListDismissal.close();
   $("export-panel").hidden = false;
   exportPanel.open();
 });

@@ -60,6 +60,16 @@ functional or release criteria.
 
 ## Delivery blocks
 
+The next native mask/Slip source block is committed at `b06948b`; its focused
+implementation gate is recorded in `evidence/f3-mask-inspector-gate.json`.
+Its isolated runtime start was deferred by the shared GPU lock. Reuse the
+passing focused checks and the retained three native reference frames; run
+the remaining Windows workflow/render comparison once hardware is available.
+Do not count native-only references as native/API parity or upgrade any
+protected editor to bypass qualification. During the hardware wait, continue
+F5 native/web catalog coordination and asset missing-file recovery as one
+connected source block. The accepted ledger remains 46 done / 44 partial.
+
 Current integration checkpoint (2026-10-22): selected Title/Solid/Filter controls
 and native key navigation are implemented through bbf0fbb. The existing Windows
 browser completed a separate 1280x720, 24 fps, 408-frame effects montage with two

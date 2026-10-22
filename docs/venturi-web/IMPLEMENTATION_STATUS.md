@@ -38,6 +38,29 @@ remains df50859 with an unsaved InsertClips operation and is preserved. The
 source ledger is45 done/45 partial;
 this gate does not by itself close remaining capabilities.
 
+## Mask Inspector and continuous Slip implementation
+
+Source `b06948b` adds compact native mask Inspector rows, source-clock keys and
+navigation, native reset semantics, a Viewer pen entrypoint and stable mask
+selection across edits. Slip pointer direction/rounding now match the native
+editor, linked media extents are shown during the draft, and dual-edge source
+windows update through a bounded latest-target preparation while retaining
+the last verified pictures with a seeking indicator.
+
+`evidence/f3-mask-inspector-gate.json` records 187 unique focused JavaScript and
+51 unique focused Rust cases, affected all-target Clippy and the cached build.
+The staged binary is ready, but its actual Windows mask/Slip workflow and
+native/API render comparison remain pending: the shared GPU lock refused the
+isolated runtime start. Three native-only reference frames are retained; they
+are not proof of API equality. No editor was restarted and no acceptance row
+was closed. Port 8812 still serves `f3dcf1c`, with 8790 and 8811 retaining their
+unsaved commands.
+
+While GPU qualification is unavailable, F5 source work addresses native/web
+catalog coordination and missing-file relinking. Native cached manifests and
+uncoordinated writes are a real shared-library gap; HTTP access to the ds4 media
+archive alone does not establish shared native assets/presets acceptance.
+
 ## Native timeline and Inspector gesture qualification
 
 Source `9f7dcc4` adds native selected-group trim and adjacent Roll, explicit safe

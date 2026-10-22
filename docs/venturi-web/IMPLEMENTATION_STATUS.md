@@ -34,8 +34,17 @@ One bounded cached halo2 gate passes 924 JavaScript tests, 443 vv-web Rust tests
 27 native Inspector/timeline oracle tests, vv-web all-target Clippy with warnings
 denied, and the embedded native build. These are implementation checks, not full
 F1 acceptance or a production-service upgrade. The existing delivered editor
-and protected unsaved main remain unchanged. Browser/save/reopen qualification
-of this block is next, on an isolated root and port.
+and protected unsaved main remain unchanged.
+
+`evidence/f1-selected-inspector.json` records the existing Windows browser on
+the isolated port-8812 instance: a 1280x720/24fps project with two linked A/V
+pairs, static and animated Position deltas, per-clip source keys at47 and0,
+independent peer Flip axes, selected audio gain and full-track key navigation.
+Native timeline/detail state and saved project/source bytes match after the
+bounded candidate restart. The source video is320x180; this does not qualify
+large-source decode or full-resolution throughput. The actual Canvas new-track
+gesture produced no command. Inspection identified an unrelated Inspector
+scroll canceling the drag; its correction and integrated recheck are pending.
 
 F1 residuals remain explicit: native key-editor ruler/playhead navigation,
 root-timeline view memory, painted pane scrollbars/inertial scrolling and the

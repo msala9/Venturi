@@ -1,0 +1,864 @@
+{
+  "status": "partial",
+  "scope": "F1 selected Inspector browser workflow and native editing implementation gate",
+  "date": "2026-10-22",
+  "source_commit": "8120bf658d0c6f534a20f0db1fcb26b00322dae4",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792662274.7204707,
+    "validation": "F1-inspector-timeline",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "055a95ad957ccd1329c0bd69bead551f6ae318bbd02717c16369f9080ad3e14e",
+    "native_rust_hashes": {
+      "crates/vv-web/src/commands.rs": "10e620f7bd93aa1fbc2eee9b5d6726a54ab630359b23e8f92c4f078323ac07a8",
+      "crates/vv-web/src/inspector.rs": "3316b33ff19b8889e5cd710c14e8fe157cad39c1d74c747620cbe0f107c146fc",
+      "crates/vv-web/src/tests/commands.rs": "ed9629dc4271169ed04c9c8fc5c9faa31bb5d98c7b3bb57003e66ce524456434",
+      "crates/vv-web/src/tests/inspector.rs": "94ad7e2fbfda7d311a4545f5576402c9b3b1ccdbf62ac7a67439688962e25cab"
+    },
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "binary_sha256": "6aa2bd0c46734f7197527cc1bf8cb963c70274d11eb26b57da155a666fa7594c",
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/commands.rs": "10e620f7bd93aa1fbc2eee9b5d6726a54ab630359b23e8f92c4f078323ac07a8",
+      "crates/vv-web/src/inspector.rs": "3316b33ff19b8889e5cd710c14e8fe157cad39c1d74c747620cbe0f107c146fc",
+      "crates/vv-web/src/tests/commands.rs": "ed9629dc4271169ed04c9c8fc5c9faa31bb5d98c7b3bb57003e66ce524456434",
+      "crates/vv-web/src/tests/inspector.rs": "94ad7e2fbfda7d311a4545f5576402c9b3b1ccdbf62ac7a67439688962e25cab",
+      "web/js/curves.js": "97d7d8dbb8524cd76600727ebc6db1ad23226f1b33a989441f5302413ae203e5",
+      "web/js/eventkeys.js": "aeaa8a0e987014b25db46994dc17f8d96065776f99c5f60be0dd4a6050cc5c6a",
+      "web/js/inspector.js": "aecd6d76d75e9725c02c28de655c4e3df32b003b11b766a8e28c18c15a510a7e",
+      "web/js/keyselection.js": "2381d6930edad7b06a2a86e3a940ba6a0e724341436a95132847366ec1f7f616",
+      "web/js/main.js": "acca413fc9dd8e05d27dae6acde9fc4ba1e635f3aba5e1a5316d30b9de416465",
+      "web/js/timeline/draw.js": "f6d170ae18ad35afe2a0dc9e570845b5fdd746ac781b603910c7dd44342a8ab0",
+      "web/js/timeline/geometry.js": "464a397187a294ebc65756f1c41b2c21fac0aa73d603285b734d3d03332429eb",
+      "web/js/timeline/input.js": "3114dfc8a5376be3ca5669376c5265016e7f9b8f1c07fdfd6fefc0a15c72a804",
+      "web/js/timeline/preset-drop.js": "833aec09727380a9870d55827829a4c696fa438e2f0be9faa0bd46e6a6fc3a2b",
+      "web/js/viewer-transform.js": "80a19797124e9ff8adb80dcf205437783b0f95d1d0b6f999b7dadf71571439f6",
+      "web/test/curves.test.js": "976d3c00c8fed295a0a9afaa91f5c4fb62cdcaa4a901eb24820899d3cd95d94b",
+      "web/test/inspector-selection.test.js": "3e3ed8e503b45665618f85a3b3edad2e90f2a071751f6f42ca099115b79b21e1",
+      "web/test/retime-visibility.test.js": "3ea2f626de62fe527e85d7e0cdb100267b070478648c534c2795c5179a0bbe22",
+      "web/test/timeline-compound-input.test.js": "b85ee1d2e3741a8945c5b4a57a5b03443bb89ca5a1b3c83c6c0b8c0d96d68b7b",
+      "web/test/timeline-fades.test.js": "0248b697b719fd72df3c820ca32009e2b08c6b1eff2ed580d162049ebebaa903",
+      "web/test/timeline-gap.test.js": "0029d093d22e8e1a5d22a3282e44e1312d32605283a40cfb3b93cdcc40a1b758",
+      "web/test/timeline-layout.test.js": "394a66b83e2c27f9c91b5284b6ebb161e754b3e0dad200f930e277d85b255e30",
+      "web/test/timeline-preset-drop.test.js": "15635b57b10bb9f48459fc1b28293c93b95e825e569c145eb3c20ea777b9e73e",
+      "web/test/timeline-retime-input.test.js": "783652956f0b750a51d722e0912b755be029c723e8f3968d326bc2e424043bfc",
+      "web/test/timeline-selection-anchor.test.js": "17413cdb4770c268f3b42bf5939d8b5dc5c8fadefb721f865933fc1aa6f024df",
+      "web/test/timeline-selection.test.js": "e28ccd5a0f4c39bac788f6a9853513a296be2f281b365913f5b003820afda295",
+      "web/test/timeline-transition-input.test.js": "43b01354a42a3fcbe013873b6ddb223789297d8bc7161a503ed30e296aa054cb",
+      "web/test/timeline-transition-placement-input.test.js": "818349078341c8de77fa0d9bfe350d508af290ff1b956051335a032f2e35ed75",
+      "web/test/timeline-transition-placement.test.js": "1bcb6a607f6ffd92fbfe22b945da2d138df9574a3abedf5ba89c329767d0f579",
+      "web/test/timeline.test.js": "6e2e10007a05dbc7d3df0b51a6c4f6edd553a42060d2b7b4b85022c904cee464",
+      "web/test/viewer-transform.test.js": "7bc037650f38ebdbc482dcabb3b9712376fd4f3a5a2a9ed3789b20b1edba41a9"
+    },
+    "javascript": 924,
+    "vv_web_rust": 443,
+    "native_oracles": 27,
+    "clippy_all_targets_warnings_denied": true,
+    "embedded_build": true,
+    "browser_console_errors": [],
+    "screenshots": [
+      "f1-selected-inspector-windows.jpg"
+    ]
+  },
+  "workflow": {
+    "project": "Venturi_F1_Editing.vvproj",
+    "timeline": "F1 native editing",
+    "resolution": [
+      1280,
+      720
+    ],
+    "fps": [
+      24,
+      1
+    ],
+    "linked_av_pairs": 2,
+    "source": "venturi-smoke.mp4",
+    "source_resolution": [
+      320,
+      180
+    ],
+    "source_frames": 48,
+    "observations": {
+      "selected-position-delta": {
+        "generation": "7",
+        "history": {
+          "labels": [
+            "NewTimeline",
+            "ImportMedia",
+            "InsertClips",
+            "InsertClips",
+            "Transform",
+            "Transform",
+            "Transform"
+          ],
+          "position": 7
+        },
+        "clips": [
+          {
+            "id": "1",
+            "video": true,
+            "source_frame": 47,
+            "transform": [
+              {
+                "default": 20.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionX",
+                "value": 20.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          },
+          {
+            "id": "3",
+            "video": true,
+            "source_frame": 0,
+            "transform": [
+              {
+                "default": 50.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionX",
+                "value": 50.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          },
+          {
+            "id": "0",
+            "video": false,
+            "source_frame": 47,
+            "transform": [
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionX",
+                "value": 0.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          },
+          {
+            "id": "2",
+            "video": false,
+            "source_frame": 0,
+            "transform": [
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionX",
+                "value": 0.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "own-source-keyframes": {
+        "generation": "9",
+        "history": {
+          "labels": [
+            "NewTimeline",
+            "ImportMedia",
+            "InsertClips",
+            "InsertClips",
+            "Transform",
+            "Transform",
+            "Transform",
+            "SetKeyframe",
+            "SetKeyframe"
+          ],
+          "position": 9
+        },
+        "clips": [
+          {
+            "id": "1",
+            "video": true,
+            "source_frame": 47,
+            "transform": [
+              {
+                "default": 20.0,
+                "key_count": 1,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": true,
+                  "previous_frame": null
+                },
+                "keyframes": [
+                  [
+                    47,
+                    30.0,
+                    "Linear"
+                  ]
+                ],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": true,
+                "param": "PositionX",
+                "value": 30.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 1,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": true,
+                  "previous_frame": null
+                },
+                "keyframes": [
+                  [
+                    47,
+                    0.0,
+                    "Linear"
+                  ]
+                ],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": true,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          },
+          {
+            "id": "3",
+            "video": true,
+            "source_frame": 0,
+            "transform": [
+              {
+                "default": 50.0,
+                "key_count": 1,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": true,
+                  "previous_frame": null
+                },
+                "keyframes": [
+                  [
+                    0,
+                    60.0,
+                    "Linear"
+                  ]
+                ],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": true,
+                "param": "PositionX",
+                "value": 60.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 1,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": true,
+                  "previous_frame": null
+                },
+                "keyframes": [
+                  [
+                    0,
+                    0.0,
+                    "Linear"
+                  ]
+                ],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": true,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          },
+          {
+            "id": "0",
+            "video": false,
+            "source_frame": 47,
+            "transform": [
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionX",
+                "value": 0.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          },
+          {
+            "id": "2",
+            "video": false,
+            "source_frame": 0,
+            "transform": [
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionX",
+                "value": 0.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          }
+        ]
+      },
+      "flip-and-gain": {
+        "generation": "12",
+        "history": {
+          "labels": [
+            "NewTimeline",
+            "ImportMedia",
+            "InsertClips",
+            "InsertClips",
+            "Transform",
+            "Transform",
+            "Transform",
+            "SetKeyframe",
+            "SetKeyframe",
+            "Flip",
+            "Flip",
+            "Gain"
+          ],
+          "position": 12
+        },
+        "clips": [
+          {
+            "id": "1",
+            "video": true,
+            "source_frame": 47,
+            "transform": [
+              {
+                "default": 20.0,
+                "key_count": 1,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": true,
+                  "previous_frame": null
+                },
+                "keyframes": [
+                  [
+                    47,
+                    30.0,
+                    "Linear"
+                  ]
+                ],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": true,
+                "param": "PositionX",
+                "value": 30.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 1,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": true,
+                  "previous_frame": null
+                },
+                "keyframes": [
+                  [
+                    47,
+                    0.0,
+                    "Linear"
+                  ]
+                ],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": true,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              true,
+              false
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          },
+          {
+            "id": "3",
+            "video": true,
+            "source_frame": 0,
+            "transform": [
+              {
+                "default": 50.0,
+                "key_count": 1,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": true,
+                  "previous_frame": null
+                },
+                "keyframes": [
+                  [
+                    0,
+                    60.0,
+                    "Linear"
+                  ]
+                ],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": true,
+                "param": "PositionX",
+                "value": 60.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 1,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": true,
+                  "previous_frame": null
+                },
+                "keyframes": [
+                  [
+                    0,
+                    0.0,
+                    "Linear"
+                  ]
+                ],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": true,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              true,
+              true
+            ],
+            "gain": {
+              "default": 0.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": 0.0
+            }
+          },
+          {
+            "id": "0",
+            "video": false,
+            "source_frame": 47,
+            "transform": [
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionX",
+                "value": 0.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": -6.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": -6.0
+            }
+          },
+          {
+            "id": "2",
+            "video": false,
+            "source_frame": 0,
+            "transform": [
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionX",
+                "value": 0.0
+              },
+              {
+                "default": 0.0,
+                "key_count": 0,
+                "keyframe_info": {
+                  "next_frame": null,
+                  "on_keyframe": false,
+                  "previous_frame": null
+                },
+                "keyframes": [],
+                "max": 1000000.0,
+                "min": -1000000.0,
+                "on_keyframe": false,
+                "param": "PositionY",
+                "value": 0.0
+              }
+            ],
+            "flip": [
+              false,
+              false
+            ],
+            "gain": {
+              "default": -6.0,
+              "key_count": 0,
+              "keyframe_info": {
+                "next_frame": null,
+                "on_keyframe": false,
+                "previous_frame": null
+              },
+              "keyframes": [],
+              "on_keyframe": false,
+              "value": -6.0
+            }
+          }
+        ]
+      }
+    },
+    "save_reopen": {
+      "timeline_exact": true,
+      "details_exact": true,
+      "saved_source_project_hashes_exact": true
+    },
+    "hashes": {
+      "Venturi_F1_Editing.vvproj": "a6d00eac4a5ddbdb82f9fe50c5993edf2165e8ae5ffa7f3ae951176a458f9473",
+      "venturi-smoke.mp4": "2a89d0065a00ffed3db76e6aae2d05a298932813e52209b5897d4218b9385938"
+    },
+    "next_position_keyframe_ui": "00:00:01:23",
+    "viewer_transform_handles_available_with_two_selected_video_clips": true
+  },
+  "limitations": [
+    "Actual Canvas new-track gestures produced no command; unrelated Inspector scroll can cancel the gesture. Fix is pending integrated requalification.",
+    "Native key-editor ruler navigation, root timeline view memory, pane scrollbars/inertia and physical pointer/DPI/500-clip acceptance remain open.",
+    "This proof does not close all F1 rows or qualify playback/export, large original source decode, full-resolution throughput or physical output latency."
+  ],
+  "resources": {
+    "host": "halo2",
+    "cpu": 1,
+    "memory_max_gib": 4,
+    "swap_max": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "tasks_max": 128,
+    "runtime_max_sec": 600,
+    "gpu_lock": "/tmp/HALO_BENCHMARK.lock",
+    "windows": "Existing browser; one work tab; no local build/render"
+  },
+  "protected_editors": {
+    "main_port": 8790,
+    "main_unsaved": true,
+    "main_generation": "5",
+    "main_history_position": 5,
+    "delivery_port": 8811,
+    "delivery_unchanged": true
+  }
+}

@@ -2033,6 +2033,7 @@ async fn assets(request: Request) -> Response {
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
         "/js/eventkeys.js" => asset!("/web/js/eventkeys.js", "text/javascript"),
         "/js/keyselection.js" => asset!("/web/js/keyselection.js", "text/javascript"),
+        "/js/keyframe-lanes.js" => asset!("/web/js/keyframe-lanes.js", "text/javascript"),
         "/js/presets.js" => asset!("/web/js/presets.js", "text/javascript"),
         "/js/preset-shortcuts.js" => asset!("/web/js/preset-shortcuts.js", "text/javascript"),
         "/js/audio-presets.js" => asset!("/web/js/audio-presets.js", "text/javascript"),

@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-22",
+  "status": "implementation gate passed; actual Windows lane workflow pending",
+  "scope": "Native simultaneous animated scalar and typed parameter lanes, shared source-time axis, mixed marquee/time drag and native/Web separate-process audio preset coordination",
+  "javascript_unique": 42,
+  "javascript_affected_rerun": 22,
+  "rust_web": {
+    "keyselection": 7,
+    "embedded_assets_and_host": 1
+  },
+  "rust_native": {
+    "audio_preset_library_including_real_web_interop": 6,
+    "library_io": 6
+  },
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792698426.1690023,
+    "validation": "native-keyframe-lanes-and-audio-interop",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "1c917274739a147ab85a5078c95935a2eb0936347cedba11a582bb5f3f278fba",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "source_files": 123,
+  "source_manifest_sha256": "4d1d673e18f914927d2018d8df82cb666a7bbb879b753ce588593b784d0bba5e",
+  "log_sha256": "08f5094819bce2585a2d90dfd87416a22a5965ac7add92ea6d3daf8964db48b8",
+  "limits": {
+    "cpu_quota": 8,
+    "compiler_jobs": 2,
+    "memory_bytes": 4294967296,
+    "swap": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "tasks": 128,
+    "runtime_seconds": 1800
+  },
+  "reuse": [
+    "20 unchanged curves/eventkeys/keyselection cases passed in the initial 42-case gate; all 22 lane/navigation cases passed after correcting four pointer/paint fixtures",
+    "All production native editing rules and renderer remain unchanged; shared-key operations reuse the qualified native command",
+    "Separate-process test invokes immutable existing Web binary ad8f2d464cbdd229564bfc269217b8f86a8c5b3a3f823ecf37779f6f4a411b5b; its child is owned, GPU-disabled and killed/waited before cleanup"
+  ],
+  "native_web_interop": [
+    "Native EQ/compressor publication is read by the actual Web process",
+    "Web publication invalidates stale native resolve/save/delete; explicit Refresh preserves peer records",
+    "Native publication invalidates stale Web CAS; reread sees the native values",
+    "Native SH/EX locks force prompt Web write refusal; SH still permits reads",
+    "Real native commit stops after durable intent via a per-Guard test-only hook; Web refuses and preserves pending bytes",
+    "Actual native controller recovery finishes the journal; Web sees the recovered EQ/compressor revision",
+    "Complete Web Session and legacy Settings bytes remain unchanged; owned fixture is removed"
+  ],
+  "remaining": [
+    "Actual Windows mixed-lane editing/Undo/Save/restart workflow",
+    "Authoritative NAS mount/native-Web coordination and compatible deployment",
+    "Physical DPI and final release acceptance"
+  ]
+}

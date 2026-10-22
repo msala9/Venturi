@@ -1698,6 +1698,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/export.js", 200),
         ("/js/scopes.js", 200),
         ("/js/viewer-zoom.js", 200),
+        ("/js/keyframe-lanes.js", 200),
         ("/js/balance.js", 200),
         ("/js/silence.js", 200),
         ("/js/library.js", 200),

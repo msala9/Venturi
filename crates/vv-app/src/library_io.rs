@@ -332,6 +332,8 @@ pub(crate) struct Guard {
     directory: Directory,
     kind: Kind,
     _locks: Vec<File>,
+    #[cfg(test)]
+    fail_after_intent: bool,
 }
 
 impl Guard {
@@ -349,6 +351,8 @@ impl Guard {
             directory,
             kind,
             _locks: vec![lock],
+            #[cfg(test)]
+            fail_after_intent: false,
         };
         if matches!(kind, Kind::Assets)
             && result.directory.marker(".venturi-assets-pending.json")?
@@ -375,6 +379,8 @@ impl Guard {
             directory,
             kind,
             _locks: locks,
+            #[cfg(test)]
+            fail_after_intent: false,
         };
         if matches!(kind, Kind::Assets)
             && result.directory.marker(".venturi-assets-pending.json")?
@@ -487,7 +493,15 @@ impl Guard {
         serde_json::to_writer(&mut writer, &journal).map_err(|e| e.to_string())?;
         self.directory
             .atomic(self.marker_name(), &writer.0, false)?;
+        #[cfg(test)]
+        if self.fail_after_intent {
+            return Err("Interrupted after the durable native library intent (test)".into());
+        }
         self.recover()
+    }
+    #[cfg(test)]
+    pub(crate) fn fail_after_intent_for_test(&mut self) {
+        self.fail_after_intent = true;
     }
     fn validate_journal(&self, journal: &Journal) -> Result<(), String> {
         let mut names = HashSet::new();

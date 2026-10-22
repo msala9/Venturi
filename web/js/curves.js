@@ -1,9 +1,10 @@
 import {createKeyframeNavigation,drawKeyframeHead,keyframeClock,keyframeTimeRange} from './keyframe-navigation.js';
+import {renderKeyframeLanes,animatedKeyRows,KEYFRAME_LABEL_WIDTH} from './keyframe-lanes.js';
 
 export const keyPickIdentity=pick=>JSON.stringify([pick.target,pick.source_frame]);
 export function createKeyPickSelection(openState,scope){
-  const stateKey=`all-keys:${scope}`,stored=openState?.get(stateKey),listeners=new Set(),gestureListeners=new Set();
-  let picks=[];
+  const stateKey=`all-keys:${scope}`,stored=openState?.get(stateKey),listeners=new Set(),gestureListeners=new Set(),targetListeners=new Set();
+  let picks=[],activeTarget=null;
   try{picks=(stored?.ids || (Array.isArray(stored)?stored:stored?.after || [])).map(id=>{const [target,source_frame]=JSON.parse(id);return {target,source_frame};});}catch{}
   const valid=values=>Array.isArray(values) && values.length<=2048 && values.every(pick=>pick?.target && typeof pick.target.kind==='string' && Number.isSafeInteger(pick.source_frame)) && new Set(values.map(keyPickIdentity)).size===values.length;
   if(!valid(picks))picks=[];
@@ -14,7 +15,7 @@ export function createKeyPickSelection(openState,scope){
     if(openState){openState.delete(stateKey);openState.set(stateKey,{ids:picks.map(keyPickIdentity),focus});const keys=[...openState.keys()].filter(key=>key.startsWith('all-keys:'));for(const key of keys.slice(0,Math.max(0,keys.length-32)))openState.delete(key);}
     if(changed)for(const listener of listeners)listener();
   };
-  return {get,set,replace(before,after,options){const removed=new Set(before.map(keyPickIdentity));set([...new Map([...picks.filter(pick=>!removed.has(keyPickIdentity(pick))),...after].map(pick=>[keyPickIdentity(pick),pick])).values()],options);},select(pick,additive=false){const exists=picks.some(value=>keyPickIdentity(value)===keyPickIdentity(pick));set(additive || exists?(exists?picks:[...picks,pick]):[pick]);},beginGesture(){for(const listener of gestureListeners)listener();},onGesture(listener){gestureListeners.add(listener);return ()=>gestureListeners.delete(listener);},subscribe(listener){listeners.add(listener);return ()=>listeners.delete(listener);}};
+  return {get,set,replace(before,after,options){const removed=new Set(before.map(keyPickIdentity));set([...new Map([...picks.filter(pick=>!removed.has(keyPickIdentity(pick))),...after].map(pick=>[keyPickIdentity(pick),pick])).values()],options);},select(pick,additive=false){const exists=picks.some(value=>keyPickIdentity(value)===keyPickIdentity(pick));set(additive || exists?(exists?picks:[...picks,pick]):[pick]);},activate(target){activeTarget=structuredClone(target);for(const listener of targetListeners)listener(structuredClone(activeTarget));},subscribeTarget(listener){targetListeners.add(listener);return ()=>targetListeners.delete(listener);},beginGesture(){for(const listener of gestureListeners)listener();},onGesture(listener){gestureListeners.add(listener);return ()=>gestureListeners.delete(listener);},subscribe(listener){listeners.add(listener);return ()=>listeners.delete(listener);}};
 }
 export function pointerKeyOperation(clip,picks,delta,grabbed=null,linkZoom=false){
   if(!Array.isArray(picks) || !picks.length || picks.length>2048 || picks.some(pick=>!pick?.target || !Number.isSafeInteger(pick.source_frame)) || new Set(picks.map(keyPickIdentity)).size!==picks.length || !Number.isSafeInteger(delta))throw Error('Choose distinct native keys and an integer frame delta');
@@ -90,14 +91,14 @@ export function curveHandles(curve, selected) {
     frame: key.source_frame + (next.source_frame - key.source_frame) * point[0], value: key.value + (next.value - key.value) * point[1]}));
 }
 
-export function curveGeometry(curve, range, width, height, selected = null) {
+export function curveGeometry(curve, range, width, height, selected = null, left = 42) {
   const values = [...curve.samples.map((p) => p[1]), ...curve.keys.filter((k) => k.source_frame >= range.source_start && k.source_frame <= range.source_end).map((k) => k.value)];
   values.push(...curveHandles(curve, selected).map((p) => p.value));
   let min = Math.min(...values), max = Math.max(...values);
   const padding = Math.max((max - min) * 0.1, Math.abs(min) * 0.02, 0.01);
   min -= padding; max += padding;
   if(Number.isFinite(range.value_min) && Number.isFinite(range.value_max) && range.value_max>range.value_min){min=range.value_min;max=range.value_max;}
-  const left = 42, top = 12, plotWidth = Math.max(1, width - left - 12), plotHeight = Math.max(1, height - top - 28);
+  const top = 12, plotWidth = Math.max(1, width - left - 12), plotHeight = Math.max(1, height - top - 28);
   return {min, max, left, top, plotWidth, plotHeight,
     x: (frame) => left + (frame - range.source_start) / Math.max(1, range.source_end - range.source_start) * plotWidth,
     y: (value) => top + (max - value) / (max - min) * plotHeight,
@@ -220,7 +221,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   }
   const groupApply=document.createElement("button");groupApply.textContent="Move selected keys";groupForm.append(groupApply);
   const groupRemove=document.createElement("button");groupRemove.type="button";groupRemove.textContent="Delete selected keys";groupForm.append(groupRemove);section.append(groupForm);
-  let drafting = false, handleDraft = null, geometry = null, waiting = false, disposed = false,navigation=null;
+  let drafting = false, handleDraft = null, geometry = null, waiting = false, disposed = false,navigation=null,lanes=null;
   const owner=createKeyEditorGuard({root,section,disabled,canInteract,commit});
   let selectedFrames=new Set(),groupDraft=null,boxDraft=null,viewRange=fullViewport(),panOrigin=null;
   const events = new AbortController();
@@ -242,7 +243,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
     const ctx = canvas.getContext("2d"), style = getComputedStyle(canvas); ctx.scale(ratio, ratio);
     const color = (key) => style.getPropertyValue(key).trim();
     ctx.fillStyle = color("--bg"); ctx.fillRect(0, 0, box.width, box.height);
-    geometry = (handleDraft || drafting || boxDraft) && geometry ? geometry : curveGeometry(current(), viewRange, box.width, box.height, selectedFrames.size>1?null:previous());
+    geometry = (handleDraft || drafting || boxDraft) && geometry ? geometry : curveGeometry(current(), viewRange, Math.min(box.width,lanes?.width() || box.width), box.height, selectedFrames.size>1?null:previous(),keySelection && animatedKeyRows(detail).length?KEYFRAME_LABEL_WIDTH:42);
     const g = geometry; ctx.font = "10px sans-serif";
     viewportStatus.textContent=`View source ${viewRange.source_start}–${viewRange.source_end} · values ${g.min.toPrecision(4)}–${g.max.toPrecision(4)} · ${selectedFrames.size} selected keys`;
     for (let i = 0; i <= 4; i++) {
@@ -277,6 +278,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
     if(boxDraft){ctx.strokeStyle=color("--violet");ctx.strokeRect(boxDraft.x,boxDraft.y,boxDraft.width,boxDraft.height);}
     drawKeyframeHead(ctx,g,detail,{sourceFrame:navigation?.sourceFrame(),color:color('--primary')});
     ctx.restore();
+    lanes?.refresh();
     navigation?.refresh();
   }
   function load() {
@@ -372,6 +374,13 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   section.addEventListener("toggle", draw);
   const unsubscribe=keySelection?.subscribe(()=>{selectedFrames=new Set(keySelection.get().filter(pick=>JSON.stringify(pick.target)===JSON.stringify(current().target)).map(pick=>pick.source_frame));if(!selectedFrames.has(previous()))select.value=selectedFrames.size?String([...selectedFrames][0]):'';load();});
   const stopNavigation=keySelection?.onGesture(()=>navigation?.cancel());
+  const stopTarget=keySelection?.subscribeTarget(target=>{
+    const index=range.tracks.findIndex(row=>JSON.stringify(row.target)===JSON.stringify(target));
+    if(index<0 || index===Number(tracks.value))return;
+    drag.cancel();navigation?.cancel();const time={source_start:viewRange.source_start,source_end:viewRange.source_end};tracks.value=String(index);chooseCurve();viewRange=time;rememberViewport();draw();
+  });
+  lanes=renderKeyframeLanes(section,detail,{keySelection,getGeometry:()=>geometry,getRange:()=>viewRange,canNavigate:()=>!waiting && !drafting && !handleDraft && !boxDraft && (canNavigate?.() ?? true),canEdit:()=>owner.current(),commit:operation=>owner.commit(operation),operation:(picks,delta,linked)=>pointerKeyOperation(detail.clip_id,picks,delta,null,linked),notice,activate:target=>keySelection.activate(target),linkZoom:()=>zoomLink.get(),seek});
+  if(lanes)section.append(form,groupForm);
   const observer = new ResizeObserver(()=>{drag.cancel();draw();}); observer.observe(canvas); chooseCurve();
-  return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}unsubscribe?.();stopNavigation?.();navigation?.dispose();owner.dispose();drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
+  return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}lanes?.dispose();unsubscribe?.();stopNavigation?.();stopTarget?.();navigation?.dispose();owner.dispose();drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
 }

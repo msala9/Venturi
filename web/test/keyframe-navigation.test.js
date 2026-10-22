@@ -4,6 +4,7 @@ import {createKeyframeNavigation,drawKeyframeHead,keyframeNavigationResult,keyfr
 import {renderCurves,createKeyPickSelection,curveGeometry} from '../js/curves.js';
 import {renderEventKeys} from '../js/eventkeys.js';
 import {renderKeySelection} from '../js/keyselection.js';
+import {KEYFRAME_LABEL_WIDTH} from '../js/keyframe-lanes.js';
 
 const detail=()=>({project_epoch:'epoch',generation:'7',timeline_id:'2',revision:'revision',clip_id:'3',timeline_frame:415,source_frame:30,freeze_source_frame:20,video:false,
   keyframe_clock:{source_frame:30,source_in:20,source_out:40,ticks:[{source_frame:20,timeline_frame:400},{source_frame:30,timeline_frame:415},{source_frame:40,timeline_frame:430}]},
@@ -124,6 +125,29 @@ test('actual scalar and typed-value editors expose readonly key jumps and native
   }
 });
 
+test('actual simultaneous lanes activate scalar and typed editors and move their shared marquee in one native command',async()=>{
+  const selected=createKeyPickSelection(new Map(),'3');
+  const renderer=(root,native,options)=>{
+    native.curves.tracks.push({...structuredClone(native.curves.tracks[0]),name:'Position Y',target:{kind:'transform',param:'PositionY'}});
+    const scalar=renderCurves(root,native,options),typed=renderEventKeys(root,native,options);
+    return {cancel(){typed.cancel();scalar.cancel();}};
+  };
+  const h=harness({renderer,editable:true,keySelection:selected});
+  try{
+    const lanes=h.all().find(node=>node.className==='keyframe-lanes-canvas');
+    lanes.emit('pointerdown',{clientX:40,clientY:133});
+    assert.equal(h.all().find(node=>node.getAttribute('aria-label')==='Curve parameter').value,'1');
+    lanes.emit('pointerdown',{clientX:40,clientY:155});
+    assert.equal(h.all().find(node=>node.dataset.visualPath==='event-keys').open,true);
+    lanes.emit('pointerdown',{clientX:205,clientY:101});lanes.emit('pointermove',{clientX:225,clientY:166});
+    assert.equal(h.commands.length,0);lanes.emit('pointerup',{clientX:225,clientY:166});assert.equal(selected.get().length,3);
+    lanes.emit('pointerdown',{clientX:219,clientY:155});lanes.emit('pointermove',{clientX:237,clientY:155});assert.equal(h.commands.length,0);
+    lanes.emit('pointerup',{clientX:237,clientY:155});await settle();
+    assert.equal(h.commands.length,1);assert.equal(h.commands[0].kind,'edit_key_selection');assert.equal(h.commands[0].edit.picks.length,3);
+    assert.deepEqual(h.commands[0].edit.action,{kind:'move',delta_source_frames:2});assert.equal(h.requests.length,0);assert.equal(h.seeks.length,0);
+  }finally{h.restore();}
+});
+
 test('actual scalar, value and cross-parameter editors share additive selection and one native grabbed-value drag',async()=>{
   const state=new Map(),selected=createKeyPickSelection(state,'3'),scalar={kind:'transform',param:'PositionX'},text={kind:'text'};selected.set([{target:scalar,source_frame:20},{target:scalar,source_frame:30},{target:text,source_frame:30}]);
   const h=harness({renderer:renderCurves,editable:true,keySelection:selected});let events,list;
@@ -133,7 +157,7 @@ test('actual scalar, value and cross-parameter editors share additive selection 
     const eventCanvas=h.all().find(node=>node.className==='curve-graph event-key-graph'),pickList=h.all().find(node=>node.getAttribute('aria-label')==='Keys across parameters');
     eventCanvas.emit('pointerdown',{clientX:40,clientY:134,ctrlKey:true});eventCanvas.emit('pointerup',{clientX:40,clientY:134,ctrlKey:true});
     assert.equal(selected.get().length,4);assert.equal(pickList.selectedOptions.length,4);assert.deepEqual(h.commands,[]);
-    const before=selected.get(),canvas=h.all().find(node=>node.className==='curve-graph'),g=curveGeometry(h.native.curves.tracks[0],{source_start:20,source_end:40},300,190),x=canvas.rect.left+g.x(20),y=canvas.rect.top+g.y(0);
+    const before=selected.get(),canvas=h.all().find(node=>node.className==='curve-graph'),g=curveGeometry(h.native.curves.tracks[0],{source_start:20,source_end:40},300,190,null,KEYFRAME_LABEL_WIDTH),x=canvas.rect.left+g.x(20),y=canvas.rect.top+g.y(0);
     canvas.emit('pointerdown',{clientX:x+1,clientY:y+2,shiftKey:true});canvas.emit('pointermove',{clientX:x+10,clientY:y-10,shiftKey:true});assert.deepEqual(h.commands,[]);
     canvas.emit('pointerup',{clientX:x+25,clientY:y-20,shiftKey:true});await settle();
     const delta=g.frame(g.x(20)+24)-20;assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0],{kind:'edit_key_selection',clip_id:'3',edit:{picks:before,link_zoom:false,action:{kind:'drag',delta_source_frames:delta,grabbed:{target:scalar,source_frame:20,value:g.value(g.y(0)-20)}}}});
@@ -144,6 +168,6 @@ test('actual scalar, value and cross-parameter editors share additive selection 
 test('actual scalar drag rejects changed cross-parameter selection and current editing permission before release',async()=>{
   for(const stale of ['selection','permission']){
     const selected=createKeyPickSelection(new Map(),'3'),scalar={kind:'transform',param:'PositionX'};selected.set([{target:scalar,source_frame:20}]);const h=harness({renderer:renderCurves,editable:true,keySelection:selected});
-    try{const canvas=h.all().find(node=>node.className==='curve-graph'),g=curveGeometry(h.native.curves.tracks[0],{source_start:20,source_end:40},300,190),x=canvas.rect.left+g.x(20),y=canvas.rect.top+g.y(0);canvas.emit('pointerdown',{clientX:x,clientY:y});canvas.emit('pointermove',{clientX:x+15,clientY:y-10});if(stale==='selection')selected.select({target:{kind:'text'},source_frame:30},true);else h.setAllowed(false);canvas.emit('pointerup',{clientX:x+25,clientY:y-20});await settle();assert.deepEqual(h.commands,[]);assert.equal(canvas.captures.size,0);}finally{h.restore();}
+    try{const canvas=h.all().find(node=>node.className==='curve-graph'),g=curveGeometry(h.native.curves.tracks[0],{source_start:20,source_end:40},300,190,null,KEYFRAME_LABEL_WIDTH),x=canvas.rect.left+g.x(20),y=canvas.rect.top+g.y(0);canvas.emit('pointerdown',{clientX:x,clientY:y});canvas.emit('pointermove',{clientX:x+15,clientY:y-10});if(stale==='selection')selected.select({target:{kind:'text'},source_frame:30},true);else h.setAllowed(false);canvas.emit('pointerup',{clientX:x+25,clientY:y-20});await settle();assert.deepEqual(h.commands,[]);assert.equal(canvas.captures.size,0);}finally{h.restore();}
   }
 });

@@ -454,6 +454,7 @@ pub fn paste(
         Some(id),
         frame,
         false,
+        false,
     )?
     .apply(session);
     Ok(())
@@ -468,6 +469,7 @@ pub struct PreparedPaste {
     timeline: Option<TimelineId>,
     frame: i64,
     to_pool: bool,
+    overwrite: bool,
     no_op: Option<PasteReport>,
 }
 #[derive(Clone)]
@@ -483,12 +485,19 @@ pub fn prepare_paste(
     id: Option<TimelineId>,
     frame: i64,
     to_pool: bool,
+    overwrite: bool,
 ) -> Result<PreparedPaste> {
     if !(0..=commands::MAX_FRAME).contains(&frame) {
         return Err(ApiError::invalid("Choose a bounded timeline frame"));
     }
     crate::asset_payload::validate_clipboard(&payload)?;
+    if to_pool && overwrite {
+        return Err(ApiError::invalid(
+            "Overwrite applies only to timeline clips",
+        ));
+    }
     let to_pool = to_pool || !payload.has_clips();
+    let overwrite = overwrite && !to_pool;
     if !to_pool && id.is_none() {
         return Err(ApiError::invalid("Choose a destination timeline"));
     }
@@ -510,6 +519,7 @@ pub fn prepare_paste(
         timeline: id,
         frame,
         to_pool,
+        overwrite,
         no_op: None,
     };
     let mut trial = session.project.clone();
@@ -518,6 +528,24 @@ pub fn prepare_paste(
         command.apply(&mut trial);
     }
     crate::files::validate_project(&trial)?;
+    if overwrite && let Some(id) = id {
+        for (index, track) in session.project.timelines[id]
+            .tracks
+            .iter()
+            .enumerate()
+            .filter(|(_, track)| track.locked)
+        {
+            if serde_json::to_value(track).map_err(|_| ApiError::io())?
+                != serde_json::to_value(&trial.timelines[id].tracks[index])
+                    .map_err(|_| ApiError::io())?
+            {
+                return Err(ApiError::conflict(
+                    "TRACK_LOCKED",
+                    "Overwrite would change a locked track",
+                ));
+            }
+        }
+    }
     if let PasteSource::Local(local) = &prepared.source
         && to_pool
     {
@@ -556,7 +584,10 @@ impl PreparedPaste {
                     &local.entries,
                     &local.crossings,
                     self.frame,
-                    false,
+                    PlanMode {
+                        allow_offline: false,
+                        overwrite: self.overwrite,
+                    },
                 )?;
                 Ok((
                     Some(command),
@@ -602,7 +633,10 @@ impl PreparedPaste {
                         &pasted.clips,
                         &[],
                         self.frame,
-                        true,
+                        PlanMode {
+                            allow_offline: true,
+                            overwrite: self.overwrite,
+                        },
                     )?;
                     if !pasted.clips.is_empty() {
                         commands.push(command);
@@ -640,6 +674,10 @@ impl PreparedPaste {
         report
     }
 }
+struct PlanMode {
+    allow_offline: bool,
+    overwrite: bool,
+}
 fn plan(
     project: &mut core::Project,
     dependencies: &core::Project,
@@ -647,17 +685,24 @@ fn plan(
     entries: &[ClipboardEntry],
     crossings: &[core::CrossTransition],
     frame: i64,
-    allow_offline: bool,
+    mode: PlanMode,
 ) -> Result<(Box<dyn Command>, Vec<core::ClipId>)> {
     let mut layout = dependencies
         .timelines
         .get(id)
         .ok_or_else(ApiError::missing)?
         .clone();
+    if mode.overwrite {
+        for track in &mut layout.tracks {
+            track.clips.clear();
+            track.crossings.clear();
+        }
+    }
     let mut commands: Vec<Box<dyn Command>> = vec![];
     let mut inserted = vec![];
     let mut mapped = HashMap::new();
     let mut groups: BTreeMap<u64, Vec<(usize, core::ClipId)>> = BTreeMap::new();
+    let mut overwriting = vec![];
     for entry in entries {
         while layout
             .track_of_kind_numbered(entry.track_kind, entry.track_number)
@@ -681,7 +726,7 @@ fn plan(
             ));
         }
         if let core::ClipSource::Media(media) = entry.clip.source {
-            if !allow_offline && !dependencies.media_pool.contains_key(media) {
+            if !mode.allow_offline && !dependencies.media_pool.contains_key(media) {
                 return Err(ApiError::invalid(
                     "Copied media was removed from the project",
                 ));
@@ -739,14 +784,55 @@ fn plan(
             groups.entry(group).or_default().push((track, clip.id));
         }
         layout.tracks[track].insert_sorted(clip.clone());
-        commands.push(Box::new(core::InsertClip {
-            timeline: id,
-            track_index: track,
-            clip,
-        }));
+        if mode.overwrite {
+            overwriting.push((track, clip, entry.link_tag));
+        } else {
+            commands.push(Box::new(core::InsertClip {
+                timeline: id,
+                track_index: track,
+                clip,
+            }));
+        }
     }
-    for members in groups.into_values().filter(|members| members.len() > 1) {
-        commands.push(Box::new(core::LinkClips::new(id, members)));
+    if mode.overwrite {
+        let ranges = overwriting
+            .iter()
+            .map(|(track, clip, _)| (*track, clip.timeline_start, clip.timeline_end()))
+            .collect::<Vec<_>>();
+        overwrite_allowed(&dependencies.timelines[id], &ranges)?;
+        commands.extend(core::insert_overwriting(project, id, overwriting));
+        for (track, lane) in dependencies.timelines[id].tracks.iter().enumerate() {
+            for crossing in &lane.crossings {
+                let Some(left) = lane.clips.iter().find(|clip| clip.id == crossing.left_clip)
+                else {
+                    continue;
+                };
+                let Some(right) = lane
+                    .clips
+                    .iter()
+                    .find(|clip| clip.id == crossing.right_clip)
+                else {
+                    continue;
+                };
+                let cut = left.timeline_end();
+                if cut == right.timeline_start
+                    && ranges
+                        .iter()
+                        .any(|&(lane, start, end)| lane == track && start <= cut && cut <= end)
+                {
+                    commands.push(Box::new(core::SetCrossTransition::new(
+                        id,
+                        track,
+                        crossing.left_clip,
+                        None,
+                    )));
+                }
+            }
+        }
+    } else {
+        for members in groups.into_values().filter(|members| members.len() > 1) {
+            commands.push(Box::new(core::LinkClips::new(id, members)));
+        }
     }
     for crossing in crossings {
         let (track, left, from) = mapped[&crossing.left_clip];
@@ -776,6 +862,47 @@ fn plan(
         )),
         inserted,
     ))
+}
+
+fn overwrite_allowed(timeline: &core::Timeline, ranges: &[(usize, i64, i64)]) -> Result<()> {
+    for &(track, start, end) in ranges {
+        let Some(lane) = timeline.tracks.get(track) else {
+            continue;
+        };
+        for target in lane
+            .clips
+            .iter()
+            .filter(|clip| clip.timeline_start < end && clip.timeline_end() > start)
+        {
+            let Some(group) = target.linked_group else {
+                continue;
+            };
+            for (member_track, lane) in timeline.tracks.iter().enumerate() {
+                for member in lane
+                    .clips
+                    .iter()
+                    .filter(|clip| clip.linked_group == Some(group))
+                {
+                    if lane.locked {
+                        return Err(ApiError::conflict(
+                            "TRACK_LOCKED",
+                            "An overwritten linked track is locked",
+                        ));
+                    }
+                    if !ranges.contains(&(member_track, start, end))
+                        || member.timeline_start >= end
+                        || member.timeline_end() <= start
+                    {
+                        return Err(ApiError::conflict(
+                            "LINKED_OVERWRITE",
+                            "Overwrite must cover every affected linked member with the same timeline range",
+                        ));
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

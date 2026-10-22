@@ -1,6 +1,31 @@
 use super::*;
 
 #[test]
+fn clipboard_overwrite_is_explicit_and_preserves_legacy_command_identity() {
+    let legacy = serde_json::json!({"kind":"paste_prepared_clipboard","job_id":"clipboard-job","to_pool":false,"timeline_id":"1","timeline_revision":"revision","frame":12});
+    let operation: Operation = serde_json::from_value(legacy.clone()).unwrap();
+    assert!(matches!(
+        &operation,
+        Operation::PastePreparedClipboard {
+            overwrite: false,
+            ..
+        }
+    ));
+    assert_eq!(serde_json::to_value(operation).unwrap(), legacy);
+    let mut explicit = legacy;
+    explicit["overwrite"] = serde_json::json!(true);
+    let operation: Operation = serde_json::from_value(explicit.clone()).unwrap();
+    assert!(matches!(
+        &operation,
+        Operation::PastePreparedClipboard {
+            overwrite: true,
+            ..
+        }
+    ));
+    assert_eq!(serde_json::to_value(operation).unwrap(), explicit);
+}
+
+#[test]
 fn native_track_removal_keeps_one_per_kind_respects_locks_and_undo_restores_contents() {
     let (mut session, id, _) = fixture();
     let remove = Operation::RemoveTrack { track: "0".into() };

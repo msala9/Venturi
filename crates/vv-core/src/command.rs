@@ -2916,17 +2916,6 @@ impl Command for SetMediaPath {
     }
 }
 
-/// `(timeline_start, timeline_end)` of a clip, if it exists.
-fn clip_bounds(
-    project: &Project,
-    timeline_id: TimelineId,
-    track_index: usize,
-    clip_id: ClipId,
-) -> Option<(FrameIdx, FrameIdx)> {
-    let clip = project.timelines[timeline_id].clip(track_index, clip_id)?;
-    Some((clip.timeline_start, clip.timeline_end()))
-}
-
 /// Appends the commands freeing `[new_start, new_end)` from a clip invading
 /// it: removed if covered, shortened if it sticks out on one side, split if
 /// the stretch falls in the middle (returns the right half).
@@ -2997,81 +2986,114 @@ pub fn make_room_for_ranges(
     exclude: &[(usize, ClipId)],
     commands: &mut Vec<Box<dyn Command>>,
 ) {
-    let mut processed: BTreeSet<(usize, ClipId)> = exclude.iter().copied().collect();
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    enum Group {
+        Existing(LinkGroupId),
+        Split(usize),
+    }
+    #[derive(Clone, Copy)]
+    struct Part {
+        track: usize,
+        id: ClipId,
+        start: FrameIdx,
+        end: FrameIdx,
+        group: Option<Group>,
+    }
     let range_tracks: BTreeSet<usize> = ranges.iter().map(|(t, _, _)| *t).collect();
+    let excluded: BTreeSet<_> = exclude.iter().copied().collect();
+    // Later ranges must see the halves planned by earlier cuts.
+    let mut parts: Vec<Part> = project.timelines[timeline_id]
+        .tracks
+        .iter()
+        .enumerate()
+        .filter(|(track, _)| range_tracks.contains(track))
+        .flat_map(|(track, clips)| {
+            let excluded = &excluded;
+            clips
+                .clips
+                .iter()
+                .filter(move |clip| !excluded.contains(&(track, clip.id)))
+                .map(move |clip| Part {
+                    track,
+                    id: clip.id,
+                    start: clip.timeline_start,
+                    end: clip.timeline_end(),
+                    group: clip.linked_group.map(Group::Existing),
+                })
+        })
+        .collect();
 
     for &(track_index, new_start, new_end) in ranges {
         if new_start >= new_end {
             continue;
         }
-        type Overlapping = (ClipId, FrameIdx, FrameIdx, Option<LinkGroupId>);
-        let overlapping: Vec<Overlapping> = project.timelines[timeline_id]
-            .tracks
-            .get(track_index)
-            .map(|t| {
-                t.clips
-                    .iter()
-                    .filter(|c| c.timeline_start < new_end && c.timeline_end() > new_start)
-                    .map(|c| (c.id, c.timeline_start, c.timeline_end(), c.linked_group))
-                    .collect()
-            })
-            .unwrap_or_default();
-
-        for (clip_id, old_start, old_end, group) in overlapping {
-            if !processed.insert((track_index, clip_id)) {
+        let intersects =
+            |part: &Part| part.start < part.end && part.start < new_end && part.end > new_start;
+        let overlapping: Vec<usize> = parts
+            .iter()
+            .enumerate()
+            .filter(|(_, part)| part.track == track_index && intersects(part))
+            .map(|(index, _)| index)
+            .collect();
+        let mut processed = BTreeSet::new();
+        for index in overlapping {
+            if processed.contains(&index) {
                 continue;
             }
-            let split_halves = resolve_overlap(
-                project,
-                timeline_id,
-                track_index,
-                clip_id,
-                old_start,
-                old_end,
-                new_start,
-                new_end,
-                commands,
-            );
-
-            if group.is_none() {
-                continue;
-            }
-            let mut new_rights: Vec<(usize, ClipId)> = split_halves
-                .map(|right| (track_index, right))
-                .into_iter()
+            let group = parts[index].group;
+            let members: Vec<usize> = parts
+                .iter()
+                .enumerate()
+                .filter(|(member, part)| {
+                    (*member == index || (group.is_some() && part.group == group))
+                        && intersects(part)
+                })
+                .map(|(member, _)| member)
                 .collect();
-
-            for (member_track, member_id) in
-                project.timelines[timeline_id].linked_members(track_index, clip_id)
-            {
-                if !range_tracks.contains(&member_track)
-                    || !processed.insert((member_track, member_id))
-                {
+            let mut new_rights = Vec::new();
+            for member in members {
+                if !processed.insert(member) {
                     continue;
                 }
-                let Some((m_start, m_end)) =
-                    clip_bounds(project, timeline_id, member_track, member_id)
-                else {
-                    continue;
-                };
-                let member_split = resolve_overlap(
+                let part = parts[member];
+                let right = resolve_overlap(
                     project,
                     timeline_id,
-                    member_track,
-                    member_id,
-                    m_start,
-                    m_end,
+                    part.track,
+                    part.id,
+                    part.start,
+                    part.end,
                     new_start,
                     new_end,
                     commands,
                 );
-                if let Some(right) = member_split {
-                    new_rights.push((member_track, right));
+                if let Some(id) = right {
+                    parts[member].end = new_start;
+                    new_rights.push(parts.len());
+                    parts.push(Part {
+                        id,
+                        start: new_end,
+                        group: None,
+                        ..part
+                    });
+                } else if part.start >= new_start && part.end <= new_end {
+                    parts[member].end = part.start;
+                } else if part.start < new_start {
+                    parts[member].end = new_start;
+                } else {
+                    parts[member].start = new_end;
                 }
             }
-
-            if new_rights.len() >= 2 {
-                commands.push(Box::new(LinkClips::new(timeline_id, new_rights)));
+            if group.is_some() && new_rights.len() >= 2 {
+                let group = Group::Split(new_rights[0]);
+                let members = new_rights
+                    .into_iter()
+                    .map(|right| {
+                        parts[right].group = Some(group);
+                        (parts[right].track, parts[right].id)
+                    })
+                    .collect();
+                commands.push(Box::new(LinkClips::new(timeline_id, members)));
             }
         }
     }

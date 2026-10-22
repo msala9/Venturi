@@ -5,7 +5,7 @@ import {MAX_CLIPBOARD_BYTES,clipboardAction,clipboardBlocked,clipboardIdentity,c
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function flush(){for(let index=0;index<20;index++)await Promise.resolve();}
 function harness({commit,writeText,readText,onChange,onPasted}={}){
-  let context={project_epoch:'epoch',generation:'7',owner:'timeline',timeline_id:'11',timeline_revision:'timeline-rev',frame:100,clip_ids:['21','22'],media_ids:['31'],view_stamp:'view',source_stamp:'program',clipboard_revision:null},writable=true;
+  let context={project_epoch:'epoch',generation:'7',owner:'timeline',timeline_id:'11',timeline_revision:'timeline-rev',frame:100,clip_ids:['21','22'],media_ids:['31'],view_stamp:'view',source_stamp:'program',clipboard_revision:null,overwrite:false},writable=true;
   const mutations=[],reads=[],prepares=[],polls=[],deletes=[],pauses=[],systemCalls=[],systemWrites=[],systemReads=[],changes=[],pasted=[];
   const receipt={command_id:'command-1',project_epoch:'epoch',media_ids:[],clip_ids:['9007199254740993'],changed:true};
   const copyValue=(patch={})=>({project_epoch:'epoch',generation:'7',clipboard_revision:'copy-rev',text:'venturi-clipboard/1\nOpaque native RON',clip_count:context.owner==='pool'?0:2,media_count:context.owner==='pool'?1:0,...patch});
@@ -44,7 +44,7 @@ test('text fields, implicit/plaintext contenteditable, dialogs and media control
 
 test('clipboard identity captures target, selected IDs, playhead, viewport and source without system text',()=>{
   const h=harness(),context=h.getContext(),stamp=clipboardIdentity(context);
-  for(const patch of [{owner:'pool'},{generation:'8'},{project_epoch:'other'},{timeline_id:'12'},{timeline_revision:'changed'},{frame:101},{clip_ids:['22']},{media_ids:['32']},{view_stamp:'resized'},{source_stamp:'source'}])assert.notEqual(clipboardIdentity({...context,...patch}),stamp);
+  for(const patch of [{owner:'pool'},{generation:'8'},{project_epoch:'other'},{timeline_id:'12'},{timeline_revision:'changed'},{frame:101},{clip_ids:['22']},{media_ids:['32']},{view_stamp:'resized'},{source_stamp:'source'},{overwrite:true}])assert.notEqual(clipboardIdentity({...context,...patch}),stamp);
   assert.equal(clipboardIdentity({...context,clip_ids:['22','21'],clipboard_revision:'new-copy'}),stamp);assert.equal(clipboardIdentity(null),null);
 });
 
@@ -92,14 +92,14 @@ test('opaque OS text is prepared and polled then pasted to captured native timel
   const h=harness(),text='venturi-clipboard/1\nDo not parse or rewrite this native text',pending=h.controller.paste(text);
   assert.deepEqual(h.prepares[0].body,{project_epoch:'epoch',if_generation:'7',text,to_pool:false});h.prepares[0].resolve(h.job('queued'));await flush();assert.equal(h.mutations.length,0);
   h.pauses[0].resolve();await flush();assert.equal(h.polls[0].path,'/clipboard/jobs/clipboard-job?project_epoch=epoch');h.polls[0].resolve(h.job());assert.equal(await pending,h.receipt);
-  assert.deepEqual(h.mutations,[{operation:{kind:'paste_prepared_clipboard',job_id:'clipboard-job',to_pool:false,timeline_id:'11',timeline_revision:'timeline-rev',frame:100},project:true}]);
+  assert.deepEqual(h.mutations,[{operation:{kind:'paste_prepared_clipboard',job_id:'clipboard-job',to_pool:false,timeline_id:'11',timeline_revision:'timeline-rev',frame:100,overwrite:false},project:true}]);
   assert.deepEqual(h.pasted,[{value:h.receipt,target:{to_pool:false,timeline_id:'11'}}]);assert.equal(h.deletes.length,0);
 });
 
 test('pool retained paste works without a timeline and native zero-result no-op remains authoritative',async()=>{
   const h=harness({commit:async()=>({...h.receipt,media_ids:['31'],clip_ids:[],changed:false})});h.setContext({owner:'pool',timeline_id:null,timeline_revision:null,clip_ids:[],media_ids:[]});
   const pending=h.controller.paste();assert.deepEqual(h.prepares[0].body,{project_epoch:'epoch',if_generation:'7',text:null,to_pool:true});h.prepares[0].resolve(h.job('ready',{result:{clip_count:0,media_count:0,warnings:[]}}));await pending;
-  assert.deepEqual(h.mutations[0].operation,{kind:'paste_prepared_clipboard',job_id:'clipboard-job',to_pool:true,timeline_id:null,timeline_revision:null,frame:0});assert.equal(h.pasted[0].value.changed,false);assert.match(h.controller.state().message,/Nothing to paste/);
+  assert.deepEqual(h.mutations[0].operation,{kind:'paste_prepared_clipboard',job_id:'clipboard-job',to_pool:true,timeline_id:null,timeline_revision:null,frame:0,overwrite:false});assert.equal(h.pasted[0].value.changed,false);assert.match(h.controller.state().message,/Nothing to paste/);
 });
 
 test('ordinary text passes unchanged to Rust and native warnings remain visible',async()=>{
@@ -231,4 +231,42 @@ test('bound native events preserve text/modal clipboard and route pool Copy with
 test('binding retains original synchronous gesture and recovers from rejected native actions',async()=>{
   const target=clipboardTarget(),errors=[];let calls=0;bindClipboardEvents({target,getOwner:()=> 'timeline',copy:()=>{calls++;return Promise.reject(Error('Native copy failed'));},paste:()=>{},onError:error=>errors.push(error.message)});
   target.fire('copy');assert.equal(calls,1);await flush();assert.deepEqual(errors,['Native copy failed']);target.fire('copy');assert.equal(calls,2);await flush();
+});
+
+test('overwrite is explicit for retained, actual paste-event text and system-read timeline imports',async()=>{
+  for(const mode of ['retained','event','system']){
+    const h=harness();h.setContext({overwrite:true});const pending=mode==='system'?h.controller.pasteSystem():h.controller.paste(mode==='event'?'Opaque OS payload':null);await flush();h.prepares[0].resolve(h.job());await pending;
+    assert.equal(h.mutations[0].operation.overwrite,true,mode);assert.equal(h.mutations[0].operation.to_pool,false,mode);assert.equal(h.mutations.length,1,mode);assert.match(h.changes.find(state=>state.phase==='committing').message,/replacing overlapping clips/);
+  }
+  const h=harness();h.setContext({overwrite:undefined});const pending=h.controller.paste();h.prepares[0].resolve(h.job());await pending;assert.equal(h.mutations[0].operation.overwrite,false);
+});
+
+test('pool paste always sends overwrite false even if a timeline checkbox was previously selected',async()=>{
+  const h=harness();h.setContext({owner:'pool',overwrite:true,timeline_id:null,timeline_revision:null,clip_ids:[]});const pending=h.controller.pasteSystem();await flush();h.prepares[0].resolve(h.job('ready',{result:{clip_count:0,media_count:1,warnings:[]}}));await pending;assert.equal(h.mutations[0].operation.overwrite,false);assert.equal(h.mutations[0].operation.to_pool,true);
+});
+
+test('changing overwrite cancels preparation and changing it back never auto-pastes or resurrects the ticket',async()=>{
+  const h=harness(),pending=h.controller.paste();h.setContext({overwrite:true});h.controller.invalidate();h.setContext({overwrite:false});h.controller.invalidate();h.prepares[0].resolve(h.job());assert.equal(await pending,null);assert.equal(h.mutations.length,0);assert.equal(h.prepares.length,1);assert.equal(h.deletes.length,1);
+  const waiting=harness(),queued=waiting.controller.paste();waiting.prepares[0].resolve(waiting.job('queued'));await flush();waiting.setContext({overwrite:true});waiting.controller.invalidate();assert.equal(await queued,null);assert.equal(waiting.pauses[0].signal.aborted,true);assert.equal(waiting.mutations.length,0);assert.equal(waiting.deletes.length,1);
+});
+
+test('overwrite is captured before system permission and checked again before native commit',async()=>{
+  const read=deferred(),h=harness({readText:()=>read.promise}),pending=h.controller.pasteSystem();h.setContext({overwrite:true});h.controller.invalidate();read.resolve('Old intent');assert.equal(await pending,null);assert.equal(h.prepares.length,0);assert.equal(h.mutations.length,0);
+  const reentrant=harness({onChange:state=>{if(state.phase==='committing')reentrant.setContext({overwrite:true});}}),second=reentrant.controller.paste();reentrant.prepares[0].resolve(reentrant.job());assert.equal(await second,null);assert.equal(reentrant.mutations.length,0);assert.equal(reentrant.deletes.length,1);
+});
+
+test('only the marked paste checkbox keeps native copy/paste routing while focused',()=>{
+  const checkbox={},target={closest:selector=>['input[type="checkbox"][data-clipboard-paste-option]','input,textarea,select,video,audio,dialog'].includes(selector)?checkbox:null};
+  assert.equal(clipboardAction({type:'copy',target},{owner:'timeline'}),'copy');assert.equal(clipboardAction({type:'paste',target},{owner:'timeline'}),'paste');assert.equal(clipboardAction({type:'keydown',key:'v',ctrlKey:true,target}),null);
+  for(const patch of [{repeat:true},{isComposing:true},{defaultPrevented:true},{getModifierState:()=>true}])assert.equal(clipboardAction({type:'paste',target,...patch}),null);
+  assert.equal(clipboardAction({type:'paste',target},{dialogOpen:true}),null);
+  const textField={closest:selector=>selector==='input,textarea,select,video,audio,dialog'?{}:null};assert.equal(clipboardAction({type:'paste',target:textField}),null);assert.equal(clipboardAction({type:'copy',target:textField}),null);
+  const inDialog={closest:selector=>selector==='dialog'?{}:target.closest(selector)};assert.equal(clipboardAction({type:'paste',target:inDialog}),null);
+});
+
+test('bound paste event on overwrite checkbox forwards once and textbox paste remains untouched',async()=>{
+  const target=clipboardTarget(),calls=[],checkbox={},option={closest:selector=>['input[type="checkbox"][data-clipboard-paste-option]','input,textarea,select,video,audio,dialog'].includes(selector)?checkbox:null};
+  bindClipboardEvents({target,getOwner:()=> 'timeline',copy:options=>calls.push(options),paste:text=>calls.push(text)});
+  assert.equal(target.fire('keydown',{key:'v',ctrlKey:true,target:option}).defaultPrevented,false);assert.equal(target.fire('paste',{target:option,clipboardData:{getData:()=> 'Opaque native clipboard'}}).defaultPrevented,true);assert.deepEqual(calls,['Opaque native clipboard']);await flush();
+  const input={closest:selector=>selector==='input,textarea,select,video,audio,dialog'?{}:null};assert.equal(target.fire('paste',{target:input,clipboardData:{getData:()=>assert.fail('Text field clipboard must remain native')}}).defaultPrevented,false);assert.equal(calls.length,1);
 });

@@ -8,8 +8,8 @@ const apiRequest=(path,body,{signal,method}={})=>request(path,body,(url,init)=>f
 const delay=(ms,signal)=>new Promise((resolve,reject)=>{const abort=()=>{clearTimeout(timer);reject(new DOMException('Clipboard preparation canceled','AbortError'));},timer=setTimeout(()=>{signal.removeEventListener('abort',abort);resolve();},ms);signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();});
 
 export function clipboardBlocked(event,{dialogOpen=false}={}){
-  const target=event.target,editable=target?.closest?.('[contenteditable]');
-  return dialogOpen || event.defaultPrevented || event.repeat || event.isComposing || event.getModifierState?.('AltGraph') || target?.isContentEditable || editable && editable.getAttribute('contenteditable')!=='false' || Boolean(target?.closest?.('input,textarea,select,video,audio,dialog'));
+  const target=event.target,editable=target?.closest?.('[contenteditable]'),pasteOption=target?.closest?.('input[type="checkbox"][data-clipboard-paste-option]');
+  return dialogOpen || event.defaultPrevented || event.repeat || event.isComposing || event.getModifierState?.('AltGraph') || target?.isContentEditable || editable && editable.getAttribute('contenteditable')!=='false' || Boolean(target?.closest?.('dialog')) || Boolean(target?.closest?.('input,textarea,select,video,audio,dialog') && !pasteOption);
 }
 export function clipboardAction(event,options={}){
   if(clipboardBlocked(event,options))return null;
@@ -36,7 +36,7 @@ export function bindClipboardEvents({target,getOwner,isDialogOpen=()=>false,copy
 }
 export function clipboardIdentity(context){
   if(!context || typeof context.project_epoch!=='string' || !context.project_epoch || typeof context.generation!=='string' || !context.generation || !['pool','timeline'].includes(context.owner))return null;
-  return JSON.stringify([context.project_epoch,context.generation,context.owner,context.timeline_id,context.timeline_revision,context.frame,[...context.clip_ids].sort(),[...context.media_ids].sort(),context.view_stamp,context.source_stamp]);
+  return JSON.stringify([context.project_epoch,context.generation,context.owner,context.timeline_id,context.timeline_revision,context.frame,[...context.clip_ids].sort(),[...context.media_ids].sort(),context.view_stamp,context.source_stamp,context.owner==='timeline' && context.overwrite===true]);
 }
 export function writeSystemClipboard(textPromise,{clipboard=globalThis.navigator?.clipboard,Item=globalThis.ClipboardItem}={}){
   if(clipboard?.write && Item)return clipboard.write([new Item({'text/plain':Promise.resolve(textPromise).then(text=>new Blob([text],{type:'text/plain'}))})]);
@@ -56,7 +56,7 @@ export function createClipboard({getContext,canCommit,commit,api=apiRequest,writ
   let owner=null,cached=null,disposed=false,state={phase:'idle',message:'Native clips and media can be copied between projects',job:null};
   const emit=(phase,message,job=null)=>{state={phase,message,job};onChange(state);};
   const current=ticket=>!disposed && owner===ticket && !ticket.canceled && canCommit() && clipboardIdentity(getContext())===ticket.identity;
-  const ticketFor=context=>({identity:clipboardIdentity(context),epoch:context.project_epoch,generation:context.generation,target:context.owner,timeline:context.timeline_id,context:{...context,clip_ids:[...context.clip_ids],media_ids:[...context.media_ids]},job:null,controller:new AbortController(),phase:'copying',canceled:false,deletion:null});
+  const ticketFor=context=>({identity:clipboardIdentity(context),epoch:context.project_epoch,generation:context.generation,target:context.owner,timeline:context.timeline_id,context:{...context,overwrite:context.owner==='timeline' && context.overwrite===true,clip_ids:[...context.clip_ids],media_ids:[...context.media_ids]},job:null,controller:new AbortController(),phase:'copying',canceled:false,deletion:null});
   const jobPath=ticket=>`/clipboard/jobs/${encodeURIComponent(ticket.job)}?${new URLSearchParams({project_epoch:ticket.epoch})}`;
   const release=ticket=>ticket.job?(ticket.deletion??=api(jobPath(ticket),undefined,{method:'DELETE',signal:AbortSignal.timeout(5000)}).catch(()=>{})):Promise.resolve();
   const canStart=()=>!disposed && !owner && canCommit() && Boolean(clipboardIdentity(getContext()));
@@ -122,8 +122,8 @@ export function createClipboard({getContext,canCommit,commit,api=apiRequest,writ
       }
       if(!current(ticket))return null;
       if(job.state!=='ready')throw Error(job.error || `Native clipboard ${job.state}`);
-      ticket.phase='committing';emit('committing','Pasting native clipboard · one Undo…',job);if(!current(ticket))return null;
-      submitted=true;const receipt=await commit({kind:'paste_prepared_clipboard',job_id:ticket.job,to_pool:ticket.target==='pool',timeline_id:ticket.target==='pool'?null:context.timeline_id,timeline_revision:ticket.target==='pool'?null:context.timeline_revision,frame:ticket.target==='pool'?0:context.frame},true);
+      ticket.phase='committing';emit('committing',ticket.context.overwrite?'Pasting native clipboard · replacing overlapping clips · one Undo…':'Pasting native clipboard · refusing overlaps · one Undo…',job);if(!current(ticket))return null;
+      submitted=true;const receipt=await commit({kind:'paste_prepared_clipboard',job_id:ticket.job,to_pool:ticket.target==='pool',timeline_id:ticket.target==='pool'?null:context.timeline_id,timeline_revision:ticket.target==='pool'?null:context.timeline_revision,frame:ticket.target==='pool'?0:context.frame,overwrite:ticket.context.overwrite},true);
       if(!key(receipt?.command_id) || receipt.project_epoch!==ticket.epoch || !entityIds(receipt.media_ids) || !entityIds(receipt.clip_ids) || typeof receipt.changed!=='boolean')throw Error('Paste was acknowledged with an unexpected result; refresh and do not repeat it');
       let message=receipt.changed?'Native clipboard pasted · one Undo restores the previous edit':'Nothing to paste for this destination';
       const toPool=ticket.target==='pool' || receipt.media_ids.length>0 && receipt.clip_ids.length===0;

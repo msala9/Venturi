@@ -1,0 +1,5394 @@
+{
+  "status": "passed",
+  "date": "2026-10-22",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792633317.2209694,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "03e88156298f49951c729a594e23ab8aea709e7abfde4974e64fd52be12a76c5",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "full_build": {
+    "phase": "passed",
+    "updated_unix": 1792632966.4713974,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "3b40683eb982850a931e7de2c1dae6e9a5686f317f77e6e149c6aededb2f7909",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-core/src/command.rs": "84751b49c1e22cafa0af422a4c4499c6ec262f67b06a3838343f5b0e64bf0545",
+      "crates/vv-core/src/tests/command.rs": "21439fbef331612b634378c646b56150919237d03cbeab6db22d5d2e62e87663",
+      "crates/vv-web/src/clipboard.rs": "515fb4e4e09f67f739de3e350c19d8f6e10dff1d78a0300e6abc01f8a7cf8ee6",
+      "crates/vv-web/src/commands.rs": "997f4ba484524a925588ec60abd309982f6cc516ae9266c7d021cc91163eea91",
+      "crates/vv-web/src/host.rs": "3b6ee84e796b9da5401bb92a2586c7cd1dcf7bb5dff53ebe6e1a494745cad80d",
+      "crates/vv-web/src/tests/clipboard.rs": "796cd5592321e19777621d2532c524050ed15381a1772cc7a03814e8a1b2812b",
+      "crates/vv-web/src/tests/commands.rs": "8b76f61d9650c8586244f0ed85be9ba14fa697bccebfbac5bcab199dad424d74",
+      "crates/vv-web/src/tests/host.rs": "40bc6bd35c4cacf608fad865472d8f9b933579bd5d788a7a7f3ffca4ba39a524",
+      "web/js/clipboard.js": "5a089c00a96bba53d184c5578b162251933c1d3b9b77bce23f61c56294364417",
+      "web/js/main.js": "1034be1f1da1a92e8664366b5157ac70af4fa16c31dec79b560565dea3977af1",
+      "web/style/app.css": "034b9795f49fd6e3e7238cb4864b9af812691eead5b8eede1551ff5a9d0dc73d",
+      "web/test/clipboard.test.js": "b2953132e9f9ec188c4e8237e763e70972985a6fdb9297f4a727b9dbc01c699e"
+    }
+  },
+  "validation": {
+    "core": 281,
+    "web_rust": 379,
+    "javascript": 740,
+    "raw_results": [
+      "281 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+      "0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "10 passed; 0 failed; 0 ignored; 0 measured; 117 filtered out; finished in 0.48s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 124 filtered out; finished in 0.24s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 126 filtered out; finished in 0.00s",
+      "379 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.23s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 545 filtered out; finished in 0.00s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 547 filtered out; finished in 0.00s"
+    ],
+    "fmt": true,
+    "clippy_all_targets_deny_warnings": true,
+    "native_build": true,
+    "javascript_focus_fix_after_full_validation": true,
+    "rust_sources_identical_to_full_validation": true
+  },
+  "api": {
+    "status": "passed",
+    "root": "/home/marco/VenturiWeb-clipboard-overwrite-20261022-2",
+    "project": "Clipboard_Overwrite_API_check.vvproj",
+    "project_sha256": "d061775707abc48744870eee965db99b299664d0bb9d4ca4d5ca39b04fe46571",
+    "binary_sha256": "03e88156298f49951c729a594e23ab8aea709e7abfde4974e64fd52be12a76c5",
+    "source_timeline": "2",
+    "target_timeline": "3",
+    "source_clip_ids": [
+      "0",
+      "1"
+    ],
+    "default_overlap_refusal": {
+      "status": 409,
+      "error": "OVERLAP"
+    },
+    "explicit_multi_range_spans": [
+      [
+        0,
+        12
+      ],
+      [
+        12,
+        12
+      ],
+      [
+        24,
+        12
+      ],
+      [
+        36,
+        12
+      ],
+      [
+        48,
+        48
+      ]
+    ],
+    "native_gap_preserved": true,
+    "one_undo_redo": true,
+    "retry_exact": true,
+    "locked_refusal_atomic": true,
+    "save_restart_exact": true,
+    "hardware_gpu_used": false,
+    "limits": {
+      "cpu": 1,
+      "memory_mib": 512,
+      "swap": 0,
+      "oom_score": 1000,
+      "runtime_seconds": 120
+    },
+    "own_test_units_stopped": true,
+    "port8811_closed": true,
+    "primary_editor_preserved": true
+  },
+  "windows": {
+    "browser": "Existing Windows Codex in-app browser 2",
+    "observations": {
+      "browser_id": "2",
+      "tab_id": "27",
+      "default_unchecked": true,
+      "refusal_visible": true,
+      "refusal_text": "Safe edit would overwrite another clip \u00b7 Check command status before repeating Paste",
+      "explicit_checked": true,
+      "paste_applied_visible": true,
+      "paste_text": "Native clipboard pasted \u00b7 one Undo restores the previous edit",
+      "keyboard_paste_focused_overwrite_checkbox": true,
+      "undo_redo_visible": true,
+      "browser_clip_count": 1,
+      "multi_range_qualified_by": "finite API and native Rust regression tests",
+      "console_errors": []
+    },
+    "native_states": {
+      "before": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": true,
+            "created_unix_ms": 1792633340049,
+            "pending": false,
+            "project_token": "Clipboard_Overwrite_API_check.vvproj",
+            "resolved_to": "Clipboard_Overwrite_API_check.vvproj",
+            "revision": "7c90ba980f4757efc2f7b5984c69a36080214a487ed868908de7c2de39d333b1",
+            "state": "saved"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 0,
+          "clipboard_current_project": false,
+          "clipboard_media_count": 0,
+          "clipboard_revision": null,
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "0",
+          "history": {
+            "labels": [],
+            "position": 0
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "14",
+              "duration_frames": 0,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": false,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "2",
+              "content_hash": "15",
+              "duration_frames": 36,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "Overwrite source",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "3",
+              "content_hash": "18",
+              "duration_frames": 96,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "3",
+              "is_image": false,
+              "name": "Overwrite target",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792633341321894130:1",
+          "project_name": "Clipboard_Overwrite_API_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "d1215a762e8d85aa",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "2",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite source",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "1dd5c941b9a7a4b9",
+              "timeline_id": "2",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    },
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "1",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 24,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "3",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite target",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "22a0833c50d3063d",
+              "timeline_id": "3",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "2",
+                      "kind": "solid_color",
+                      "length_frames": 96,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 96,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": false
+        },
+        "limits": {
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "17895424",
+          "MemoryPeak": "17895424",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "saved_project_preserved": true,
+        "no_hardware_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true
+      },
+      "copied": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": true,
+            "created_unix_ms": 1792633340049,
+            "pending": false,
+            "project_token": "Clipboard_Overwrite_API_check.vvproj",
+            "resolved_to": "Clipboard_Overwrite_API_check.vvproj",
+            "revision": "7c90ba980f4757efc2f7b5984c69a36080214a487ed868908de7c2de39d333b1",
+            "state": "saved"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 1,
+          "clipboard_current_project": true,
+          "clipboard_media_count": 0,
+          "clipboard_revision": "72c3a5994f792a38fbc1339ca45932afa26dc79747b4982a99223ea820d93f9e",
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "0",
+          "history": {
+            "labels": [],
+            "position": 0
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "14",
+              "duration_frames": 0,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": false,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "2",
+              "content_hash": "15",
+              "duration_frames": 36,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "Overwrite source",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "3",
+              "content_hash": "18",
+              "duration_frames": 96,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "3",
+              "is_image": false,
+              "name": "Overwrite target",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792633341321894130:1",
+          "project_name": "Clipboard_Overwrite_API_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "d1215a762e8d85aa",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "2",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite source",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "1dd5c941b9a7a4b9",
+              "timeline_id": "2",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    },
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "1",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 24,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "3",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite target",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "22a0833c50d3063d",
+              "timeline_id": "3",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "2",
+                      "kind": "solid_color",
+                      "length_frames": 96,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 96,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": false
+        },
+        "limits": {
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "17342464",
+          "MemoryPeak": "17895424",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "saved_project_preserved": true,
+        "no_hardware_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true
+      },
+      "target": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": true,
+            "created_unix_ms": 1792633340049,
+            "pending": false,
+            "project_token": "Clipboard_Overwrite_API_check.vvproj",
+            "resolved_to": "Clipboard_Overwrite_API_check.vvproj",
+            "revision": "7c90ba980f4757efc2f7b5984c69a36080214a487ed868908de7c2de39d333b1",
+            "state": "saved"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 1,
+          "clipboard_current_project": true,
+          "clipboard_media_count": 0,
+          "clipboard_revision": "72c3a5994f792a38fbc1339ca45932afa26dc79747b4982a99223ea820d93f9e",
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "0",
+          "history": {
+            "labels": [],
+            "position": 0
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "14",
+              "duration_frames": 0,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": false,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "2",
+              "content_hash": "15",
+              "duration_frames": 36,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "Overwrite source",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "3",
+              "content_hash": "18",
+              "duration_frames": 96,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "3",
+              "is_image": false,
+              "name": "Overwrite target",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792633341321894130:1",
+          "project_name": "Clipboard_Overwrite_API_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "d1215a762e8d85aa",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "2",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite source",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "1dd5c941b9a7a4b9",
+              "timeline_id": "2",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    },
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "1",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 24,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "3",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite target",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "22a0833c50d3063d",
+              "timeline_id": "3",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "2",
+                      "kind": "solid_color",
+                      "length_frames": 96,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 96,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": false
+        },
+        "limits": {
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "16941056",
+          "MemoryPeak": "17895424",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "saved_project_preserved": true,
+        "no_hardware_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true
+      },
+      "refused": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": true,
+            "created_unix_ms": 1792633340049,
+            "pending": false,
+            "project_token": "Clipboard_Overwrite_API_check.vvproj",
+            "resolved_to": "Clipboard_Overwrite_API_check.vvproj",
+            "revision": "7c90ba980f4757efc2f7b5984c69a36080214a487ed868908de7c2de39d333b1",
+            "state": "saved"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 1,
+          "clipboard_current_project": true,
+          "clipboard_media_count": 0,
+          "clipboard_revision": "72c3a5994f792a38fbc1339ca45932afa26dc79747b4982a99223ea820d93f9e",
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "0",
+          "history": {
+            "labels": [],
+            "position": 0
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "14",
+              "duration_frames": 0,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": false,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "2",
+              "content_hash": "15",
+              "duration_frames": 36,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "Overwrite source",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "3",
+              "content_hash": "18",
+              "duration_frames": 96,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "3",
+              "is_image": false,
+              "name": "Overwrite target",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792633341321894130:1",
+          "project_name": "Clipboard_Overwrite_API_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "d1215a762e8d85aa",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "2",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite source",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "1dd5c941b9a7a4b9",
+              "timeline_id": "2",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    },
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "1",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 24,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "3",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite target",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "22a0833c50d3063d",
+              "timeline_id": "3",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "2",
+                      "kind": "solid_color",
+                      "length_frames": 96,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 96,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": false
+        },
+        "limits": {
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "17752064",
+          "MemoryPeak": "17895424",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "saved_project_preserved": true,
+        "no_hardware_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true
+      },
+      "pasted": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792633396472,
+            "pending": false,
+            "project_token": "Clipboard_Overwrite_API_check.vvproj",
+            "resolved_to": null,
+            "revision": "5888ef8476cdf2ece4e582cb4094cf6b497ba3ee95eefd174dcf8719a37b841a",
+            "state": "ready"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 1,
+          "clipboard_current_project": true,
+          "clipboard_media_count": 0,
+          "clipboard_revision": "72c3a5994f792a38fbc1339ca45932afa26dc79747b4982a99223ea820d93f9e",
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "1",
+          "history": {
+            "labels": [
+              "PasteClips"
+            ],
+            "position": 1
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "14",
+              "duration_frames": 0,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": false,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "2",
+              "content_hash": "15",
+              "duration_frames": 36,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "Overwrite source",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "3",
+              "content_hash": "19",
+              "duration_frames": 96,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "3",
+              "is_image": false,
+              "name": "Overwrite target",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792633341321894130:1",
+          "project_name": "Clipboard_Overwrite_API_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "d1215a762e8d85aa",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "2",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite source",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "1dd5c941b9a7a4b9",
+              "timeline_id": "2",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    },
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "1",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 24,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "3",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite target",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "4372b3657e2b1a7d",
+              "timeline_id": "3",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "7",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    },
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "2",
+                      "kind": "solid_color",
+                      "length_frames": 84,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 12,
+                      "source_out_frames": 96,
+                      "speed_percent": 100.0,
+                      "start_frame": 12,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": true
+        },
+        "limits": {
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "17354752",
+          "MemoryPeak": "17895424",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "saved_project_preserved": true,
+        "no_hardware_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true
+      },
+      "undo": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792633413329,
+            "pending": false,
+            "project_token": "Clipboard_Overwrite_API_check.vvproj",
+            "resolved_to": null,
+            "revision": "2190cb48de8ef602462dd6024d54ba6ed6c0bf192d93b86f8505d34690a07139",
+            "state": "ready"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 1,
+          "clipboard_current_project": true,
+          "clipboard_media_count": 0,
+          "clipboard_revision": "72c3a5994f792a38fbc1339ca45932afa26dc79747b4982a99223ea820d93f9e",
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "2",
+          "history": {
+            "labels": [
+              "PasteClips"
+            ],
+            "position": 0
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "20",
+              "duration_frames": 0,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": false,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "2",
+              "content_hash": "21",
+              "duration_frames": 36,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "Overwrite source",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "3",
+              "content_hash": "22",
+              "duration_frames": 96,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "3",
+              "is_image": false,
+              "name": "Overwrite target",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792633341321894130:1",
+          "project_name": "Clipboard_Overwrite_API_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "d1215a762e8d85aa",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "2",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite source",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "1dd5c941b9a7a4b9",
+              "timeline_id": "2",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    },
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "1",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 24,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "3",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite target",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "22a0833c50d3063d",
+              "timeline_id": "3",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "2",
+                      "kind": "solid_color",
+                      "length_frames": 96,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 96,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": true
+        },
+        "limits": {
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "17399808",
+          "MemoryPeak": "17895424",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "saved_project_preserved": true,
+        "no_hardware_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true
+      },
+      "redo": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792633423975,
+            "pending": false,
+            "project_token": "Clipboard_Overwrite_API_check.vvproj",
+            "resolved_to": null,
+            "revision": "da37290721bcc75c01179dbddd1793ba48f8c43c35eb5af6314694473aa992ef",
+            "state": "ready"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 1,
+          "clipboard_current_project": true,
+          "clipboard_media_count": 0,
+          "clipboard_revision": "72c3a5994f792a38fbc1339ca45932afa26dc79747b4982a99223ea820d93f9e",
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "3",
+          "history": {
+            "labels": [
+              "PasteClips"
+            ],
+            "position": 1
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "23",
+              "duration_frames": 0,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": false,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "2",
+              "content_hash": "24",
+              "duration_frames": 36,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "Overwrite source",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "3",
+              "content_hash": "25",
+              "duration_frames": 96,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "3",
+              "is_image": false,
+              "name": "Overwrite target",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792633341321894130:1",
+          "project_name": "Clipboard_Overwrite_API_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "d1215a762e8d85aa",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "2",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite source",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "1dd5c941b9a7a4b9",
+              "timeline_id": "2",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    },
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "1",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 24,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            },
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 360,
+                  "percent": 100,
+                  "width": 640
+                },
+                {
+                  "height": 270,
+                  "percent": 75,
+                  "width": 480
+                },
+                {
+                  "height": 180,
+                  "percent": 50,
+                  "width": 320
+                },
+                {
+                  "height": 90,
+                  "percent": 25,
+                  "width": 160
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "3",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Overwrite target",
+              "resolution": {
+                "height": 360,
+                "width": 640
+              },
+              "revision": "4372b3657e2b1a7d",
+              "timeline_id": "3",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "7",
+                      "kind": "solid_color",
+                      "length_frames": 12,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 0,
+                      "source_out_frames": 12,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    },
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "2",
+                      "kind": "solid_color",
+                      "length_frames": 84,
+                      "linked_group": null,
+                      "media_id": null,
+                      "name": "Solid color",
+                      "retime": null,
+                      "slip_range": null,
+                      "source_in_frames": 12,
+                      "source_out_frames": 96,
+                      "speed_percent": 100.0,
+                      "start_frame": 12,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": true
+        },
+        "limits": {
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "17174528",
+          "MemoryPeak": "17895424",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "saved_project_preserved": true,
+        "no_hardware_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true
+      }
+    },
+    "screenshot": "m4-clipboard-overwrite.png"
+  },
+  "guards": {
+    "primary_editor_preserved": true,
+    "own_test_units_stopped": true,
+    "port8811_closed": true
+  },
+  "limits": [
+    "No Windows builds, installations, renders or test fleets",
+    "One CPU-only halo2 validation workload at a time",
+    "No GPU or shared benchmark lock used",
+    "Primary editor retains five unsaved MoveClips; candidate staged separately",
+    "Linked overwrites require the same overlapping replacement interval for all affected members",
+    "Bitmap clipboard import remains a separate unimplemented media-import workflow"
+  ]
+}

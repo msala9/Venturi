@@ -1402,10 +1402,12 @@ metadata editing remain available. No foreign workload is stopped.
   independently fingerprinted before native content reuse; missing/unreadable
   entries retain offline metadata with hash zero. Changed critical metadata,
   symlinks, root escapes, manifests and canceled/stale jobs cannot apply.
-- Project `paste_prepared_clipboard {job_id,to_pool,timeline_id,
+- Project `paste_prepared_clipboard {job_id,to_pool,overwrite?,timeline_id,
   timeline_revision,frame}` validates the entire native merge and clip plan on a
   clone, then rechecks source/cancellation witnesses before infallible application.
-  Pool requests require null timeline/revision and frame zero; timeline requests
+  `overwrite` defaults to false and is omitted when false in the canonical command
+  identity, preserving older retries. Pool requests require null timeline/revision,
+  frame zero and overwrite false; timeline requests
   require the captured exact target revision. A native media-only payload goes
   to the pool even with timeline focus. The ACK adds `media_ids` (selected pool
   roots), `clip_ids` and `changed`. Native path/content reuse, nested naming,
@@ -1414,6 +1416,16 @@ metadata editing remain available. No foreign workload is stopped.
   complete Undo for both imported dependencies and inserted clips. Current
   compound reuse requires the exact trusted captured text and current session;
   a received origin identifier alone never authorizes the fast path.
+  Explicit timeline overwrite uses native `insert_overwriting`: existing clips
+  are split, trimmed or removed while copied gaps remain gaps in the incoming
+  selection. Existing material inside those gaps remains in place. Missing
+  destination tracks, dependency imports, replacement and relinking share one
+  PasteClips Undo. Locked destinations or linked members refuse the whole edit.
+  Every affected linked member must receive the same overlapping replacement
+  interval; a partial linked overwrite is refused before real allocation.
+  The visible Replace overlapping clips checkbox starts unchecked, applies to
+  retained/system/keyboard timeline paste, and is captured before clipboard
+  reading or preparation. Changing it cancels preparation without replay.
 - `paste_clips {frame}` requires the same project epoch. Different timeline FPS
   use native `Clip::retime`: set the copied relative start, conform to the target
   timeline/media FPS, then add the destination playhead. Source-frame animation,

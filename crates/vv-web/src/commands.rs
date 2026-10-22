@@ -73,6 +73,8 @@ pub enum Operation {
     PastePreparedClipboard {
         job_id: String,
         to_pool: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        overwrite: bool,
         timeline_id: Option<String>,
         timeline_revision: Option<String>,
         frame: FrameIdx,
@@ -320,6 +322,10 @@ pub enum Operation {
         length_frames: FrameIdx,
         generator: Generator,
     },
+}
+
+fn is_false(value: &bool) -> bool {
+    !value
 }
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]

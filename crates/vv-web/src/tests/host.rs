@@ -14,6 +14,89 @@ fn prepare_clipboard_fixture(editor: &mut Editor, text: Option<String>, to_pool:
 }
 
 #[test]
+fn prepared_clipboard_requires_explicit_overwrite_and_retries_as_one_native_undo() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-clipboard-overwrite-host-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Clipboard_overwrite".into(),
+        },
+        "overwrite-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let path = Some(vv_core::Id::raw(id).to_string());
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "overwrite-solid",
+        Some(id),
+    );
+    editor.mutation(path.clone(), add).unwrap();
+    let clip = editor.session.project.timelines[id].tracks[0].clips[0]
+        .id
+        .0
+        .to_string();
+    let copy = request(
+        &editor,
+        Operation::CopyClips {
+            clip_ids: vec![clip],
+        },
+        "overwrite-copy",
+        Some(id),
+    );
+    editor.mutation(path, copy).unwrap();
+    let job = prepare_clipboard_fixture(&mut editor, None, false);
+    let before = serde_json::to_value(&editor.session.project.timelines[id]).unwrap();
+    let position = editor.session.history.position();
+    let operation = Operation::PastePreparedClipboard {
+        job_id: job["id"].as_str().unwrap().into(),
+        to_pool: false,
+        overwrite: false,
+        timeline_id: Some(vv_core::Id::raw(id).to_string()),
+        timeline_revision: Some(editor.session.timeline_revision(id)),
+        frame: 6,
+    };
+    let refused = request(&editor, operation.clone(), "overwrite-refused", None);
+    assert!(editor.mutation(None, refused).is_err());
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(
+        serde_json::to_value(&editor.session.project.timelines[id]).unwrap(),
+        before
+    );
+    let mut operation = operation;
+    if let Operation::PastePreparedClipboard { overwrite, .. } = &mut operation {
+        *overwrite = true;
+    }
+    let paste = request(&editor, operation, "overwrite-accepted", None);
+    let ack = editor.mutation(None, paste.clone()).unwrap();
+    assert_eq!(ack["changed"], true);
+    assert_eq!(editor.mutation(None, paste).unwrap(), ack);
+    assert_eq!(editor.session.history.position(), position + 1);
+    let clips = &editor.session.project.timelines[id].tracks[0].clips;
+    assert_eq!(clips.len(), 2);
+    assert_eq!((clips[0].timeline_start, clips[0].timeline_len), (0, 6));
+    assert_eq!((clips[1].timeline_start, clips[1].timeline_len), (6, 24));
+    let undo = request(&editor, Operation::Undo, "overwrite-undo", None);
+    editor.mutation(None, undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&editor.session.project.timelines[id]).unwrap(),
+        before
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn native_clipboard_text_survives_project_change_and_prepared_paste_is_one_retry_safe_undo() {
     let root = std::env::temp_dir().join(format!(
         "vv-clipboard-project-host-{}",
@@ -96,6 +179,7 @@ fn native_clipboard_text_survives_project_change_and_prepared_paste_is_one_retry
         Operation::PastePreparedClipboard {
             job_id: ready["id"].as_str().unwrap().into(),
             to_pool: false,
+            overwrite: false,
             timeline_id: Some(vv_core::Id::raw(target).to_string()),
             timeline_revision: Some(editor.session.timeline_revision(target)),
             frame: 12,
@@ -193,6 +277,7 @@ fn clipboard_pool_copy_noop_and_cut_refusals_preserve_native_data_and_canceled_j
         Operation::PastePreparedClipboard {
             job_id: job["id"].as_str().unwrap().into(),
             to_pool: true,
+            overwrite: false,
             timeline_id: None,
             timeline_revision: None,
             frame: 0,
@@ -200,6 +285,13 @@ fn clipboard_pool_copy_noop_and_cut_refusals_preserve_native_data_and_canceled_j
         "cb-pool-paste",
         None,
     );
+    let mut invalid = paste.clone();
+    invalid.command_id = "cb-pool-overwrite".into();
+    if let Operation::PastePreparedClipboard { overwrite, .. } = &mut invalid.operation {
+        *overwrite = true;
+    }
+    assert!(editor.mutation(None, invalid).is_err());
+    assert_eq!(editor.session.history.position(), position);
     let ack = editor.mutation(None, paste).unwrap();
     assert_eq!(ack["changed"], false);
     assert_eq!(
@@ -285,6 +377,7 @@ fn clipboard_pool_copy_noop_and_cut_refusals_preserve_native_data_and_canceled_j
         Operation::PastePreparedClipboard {
             job_id: job["id"].as_str().unwrap().into(),
             to_pool: false,
+            overwrite: false,
             timeline_id: Some(vv_core::Id::raw(id).to_string()),
             timeline_revision: Some(editor.session.timeline_revision(id)),
             frame: 48,

@@ -617,14 +617,19 @@ impl Editor {
             Operation::PastePreparedClipboard {
                 job_id,
                 to_pool,
+                overwrite,
                 timeline_id,
                 timeline_revision,
                 frame,
             } => {
                 let target = if *to_pool {
-                    if timeline_id.is_some() || timeline_revision.is_some() || *frame != 0 {
+                    if timeline_id.is_some()
+                        || timeline_revision.is_some()
+                        || *frame != 0
+                        || *overwrite
+                    {
                         return Err(ApiError::invalid(
-                            "Pool paste does not accept a timeline or frame",
+                            "Pool paste does not accept a timeline, frame or overwrite",
                         ));
                     }
                     None
@@ -657,6 +662,7 @@ impl Editor {
                     target,
                     *frame,
                     *to_pool,
+                    *overwrite,
                 )?;
                 self.asset_jobs.mark_clipboard_applied(
                     job_id,

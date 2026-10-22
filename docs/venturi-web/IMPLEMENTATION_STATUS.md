@@ -4,15 +4,31 @@
 
 ## Current completion assessment
 
-The ledger contains 90 in-scope capabilities: 38 done, 52 partial and none not
+The ledger contains 90 in-scope capabilities: 39 done, 51 partial and none not
 started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus
-42.2% of capability rows have full acceptance; this is not an estimate of
+43.3% of capability rows have full acceptance; this is not an estimate of
 implementation effort. Many partial rows already have native adapters and
 working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
-Native text clipboard now passes evidence/m4-native-text-clipboard.json.
+Explicit native clipboard overwrite now passes evidence/m4-clipboard-overwrite.json.
+The Windows control starts unchecked and captures intent before asynchronous
+clipboard reads. Native insert_overwriting handles split/trim/delete, missing
+tracks, linked groups and one complete Undo/Redo. The core planner now sees
+halves created by earlier ranges, preserving material between pasted intervals
+and fixing a native desktop multi-range defect. Invalid retained crossings are
+removed through native commands and restored by Undo. Locked or partial linked
+overwrites refuse atomically. Old command retries preserve their identity.
+Cached halo2 validation passes 379 web Rust, 281 core and
+740 JavaScript tests, multimedia/targeted desktop checks, fmt,
+Clippy all-targets with warnings denied and native build. Finite API and the
+existing Windows browser prove default refusal, explicit replacement, preserved
+gaps, retry, one Undo/Redo and saved-project preservation. No local compilation,
+installation, rendering, hardware GPU use or main-session restart occurred.
+The copy/paste row is accepted; bitmap import remains a separate open workflow.
+
+The preceding native text-clipboard increment passed evidence/m4-native-text-clipboard.json.
 The browser exchanges the original venturi-clipboard/1 text with Rust;
 selected clips, pool items and their native dependency fragment survive project
 changes. Pool focus routes Copy/Paste to its selected media, without stealing a
@@ -65,12 +81,9 @@ No browser/environment installation, local build/render/test or hardware GPU
 work occurred. Metadata servers were capped at one CPU/512 MiB/no swap; recorded
 cgroup events show no OOM. The verified binary is staged without activation.
 
-The clip-paste row remains partial: explicit native overwrite acceptance still
-needs an intentional UI choice and complete linked/crossing/Undo qualification.
-The native planner is available; refusing occupied space is not a substitute
-for this original workflow. Native bitmap clipboard import is also open and is
-now recorded on the media-import row. Counts remain 38 done/52 partial and the
-uncertain overall engineering estimate is unchanged.
+That increment left explicit native overwrite open. The intentional UI choice
+and linked/crossing/Undo qualification are now covered by the overwrite proof
+above. Native bitmap clipboard import remains open on the media-import row.
 
 Native current-project OTIO import now passes
 `evidence/m4-native-otio-merge.json` and its actual Windows screenshot. The

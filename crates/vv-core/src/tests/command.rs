@@ -1,4 +1,5 @@
 use super::*;
+use crate::Id;
 use crate::{Rational, Timeline, Track};
 
 fn project() -> (Project, TimelineId) {
@@ -321,4 +322,221 @@ fn the_processing_precision_is_an_undoable_step() {
     assert_eq!(project.precision, ProcessingPrecision::High);
     history.redo(&mut project);
     assert_eq!(project.precision, ProcessingPrecision::Standard);
+}
+
+fn room_clip(project: &mut Project, start: FrameIdx, end: FrameIdx) -> Clip {
+    Clip::from_source_range(
+        project.alloc_clip_id(),
+        ClipSource::Media(MediaId::from_raw(0)),
+        start + 10,
+        end + 10,
+        start,
+        Rational::one(),
+    )
+}
+
+fn room_bounds(project: &Project, timeline: TimelineId, track: usize) -> Vec<(FrameIdx, FrameIdx)> {
+    project.timelines[timeline].tracks[track]
+        .clips
+        .iter()
+        .map(|clip| (clip.timeline_start, clip.timeline_end()))
+        .collect()
+}
+
+#[test]
+fn make_room_subtracts_every_interval_from_planned_halves() {
+    let cases = [
+        (vec![(20, 30), (40, 50)], vec![(0, 20), (30, 40), (50, 100)]),
+        (vec![(40, 50), (20, 30)], vec![(0, 20), (30, 40), (50, 100)]),
+        (vec![(20, 30), (30, 40)], vec![(0, 20), (40, 100)]),
+        (vec![(20, 30), (10, 50)], vec![(0, 10), (50, 100)]),
+        (vec![(20, 60), (40, 50)], vec![(0, 20), (60, 100)]),
+        (vec![(20, 30), (0, 100)], vec![]),
+    ];
+    for (cuts, expected) in cases {
+        let (mut project, timeline) = project();
+        let original = room_clip(&mut project, 0, 100);
+        project.timelines[timeline].tracks[0].insert_sorted(original);
+        let before = serde_json::to_value(&project.timelines[timeline]).unwrap();
+        let ranges: Vec<_> = cuts.iter().map(|&(start, end)| (0, start, end)).collect();
+        let mut commands = Vec::new();
+        make_room_for_ranges(&mut project, timeline, &ranges, &[], &mut commands);
+        assert_eq!(
+            serde_json::to_value(&project.timelines[timeline]).unwrap(),
+            before
+        );
+        let mut history = History::default();
+        history.do_command(
+            &mut project,
+            Box::new(CompositeCommand::new(CommandLabel::PasteClips, commands)),
+        );
+        assert_eq!(room_bounds(&project, timeline, 0), expected, "{cuts:?}");
+        for clip in &project.timelines[timeline].tracks[0].clips {
+            assert_eq!(clip.source_offset, clip.timeline_start + 10);
+        }
+        let after = serde_json::to_value(&project.timelines[timeline]).unwrap();
+        history.undo(&mut project);
+        assert_eq!(
+            serde_json::to_value(&project.timelines[timeline]).unwrap(),
+            before
+        );
+        history.redo(&mut project);
+        assert_eq!(
+            serde_json::to_value(&project.timelines[timeline]).unwrap(),
+            after
+        );
+    }
+}
+
+#[test]
+fn overwrite_multiple_linked_ranges_relinks_halves_and_restores_native_crossings() {
+    let (mut project, timeline) = project();
+    project.timelines[timeline]
+        .tracks
+        .push(Track::new(TrackKind::Audio));
+    let group = project.alloc_link_group_id();
+    let mut original = room_clip(&mut project, 0, 100);
+    original.linked_group = Some(group);
+    original.freeze = Some(17);
+    original.fade_in = 7;
+    original.fade_out = 9;
+    original.effects.gain_db = Keyframed::constant(-3.0);
+    let mut audio = original.clone();
+    audio.id = project.alloc_clip_id();
+    audio.audio_stream_index = 2;
+    let tail = room_clip(&mut project, 100, 120);
+    project.timelines[timeline].tracks[0]
+        .crossings
+        .push(CrossTransition {
+            left_clip: original.id,
+            right_clip: tail.id,
+            transition: Transition {
+                kind: crate::TransitionKind::Push,
+                duration: 10,
+                direction: crate::PushDirection::Right,
+                ease: crate::Ease::None,
+                curve: 0.0,
+            },
+        });
+    project.timelines[timeline].tracks[0].insert_sorted(original);
+    project.timelines[timeline].tracks[0].insert_sorted(tail);
+    project.timelines[timeline].tracks[1].insert_sorted(audio);
+    let before = serde_json::to_value(&project.timelines[timeline]).unwrap();
+    let mut incoming = Vec::new();
+    for (key, (start, end)) in [(20, 30), (40, 50)].into_iter().enumerate() {
+        for track in 0..2 {
+            incoming.push((track, room_clip(&mut project, start, end), Some(key)));
+        }
+    }
+    let commands = insert_overwriting(&mut project, timeline, incoming);
+    let mut history = History::default();
+    history.do_command(
+        &mut project,
+        Box::new(CompositeCommand::new(CommandLabel::PasteClips, commands)),
+    );
+    assert_eq!(history.position(), 1);
+    assert!(project.timelines[timeline].tracks[0].crossings.is_empty());
+    for track in 0..2 {
+        let clips = &project.timelines[timeline].tracks[track].clips;
+        assert!(
+            clips
+                .windows(2)
+                .all(|pair| pair[0].timeline_end() <= pair[1].timeline_start)
+        );
+        for start in [0, 30, 50] {
+            let clip = clips
+                .iter()
+                .find(|clip| clip.timeline_start == start)
+                .unwrap();
+            assert_eq!(clip.freeze, Some(17));
+            assert_eq!(clip.source_offset, start + 10);
+            assert_eq!(clip.effects.gain_db, Keyframed::constant(-3.0));
+            assert_eq!(clip.audio_stream_index, if track == 1 { 2 } else { 0 });
+        }
+    }
+    let groups: Vec<_> = [0, 20, 30, 40, 50]
+        .into_iter()
+        .map(|start| {
+            let video = project.timelines[timeline].tracks[0]
+                .clips
+                .iter()
+                .find(|clip| clip.timeline_start == start)
+                .unwrap();
+            let audio = project.timelines[timeline].tracks[1]
+                .clips
+                .iter()
+                .find(|clip| clip.timeline_start == start)
+                .unwrap();
+            assert!(video.linked_group.is_some());
+            assert_eq!(video.linked_group, audio.linked_group);
+            video.linked_group.unwrap()
+        })
+        .collect();
+    assert_eq!(
+        groups
+            .iter()
+            .map(|group| group.0)
+            .collect::<BTreeSet<_>>()
+            .len(),
+        groups.len()
+    );
+    let after = serde_json::to_value(&project.timelines[timeline]).unwrap();
+    history.undo(&mut project);
+    assert_eq!(
+        serde_json::to_value(&project.timelines[timeline]).unwrap(),
+        before
+    );
+    history.redo(&mut project);
+    assert_eq!(
+        serde_json::to_value(&project.timelines[timeline]).unwrap(),
+        after
+    );
+}
+
+#[test]
+fn make_room_preserves_excluded_and_nonintersecting_linked_members() {
+    let (mut project, timeline) = project();
+    project.timelines[timeline]
+        .tracks
+        .extend([Track::new(TrackKind::Audio), Track::new(TrackKind::Audio)]);
+    let group = project.alloc_link_group_id();
+    let mut excluded_id = None;
+    for (track, start, end) in [(0, 0, 100), (1, 200, 300), (2, 0, 100)] {
+        let mut clip = room_clip(&mut project, start, end);
+        clip.linked_group = Some(group);
+        if track == 2 {
+            excluded_id = Some(clip.id);
+        }
+        project.timelines[timeline].tracks[track].locked = track != 0;
+        project.timelines[timeline].tracks[track].insert_sorted(clip);
+    }
+    let before = serde_json::to_value(&project.timelines[timeline]).unwrap();
+    let mut commands = Vec::new();
+    make_room_for_ranges(
+        &mut project,
+        timeline,
+        &[(0, 20, 30), (1, 20, 30), (2, 20, 30), (0, 40, 50)],
+        &[(2, excluded_id.unwrap())],
+        &mut commands,
+    );
+    let mut history = History::default();
+    history.do_command(
+        &mut project,
+        Box::new(CompositeCommand::new(CommandLabel::PasteClips, commands)),
+    );
+    assert_eq!(
+        room_bounds(&project, timeline, 0),
+        [(0, 20), (30, 40), (50, 100)]
+    );
+    for track in 1..3 {
+        assert_eq!(
+            serde_json::to_value(&project.timelines[timeline].tracks[track]).unwrap(),
+            before["tracks"][track]
+        );
+    }
+    history.undo(&mut project);
+    assert_eq!(
+        serde_json::to_value(&project.timelines[timeline]).unwrap(),
+        before
+    );
 }

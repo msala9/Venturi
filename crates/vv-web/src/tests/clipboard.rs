@@ -27,6 +27,422 @@ fn entity_snapshot(project: &core::Project) -> serde_json::Value {
     serde_json::json!({"timelines":project.timelines.iter().collect::<Vec<_>>(),"media":media,"folders":project.folders.iter().collect::<Vec<_>>()})
 }
 
+fn overwrite_solid(
+    session: &mut Session,
+    id: TimelineId,
+    track: usize,
+    start: i64,
+    length: i64,
+    group: Option<core::LinkGroupId>,
+) -> core::ClipId {
+    let clip_id = session.project.alloc_clip_id();
+    let mut clip = core::Clip::from_source_range(
+        clip_id,
+        core::ClipSource::SolidColor,
+        0,
+        length,
+        start,
+        core::Rational::one(),
+    );
+    clip.linked_group = group;
+    clip.effects
+        .transform
+        .track_mut(core::TransformParam::PositionX)
+        .upsert(10, 3.0, core::Interpolation::Linear);
+    session.project.timelines[id].tracks[track].insert_sorted(clip);
+    clip_id
+}
+
+#[test]
+fn explicit_clipboard_overwrite_matches_native_split_trim_delete_across_fps_and_one_undo() {
+    for fps in [core::Rational::new(24, 1), core::Rational::new(30000, 1001)] {
+        for (start, length) in [(0, 100), (0, 30), (25, 10), (30, 50)] {
+            let (mut session, source, selected) = fixture();
+            session.project.timelines[source].tracks[0].clips[0].linked_group = None;
+            session.project.timelines[source].tracks[0].clips[0].freeze = Some(5);
+            session.project.timelines[source].tracks[0].clips[0].pitch_correction = true;
+            let clipboard = copy(&session, source, &selected[..1]).unwrap();
+            let target = empty_timeline(&mut session, "Native overwrite", fps);
+            overwrite_solid(&mut session, target, 0, start, length, None);
+            session.project.timelines[target]
+                .tracks
+                .push(core::Track::new(core::TrackKind::Video));
+            overwrite_solid(&mut session, target, 1, 0, 200, None);
+            session.project.timelines[target].tracks[1].locked = true;
+            let before = serde_json::to_value(&session.project).unwrap();
+            let timeline_before = serde_json::to_value(&session.project.timelines[target]).unwrap();
+            let steps = session.history.position();
+            assert_eq!(
+                prepare_paste(
+                    &session,
+                    clipboard.payload.clone(),
+                    Some(&clipboard),
+                    Some(target),
+                    20,
+                    false,
+                    false
+                )
+                .err()
+                .unwrap()
+                .1,
+                "OVERLAP"
+            );
+            assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+            let mut native = session.project.clone();
+            let entry = &clipboard.entries[0];
+            let mut clip = entry.clip.clone();
+            clip.id = native.alloc_clip_id();
+            clip.timeline_start = entry.relative_start;
+            clip.linked_group = None;
+            if entry.timeline_fps != fps {
+                let core::ClipSource::Media(media) = clip.source else {
+                    unreachable!();
+                };
+                clip.retime(
+                    entry.timeline_fps,
+                    fps,
+                    core::Rational::conform_rate(fps, native.media_pool[media].meta.fps),
+                );
+            }
+            clip.timeline_start += 20;
+            let commands =
+                core::insert_overwriting(&mut native, target, vec![(0, clip, None::<u64>)]);
+            core::CompositeCommand::new(core::CommandLabel::PasteClips, commands)
+                .apply(&mut native);
+            let prepared = prepare_paste(
+                &session,
+                clipboard.payload.clone(),
+                Some(&clipboard),
+                Some(target),
+                20,
+                false,
+                true,
+            )
+            .unwrap();
+            assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+            let report = prepared.apply(&mut session);
+            assert_eq!(report.clips.len(), 1);
+            assert!(report.changed);
+            assert_eq!(session.history.position(), steps + 1);
+            let after = serde_json::to_value(&session.project.timelines[target]).unwrap();
+            assert_eq!(
+                after,
+                serde_json::to_value(&native.timelines[target]).unwrap()
+            );
+            session.history.undo(&mut session.project);
+            assert_eq!(
+                serde_json::to_value(&session.project.timelines[target]).unwrap(),
+                timeline_before
+            );
+            session.history.redo(&mut session.project);
+            assert_eq!(
+                serde_json::to_value(&session.project.timelines[target]).unwrap(),
+                after
+            );
+        }
+    }
+}
+
+#[test]
+fn explicit_clipboard_overwrite_preserves_differing_linked_ends_and_rejects_partial_or_locked_cuts()
+{
+    let (mut session, source, selected) = fixture();
+    let clipboard = copy(&session, source, &selected[..1]).unwrap();
+    let target = empty_timeline(&mut session, "Linked overwrite", core::Rational::new(24, 1));
+    session.project.timelines[target]
+        .tracks
+        .push(core::Track::new(core::TrackKind::Audio));
+    let group = Some(core::LinkGroupId(77));
+    let old_video = overwrite_solid(&mut session, target, 0, 0, 100, group);
+    let old_audio = overwrite_solid(&mut session, target, 1, 10, 110, group);
+    let before = serde_json::to_value(&session.project.timelines[target]).unwrap();
+    let steps = session.history.position();
+    let report = prepare_paste(
+        &session,
+        clipboard.payload.clone(),
+        Some(&clipboard),
+        Some(target),
+        20,
+        false,
+        true,
+    )
+    .unwrap()
+    .apply(&mut session);
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(report.clips.len(), 2);
+    let timeline = &session.project.timelines[target];
+    assert_eq!(
+        (
+            timeline.clip(0, old_video).unwrap().timeline_start,
+            timeline.clip(0, old_video).unwrap().timeline_end()
+        ),
+        (0, 20)
+    );
+    assert_eq!(
+        (
+            timeline.clip(1, old_audio).unwrap().timeline_start,
+            timeline.clip(1, old_audio).unwrap().timeline_end()
+        ),
+        (10, 20)
+    );
+    let right_video = timeline.tracks[0]
+        .clips
+        .iter()
+        .find(|clip| clip.timeline_start == 44)
+        .unwrap();
+    let right_audio = timeline.tracks[1]
+        .clips
+        .iter()
+        .find(|clip| clip.timeline_start == 44)
+        .unwrap();
+    assert_eq!(right_video.timeline_end(), 100);
+    assert_eq!(right_audio.timeline_end(), 120);
+    assert!(right_video.linked_group.is_some());
+    assert_eq!(right_video.linked_group, right_audio.linked_group);
+    assert_ne!(right_video.linked_group, group);
+    assert_eq!(
+        timeline.tracks[0].clips[1].linked_group,
+        timeline.tracks[1].clips[1].linked_group
+    );
+    assert_ne!(
+        timeline.tracks[0].clips[1].linked_group,
+        right_video.linked_group
+    );
+    let after = serde_json::to_value(timeline).unwrap();
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[target]).unwrap(),
+        before
+    );
+    session.history.redo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[target]).unwrap(),
+        after
+    );
+    session.history.undo(&mut session.project);
+    session.project.timelines[target].tracks[1].locked = true;
+    let protected = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(
+        prepare_paste(
+            &session,
+            clipboard.payload.clone(),
+            Some(&clipboard),
+            Some(target),
+            20,
+            false,
+            true
+        )
+        .err()
+        .unwrap()
+        .1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), protected);
+    session.project.timelines[target].tracks[1].locked = false;
+    session.project.timelines[source].tracks[0].clips[0].linked_group = None;
+    let video_only = copy(&session, source, &selected[..1]).unwrap();
+    let protected = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(
+        prepare_paste(
+            &session,
+            video_only.payload.clone(),
+            Some(&video_only),
+            Some(target),
+            20,
+            false,
+            true
+        )
+        .err()
+        .unwrap()
+        .1,
+        "LINKED_OVERWRITE"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), protected);
+}
+
+#[test]
+fn explicit_clipboard_overwrite_adds_missing_tracks_and_restores_native_crossings_with_undo() {
+    let (mut session, source, selected) = fixture();
+    let pair = copy(&session, source, &selected[..1]).unwrap();
+    let missing = empty_timeline(&mut session, "Missing audio", core::Rational::new(30, 1));
+    overwrite_solid(&mut session, missing, 0, 0, 120, None);
+    let before = serde_json::to_value(&session.project.timelines[missing]).unwrap();
+    let steps = session.history.position();
+    let report = prepare_paste(
+        &session,
+        pair.payload.clone(),
+        Some(&pair),
+        Some(missing),
+        20,
+        false,
+        true,
+    )
+    .unwrap()
+    .apply(&mut session);
+    assert_eq!(session.project.timelines[missing].tracks.len(), 2);
+    assert_eq!(report.clips.len(), 2);
+    assert_eq!(session.history.position(), steps + 1);
+    let inserted_video = session.project.timelines[missing].tracks[0]
+        .clips
+        .iter()
+        .find(|clip| report.clips.contains(&clip.id))
+        .unwrap();
+    assert_eq!(
+        (inserted_video.timeline_start, inserted_video.timeline_len),
+        (20, 30)
+    );
+    assert_eq!(
+        inserted_video.linked_group,
+        session.project.timelines[missing].tracks[1].clips[0].linked_group
+    );
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[missing]).unwrap(),
+        before
+    );
+    let clipboard = copy(&session, source, &selected).unwrap();
+    let target = empty_timeline(
+        &mut session,
+        "Crossing overwrite",
+        core::Rational::new(24, 1),
+    );
+    session.project.timelines[target]
+        .tracks
+        .push(core::Track::new(core::TrackKind::Audio));
+    let old_left = overwrite_solid(&mut session, target, 0, 0, 60, None);
+    let old_right = overwrite_solid(&mut session, target, 0, 60, 60, None);
+    overwrite_solid(&mut session, target, 1, 0, 120, None);
+    let mut transition = clipboard.crossings[0].transition.clone();
+    transition.kind = core::TransitionKind::Push;
+    transition.duration = 8;
+    session.project.timelines[target].tracks[0]
+        .crossings
+        .push(core::CrossTransition {
+            left_clip: old_left,
+            right_clip: old_right,
+            transition,
+        });
+    let before = serde_json::to_value(&session.project.timelines[target]).unwrap();
+    let steps = session.history.position();
+    let report = prepare_paste(
+        &session,
+        clipboard.payload.clone(),
+        Some(&clipboard),
+        Some(target),
+        20,
+        false,
+        true,
+    )
+    .unwrap()
+    .apply(&mut session);
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(report.clips.len(), 4);
+    let timeline = &session.project.timelines[target];
+    for track in &timeline.tracks {
+        assert_eq!(
+            track
+                .clips
+                .iter()
+                .map(|clip| (clip.timeline_start, clip.timeline_end()))
+                .collect::<Vec<_>>(),
+            vec![(0, 20), (20, 44), (44, 68), (68, 120)]
+        );
+    }
+    assert_eq!(timeline.tracks[0].crossings.len(), 1);
+    let crossing = &timeline.tracks[0].crossings[0];
+    assert!(report.clips.contains(&crossing.left_clip));
+    assert!(report.clips.contains(&crossing.right_clip));
+    assert_eq!(
+        serde_json::to_value(&crossing.transition).unwrap(),
+        serde_json::to_value(&clipboard.crossings[0].transition).unwrap()
+    );
+    let after = serde_json::to_value(timeline).unwrap();
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[target]).unwrap(),
+        before
+    );
+    session.history.redo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[target]).unwrap(),
+        after
+    );
+    let trim = empty_timeline(&mut session, "Trim crossing", core::Rational::new(24, 1));
+    let left = overwrite_solid(&mut session, trim, 0, 0, 24, None);
+    let right = overwrite_solid(&mut session, trim, 0, 24, 56, None);
+    session.project.timelines[trim].tracks[0]
+        .crossings
+        .push(core::CrossTransition {
+            left_clip: left,
+            right_clip: right,
+            transition: clipboard.crossings[0].transition.clone(),
+        });
+    let before = serde_json::to_value(&session.project.timelines[trim]).unwrap();
+    prepare_paste(
+        &session,
+        pair.payload.clone(),
+        Some(&pair),
+        Some(trim),
+        20,
+        false,
+        true,
+    )
+    .unwrap()
+    .apply(&mut session);
+    assert!(
+        session.project.timelines[trim].tracks[0]
+            .crossings
+            .is_empty()
+    );
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[trim]).unwrap(),
+        before
+    );
+    for track in &mut session.project.timelines[source].tracks {
+        track.crossings.clear();
+        track.clips[1].timeline_start += 12;
+    }
+    let spaced = copy(&session, source, &selected).unwrap();
+    let gap = empty_timeline(
+        &mut session,
+        "Disjoint overwrite",
+        core::Rational::new(24, 1),
+    );
+    session.project.timelines[gap]
+        .tracks
+        .push(core::Track::new(core::TrackKind::Audio));
+    overwrite_solid(&mut session, gap, 0, 0, 120, None);
+    overwrite_solid(&mut session, gap, 1, 0, 120, None);
+    let before = serde_json::to_value(&session.project.timelines[gap]).unwrap();
+    prepare_paste(
+        &session,
+        spaced.payload.clone(),
+        Some(&spaced),
+        Some(gap),
+        20,
+        false,
+        true,
+    )
+    .unwrap()
+    .apply(&mut session);
+    for track in &session.project.timelines[gap].tracks {
+        assert_eq!(
+            track
+                .clips
+                .iter()
+                .map(|clip| (clip.timeline_start, clip.timeline_end()))
+                .collect::<Vec<_>>(),
+            vec![(0, 20), (20, 44), (44, 56), (56, 80), (80, 120)]
+        );
+    }
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[gap]).unwrap(),
+        before
+    );
+}
+
 #[test]
 fn foreign_nested_clipboard_uses_native_reuse_remaps_u64_ids_and_one_complete_undo() {
     let (mut source, child, _) = fixture();
@@ -82,6 +498,7 @@ fn foreign_nested_clipboard_uses_native_reuse_remaps_u64_ids_and_one_complete_un
             Some(&clipboard),
             Some(child),
             100,
+            false,
             false
         )
         .is_err()
@@ -96,6 +513,7 @@ fn foreign_nested_clipboard_uses_native_reuse_remaps_u64_ids_and_one_complete_un
         Some(root),
         48,
         false,
+        false,
     )
     .unwrap()
     .apply(&mut source);
@@ -109,7 +527,7 @@ fn foreign_nested_clipboard_uses_native_reuse_remaps_u64_ids_and_one_complete_un
     let timeline = empty_timeline(&mut target, "Destination", core::Rational::new(30, 1));
     let before = entity_snapshot(&target.project);
     let steps = target.history.position();
-    let prepared = prepare_paste(&target, payload, None, Some(timeline), 30, false).unwrap();
+    let prepared = prepare_paste(&target, payload, None, Some(timeline), 30, false, false).unwrap();
     assert_eq!(entity_snapshot(&target.project), before);
     let report = prepared.apply(&mut target);
     assert!(report.changed);
@@ -172,12 +590,33 @@ fn native_pool_clipboard_selects_current_ids_and_foreign_reuse_is_a_true_noop() 
     assert!(clipboard.matches_payload(&session, &payload));
     let before = serde_json::to_value(&session.project).unwrap();
     let steps = session.history.position();
-    let report = prepare_paste(&session, payload.clone(), Some(&clipboard), None, 0, true)
-        .unwrap()
-        .apply(&mut session);
+    let report = prepare_paste(
+        &session,
+        payload.clone(),
+        Some(&clipboard),
+        None,
+        0,
+        true,
+        false,
+    )
+    .unwrap()
+    .apply(&mut session);
     assert_eq!(report.media, vec![file]);
     assert!(!report.changed);
-    let report = prepare_paste(&session, payload.clone(), None, None, 0, true)
+    let implicit = prepare_paste(
+        &session,
+        payload.clone(),
+        Some(&clipboard),
+        Some(id),
+        0,
+        false,
+        true,
+    )
+    .unwrap()
+    .apply(&mut session);
+    assert_eq!(implicit.media, vec![file]);
+    assert!(!implicit.changed);
+    let report = prepare_paste(&session, payload.clone(), None, None, 0, true, false)
         .unwrap()
         .apply(&mut session);
     assert_eq!(report.media, vec![file]);
@@ -195,6 +634,7 @@ fn native_pool_clipboard_selects_current_ids_and_foreign_reuse_is_a_true_noop() 
         None,
         0,
         true,
+        false,
     )
     .unwrap()
     .apply(&mut session);
@@ -212,7 +652,7 @@ fn native_pool_clipboard_selects_current_ids_and_foreign_reuse_is_a_true_noop() 
         &[file],
         &[dangling],
     );
-    let report = prepare_paste(&session, mixed, None, None, 0, true)
+    let report = prepare_paste(&session, mixed, None, None, 0, true, false)
         .unwrap()
         .apply(&mut session);
     assert!(!report.changed);
@@ -232,6 +672,7 @@ fn native_pool_clipboard_selects_current_ids_and_foreign_reuse_is_a_true_noop() 
         None,
         0,
         true,
+        false,
     )
     .unwrap()
     .apply(&mut session);
@@ -324,6 +765,7 @@ fn foreign_offline_clipboard_stays_offline_and_rejections_do_not_allocate() {
             None,
             Some(timeline),
             0,
+            false,
             false
         )
         .err()
@@ -340,6 +782,7 @@ fn foreign_offline_clipboard_stays_offline_and_rejections_do_not_allocate() {
         None,
         Some(timeline),
         0,
+        false,
         false,
     )
     .unwrap()
@@ -358,6 +801,7 @@ fn foreign_offline_clipboard_stays_offline_and_rejections_do_not_allocate() {
             None,
             Some(timeline),
             0,
+            false,
             false
         )
         .err()

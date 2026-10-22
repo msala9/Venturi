@@ -461,6 +461,8 @@ function syncSelectionActions(){
   $("delete").disabled=disabled || (target?target.locked:!view.selection.length);
 }
 function selected() {
+  for (const button of $("clip-list").querySelectorAll("button[data-clip-id]"))
+    button.setAttribute("aria-pressed", String(view.selection.includes(button.dataset.clipId)));
   slipView?.invalidate();
   syncClipboardControls();
   compoundNavigation?.invalidate();
@@ -731,9 +733,16 @@ function installTimeline(next,{transitionSelection=null}={}) {
     for (const clip of track.clips) {
       const button = document.createElement("button");
       button.textContent = `${track.label || track.id} · ${clip.name || clip.id}`;
-      button.addEventListener("click", () => {
+      button.dataset.clipId = clip.id;
+      button.setAttribute("aria-pressed", "false");
+      button.addEventListener("click", (event) => {
         view.transitionSelection=null;
-        view.selection = [clip.id];
+        const group = linkedSelection(next, [clip.id]);
+        view.selection = event.ctrlKey || event.metaKey || event.shiftKey
+          ? view.selection.includes(clip.id)
+            ? view.selection.filter(id => !group.includes(id))
+            : linkedSelection(next, [...view.selection, clip.id])
+          : group;
         selected();
         canvasTimeline.invalidate();
       });

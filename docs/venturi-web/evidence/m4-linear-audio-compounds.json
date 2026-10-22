@@ -1,0 +1,1614 @@
+{
+  "status": "passed",
+  "date": "2026-10-22",
+  "scope": "Native linear multibus compounds; unrestricted processed-bus parity remains open",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792644566.4713318,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "ba1828961271b68387450b9eba67ce731714dd4c45efb1322c3ea4b9afc42bcf",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-audio/src/tests/mixer.rs": "a9296cedb7dd500ad4ff3a676fa35b68c586978b4a9e62bbcc9f2797efb2b67c",
+      "crates/vv-core/src/command.rs": "b1fa78f7ceefc57bb6db69a64cb63660abf4d6645010863dcfdea8a2799ca565",
+      "crates/vv-core/src/lib.rs": "95d9b78663cdae7fd20a98fb24457f5102c513535799c45b1540d4be1bc12faa",
+      "crates/vv-core/src/tests/lib_compound_clip.rs": "fd44c31391a7b0d3d9e2013371cc9eb46e22a8178cff30d3a04ce55e1c55a290",
+      "crates/vv-web/src/commands.rs": "55b7359845c106dea93af98a4b063ac75b4f0ce4c1df9968b2e9a82f4b6011f5",
+      "crates/vv-web/src/tests/commands.rs": "23941f33056280c53700c7f5ed56f71727eaf982bbd923111519f297460a9185",
+      "web/js/main.js": "cd09f3960ff6d8a1399faeed1d8d46faa1f1464c13c135758961f07c88e3c577"
+    }
+  },
+  "validation": {
+    "core": 288,
+    "native_pcm": 4,
+    "web_rust": 422,
+    "javascript": 800,
+    "raw_results": [
+      "288 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+      "0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "4 passed; 0 failed; 0 ignored; 0 measured; 100 filtered out; finished in 0.03s",
+      "10 passed; 0 failed; 0 ignored; 0 measured; 118 filtered out; finished in 0.43s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 125 filtered out; finished in 0.15s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 125 filtered out; finished in 0.27s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 127 filtered out; finished in 0.00s",
+      "422 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.92s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 546 filtered out; finished in 0.00s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 548 filtered out; finished in 0.00s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 548 filtered out; finished in 0.00s"
+    ],
+    "fmt": true,
+    "clippy_all_targets_deny_warnings": true,
+    "native_build": true
+  },
+  "api": {
+    "root": "/home/marco/VenturiWeb-linear-compound-20261022-2",
+    "project": "Linear_Compound_API_check.vvproj",
+    "project_sha256": "f70a73c3e1be5107e8262e961bf98e3ea1a2079428c6ab311e6c131f9e01dd4e",
+    "windows_baseline": {
+      "project": "Linear_Compound_Windows_check.vvproj",
+      "sha256": "eb99fca084f02d3fc6dbbb6b3881fef5e120c555711db56774f117cb970ca1a5"
+    },
+    "selected_clip_ids": [
+      "0",
+      "1"
+    ],
+    "original_files": {
+      "linear-stereo.wav": "e300a44a2552a8b261eab72a72d6ea509bde2beac9f76e322b0740144a2ef1aa"
+    },
+    "binary_sha256": "ba1828961271b68387450b9eba67ce731714dd4c45efb1322c3ea4b9afc42bcf",
+    "timeline_id": "2",
+    "checks": {
+      "partial_source_bus_with_intervening_unselected_clip": true,
+      "native_gain_pan_mono_bypassed_compressor": true,
+      "muted_selected_solo_and_audible_selected_solo": true,
+      "new_neutral_solo_wrapper": true,
+      "one_undo_redo_retry": true,
+      "nonlinear_atomic_refusal": true,
+      "parent_master_and_source_flags_preserved": true
+    },
+    "before": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": -2.0,
+        "pan": 0.125
+      },
+      "name": "Linear multibus",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 2,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [
+              {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              {
+                "enabled": false,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              }
+            ],
+            "gain_db": -3.0,
+            "pan": 0.5
+          },
+          "muted": true,
+          "solo": true
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 4,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "2",
+          "kind": "audio",
+          "label": "A2",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": -9.0,
+            "pan": -0.25
+          },
+          "muted": false,
+          "solo": true
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "after": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": -2.0,
+        "pan": 0.125
+      },
+      "name": "Linear multibus",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 2,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [
+              {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              {
+                "enabled": false,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              }
+            ],
+            "gain_db": -3.0,
+            "pan": 0.5
+          },
+          "muted": true,
+          "solo": true
+        },
+        {
+          "armed": false,
+          "clips": [],
+          "crossings": [],
+          "id": "2",
+          "kind": "audio",
+          "label": "A2",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": -9.0,
+            "pan": -0.25
+          },
+          "muted": false,
+          "solo": true
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "media",
+              "length_frames": 6,
+              "linked_group": null,
+              "media_id": "4",
+              "name": "Preserved linear buses",
+              "retime": {
+                "max_length": 600,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 6,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                0
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 6,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "3",
+          "kind": "audio",
+          "label": "A3",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": true
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "nested": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "id": "3",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Preserved linear buses",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "3",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [
+              {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              {
+                "enabled": false,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              }
+            ],
+            "gain_db": -3.0,
+            "pan": 0.5
+          },
+          "muted": true,
+          "solo": true
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 4,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A2",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": -9.0,
+            "pan": -0.25
+          },
+          "muted": false,
+          "solo": true
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "save_restart_exact": true,
+    "source_bytes_preserved": true,
+    "hardware_gpu_used": false,
+    "no_render_or_exports": true,
+    "no_gpu_or_shared_lock_fds": true,
+    "limits": {
+      "cpu": "one CPU",
+      "memory": "512 MiB",
+      "swap": 0,
+      "oom_score": 1000,
+      "runtime_max_seconds": 120
+    },
+    "status": "passed",
+    "own_test_units_stopped": true,
+    "port8811_closed": true,
+    "primary_editor_preserved": true,
+    "checkpoint": "/home/marco/.cache/venturi-linear-compound-check2/acceptance.json",
+    "phase": "verified"
+  },
+  "windows": {
+    "project": "Linear_Compound_Windows_check.vvproj",
+    "checks": {
+      "control_adds_second_clip": true,
+      "control_toggles_second_clip": true,
+      "shift_adds_second_clip": true,
+      "meta_toggles_second_clip": true,
+      "unselected_middle_clip_retained": true,
+      "undo_restores_three_clips": true,
+      "redo_restores_neutral_wrapper": true,
+      "child_mix_values_visible": true,
+      "mono_and_bypassed_compressor_visible": true
+    },
+    "history": {
+      "baseline": {
+        "labels": [],
+        "position": 0
+      },
+      "compound": {
+        "labels": [
+          "MakeCompoundClip"
+        ],
+        "position": 1
+      },
+      "undo": {
+        "labels": [
+          "MakeCompoundClip"
+        ],
+        "position": 0
+      },
+      "redo": {
+        "labels": [
+          "MakeCompoundClip"
+        ],
+        "position": 1
+      },
+      "child": {
+        "labels": [
+          "MakeCompoundClip"
+        ],
+        "position": 1
+      }
+    },
+    "before": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": -2.0,
+        "pan": 0.125
+      },
+      "name": "Linear multibus",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 2,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [
+              {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              {
+                "enabled": false,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              }
+            ],
+            "gain_db": -3.0,
+            "pan": 0.5
+          },
+          "muted": true,
+          "solo": true
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 4,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "2",
+          "kind": "audio",
+          "label": "A2",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": -9.0,
+            "pan": -0.25
+          },
+          "muted": false,
+          "solo": true
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "after": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": -2.0,
+        "pan": 0.125
+      },
+      "name": "Linear multibus",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 2,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [
+              {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              {
+                "enabled": false,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              }
+            ],
+            "gain_db": -3.0,
+            "pan": 0.5
+          },
+          "muted": true,
+          "solo": true
+        },
+        {
+          "armed": false,
+          "clips": [],
+          "crossings": [],
+          "id": "2",
+          "kind": "audio",
+          "label": "A2",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": -9.0,
+            "pan": -0.25
+          },
+          "muted": false,
+          "solo": true
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "media",
+              "length_frames": 6,
+              "linked_group": null,
+              "media_id": "4",
+              "name": "Windows linear buses",
+              "retime": {
+                "max_length": 600,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 6,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                0
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 6,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "3",
+          "kind": "audio",
+          "label": "A3",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": true
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "child": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "id": "3",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Windows linear buses",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "revision": "b66545c29ac99035",
+      "timeline_id": "3",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [
+              {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              {
+                "enabled": false,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              }
+            ],
+            "gain_db": -3.0,
+            "pan": 0.5
+          },
+          "muted": true,
+          "solo": true
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "media",
+              "length_frames": 2,
+              "linked_group": null,
+              "media_id": "3",
+              "name": "linear-stereo.wav",
+              "retime": {
+                "max_length": 200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 2,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                4
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 2,
+              "speed_percent": 100.0,
+              "start_frame": 4,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A2",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": -9.0,
+            "pan": -0.25
+          },
+          "muted": false,
+          "solo": true
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "console_errors": [],
+    "screenshot": "m4-linear-audio-compounds.jpg",
+    "existing_windows_browser": true,
+    "temporary_tab_closed": true
+  },
+  "cleanup": {
+    "own_backend_stopped": true,
+    "remote_port8811_closed": true,
+    "main_five_unsaved_edits_preserved": true
+  },
+  "limits": {
+    "local_builds": false,
+    "browser_installed": false,
+    "hardware_gpu_used": false,
+    "build_cpu": 1,
+    "build_memory_gib": 4,
+    "finite_api_memory_mib": 512,
+    "swap": 0,
+    "oom_score_adjust": 1000
+  },
+  "remaining": [
+    "Enabled EQ/compressor/Normalize bus context and filter tails",
+    "Origins or audio extents that cannot preserve sample phase",
+    "General video compositing and hardware acceptance",
+    "Live upgrade preserving the original five-step Undo history"
+  ]
+}

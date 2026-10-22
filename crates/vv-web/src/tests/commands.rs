@@ -347,10 +347,12 @@ fn neutral_multitrack_compound_preserves_layers_gain_links_and_one_step_undo() {
     assert_eq!(session.history.position(), steps + 1);
     assert_eq!(session.project.media_pool.len(), media_count + 1);
     let parent = &session.project.timelines[id];
+    assert_eq!(parent.tracks.len(), 5);
     assert!(parent.tracks[1].clips.is_empty());
+    assert!(parent.tracks[2].clips.is_empty());
     assert!(parent.tracks[3].clips.is_empty());
     let wrapper = &parent.tracks[0].clips[0];
-    assert_eq!(wrapper.linked_group, parent.tracks[2].clips[0].linked_group);
+    assert_eq!(wrapper.linked_group, parent.tracks[4].clips[0].linked_group);
     assert!(wrapper.linked_group.is_some());
     let core::ClipSource::Media(media) = &wrapper.source else {
         panic!("Expected native compound media")
@@ -361,9 +363,16 @@ fn neutral_multitrack_compound_preserves_layers_gain_links_and_one_step_undo() {
     for (index, clip_id) in clips.iter().enumerate() {
         assert_eq!(nested.tracks[index].clips[0].id, *clip_id);
     }
-    assert_eq!(nested.tracks[2].mix.gain_db, 0.0);
-    assert_eq!(nested.tracks[3].mix.gain_db, -6.0);
+    assert_eq!(nested.tracks[2].mix.gain_db, -3.0);
+    assert_eq!(nested.tracks[3].mix.gain_db, -9.0);
     assert_eq!(parent.tracks[2].mix.gain_db, -3.0);
+    assert_eq!(parent.tracks[3].mix.gain_db, -9.0);
+    assert_eq!(parent.tracks[4].kind, TrackKind::Audio);
+    assert_eq!(parent.tracks[4].mix.gain_db, 0.0);
+    assert_eq!(parent.tracks[4].mix.pan, 0.0);
+    assert!(parent.tracks[4].mix.effects.is_empty());
+    let after_parent = serde_json::to_value(parent).unwrap();
+    let after_nested = serde_json::to_value(nested).unwrap();
     apply(&mut session, id, &Operation::Undo).unwrap();
     assert_eq!(session.project.timelines.len(), 1);
     assert_eq!(session.project.media_pool.len(), media_count);
@@ -374,7 +383,15 @@ fn neutral_multitrack_compound_preserves_layers_gain_links_and_one_step_undo() {
     apply(&mut session, id, &Operation::Redo).unwrap();
     assert_eq!(
         session.project.timelines[nested_id].tracks[3].mix.gain_db,
-        -6.0
+        -9.0
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        after_parent
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[nested_id]).unwrap(),
+        after_nested
     );
 }
 
@@ -475,8 +492,8 @@ fn multivideo_compound_preserves_single_audio_host_processing_audibility_and_exa
 }
 
 #[test]
-fn two_audio_tracks_still_refuse_processing_solo_and_mute_with_only_one_video_track() {
-    for case in 0..4 {
+fn multiaudio_compound_preserves_linear_buses_flags_and_external_solo_with_exact_undo_redo() {
+    for case in 0..9 {
         let (mut session, id, clips) = multitrack_compound_fixture();
         let timeline = &mut session.project.timelines[id];
         match case {
@@ -486,54 +503,177 @@ fn two_audio_tracks_still_refuse_processing_solo_and_mute_with_only_one_video_tr
                 .effects
                 .push(core::AudioEffect::new(core::AudioEffectKind::Mono)),
             2 => timeline.tracks[2].solo = true,
-            _ => timeline.tracks[3].muted = true,
+            3 => timeline.tracks[3].muted = true,
+            4 => {
+                let mut outside = core::Track::new(TrackKind::Audio);
+                outside.solo = true;
+                timeline.tracks.push(outside);
+            }
+            5 => {
+                timeline.tracks[2].solo = true;
+                timeline.tracks[2].muted = true;
+            }
+            6 => {
+                for kind in [
+                    core::AudioEffectKind::Equalizer(core::Equalizer::DEFAULT),
+                    core::AudioEffectKind::MultibandCompressor(core::MultibandCompressor::DEFAULT),
+                    core::AudioEffectKind::Normalize {
+                        target_db: -1.0,
+                        mode: core::NormalizeMode::SamplePeak,
+                        set_level: core::SetLevel::Relative,
+                    },
+                ] {
+                    let mut effect = core::AudioEffect::new(kind);
+                    effect.enabled = false;
+                    timeline.tracks[3].mix.effects.push(effect);
+                }
+            }
+            7 => {
+                timeline.tracks[2].mix.pan = -0.4;
+                timeline.tracks[3].mix.pan = 0.6;
+                timeline.tracks[2]
+                    .mix
+                    .effects
+                    .push(core::AudioEffect::new(core::AudioEffectKind::Mono));
+                timeline.tracks[3]
+                    .mix
+                    .effects
+                    .push(core::AudioEffect::new(core::AudioEffectKind::Mono));
+                timeline.tracks[2].muted = true;
+                timeline.tracks[3].solo = true;
+            }
+            _ => {
+                timeline.tracks[0].clips[0].linked_group = None;
+                timeline.tracks[2].clips[0].linked_group = None;
+            }
         }
-        let before = serde_json::to_value(&session.project).unwrap();
+        let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+        let original_tracks = session.project.timelines[id].tracks.len();
+        let pool_count = session.project.media_pool.len();
         let position = session.history.position();
-        // Selecting the two audio clips also expands their single linked video peer.
         let request = Operation::MakeCompound {
             clip_ids: vec![clips[2].0.to_string(), clips[3].0.to_string()],
-            name: "Still unsafe audio collapse".into(),
+            name: "Linear audio buses".into(),
         };
-        let error = apply(&mut session, id, &request).unwrap_err();
-        assert_eq!(error.0.as_u16(), 422, "case {case}");
-        assert_eq!(session.history.position(), position);
+        apply(&mut session, id, &request).unwrap();
+        assert_eq!(session.history.position(), position + 1, "case {case}");
+        let parent = &session.project.timelines[id];
+        assert_eq!(parent.tracks.len(), original_tracks + 1, "case {case}");
+        for (index, track) in parent.tracks[..original_tracks].iter().enumerate() {
+            assert_eq!(
+                serde_json::to_value(&track.mix).unwrap(),
+                before["tracks"][index]["mix"],
+                "case {case} track {index}"
+            );
+            assert_eq!(
+                track.muted,
+                before["tracks"][index]["muted"].as_bool().unwrap()
+            );
+            assert_eq!(
+                track.solo,
+                before["tracks"][index]["solo"].as_bool().unwrap()
+            );
+        }
+        assert!(parent.tracks[2].clips.is_empty());
+        assert!(parent.tracks[3].clips.is_empty());
+        let wrapper = &parent.tracks[original_tracks];
+        assert_eq!(wrapper.kind, TrackKind::Audio);
+        assert_eq!(wrapper.mix.gain_db, 0.0);
+        assert_eq!(wrapper.mix.pan, 0.0);
+        assert!(wrapper.mix.effects.is_empty());
+        assert!(!wrapper.muted);
         assert_eq!(
-            serde_json::to_value(&session.project).unwrap(),
+            wrapper.solo,
+            before["tracks"][2]["solo"].as_bool().unwrap()
+                || before["tracks"][3]["solo"].as_bool().unwrap()
+        );
+        let core::ClipSource::Media(media) = &wrapper.clips[0].source else {
+            panic!("Expected native audio wrapper")
+        };
+        let nested_id = session.project.media_pool[*media].compound.unwrap();
+        let nested = &session.project.timelines[nested_id];
+        let source_tracks: &[usize] = if case == 8 { &[2, 3] } else { &[0, 2, 3] };
+        assert_eq!(nested.tracks.len(), source_tracks.len());
+        for (child_index, source_index) in source_tracks.iter().copied().enumerate() {
+            let child = &nested.tracks[child_index];
+            assert_eq!(child.clips[0].id, clips[source_index]);
+            assert_eq!(
+                serde_json::to_value(&child.mix).unwrap(),
+                before["tracks"][source_index]["mix"]
+            );
+            assert_eq!(
+                child.muted,
+                before["tracks"][source_index]["muted"].as_bool().unwrap()
+            );
+            assert_eq!(
+                child.solo,
+                before["tracks"][source_index]["solo"].as_bool().unwrap()
+            );
+        }
+        if case != 8 {
+            assert_eq!(
+                wrapper.clips[0].linked_group,
+                parent.tracks[0].clips[0].linked_group
+            );
+            assert!(wrapper.clips[0].linked_group.is_some());
+        }
+        assert_eq!(
+            serde_json::to_value(&parent.tracks[1]).unwrap(),
+            before["tracks"][1]
+        );
+        if case == 4 {
+            assert_eq!(
+                serde_json::to_value(&parent.tracks[4]).unwrap(),
+                before["tracks"][4]
+            );
+        }
+        let after_parent = serde_json::to_value(parent).unwrap();
+        let after_nested = serde_json::to_value(nested).unwrap();
+        apply(&mut session, id, &Operation::Undo).unwrap();
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.project.timelines.len(), 1);
+        assert_eq!(session.project.media_pool.len(), pool_count);
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
             before,
             "case {case}"
+        );
+        apply(&mut session, id, &Operation::Redo).unwrap();
+        assert_eq!(session.history.position(), position + 1);
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            after_parent
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[nested_id]).unwrap(),
+            after_nested
         );
     }
 }
 
 #[test]
-fn multitrack_compound_rejects_processing_audibility_and_linked_locks_without_mutation() {
-    for case in 0..11 {
+fn multitrack_compound_rejects_nonlinear_audio_video_dependencies_and_linked_locks_without_mutation()
+ {
+    for case in 0..8 {
         let (mut session, id, clips) = multitrack_compound_fixture();
         let timeline = &mut session.project.timelines[id];
         match case {
             0 => timeline.tracks[1].muted = true,
-            1 => timeline.tracks[3].muted = true,
-            2 => timeline.tracks[2].solo = true,
-            3 => timeline.tracks[3].mix.pan = 0.5,
-            4 => timeline.tracks[3]
-                .mix
-                .effects
-                .push(core::AudioEffect::new(core::AudioEffectKind::Mono)),
-            5 => timeline.tracks[1].clips[0].effects.blend_mode = core::BlendMode::Multiply,
-            6 => timeline.tracks[1].clips[0].source = core::ClipSource::Adjustment,
-            7 => timeline.tracks[2].locked = true,
-            8 => {
-                let mut outside = core::Track::new(TrackKind::Audio);
-                outside.solo = true;
-                timeline.tracks.push(outside);
-            }
-            9 => timeline.tracks[3].mix.effects.push(core::AudioEffect::new(
+            1 => timeline.tracks[1].clips[0].effects.blend_mode = core::BlendMode::Multiply,
+            2 => timeline.tracks[1].clips[0].source = core::ClipSource::Adjustment,
+            3 => timeline.tracks[2].locked = true,
+            4 => timeline.tracks[3].mix.effects.push(core::AudioEffect::new(
                 core::AudioEffectKind::Normalize {
                     target_db: -1.0,
                     mode: core::NormalizeMode::SamplePeak,
                     set_level: core::SetLevel::Relative,
                 },
+            )),
+            5 => timeline.tracks[3].mix.effects.push(core::AudioEffect::new(
+                core::AudioEffectKind::Equalizer(core::Equalizer::DEFAULT),
+            )),
+            6 => timeline.tracks[3].mix.effects.push(core::AudioEffect::new(
+                core::AudioEffectKind::MultibandCompressor(core::MultibandCompressor::DEFAULT),
             )),
             _ => timeline.tracks[1].clips[0].effects.matte = Some(core::MatteMode::Alpha),
         }
@@ -547,8 +687,10 @@ fn multitrack_compound_rejects_processing_audibility_and_linked_locks_without_mu
         let before = serde_json::to_value(&session.project).unwrap();
         let steps = session.history.position();
         let error = apply(&mut session, id, &request).unwrap_err();
-        if case == 7 {
+        if case == 3 {
             assert_eq!(error.1, "TRACK_LOCKED");
+        } else {
+            assert_eq!(error.0.as_u16(), 422, "case {case}");
         }
         assert_eq!(
             serde_json::to_value(&session.project).unwrap(),
@@ -605,6 +747,198 @@ fn multitrack_compound_refuses_intervening_layers_and_crossing_boundaries() {
         }
         assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
         assert_eq!(session.history.position(), steps);
+    }
+}
+
+#[test]
+fn multiaudio_partial_buses_keep_unselected_host_material_under_the_new_wrapper_range() {
+    let (mut session, id, clips) = multitrack_compound_fixture();
+    let extra_id = session.project.alloc_clip_id();
+    let source = session.project.timelines[id].tracks[2].clips[0]
+        .source
+        .clone();
+    let extra = core::Clip::from_source_range(extra_id, source, 0, 24, 0, core::Rational::one());
+    let lane = &mut session.project.timelines[id];
+    lane.tracks[2].clips[0].timeline_start = 48;
+    lane.tracks[2].mix.pan = -0.25;
+    lane.tracks[2]
+        .mix
+        .effects
+        .push(core::AudioEffect::new(core::AudioEffectKind::Mono));
+    lane.tracks[2].insert_sorted(extra);
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let outside_before =
+        serde_json::to_value(&session.project.timelines[id].tracks[2].clips[0]).unwrap();
+    let position = session.history.position();
+    apply(
+        &mut session,
+        id,
+        &Operation::MakeCompound {
+            clip_ids: vec![clips[2].0.to_string(), clips[3].0.to_string()],
+            name: "Partial buses".into(),
+        },
+    )
+    .unwrap();
+    let parent = &session.project.timelines[id];
+    assert_eq!(parent.tracks.len(), 5);
+    assert_eq!(parent.tracks[2].clips.len(), 1);
+    assert_eq!(
+        serde_json::to_value(&parent.tracks[2].clips[0]).unwrap(),
+        outside_before
+    );
+    assert_eq!(
+        serde_json::to_value(&parent.tracks[2].mix).unwrap(),
+        before["tracks"][2]["mix"]
+    );
+    assert_eq!(parent.tracks[4].clips[0].timeline_start, 0);
+    assert_eq!(parent.tracks[4].clips[0].timeline_len, 96);
+    let core::ClipSource::Media(media) = &parent.tracks[4].clips[0].source else {
+        panic!("Expected appended compound wrapper")
+    };
+    let child_id = session.project.media_pool[*media].compound.unwrap();
+    let child = &session.project.timelines[child_id];
+    assert_eq!(child.tracks[1].clips.len(), 1);
+    assert_eq!(child.tracks[1].clips[0].id, clips[2]);
+    assert_eq!(child.tracks[1].clips[0].timeline_start, 48);
+    assert_eq!(
+        serde_json::to_value(&child.tracks[1].mix).unwrap(),
+        before["tracks"][2]["mix"]
+    );
+    assert!(
+        child
+            .tracks
+            .iter()
+            .all(|track| track.clips.iter().all(|clip| clip.id != extra_id))
+    );
+    let after_parent = serde_json::to_value(parent).unwrap();
+    let after_child = serde_json::to_value(child).unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(session.history.position(), position);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    apply(&mut session, id, &Operation::Redo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        after_parent
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[child_id]).unwrap(),
+        after_child
+    );
+}
+
+#[test]
+fn multiaudio_compound_reserves_one_track_and_refuses_the_128_track_limit_atomically() {
+    for track_count in [127, 128] {
+        let (mut session, id, clips) = multitrack_compound_fixture();
+        while session.project.timelines[id].tracks.len() < track_count {
+            session.project.timelines[id]
+                .tracks
+                .push(core::Track::new(TrackKind::Audio));
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let before_timeline = serde_json::to_value(&session.project.timelines[id]).unwrap();
+        let position = session.history.position();
+        let generation = session.history.generation();
+        let result = apply(
+            &mut session,
+            id,
+            &Operation::MakeCompound {
+                clip_ids: clips.iter().map(|clip| clip.0.to_string()).collect(),
+                name: "Track boundary".into(),
+            },
+        );
+        if track_count == 128 {
+            assert_eq!(result.unwrap_err().0.as_u16(), 422);
+            assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+            assert_eq!(session.history.position(), position);
+            assert_eq!(session.history.generation(), generation);
+        } else {
+            result.unwrap();
+            assert_eq!(session.project.timelines[id].tracks.len(), 128);
+            assert_eq!(session.history.position(), position + 1);
+            apply(&mut session, id, &Operation::Undo).unwrap();
+            assert_eq!(
+                serde_json::to_value(&session.project.timelines[id]).unwrap(),
+                before_timeline
+            );
+            apply(&mut session, id, &Operation::Redo).unwrap();
+            assert_eq!(session.project.timelines[id].tracks.len(), 128);
+        }
+    }
+}
+
+#[test]
+fn multiaudio_fractional_fps_requires_a_sample_aligned_range_origin_not_an_integer_fps() {
+    for start in [1, 5] {
+        let (mut session, id, clips) = multitrack_compound_fixture();
+        let fps = core::Rational::new(30000, 1001);
+        session.project.timelines[id].fps = fps;
+        for (_, media) in session.project.media_pool.iter_mut() {
+            media.meta.fps = fps;
+        }
+        for track in &mut session.project.timelines[id].tracks {
+            for clip in &mut track.clips {
+                clip.timeline_start = start;
+            }
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let before_timeline = serde_json::to_value(&session.project.timelines[id]).unwrap();
+        let position = session.history.position();
+        let generation = session.history.generation();
+        let result = apply(
+            &mut session,
+            id,
+            &Operation::MakeCompound {
+                clip_ids: clips.iter().map(|clip| clip.0.to_string()).collect(),
+                name: "Fractional origin".into(),
+            },
+        );
+        if start == 1 {
+            assert_eq!(result.unwrap_err().0.as_u16(), 422);
+            assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+            assert_eq!(session.history.position(), position);
+            assert_eq!(session.history.generation(), generation);
+        } else {
+            result.unwrap();
+            let parent = &session.project.timelines[id];
+            assert_eq!(parent.tracks[4].clips[0].timeline_start, 5);
+            assert_eq!(parent.tracks[4].clips[0].timeline_len, 48);
+            let core::ClipSource::Media(media) = &parent.tracks[4].clips[0].source else {
+                panic!("Expected native audio wrapper")
+            };
+            let nested_id = session.project.media_pool[*media].compound.unwrap();
+            let child = &session.project.timelines[nested_id];
+            assert_eq!(child.fps, fps);
+            assert!(
+                child
+                    .tracks
+                    .iter()
+                    .all(|track| track.clips[0].timeline_start == 0)
+            );
+            assert_eq!(child.tracks[2].mix.gain_db, -3.0);
+            assert_eq!(child.tracks[3].mix.gain_db, -9.0);
+            let after_parent = serde_json::to_value(parent).unwrap();
+            let after_child = serde_json::to_value(child).unwrap();
+            assert_eq!(session.history.position(), position + 1);
+            apply(&mut session, id, &Operation::Undo).unwrap();
+            assert_eq!(
+                serde_json::to_value(&session.project.timelines[id]).unwrap(),
+                before_timeline
+            );
+            apply(&mut session, id, &Operation::Redo).unwrap();
+            assert_eq!(
+                serde_json::to_value(&session.project.timelines[id]).unwrap(),
+                after_parent
+            );
+            assert_eq!(
+                serde_json::to_value(&session.project.timelines[nested_id]).unwrap(),
+                after_child
+            );
+        }
     }
 }
 

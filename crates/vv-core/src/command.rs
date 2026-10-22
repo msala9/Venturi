@@ -3368,6 +3368,158 @@ pub fn compound_clip_commands(
     (media_id, commands)
 }
 
+/// Opt-in bus-preserving compound plan; legacy compound placement is unchanged.
+pub struct LinearAudioCompoundPlan {
+    pub compound: CompoundPlan,
+    wrapper_solo: bool,
+}
+
+pub fn plan_linear_audio_compound(
+    project: &Project,
+    timeline_id: TimelineId,
+    clips: &[(usize, ClipId)],
+    sample_rate: u32,
+) -> Result<LinearAudioCompoundPlan, &'static str> {
+    let timeline = project
+        .timelines
+        .get(timeline_id)
+        .ok_or("Compound timeline does not exist")?;
+    if sample_rate == 0 || timeline.fps.num <= 0 || timeline.fps.den <= 0 {
+        return Err("Linear audio compound requires a positive sample rate and frame rate");
+    }
+    let mut distinct = BTreeSet::new();
+    let mut selected = BTreeSet::new();
+    let mut has_audio = false;
+    for &(track_index, id) in clips {
+        let track = timeline
+            .tracks
+            .get(track_index)
+            .ok_or("Compound track does not exist")?;
+        let clip = track.clip(id).ok_or("Compound clip does not exist")?;
+        if !selected.insert((track_index, id)) {
+            return Err("Compound selection contains a duplicate clip");
+        }
+        if clip.timeline_start < 0
+            || clip.timeline_len <= 0
+            || clip.timeline_start.checked_add(clip.timeline_len).is_none()
+        {
+            return Err("Compound clip has an invalid timeline range");
+        }
+        if distinct.insert(track_index) && track.kind == TrackKind::Audio {
+            has_audio = true;
+            if !linear_audio_strip_is_finite(&track.mix) {
+                return Err("Linear audio compound requires finite bus settings");
+            }
+            if track.mix.effects.iter().any(|effect| {
+                effect.enabled && !matches!(effect.kind, crate::AudioEffectKind::Mono)
+            }) {
+                return Err("Linear audio compound supports only Mono or bypassed bus inserts");
+            }
+        }
+    }
+    if !has_audio {
+        return Err("Linear audio compound requires selected audio clips");
+    }
+    let mut compound = plan_compound_clip(project, timeline_id, clips)
+        .ok_or("Compound selection contains no clips")?;
+    let origin_samples = i128::from(compound.range_start)
+        .checked_mul(i128::from(sample_rate))
+        .and_then(|value| value.checked_mul(i128::from(timeline.fps.den)))
+        .ok_or("Linear audio compound sample origin is out of range")?;
+    if origin_samples % i128::from(timeline.fps.num) != 0 {
+        return Err("Linear audio compound origin is not sample-aligned");
+    }
+    let rounded_samples = |frames: FrameIdx| -> Result<i128, &'static str> {
+        i128::from(frames)
+            .checked_mul(i128::from(sample_rate))
+            .and_then(|value| value.checked_mul(i128::from(timeline.fps.den)))
+            .and_then(|value| value.checked_add(i128::from(timeline.fps.num) / 2))
+            .map(|value| value / i128::from(timeline.fps.num))
+            .ok_or("Linear audio compound sample range is out of range")
+    };
+    let wrapper_end = rounded_samples(compound.range_start)?
+        .checked_add(rounded_samples(compound.len)?)
+        .ok_or("Linear audio compound sample range is out of range")?;
+    for &(track_index, id) in clips {
+        let track = &timeline.tracks[track_index];
+        if track.kind == TrackKind::Audio {
+            let clip = track.clip(id).expect("validated compound clip");
+            let clip_end = rounded_samples(clip.timeline_start)?
+                .checked_add(rounded_samples(clip.timeline_len)?)
+                .ok_or("Linear audio compound sample range is out of range")?;
+            if clip_end > wrapper_end {
+                return Err("Linear audio compound would truncate a source sample tail");
+            }
+        }
+    }
+    let mut wrapper_solo = false;
+    for (nested, original_index) in compound.nested_timeline.tracks.iter_mut().zip(distinct) {
+        let original = &timeline.tracks[original_index];
+        if original.kind == TrackKind::Audio {
+            nested.mix = original.mix.clone();
+            nested.muted = original.muted;
+            nested.solo = original.solo;
+            wrapper_solo |= original.solo;
+        }
+    }
+    compound.audio_track = Some(timeline.tracks.len());
+    Ok(LinearAudioCompoundPlan {
+        compound,
+        wrapper_solo,
+    })
+}
+
+fn linear_audio_strip_is_finite(strip: &ChannelStrip) -> bool {
+    use crate::AudioEffectKind;
+    strip.gain_db.is_finite()
+        && strip.pan.is_finite()
+        && strip.effects.iter().all(|effect| match &effect.kind {
+            AudioEffectKind::Mono => true,
+            AudioEffectKind::Normalize { target_db, .. } => target_db.is_finite(),
+            AudioEffectKind::Equalizer(eq) => eq.bands.iter().all(|band| {
+                band.freq_hz.is_finite() && band.gain_db.is_finite() && band.q.is_finite()
+            }),
+            AudioEffectKind::MultibandCompressor(compressor) => {
+                compressor
+                    .crossovers_hz
+                    .iter()
+                    .all(|value| value.is_finite())
+                    && compressor.bands.iter().all(|band| {
+                        band.threshold_db.is_finite()
+                            && band.ratio.is_finite()
+                            && band.attack_ms.is_finite()
+                            && band.release_ms.is_finite()
+                            && band.makeup_db.is_finite()
+                    })
+            }
+        })
+}
+
+/// Materialize against the same project and selection used to build `plan`.
+pub fn linear_audio_compound_commands(
+    project: &mut Project,
+    timeline_id: TimelineId,
+    clips: &[(usize, ClipId)],
+    plan: &LinearAudioCompoundPlan,
+) -> (MediaId, Vec<Box<dyn Command>>) {
+    let mut commands: Vec<Box<dyn Command>> =
+        vec![Box::new(AddTrack::new(timeline_id, TrackKind::Audio))];
+    if plan.wrapper_solo {
+        commands.push(Box::new(SetTrackFlag::new(
+            timeline_id,
+            plan.compound
+                .audio_track
+                .expect("linear audio wrapper track"),
+            TrackFlag::Solo,
+            true,
+        )));
+    }
+    let (media, compound_commands) =
+        compound_clip_commands(project, timeline_id, clips, &plan.compound);
+    commands.extend(compound_commands);
+    (media, commands)
+}
+
 #[derive(Debug)]
 pub struct SetProcessingPrecision {
     precision: ProcessingPrecision,

@@ -2,6 +2,444 @@ use super::*;
 use std::path::PathBuf;
 use vv_core::{Clip, ClipId, Interpolation, MediaItem, MediaMeta, Rational, Track, TrackKind};
 
+#[derive(Clone)]
+struct LinearCompoundPcm {
+    project: Project,
+    timeline: TimelineId,
+    selected: Vec<(usize, ClipId)>,
+    inputs: [Arc<Vec<f32>>; 2],
+    frames: usize,
+}
+
+fn linear_compound_pcm_clip(
+    project: &mut Project,
+    media: MediaId,
+    start: FrameIdx,
+    source_in: FrameIdx,
+    len: FrameIdx,
+) -> Clip {
+    Clip::from_source_range(
+        project.alloc_clip_id(),
+        ClipSource::Media(media),
+        source_in,
+        source_in + len,
+        start,
+        Rational::one(),
+    )
+}
+
+fn linear_compound_pcm_fixture(
+    fps: Rational,
+    origin: FrameIdx,
+    selected_len: FrameIdx,
+) -> LinearCompoundPcm {
+    let mut project = Project::default();
+    let meta = MediaMeta {
+        duration_frames: 24,
+        fps,
+        width: 0,
+        height: 0,
+        has_video: false,
+        has_audio: true,
+        sample_rate: PROJECT_SAMPLE_RATE,
+        channels: 2,
+        audio_streams: 1,
+        file: Default::default(),
+    };
+    let media: Vec<_> = ["linear-compound-a.wav", "linear-compound-b.wav"]
+        .into_iter()
+        .enumerate()
+        .map(|(index, name)| {
+            project.media_pool.insert(MediaItem {
+                path: name.into(),
+                meta: meta.clone(),
+                content_hash: index as u64 + 1,
+                compound: None,
+                folder: None,
+            })
+        })
+        .collect();
+    let selected_a = linear_compound_pcm_clip(&mut project, media[0], origin, 1, selected_len);
+    let remaining_a = linear_compound_pcm_clip(&mut project, media[1], origin + 1, 0, 4);
+    let selected_b =
+        linear_compound_pcm_clip(&mut project, media[1], origin + 1, 2, selected_len - 1);
+    let remaining_b = linear_compound_pcm_clip(&mut project, media[0], 0, 0, 2);
+    let external = linear_compound_pcm_clip(&mut project, media[1], 1, 0, origin + 5);
+    let selected = vec![(0, selected_a.id), (1, selected_b.id)];
+    let mut first = audio_track(vec![selected_a, remaining_a]);
+    first.mix.gain_db = -3.0;
+    first.mix.pan = 0.35;
+    first.mix.effects = vec![
+        vv_core::AudioEffect::new(AudioEffectKind::Mono),
+        vv_core::AudioEffect {
+            enabled: false,
+            kind: AudioEffectKind::MultibandCompressor(MultibandCompressor::DEFAULT),
+        },
+    ];
+    let mut second = audio_track(vec![remaining_b, selected_b]);
+    second.mix.gain_db = 2.0;
+    second.mix.pan = -0.45;
+    second.mix.effects = vec![vv_core::AudioEffect::new(AudioEffectKind::Mono)];
+    let mut outer = timeline(vec![first, second, audio_track(vec![external])]);
+    outer.fps = fps;
+    outer.master.gain_db = -4.0;
+    outer.master.pan = 0.2;
+    let mut eq = Equalizer::DEFAULT;
+    eq.bands[2].gain_db = 2.5;
+    outer.master.effects = vec![vv_core::AudioEffect::new(AudioEffectKind::Equalizer(eq))];
+    let timeline = project.timelines.insert(outer);
+    let inputs = [0, 1].map(|source| {
+        Arc::new(
+            (0..48_000)
+                .flat_map(|sample| {
+                    let phase = ((sample * (source + 3)) % 97) as f32 / 97.0 - 0.5;
+                    [phase * 0.31 + 0.04, (0.5 - phase) * 0.23 - 0.03]
+                })
+                .collect(),
+        )
+    });
+    LinearCompoundPcm {
+        project,
+        timeline,
+        selected,
+        inputs,
+        frames: timeline_frame_to_sample(origin + 8, fps.as_f64(), PROJECT_SAMPLE_RATE) as usize,
+    }
+}
+
+fn linear_compound_pcm_render(fixture: &LinearCompoundPcm, chunk: usize) -> Vec<f32> {
+    let mut source = |path: &Path, stream: usize| {
+        assert_eq!(stream, 0);
+        let index = match path.to_str().unwrap() {
+            "linear-compound-a.wav" => 0,
+            "linear-compound-b.wav" => 1,
+            other => panic!("A compound must use the native nested mixer, not decode {other}"),
+        };
+        Some(SampleBlocks::contiguous(
+            fixture.inputs[index].clone(),
+            0,
+            2,
+        ))
+    };
+    let snapshot = MixSnapshot::from_timeline(
+        &fixture.project,
+        &fixture.project.timelines[fixture.timeline],
+        PROJECT_SAMPLE_RATE,
+        2,
+        &mut source,
+    );
+    let mut out = vec![0.0; fixture.frames * 2];
+    if chunk == 0 {
+        mix_range(&snapshot, 0, &mut out);
+    } else {
+        let mut state = MixState::new(&snapshot);
+        for (index, samples) in out.chunks_mut(chunk * 2).enumerate() {
+            mix_range_from(&snapshot, &mut state, (index * chunk) as u64, samples);
+        }
+    }
+    out
+}
+
+#[track_caller]
+fn assert_linear_compound_pcm_with_tolerance(
+    context: &str,
+    expected: &[f32],
+    actual: &[f32],
+    tolerance: f32,
+) {
+    assert_eq!(expected.len(), actual.len());
+    assert!(expected.iter().chain(actual).all(|value| value.is_finite()));
+    let (index, maximum) = expected
+        .iter()
+        .zip(actual)
+        .enumerate()
+        .map(|(index, (a, b))| (index, (a - b).abs()))
+        .max_by(|(_, a), (_, b)| a.total_cmp(b))
+        .unwrap();
+    assert!(
+        maximum <= tolerance,
+        "{context}: sample {index}, expected {}, actual {}, maximum error {maximum}, tolerance {tolerance}",
+        expected[index],
+        actual[index]
+    );
+}
+
+#[track_caller]
+fn assert_linear_compound_pcm_equal(context: &str, expected: &[f32], actual: &[f32]) {
+    // Linear summation may regroup f32 additions; a sample-phase error is >1e-3.
+    assert_linear_compound_pcm_with_tolerance(context, expected, actual, 1e-6);
+}
+
+fn apply_linear_compound_pcm(
+    fixture: &mut LinearCompoundPcm,
+    history: &mut vv_core::History,
+) -> MediaId {
+    let plan = vv_core::command::plan_linear_audio_compound(
+        &fixture.project,
+        fixture.timeline,
+        &fixture.selected,
+        PROJECT_SAMPLE_RATE,
+    )
+    .expect("The selected linear partial buses must have a native compound plan");
+    let (media, commands) = vv_core::command::linear_audio_compound_commands(
+        &mut fixture.project,
+        fixture.timeline,
+        &fixture.selected,
+        &plan,
+    );
+    history.do_command(
+        &mut fixture.project,
+        Box::new(vv_core::CompositeCommand::new(
+            vv_core::CommandLabel::MakeCompoundClip,
+            commands,
+        )),
+    );
+    media
+}
+
+#[test]
+fn linear_audio_compound_partial_buses_preserve_pcm_chain_master_and_native_undo_redo() {
+    let mut fixture = linear_compound_pcm_fixture(Rational::new(24, 1), 2, 4);
+    let mut raw = fixture.clone();
+    raw.project.timelines[raw.timeline].master.effects.clear();
+    let raw_before = linear_compound_pcm_render(&raw, 0);
+    let mut raw_history = vv_core::History::default();
+    apply_linear_compound_pcm(&mut raw, &mut raw_history);
+    let raw_after = linear_compound_pcm_render(&raw, 0);
+    assert_linear_compound_pcm_equal("unfiltered native bus sum", &raw_before, &raw_after);
+    assert_linear_compound_pcm_equal(
+        "unfiltered compound whole versus 257-frame chunks",
+        &raw_after,
+        &linear_compound_pcm_render(&raw, 257),
+    );
+    let original = fixture.project.timelines[fixture.timeline].clone();
+    let before = linear_compound_pcm_render(&fixture, 0);
+    assert!(before.iter().any(|value| value.abs() > 0.01));
+    assert_linear_compound_pcm_equal(
+        "baseline master EQ whole versus chunks",
+        &before,
+        &linear_compound_pcm_render(&fixture, 257),
+    );
+    let mut history = vv_core::History::default();
+    let media = apply_linear_compound_pcm(&mut fixture, &mut history);
+    assert_eq!(history.position(), 1);
+    assert_eq!(
+        history.labels().collect::<Vec<_>>(),
+        [vv_core::CommandLabel::MakeCompoundClip]
+    );
+    let after = linear_compound_pcm_render(&fixture, 0);
+    // Recursive EQ amplifies f32 regrouping; the unfiltered comparison stays strict.
+    assert_linear_compound_pcm_with_tolerance(
+        "compound through nonunity master EQ",
+        &before,
+        &after,
+        2e-6,
+    );
+    for chunk in [257, 512] {
+        assert_linear_compound_pcm_equal(
+            "compound master EQ whole versus chunks",
+            &after,
+            &linear_compound_pcm_render(&fixture, chunk),
+        );
+    }
+    let outer = &fixture.project.timelines[fixture.timeline];
+    assert_eq!(outer.master, original.master);
+    assert_eq!(outer.tracks.len(), original.tracks.len() + 1);
+    for (actual, previous) in outer.tracks.iter().zip(&original.tracks) {
+        assert_eq!(actual.mix, previous.mix);
+        assert_eq!((actual.muted, actual.solo), (previous.muted, previous.solo));
+    }
+    assert_eq!(outer.tracks[0].clips.len(), 1);
+    assert_eq!(outer.tracks[1].clips.len(), 1);
+    assert_eq!(outer.tracks.last().unwrap().mix, ChannelStrip::default());
+    let nested = fixture.project.media_pool[media].compound.unwrap();
+    let child = &fixture.project.timelines[nested];
+    assert_eq!(child.master, ChannelStrip::default());
+    assert_eq!(child.tracks[0].mix, original.tracks[0].mix);
+    assert_eq!(child.tracks[1].mix, original.tracks[1].mix);
+    assert!(!child.tracks[0].mix.effects[1].enabled);
+
+    history.undo(&mut fixture.project);
+    assert_eq!(history.position(), 0);
+    assert_eq!(fixture.project.timelines.len(), 1);
+    assert_eq!(
+        fixture.project.timelines[fixture.timeline].tracks.len(),
+        original.tracks.len()
+    );
+    assert_linear_compound_pcm_equal(
+        "undo restores original master EQ PCM",
+        &before,
+        &linear_compound_pcm_render(&fixture, 257),
+    );
+    for (actual, previous) in fixture.project.timelines[fixture.timeline]
+        .tracks
+        .iter()
+        .zip(&original.tracks)
+    {
+        assert_eq!(actual.mix, previous.mix);
+        assert_eq!(
+            actual
+                .clips
+                .iter()
+                .map(|clip| (
+                    clip.id,
+                    clip.timeline_start,
+                    clip.source_offset,
+                    clip.timeline_len
+                ))
+                .collect::<Vec<_>>(),
+            previous
+                .clips
+                .iter()
+                .map(|clip| (
+                    clip.id,
+                    clip.timeline_start,
+                    clip.source_offset,
+                    clip.timeline_len
+                ))
+                .collect::<Vec<_>>()
+        );
+    }
+    history.redo(&mut fixture.project);
+    assert_eq!(history.position(), 1);
+    assert_eq!(fixture.project.timelines.len(), 2);
+    assert_linear_compound_pcm_equal(
+        "redo restores compound master EQ PCM",
+        &after,
+        &linear_compound_pcm_render(&fixture, 512),
+    );
+}
+
+#[test]
+fn linear_audio_compound_solo_and_muted_solo_preserve_partial_bus_pcm() {
+    for (name, first_solo, first_muted, second_solo, external_solo) in [
+        ("selected solo", true, false, false, false),
+        (
+            "muted selected solo and external solo",
+            true,
+            true,
+            false,
+            true,
+        ),
+        ("external solo", false, false, false, true),
+        ("muted selected bus", false, true, false, false),
+        ("selected and external solo", false, false, true, true),
+    ] {
+        let mut fixture = linear_compound_pcm_fixture(Rational::new(24, 1), 2, 4);
+        let outer = &mut fixture.project.timelines[fixture.timeline];
+        outer.tracks[0].solo = first_solo;
+        outer.tracks[0].muted = first_muted;
+        outer.tracks[1].solo = second_solo;
+        outer.tracks[2].solo = external_solo;
+        let before = linear_compound_pcm_render(&fixture, 0);
+        assert!(
+            before.iter().any(|value| value.abs() > 0.01),
+            "{name} must test audible PCM"
+        );
+        let mut history = vv_core::History::default();
+        let media = apply_linear_compound_pcm(&mut fixture, &mut history);
+        let outer = &fixture.project.timelines[fixture.timeline];
+        assert_eq!(
+            outer.tracks.last().unwrap().solo,
+            first_solo || second_solo,
+            "{name}"
+        );
+        let nested = fixture.project.media_pool[media].compound.unwrap();
+        let child = &fixture.project.timelines[nested];
+        assert_eq!(
+            (child.tracks[0].solo, child.tracks[0].muted),
+            (first_solo, first_muted)
+        );
+        assert_eq!(child.tracks[1].solo, second_solo);
+        assert_linear_compound_pcm_equal(name, &before, &linear_compound_pcm_render(&fixture, 0));
+        assert_linear_compound_pcm_equal(name, &before, &linear_compound_pcm_render(&fixture, 257));
+    }
+}
+
+#[test]
+fn linear_audio_compound_aligned_fractional_fps_preserves_source_sample_phase() {
+    let fps = Rational::new(30_000, 1001);
+    let mut fixture = linear_compound_pcm_fixture(fps, 5, 5);
+    fixture.project.timelines[fixture.timeline]
+        .master
+        .effects
+        .clear();
+    assert_eq!(
+        timeline_frame_to_sample(5, fps.as_f64(), PROJECT_SAMPLE_RATE),
+        8008
+    );
+    let before = linear_compound_pcm_render(&fixture, 0);
+    let phase_step = before
+        .as_chunks::<2>()
+        .0
+        .iter()
+        .map(|frame| frame[0])
+        .collect::<Vec<_>>()
+        .windows(2)
+        .map(|pair| (pair[1] - pair[0]).abs())
+        .fold(0.0_f32, f32::max);
+    assert!(
+        phase_step > 1e-3,
+        "The signal must expose a one-sample phase shift"
+    );
+    let mut history = vv_core::History::default();
+    apply_linear_compound_pcm(&mut fixture, &mut history);
+    assert_linear_compound_pcm_equal(
+        "aligned fractional source phase",
+        &before,
+        &linear_compound_pcm_render(&fixture, 0),
+    );
+    assert_linear_compound_pcm_equal(
+        "aligned fractional source phase in chunks",
+        &before,
+        &linear_compound_pcm_render(&fixture, 257),
+    );
+    history.undo(&mut fixture.project);
+    assert_linear_compound_pcm_equal(
+        "aligned fractional undo",
+        &before,
+        &linear_compound_pcm_render(&fixture, 512),
+    );
+    history.redo(&mut fixture.project);
+    assert_linear_compound_pcm_equal(
+        "aligned fractional redo",
+        &before,
+        &linear_compound_pcm_render(&fixture, 257),
+    );
+}
+
+#[test]
+fn linear_audio_compound_refuses_a_fractional_extent_that_would_cut_an_audible_sample() {
+    let fps = Rational::new(30_000, 1001);
+    let fixture = linear_compound_pcm_fixture(fps, 5, 4);
+    let sample = |frame| timeline_frame_to_sample(frame, fps.as_f64(), PROJECT_SAMPLE_RATE);
+    let wrapper_end = sample(5) + sample(4);
+    let selected_end = sample(6) + sample(3);
+    assert_eq!((wrapper_end, selected_end), (14_414, 14_415));
+    let mut isolated = fixture.clone();
+    let peer = fixture.selected[1].1;
+    let outer = &mut isolated.project.timelines[isolated.timeline];
+    for track in &mut outer.tracks {
+        track.clips.retain(|clip| clip.id == peer);
+    }
+    outer.master.effects.clear();
+    let pcm = linear_compound_pcm_render(&isolated, 0);
+    assert!(pcm[wrapper_end as usize * 2].abs() > 1e-3);
+    assert_eq!(
+        &pcm[selected_end as usize * 2..selected_end as usize * 2 + 2],
+        &[0.0, 0.0]
+    );
+    assert!(
+        vv_core::command::plan_linear_audio_compound(
+            &fixture.project,
+            fixture.timeline,
+            &fixture.selected,
+            PROJECT_SAMPLE_RATE,
+        )
+        .is_err()
+    );
+}
+
 const RATE: u32 = 100;
 
 /// Ids unique like a project's: a clip measured alone is found by its id.

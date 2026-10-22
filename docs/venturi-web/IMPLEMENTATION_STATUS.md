@@ -12,6 +12,40 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Linear multibus compounds now pass `evidence/m4-linear-audio-compounds.json`
+and its existing-Windows-browser screenshot. The opt-in native plan preserves
+partial source buses with gain, pan, Mono, bypassed inserts and mute/solo. A new
+neutral audio track hosts the wrapper; original bus settings, unselected clips
+and the parent master remain intact. Selected solo flags, including muted solo
+buses, carry into the wrapper and child without introducing a persistent mute
+from an outside solo. The legacy desktop compound helpers remain unchanged.
+
+Native preflight refuses enabled EQ/compressor/Normalize bus inserts, unaligned
+sample origins and rounded audio extents that would lose a final sample. The
+wrapper also respects the 128-track limit. Four in-memory PCM tests compare
+partial overlapping buses, solo/mute combinations, whole/chunked mixing,
+Undo/Redo and fractional-FPS source phase. Unfiltered and phase comparisons use
+an absolute 1e-6 bound; the separately isolated recursive master-EQ comparison
+uses 2e-6 for f32 regrouping. An audible one-sample truncation fixture is refused.
+
+The browser check also exposed and fixed accessible clip controls replacing
+the selection despite Ctrl/Shift. They now support Ctrl, Shift and Meta group
+selection/toggling, preserve linked groups and publish `aria-pressed`. Actual
+Windows input verifies those modifiers without a native edit, then creates one
+MakeCompoundClip history step, retains an intervening unselected clip, performs
+exact Undo/Redo and opens the child with the original gain/pan/Mono/bypass
+values. Native snapshots independently confirm every result.
+
+Final cached halo2 validation passes 288 core, 422 web Rust, four focused native
+PCM and 800 JavaScript tests, targeted multimedia/five desktop checks, fmt,
+Clippy with warnings denied and native build. Finite API acceptance passes
+retry, atomic nonlinear refusal, source preservation and save/restart with a
+48044-byte stereo WAV. The final Windows check uses that same binary. Temporary
+tabs, backend and tunnel are closed; the original five unsaved edits remain
+intact. No browser installation, local build, GPU rendering or export was used.
+General processed-bus/compositing and hardware acceptance remain open, so the
+compound rows stay partial and the ledger remains 39 done and 51 partial.
+
 Long-source Slip edges now pass `evidence/m4-slip-source-windows.json` and its
 Windows screenshot. The dual viewer uses one shared or two sequential bounded
 Source windows instead of requesting a full movie proxy. Both windows match

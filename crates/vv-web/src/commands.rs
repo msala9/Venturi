@@ -568,28 +568,13 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             let multiple_video_tracks = video.len() > 1;
             let multiple_audio_tracks = audio.len() > 1;
             let multiple_tracks = multiple_video_tracks || multiple_audio_tracks;
-            if multiple_video_tracks && video.iter().any(|&index| tl.tracks[index].muted)
-                || multiple_audio_tracks && audio.iter().any(|&index| tl.tracks[index].muted)
-            {
+            if multiple_video_tracks && video.iter().any(|&index| tl.tracks[index].muted) {
                 return Err(ApiError::invalid(
-                    "Multitrack compounds require unmuted source tracks",
+                    "Multitrack video compounds require unmuted source tracks",
                 ));
             }
-            // With one audio track the native wrapper remains on that same host,
-            // so its bus processing and audibility are not moved into the child.
-            if multiple_audio_tracks
-                && (tl
-                    .tracks
-                    .iter()
-                    .any(|track| track.kind == TrackKind::Audio && track.solo)
-                    || audio.iter().any(|&index| {
-                        let mix = &tl.tracks[index].mix;
-                        mix.pan != 0.0 || !mix.effects.is_empty() || !mix.gain_db.is_finite()
-                    }))
-            {
-                return Err(ApiError::invalid(
-                    "Multitrack compounds require gain-only audio tracks without solo, pan or inserts",
-                ));
+            if multiple_audio_tracks && tl.tracks.len() >= 128 {
+                return Err(ApiError::invalid("Timeline track limit reached"));
             }
             if let Some(&track) = audio.iter().next()
                 && selected.iter().filter(|(t, _)| *t == track).count() > 1
@@ -602,8 +587,32 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 ));
             }
             let ids = selected.iter().map(|r| r.1).collect::<HashSet<_>>();
-            let mut plan = core::plan_compound_clip(&session.project, id, &selected)
-                .ok_or_else(ApiError::missing)?;
+            let mut linear_audio = if multiple_audio_tracks {
+                Some(
+                    core::plan_linear_audio_compound(
+                        &session.project,
+                        id,
+                        &selected,
+                        vv_audio::mixer::PROJECT_SAMPLE_RATE,
+                    )
+                    .map_err(ApiError::invalid)?,
+                )
+            } else {
+                None
+            };
+            let mut legacy_plan = if multiple_audio_tracks {
+                None
+            } else {
+                Some(
+                    core::plan_compound_clip(&session.project, id, &selected)
+                        .ok_or_else(ApiError::missing)?,
+                )
+            };
+            let plan = if let Some(linear) = &mut linear_audio {
+                &mut linear.compound
+            } else {
+                legacy_plan.as_mut().unwrap()
+            };
             plan.nested_timeline.name = name.clone();
             if multiple_tracks && !video.is_empty() {
                 let first = *video.iter().min().unwrap();
@@ -639,7 +648,9 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 }
             }
             for track in [plan.video_track, plan.audio_track].into_iter().flatten() {
-                free(tl, track, plan.range_start, plan.len, &ids)?;
+                if track < tl.tracks.len() {
+                    free(tl, track, plan.range_start, plan.len, &ids)?;
+                }
             }
             for track in video.iter().chain(audio.iter()).copied() {
                 if tl.tracks[track]
@@ -652,10 +663,23 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                     ));
                 }
             }
+            let plan = linear_audio
+                .as_ref()
+                .map(|linear| &linear.compound)
+                .or(legacy_plan.as_ref())
+                .unwrap();
             let mut trial = session.project.clone();
-            compound_command(&mut trial, id, &selected, &plan, name).apply(&mut trial);
+            compound_command(&mut trial, id, &selected, plan, linear_audio.as_ref(), name)
+                .apply(&mut trial);
             crate::files::validate_project(&trial)?;
-            let command = compound_command(&mut session.project, id, &selected, &plan, name);
+            let command = compound_command(
+                &mut session.project,
+                id,
+                &selected,
+                plan,
+                linear_audio.as_ref(),
+                name,
+            );
             session.apply(command);
         }
         Operation::SetSpeed {
@@ -1322,9 +1346,14 @@ fn compound_command(
     id: TimelineId,
     selected: &[edit::ClipRef],
     plan: &core::CompoundPlan,
+    linear_audio: Option<&core::LinearAudioCompoundPlan>,
     name: &str,
 ) -> Box<dyn Command> {
-    let (media, mut commands) = core::compound_clip_commands(project, id, selected, plan);
+    let (media, mut commands) = if let Some(linear) = linear_audio {
+        core::linear_audio_compound_commands(project, id, selected, linear)
+    } else {
+        core::compound_clip_commands(project, id, selected, plan)
+    };
     commands.push(Box::new(core::RenameTimeline::new(media, name.to_owned())));
     Box::new(CompositeCommand::new(
         CommandLabel::MakeCompoundClip,

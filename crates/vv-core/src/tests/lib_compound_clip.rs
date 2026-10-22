@@ -1,4 +1,341 @@
 use super::*;
+use std::collections::BTreeSet;
+
+fn linear_audio_fixture() -> (Project, TimelineId, Vec<(usize, ClipId)>) {
+    let (mut project, timeline) =
+        project_with_tracks(&[TrackKind::Audio, TrackKind::Audio, TrackKind::Audio]);
+    let first = insert_clip(&mut project, timeline, 0, 10, 20);
+    let second = insert_clip(&mut project, timeline, 1, 15, 30);
+    insert_clip(&mut project, timeline, 0, 0, 5);
+    insert_clip(&mut project, timeline, 1, 50, 10);
+    insert_clip(&mut project, timeline, 2, 0, 60);
+    let tracks = &mut project.timelines[timeline].tracks;
+    tracks[0].mix.gain_db = -3.0;
+    tracks[0].mix.pan = -0.4;
+    tracks[0].mix.effects = vec![
+        AudioEffect::new(AudioEffectKind::Mono),
+        AudioEffect {
+            enabled: false,
+            kind: AudioEffectKind::MultibandCompressor(MultibandCompressor::DEFAULT),
+        },
+    ];
+    tracks[0].armed = true;
+    tracks[0].clips[1].effects.gain_db = Keyframed::constant(-2.5);
+    tracks[1].mix.gain_db = -9.0;
+    tracks[1].mix.pan = 0.6;
+    project.timelines[timeline].master.gain_db = -4.0;
+    (project, timeline, vec![(0, first), (1, second)])
+}
+
+#[test]
+fn linear_audio_compound_partial_buses_copy_strips_and_preserve_one_native_undo() {
+    let (mut project, timeline, selected) = linear_audio_fixture();
+    project.timelines[timeline].tracks[0].muted = true;
+    project.timelines[timeline].tracks[1].solo = true;
+    let before_timeline = serde_json::to_value(&project.timelines[timeline]).unwrap();
+    let plan = plan_linear_audio_compound(&project, timeline, &selected, 48_000).unwrap();
+    assert_eq!(plan.compound.audio_track, Some(3));
+    assert_eq!(plan.compound.range_start, 10);
+    assert_eq!(plan.compound.len, 35);
+    assert_eq!(
+        plan.compound.nested_timeline.master,
+        ChannelStrip::default()
+    );
+    for (index, &(_, id)) in selected.iter().enumerate() {
+        let original = &project.timelines[timeline].tracks[index];
+        let child = &plan.compound.nested_timeline.tracks[index];
+        assert_eq!(child.mix, original.mix);
+        assert_eq!(child.muted, original.muted);
+        assert_eq!(child.solo, original.solo);
+        assert!(!child.armed);
+        let mut expected = original.clip(id).unwrap().clone();
+        expected.timeline_start -= 10;
+        assert_eq!(
+            serde_json::to_value(&child.clips).unwrap(),
+            serde_json::to_value(vec![expected]).unwrap()
+        );
+    }
+    let (media, commands) =
+        linear_audio_compound_commands(&mut project, timeline, &selected, &plan);
+    assert_eq!(commands[0].label(), CommandLabel::AddTrack);
+    assert_eq!(commands[1].label(), CommandLabel::SoloTrack);
+    // Native command construction reserves IDs before the history step.
+    let before = serde_json::to_value(&project).unwrap();
+    let mut history = History::default();
+    history.do_command(
+        &mut project,
+        Box::new(CompositeCommand::new(
+            CommandLabel::MakeCompoundClip,
+            commands,
+        )),
+    );
+    assert_eq!(history.position(), 1);
+    let outer = &project.timelines[timeline];
+    assert_eq!(outer.tracks.len(), 4);
+    let wrapper = &outer.tracks[3];
+    assert_eq!(wrapper.kind, TrackKind::Audio);
+    assert_eq!(wrapper.mix, ChannelStrip::default());
+    assert!(wrapper.solo);
+    assert!(!wrapper.muted && !wrapper.locked && !wrapper.armed);
+    assert_eq!(wrapper.clips.len(), 1);
+    assert!(matches!(wrapper.clips[0].source, ClipSource::Media(id) if id == media));
+    for index in 0..3 {
+        let mut expected = before_timeline["tracks"][index].clone();
+        if index < 2 {
+            expected["clips"] =
+                serde_json::to_value(project.timelines[timeline].tracks[index].clips.clone())
+                    .unwrap();
+        }
+        assert_eq!(
+            serde_json::to_value(&outer.tracks[index]).unwrap(),
+            expected
+        );
+    }
+    assert_eq!(outer.tracks[0].clips.len(), 1);
+    assert_eq!(outer.tracks[1].clips.len(), 1);
+    assert_eq!(
+        serde_json::to_value(&outer.master).unwrap(),
+        before_timeline["master"]
+    );
+    let nested = project.media_pool[media].compound.unwrap();
+    assert_eq!(
+        serde_json::to_value(&project.timelines[nested]).unwrap(),
+        serde_json::to_value(&plan.compound.nested_timeline).unwrap()
+    );
+    let after = serde_json::to_value(&project).unwrap();
+    history.undo(&mut project);
+    assert_eq!(history.position(), 0);
+    assert_eq!(serde_json::to_value(&project).unwrap(), before);
+    history.redo(&mut project);
+    assert_eq!(serde_json::to_value(&project).unwrap(), after);
+}
+
+#[test]
+fn linear_audio_compound_solo_gating_includes_muted_and_external_solo_buses() {
+    for (first_solo, first_muted, second_solo, external_solo) in [
+        (false, false, false, false),
+        (false, false, false, true),
+        (true, false, false, false),
+        (true, true, false, false),
+        (true, true, false, true),
+        (true, true, true, true),
+    ] {
+        let (mut project, timeline, selected) = linear_audio_fixture();
+        project.timelines[timeline].tracks[0].solo = first_solo;
+        project.timelines[timeline].tracks[0].muted = first_muted;
+        project.timelines[timeline].tracks[1].solo = second_solo;
+        project.timelines[timeline].tracks[2].solo = external_solo;
+        let audible_before: BTreeSet<_> = project.timelines[timeline]
+            .audible_tracks()
+            .map(|(index, _)| index)
+            .collect();
+        let plan = plan_linear_audio_compound(&project, timeline, &selected, 48_000).unwrap();
+        let (_, commands) =
+            linear_audio_compound_commands(&mut project, timeline, &selected, &plan);
+        let mut command = CompositeCommand::new(CommandLabel::MakeCompoundClip, commands);
+        command.apply(&mut project);
+        let outer = &project.timelines[timeline];
+        let audible_after: BTreeSet<_> = outer.audible_tracks().map(|(index, _)| index).collect();
+        assert_eq!(outer.tracks[3].solo, first_solo || second_solo);
+        assert!(!outer.tracks[3].muted);
+        for index in 0..3 {
+            assert_eq!(
+                audible_before.contains(&index),
+                audible_after.contains(&index)
+            );
+        }
+        let audible_child: BTreeSet<_> = if audible_after.contains(&3) {
+            plan.compound
+                .nested_timeline
+                .audible_tracks()
+                .map(|(index, _)| index)
+                .collect()
+        } else {
+            BTreeSet::new()
+        };
+        assert_eq!(
+            audible_child,
+            audible_before
+                .into_iter()
+                .filter(|index| *index < 2)
+                .collect()
+        );
+    }
+}
+
+#[test]
+fn linear_audio_compound_checks_rational_sample_origin_without_allocating() {
+    let (mut project, timeline, selected) = linear_audio_fixture();
+    project.timelines[timeline].fps = Rational::new(30_000, 1001);
+    for (index, &(_, id)) in selected.iter().enumerate() {
+        project.timelines[timeline].tracks[index]
+            .clip_mut(id)
+            .unwrap()
+            .timeline_start = if index == 0 { 1 } else { 6 };
+    }
+    let before = serde_json::to_value(&project).unwrap();
+    assert_eq!(
+        plan_linear_audio_compound(&project, timeline, &selected, 48_000).err(),
+        Some("Linear audio compound origin is not sample-aligned")
+    );
+    assert_eq!(serde_json::to_value(&project).unwrap(), before);
+    project.timelines[timeline].tracks[0]
+        .clip_mut(selected[0].1)
+        .unwrap()
+        .timeline_start = 5;
+    let plan = plan_linear_audio_compound(&project, timeline, &selected, 48_000).unwrap();
+    assert_eq!(plan.compound.range_start, 5);
+    assert_eq!(
+        plan.compound.nested_timeline.tracks[1].clips[0].timeline_start,
+        1
+    );
+    assert!(plan_linear_audio_compound(&project, timeline, &selected, 0).is_err());
+    project.timelines[timeline].fps = Rational { num: 0, den: 1 };
+    assert!(plan_linear_audio_compound(&project, timeline, &selected, 48_000).is_err());
+    project.timelines[timeline].fps = Rational { num: 25, den: 0 };
+    assert!(plan_linear_audio_compound(&project, timeline, &selected, 48_000).is_err());
+}
+
+#[test]
+fn linear_audio_compound_rejects_rounded_sample_tail_truncation_at_aligned_origin() {
+    let (mut project, timeline) = project_with_tracks(&[TrackKind::Audio, TrackKind::Audio]);
+    project.timelines[timeline].fps = Rational::new(30_000, 1001);
+    let first = insert_clip(&mut project, timeline, 0, 5, 4);
+    let second = insert_clip(&mut project, timeline, 1, 6, 3);
+    let selected = [(0, first), (1, second)];
+    let before = serde_json::to_value(&project).unwrap();
+    assert_eq!(
+        plan_linear_audio_compound(&project, timeline, &selected, 48_000).err(),
+        Some("Linear audio compound would truncate a source sample tail")
+    );
+    assert_eq!(serde_json::to_value(&project).unwrap(), before);
+    project.timelines[timeline].tracks[0]
+        .clip_mut(first)
+        .unwrap()
+        .timeline_len = 5;
+    project.timelines[timeline].tracks[1]
+        .clip_mut(second)
+        .unwrap()
+        .timeline_len = 4;
+    let plan = plan_linear_audio_compound(&project, timeline, &selected, 48_000).unwrap();
+    assert_eq!(plan.compound.range_start, 5);
+    assert_eq!(plan.compound.len, 5);
+    project.timelines[timeline].fps = Rational::new(240, 1);
+    let first_clip = project.timelines[timeline].tracks[0]
+        .clip_mut(first)
+        .unwrap();
+    first_clip.timeline_start = 4;
+    first_clip.timeline_len = 4;
+    let second_clip = project.timelines[timeline].tracks[1]
+        .clip_mut(second)
+        .unwrap();
+    second_clip.timeline_start = 6;
+    second_clip.timeline_len = 2;
+    assert_eq!(
+        plan_linear_audio_compound(&project, timeline, &selected, 44_100).err(),
+        Some("Linear audio compound would truncate a source sample tail")
+    );
+}
+
+#[test]
+fn linear_audio_compound_rejects_enabled_non_linear_inserts_and_nonfinite_bypasses() {
+    let (mut project, timeline, selected) = linear_audio_fixture();
+    for kind in [
+        AudioEffectKind::Equalizer(Equalizer::DEFAULT),
+        AudioEffectKind::MultibandCompressor(MultibandCompressor::DEFAULT),
+        AudioEffectKind::Normalize {
+            target_db: -1.0,
+            mode: NormalizeMode::SamplePeak,
+            set_level: SetLevel::Relative,
+        },
+    ] {
+        project.timelines[timeline].tracks[1].mix.effects = vec![AudioEffect::new(kind)];
+        let before = serde_json::to_value(&project).unwrap();
+        assert_eq!(
+            plan_linear_audio_compound(&project, timeline, &selected, 48_000).err(),
+            Some("Linear audio compound supports only Mono or bypassed bus inserts")
+        );
+        assert_eq!(serde_json::to_value(&project).unwrap(), before);
+        project.timelines[timeline].tracks[1].mix.effects[0].enabled = false;
+        assert!(plan_linear_audio_compound(&project, timeline, &selected, 48_000).is_ok());
+    }
+    let mut eq = Equalizer::DEFAULT;
+    eq.bands[0].q = f32::NAN;
+    let mut compressor = MultibandCompressor::DEFAULT;
+    compressor.bands[2].release_ms = f32::INFINITY;
+    for kind in [
+        AudioEffectKind::Equalizer(eq),
+        AudioEffectKind::MultibandCompressor(compressor),
+        AudioEffectKind::Normalize {
+            target_db: f32::NAN,
+            mode: NormalizeMode::Loudness,
+            set_level: SetLevel::Independent,
+        },
+    ] {
+        project.timelines[timeline].tracks[1].mix.effects = vec![AudioEffect {
+            enabled: false,
+            kind,
+        }];
+        assert_eq!(
+            plan_linear_audio_compound(&project, timeline, &selected, 48_000).err(),
+            Some("Linear audio compound requires finite bus settings")
+        );
+    }
+    project.timelines[timeline].tracks[1].mix.effects.clear();
+    project.timelines[timeline].tracks[1].mix.pan = f32::INFINITY;
+    assert!(plan_linear_audio_compound(&project, timeline, &selected, 48_000).is_err());
+    project.timelines[timeline].tracks[1].mix.pan = 0.0;
+    project.timelines[timeline].tracks[1].mix.gain_db = f32::NAN;
+    assert!(plan_linear_audio_compound(&project, timeline, &selected, 48_000).is_err());
+}
+
+#[test]
+fn linear_audio_compound_refuses_missing_duplicate_and_invalid_clip_ranges() {
+    let (mut project, timeline, selected) = linear_audio_fixture();
+    let before = serde_json::to_value(&project).unwrap();
+    for invalid in [
+        vec![],
+        vec![selected[0], selected[0]],
+        vec![(3, selected[0].1)],
+        vec![(1, selected[0].1)],
+    ] {
+        assert!(plan_linear_audio_compound(&project, timeline, &invalid, 48_000).is_err());
+        assert_eq!(serde_json::to_value(&project).unwrap(), before);
+    }
+    project.timelines[timeline].tracks[0]
+        .clip_mut(selected[0].1)
+        .unwrap()
+        .timeline_start = -1;
+    assert!(plan_linear_audio_compound(&project, timeline, &selected, 48_000).is_err());
+    project.timelines[timeline].tracks[0]
+        .clip_mut(selected[0].1)
+        .unwrap()
+        .timeline_start = i64::MAX;
+    assert!(plan_linear_audio_compound(&project, timeline, &selected, 48_000).is_err());
+}
+
+#[test]
+fn linear_audio_compound_opt_in_does_not_change_legacy_gain_or_track_placement() {
+    let (mut project, timeline, selected) = linear_audio_fixture();
+    project.timelines[timeline].tracks[0].muted = true;
+    project.timelines[timeline].tracks[0].solo = true;
+    let legacy = plan_compound_clip(&project, timeline, &selected).unwrap();
+    assert_eq!(legacy.audio_track, Some(0));
+    assert_eq!(
+        legacy.nested_timeline.tracks[0].mix,
+        ChannelStrip::default()
+    );
+    assert_eq!(legacy.nested_timeline.tracks[1].mix.gain_db, -6.0);
+    assert_eq!(legacy.nested_timeline.tracks[1].mix.pan, 0.0);
+    assert!(!legacy.nested_timeline.tracks[0].muted);
+    assert!(!legacy.nested_timeline.tracks[0].solo);
+    let (_, commands) = compound_clip_commands(&mut project, timeline, &selected, &legacy);
+    assert_eq!(commands[0].label(), CommandLabel::MakeCompoundClip);
+    let mut command = CompositeCommand::new(CommandLabel::MakeCompoundClip, commands);
+    command.apply(&mut project);
+    assert_eq!(project.timelines[timeline].tracks.len(), 3);
+    assert_eq!(project.timelines[timeline].tracks[0].clips.len(), 2);
+}
 
 fn project_with_tracks(kinds: &[TrackKind]) -> (Project, TimelineId) {
     let mut project = Project::default();

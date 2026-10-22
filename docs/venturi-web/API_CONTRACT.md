@@ -1359,10 +1359,22 @@ and hardware acceptance remain open.
   Audibility and processing guards apply independently to each role: one audio
   track retains its original host bus, so pan, inserts, solo and mute remain
   valid even when multiple video tracks are selected. Multiple audio tracks
-  require unmuted gain-only buses without solo, pan or inserts. Multiple video
+  use an opt-in native plan with a new neutral audio track. Child buses retain
+  their full gain, pan, Mono, bypassed inserts and mute/solo flags; original
+  tracks and unselected clips remain in place. The wrapper inherits the OR of
+  selected solo flags, including muted solo buses, without acquiring a mute
+  flag from an outside solo. Enabled inserts other than Mono remain refused
+  because splitting processed buses can change their context or filter tails.
+  The compound origin must land on a whole native 48 kHz sample to preserve
+  fractional-FPS phase. Rounded source audio extents must also fit the wrapper,
+  preventing a one-sample tail truncation. Appending the wrapper respects the
+  128-track cap.
+  Multiple video
   tracks require unmuted tracks, all intervening material selected and no
   changed adjustment/matte/selected-blend dependencies.
-  Replacement space must be free of unselected clips, and crossing transitions
+  Existing replacement tracks must be free of unselected clips; the new audio
+  track allows unselected material inside the compound span on original audio
+  buses. Crossing transitions
   must be selected on both sides. Internal crossings are retained by the native
   planner. Multiple audio clips with enabled per-clip normalization are refused
   because wrapping them changes the native level policy. A native trial checks

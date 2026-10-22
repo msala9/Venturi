@@ -3984,3 +3984,19 @@ Continuous Program meter state and voiceover handoff remain concrete production
 gaps (AUDIO_RUNTIME_GAPS.md). Native paused-edit/Inspector refresh and physical
 pointer/DPI/performance/device acceptance remain open. No partial row is closed
 merely by these source/component or synthetic output proofs.
+
+
+### Native compound and Freeze accepted
+
+The integrated eced3ca workflow is recorded in evidence/nativeview-workflow.json.
+Actual Windows Canvas double-click at 125% scaling, child/breadcrumb navigation,
+linked selected speed/freeze, one native Undo/Redo, saved reopen and a real own
+service restart preserve all five timelines, remembered root positions and saved
+project bytes. The 392-frame 1280x720 compound export decodes as H.264 and stereo
+48 kHz AAC; its Windows download is byte-identical and playback reaches natural EOF.
+GPU previews at frames 370 and 380 are identical under native Freeze (source 15)
+and different after one Undo. Both compound_clips and freeze_frame now satisfy
+their native function/control/persistence/render criteria: 44 done, 46 partial,
+2 excluded. Broader 100%/150% DPI, devices, 500-clip performance and M7 remain
+global release gates. The df50859 user-delivered port-8811 service still needs
+a guarded upgrade.

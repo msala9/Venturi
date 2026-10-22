@@ -7,8 +7,10 @@ and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
 ## Goal and baseline
 
 Complete all remaining in-scope capabilities against the original native GUI,
-the UX specification and M7 release criteria. FUNCTIONAL_PARITY.csv currently
-contains 42 done and 48 partial capabilities. The two explicitly NOT-PLANNED
+the UX specification and M7 release criteria. FUNCTIONAL_PARITY.csv
+started with 42 done and 48 partial capabilities. The current accepted source
+ledger contains 44 done and 46 partial capabilities after the native compound
+and freeze workflow (evidence/nativeview-workflow.json). The two explicitly NOT-PLANNED
 rows, speed_ramp_reverse and node_graph, remain excluded. Do not relabel partial
 capabilities as finished merely because a small demo, API or component test passes.
 
@@ -28,7 +30,13 @@ See evidence/f3-effects-workflow.json for actual paths and remaining limits.
 The finite qualification service was stopped Saved; the delivered port-8811
 version remains df50859. Native compound grouping, selected media retiming and
 native ProjectView persistence form the next coherent integration block. This
-checkpoint does not close the broader partial capability rows or the full goal.
+checkpoint does not close the full goal. Native grouping and Freeze subsequently
+completed actual Windows controls at 125% scaling, one Undo/Redo, child/root mapping,
+saved reopen and real isolated restart, plus a 392-frame 1280x720 R9700/AAC export
+and exact downloaded-file playback. Compound Canvas double-click and pane rails
+were exercised; GPU freeze-frame hashes were equal when held and different
+after Undo. The compound_clips and freeze_frame rows are accepted. The delivered
+port-8811 baseline still needs a guarded upgrade; broader release QA remains open.
 
 Complete coherent user workflows in this order, taking independent source work
 forward when hardware is busy. Do not restart the former sequence of tiny

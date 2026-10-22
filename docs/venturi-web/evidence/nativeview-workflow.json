@@ -1,0 +1,198 @@
+{
+  "date": "2026-10-22",
+  "status": "integrated_native_workflow_qualified",
+  "source_commit": "eced3ca3606af36a780cb254da0dd9fdeb25be6a",
+  "runtime_sha256": "9fde3310c4e775f23edc7d3b74be392dd5a39017927522a7e7e5670d05604243",
+  "project": "Venturi_Native_Grouping.vvproj",
+  "resolution": [
+    1280,
+    720
+  ],
+  "fps": 24,
+  "scope": [
+    "Native grouping, selected-media Speed/Freeze, parent/root view memory, pane scrollbar pointer interaction and composed export."
+  ],
+  "observed": [
+    "Existing Windows browser only; 1280x720 CSS viewport, devicePixelRatio1.25.",
+    "Separate Save As retains the previous effects montage project.",
+    "Selected media 150-percent Ripple speed and Freeze changed exactly three linked video/audio clips to32frames, preserving120-frameTitle/Title/Solid; native history ClipSpeed/FreezeFrame with oneUndo/Redo.",
+    "Unfreeze then Native grouping of six clips creates one native child timeline and linked video/audio wrappers. One Undo restores all six clips; Redo restores wrappers.",
+    "Open selected compound and actual Canvas double-click both enter the child, preserving native mapped playhead.",
+    "Actual audio scrollbar drag revealsA2 and video rail moves in native inverse direction, without project edits.",
+    "Child frame370 returns to parent370; each level switch resets zoom/scroll/selection to the native defaults.",
+    "Two remembered root positions: F1 native editing frame24, F3 effects montage frame370. Save/reopen restores active montage; actual isolated service restart and browser reload preserve all five timelines, remembered view and saved project bytes.",
+    "Native compound 392-frame1280x720export uses R9700Vulkan composition, software decode/x264 andAAC128kbps. Windows downloaded bytes equal halo2 output; result played through natural16.341sEOF.",
+    "Freeze in the child at timeline370 independently pins all three linked media source frames15. GPUpreview370/380 has byte-identical PNGs; oneUndo clears allthree and yields different370/380PNGs, with370matchingtheheldimage.",
+    "Own qualification unit stopped Saved; protected five-unsaved-MoveClips editor and delivered editor unchanged. No browser errors logged."
+  ],
+  "persistence": {
+    "saved_sha256_before_restart": "5da5d93a35cfcbe7990709c8abd16b0f91a59f1fff27bfd57b034ba74c6941b1",
+    "saved_sha256_after_restart": "5da5d93a35cfcbe7990709c8abd16b0f91a59f1fff27bfd57b034ba74c6941b1",
+    "all_timelines_equal": true,
+    "view_before_restart": {
+      "active_timeline": "4",
+      "playheads": {
+        "1": 0,
+        "2": 24,
+        "4": 370
+      }
+    },
+    "view_after_restart": {
+      "active_timeline": "4",
+      "playheads": {
+        "1": 0,
+        "2": 24,
+        "4": 370
+      }
+    },
+    "final_view": {
+      "active_timeline": "4",
+      "playheads": {
+        "1": 0,
+        "2": 24,
+        "4": 380
+      }
+    },
+    "timeline_count": 5
+  },
+  "export": {
+    "cancel_requested": false,
+    "durability_error": false,
+    "durable": true,
+    "error": null,
+    "export_revision": "eb0be1b9e4ac295c1dbc9af123bcb2bf5f1a5107ace3c4cb16479ff39bdf993d",
+    "frames": 0,
+    "id": "1792669845879833862",
+    "previous_state": null,
+    "program": {
+      "audio_present": true,
+      "end_frame": 392,
+      "export_settings": {
+        "audio": true,
+        "audio_bitrate_kbps": 128,
+        "audio_codec": "aac",
+        "audio_fast_coder": false,
+        "preset": "veryfast",
+        "quality": 18,
+        "scale_percent": 100
+      },
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "0",
+      "height": 720,
+      "project_epoch": "1792669657170883734:2",
+      "revision": "d17d03a774856cde",
+      "start_frame": 0,
+      "width": 1280
+    },
+    "progress": {
+      "compose_fps": 285.4879931986972,
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "current_frame": 392,
+      "decode_fps": 272.17484244147266,
+      "decoder_fallback": false,
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)"
+        }
+      ],
+      "elapsed_ms": 2180.2905,
+      "encode_fps": 205.09177305921855,
+      "encoder": "X264",
+      "fps": 179.79255516638725,
+      "startup_ms": 119.01278599999999,
+      "total_frames": 392
+    },
+    "project_epoch": "1792669657170883734:2",
+    "source_asset": null,
+    "source_assets": null,
+    "source_window": null,
+    "state": "ready"
+  },
+  "decoded_output": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 1280,
+        "height": 720,
+        "duration": "16.333333",
+        "nb_read_frames": "392"
+      },
+      {
+        "codec_name": "aac",
+        "codec_type": "audio",
+        "sample_rate": "48000",
+        "channels": 2,
+        "duration": "16.341000",
+        "nb_read_frames": "766"
+      }
+    ]
+  },
+  "download": {
+    "bytes": 869042,
+    "sha256": "e39642726e81fd1ce99e94ed873b48237a6980a6fde87e7e2b42218a01a1f4e4"
+  },
+  "freeze_gpu": {
+    "held_source_frame": 15,
+    "frozen_frames": [
+      {
+        "frame": 370,
+        "sha256": "9a40f216275f03348aec5b02ce118e0058eabb597e0cde75dd50d93435af721e",
+        "bytes": 263182
+      },
+      {
+        "frame": 380,
+        "sha256": "9a40f216275f03348aec5b02ce118e0058eabb597e0cde75dd50d93435af721e",
+        "bytes": 263182
+      }
+    ],
+    "after_undo": [
+      {
+        "frame": 370,
+        "sha256": "9a40f216275f03348aec5b02ce118e0058eabb597e0cde75dd50d93435af721e",
+        "bytes": 263182
+      },
+      {
+        "frame": 380,
+        "sha256": "302d233f6761af1ef556fe17cd2c81569a42d903a3b78fce8c00415f19587087",
+        "bytes": 269873
+      }
+    ]
+  },
+  "screenshots": [
+    "nativeview-compound-reopen-windows.jpg",
+    "nativeview-compound-export-windows.jpg",
+    "nativeview-restart-windows.jpg",
+    "nativeview-freeze-hd-windows.jpg"
+  ],
+  "limits": [
+    "RuntimeMaxSec=600",
+    "TimeoutStopSec=3",
+    "KillMode=control-group",
+    "Restart=no",
+    "CPUQuota=100%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "OOMScoreAdjust=1000",
+    "Nice=19",
+    "IOWeight=10",
+    "TasksMax=128"
+  ],
+  "remaining": [
+    "Current delivered port8811 service is still df50859; qualification candidate has not replaced it.",
+    "Broader100/150percentDPI/viewport/device/500clip performance andM7release QA remain explicit.",
+    "No sustained real-footage throughput, gapless playback or physical audio-output claim.",
+    "Native compound grouping can change child-bus/compositing/normalization context as in the desktop; the legacy conservative mix option remains separate.",
+    "Moving SmoothCut/masks/adjustments and continuous audio/recording requirements remain separate full-plan work."
+  ],
+  "accepted_capabilities": [
+    "compound_clips",
+    "freeze_frame"
+  ]
+}

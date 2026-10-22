@@ -84,6 +84,7 @@ let exportPanel=null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));}
+function updateBrowserToggle(){for(const button of document.querySelectorAll('#workspaces [data-panel]'))button.setAttribute('aria-expanded',String(innerWidth<=760?editor.classList.contains('browser-drawer-open'):!editor.classList.contains('browser-collapsed')));}
 function setInspectorTab(tab){
   if(!['video','audio','selection'].includes(tab))return;
   $('inspector').dataset.inspectorTab=tab;
@@ -93,14 +94,14 @@ function revealBrowser(name){
   const same=($('browser').dataset.browserPanel || 'Media')===name;
   if(innerWidth<=760){const open=!(same && editor.classList.contains('browser-drawer-open') && ['Media','Effects'].includes(name));editor.classList.toggle('browser-drawer-open',open);if(open)editor.classList.remove('inspector-drawer-open');}
   else if(same && ['Media','Effects'].includes(name))editor.classList.toggle('browser-collapsed');else editor.classList.remove('browser-collapsed');
-  for(const button of document.querySelectorAll('#workspaces [data-panel]'))button.setAttribute('aria-expanded',String(innerWidth<=760?editor.classList.contains('browser-drawer-open'):!editor.classList.contains('browser-collapsed')));
+  updateBrowserToggle();updateInspectorToggle();
 }
 function workspaceTool(workspace,label){
   if(editor.dataset.workspace!==workspace || !$('workspace-tools').querySelector('button'))showWorkspace(workspace);
   const action=[...$('workspace-tools').querySelectorAll('button')].find(button=>button.textContent===label);
   if(action && !action.disabled)action.click();
 }
-function revealInspector(){if(innerWidth<=760)editor.classList.remove('browser-drawer-open');editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");updateInspectorToggle();}
+function revealInspector(){if(innerWidth<=760)editor.classList.remove('browser-drawer-open');editor.classList.remove("inspector-collapsed");if(innerWidth<=950)editor.classList.add("inspector-drawer-open");updateBrowserToggle();updateInspectorToggle();}
 $("search").addEventListener("input", () => {
   const query = $("search").value.toLowerCase();
   if(catalog){catalog.search(query);return;}
@@ -1795,7 +1796,7 @@ silencePanel=createSilencePanel({root:$("silence-dialog"),notice,preview:(ranges
 }});
 for(const button of document.querySelectorAll('button[data-inspector-tab]'))button.addEventListener('click',()=>setInspectorTab(button.dataset.inspectorTab));
 $('inspector-content').addEventListener('click',event=>{if(event.target.closest('[data-inspector-auto-balance]'))workspaceTool('Color','Auto balance');});
-$('close-browser').addEventListener('click',()=>{editor.classList.remove('browser-drawer-open');document.querySelector('#workspaces [data-panel="Media"]').focus();});
+$('close-browser').addEventListener('click',()=>{editor.classList.remove('browser-drawer-open');updateBrowserToggle();document.querySelector('#workspaces [data-panel="Media"]').focus();});
 $('viewer-volume').addEventListener('input',()=>{for(const video of [$('source-video'),$('program-video')])video.volume=Number($('viewer-volume').value);});
 for(const button of document.querySelectorAll('[data-ui]'))button.addEventListener('click',()=>{
   switch(button.dataset.ui){

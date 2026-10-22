@@ -120,11 +120,12 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         }
         const darkLabel=clip.display_rgb && clip.display_rgb[0]*.299+clip.display_rgb[1]*.587+clip.display_rgb[2]*.114<110;
         ctx.fillStyle = darkLabel?"#eeeeee":"#121212";
-        ctx.fillText(clip.name || `Clip ${clip.id}`, x + 9, top + Math.min(24,rowHeight*.35));
+        const labelX=Math.max(x+9,HEADER+5);
+        ctx.fillText(clip.name || `Clip ${clip.id}`, labelX, top + Math.min(24,rowHeight*.35));
         ctx.fillStyle = darkLabel?"#dddddd":"#202020";
         if(rowHeight>=60)ctx.fillText(
           `${clip.length_frames} fr${clip.linked_group !== null ? " · linked" : ""}`,
-          x + 9,
+          labelX,
           top + 41,
         );
         ctx.restore();

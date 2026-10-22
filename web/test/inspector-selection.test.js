@@ -76,7 +76,18 @@ test('compact Inspector preserves collapsed crop actions, accessible key navigat
   const h=harness(t),groups=h.all().filter(node=>node.className==='inspector-property-group');
   assert.equal(groups.find(node=>node.children[0].textContent==='Transform').open,true);assert.equal(groups.find(node=>node.children[0].textContent==='Crop').open,false);
   assert.equal(h.field('Toggle Position keyframes at playhead').textContent,'◆');assert.equal(h.field('Previous Position keyframe').textContent,'‹');assert.equal(h.field('Reset crop').textContent,'↺');
+  assert.equal(h.field('Rotation').parent.textContent,'');assert.equal(h.field('Rotation')['aria-label'],'Rotation');
   h.click('Reset crop');await settle();assert.deepEqual(h.commands[0].edit,{action:'reset_transform',params:['CropLeft','CropTop','CropRight','CropBottom','CropSoftness'],reset_flip:false});
+});
+
+test('native key pager stays collapsed until requested and preserves page actions and navigation focus',async t=>{
+  const h=harness(t),state=new Map(),pages=[],scope='epoch:timeline:9';h.native.key_page={index:0,total_pages:2,page_size:16};
+  h.Element.prototype.focus=function(){this.focused=true;};
+  const render=()=>{const root=new h.Element('div');renderProperties(root,h.native,{writable:true,getFrame:()=>20,commit:async()=>{},reload(){},notice(){},visualState:state,scope,setKeyPage:page=>pages.push(page),transformControls:false,gainControls:false,compositing:false});return root;};
+  const root=render(),pager=root.children[0];assert.equal(pager.dataset.visualPath,'key-page-controls');assert.equal(pager.open,false);
+  h.all(pager).find(node=>node.textContent==='Next key page').dispatchEvent(new Event('click'));assert.deepEqual(pages,[1]);
+  state.set('key-page-focus',scope);const requested=render(),input=h.all(requested.children[0]).find(node=>node.tagName==='input');await settle();
+  assert.equal(requested.children[0].open,true);assert.equal(input.focused,true);assert.equal(state.has('key-page-focus'),false);
 });
 
 test('linked Zoom edit sends only changed axes, while native row diamond always includes both axes',async t=>{

@@ -29,10 +29,12 @@
 #inspector .inspector-number { display: flex; flex-wrap: nowrap; min-width: 0; }
 #inspector .inspector-number > .field { flex: 1 1 auto; margin: 0; grid-template-columns: minmax(65px,1fr) minmax(52px,90px); }
 #inspector .inspector-number-apply { display: none; }
-#inspector .inspector-axis-row { display: flex; align-items: center; gap: 5px; min-width: 0; padding: 3px 0; }
-#inspector .inspector-row-label { flex: 0 0 58px; font-size: 12px; }
-#inspector .inspector-axis-row > .inspector-number { flex: 1 1 68px; }
-#inspector .inspector-axis-row > .inspector-number > .field { grid-template-columns: auto minmax(40px,1fr); font-size: 11px; }
+#inspector .inspector-axis-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 2px; min-width: 0; padding: 1px 0; }
+#inspector .inspector-row-label { flex: 0 0 44px; font-size: 11px; }
+#inspector .inspector-axis-row > .inspector-number { flex: 1 1 0; min-width: 0; margin: 0; }
+#inspector .inspector-axis-row > .inspector-number > .field { grid-template-columns: auto minmax(0,1fr); gap: 2px; font-size: 11px; }
+#inspector .inspector-axis-row.inspector-axis-single > .inspector-number > .field { grid-template-columns: minmax(0,1fr); font-size: 0; }
+#inspector .inspector-axis-row input[type="number"] { min-height: 22px; font-size: 11px; padding: 1px 2px; }
 #inspector .inspector-key-controls { display: inline-flex; align-items: center; gap: 0; flex: 0 0 auto; white-space: nowrap; }
 #inspector .inspector-key-controls > button { min-width: 22px; min-height: 26px; width: 22px; padding: 0; margin: 0; border-color: transparent; background: transparent; }
 #inspector .inspector-key-controls > button:first-child { order: 1; }
@@ -42,6 +44,11 @@
 #inspector .inspector-reset { min-width: 24px; width: 24px; padding: 0; border-color: transparent; background: transparent; font-size: 16px; }
 #inspector .inspector-zoom-link { display: inline-flex; align-items: center; font-size: 12px; gap: 1px; }
 #inspector .inspector-zoom-link input { width: 12px; margin: 0; }
+#inspector .inspector-axis-row > .inspector-key-controls { width: 54px; }
+#inspector .inspector-axis-row > .inspector-key-controls > button,
+#inspector .inspector-axis-row > .inspector-reset { min-width: 18px; width: 18px; min-height: 22px; padding: 0; }
+#inspector .inspector-axis-row > .inspector-reset { flex: 0 0 18px; margin: 0; }
+#inspector .inspector-axis-row > .inspector-zoom-link { flex: 0 0 18px; gap: 0; font-size: 9px; }
 #inspector .inspector-filter-toolbar,
 #inspector .inspector-filter-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; margin: 3px 0; }
 #inspector .inspector-filter-toolbar > select { flex: 1 1 100px; min-width: 0; }
@@ -59,7 +66,4 @@
 #inspector .inspector-grade-coordinates > summary { font-size: 11px; font-weight: 400; }
 @container (max-width: 480px) {
   #inspector .grade-wheels { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  #inspector .inspector-axis-row { gap: 2px; flex-wrap: wrap; }
-  #inspector .inspector-row-label { flex-basis: 52px; }
-  #inspector .inspector-axis-row > .inspector-key-controls { margin-left: auto; }
 }

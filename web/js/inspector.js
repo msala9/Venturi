@@ -88,9 +88,9 @@ function selectedPropertyControls(root,detail,{selection,getSelection,frame,getF
   root.append(section);
   return {section,register,button,localButton,submit,current,sync,available:()=>!waiting && !outcomeUnknown && current()};
 }
-function selectedNumber(parent,label,parameter,controls,apply){
+function selectedNumber(parent,label,parameter,controls,apply,displayLabel){
   const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));
-  form.className='property-row inspector-number';field.className='field';field.textContent=/^(Zoom|Position|Anchor)[XY]$/.test(label)?label.slice(-1):label;
+  form.className='property-row inspector-number';field.className='field';field.textContent=displayLabel ?? (/^(Zoom|Position|Anchor)[XY]$/.test(label)?label.slice(-1):label);
   input.type='number';input.step=parameter.step ?? 'any';input.required=true;input.value=parameter.value;input.min=parameter.min;input.max=parameter.max;input.setAttribute('aria-label',label);field.append(input);
   const button=controls.register(document.createElement('button'));button.className='inspector-number-apply';button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(field,button);
   const complete=()=>{const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && form.reportValidity())apply(value);};
@@ -117,11 +117,11 @@ export function renderSelectedVideoProperties(root,detail,options){
     const groupParams=label==='Crop'?CROP_PARAMS:groupRows.flatMap(([,params])=>params);
     if(label!=='Opacity')controls.button(`Reset ${label.toLowerCase()}`,{action:'reset_transform',params:groupParams,reset_flip:resetFlip},heading);
     for(const [rowLabel,params] of groupRows){
-      const row=document.createElement('div'),legend=document.createElement('span');row.className='inspector-axis-row';legend.className='inspector-row-label';legend.textContent=rowLabel==='Zoom'?'Scale':rowLabel==='Anchor'?'Pivot':rowLabel;row.append(legend);group.append(row);
+      const row=document.createElement('div'),legend=document.createElement('span');row.className=`inspector-axis-row${params.length===1?' inspector-axis-single':''}`;legend.className='inspector-row-label';legend.textContent=rowLabel==='Zoom'?'Scale':rowLabel==='Anchor'?'Pivot':rowLabel;row.append(legend);group.append(row);
       for(const param of params)selectedNumber(row,param,parameters.get(param),controls,value=>{
         const changed=zoomParameters(param,zoomLink.get()).filter(axis=>parameters.get(axis).value!==value).map(param=>({param,value}));
         if(changed.length)controls.submit({action:'transform',parameters:changed});
-      });
+      },params.length===1?'':undefined);
       if(rowLabel==='Zoom'){
         const field=document.createElement('label'),link=controls.register(document.createElement('input'));field.className='inspector-zoom-link';field.title='Link Zoom X/Y';link.type='checkbox';link.setAttribute('aria-label','Link selected Zoom X/Y');zoomLink.register(link);field.append(link,'↔');row.append(field);
         link.addEventListener('change',()=>{if(link.checked && parameters.get('ZoomY').value!==parameters.get('ZoomX').value)controls.submit({action:'transform',parameters:[{param:'ZoomY',value:parameters.get('ZoomX').value}]});});
@@ -156,7 +156,7 @@ export function renderSelectedVideoEffects(root,detail,options){
   const controls=selectedPropertyControls(root,detail,options,true);if(!controls)return [];
   const {section}=controls;section.children[0].textContent='Selected video effects';
   const note=document.createElement('p');note.className='muted';note.textContent=`Values from ${options.primaryName || 'the first selected video clip'}. Title and Solid controls follow this primary type; edits affect only matching selected clips. Filter parameters affect selected clips already carrying that filter. Rust chooses defaults or keys at each clip's clamped playhead.`;inspectorHelp(section,note);
-  const group=label=>{const node=document.createElement('details'),summary=document.createElement('summary');node.dataset.visualPath=`selected-effects:${label}`;node.open=options.visualState?.get(node.dataset.visualPath) ?? !label.includes('background');node.className='inspector-property-group';summary.textContent=label;node.append(summary);section.append(node);return node;};
+  const group=label=>{const node=document.createElement('details'),summary=document.createElement('summary');node.dataset.visualPath=`selected-effects:${label}`;node.open=options.visualState?.get(node.dataset.visualPath) ?? label==='Selected solid color';node.className='inspector-property-group';summary.textContent=label;node.append(summary);section.append(node);return node;};
   function colorRow(parent,label,value,apply){
     const form=document.createElement('form'),fields={};form.className='property-row inspector-color-row';
     for(const axis of ['r','g','b','a']){const field=document.createElement('label'),input=controls.register(document.createElement('input'));field.className='field';field.textContent=`${label} ${axis.toUpperCase()}`;input.type='number';input.min=0;input.max=1;input.step='any';input.required=true;input.value=value[axis];input.setAttribute('aria-label',field.textContent);fields[axis]=input;field.append(input);form.append(field);}
@@ -224,8 +224,9 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     label.className="field";label.textContent="Native key page";input.type="number";input.min=1;input.max=page.total_pages;input.step=1;input.required=true;input.value=page.index+1;label.append(input);
     previous.type=next.type="button";previous.textContent="Previous key page";next.textContent="Next key page";go.textContent="Read key page";previous.disabled=page.index===0;next.disabled=page.index+1>=page.total_pages;
     previous.addEventListener("click",()=>setKeyPage(page.index-1));next.addEventListener("click",()=>setKeyPage(page.index+1));form.addEventListener("submit",event=>{event.preventDefault();if(form.reportValidity()){try{setKeyPage(keyPageIndex(input.value,page.total_pages));}catch(error){notice(error.message);}}});
-    note.className="muted";note.textContent=`Page ${page.index+1} of ${page.total_pages} · up to ${page.page_size} keys per parameter. Curve and value-key selections apply to this page; cross-parameter selection retains keys from other pages.`;form.append(label,previous,next,go,note);root.append(form);
-    if(visualState?.get("key-page-focus")===scope){visualState.delete("key-page-focus");queueMicrotask(()=>{if(input.isConnected)input.focus({preventScroll:true});});}
+    const pager=document.createElement('details'),summary=document.createElement('summary');pager.dataset.visualPath='key-page-controls';pager.open=visualState?.get(pager.dataset.visualPath) ?? false;summary.textContent='Key pages';pager.append(summary,form);
+    note.className="muted";note.textContent=`Page ${page.index+1} of ${page.total_pages} · up to ${page.page_size} keys per parameter. Curve and value-key selections apply to this page; cross-parameter selection retains keys from other pages.`;form.append(label,previous,next,go,note);root.append(pager);
+    if(scope && visualState?.get("key-page-focus")===scope){pager.open=true;visualState.delete("key-page-focus");queueMicrotask(()=>{if(input.isConnected)input.focus({preventScroll:true});});}
   }
   const zoomLink=sharedZoomLink || createZoomLink(visualState);
   let waiting=false;

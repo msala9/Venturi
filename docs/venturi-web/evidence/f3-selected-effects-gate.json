@@ -2,7 +2,7 @@
   "date": "2026-10-22",
   "status": "implementation_gate_passed_workflow_pending",
   "validation": "F3-selected-effects-keyclock",
-  "binary_sha256": "0439465c1f09cff20f9f553e61036268200cd3b85b3062f2ec3f2f2b5c483131",
+  "binary_sha256": "57416c48366af474258719c28f231c0004289a4db85876cce4f3e39ed5e5a542",
   "javascript": {
     "unique_cases": 978,
     "initial_failed": 2,
@@ -18,7 +18,8 @@
   ],
   "corrections": [
     "Typed OUTCOME_UNKNOWN retires selected-property owner without replay or overwriting its diagnostic.",
-    "New typed-editor DOM harness supplies/restores devicePixelRatio used by the unchanged legacy draw path."
+    "New typed-editor DOM harness supplies/restores devicePixelRatio used by the unchanged legacy draw path.",
+    "Color workspace and native color-preset entrypoints now reveal selected-filters, with legacy fallback and ancestor expansion; JavaScript syntax and embedded build rerun, unchanged regression gates reused."
   ],
   "limits": {
     "host": "halo2",

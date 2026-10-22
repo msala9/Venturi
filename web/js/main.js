@@ -130,6 +130,13 @@ const workspaceTools = {
   ],
 };
 
+function revealNativeFilters(){
+  const section=document.querySelector('[data-visual-path="selected-filters"]') || document.querySelector('[data-visual-path="filters"]');
+  if(!section)return notice('Select a native video clip first');
+  revealInspector();
+  for(let node=section;node;node=node.parentElement?.closest('details'))node.open=true;
+  section.scrollIntoView({block:'start'});
+}
 function showWorkspace(name) {
   editor.dataset.workspace = name;
   scopes?.setVisible(name === "Color" && !scopePlayback && $("screen").dataset.viewerMode !== "source" && $("slip-view").hidden);
@@ -168,8 +175,7 @@ function showWorkspace(name) {
           const curves=document.querySelector('[data-visual-path="curves"]');if(!curves)return notice("Select a native clip first");
           revealInspector();curves.open=true;curves.scrollIntoView({block:"start"});return;
         }
-        const filters=document.querySelector('[data-visual-path="filters"]');if(!filters)return notice("Select a native video clip first");
-        revealInspector();filters.open=true;filters.scrollIntoView({block:"start"});return;
+        revealNativeFilters();return;
       }
       if (!mixerDetail) return notice("Open a native timeline first");
       revealInspector();mixerDetail.open=true;mixerDetail.scrollIntoView({block:"start"});
@@ -207,7 +213,7 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
     if (name === "Presets") for (const [label,mode] of [["Open native color presets","Color"],["Open native audio presets","Audio"]]) {
       const action=document.createElement("button");action.textContent=label;action.addEventListener("click",()=>{
         showWorkspace(mode);revealInspector();
-        if(mode==="Color") {const section=document.querySelector('[data-visual-path="filters"]');if(!section)return notice("Select a native video clip first");section.open=true;section.scrollIntoView({block:"start"});}
+        if(mode==="Color") revealNativeFilters();
         else {if(!mixerDetail)return notice("Open a native timeline first");mixerDetail.open=true;mixerDetail.scrollIntoView({block:"start"});}
       });$("panel-content").append(action);
     }

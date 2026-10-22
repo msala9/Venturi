@@ -1,5 +1,321 @@
 use super::*;
 
+fn offline_relink(fixture: &Fixture, id: &str) -> asset_store::Edit {
+    let mut asset = fixture.asset.clone();
+    let mut payload = asset_payload::decode(&asset).unwrap();
+    for item in payload.files_mut() {
+        item.path = fixture
+            .store
+            .root()
+            .join("media")
+            .join(format!("{:016x}", item.content_hash))
+            .join("tiny.png");
+    }
+    asset.payload = payload.to_text();
+    fixture.store.create(id, &asset).unwrap();
+    asset_store::Edit::Relink {
+        id: id.into(),
+        revision: fixture.store.item(id, false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .into(),
+        path_tokens: vec!["tiny.png".into()],
+    }
+}
+fn prepare_relink(fixture: &Fixture, id: &str, edit: asset_store::Edit) -> Value {
+    let job = fixture
+        .jobs
+        .prepare_edit("epoch", "7", id, [7; 32], edit_receipt(id), edit)
+        .unwrap();
+    fixture.finish(job["id"].as_str().unwrap())
+}
+#[test]
+fn native_asset_relink_preserves_compound_ids_metadata_hashes_and_durable_counts_across_reopen() {
+    let fixture = Fixture::new();
+    let edit = offline_relink(&fixture, "offline");
+    let original = fixture.store.export("offline").unwrap();
+    assert_eq!(
+        fixture.store.item("offline", false).unwrap()["missing_count"],
+        1
+    );
+    let ready = prepare_relink(&fixture, "repair", edit.clone());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert_eq!(ready["result"]["missing_count"], 0);
+    assert_eq!(ready["result"]["relinked_files"], 1);
+    assert_eq!(ready["result"]["asset_id"], "offline");
+    assert_eq!(fixture.store.export("offline").unwrap(), original);
+    let report = fixture
+        .jobs
+        .commit_edit("repair", [7; 32], "epoch", "7", &edit)
+        .unwrap();
+    assert_eq!(report["missing_count"], 0);
+    assert_eq!(report["relinked_files"], 1);
+    let restored = fixture.store.export("offline").unwrap();
+    let after = asset_payload::parse(&restored).unwrap();
+    let mut before = asset_payload::parse(&original).unwrap();
+    let mut expected = asset_payload::decode(&before).unwrap();
+    let actual = asset_payload::decode(&after).unwrap();
+    let paths: Vec<_> = actual.files().map(|file| file.path.clone()).collect();
+    for item in expected.files_mut() {
+        item.path = paths[0].clone();
+    }
+    before.payload = expected.to_text();
+    assert_eq!(
+        serde_json::to_value(&before).unwrap(),
+        serde_json::to_value(&after).unwrap()
+    );
+    assert_eq!(
+        std::fs::read(&paths[0]).unwrap(),
+        std::fs::read(&fixture.path).unwrap()
+    );
+    assert_eq!(
+        std::fs::read(fixture.store.root().join("assets/offline.json.bak")).unwrap(),
+        original
+    );
+    let reopened = Store::new(fixture.store.root()).unwrap();
+    assert_eq!(reopened.export("offline").unwrap(), restored);
+    assert_eq!(reopened.item("offline", false).unwrap()["missing_count"], 0);
+    let completion = reopened
+        .completion(
+            "repair",
+            &crate::asset_journal::project_binding(&File::open(&fixture.project).unwrap()).unwrap(),
+        )
+        .unwrap()
+        .unwrap();
+    assert_eq!(completion.1["missing_count"], 0);
+    assert_eq!(completion.1["relinked_files"], 1);
+    drop(reopened);
+    fixture.close();
+}
+#[test]
+fn native_asset_relink_last_cas_rejects_restored_mtime_source_and_destination_replacement() {
+    for destination in [false, true] {
+        let fixture = Fixture::new();
+        let edit = offline_relink(&fixture, "offline");
+        let before = fixture.store.export("offline").unwrap();
+        let ready = prepare_relink(&fixture, "repair", edit.clone());
+        assert_eq!(ready["state"], "ready", "{ready}");
+        let path = if destination {
+            let jobs = fixture.jobs.0.jobs.lock().unwrap();
+            let prepared = jobs
+                .iter()
+                .find(|job| job.id == ready["id"].as_str().unwrap())
+                .unwrap()
+                .edit_result
+                .as_ref()
+                .unwrap();
+            fixture
+                .store
+                .root()
+                .join("media")
+                .join(prepared.files[0].parent.as_ref().unwrap())
+                .join(&prepared.files[0].name)
+        } else {
+            fixture.path.clone()
+        };
+        let bytes = std::fs::read(&path).unwrap();
+        let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
+        std::fs::write(&path, &bytes).unwrap();
+        File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_times(std::fs::FileTimes::new().set_modified(modified))
+            .unwrap();
+        assert!(
+            fixture
+                .jobs
+                .commit_edit("repair", [7; 32], "epoch", "7", &edit)
+                .is_err()
+        );
+        assert_eq!(fixture.store.export("offline").unwrap(), before);
+        fixture.close();
+    }
+}
+#[test]
+fn native_asset_relink_cancel_stale_revision_and_unsafe_tokens_never_commit_metadata() {
+    for cancel in [false, true] {
+        let fixture = Fixture::new();
+        let edit = offline_relink(&fixture, "offline");
+        let ready = prepare_relink(&fixture, "repair", edit.clone());
+        assert_eq!(ready["state"], "ready", "{ready}");
+        if cancel {
+            fixture
+                .jobs
+                .status(ready["id"].as_str().unwrap(), "epoch", true)
+                .unwrap();
+        } else {
+            let asset_store::Edit::Relink { revision, .. } = &edit else {
+                unreachable!()
+            };
+            fixture
+                .store
+                .edit(
+                    "rename",
+                    &asset_store::Edit::Update {
+                        id: "offline".into(),
+                        revision: revision.clone(),
+                        name: "Newer user name".into(),
+                    },
+                )
+                .unwrap();
+        }
+        let expected = fixture.store.export("offline").unwrap();
+        assert!(
+            fixture
+                .jobs
+                .commit_edit("repair", [7; 32], "epoch", "7", &edit)
+                .is_err()
+        );
+        assert_eq!(fixture.store.export("offline").unwrap(), expected);
+        fixture.close();
+    }
+    let fixture = Fixture::new();
+    let mut edit = offline_relink(&fixture, "offline");
+    if let asset_store::Edit::Relink { path_tokens, .. } = &mut edit {
+        *path_tokens = vec!["../outside.png".into()];
+    }
+    assert!(
+        fixture
+            .jobs
+            .prepare_edit(
+                "epoch",
+                "7",
+                "unsafe",
+                [7; 32],
+                edit_receipt("unsafe"),
+                edit
+            )
+            .is_err()
+    );
+    fixture.close();
+}
+#[test]
+fn native_asset_relink_unmatched_selection_reports_remaining_missing_without_rewriting_asset() {
+    let fixture = Fixture::new();
+    let mut edit = offline_relink(&fixture, "offline");
+    if let asset_store::Edit::Relink { path_tokens, .. } = &mut edit {
+        *path_tokens = vec!["other.png".into()];
+    }
+    std::fs::copy(&fixture.path, fixture.project.join("other.png")).unwrap();
+    let before = fixture.store.export("offline").unwrap();
+    let ready = prepare_relink(&fixture, "unmatched", edit.clone());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert_eq!(ready["result"]["missing_count"], 1);
+    assert_eq!(ready["result"]["relinked_files"], 0);
+    let report = fixture
+        .jobs
+        .commit_edit("unmatched", [7; 32], "epoch", "7", &edit)
+        .unwrap();
+    assert_eq!(report["missing_count"], 1);
+    assert_eq!(fixture.store.export("offline").unwrap(), before);
+    fixture.close();
+}
+#[test]
+fn native_asset_relink_repairs_original_sha_path_without_treating_its_own_verified_copy_as_stale() {
+    let fixture = Fixture::new();
+    let digest = format!(
+        "{:x}",
+        Sha256::digest(std::fs::read(&fixture.path).unwrap())
+    );
+    let mut asset = fixture.asset.clone();
+    let mut payload = asset_payload::decode(&asset).unwrap();
+    let path = fixture
+        .store
+        .root()
+        .join("media")
+        .join(digest)
+        .join("tiny.png");
+    for item in payload.files_mut() {
+        item.path = path.clone();
+    }
+    asset.payload = payload.to_text();
+    fixture.store.create("same-path", &asset).unwrap();
+    let before = fixture.store.export("same-path").unwrap();
+    let edit = asset_store::Edit::Relink {
+        id: "same-path".into(),
+        revision: fixture.store.item("same-path", false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .into(),
+        path_tokens: vec!["tiny.png".into()],
+    };
+    let ready = prepare_relink(&fixture, "same-path-repair", edit.clone());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert!(path.is_file());
+    assert_eq!(fixture.store.export("same-path").unwrap(), before);
+    assert_eq!(
+        fixture
+            .jobs
+            .commit_edit("same-path-repair", [7; 32], "epoch", "7", &edit)
+            .unwrap()["missing_count"],
+        0
+    );
+    assert_eq!(fixture.store.export("same-path").unwrap(), before);
+    let revision = fixture.store.item("same-path", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let imported = fixture
+        .jobs
+        .prepare_import("epoch", "7", "same-path", &revision)
+        .unwrap();
+    let imported = fixture.finish(imported["id"].as_str().unwrap());
+    assert_eq!(
+        imported["state"], "ready",
+        "Restored SHA media must remain importable: {imported}"
+    );
+    fixture.close();
+}
+#[test]
+fn native_asset_relink_mismatched_replacement_is_refused_before_publishing_any_media_cache_file() {
+    let fixture = Fixture::new();
+    let mut asset = fixture.asset.clone();
+    let mut payload = asset_payload::decode(&asset).unwrap();
+    let sha = format!(
+        "{:x}",
+        Sha256::digest(std::fs::read(&fixture.path).unwrap())
+    );
+    for item in payload.files_mut() {
+        item.path = fixture
+            .store
+            .root()
+            .join("media")
+            .join(&sha)
+            .join("tiny.png");
+    }
+    asset.payload = payload.to_text();
+    fixture.store.create("offline", &asset).unwrap();
+    let edit = asset_store::Edit::Relink {
+        id: "offline".into(),
+        revision: fixture.store.item("offline", false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .into(),
+        path_tokens: vec!["tiny.png".into()],
+    };
+    let before = fixture.store.export("offline").unwrap();
+    let mut encoder = png::Encoder::new(File::create(&fixture.path).unwrap(), 16, 16);
+    encoder.set_color(png::ColorType::Rgb);
+    encoder.set_depth(png::BitDepth::Eight);
+    encoder
+        .write_header()
+        .unwrap()
+        .write_image_data(&[255; 16 * 16 * 3])
+        .unwrap();
+    let ready = prepare_relink(&fixture, "mismatch", edit);
+    assert_eq!(ready["state"], "failed", "{ready}");
+    assert_eq!(ready["error"], "SOURCE_CHANGED");
+    assert_eq!(fixture.store.export("offline").unwrap(), before);
+    assert_eq!(
+        std::fs::read_dir(fixture.store.root().join("media"))
+            .unwrap()
+            .count(),
+        0
+    );
+    fixture.close();
+}
+
 #[test]
 fn clipboard_image_prepares_original_bytes_then_publishes_once_after_native_trial() {
     let fixture = Fixture::new();

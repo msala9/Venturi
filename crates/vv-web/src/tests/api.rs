@@ -1886,18 +1886,25 @@ async fn native_asset_http_library_readers_import_routes_security_and_download_c
         );
     }
     let folder_command = |id: &str| json!({"command_id":id,"client_id":"native-browser","command_epoch":session["command_epoch"],"project_epoch":epoch,"if_generation":session["generation"],"if_revision":null,"operation":{"kind":"edit_native_asset_library","edit":{"action":"create_folder","folders_revision":"absent","name":"Takes","parent":null}}});
-    let (tx, rx) = tokio::sync::oneshot::channel();
-    host.call(Action::PrepareNativeAssetEdit(
-        serde_json::from_value(folder_command("pending-http-folder")).unwrap(),
-        tx,
-    ))
-    .await
-    .unwrap();
-    let preparation = rx.await.unwrap().unwrap();
-    assert!(matches!(
-        &preparation,
-        crate::host::NativeEditPreparation::Pending(_)
-    ));
+    let response = app
+        .clone()
+        .oneshot(make(
+            "POST",
+            "/api/v1/native-assets/commands/prepare",
+            folder_command("pending-http-folder"),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let preparation: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    assert!(preparation["id"].is_string());
+    assert!(!root.join(".assets/folders.json").exists());
+    let unchanged = host.call(Action::Session).await.unwrap();
+    for key in ["project_epoch", "generation", "history", "unsaved"] {
+        assert_eq!(unchanged[key], session[key]);
+    }
     let response = app
         .clone()
         .oneshot(make(
@@ -1920,8 +1927,72 @@ async fn native_asset_http_library_readers_import_routes_security_and_download_c
         assert_eq!(pending["error"]["details"]["recovery_pending"], true);
     }
     assert!(pending["error"]["details"]["job_id"].is_string());
-    drop(preparation);
+    let response = app
+        .clone()
+        .oneshot(make(
+            "DELETE",
+            &format!(
+                "/api/v1/native-assets/jobs/{}?project_epoch={epoch}",
+                preparation["id"].as_str().unwrap()
+            ),
+            Value::Null,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert!(!root.join(".assets/folders.json").exists());
+    let mut unprepared = folder_command("refuse-direct-prepare");
+    unprepared["operation"] = json!({"kind":"edit_native_asset_library","edit":{"action":"update","id":"native-source","revision":revision,"name":"Must not rename during preparation"}});
+    let response = app
+        .clone()
+        .oneshot(make(
+            "POST",
+            "/api/v1/native-assets/commands/prepare",
+            unprepared,
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UNPROCESSABLE_ENTITY);
+    assert_eq!(
+        store.item("native-source", false).unwrap()["name"],
+        "Native compound"
+    );
     let command = folder_command("create-http-folder");
+    let response = app
+        .clone()
+        .oneshot(make(
+            "POST",
+            "/api/v1/native-assets/commands/prepare",
+            command.clone(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let queued: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        let status = host
+            .call(Action::NativeAssetStatus(
+                queued["id"].as_str().unwrap().into(),
+                SourceQuery {
+                    project_epoch: epoch.into(),
+                },
+                false,
+            ))
+            .await
+            .unwrap();
+        if status["state"] == "ready" {
+            break;
+        }
+        assert!(
+            matches!(status["state"].as_str(), Some("queued" | "running")),
+            "{status}"
+        );
+        assert!(std::time::Instant::now() < deadline);
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    assert!(!root.join(".assets/folders.json").exists());
     let response = app
         .clone()
         .oneshot(make(
@@ -1931,13 +2002,27 @@ async fn native_asset_http_library_readers_import_routes_security_and_download_c
         ))
         .await
         .unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
+    let status = response.status();
     let receipt: Value =
         serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    assert_eq!(status, StatusCode::OK, "{receipt}");
     assert_eq!(receipt["status"], "applied");
     assert_eq!(receipt["library_durable"], true);
     assert_eq!(receipt["generation"], session["generation"]);
     assert_eq!(receipt["durability"]["state"], "volatile");
+    let response = app
+        .clone()
+        .oneshot(make(
+            "POST",
+            "/api/v1/native-assets/commands/prepare",
+            command.clone(),
+        ))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let completed: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 32768).await.unwrap()).unwrap();
+    assert_eq!(completed, json!({"state":"applied","receipt":receipt}));
     let response = app
         .clone()
         .oneshot(make("POST", "/api/v1/native-assets/commands", command))

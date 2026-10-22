@@ -72,8 +72,10 @@ The server stores native assets in `<projects-root>/.assets` by default. Overrid
 with `--assets-root DIRECTORY` to reuse an authorized native library. The root
 contains the desktop-compatible `assets` and `media` directories. The download
 action exports original desktop v1 JSON. Rename, archive, restore and restore
-previous settings preserve native folder metadata. Folder organization is not
-implemented by this increment.
+previous settings preserve native folder metadata. Native-library folders can
+be created, renamed, moved
+and removed, and selected assets can be moved between them. Removing a folder
+keeps its media and promotes its direct contents to its parent.
 
 Preparation runs one copy/probe worker, with one queued job, 64 unique files,
 512 MiB per file, 2 GiB per asset and a 512 MiB disk reserve. Files are copied into
@@ -85,8 +87,30 @@ cancellation terminates and reaps it. Desktop libraries using their original
 Existing binary media formats are
 supported; playlists and arbitrary external paths are refused. The native store
 is separate from the ds4 archive API. No NAS mount, credentials, browser or driver
-installation is performed, and concurrent native-desktop library writes are not
-supported by the web store's lock.
+installation is performed. Older desktop versions do not participate in the web
+store's locks and must not write the same catalog concurrently.
+
+### Shared native root configuration (F5 source candidate)
+
+The F5 source candidate adds `VENTURI_LIBRARY_ROOT` for the desktop. Use an
+absolute canonical library path `<L>`; an empty override keeps the original
+XDG/home default and a relative override is refused. Configure the web host
+with `--assets-root <L> --presets-root <L>/presets`. This identifies one native
+library containing `assets/`, `media/`, `presets/` and `folders.json`; it does not
+redirect desktop settings or the ds4 archive catalog. Media dependencies stored
+in native payloads still require the same usable absolute path on each host.
+
+Compatible desktop/web source versions coordinate with nonblocking locks and
+refuse stale or unfinished catalog transactions. Refresh the native Library
+panel after another editor changes a record. A pending desktop recovery marker
+blocks web access until the compatible desktop refreshes/reopens and recovers
+it. Never remove a recovery marker to bypass the error. Existing older native
+binaries remain incompatible with simultaneous shared writes.
+
+This source configuration is not evidence that halo2 has the NAS mounted or
+that the current delivered service uses that root. The canonical mount,
+compatible desktop deployment and actual shared-host workflow remain F5
+acceptance requirements; no mount or archive content is changed by this work.
 
 ## First editing session
 

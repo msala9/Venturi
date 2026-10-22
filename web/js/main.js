@@ -25,7 +25,7 @@ import { renderCatalog,mediaRowInfo } from "./catalog.js";
 import { createSlipView } from "./slip.js";
 import { createSilencePanel } from "./silence.js";
 import { createLibraryPanel } from "./library.js";
-import {createNativeAssetPanel} from './native-assets.js';
+import {createNativeAssetPanel,nativeAssetMutation} from './native-assets.js';
 import {createMediaImportPanel} from './media-import.js';
 import {createOtioImportPanel} from './otio-import.js';
 import {createClipboard,bindClipboardEvents,clipboardBlocked} from './clipboard.js';
@@ -1137,7 +1137,7 @@ function commandNotice(receipt) {
       ? "Command applied. Save current edits before restarting the server."
       : "Command applied";
 }
-async function mutate(operation, project = false,route=null) {
+async function mutate(operation, project = false,route=null,preparedMutation=null) {
   const libraryOnly=operation.kind==='edit_audio_preset_library';
   const requestEpoch=documentState?.project_epoch;
   if(!libraryOnly){fastTransport?.stop();audioScrub?.stop();}
@@ -1149,7 +1149,8 @@ async function mutate(operation, project = false,route=null) {
   if(documentState?.project_epoch!==requestEpoch)throw new Error("The project changed before this command could start");
   if (!project && (!timeline || timeline.id === "fixture"))
     throw new Error("Open a real project before editing");
-  const body = {
+  if(preparedMutation && (route!=='/native-assets/commands' || !project || operation.kind!=='edit_native_asset_library' || preparedMutation.client_id!==clientId || preparedMutation.command_epoch!==documentState.command_epoch || preparedMutation.project_epoch!==documentState.project_epoch || preparedMutation.if_generation!==documentState.generation || preparedMutation.if_revision!==null || typeof preparedMutation.command_id!=='string' || !preparedMutation.command_id || JSON.stringify(preparedMutation.operation)!==JSON.stringify(operation)))throw new Error('The prepared native library command is stale; refresh before relinking');
+  const body = preparedMutation?structuredClone(preparedMutation):{
     command_id: crypto.randomUUID(),
     client_id: clientId,
     command_epoch: documentState.command_epoch,
@@ -1798,7 +1799,7 @@ slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(o
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1),clip_id:clip};
 }});
 sharedLibrary=createLibraryPanel({root:sharedLibraryRoot,getState:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>mutate(operation,true),notice});
-nativeAssets=createNativeAssetPanel({root:nativeAssetsRoot,getContext:()=>documentState?{...documentState,selected_ids:[...mediaState.selected]}:null,canCommit:()=>writable && !busy && !unresolved,libraryCommit:operation=>mutate(operation,true,'/native-assets/commands'),projectCommit:operation=>mutate(operation,true),onImported:ids=>{mediaState.selected=ids.filter(id=>documentState.media.some(item=>item.id===id));selectedMedia=mediaState.selected.at(-1) || null;catalog?.search(mediaState.query || '');},notice});
+nativeAssets=createNativeAssetPanel({root:nativeAssetsRoot,getContext:()=>documentState?{...documentState,selected_ids:[...mediaState.selected]}:null,canCommit:()=>writable && !busy && !unresolved,makeLibraryMutation:operation=>{if(!writable || busy || unresolved)throw new Error('Editing is read only or a command is pending');return nativeAssetMutation(documentState,clientId,operation,crypto.randomUUID());},libraryCommit:(operation,prepared)=>mutate(operation,true,'/native-assets/commands',prepared),projectCommit:operation=>mutate(operation,true),onImported:ids=>{mediaState.selected=ids.filter(id=>documentState.media.some(item=>item.id===id));selectedMedia=mediaState.selected.at(-1) || null;catalog?.search(mediaState.query || '');},notice});
 const reviewContext=()=>{
   if(!documentState?.project_name || !timeline || timeline.id==="fixture")return null;
   const clips=timeline.tracks.flatMap(track=>track.clips).filter(clip=>view.selection.includes(clip.id)),oneGroup=clips[0]?.linked_group && clips.every(clip=>clip.linked_group===clips[0].linked_group),clip=(clips.length===1 || oneGroup)?clips.find(clip=>clip.kind==="media"):null;

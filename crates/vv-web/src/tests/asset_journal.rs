@@ -239,3 +239,35 @@ fn manifest_path_budget_and_orphan_stage_admission_fail_closed_without_foreign_c
     drop(root);
     std::fs::remove_dir_all(path).unwrap();
 }
+
+#[test]
+fn journal_backup_target_accepts_only_exact_native_backup_names_and_recovers_them() {
+    let (path, root, assets) = fixture();
+    let mut prepared = PreparedEdit::new(&root, completion("backup", &root), json!({})).unwrap();
+    prepared
+        .add(true, "a.json.bak".into(), None, b"native previous")
+        .unwrap();
+    assert!(validate_manifest(&prepared.manifest).is_ok());
+    for invalid in [
+        "../a.json.bak",
+        "a.json.bak.bak",
+        "a.json.deleted",
+        ".json.bak",
+        "a/b.json.bak",
+    ] {
+        prepared.manifest.targets[0].name = invalid.into();
+        assert!(validate_manifest(&prepared.manifest).is_err(), "{invalid}");
+    }
+    prepared.manifest.targets[0].name = "a.json.bak".into();
+    intent(&mut prepared, &root);
+    recover(&root, &assets).unwrap();
+    assert_eq!(
+        std::fs::read(path.join("assets/a.json.bak")).unwrap(),
+        b"native previous"
+    );
+    assert!(!pending(&root).unwrap());
+    drop(prepared);
+    drop(assets);
+    drop(root);
+    std::fs::remove_dir_all(path).unwrap();
+}

@@ -3,6 +3,36 @@ use vv_core::{
     Clip, ClipId, ClipSource, Rational, Timeline, Track, TrackKind, clipboard::ClipboardOrigin,
 };
 
+#[test]
+fn native_pending_marker_blocks_web_reads_and_writes_without_touching_foreign_recovery_data() {
+    use std::os::unix::fs::symlink;
+    let (root, store, asset) = fixture();
+    store.create("native", &asset).unwrap();
+    let before = store.export("native").unwrap();
+    let marker = root.join(".venturi-native-assets-pending.json");
+    std::fs::write(&marker, b"native recovery content").unwrap();
+    assert_eq!(store.item("native", false).unwrap_err().1, "LIBRARY_BUSY");
+    assert_eq!(store.create("new", &asset).unwrap_err().1, "LIBRARY_BUSY");
+    assert_eq!(std::fs::read(&marker).unwrap(), b"native recovery content");
+    std::fs::remove_file(&marker).unwrap();
+    let foreign = root.join("foreign.json");
+    std::fs::write(&foreign, b"foreign").unwrap();
+    symlink(&foreign, &marker).unwrap();
+    assert_eq!(store.export("native").unwrap_err().1, "LIBRARY_BUSY");
+    assert_eq!(store.lock().unwrap_err().1, "LIBRARY_BUSY");
+    assert!(
+        std::fs::symlink_metadata(&marker)
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
+    assert_eq!(std::fs::read(&foreign).unwrap(), b"foreign");
+    std::fs::remove_file(&marker).unwrap();
+    assert_eq!(store.export("native").unwrap(), before);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn fixture() -> (PathBuf, Store, AssetFile) {
     let root = std::env::temp_dir().join(format!(
         "venturi-assets-store-{}-{}",

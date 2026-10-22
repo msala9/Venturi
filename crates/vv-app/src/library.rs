@@ -3,6 +3,7 @@
 //! JSON file each so they can be synced or handed around one by one, and the
 //! folders the assets are sorted in.
 
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc;
 
@@ -15,6 +16,13 @@ use crate::paste_attributes::{Attribute, KeyframeAnchor, TimelineFormat};
 use crate::settings::Shortcut;
 
 const VERSION: u32 = 1;
+
+#[path = "library_io.rs"]
+mod io;
+use io::{Guard, Kind, Record, Target};
+type CatalogRecords = BTreeMap<String, Record>;
+type AssetCatalog = (Vec<Asset>, Vec<LibraryFolder>, CatalogRecords);
+type PresetCatalog = (Vec<(String, AttributePreset)>, CatalogRecords);
 
 #[derive(Serialize, Deserialize)]
 struct AssetFile {
@@ -110,7 +118,12 @@ impl AttributePreset {
 struct PendingAsset {
     name: String,
     /// `Ok(None)`: the file was already there, nothing added.
-    done: mpsc::Receiver<Result<Option<Asset>, String>>,
+    done: mpsc::Receiver<Result<Option<PreparedAsset>, String>>,
+}
+
+struct PreparedAsset {
+    asset: Asset,
+    record: Option<Record>,
 }
 
 #[derive(Default)]
@@ -121,10 +134,18 @@ pub(crate) struct Library {
     pub folders: Vec<LibraryFolder>,
     pub presets: Vec<(String, AttributePreset)>,
     pending: Vec<PendingAsset>,
+    records: BTreeMap<String, Record>,
+    loaded: bool,
+    error: Option<String>,
 }
 
 impl Library {
     pub fn default_root() -> Option<PathBuf> {
+        if let Some(path) = std::env::var_os("VENTURI_LIBRARY_ROOT").filter(|path| !path.is_empty())
+        {
+            // A relative override must fail visibly in open(), never select another library.
+            return Some(PathBuf::from(path));
+        }
         let data = std::env::var_os("XDG_DATA_HOME")
             .filter(|d| !d.is_empty())
             .map(PathBuf::from)
@@ -136,40 +157,190 @@ impl Library {
 
     /// Unreadable entries are skipped with a message, never fatal.
     pub fn open(root: PathBuf) -> Self {
-        let mut assets: Vec<Asset> = json_files(&root.join("assets"))
-            .filter_map(|(id, text)| {
-                let file: AssetFile = parse(&id, &text)?;
-                let payload = match ClipboardPayload::from_text(&file.payload) {
-                    Some(Ok(payload)) => payload,
-                    _ => {
-                        eprintln!("library asset {id}: unreadable payload");
-                        return None;
-                    }
-                };
-                Some(Asset {
-                    id,
-                    name: file.name,
-                    folder: file.folder,
-                    payload,
-                })
-            })
-            .collect();
-        assets.sort_by_cached_key(|a| a.name.to_lowercase());
-        let folders = std::fs::read_to_string(root.join("folders.json"))
-            .ok()
-            .and_then(|text| parse::<FoldersFile>("folders", &text))
-            .map_or_else(Vec::new, |f| f.folders);
-        let mut presets: Vec<(String, AttributePreset)> = json_files(&root.join("presets"))
-            .filter_map(|(id, text)| Some((id.clone(), parse(&id, &text)?)))
-            .collect();
-        presets.sort_by_cached_key(|(_, p)| p.name.to_lowercase());
-        Self {
+        let mut library = Self {
             root: Some(root),
-            assets,
-            folders,
-            presets,
-            pending: Vec::new(),
+            ..Default::default()
+        };
+        if let Err(error) = library.refresh() {
+            library.error = Some(error);
         }
+        library
+    }
+
+    pub fn error(&self) -> Option<&str> {
+        self.error.as_deref()
+    }
+
+    pub fn refresh(&mut self) -> Result<(), String> {
+        let result = (|| {
+            let Some(root) = &self.root else {
+                return Ok(());
+            };
+            if !root.is_absolute() {
+                return Err("VENTURI_LIBRARY_ROOT must be an absolute directory".into());
+            }
+            let assets_guard = Guard::snapshot(root, Kind::Assets)?;
+            let presets_guard = Guard::snapshot(&root.join("presets"), Kind::Presets)?;
+            let (assets, folders, mut records) = read_assets(&assets_guard)?;
+            let (presets, preset_records) = read_presets(&presets_guard)?;
+            records.extend(preset_records);
+            self.root = Some(root.canonicalize().map_err(|e| e.to_string())?);
+            self.assets = assets;
+            self.folders = folders;
+            self.presets = presets;
+            self.records = records;
+            self.loaded = true;
+            Ok(())
+        })();
+        self.error = result.as_ref().err().cloned();
+        result
+    }
+
+    fn writable(&self) -> Result<(), String> {
+        if self.root.is_some() && !self.loaded {
+            return Err(self
+                .error
+                .clone()
+                .unwrap_or_else(|| "Refresh the library before editing".into()));
+        }
+        Ok(())
+    }
+
+    fn change_assets(
+        &mut self,
+        ids: &[String],
+        check_folders: bool,
+        change: impl FnOnce(&mut Vec<Asset>, &mut Vec<LibraryFolder>) -> Result<(), String>,
+    ) -> Result<(), String> {
+        self.writable()?;
+        let Some(root) = &self.root else {
+            let (mut assets, mut folders) = (self.assets.clone(), self.folders.clone());
+            change(&mut assets, &mut folders)?;
+            assets.sort_by_cached_key(|a| a.name.to_lowercase());
+            self.assets = assets;
+            self.folders = folders;
+            return Ok(());
+        };
+        let guard = Guard::write(root, Kind::Assets)?;
+        let (mut assets, mut folders, records) = read_assets(&guard)?;
+        if check_folders && self.records.get("folders.json") != records.get("folders.json") {
+            return Err("Library folders changed; refresh before editing".into());
+        }
+        for id in ids {
+            let name = format!("assets/{id}.json");
+            if self.records.get(&name) != records.get(&name) {
+                return Err("Library asset changed; refresh before editing".into());
+            }
+        }
+        let before: BTreeMap<_, _> = assets
+            .iter()
+            .map(|asset| Ok((asset.id.clone(), asset_text(asset)?)))
+            .collect::<Result<_, String>>()?;
+        let old_folders = folders.clone();
+        change(&mut assets, &mut folders)?;
+        let mut targets = Vec::new();
+        for asset in &assets {
+            let after = asset_text(asset)?;
+            if before.get(&asset.id) != Some(&after) {
+                let path = format!("assets/{}.json", asset.id);
+                targets.push(Target {
+                    before: records.get(&path).cloned(),
+                    path,
+                    after: Some(after),
+                });
+            }
+        }
+        for id in before
+            .keys()
+            .filter(|id| !assets.iter().any(|asset| &asset.id == *id))
+        {
+            let path = format!("assets/{id}.json");
+            targets.push(Target {
+                before: records.get(&path).cloned(),
+                path,
+                after: None,
+            });
+        }
+        if folders != old_folders {
+            targets.push(Target {
+                path: "folders.json".into(),
+                before: records.get("folders.json").cloned(),
+                after: Some(
+                    serde_json::to_string_pretty(&FoldersFile {
+                        version: VERSION,
+                        folders,
+                    })
+                    .map_err(|e| e.to_string())?,
+                ),
+            });
+        }
+        guard.commit(targets)?;
+        let (assets, folders, records) = read_assets(&guard)?;
+        self.assets = assets;
+        self.folders = folders;
+        self.records.retain(|name, _| name.starts_with("presets/"));
+        self.records.extend(records);
+        self.error = None;
+        Ok(())
+    }
+
+    fn change_presets(
+        &mut self,
+        id: &str,
+        change: impl FnOnce(&mut Vec<(String, AttributePreset)>) -> Result<(), String>,
+    ) -> Result<(), String> {
+        self.writable()?;
+        let Some(root) = &self.root else {
+            let mut presets = self.presets.clone();
+            change(&mut presets)?;
+            presets.sort_by_cached_key(|(_, preset)| preset.name.to_lowercase());
+            self.presets = presets;
+            return Ok(());
+        };
+        let guard = Guard::write(&root.join("presets"), Kind::Presets)?;
+        let (mut presets, records) = read_presets(&guard)?;
+        let name = format!("presets/{id}.json");
+        if self.records.get(&name) != records.get(&name) {
+            return Err("Library preset changed; refresh before editing".into());
+        }
+        let before: BTreeMap<_, _> = presets
+            .iter()
+            .map(|(id, preset)| {
+                Ok((
+                    id.clone(),
+                    serde_json::to_string_pretty(preset).map_err(|e| e.to_string())?,
+                ))
+            })
+            .collect::<Result<_, String>>()?;
+        change(&mut presets)?;
+        let mut targets = Vec::new();
+        for (id, preset) in &presets {
+            let after = serde_json::to_string_pretty(preset).map_err(|e| e.to_string())?;
+            if before.get(id) != Some(&after) {
+                targets.push(Target {
+                    path: format!("{id}.json"),
+                    before: records.get(&format!("presets/{id}.json")).cloned(),
+                    after: Some(after),
+                });
+            }
+        }
+        for id in before
+            .keys()
+            .filter(|id| !presets.iter().any(|(present, _)| present == *id))
+        {
+            targets.push(Target {
+                path: format!("{id}.json"),
+                before: records.get(&format!("presets/{id}.json")).cloned(),
+                after: None,
+            });
+        }
+        guard.commit(targets)?;
+        let (presets, records) = read_presets(&guard)?;
+        self.presets = presets;
+        self.records.retain(|name, _| !name.starts_with("presets/"));
+        self.records.extend(records);
+        self.error = None;
+        Ok(())
     }
 
     /// Names of the assets still copying their files.
@@ -180,6 +351,11 @@ impl Library {
     /// Copies the files of `payload` into the library in the background.
     pub fn add_asset(&mut self, name: String, folder: Option<String>, payload: ClipboardPayload) {
         let (tx, done) = mpsc::channel();
+        if let Err(error) = self.writable() {
+            let _ = tx.send(Err(error));
+            self.pending.push(PendingAsset { name, done });
+            return;
+        }
         let root = self.root.clone();
         let asset = Asset {
             id: new_id(),
@@ -189,8 +365,11 @@ impl Library {
         };
         std::thread::spawn(move || {
             let result = match root {
-                Some(root) => store_asset(&root, asset),
-                None => Ok(asset),
+                Some(root) => store_prepared_asset(&root, asset),
+                None => Ok(PreparedAsset {
+                    asset,
+                    record: None,
+                }),
             };
             let _ = tx.send(result.map(Some));
         });
@@ -207,6 +386,7 @@ impl Library {
         parent: Option<String>,
         origin: ClipboardOrigin,
     ) -> Result<(), String> {
+        self.writable()?;
         let mut ids: Vec<String> = Vec::with_capacity(tree.folders.len());
         for (name, inside) in tree.folders {
             let parent = inside.map(|i| ids[i].clone()).or_else(|| parent.clone());
@@ -248,8 +428,11 @@ impl Library {
                         return Ok(None);
                     }
                     match &root {
-                        Some(root) => store_asset(root, asset).map(Some),
-                        None => Ok(Some(asset)),
+                        Some(root) => store_prepared_asset(root, asset).map(Some),
+                        None => Ok(Some(PreparedAsset {
+                            asset,
+                            record: None,
+                        })),
                     }
                 });
                 let _ = tx.send(result);
@@ -267,7 +450,13 @@ impl Library {
                 Ok(result) => {
                     let pending = self.pending.remove(i);
                     match result {
-                        Ok(Some(asset)) => self.insert_asset(asset),
+                        Ok(Some(prepared)) => {
+                            if let Some(record) = prepared.record {
+                                self.records
+                                    .insert(format!("assets/{}.json", prepared.asset.id), record);
+                            }
+                            self.insert_asset(prepared.asset);
+                        }
                         Ok(None) => {}
                         Err(e) => errors.push(format!("{}: {e}", pending.name)),
                     }
@@ -282,6 +471,7 @@ impl Library {
     }
 
     fn insert_asset(&mut self, asset: Asset) {
+        self.assets.retain(|existing| existing.id != asset.id);
         let at = self
             .assets
             .partition_point(|a| a.name.to_lowercase() <= asset.name.to_lowercase());
@@ -289,31 +479,22 @@ impl Library {
     }
 
     pub fn rename_asset(&mut self, id: &str, name: String) -> Result<(), String> {
-        let Some(index) = self.assets.iter().position(|a| a.id == id) else {
-            return Ok(());
-        };
-        let mut asset = self.assets.remove(index);
-        asset.name = name;
-        let result = self.save_asset(&asset);
-        self.insert_asset(asset);
-        result
+        self.change_assets(&[id.into()], false, |assets, _| {
+            if let Some(asset) = assets.iter_mut().find(|a| a.id == id) {
+                asset.name = name;
+            }
+            Ok(())
+        })
     }
 
     pub fn move_assets(&mut self, ids: &[String], folder: Option<String>) -> Result<(), String> {
-        for index in 0..self.assets.len() {
-            if ids.contains(&self.assets[index].id) && self.assets[index].folder != folder {
-                self.assets[index].folder = folder.clone();
-                self.save_asset(&self.assets[index])?;
+        self.change_assets(ids, true, |assets, folders| {
+            valid_parent(folders, folder.as_deref())?;
+            for asset in assets.iter_mut().filter(|asset| ids.contains(&asset.id)) {
+                asset.folder = folder.clone();
             }
-        }
-        Ok(())
-    }
-
-    fn save_asset(&self, asset: &Asset) -> Result<(), String> {
-        match &self.root {
-            Some(root) => write_asset(root, asset),
-            None => Ok(()),
-        }
+            Ok(())
+        })
     }
 
     pub fn media_dir(&self) -> Option<PathBuf> {
@@ -326,22 +507,24 @@ impl Library {
         let Some(media_dir) = self.media_dir() else {
             return Ok(0);
         };
-        let Some(index) = self.assets.iter().position(|a| a.id == id) else {
-            return Ok(0);
-        };
         let mut missing = 0;
-        for item in self.assets[index].payload.files_mut() {
-            if item.path.is_file() {
-                continue;
-            }
-            match find_file(base_dir, &original_name(&item.path)?) {
-                Some(found) => {
-                    item.path = copy_to_media(&media_dir, &found, item.content_hash)?;
+        self.change_assets(&[id.into()], false, |assets, _| {
+            let Some(asset) = assets.iter_mut().find(|a| a.id == id) else {
+                return Ok(());
+            };
+            for item in asset.payload.files_mut() {
+                if item.path.is_file() {
+                    continue;
                 }
-                None => missing += 1,
+                match find_file(base_dir, &original_name(&item.path)?) {
+                    Some(found) => {
+                        item.path = copy_to_media(&media_dir, &found, item.content_hash)?
+                    }
+                    None => missing += 1,
+                }
             }
-        }
-        self.save_asset(&self.assets[index])?;
+            Ok(())
+        })?;
         Ok(missing)
     }
 
@@ -351,89 +534,114 @@ impl Library {
 
     pub fn add_folder(&mut self, name: String, parent: Option<String>) -> Result<String, String> {
         let id = new_id();
-        self.folders.push(LibraryFolder {
-            id: id.clone(),
-            name,
-            parent,
-        });
-        self.save_folders()?;
+        self.change_assets(&[], true, |_, folders| {
+            valid_parent(folders, parent.as_deref())?;
+            folders.push(LibraryFolder {
+                id: id.clone(),
+                name,
+                parent,
+            });
+            Ok(())
+        })?;
         Ok(id)
     }
 
     pub fn rename_folder(&mut self, id: &str, name: String) -> Result<(), String> {
-        if let Some(folder) = self.folders.iter_mut().find(|f| f.id == id) {
-            folder.name = name;
-        }
-        self.save_folders()
+        self.change_assets(&[], true, |_, folders| {
+            if let Some(folder) = folders.iter_mut().find(|f| f.id == id) {
+                folder.name = name;
+            }
+            Ok(())
+        })
     }
 
     /// The caller checks that `parent` is not inside `id`.
     pub fn move_folder(&mut self, id: &str, parent: Option<String>) -> Result<(), String> {
-        if let Some(folder) = self.folders.iter_mut().find(|f| f.id == id) {
-            folder.parent = parent;
-        }
-        self.save_folders()
+        self.change_assets(&[], true, |_, folders| {
+            valid_parent(folders, parent.as_deref())?;
+            let mut ancestor = parent.as_deref();
+            for _ in 0..=folders.len() {
+                match ancestor {
+                    Some(inside) if inside == id => {
+                        return Err("A library folder cannot contain itself".into());
+                    }
+                    Some(inside) => {
+                        ancestor = folders
+                            .iter()
+                            .find(|f| f.id == inside)
+                            .and_then(|f| f.parent.as_deref())
+                    }
+                    None => break,
+                }
+            }
+            if ancestor.is_some() {
+                return Err("Library folder cycle".into());
+            }
+            if let Some(folder) = folders.iter_mut().find(|f| f.id == id) {
+                folder.parent = parent;
+            }
+            Ok(())
+        })
     }
 
     /// As in the project's pool, its content moves up one level.
     pub fn remove_folder(&mut self, id: &str) -> Result<(), String> {
-        let Some(index) = self.folders.iter().position(|f| f.id == id) else {
-            return Ok(());
-        };
-        let removed = self.folders.remove(index);
-        for folder in &mut self.folders {
-            if folder.parent.as_deref() == Some(id) {
-                folder.parent = removed.parent.clone();
+        self.change_assets(&[], true, |assets, folders| {
+            let Some(index) = folders.iter().position(|f| f.id == id) else {
+                return Ok(());
+            };
+            let removed = folders.remove(index);
+            for folder in folders {
+                if folder.parent.as_deref() == Some(id) {
+                    folder.parent = removed.parent.clone();
+                }
             }
-        }
-        let contained: Vec<String> = self
-            .assets
-            .iter()
-            .filter(|a| a.folder.as_deref() == Some(id))
-            .map(|a| a.id.clone())
-            .collect();
-        self.move_assets(&contained, removed.parent)?;
-        self.save_folders()
-    }
-
-    fn save_folders(&self) -> Result<(), String> {
-        match &self.root {
-            Some(root) => write_json(
-                &root.join("folders.json"),
-                &FoldersFile {
-                    version: VERSION,
-                    folders: self.folders.clone(),
-                },
-            ),
-            None => Ok(()),
-        }
+            for asset in assets
+                .iter_mut()
+                .filter(|a| a.folder.as_deref() == Some(id))
+            {
+                asset.folder = removed.parent.clone();
+            }
+            Ok(())
+        })
     }
 
     /// Also deletes the copied files no other asset uses.
     pub fn remove_asset(&mut self, id: &str) -> Result<(), String> {
-        let Some(index) = self.assets.iter().position(|a| a.id == id) else {
-            return Ok(());
-        };
-        let removed = self.assets.remove(index);
+        self.writable()?;
         let Some(root) = &self.root else {
+            self.assets.retain(|a| a.id != id);
             return Ok(());
         };
-        remove_file(&root.join("assets").join(format!("{id}.json")))?;
-        let media_dir = root.join("media");
-        for item in removed.payload.files() {
-            let used = self
-                .assets
-                .iter()
-                .any(|a| a.payload.files().any(|f| f.path == item.path));
-            if !used && item.path.starts_with(&media_dir) {
-                remove_file(&item.path)?;
-                if let Some(dir) = item.path.parent()
-                    && dir != media_dir
-                {
-                    let _ = std::fs::remove_dir(dir);
+        let guard = Guard::write(root, Kind::Assets)?;
+        let (mut assets, folders, records) = read_assets(&guard)?;
+        let path = format!("assets/{id}.json");
+        if self.records.get(&path) != records.get(&path) {
+            return Err("Library asset changed; refresh before deleting".into());
+        }
+        let Some(index) = assets.iter().position(|a| a.id == id) else {
+            return Ok(());
+        };
+        let removed = assets.remove(index);
+        let references = retained_media(&guard, root, id);
+        guard.commit(vec![Target {
+            path,
+            before: records.get(&format!("assets/{id}.json")).cloned(),
+            after: None,
+        }])?;
+        if let Ok(references) = references {
+            for item in removed.payload.files() {
+                if !references.contains(&item.path) {
+                    // An unrecognized managed path is retained rather than guessed or followed.
+                    let _ = remove_managed_media(root, &item.path);
                 }
             }
         }
+        let (_, _, records) = read_assets(&guard)?;
+        self.assets = assets;
+        self.folders = folders;
+        self.records.retain(|name, _| name.starts_with("presets/"));
+        self.records.extend(records);
         Ok(())
     }
 
@@ -451,8 +659,11 @@ impl Library {
 
     pub fn add_preset(&mut self, preset: AttributePreset) -> Result<String, String> {
         let id = new_id();
-        self.presets.push((id.clone(), preset.clone()));
-        self.update_preset(&id, |p| *p = preset)?;
+        self.change_presets(&id, |presets| {
+            clear_shortcut(presets, &id, preset.shortcut);
+            presets.push((id.clone(), preset));
+            Ok(())
+        })?;
         Ok(id)
     }
 
@@ -463,43 +674,131 @@ impl Library {
         id: &str,
         change: impl FnOnce(&mut AttributePreset),
     ) -> Result<(), String> {
-        let Some(index) = self.presets.iter().position(|(i, _)| i == id) else {
-            return Ok(());
-        };
-        change(&mut self.presets[index].1);
-        let mut dirty = vec![index];
-        if let Some(shortcut) = self.presets[index].1.shortcut {
-            for (i, (_, other)) in self.presets.iter_mut().enumerate() {
-                if i != index && other.shortcut == Some(shortcut) {
-                    other.shortcut = None;
-                    dirty.push(i);
-                }
-            }
-        }
-        let result = match &self.root {
-            Some(root) => dirty.iter().try_for_each(|&i| {
-                let (id, preset) = &self.presets[i];
-                write_json(&root.join("presets").join(format!("{id}.json")), preset)
-            }),
-            None => Ok(()),
-        };
-        self.presets
-            .sort_by_cached_key(|(_, p)| p.name.to_lowercase());
-        result
+        self.change_presets(id, |presets| {
+            let Some(index) = presets.iter().position(|(i, _)| i == id) else {
+                return Ok(());
+            };
+            change(&mut presets[index].1);
+            let shortcut = presets[index].1.shortcut;
+            clear_shortcut(presets, id, shortcut);
+            Ok(())
+        })
     }
 
     pub fn remove_preset(&mut self, id: &str) -> Result<(), String> {
-        self.presets.retain(|(i, _)| i != id);
-        match &self.root {
-            Some(root) => remove_file(&root.join("presets").join(format!("{id}.json"))),
-            None => Ok(()),
-        }
+        self.change_presets(id, |presets| {
+            presets.retain(|(i, _)| i != id);
+            Ok(())
+        })
     }
 }
 
 /// Copies each file into `media/`. A missing file fails the whole asset:
 /// stored, it would only come back offline.
 /// An asset of the media file at `path`, not copied yet.
+fn asset_text(asset: &Asset) -> Result<String, String> {
+    serde_json::to_string_pretty(&AssetFile {
+        version: VERSION,
+        name: asset.name.clone(),
+        folder: asset.folder.clone(),
+        payload: asset.payload.to_text(),
+    })
+    .map_err(|e| e.to_string())
+}
+
+fn read_assets(guard: &Guard) -> Result<AssetCatalog, String> {
+    let mut records = BTreeMap::new();
+    let folders = if let Some(record) = guard.read("folders.json")? {
+        let file: FoldersFile = serde_json::from_str(&record.bytes)
+            .map_err(|_| "Invalid native library folders; existing file was preserved")?;
+        if file.version != VERSION {
+            return Err("Unsupported native library folders version".into());
+        }
+        records.insert("folders.json".into(), record);
+        file.folders
+    } else {
+        Vec::new()
+    };
+    let mut assets = Vec::new();
+    for (name, record) in guard.records(false)? {
+        let id = name.strip_suffix(".json").unwrap();
+        if let Some(file) = parse::<AssetFile>(id, &record.bytes)
+            && let Some(Ok(payload)) = ClipboardPayload::from_text(&file.payload)
+        {
+            assets.push(Asset {
+                id: id.into(),
+                name: file.name,
+                folder: file.folder,
+                payload,
+            });
+        }
+        records.insert(format!("assets/{name}"), record);
+    }
+    assets.sort_by_cached_key(|a| a.name.to_lowercase());
+    Ok((assets, folders, records))
+}
+
+fn read_presets(guard: &Guard) -> Result<PresetCatalog, String> {
+    let mut records = BTreeMap::new();
+    let mut presets = Vec::new();
+    for (name, record) in guard.records(false)? {
+        let id = name.strip_suffix(".json").unwrap();
+        if let Some(preset) = parse(id, &record.bytes) {
+            presets.push((id.into(), preset));
+        }
+        records.insert(format!("presets/{name}"), record);
+    }
+    presets.sort_by_cached_key(|(_, p): &(String, AttributePreset)| p.name.to_lowercase());
+    Ok((presets, records))
+}
+
+fn valid_parent(folders: &[LibraryFolder], id: Option<&str>) -> Result<(), String> {
+    if id.is_some_and(|id| !folders.iter().any(|folder| folder.id == id)) {
+        return Err("Library destination folder changed; refresh before editing".into());
+    }
+    Ok(())
+}
+
+fn clear_shortcut(presets: &mut [(String, AttributePreset)], id: &str, shortcut: Option<Shortcut>) {
+    if let Some(shortcut) = shortcut {
+        for (other_id, preset) in presets {
+            if other_id != id && preset.shortcut == Some(shortcut) {
+                preset.shortcut = None;
+            }
+        }
+    }
+}
+
+fn retained_media(
+    guard: &Guard,
+    root: &Path,
+    removed: &str,
+) -> Result<std::collections::HashSet<PathBuf>, String> {
+    let mut references = std::collections::HashSet::new();
+    for (name, record) in guard.records(true)? {
+        if name == format!("{removed}.json") {
+            continue;
+        }
+        let file: AssetFile = serde_json::from_str(&record.bytes)
+            .map_err(|_| "Uncertain library media references")?;
+        if file.version != VERSION {
+            return Err("Unsupported retained asset references".into());
+        }
+        let payload = ClipboardPayload::from_text(&file.payload)
+            .and_then(Result::ok)
+            .ok_or("Unreadable retained asset references")?;
+        for item in payload.files() {
+            io::validate_media_reference(root, &item.path)?;
+            references.insert(item.path.clone());
+        }
+    }
+    Ok(references)
+}
+
+fn remove_managed_media(root: &Path, path: &Path) -> Result<(), String> {
+    io::remove_media(root, path)
+}
+
 fn file_asset(
     path: &Path,
     folder: Option<String>,
@@ -523,7 +822,10 @@ fn file_asset(
     })
 }
 
-fn store_asset(root: &Path, mut asset: Asset) -> Result<Asset, String> {
+fn store_prepared_asset(root: &Path, mut asset: Asset) -> Result<PreparedAsset, String> {
+    let guard = Guard::write(root, Kind::Assets)?;
+    let (_, folders, _) = read_assets(&guard)?;
+    valid_parent(&folders, asset.folder.as_deref())?;
     let media_dir = root.join("media");
     for item in asset.payload.files_mut() {
         if !item.path.is_file() {
@@ -531,22 +833,44 @@ fn store_asset(root: &Path, mut asset: Asset) -> Result<Asset, String> {
         }
         if !item.path.starts_with(&media_dir) {
             item.path = copy_to_media(&media_dir, &item.path, item.content_hash)?;
+        } else {
+            io::validate_media_reference(root, &item.path)?;
         }
     }
-    write_asset(root, &asset)?;
-    Ok(asset)
+    let path = format!("assets/{}.json", asset.id);
+    let after = asset_text(&asset)?;
+    let before = guard.read(&path)?;
+    if before.as_ref().is_some_and(|before| before.bytes != after) {
+        return Err("An existing native asset was preserved".into());
+    }
+    guard.commit(vec![Target {
+        path: path.clone(),
+        before,
+        after: Some(after),
+    }])?;
+    let record = guard
+        .read(&path)?
+        .ok_or("Native asset publication needs refresh")?;
+    Ok(PreparedAsset {
+        asset,
+        record: Some(record),
+    })
+}
+
+#[cfg(test)]
+fn store_asset(root: &Path, asset: Asset) -> Result<Asset, String> {
+    store_prepared_asset(root, asset).map(|prepared| prepared.asset)
 }
 
 /// Into `media/<content hash>/`, so two assets sharing a file share the
 /// copy and the file keeps its name.
 fn copy_to_media(media_dir: &Path, src: &Path, content_hash: u64) -> Result<PathBuf, String> {
-    let dir = media_dir.join(format!("{content_hash:016x}"));
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    let dest = dir.join(original_name(src)?);
-    if !dest.exists() {
-        copy_file(src, &dest, &|_| true)?;
-    }
-    Ok(dest)
+    io::copy_media(
+        media_dir.parent().ok_or("Missing native library root")?,
+        src,
+        content_hash,
+        &original_name(src)?,
+    )
 }
 
 /// Through a temporary name: a copy cut short must not look done.
@@ -641,51 +965,6 @@ fn find_file(dir: &Path, name: &str) -> Option<PathBuf> {
         }
     }
     None
-}
-
-fn write_asset(root: &Path, asset: &Asset) -> Result<(), String> {
-    write_json(
-        &root.join("assets").join(format!("{}.json", asset.id)),
-        &AssetFile {
-            version: VERSION,
-            name: asset.name.clone(),
-            folder: asset.folder.clone(),
-            payload: asset.payload.to_text(),
-        },
-    )
-}
-
-fn write_json(path: &Path, value: &impl Serialize) -> Result<(), String> {
-    let text = serde_json::to_string_pretty(value).map_err(|e| e.to_string())?;
-    if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-    }
-    std::fs::write(path, text).map_err(|e| format!("{}: {e}", path.display()))
-}
-
-fn remove_file(path: &Path) -> Result<(), String> {
-    match std::fs::remove_file(path) {
-        Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
-            Err(format!("{}: {e}", path.display()))
-        }
-        _ => Ok(()),
-    }
-}
-
-/// `(file stem, content)` of the `.json` files in `dir`.
-fn json_files(dir: &Path) -> impl Iterator<Item = (String, String)> {
-    std::fs::read_dir(dir)
-        .into_iter()
-        .flatten()
-        .flatten()
-        .filter_map(|entry| {
-            let path = entry.path();
-            if path.extension()? != "json" {
-                return None;
-            }
-            let id = path.file_stem()?.to_string_lossy().into_owned();
-            Some((id, std::fs::read_to_string(&path).ok()?))
-        })
 }
 
 /// Entries written by a newer Venturi are skipped, not misread.

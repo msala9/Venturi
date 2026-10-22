@@ -340,7 +340,11 @@ fn validate_manifest(manifest: &Manifest) -> Result<()> {
             || target.stage != format!("after-{index}.json")
             || target.bytes > asset_store::MAX_JSON
             || if target.asset {
-                !target.name.strip_suffix(".json").is_some_and(safe_id)
+                !target
+                    .name
+                    .strip_suffix(".json.bak")
+                    .or_else(|| target.name.strip_suffix(".json"))
+                    .is_some_and(safe_id)
             } else {
                 target.name != "folders.json"
             }

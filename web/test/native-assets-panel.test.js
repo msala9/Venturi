@@ -1,12 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createNativeAssetPanel} from '../js/native-assets.js';
+import {createNativeAssetPanel,nativeAssetMutation} from '../js/native-assets.js';
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function settle(){for(let index=0;index<4;index++)await new Promise(resolve=>setImmediate(resolve));}
 const foldersRevision='f'.repeat(64);
 const assetRevision='a'.repeat(64);
-function harness({pageReader,folderReader,libraryCommit,projectCommit}={}){
+function harness({pageReader,folderReader,projectReader,libraryCommit,projectCommit}={}){
   const original={document:globalThis.document,Option:globalThis.Option};
   class Element extends EventTarget{
     constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
@@ -23,13 +23,14 @@ function harness({pageReader,folderReader,libraryCommit,projectCommit}={}){
   const body=new Element('body'),root=new Element('root');body.append(root);
   globalThis.document={body,createElement:tag=>new Element(tag)};
   globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
-  let context={project_name:'project.vvproj',project_epoch:'epoch',generation:'7',media:[{id:'media-a',name:'Shot A'},{id:'media-b',name:'Shot B'}],selected_ids:['media-a']},writable=true;
+  let context={project_name:'project.vvproj',project_epoch:'epoch',generation:'7',command_epoch:'commands',media:[{id:'media-a',name:'Shot A'},{id:'media-b',name:'Shot B'}],selected_ids:['media-a']},writable=true;
   let items=[{id:'asset-a',revision:'rev-a',name:'Reusable shot',media_count:2,file_count:1,archived:false,can_restore_previous:true}];
   let folders=[{id:'outer',name:'Shots',parent:null},{id:'inner',name:'Day 1',parent:'outer'},{id:'other',name:'Other',parent:null}];
-  const pages=[],folderReads=[],prepares=[],deletes=[],libraryWrites=[],projectWrites=[],imported=[],notices=[],deleteGate=deferred();
+  const pages=[],folderReads=[],projectReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],imported=[],notices=[],deleteGate=deferred();
   let delayDelete=false;
   const panel=createNativeAssetPanel({root,getContext:()=>context,canCommit:()=>writable,notice:text=>notices.push(text),onImported:ids=>imported.push(ids),
-    libraryCommit(operation){libraryWrites.push(structuredClone(operation));return libraryCommit?libraryCommit(operation):Promise.resolve({command_id:'published',project_epoch:context.project_epoch});},
+    makeLibraryMutation:operation=>nativeAssetMutation(context,'client',operation,'relink-command'),
+    libraryCommit(operation,prepared){libraryWrites.push(structuredClone(operation));if(prepared)preparedWrites.push(structuredClone(prepared));return libraryCommit?libraryCommit(operation,prepared):Promise.resolve({command_id:prepared?.command_id || 'published',project_epoch:context.project_epoch,...(prepared?{missing_count:0,relinked_files:1}:{})});},
     projectCommit(operation){projectWrites.push(structuredClone(operation));return projectCommit?projectCommit(operation):Promise.resolve({command_id:'imported',project_epoch:context.project_epoch,media_ids:['new-media']});},
     api(path,body,options={}){
       if(path.startsWith('/native-assets/folders?')){
@@ -40,7 +41,8 @@ function harness({pageReader,folderReader,libraryCommit,projectCommit}={}){
         pages.push({path,options});
         return pageReader?pageReader(pages.length-1,path,items):Promise.resolve({page:0,pages:1,total:items.length,items:structuredClone(items)});
       }
-      if(path==='/native-assets/prepare'){const gate=deferred();prepares.push({...gate,body:structuredClone(body),options});return gate.promise;}
+      if(path==='/projects'){projectReads.push({path,options});return projectReader?projectReader(projectReads.length-1,options):Promise.resolve({importable_media:[{name:'Shot.mov',path_token:'Shot.mov'},{name:'Sound.wav',path_token:'Sound.wav'}]});}
+      if(path==='/native-assets/prepare' || path==='/native-assets/commands/prepare'){const gate=deferred();prepares.push({...gate,body:structuredClone(body),options});return gate.promise;}
       if(path.startsWith('/native-assets/items/published?'))return Promise.resolve({id:'published',revision:'published-revision',name:'Newly captured asset',media_count:1,file_count:1,archived:false,can_restore_previous:false});
       if(options.method==='DELETE'){deletes.push({path,options});return delayDelete?deleteGate.promise:Promise.resolve({state:'canceled'});}
       throw Error(`Unexpected panel request ${path}`);
@@ -52,11 +54,12 @@ function harness({pageReader,folderReader,libraryCommit,projectCommit}={}){
   const button=text=>find(node=>node.tag==='button' && node.textContent===text,`button ${text}`);
   const field=label=>find(node=>node.getAttribute('aria-label')===label,label);
   const status=()=>find(node=>node.getAttribute('role')==='status','panel status').textContent;
-  const job=(index=0,patch={})=>{const {project_epoch,if_generation,action}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:action.kind,bytes:0,total_bytes:32,result:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
-  return {panel,root,pages,folderReads,prepares,deletes,libraryWrites,projectWrites,imported,notices,button,field,status,job,deleteGate,
+  const job=(index=0,patch={})=>{const {project_epoch,if_generation,action,operation}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:operation?'library_edit':action.kind,bytes:0,total_bytes:32,result:operation?{asset_id:operation.edit.id,revision:operation.edit.revision,missing_count:0,relinked_files:1}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
+  return {panel,root,pages,folderReads,projectReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,imported,notices,button,field,status,job,deleteGate,
     context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setItems:value=>{items=value;},setFolders:value=>{folders=value;},delayDelete:()=>{delayDelete=true;},
     change(label,value){const node=field(label);node.value=value;node.dispatchEvent(new Event('change'));},
     chooseAssets(indexes){const node=field('Native assets');for(const [index,option] of node.children.entries())option.selected=indexes.includes(index);node.dispatchEvent(new Event('change'));},
+    chooseFiles(tokens){const node=field('Approved source files');for(const option of node.children)option.selected=tokens.includes(option.value);node.dispatchEvent(new Event('change'));},
     moveAssets:()=>find(node=>node.tag==='button' && /^Move \d* ?native assets to folder$/.test(node.textContent),'move assets button'),
     capture:()=>find(node=>node.tag==='button' && node.textContent.startsWith('Save ') && node.textContent.endsWith('selected media as native assets'),'capture button'),
     open:()=>panel.open(),
@@ -300,5 +303,33 @@ test('a stale filtered asset page cannot replace rows or folder controls after r
     stale.resolve({page:7,pages:9,total:1,items:[{id:'old-asset',revision:'c'.repeat(64),name:'Stale row',media_count:1,file_count:0,archived:false}]});await first;await settle();
     assert.equal(h.field('Native asset name').value,'Current project choice');assert.match(h.status(),/Page 1 of 1/);
     assert.equal(h.field('Native assets').children.length,1);assert.equal(h.button('Create native folder').disabled,false);assert.equal(h.libraryWrites.length,0);
+  }finally{h.destroy();}
+});
+
+const offlineAsset=()=>({id:'asset-a',revision:assetRevision,name:'Offline native shot',media_count:2,file_count:2,missing_count:1,offline_files:[{name:'Shot.mov',missing:true},{name:'Sound.wav',missing:false}],archived:false,can_restore_previous:true});
+
+test('offline asset Relink uses approved selected files and refreshes native missing counts after one library command',async()=>{
+  const h=harness({libraryCommit:(_operation,body)=>{h.setItems([{...offlineAsset(),revision:'b'.repeat(64),missing_count:0}]);return Promise.resolve({command_id:body.command_id,project_epoch:'epoch',missing_count:0,relinked_files:1});}});try{
+    await h.open();assert.equal(h.button('Relink missing native asset files').disabled,true);assert.equal(h.projectReads.length,0);
+    h.setItems([offlineAsset()]);await h.open();h.button('Relink missing native asset files').click();await settle();assert.equal(h.projectReads.length,1);assert.equal(h.prepares.length,0);
+    assert.equal(h.button('Relink selected source files').disabled,true);h.chooseFiles(['Shot.mov']);h.button('Relink selected source files').click();assert.equal(h.prepares.length,1);
+    const body=h.prepares[0].body;assert.deepEqual(body.operation,{kind:'edit_native_asset_library',edit:{action:'relink',id:'asset-a',revision:assetRevision,path_tokens:['Shot.mov']}});assert.equal(body.command_id,'relink-command');assert.equal(h.button('Cancel native asset preparation').disabled,false);
+    h.prepares[0].resolve(h.job());await settle();assert.deepEqual(h.preparedWrites,[body]);assert.equal(h.libraryWrites.length,1);assert.equal(h.projectWrites.length,0);assert.equal(h.deletes.length,0);assert.equal(h.button('Relink missing native asset files').disabled,true);assert.match(h.status(),/1 files restored.*0 still missing/);
+  }finally{h.destroy();}
+});
+
+test('late approved-source reads cannot populate a reopened asset panel or emit relink commands',async()=>{
+  const stale=deferred(),h=harness({projectReader:()=>stale.promise});try{
+    h.setItems([offlineAsset()]);await h.open();h.button('Relink missing native asset files').click();assert.equal(h.projectReads.length,1);
+    h.setContext({...h.context(),project_epoch:'new-epoch'});h.setItems([]);await h.open();assert.equal(h.projectReads[0].options.signal.aborted,true);
+    stale.resolve({importable_media:[{name:'Old.mov',path_token:'Old.mov'}]});await settle();assert.throws(()=>h.field('Approved source files'),/Expected/);assert.match(h.status(),/Page 1 of 1/);assert.equal(h.prepares.length+h.libraryWrites.length,0);
+  }finally{h.destroy();}
+});
+
+test('canceling Relink before its late prepare acknowledgment deletes the owned job without applying',async()=>{
+  const h=harness();try{
+    h.setItems([offlineAsset()]);await h.open();h.button('Relink missing native asset files').click();await settle();h.chooseFiles(['Shot.mov']);h.button('Relink selected source files').click();
+    h.button('Cancel native asset relink').click();assert.equal(h.deletes.length,0);h.prepares[0].resolve(h.job());await settle();
+    assert.equal(h.deletes.length,1);assert.match(h.deletes[0].path,/jobs\/job-1\?project_epoch=epoch/);assert.equal(h.libraryWrites.length+h.projectWrites.length,0);assert.equal(h.prepares.length,1);assert.match(h.status(),/canceled.*project unchanged/i);
   }finally{h.destroy();}
 });

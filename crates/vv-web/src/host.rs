@@ -184,6 +184,7 @@ pub struct Editor {
     native_edits: HashMap<String, PendingNativeEdit>,
     legacy_media_imports: HashMap<String, PendingNativeEdit>,
     media_import_receipt: Option<Value>,
+    native_asset_receipt: Option<Value>,
     otio_import_receipt: Option<Value>,
     clipboard_receipt: Option<Value>,
     timeline_edit_selection: Option<Vec<String>>,
@@ -255,6 +256,7 @@ impl Editor {
             native_edits: HashMap::new(),
             legacy_media_imports: HashMap::new(),
             media_import_receipt: None,
+            native_asset_receipt: None,
             otio_import_receipt: None,
             clipboard_receipt: None,
             timeline_edit_selection: None,
@@ -417,6 +419,7 @@ impl Editor {
         }
         let previous_epoch = self.session.epoch();
         self.media_import_receipt = None;
+        self.native_asset_receipt = None;
         self.otio_import_receipt = None;
         self.clipboard_receipt = None;
         self.timeline_edit_selection = None;
@@ -431,6 +434,7 @@ impl Editor {
             self.persisted_view = self.session.project.view.clone();
         }
         let media_import_receipt = self.media_import_receipt.take();
+        let native_asset_receipt = self.native_asset_receipt.take();
         let otio_import_receipt = self.otio_import_receipt.take();
         let clipboard_receipt = self.clipboard_receipt.take();
         let timeline_edit_selection = self.timeline_edit_selection.take();
@@ -474,6 +478,11 @@ impl Editor {
             }
             let mut value=json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()});
             if prepared_edit {value["library_durable"]=json!(true);}
+            if let Some(report)=native_asset_receipt {
+                for field in ["missing_count","relinked_files"] {
+                    if let Some(count)=report.get(field) {value[field]=count.clone();}
+                }
+            }
             if let Some(report)=media_import_receipt {
                 value["media_ids"]=report["media_ids"].clone();
                 value["errors"]=report["errors"].clone();
@@ -759,13 +768,13 @@ impl Editor {
                             .map_err(|_| ApiError::invalid("Invalid native library command"))?,
                     )
                     .into();
-                    self.asset_jobs.commit_edit(
+                    self.native_asset_receipt = Some(self.asset_jobs.commit_edit(
                         &request.command_id,
                         fingerprint,
                         &request.project_epoch,
                         &request.if_generation,
                         edit,
-                    )?;
+                    )?);
                 } else {
                     self.assets.edit(&request.command_id, edit)?;
                 }
@@ -2397,6 +2406,27 @@ impl Host {
             guard.armed = false;
         }
         result
+    }
+    pub async fn prepare_native_asset_edit(&self, request: Mutation) -> Result<Value> {
+        if !matches!(&request.operation, Operation::EditNativeAssetLibrary { edit } if edit.requires_preparation())
+        {
+            return Err(ApiError::invalid(
+                "Choose a preparable native asset library edit",
+            ));
+        }
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::PrepareNativeAssetEdit(request, tx))
+            .await?;
+        match rx.await.map_err(|_| ApiError::io())?? {
+            NativeEditPreparation::Complete(receipt) => {
+                Ok(json!({"state":"applied","receipt":receipt}))
+            }
+            NativeEditPreparation::Pending(mut guard) => {
+                let status = guard.jobs.status(&guard.job, &guard.epoch, false)?;
+                guard.armed = false;
+                Ok(status)
+            }
+        }
     }
     pub async fn native_asset_mutation(&self, request: Mutation) -> Result<Value> {
         let (tx, rx) = oneshot::channel();

@@ -146,6 +146,107 @@ fn independent_library_handles_share_files_and_refuse_concurrent_writes() {
     drop(lock);
     second.create("other", &preset).unwrap();
     assert_eq!(first.list(0, &Query::default()).unwrap()["total"], 2);
+    let desktop = std::fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(root.join(".venturi-presets.lock"))
+        .unwrap();
+    desktop.try_lock().unwrap();
+    assert_eq!(
+        second.list(0, &Query::default()).unwrap_err().1,
+        "LIBRARY_BUSY"
+    );
+    assert_eq!(
+        second.create("native-busy", &preset).unwrap_err().1,
+        "LIBRARY_BUSY"
+    );
+    drop(desktop);
+    assert_eq!(second.list(0, &Query::default()).unwrap()["total"], 2);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn preset_readers_refuse_an_inflight_catalog_writer_and_allow_parallel_readers() {
+    let (root, first, preset) = fixture();
+    let second = Store::new(&root).unwrap();
+    first.create("shared", &preset).unwrap();
+    let expected = revision(&first, "shared", false);
+    let bytes = first.export("shared").unwrap();
+    let writer = first.lock().unwrap();
+    assert_eq!(
+        second.load("shared", &expected).err().unwrap().1,
+        "LIBRARY_BUSY"
+    );
+    assert_eq!(second.export("shared").unwrap_err().1, "LIBRARY_BUSY");
+    assert_eq!(second.item("shared", false).unwrap_err().1, "LIBRARY_BUSY");
+    assert_eq!(
+        second.list(0, &Query::default()).unwrap_err().1,
+        "LIBRARY_BUSY"
+    );
+    drop(writer);
+
+    let reader = first.catalog_lock(false).unwrap();
+    assert_eq!(second.load("shared", &expected).unwrap().name, preset.name);
+    assert_eq!(second.export("shared").unwrap(), bytes);
+    assert_eq!(second.item("shared", false).unwrap()["revision"], expected);
+    assert_eq!(second.list(0, &Query::default()).unwrap()["total"], 1);
+    assert_eq!(
+        second.create("other", &preset).unwrap_err().1,
+        "LIBRARY_BUSY"
+    );
+    drop(reader);
+    second.create("other", &preset).unwrap();
+    assert_eq!(first.list(0, &Query::default()).unwrap()["total"], 2);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn pending_desktop_preset_transaction_blocks_reads_and_writes_without_removing_its_marker() {
+    let (root, store, preset) = fixture();
+    store.create("shared", &preset).unwrap();
+    let expected = revision(&store, "shared", false);
+    let original = store.export("shared").unwrap();
+    let pending = root.join(".venturi-native-presets-pending.json");
+    std::fs::write(&pending, b"incomplete desktop intent").unwrap();
+    assert_eq!(
+        store.load("shared", &expected).err().unwrap().1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    assert_eq!(
+        store.export("shared").unwrap_err().1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    assert_eq!(
+        store.item("shared", false).unwrap_err().1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    assert_eq!(
+        store.list(0, &Query::default()).unwrap_err().1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    assert_eq!(
+        store.create("other", &preset).unwrap_err().1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    assert_eq!(std::fs::read(root.join("shared.json")).unwrap(), original);
+    assert_eq!(
+        std::fs::read(&pending).unwrap(),
+        b"incomplete desktop intent"
+    );
+
+    std::fs::remove_file(&pending).unwrap();
+    std::os::unix::fs::symlink(root.join("absent-intent"), &pending).unwrap();
+    assert_eq!(
+        store.list(0, &Query::default()).unwrap_err().1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    assert_eq!(
+        store.create("other", &preset).unwrap_err().1,
+        "LIBRARY_RECOVERY_REQUIRED"
+    );
+    assert!(pending.symlink_metadata().unwrap().is_symlink());
+    std::fs::remove_file(&pending).unwrap();
+    assert_eq!(store.export("shared").unwrap(), original);
     std::fs::remove_dir_all(root).unwrap();
 }
 

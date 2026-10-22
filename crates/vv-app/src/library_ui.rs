@@ -361,6 +361,17 @@ impl VenturiApp {
     }
 
     pub(crate) fn show_library(&mut self, ui: &mut egui::Ui, preview_action: &mut Option<Browsed>) {
+        ui.horizontal(|ui| {
+            if ui.small_button("Refresh library").clicked() {
+                match self.library.refresh() {
+                    Ok(()) => self.library_ui.pool.clear(),
+                    Err(error) => self.library_result(Err(error)),
+                }
+            }
+            if let Some(error) = self.library.error() {
+                ui.label(error);
+            }
+        });
         for name in self.library.pending() {
             ui.horizontal(|ui| {
                 ui.spinner();

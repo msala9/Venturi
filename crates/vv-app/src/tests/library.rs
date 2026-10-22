@@ -33,6 +33,116 @@ fn project_with_file(path: &Path, hash: u64) -> (Project, MediaId) {
     (project, id)
 }
 
+#[test]
+fn cooperative_library_refresh_recovers_busy_open_and_rejects_stale_folder_and_asset_drafts() {
+    let root = temp_root("cooperative-refresh");
+    let guard = Guard::write(&root, Kind::Assets).unwrap();
+    let mut blocked = Library::open(root.clone());
+    assert!(blocked.error().is_some());
+    assert!(
+        blocked
+            .add_folder("No writable empty catalog".into(), None)
+            .is_err()
+    );
+    drop(guard);
+    blocked.refresh().unwrap();
+    assert!(blocked.error().is_none());
+    let mut stale = Library::open(root.clone());
+    let folder = blocked.add_folder("First".into(), None).unwrap();
+    assert!(stale.add_folder("Stale".into(), None).is_err());
+    assert!(stale.folders.is_empty());
+    stale.refresh().unwrap();
+    stale.rename_folder(&folder, "Fresh".into()).unwrap();
+    assert_eq!(
+        Library::open(root.clone()).folder(&folder).unwrap().name,
+        "Fresh"
+    );
+
+    let (project, media) = project_with_file(&root.join("clip.mp4"), 7);
+    store_asset(&root, asset("a", "Original", payload(&project, media))).unwrap();
+    let mut a = Library::open(root.clone());
+    let mut b = Library::open(root.clone());
+    a.rename_asset("a", "Other writer".into()).unwrap();
+    assert!(b.rename_asset("a", "Old draft".into()).is_err());
+    assert_eq!(b.assets[0].name, "Original");
+    b.refresh().unwrap();
+    b.rename_asset("a", "Final".into()).unwrap();
+    let before = b.records["assets/a.json"].clone();
+    b.rename_asset("a", "Final".into()).unwrap();
+    assert_eq!(
+        b.records["assets/a.json"], before,
+        "A no-op must not rewrite the native JSON"
+    );
+    assert_eq!(Library::open(root).assets[0].name, "Final");
+    let mut relative = Library::open(PathBuf::from("relative-library-override"));
+    assert!(relative.error().unwrap().contains("absolute"));
+    assert!(
+        relative
+            .add_folder("Never redirected".into(), None)
+            .is_err()
+    );
+}
+
+#[test]
+fn cooperative_native_preset_updates_preserve_fresh_peers_and_original_shortcut_ownership() {
+    let root = temp_root("cooperative-presets");
+    let mut a = Library::open(root.clone());
+    let key = Shortcut::plain(egui::Key::A);
+    let first = a.add_preset(preset("First", Some(key))).unwrap();
+    let second = a.add_preset(preset("Second", None)).unwrap();
+    let mut b = Library::open(root.clone());
+    a.update_preset(&first, |preset| {
+        preset.name = "Fresh first".into();
+        preset.append_filters = true;
+    })
+    .unwrap();
+    assert!(
+        b.update_preset(&first, |preset| preset.name = "Stale first".into())
+            .is_err()
+    );
+    assert_eq!(b.preset(&first).unwrap().name, "First");
+    // An unrelated preset edit refreshes peers under the lock instead of overwriting them.
+    b.update_preset(&second, |preset| preset.shortcut = Some(key))
+        .unwrap();
+    let first_preset = b.preset(&first).unwrap();
+    assert_eq!(first_preset.name, "Fresh first");
+    assert!(first_preset.append_filters);
+    assert_eq!(first_preset.shortcut, None);
+    assert_eq!(b.preset(&second).unwrap().shortcut, Some(key));
+    let before = b.records[&format!("presets/{second}.json")].clone();
+    b.update_preset(&second, |_| {}).unwrap();
+    assert_eq!(b.records[&format!("presets/{second}.json")], before);
+    let reopened = Library::open(root.clone());
+    assert_eq!(reopened.preset(&first).unwrap().name, "Fresh first");
+    assert_eq!(reopened.preset(&second).unwrap().shortcut, Some(key));
+    assert!(!root.join("presets").join(io::PRESET_PENDING).exists());
+}
+
+#[test]
+fn cooperative_native_deletion_retains_web_archived_backups_and_uncertain_media_references() {
+    for suffix in [".json.deleted", ".json.bak", ".json"] {
+        let root = temp_root(&format!("cooperative-retained-{suffix}"));
+        let (project, media) = project_with_file(&root.join("clip.mp4"), 99);
+        let saved = store_asset(&root, asset("a", "A", payload(&project, media))).unwrap();
+        let source = saved.item().unwrap().path.clone();
+        let bytes = std::fs::read(root.join("assets/a.json")).unwrap();
+        std::fs::write(
+            root.join("assets").join(format!("kept{suffix}")),
+            if suffix == ".json" {
+                b"unreadable".to_vec()
+            } else {
+                bytes
+            },
+        )
+        .unwrap();
+        let mut library = Library::open(root.clone());
+        library.remove_asset("a").unwrap();
+        assert!(source.exists(), "Preserve references in {suffix}");
+        assert!(!root.join("assets/a.json").exists());
+        assert!(root.join("assets").join(format!("kept{suffix}")).exists());
+    }
+}
+
 fn payload(project: &Project, id: MediaId) -> ClipboardPayload {
     let origin = ClipboardOrigin {
         instance: 0,

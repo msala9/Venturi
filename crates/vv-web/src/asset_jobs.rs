@@ -178,6 +178,17 @@ struct Prepared {
     asset: AssetFile,
     files: Vec<Witness>,
 }
+struct PreparedLibraryEdit {
+    edit: crate::asset_journal::PreparedEdit,
+    sources: Vec<OtioWitness>,
+    files: Vec<Witness>,
+    media: Vec<(PathBuf, Option<String>)>,
+}
+impl PreparedLibraryEdit {
+    fn summary(&self) -> Value {
+        self.edit.summary()
+    }
+}
 struct Job {
     id: String,
     kind: &'static str,
@@ -192,7 +203,7 @@ struct Job {
     revision: Option<String>,
     cancel: Arc<AtomicBool>,
     result: Option<Prepared>,
-    edit_result: Option<crate::asset_journal::PreparedEdit>,
+    edit_result: Option<PreparedLibraryEdit>,
     edit: Option<asset_store::Edit>,
     command_id: Option<String>,
     fingerprint: Option<[u8; 32]>,
@@ -235,7 +246,7 @@ struct Work {
 }
 enum Finished {
     Media(Prepared),
-    Edit(crate::asset_journal::PreparedEdit),
+    Edit(PreparedLibraryEdit),
     Import(PreparedImport),
     Otio(PreparedOtio),
     Clipboard(PreparedClipboard),
@@ -331,10 +342,21 @@ impl Jobs {
                         run_media_import(&inner, &work, tokens, MEDIA_IMPORT_BUDGET)
                             .map(Finished::Import)
                     } else if let Some((edit, completion)) = &work.edit {
-                        inner
-                            .store
-                            .prepare_edit(edit, completion.clone(), &work.cancel)
-                            .map(Finished::Edit)
+                        if matches!(edit, asset_store::Edit::Relink { .. }) {
+                            run_relink(&inner, &work, edit, completion.clone()).map(Finished::Edit)
+                        } else {
+                            inner
+                                .store
+                                .prepare_edit(edit, completion.clone(), &work.cancel)
+                                .map(|edit| {
+                                    Finished::Edit(PreparedLibraryEdit {
+                                        edit,
+                                        sources: vec![],
+                                        files: vec![],
+                                        media: vec![],
+                                    })
+                                })
+                        }
                     } else {
                         run(&inner, &work).map(Finished::Media)
                     };
@@ -409,7 +431,9 @@ impl Jobs {
     ) -> Result<Value> {
         binding(epoch, generation)?;
         if !edit.requires_preparation() {
-            return Err(ApiError::invalid("Choose a native asset folder operation"));
+            return Err(ApiError::invalid(
+                "Choose a prepared native asset library operation",
+            ));
         }
         let completion = crate::asset_journal::Completion {
             version: 1,
@@ -432,6 +456,41 @@ impl Jobs {
             return Ok(job.value());
         }
         reserve(&mut jobs)?;
+        let witness_reservation = if let asset_store::Edit::Relink {
+            id,
+            revision,
+            path_tokens,
+        } = &edit
+        {
+            if path_tokens.is_empty()
+                || path_tokens.len() > MAX_FILES
+                || path_tokens.iter().collect::<HashSet<_>>().len() != path_tokens.len()
+            {
+                return Err(ApiError::invalid(
+                    "Choose 1 to 64 unique approved replacement files",
+                ));
+            }
+            for token in path_tokens {
+                crate::files::root_media_token(&self.0.root, &self.0.root.join(token))?;
+                if !vv_media::is_media_path(Path::new(token)) {
+                    return Err(ApiError::invalid(
+                        "Choose approved native media replacement files",
+                    ));
+                }
+            }
+            let asset = self.0.store.load(id, revision)?;
+            let payload = asset_payload::decode(&asset)?;
+            let reservation = payload
+                .files()
+                .map(|item| &item.path)
+                .collect::<HashSet<_>>()
+                .len()
+                .saturating_mul(4);
+            reserve_witnesses(&jobs, reservation)?;
+            reservation
+        } else {
+            0
+        };
         let id = format!("asset-{}", nonce());
         let cancel = Arc::new(AtomicBool::new(false));
         let work = Work {
@@ -466,7 +525,7 @@ impl Jobs {
             fingerprint: Some(fingerprint),
             media_import: None,
             import_completed: 0,
-            import_total: 0,
+            import_total: witness_reservation,
             otio_probe_total: None,
             otio: None,
             clipboard: None,
@@ -488,7 +547,7 @@ impl Jobs {
         epoch: &str,
         generation: &str,
         edit: &asset_store::Edit,
-    ) -> Result<()> {
+    ) -> Result<Value> {
         let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
         let job = jobs
             .iter_mut()
@@ -504,13 +563,42 @@ impl Jobs {
                 "Native asset command ID was reused",
             ));
         }
-        self.0.store.commit_edit(
-            job.edit_result.as_mut().ok_or_else(ApiError::missing)?,
-            &job.cancel,
-        )?;
+        let prepared = job.edit_result.as_mut().ok_or_else(ApiError::missing)?;
+        let summary = prepared.summary();
+        let PreparedLibraryEdit {
+            edit,
+            sources,
+            files,
+            media,
+        } = prepared;
+        if sources.is_empty() && files.is_empty() && media.is_empty() {
+            self.0.store.commit_edit(edit, &job.cancel)?;
+        } else {
+            self.0.store.commit_edit_checked(edit, &job.cancel, || {
+                roots(&self.0)?;
+                for source in sources {
+                    source.validate(&self.0)?;
+                }
+                for file in files {
+                    file.validate()?;
+                }
+                for (path, expected) in media {
+                    let actual = self
+                        .0
+                        .store
+                        .media_entry(path)?
+                        .map(|file| asset_store::stable_identity(&file))
+                        .transpose()?;
+                    if actual != *expected {
+                        return Err(source_changed());
+                    }
+                }
+                Ok(())
+            })?;
+        }
         job.state = "applied";
         job.edit_result = None;
-        Ok(())
+        Ok(summary)
     }
     pub fn prepare_import(
         &self,
@@ -1238,6 +1326,9 @@ fn reserve_witnesses(jobs: &VecDeque<Job>, additional: usize) -> Result<()> {
                             .count()
                     })
                     + job.clipboard_image.as_ref().map_or(0, |_| 8)
+                    + job.edit_result.as_ref().map_or(0, |prepared| {
+                        prepared.sources.len() + prepared.files.len().saturating_mul(3)
+                    })
             }
         })
         .sum();
@@ -1485,6 +1576,16 @@ struct Copied {
     hash: u64,
 }
 fn copy(inner: &Inner, source: &PinnedSource, work: &Work, budget: &Budget) -> Result<Copied> {
+    copy_checked(inner, source, work, budget, None, |_, _, _| Ok(()))
+}
+fn copy_checked(
+    inner: &Inner,
+    source: &PinnedSource,
+    work: &Work,
+    budget: &Budget,
+    publish_path: Option<&Path>,
+    validate: impl FnOnce(&vv_core::MediaMeta, u64, &str) -> Result<()>,
+) -> Result<Copied> {
     live_source(inner, source, work.import.is_some())?;
     let source_identity = asset_store::stable_identity(&source.file)?;
     let source_hash = fingerprint(&source.file)?;
@@ -1576,7 +1677,24 @@ fn copy(inner: &Inner, source: &PinnedSource, work: &Work, budget: &Budget) -> R
         return Err(source_changed());
     }
     live_source(inner, source, work.import.is_some())?;
-    let (destination, name, path) = if work.import.is_some() {
+    validate(&meta, source_hash, &hash)?;
+    let (destination, name, path) = if let Some(path) = publish_path {
+        inner.store.media_entry(path)?;
+        let parent = path
+            .parent()
+            .and_then(|parent| parent.file_name())
+            .and_then(|name| name.to_str())
+            .ok_or_else(ApiError::missing)?;
+        let name = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(ApiError::missing)?;
+        (
+            asset_store::directory(inner.store.media(), parent)?,
+            name.to_owned(),
+            path.to_owned(),
+        )
+    } else if work.import.is_some() {
         let suffix: String = source_name
             .chars()
             .map(|c| {
@@ -1654,7 +1772,13 @@ fn copy(inner: &Inner, source: &PinnedSource, work: &Work, budget: &Budget) -> R
         parent: if work.import.is_some() {
             None
         } else {
-            Some(hash)
+            Some(
+                path.parent()
+                    .and_then(|parent| parent.file_name())
+                    .and_then(|name| name.to_str())
+                    .ok_or_else(ApiError::missing)?
+                    .to_owned(),
+            )
         },
         name,
         file,
@@ -1705,8 +1829,11 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
             None
         };
         for item in payload.files().filter(|item| item.path == source.path) {
+            // SHA-directory imports already authenticate bytes; native fingerprints include path/mtime.
             let hash_matches = legacy.map_or(
-                item.content_hash == 0 || item.content_hash == copied.source_hash,
+                work.import.is_some()
+                    || item.content_hash == 0
+                    || item.content_hash == copied.source_hash,
                 |hash| hash == item.content_hash,
             );
             if !same_meta(&item.meta, &copied.meta) || !hash_matches {
@@ -1745,6 +1872,169 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
         inner.store.media()
     })?;
     Ok(Prepared { asset, files })
+}
+fn run_relink(
+    inner: &Inner,
+    work: &Work,
+    edit: &asset_store::Edit,
+    completion: crate::asset_journal::Completion,
+) -> Result<PreparedLibraryEdit> {
+    let asset_store::Edit::Relink {
+        id,
+        revision,
+        path_tokens,
+    } = edit
+    else {
+        return Err(ApiError::invalid("Choose a native asset relink"));
+    };
+    roots(inner)?;
+    let lock = inner.store.lock()?;
+    let asset = inner.store.load(id, revision)?;
+    let payload = asset_payload::decode(&asset)?;
+    let missing = inner.store.missing_files(&asset)?;
+    let budget = Budget {
+        start: Instant::now(),
+        cancel: work.cancel.clone(),
+    };
+    budget.check(inner.store.media())?;
+    let mut names = HashMap::new();
+    for token in path_tokens {
+        crate::files::root_media_token(&inner.root, &inner.root.join(token))?;
+        let name = Path::new(token)
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(ApiError::missing)?;
+        if names.insert(name.to_owned(), token).is_some() {
+            return Err(ApiError::invalid(
+                "Selected replacement file names are ambiguous",
+            ));
+        }
+    }
+    let original_missing: HashSet<_> = missing
+        .iter()
+        .filter(|(_, missing)| *missing)
+        .map(|(path, _)| path.clone())
+        .collect();
+    let mut remap = HashMap::new();
+    let mut sources = Vec::new();
+    let mut files = Vec::new();
+    let mut total = 0_u64;
+    for (path, is_missing) in missing {
+        if !is_missing {
+            continue;
+        }
+        let filename = path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(ApiError::missing)?;
+        let Some(token) = names.get(filename) else {
+            continue;
+        };
+        budget.check(inner.store.media())?;
+        let source_path = inner.root.join(token);
+        let file = crate::files::open_root_media(&inner.root, &inner.directory, &source_path)?;
+        let identity = asset_store::stable_identity(&file)?;
+        let (entry, parent) = otio_entry(inner, token)?;
+        let size = file.metadata().map_err(|_| ApiError::io())?.len();
+        total = total
+            .checked_add(size)
+            .ok_or_else(|| ApiError::invalid("Asset byte budget exceeded"))?;
+        if size > MAX_FILE || total > MAX_ASSET {
+            return Err(ApiError::invalid(
+                "Relink exceeds 512 MiB per file or 2 GiB total",
+            ));
+        }
+        if let Ok(mut jobs) = inner.jobs.lock()
+            && let Some(job) = jobs.iter_mut().find(|job| job.id == work.id)
+        {
+            job.total = total;
+        }
+        let source = PinnedSource {
+            identity: crate::source::file_identity(&file)?,
+            path: source_path,
+            file,
+        };
+        let copied = copy_checked(
+            inner,
+            &source,
+            work,
+            &budget,
+            Some(&path),
+            |meta, _, sha| validate_relink_match(&payload, &path, meta, sha),
+        )?;
+        let witness = OtioWitness {
+            token: (*token).clone(),
+            parent,
+            entry: entry.map(|meta| entry_identity(&meta)),
+            file: Some(source.file),
+            identity: Some(identity),
+        };
+        witness.validate(inner)?;
+        copied.witness.validate()?;
+        remap.insert(path, copied.path);
+        sources.push(witness);
+        files.push(copied.witness);
+    }
+    for source in &sources {
+        source.validate(inner)?;
+    }
+    for file in &files {
+        file.validate()?;
+    }
+    let media = inner
+        .store
+        .missing_files(&asset)?
+        .into_iter()
+        .map(|(path, _)| {
+            let identity = inner
+                .store
+                .media_entry(&path)?
+                .map(|file| asset_store::stable_identity(&file))
+                .transpose()?;
+            Ok((path, identity))
+        })
+        .collect::<Result<Vec<_>>>()?;
+    budget.check(inner.store.media())?;
+    drop(lock);
+    let edit =
+        inner
+            .store
+            .prepare_relink(edit, &remap, &original_missing, completion, &work.cancel)?;
+    Ok(PreparedLibraryEdit {
+        edit,
+        sources,
+        files,
+        media,
+    })
+}
+fn validate_relink_match(
+    payload: &ClipboardPayload,
+    path: &Path,
+    meta: &vv_core::MediaMeta,
+    sha256: &str,
+) -> Result<()> {
+    let directory = path
+        .parent()
+        .and_then(|parent| parent.file_name())
+        .and_then(|name| name.to_str())
+        .ok_or_else(ApiError::missing)?;
+    if directory.len() == 64 && directory != sha256 {
+        return Err(source_changed());
+    }
+    let legacy = legacy_hash(directory);
+    if payload
+        .files()
+        .filter(|item| item.path == path)
+        .any(|item| {
+            !same_meta(&item.meta, meta) || legacy.is_some_and(|hash| hash != item.content_hash)
+        })
+    {
+        return Err(ApiError::conflict(
+            "SOURCE_CHANGED",
+            "Replacement must match the native asset metadata and managed content identity",
+        ));
+    }
+    Ok(())
 }
 fn roots(inner: &Inner) -> Result<()> {
     inner.store.validate_root()?;

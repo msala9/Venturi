@@ -80,6 +80,10 @@ pub fn router(state: AppState) -> Router {
             get(native_asset_status).delete(cancel_native_asset),
         )
         .route("/api/v1/native-assets/commands", post(native_asset_command))
+        .route(
+            "/api/v1/native-assets/commands/prepare",
+            post(prepare_native_asset_command),
+        )
         .route("/api/v1/presets", get(preset_list_first))
         .route("/api/v1/presets/shortcuts", get(preset_shortcuts))
         .route("/api/v1/presets/pages/{page}", get(preset_list))
@@ -859,6 +863,20 @@ async fn cancel_native_asset(
                 .0,
             true,
         ))
+        .await
+        .map(native_asset_json)
+}
+async fn prepare_native_asset_command(
+    State(state): State<AppState>,
+    payload: std::result::Result<Json<Mutation>, axum::extract::rejection::JsonRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .prepare_native_asset_edit(
+            payload
+                .map_err(|_| ApiError::invalid("Invalid native asset library preparation"))?
+                .0,
+        )
         .await
         .map(native_asset_json)
 }

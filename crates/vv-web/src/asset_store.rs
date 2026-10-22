@@ -55,6 +55,11 @@ pub struct AssetRef {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Edit {
+    Relink {
+        id: String,
+        revision: String,
+        path_tokens: Vec<String>,
+    },
     Update {
         id: String,
         revision: String,
@@ -101,7 +106,8 @@ impl Edit {
     pub fn requires_preparation(&self) -> bool {
         matches!(
             self,
-            Self::CreateFolder { .. }
+            Self::Relink { .. }
+                | Self::CreateFolder { .. }
                 | Self::RenameFolder { .. }
                 | Self::MoveFolder { .. }
                 | Self::RemoveFolder { .. }
@@ -229,6 +235,7 @@ impl Store {
             },
         )?;
         let _catalog = self.catalog_lock(true)?;
+        self.no_native_pending()?;
         asset_journal::recover(&self.0.directory, &self.0.assets)?;
         Ok(file)
     }
@@ -268,12 +275,103 @@ impl Store {
     fn read_guard(&self) -> Result<File> {
         self.validate_root()?;
         let guard = self.catalog_lock(false)?;
+        self.no_native_pending()?;
         if !asset_journal::pending(&self.0.directory)? {
             return Ok(guard);
         }
         drop(guard);
         let _global = self.lock()?;
-        self.catalog_lock(false)
+        let guard = self.catalog_lock(false)?;
+        self.no_native_pending()?;
+        Ok(guard)
+    }
+    fn no_native_pending(&self) -> Result<()> {
+        match rustix::fs::statat(
+            &self.0.directory,
+            ".venturi-native-assets-pending.json",
+            AtFlags::SYMLINK_NOFOLLOW,
+        ) {
+            Err(rustix::io::Errno::NOENT) => Ok(()),
+            _ => Err(ApiError::conflict(
+                "LIBRARY_BUSY",
+                "Native library recovery is pending; reopen the native library before using it here",
+            )),
+        }
+    }
+    pub(crate) fn media_entry(&self, path: &Path) -> Result<Option<File>> {
+        let relative = path
+            .strip_prefix(self.root().join("media"))
+            .map_err(|_| ApiError::invalid("Relink requires managed native library media paths"))?;
+        let parts: Vec<_> = relative.components().collect();
+        if parts.len() != 2
+            || parts
+                .iter()
+                .any(|p| !matches!(p, std::path::Component::Normal(_)))
+        {
+            return Err(ApiError::invalid("Invalid native library media path"));
+        }
+        let hash = parts[0]
+            .as_os_str()
+            .to_str()
+            .ok_or_else(ApiError::missing)?;
+        let filename = parts[1]
+            .as_os_str()
+            .to_str()
+            .ok_or_else(ApiError::missing)?;
+        if ![16, 64].contains(&hash.len())
+            || !hash
+                .bytes()
+                .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+            || filename.is_empty()
+            || filename.len() > 128
+            || filename.starts_with('.')
+            || filename
+                .chars()
+                .any(|c| c.is_control() || c == '/' || c == '\\')
+        {
+            return Err(ApiError::invalid("Invalid managed native media name"));
+        }
+        let dir = match openat(
+            self.media(),
+            hash,
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        ) {
+            Ok(fd) => File::from(fd),
+            Err(rustix::io::Errno::NOENT) => return Ok(None),
+            Err(_) => return Err(changed()),
+        };
+        let file = match openat(
+            &dir,
+            filename,
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        ) {
+            Ok(fd) => File::from(fd),
+            Err(rustix::io::Errno::NOENT) => return Ok(None),
+            Err(_) => return Err(changed()),
+        };
+        if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
+            return Err(changed());
+        }
+        Ok(Some(file))
+    }
+    pub(crate) fn missing_files(&self, asset: &AssetFile) -> Result<Vec<(PathBuf, bool)>> {
+        let payload = asset_payload::decode(asset)?;
+        let paths: std::collections::BTreeSet<_> =
+            payload.files().map(|item| item.path.clone()).collect();
+        if paths.len() > 64 {
+            return Err(ApiError::invalid(
+                "Native assets support at most 64 unique files",
+            ));
+        }
+        paths
+            .into_iter()
+            .map(|path| {
+                let missing = self.media_entry(&path)?.is_none();
+                Ok((path, missing))
+            })
+            .collect()
     }
     fn folders_raw(&self) -> Result<(Tree, String, Option<Before>)> {
         let fd = match openat(
@@ -487,13 +585,27 @@ impl Store {
         Ok(match asset_payload::parse(&raw.bytes) {
             Ok(asset) => {
                 let payload = asset_payload::decode(&asset)?;
+                let files = self.missing_files(&asset);
                 let previous = if archived {
                     false
                 } else {
                     self.raw(&format!("{id}.json.bak"))?.is_some()
                 };
                 let effective = asset.folder.as_deref().filter(|id| tree.contains(id));
-                json!({"id":id,"revision":raw.revision,"name":asset.name,"folder":asset.folder,"effective_folder":effective,"media_count":payload.media_items().count(),"file_count":payload.files().map(|m| &m.path).collect::<std::collections::HashSet<_>>().len(),"archived":archived,"can_restore_previous":previous})
+                let mut value = json!({"id":id,"revision":raw.revision,"name":asset.name,"folder":asset.folder,"effective_folder":effective,"media_count":payload.media_items().count(),"file_count":payload.files().map(|m|&m.path).collect::<std::collections::HashSet<_>>().len(),"archived":archived,"can_restore_previous":previous});
+                match files {
+                    Ok(files) => {
+                        value["missing_count"] =
+                            json!(files.iter().filter(|(_, missing)| *missing).count());
+                        value["offline_files"]=json!(files.iter().map(|(path,missing)|json!({"name":path.file_name().and_then(|n|n.to_str()).unwrap_or_default(),"missing":missing})).collect::<Vec<_>>());
+                    }
+                    Err(error) => {
+                        value["missing_count"] = Value::Null;
+                        value["offline_files"] = json!([]);
+                        value["relink_error"] = json!(error.2);
+                    }
+                }
+                value
             }
             Err(e) => {
                 json!({"id":id,"revision":raw.revision,"name":id,"error":e.2,"archived":archived})
@@ -664,7 +776,7 @@ impl Store {
         cancel: &AtomicBool,
     ) -> Result<PreparedEdit> {
         let _global = self.lock()?;
-        if !edit.requires_preparation() {
+        if !edit.requires_preparation() || matches!(edit, Edit::Relink { .. }) {
             return Err(ApiError::invalid(
                 "This native asset edit does not require folder preparation",
             ));
@@ -845,6 +957,99 @@ impl Store {
         let _catalog = self.catalog_lock(true)?;
         self.validate_root()?;
         prepared.commit(&self.0.directory, &self.0.assets, cancel)
+    }
+    pub(crate) fn commit_edit_checked(
+        &self,
+        prepared: &mut PreparedEdit,
+        cancel: &AtomicBool,
+        check: impl FnOnce() -> Result<()>,
+    ) -> Result<()> {
+        let _global = self.lock()?;
+        let _catalog = self.catalog_lock(true)?;
+        self.validate_root()?;
+        check()?;
+        prepared.commit(&self.0.directory, &self.0.assets, cancel)
+    }
+    pub(crate) fn prepare_relink(
+        &self,
+        edit: &Edit,
+        remap: &std::collections::HashMap<PathBuf, PathBuf>,
+        original_missing: &std::collections::HashSet<PathBuf>,
+        mut completion: Completion,
+        cancel: &AtomicBool,
+    ) -> Result<PreparedEdit> {
+        let Edit::Relink { id, revision, .. } = edit else {
+            return Err(ApiError::invalid("Choose a native asset relink"));
+        };
+        let _global = self.lock()?;
+        let filename = name(id, false)?;
+        let raw = self.checked(&filename, revision)?;
+        let mut asset = asset_payload::parse(&raw.bytes)?;
+        let paths: std::collections::HashSet<_> = self
+            .missing_files(&asset)?
+            .into_iter()
+            .map(|(path, _)| path)
+            .collect();
+        if remap
+            .keys()
+            .any(|path| !original_missing.contains(path) || !paths.contains(path))
+        {
+            return Err(changed());
+        }
+        let mut payload = asset_payload::decode(&asset)?;
+        for item in payload.files_mut() {
+            if let Some(path) = remap.get(&item.path) {
+                if self.media_entry(path)?.is_none() {
+                    return Err(changed());
+                }
+                item.path = path.clone();
+            }
+        }
+        asset.payload = payload.to_text();
+        let remaining = self
+            .missing_files(&asset)?
+            .iter()
+            .filter(|(_, missing)| *missing)
+            .count();
+        completion.receipt["missing_count"] = json!(remaining);
+        completion.receipt["relinked_files"] = json!(remap.len());
+        let mut prepared = PreparedEdit::new(
+            &self.0.directory,
+            completion,
+            json!({"asset_id":id,"revision":revision,"missing_count":remaining,"relinked_files":remap.len()}),
+        )?;
+        let before = Some(Before {
+            identity: raw.identity.clone(),
+            sha256: raw.revision.clone(),
+        });
+        if remap.is_empty() {
+            prepared.guard(true, filename, before);
+        } else {
+            let backup_name = format!("{filename}.bak");
+            let backup = self.raw(&backup_name)?;
+            prepared.add(
+                true,
+                backup_name,
+                backup.map(|raw| Before {
+                    identity: raw.identity,
+                    sha256: raw.revision,
+                }),
+                &raw.bytes,
+            )?;
+            prepared.add(
+                true,
+                filename,
+                before,
+                &serde_json::to_vec_pretty(&asset).map_err(|_| ApiError::io())?,
+            )?;
+        }
+        if cancel.load(Ordering::Acquire) {
+            return Err(ApiError::conflict(
+                "ASSET_CANCELED",
+                "Asset preparation was canceled",
+            ));
+        }
+        Ok(prepared)
     }
 }
 pub(crate) fn changed() -> ApiError {

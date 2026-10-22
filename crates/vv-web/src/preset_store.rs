@@ -91,10 +91,13 @@ impl Store {
         })
     }
     fn lock(&self) -> Result<File> {
+        self.catalog_lock(true)
+    }
+    fn catalog_lock(&self, exclusive: bool) -> Result<File> {
         let fd = openat(
             &self.dir,
             ".venturi-presets.lock",
-            OFlags::RDWR | OFlags::CREATE | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            OFlags::RDWR | OFlags::CREATE | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
             Mode::RUSR | Mode::WUSR,
         )
         .map_err(|_| ApiError::io())?;
@@ -102,14 +105,34 @@ impl Store {
         if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
             return Err(ApiError::invalid("Preset lock must be a regular file"));
         }
-        rustix::fs::flock(&file, rustix::fs::FlockOperation::NonBlockingLockExclusive).map_err(
-            |_| {
-                ApiError::conflict(
-                    "LIBRARY_BUSY",
-                    "Preset library is busy; retain the draft and retry",
-                )
+        rustix::fs::flock(
+            &file,
+            if exclusive {
+                rustix::fs::FlockOperation::NonBlockingLockExclusive
+            } else {
+                rustix::fs::FlockOperation::NonBlockingLockShared
             },
-        )?;
+        )
+        .map_err(|_| {
+            ApiError::conflict(
+                "LIBRARY_BUSY",
+                "Preset library is busy; retain the draft and retry",
+            )
+        })?;
+        match rustix::fs::statat(
+            &self.dir,
+            ".venturi-native-presets-pending.json",
+            AtFlags::SYMLINK_NOFOLLOW,
+        ) {
+            Err(rustix::io::Errno::NOENT) => (),
+            Ok(_) => {
+                return Err(ApiError::conflict(
+                    "LIBRARY_RECOVERY_REQUIRED",
+                    "A desktop preset transaction is pending; reopen the desktop library to recover it",
+                ));
+            }
+            Err(_) => return Err(ApiError::io()),
+        }
         Ok(file)
     }
     fn raw(&self, file_name: &str) -> Result<Option<Raw>> {
@@ -231,15 +254,21 @@ impl Store {
         self.publish(&file_name, &bytes, None)
     }
     pub fn load(&self, id: &str, expected: &str) -> Result<Preset> {
+        let _guard = self.catalog_lock(false)?;
         parse(&self.checked(&name(id, false)?, expected)?.bytes)
     }
     pub fn export(&self, id: &str) -> Result<Vec<u8>> {
+        let _guard = self.catalog_lock(false)?;
         Ok(self
             .raw(&name(id, false)?)?
             .ok_or_else(ApiError::missing)?
             .bytes)
     }
     pub fn item(&self, id: &str, archived: bool) -> Result<Value> {
+        let _guard = self.catalog_lock(false)?;
+        self.item_locked(id, archived)
+    }
+    fn item_locked(&self, id: &str, archived: bool) -> Result<Value> {
         let raw = self
             .raw(&name(id, archived)?)?
             .ok_or_else(ApiError::missing)?;
@@ -268,6 +297,7 @@ impl Store {
         })
     }
     pub fn list(&self, page: usize, query: &Query) -> Result<Value> {
+        let _guard = self.catalog_lock(false)?;
         if query.search.len() > 128 {
             return Err(ApiError::invalid(
                 "Preset search is limited to 128 UTF-8 bytes",
@@ -307,7 +337,7 @@ impl Store {
         let search = query.search.to_lowercase();
         let mut items = Vec::new();
         for id in names.into_iter().skip(start).take(32) {
-            let item = match self.item(&id, query.archived) {
+            let item = match self.item_locked(&id, query.archived) {
                 Ok(item) => item,
                 Err(error) if error.1 == "NOT_FOUND" => continue,
                 Err(error) => json!({"id":id,"name":id,"error":error.2,"archived":query.archived}),

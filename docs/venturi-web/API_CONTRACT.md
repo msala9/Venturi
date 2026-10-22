@@ -1,5 +1,71 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Explicit native library edit preparation
+
+`POST /api/v1/native-assets/commands/prepare` accepts the full ordinary
+`Mutation`, including its final command ID, client, command epoch, project
+epoch, generation and operation. Only `edit_native_asset_library` edits whose
+`requires_preparation()` is true are accepted. A direct rename/publication or
+project operation is refused before dispatch; this endpoint cannot apply it.
+The response is the existing native-asset job object, or
+`{state:"applied",receipt}` for an already applied identical request. Responses
+are `no-store` and retain the ordinary origin/host/body validation.
+
+Poll or cancel through the existing `/native-assets/jobs/{id}` routes. Submit
+the exact same `Mutation` to `/native-assets/commands` only after its preparation
+is ready. Reusing its command ID with different bytes is refused. Preparation
+does not mutate timeline history or publish catalog metadata. A canceled job
+cannot subsequently commit. Verified media copies may remain reusable, as for
+other native-asset preparation jobs; cancellation never deletes shared files.
+
+The browser retains the prepared mutation and validates its current writer,
+command epoch, project epoch, generation and operation before entering the
+ordinary mutation owner. An uncertain final application follows the existing
+command-status reconciliation and read-only latch; creating a fresh command ID
+is not a recovery action.
+
+The native asset edit `{action:"relink",id,revision,path_tokens}` uses this
+preparation boundary. `path_tokens` contains 1–64 distinct listed media tokens
+from the approved project root. Files match missing dependency basenames;
+ambiguous names are refused. Readable dependencies keep their paths. Repaired
+dependencies retain their native metadata, content hash, media/compound IDs and
+clipboard references. Repairs restore the original managed media path. A
+64-digit SHA directory requires a full matching content digest before
+publication. Legacy 16-digit native directories retain their original native
+fingerprint and require probe-compatible metadata. That native fingerprint
+depends on path, size and mtime; it is not a byte checksum. Imports retain the
+existing SHA-content verification and legacy-directory rules after relinking.
+Recursive folder search and substitutions with incompatible metadata remain
+open; SHA-managed dependencies require their original content.
+
+Ready job `result` includes `{asset_id,revision,missing_count,relinked_files}`.
+The final command receipt and journal completion retain both counts. Native
+asset items expose `missing_count` and `offline_files` for contextual recovery.
+An unsafe or unrecognized media path retains its listed metadata/revision and
+reports `missing_count:null` with `relink_error`; it cannot be prepared for relink.
+Preparation uses the existing file/asset byte limits, isolated probe and disk
+reserve. Source descriptors, entry/ctime identities, copied media and original
+library dependencies are witnessed again under the catalog/global locks
+immediately before journal intent. Stale revisions, cancellation and replaced
+files refuse the metadata publication; original JSON and backup are retained.
+
+## Cooperative desktop preset catalog reads
+
+Preset list, item, export and apply reads hold a shared nonblocking
+`presets/.venturi-presets.lock`; mutations hold the exclusive lock. A list keeps
+one guard across its bounded page, preventing an intermediate multi-record
+desktop shortcut update from appearing as a complete catalog. Busy access
+returns `LIBRARY_BUSY` and preserves the client draft.
+
+Any existing `.venturi-native-presets-pending.json` entry under the preset
+directory, including a broken link or malformed marker, returns
+`LIBRARY_RECOVERY_REQUIRED` after the lock is acquired. Web readers/writers do
+not delete or interpret a desktop recovery intent. Recover it by refreshing or
+reopening the compatible native library. The native asset catalog uses the
+corresponding `.venturi-native-assets-pending.json` at its root alongside the
+existing web journal protocol. These guards require cooperating versions;
+older desktop binaries do not participate in them.
+
 ## Native selected Inspector edits
 
 The timeline mutation `edit_inspector_selection` accepts

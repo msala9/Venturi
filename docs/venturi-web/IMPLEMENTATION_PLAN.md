@@ -38,6 +38,17 @@ checks, remaining defects and deployment state. No upstream PR or merge.
 | M6 | AI Review | M3+safe commands | Shot/Take sidecar, A/B comparison, atomic Replace Take with duration policies |
 | M7 | Security, deployment and release | M5+M6 | systemd loopback, SSH tunnel, reload/recovery, threat-model, 2h soak, docs and license review |
 
+## Current F1 delivery checkpoint — 2026-10-23
+
+Source `6a1f020` runs on halo1 port8818 with native fractional curve viewport
+reads, adjacent selected-key tangent editing and typed-row graph activation.
+The integrated Windows compound animation/tangent/Undo/Redo/Save/playback passes;
+see `evidence/f1-native-curve-viewport-workflow.json`. Shared animated lanes are
+implemented; the dedicated movable/floating Curves panel and remaining physical
+modifier/DPI/dense acceptance are still open. Keep this next UX block coherent
+and reuse unchanged native/render evidence. No parity row is promoted by this
+increment; ledger47/43/2 and full F1-F7/M7 scope remain unchanged.
+
 ## G0 — work orders (first Codex turn only)
 
 - Confirm branch/commit. Inspect root `AGENTS.md`, `CLAUDE.md`, screenshot directory names, desktop `vv-app` panel files, `vv-mcp` tool enum + dispatch, `vv-session` render interfaces.

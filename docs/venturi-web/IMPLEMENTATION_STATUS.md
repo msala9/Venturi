@@ -4,7 +4,36 @@
 
 ## Active completion objective
 
-The current working delivery is **http://127.0.0.1:8817/** on halo1, source
+The current halo1 delivery is **http://127.0.0.1:8818/**, source `6a1f020`,
+binary `87ef35912694`, in `venturi-web-halo1-native-curves.service`.
+Its independent Saved `Venturi_Native_Curves.vvproj` adds Opacity/Position X
+animation to the Library montage. The graph reads fractional visible-range
+samples from Rust; selected keys expose both adjacent segments, including the
+incoming segment of the last key. Tangent edits preserve mixed parameter picks
+and target the segment-start interpolation with one native Undo. Typed rows
+clear the scalar plot while retaining shared lane editing and navigation.
+Accepted samples and pointerdown geometry survive selection/drafts, avoiding
+Bezier overshoot value jumps. Compact viewport labels retain accessible names.
+
+The bounded halo1 gate passes 95 JavaScript cases and covers all 543 vv-web
+cases: 542 passed initially; 15 affected curve cases pass after correcting the
+new endpoint oracle to native exact endpoint clamping. Formatting, all-target
+Clippy and build pass. Actual Windows editing creates five keys on two animated
+parameters, changes the incoming tangent of source key120, retains three mixed
+picks, restores exact curves with one Undo/Redo, zooms/pans the shared axis,
+saves and plays the compound from frame315 to natural EOF391. Three readonly
+viewport reads preserve the complete Session. See
+`evidence/f1-native-curve-viewport-workflow.json` and its screenshot.
+
+The protected halo1 ports8813/8816/8817 retain complete Sessions, project hashes,
+PIDs and Undo chains; ds4 and both canonical native assets remain unchanged.
+Halo2/H3 was untouched. The dedicated movable/floating Curves panel, physical
+modifier-wheel/DPI and representative dense editing acceptance remain open.
+The ledger stays **47 done / 43 partial / 2 excluded**; full F1-F7/M7 is active.
+
+### Preserved Library delivery
+
+The preserved Library delivery is **http://127.0.0.1:8817/** on halo1, source
 `ac0ba1a`, binary `3af3f2e0872a`, in
 `venturi-web-halo1-library-edit-r2.service`. Its independent Saved
 `Venturi_Library_Edit.vvproj` uses the canonical NAS. Direct Library drag now

@@ -9,23 +9,37 @@ and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
 ### Current execution host — halo1
 
 The owner moved new work to free halo1 on 2026-10-22 because halo2 is shared
-with an H3 agent. The current working runtime serves Windows
-**http://127.0.0.1:8817/** through the same-port SSH tunnel to halo1.
-Source `ac0ba1a` runs as unprivileged `halo` in
-`venturi-web-halo1-library-edit-r2.service`, using
-`/home/halo/VenturiWeb-library-edit-20261023` and the separate Saved project
-`Venturi_Library_Edit.vvproj`. It adds ordered multiasset Library placement with
-one native Undo to the existing Color/Audio and CIFS fixes. The earlier 8816
-Color/Audio editor (source `63f4919`) retains its complete Session, Saved project
-and Undo chain. The earlier halo1 editor on **8813**, source `fd9bde4`, remains running
-with its complete Session, ImportMedia Undo entry and project bytes unchanged.
-All three use the existing CIFS mount
-`/mnt/madrock-share/madrock-library` for native assets and its `presets/`
-subdirectory for presets, and the existing local ds4 API on 8787 for archive
-media. The existing halo2 editors below are preserved historical deliveries;
-ports 8813/8816/8817 on Windows target halo1, not the stopped halo2 qualifications.
-Use halo1 for subsequent bounded build/render/qualification work. Do not
-start another NAS mount or install browsers on either server.
+with an H3 agent. All new heavy work remains bounded on halo1. The existing
+CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
+archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
+is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
+
+The current halo1 delivery is **http://127.0.0.1:8818/**, source `6a1f020`,
+binary `87ef35912694`, in `venturi-web-halo1-native-curves.service`.
+Its independent Saved `Venturi_Native_Curves.vvproj` adds Opacity/Position X
+animation to the Library montage. The graph reads fractional visible-range
+samples from Rust; selected keys expose both adjacent segments, including the
+incoming segment of the last key. Tangent edits preserve mixed parameter picks
+and target the segment-start interpolation with one native Undo. Typed rows
+clear the scalar plot while retaining shared lane editing and navigation.
+Accepted samples and pointerdown geometry survive selection/drafts, avoiding
+Bezier overshoot value jumps. Compact viewport labels retain accessible names.
+
+The bounded halo1 gate passes 95 JavaScript cases and covers all 543 vv-web
+cases: 542 passed initially; 15 affected curve cases pass after correcting the
+new endpoint oracle to native exact endpoint clamping. Formatting, all-target
+Clippy and build pass. Actual Windows editing creates five keys on two animated
+parameters, changes the incoming tangent of source key120, retains three mixed
+picks, restores exact curves with one Undo/Redo, zooms/pans the shared axis,
+saves and plays the compound from frame315 to natural EOF391. Three readonly
+viewport reads preserve the complete Session. See
+`evidence/f1-native-curve-viewport-workflow.json` and its screenshot.
+
+The protected halo1 ports8813/8816/8817 retain complete Sessions, project hashes,
+PIDs and Undo chains; ds4 and both canonical native assets remain unchanged.
+Halo2/H3 was untouched. The dedicated movable/floating Curves panel, physical
+modifier-wheel/DPI and representative dense editing acceptance remain open.
+The ledger stays **47 done / 43 partial / 2 excluded**; full F1-F7/M7 is active.
 
 R9700 Vulkan discovery, real archived-video import, Source preparation,
 timeline insertion, composed preview and project Save pass in the existing
@@ -164,6 +178,16 @@ match the native/API frames in `evidence/f3-mask-inspector-workflow.json`.
 Physical modifier/DPI and dense 500-clip acceptance remain open. The finite 8813
 qualification instance is stopped Saved. Stable 8812 still runs `f3dcf1c`; none of
 the three live editors was upgraded/reloaded or had client drafts discarded.
+
+The 2026-10-23 native curve block is delivered as `6a1f020` on halo1: see
+`evidence/f1-native-curve-viewport-workflow.json`. Simultaneous animated parameter
+lanes and shared scalar/typed selection already exist; native has one selected
+scalar graph, not simultaneous overlaid scalar graphs. Visible native sampling,
+incoming/outgoing tangent ownership and typed-row graph clearing now pass the
+bounded gate and real Windows tangent/Undo/Redo/Save/playback workflow. Finish
+the dedicated movable/floating curve panel as a coherent UX increment, then the
+remaining modifier/DPI/dense editing acceptance; do not repeat unchanged native
+catalog or export matrices for this Web-only graph change. F1 remains partial.
 
 ### F2 — media, playback and export
 

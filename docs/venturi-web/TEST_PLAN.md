@@ -20,6 +20,19 @@ workloads and the shared nonblocking GPU lock. The owner moved new work to free
 halo1 because halo2 is shared with H3. Preserve every earlier editor and Undo
 chain. Keep the eight-CPU/4-GiB/no-swap/low-priority resource policy.
 
+## Native curve viewport checkpoint — 2026-10-23
+
+`evidence/f1-native-curve-viewport-workflow.json` covers95 focused JS cases,
+543 vv-web cases with15 affected reruns after a test-only endpoint correction,
+formatting, all-target Web Clippy and embedded build on bounded halo1. Actual
+Windows animation, incoming tangent ownership, mixed selection, exact Undo/Redo,
+shared time zoom/pan, Save and composed compound EOF pass. Three real readonly
+viewport calls preserve Session/history. Regressions cover fractional native
+ease/overshoot, full-track page neighbors, bounds/stale/locked readonly behavior,
+coalesced cancellation and horizontal drag retaining accepted overshoot samples.
+The dedicated floating UI, physical modifier-wheel/DPI and dense editing gates
+remain open; this does not qualify unchanged export/restart or full M7 release.
+
 ## Existing repo quality gate
 
 Run `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test --workspace` where dependencies/GPU exist. Upstream Rust unit tests belong in `crates/<crate>/src/tests/<source path>.rs`, not inline. See root AGENTS/CLAUDE.md and docs/BUILDING.md. Before adding new test harness for frontend, prove pure JS works with `node --test`; UI interactions need browser-level smoke only when necessary.

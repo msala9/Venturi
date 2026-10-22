@@ -2,6 +2,26 @@
 
 ## Current halo1 working instance
 
+Use **http://127.0.0.1:8818/** in the existing Windows browser. Source `6a1f020`,
+binary `vv-web-87ef35912694`, runs as unprivileged `halo` in
+`venturi-web-halo1-native-curves.service`, with projects in
+`/home/halo/VenturiWeb-native-curves-20261023`. Open the Saved
+`Venturi_Native_Curves.vvproj`; select the V1 Timeline 1 2 compound and use Curves.
+It retains the Library montage and adds two animated parameters, native visible
+curve sampling and a verified incoming tangent edit with one Undo/Redo.
+The actual Windows Program plays the animated compound to natural EOF391.
+See `evidence/f1-native-curve-viewport-workflow.json`.
+
+The hidden same-port tunnel forwards8818 to halo1. The runtime uses the existing
+canonical NAS and ds4 arguments, eight-CPU/4-GiB/no-swap/low-priority limits and
+nonblocking shared GPU lock. It has no automatic restart, boot enablement or
+qualification deadline. Save before deliberately stopping it; restart retains
+saved project data, not the live Undo chain. Earlier ports8813/8816/8817 remain
+running and unchanged. No Windows build/render or Linux browser is required.
+The dedicated movable/floating Curves UI and remaining full-plan gates are open.
+
+### Preserved Library instance
+
 Use **http://127.0.0.1:8817/** in the existing Windows browser. Source `ac0ba1a`,
 binary `vv-web-3af3f2e0872a`, runs as unprivileged `halo` in
 `venturi-web-halo1-library-edit-r2.service`, with projects in

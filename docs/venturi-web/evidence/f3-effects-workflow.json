@@ -1,0 +1,111 @@
+{
+  "date": "2026-10-22",
+  "status": "partial_integrated_workflow",
+  "source_commit": "bbf0fbba84a958472cff9315ed17677dd7188a3d",
+  "runtime_sha256": "34181f4ff4b14ca5271a326666c6f20439477cb84a8bbfd1aeaa9bbe2dd92fb2",
+  "project": "Venturi_F3_Effects.vvproj",
+  "saved_sha256": "76ba999bed8c0a246ae996b22bb89186e575885a5604aabee2295c9c8bc1f6d6",
+  "timeline": "F3 effects montage",
+  "resolution": [
+    1280,
+    720
+  ],
+  "fps": 24,
+  "frames": 408,
+  "observed": [
+    "Dedicated Save As and new timeline in the existing Windows browser.",
+    "Two distinct native Title texts; selected Upper case, background enabled/color and Exposure 0.5 retained each title text.",
+    "Selected background color change followed by one Undo and Redo; native grouped regression evidence remains the authority for exact project equality.",
+    "Native title text diamonds, Solid RGBA and Solid diamond at its own clamped source frame.",
+    "Next Solid key navigation from timeline frame 240 reached 359 (source 119).",
+    "First unfocused Canvas ruler click reached frame 120 without changing Canvas y or page scroll.",
+    "HD media insertion created one video and two linked audio lanes after the generators.",
+    "Full timeline export ready, downloaded via the visible link and played from start through natural EOF in the existing Windows browser.",
+    "Exported video metadata: 1280x720, duration 17.002s, no player error; actual x264/software decode/R9700 Vulkan composition.",
+    "Viewer header visually fits two compact rows at the existing 1280x720 browser viewport. Viewer fullscreen entered and exited; Fit and 100% controls accepted.",
+    "Color workspace opened with the selected filters entrypoint.",
+    "Own finite qualification service stopped only after Saved; protected original editor and delivered editor preserved."
+  ],
+  "export": {
+    "cancel_requested": false,
+    "durability_error": false,
+    "durable": true,
+    "error": null,
+    "export_revision": "475b7b73fcf065af9e5eeec338231a24ae9f08dbfeb5040755fe9fd4e8f77b8e",
+    "frames": 0,
+    "id": "1792668005335873815",
+    "previous_state": null,
+    "program": {
+      "audio_present": true,
+      "end_frame": 408,
+      "export_settings": {
+        "audio": true,
+        "audio_bitrate_kbps": 128,
+        "audio_codec": "aac",
+        "audio_fast_coder": false,
+        "preset": "veryfast",
+        "quality": 18,
+        "scale_percent": 100
+      },
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "18",
+      "height": 720,
+      "project_epoch": "1792667615997975127:1",
+      "revision": "54ac69dc0a1ff3f9",
+      "start_frame": 0,
+      "width": 1280
+    },
+    "progress": {
+      "compose_fps": 368.3164381723413,
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "current_frame": 408,
+      "decode_fps": 353.8689139287824,
+      "decoder_fallback": false,
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)"
+        }
+      ],
+      "elapsed_ms": 2427.019767,
+      "encode_fps": 179.45727848957156,
+      "encoder": "X264",
+      "fps": 168.10740709554344,
+      "startup_ms": 36.089709,
+      "total_frames": 408
+    },
+    "project_epoch": "1792667615997975127:1",
+    "source_asset": null,
+    "source_assets": null,
+    "source_window": null,
+    "state": "ready"
+  },
+  "download": {
+    "bytes": 1173542,
+    "sha256": "7bf21f068e4faf3af3ac2958c75181d8addbee41849805661c8e297cc0148e7f"
+  },
+  "screenshots": [
+    "f3-effects-export-windows.jpg",
+    "f3-viewer-fullscreen-windows.jpg"
+  ],
+  "limits": {
+    "cpu": 1,
+    "memory_gib": 4,
+    "swap": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "runtime_seconds": 600,
+    "shared_gpu_lock": "nonblocking"
+  },
+  "scope_limits": [
+    "Synthetic 17-second montage is representative output resolution, not sustained real-footage throughput.",
+    "No moving SmoothCut/mask/adjustment/compound qualification in this pass. Existing unchanged native renderer evidence is retained.",
+    "No claim of physical audio output or device latency, multi-DPI pointer acceptance, wheel/pan qualification or key-ruler drag acceptance.",
+    "Save was verified; restart/reopen of this F3 project remains pending.",
+    "No functional parity row closed by this partial workflow."
+  ]
+}

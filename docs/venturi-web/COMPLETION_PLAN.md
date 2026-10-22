@@ -19,6 +19,17 @@ state before deployment; the owner may have begun new work in the candidate.
 
 ## Delivery blocks
 
+Current integration checkpoint (2026-10-22): selected Title/Solid/Filter controls
+and native key navigation are implemented through bbf0fbb. The existing Windows
+browser completed a separate 1280x720, 24 fps, 408-frame effects montage with two
+distinct titles, selected styling/filter edits, Solid keys and linked HD media
+audio, Save As/Save, H.264/AAC export, download and natural exported-file EOF.
+See evidence/f3-effects-workflow.json for actual paths and remaining limits.
+The finite qualification service was stopped Saved; the delivered port-8811
+version remains df50859. Native compound grouping, selected media retiming and
+native ProjectView persistence form the next coherent integration block. This
+checkpoint does not close the broader partial capability rows or the full goal.
+
 Complete coherent user workflows in this order, taking independent source work
 forward when hardware is busy. Do not restart the former sequence of tiny
 feature/test/evidence increments. Each capability appears in exactly one block.

@@ -12,7 +12,7 @@ use sha2::{Digest, Sha256};
 use std::{
     collections::{HashMap, HashSet},
     path::Path,
-    sync::mpsc,
+    sync::{Arc, mpsc},
     time::{Duration, Instant},
 };
 use tokio::sync::oneshot;
@@ -28,6 +28,10 @@ pub struct KeyframeNavigationRequest {
 
 pub enum Action {
     MediaRoot(oneshot::Sender<Result<std::fs::File>>),
+    SourceBrowserTask(
+        crate::files::SourcesQuery,
+        oneshot::Sender<Result<crate::files::SourceBrowserTask>>,
+    ),
     Session,
     Timeline(String),
     Projects,
@@ -162,7 +166,7 @@ struct PendingNativeEdit {
     epoch: String,
 }
 #[derive(Clone)]
-pub struct Host(mpsc::SyncSender<Message>);
+pub struct Host(mpsc::SyncSender<Message>, Arc<tokio::sync::Semaphore>);
 pub struct Editor {
     pub session: Session,
     files: Files,
@@ -479,7 +483,7 @@ impl Editor {
             let mut value=json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()});
             if prepared_edit {value["library_durable"]=json!(true);}
             if let Some(report)=native_asset_receipt {
-                for field in ["missing_count","relinked_files"] {
+                for field in ["missing_count","relinked_files","imported_assets","skipped_files","error_count","root_folder_id","folders_revision","created_folders"] {
                     if let Some(count)=report.get(field) {value[field]=count.clone();}
                 }
             }
@@ -2315,6 +2319,13 @@ impl Editor {
                 let _ = reply.send(self.files.root_file());
                 Ok(Value::Null)
             }
+            Action::SourceBrowserTask(query, reply) => {
+                let result = self
+                    .validate_asset_epoch(&query.project_epoch, None)
+                    .and_then(|_| self.files.source_browser_task(query));
+                let _ = reply.send(result);
+                Ok(Value::Null)
+            }
             Action::Projects => self.files.list(),
             Action::Recovery => Ok(self.autosave.info()),
             Action::Lease(client) => self.lease(&client),
@@ -2331,6 +2342,31 @@ fn valid_key(key: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
 }
 impl Host {
+    pub async fn source_browser(&self, query: crate::files::SourcesQuery) -> Result<Value> {
+        let permit = self.1.clone().try_acquire_owned().map_err(|_| {
+            ApiError::conflict(
+                "SOURCE_BROWSER_BUSY",
+                "Source browser is busy; retry after the current directory read",
+            )
+        })?;
+        let epoch = query.project_epoch.clone();
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::SourceBrowserTask(query, tx)).await?;
+        let task = rx.await.map_err(|_| ApiError::io())??;
+        let value = tokio::task::spawn_blocking(move || {
+            let _permit = permit;
+            task.run()
+        })
+        .await
+        .map_err(|_| ApiError::io())??;
+        if self.call(Action::Session).await?["project_epoch"] != epoch {
+            return Err(ApiError::conflict(
+                "REVISION_CONFLICT",
+                "Project changed while browsing sources",
+            ));
+        }
+        Ok(value)
+    }
     pub async fn project_mutation(&self, request: Mutation) -> Result<Value> {
         if !matches!(
             request.operation,
@@ -2525,7 +2561,7 @@ impl Host {
                 editor.autosave.tick(&editor.files, &editor.session);
             }
         });
-        Ok(Self(tx))
+        Ok(Self(tx, Arc::new(tokio::sync::Semaphore::new(1))))
     }
     pub async fn call(&self, action: Action) -> Result<Value> {
         let (tx, rx) = oneshot::channel();

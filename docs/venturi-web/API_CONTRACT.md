@@ -1,5 +1,29 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Approved source folders
+
+`GET /api/v1/media/sources` accepts strict query
+`{project_epoch,directory_token:"",page:0}`. The empty token lists the configured
+project source root; folder operations require an explicit nonempty child token.
+The response echoes the epoch, directory token and page, with
+`{parent_token,entries:[{kind:"directory"|"media",name,path_token}],pages}`.
+Root has a null parent; an immediate child has the empty root parent token.
+Listings are deterministic, contain at most 32 entries per page and refuse
+directories beyond the 4096-entry budget rather than silently truncate them.
+
+Tokens are exact UTF-8 paths relative to the configured root, with bounded
+components/depth and no absolute paths, traversal, hidden directories, backslash
+aliases or symlink traversal. Media reads pin the root and each parent; jobs
+retain entry/descriptor witnesses through final publication. Project Save/Open
+names retain their existing flat-name contract.
+
+The host validates the epoch and snapshots the root descriptor in the actor,
+then reads the directory outside the mutable Session. One shared permit stays
+with the blocking read even when the HTTP request is canceled. A competing
+directory read returns `SOURCE_BROWSER_BUSY`; a project switch before the
+response returns `REVISION_CONFLICT`. Listing does not acquire the writer lease
+or mutate history. Responses are `no-store`.
+
 ## Explicit native library edit preparation
 
 `POST /api/v1/native-assets/commands/prepare` accepts the full ordinary
@@ -35,8 +59,10 @@ publication. Legacy 16-digit native directories retain their original native
 fingerprint and require probe-compatible metadata. That native fingerprint
 depends on path, size and mtime; it is not a byte checksum. Imports retain the
 existing SHA-content verification and legacy-directory rules after relinking.
-Recursive folder search and substitutions with incompatible metadata remain
-open; SHA-managed dependencies require their original content.
+`{action:"relink_folder",id,revision,directory_token}` searches the chosen
+approved folder recursively through the same preparation boundary and identity
+rules. Substitutions with incompatible metadata remain unavailable;
+SHA-managed dependencies require their original content.
 
 Ready job `result` includes `{asset_id,revision,missing_count,relinked_files}`.
 The final command receipt and journal completion retain both counts. Native
@@ -48,6 +74,24 @@ reserve. Source descriptors, entry/ctime identities, copied media and original
 library dependencies are witnessed again under the catalog/global locks
 immediately before journal intent. Stale revisions, cancellation and replaced
 files refuse the metadata publication; original JSON and backup are retained.
+
+`{action:"import_tree",directory_token,parent,folders_revision}` imports an
+explicit approved folder into the native library. A null parent means the
+library root. Native sorted/pruned hierarchy is retained, same-name siblings
+merge and matching source fingerprints in the same library folder are skipped
+after probing. Source scans allow at most 64 media files, 128 directories,
+4096 raw entries and 16 directory levels; existing 512 MiB/file and 2 GiB/job
+bounds still apply. Exceeding a scan limit refuses the operation rather than
+publishing a truncated tree. Visited directories and files are witnessed again
+before the single guarded catalog publication, including pruned directories.
+
+The ready result contains
+`{imported_assets,skipped_files,error_count,errors:[{path_token,code,message}],root_folder_id,folders_revision,created_folders}`.
+An empty pruned tree has a null root ID and creates no invented folder. The
+durable command/completion receipt retains only the six scalar summary fields,
+not per-file errors or unbounded ID arrays. The browser keeps ready errors in
+collapsed result details and does not repeat an applied command to recover
+those details. Native folder imports do not edit project history.
 
 ## Cooperative desktop preset catalog reads
 

@@ -1,5 +1,278 @@
 use super::*;
 
+fn tree_edit(fixture: &Fixture, directory: &str) -> asset_store::Edit {
+    asset_store::Edit::ImportTree {
+        directory_token: directory.into(),
+        parent: None,
+        folders_revision: fixture.store.folders().unwrap()["folders_revision"]
+            .as_str()
+            .unwrap()
+            .into(),
+    }
+}
+
+#[test]
+fn native_tree_import_merges_native_hierarchy_skips_same_folder_fingerprints_and_persists_compact_receipts()
+ {
+    let fixture = Fixture::new();
+    let shots = fixture.project.join("Shots");
+    std::fs::create_dir_all(shots.join("Nested")).unwrap();
+    std::fs::create_dir_all(shots.join("Empty")).unwrap();
+    std::fs::copy(&fixture.path, shots.join("first.png")).unwrap();
+    std::fs::copy(&fixture.path, shots.join("Nested/second.png")).unwrap();
+    std::fs::write(shots.join("Nested/broken.mp4"), b"not media").unwrap();
+    let edit = tree_edit(&fixture, "Shots");
+    let ready = prepare_relink(&fixture, "tree-first", edit.clone());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let total = std::fs::metadata(shots.join("first.png")).unwrap().len()
+        + std::fs::metadata(shots.join("Nested/second.png"))
+            .unwrap()
+            .len()
+        + std::fs::metadata(shots.join("Nested/broken.mp4"))
+            .unwrap()
+            .len();
+    assert_eq!(ready["total_bytes"], total);
+    assert_eq!(ready["bytes"], total);
+    assert_eq!(ready["result"]["imported_assets"], 2);
+    assert_eq!(ready["result"]["skipped_files"], 0);
+    assert_eq!(ready["result"]["created_folders"], 2);
+    assert_eq!(ready["result"]["error_count"], 1);
+    assert_eq!(
+        ready["result"]["errors"][0]["path_token"],
+        "Shots/Nested/broken.mp4"
+    );
+    assert_eq!(fixture.store.folders().unwrap()["folders"], json!([]));
+    assert_eq!(
+        fixture.store.list(0, &Default::default()).unwrap()["total"],
+        0
+    );
+    let report = fixture
+        .jobs
+        .commit_edit("tree-first", [7; 32], "epoch", "7", &edit)
+        .unwrap();
+    assert_eq!(report, ready["result"]);
+    let folders = fixture.store.folders().unwrap();
+    let root = report["root_folder_id"].as_str().unwrap();
+    assert!(
+        folders["folders"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|folder| folder["id"] == root
+                && folder["name"] == "Shots"
+                && folder["parent"].is_null())
+    );
+    assert!(
+        folders["folders"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|folder| folder["name"] == "Nested" && folder["parent"] == root)
+    );
+    let list = fixture.store.list(0, &Default::default()).unwrap();
+    assert_eq!(list["total"], 2);
+    for item in list["items"].as_array().unwrap() {
+        let asset = fixture
+            .store
+            .load(
+                item["id"].as_str().unwrap(),
+                item["revision"].as_str().unwrap(),
+            )
+            .unwrap();
+        let payload = asset_payload::decode(&asset).unwrap();
+        assert_eq!(payload.media_ids().len(), 1);
+        assert!(payload.clip_entries().is_empty());
+        let media = payload.files().next().unwrap();
+        let original = if asset.name == "first.png" {
+            shots.join("first.png")
+        } else {
+            shots.join("Nested/second.png")
+        };
+        assert_eq!(
+            media.content_hash,
+            vv_media::content_fingerprint(&original).unwrap()
+        );
+        assert_eq!(
+            std::fs::read(&media.path).unwrap(),
+            std::fs::read(original).unwrap()
+        );
+    }
+    let reopened = Store::new(fixture.store.root()).unwrap();
+    let binding =
+        crate::asset_journal::project_binding(&File::open(&fixture.project).unwrap()).unwrap();
+    let receipt = reopened
+        .completion("tree-first", &binding)
+        .unwrap()
+        .unwrap()
+        .1;
+    assert_eq!(receipt["error_count"], 1);
+    assert_eq!(receipt["root_folder_id"], root);
+    assert!(receipt.get("errors").is_none());
+    assert!(serde_json::to_vec(&receipt).unwrap().len() < 4096);
+    let again = tree_edit(&fixture, "Shots");
+    let ready = prepare_relink(&fixture, "tree-repeat", again.clone());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert_eq!(ready["result"]["root_folder_id"], root);
+    assert_eq!(ready["result"]["imported_assets"], 0);
+    assert_eq!(ready["result"]["skipped_files"], 2);
+    assert_eq!(ready["result"]["created_folders"], 0);
+    fixture
+        .jobs
+        .commit_edit("tree-repeat", [7; 32], "epoch", "7", &again)
+        .unwrap();
+    assert_eq!(
+        fixture.store.list(0, &Default::default()).unwrap()["total"],
+        2
+    );
+    drop(reopened);
+    fixture.close();
+}
+
+#[test]
+fn native_tree_import_cancel_and_source_folder_catalog_changes_never_publish_metadata() {
+    for failure in ["cancel", "source", "folders", "roster"] {
+        let fixture = Fixture::new();
+        let shots = fixture.project.join("Shots");
+        std::fs::create_dir(&shots).unwrap();
+        std::fs::copy(&fixture.path, shots.join("one.png")).unwrap();
+        let edit = tree_edit(&fixture, "Shots");
+        let ready = prepare_relink(&fixture, "tree-guard", edit.clone());
+        assert_eq!(ready["state"], "ready", "{ready}");
+        match failure {
+            "cancel" => {
+                fixture
+                    .jobs
+                    .status(ready["id"].as_str().unwrap(), "epoch", true)
+                    .unwrap();
+            }
+            "source" => {
+                std::fs::rename(&shots, fixture.project.join("previous")).unwrap();
+                std::fs::create_dir(&shots).unwrap();
+                std::fs::copy(&fixture.path, shots.join("one.png")).unwrap();
+            }
+            "folders" => {
+                std::fs::write(
+                    fixture.store.root().join("folders.json"),
+                    br#"{"version":1,"folders":[]}"#,
+                )
+                .unwrap();
+            }
+            "roster" => {
+                fixture.store.create("foreign", &fixture.asset).unwrap();
+            }
+            _ => unreachable!(),
+        }
+        assert!(
+            fixture
+                .jobs
+                .commit_edit("tree-guard", [7; 32], "epoch", "7", &edit)
+                .is_err(),
+            "{failure}"
+        );
+        assert_eq!(fixture.store.folders().unwrap()["folders"], json!([]));
+        assert_eq!(
+            fixture.store.list(0, &Default::default()).unwrap()["total"],
+            usize::from(failure == "roster")
+        );
+        fixture.close();
+    }
+}
+
+#[test]
+fn native_tree_import_prunes_empty_sources_without_creating_an_invented_folder() {
+    let fixture = Fixture::new();
+    std::fs::create_dir(fixture.project.join("Empty")).unwrap();
+    std::fs::write(fixture.project.join("Empty/readme.txt"), b"no media").unwrap();
+    let edit = tree_edit(&fixture, "Empty");
+    let ready = prepare_relink(&fixture, "tree-empty", edit.clone());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert_eq!(ready["result"]["root_folder_id"], Value::Null);
+    assert_eq!(ready["result"]["folders_revision"], "absent");
+    assert_eq!(ready["result"]["created_folders"], 0);
+    fixture
+        .jobs
+        .commit_edit("tree-empty", [7; 32], "epoch", "7", &edit)
+        .unwrap();
+    assert!(!fixture.store.root().join("folders.json").exists());
+    std::fs::create_dir(fixture.project.join("Broken")).unwrap();
+    std::fs::write(fixture.project.join("Broken/bad.mp4"), b"not media").unwrap();
+    let edit = tree_edit(&fixture, "Broken");
+    let ready = prepare_relink(&fixture, "tree-broken", edit.clone());
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert_eq!(ready["result"]["imported_assets"], 0);
+    assert_eq!(ready["result"]["error_count"], 1);
+    assert_eq!(ready["result"]["created_folders"], 1);
+    assert!(ready["result"]["root_folder_id"].is_string());
+    fixture
+        .jobs
+        .commit_edit("tree-broken", [7; 32], "epoch", "7", &edit)
+        .unwrap();
+    assert_eq!(
+        fixture.store.folders().unwrap()["folders"][0]["name"],
+        "Broken"
+    );
+    fixture.close();
+}
+
+#[test]
+fn native_recursive_relink_uses_approved_nested_files_preserves_payload_and_guards_tree_changes() {
+    for changed in [false, true] {
+        let fixture = Fixture::new();
+        let original_edit = offline_relink(&fixture, "offline");
+        let asset_store::Edit::Relink { id, revision, .. } = original_edit else {
+            unreachable!()
+        };
+        let directory = fixture.project.join("Replacements/deep");
+        std::fs::create_dir_all(&directory).unwrap();
+        std::fs::copy(&fixture.path, directory.join("tiny.png")).unwrap();
+        let edit = asset_store::Edit::RelinkFolder {
+            id,
+            revision,
+            directory_token: "Replacements".into(),
+        };
+        let original = fixture.store.export("offline").unwrap();
+        let ready = prepare_relink(&fixture, "tree-relink", edit.clone());
+        assert_eq!(ready["state"], "ready", "{ready}");
+        assert_eq!(ready["result"]["missing_count"], 0);
+        assert_eq!(ready["result"]["relinked_files"], 1);
+        assert_eq!(fixture.store.export("offline").unwrap(), original);
+        if changed {
+            std::fs::write(directory.join("new.txt"), b"tree changed").unwrap();
+            assert!(
+                fixture
+                    .jobs
+                    .commit_edit("tree-relink", [7; 32], "epoch", "7", &edit)
+                    .is_err()
+            );
+            assert_eq!(fixture.store.export("offline").unwrap(), original);
+        } else {
+            fixture
+                .jobs
+                .commit_edit("tree-relink", [7; 32], "epoch", "7", &edit)
+                .unwrap();
+            let after = asset_payload::parse(&fixture.store.export("offline").unwrap()).unwrap();
+            let before = asset_payload::parse(&original).unwrap();
+            assert_eq!(after.name, before.name);
+            assert_eq!(after.folder, before.folder);
+            let mut expected = asset_payload::decode(&before).unwrap();
+            let actual = asset_payload::decode(&after).unwrap();
+            let path = actual.files().next().unwrap().path.clone();
+            for item in expected.files_mut() {
+                item.path = path.clone();
+            }
+            assert_eq!(actual.to_text(), expected.to_text());
+            assert_eq!(
+                Store::new(fixture.store.root())
+                    .unwrap()
+                    .item("offline", false)
+                    .unwrap()["missing_count"],
+                0
+            );
+        }
+        fixture.close();
+    }
+}
+
 fn offline_relink(fixture: &Fixture, id: &str) -> asset_store::Edit {
     let mut asset = fixture.asset.clone();
     let mut payload = asset_payload::decode(&asset).unwrap();

@@ -1,6 +1,62 @@
 use super::*;
 use serde_json::json;
 
+#[test]
+fn tree_import_recovery_accepts_only_its_new_roster_entries_after_partial_publication() {
+    let (path, root, assets) = fixture();
+    std::fs::write(path.join("assets/existing.json"), b"existing").unwrap();
+    let mut prepared =
+        PreparedEdit::new(&root, completion("tree-import", &root), json!({})).unwrap();
+    prepared.roster(active_roster(&assets).unwrap());
+    prepared
+        .add(true, "first.json".into(), None, b"first")
+        .unwrap();
+    prepared
+        .add(true, "second.json".into(), None, b"second")
+        .unwrap();
+    prepared
+        .add(false, "folders.json".into(), None, b"folders")
+        .unwrap();
+    intent(&mut prepared, &root);
+    renameat(&prepared.stage, "after-0.json", &assets, "first.json").unwrap();
+    assets.sync_all().unwrap();
+    std::fs::write(path.join("assets/foreign.json"), b"foreign").unwrap();
+    assert_eq!(
+        recover(&root, &assets).unwrap_err().1,
+        "ASSET_JOURNAL_CONFLICT"
+    );
+    assert_eq!(
+        std::fs::read(path.join("assets/foreign.json")).unwrap(),
+        b"foreign"
+    );
+    assert!(!path.join("assets/second.json").exists());
+    assert!(pending(&root).unwrap());
+    std::fs::remove_file(path.join("assets/foreign.json")).unwrap();
+    recover(&root, &assets).unwrap();
+    assert_eq!(
+        std::fs::read(path.join("assets/existing.json")).unwrap(),
+        b"existing"
+    );
+    assert_eq!(
+        std::fs::read(path.join("assets/first.json")).unwrap(),
+        b"first"
+    );
+    assert_eq!(
+        std::fs::read(path.join("assets/second.json")).unwrap(),
+        b"second"
+    );
+    assert_eq!(
+        std::fs::read(path.join("folders.json")).unwrap(),
+        b"folders"
+    );
+    assert!(!pending(&root).unwrap());
+    recover(&root, &assets).unwrap();
+    drop(prepared);
+    drop(assets);
+    drop(root);
+    std::fs::remove_dir_all(path).unwrap();
+}
+
 fn fixture() -> (std::path::PathBuf, File, File) {
     let path = std::env::temp_dir().join(format!(
         "venturi-asset-journal-{}",

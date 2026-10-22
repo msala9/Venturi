@@ -91,6 +91,25 @@ No mount/archive was changed. Protected 8790/8811 edits and the port8812 service
 remain unchanged; neither shared capability is newly accepted. Ledger46done/
 44partial and full F1-F7 scope remain active.
 
+## Approved source folders and recursive native library import
+
+The connected F5 increment adds an epoch-bound, paged browser inside the
+approved project source root, contextual recursive missing-file search and
+native folder import. Directory reads run outside the editing actor with one
+shared permit. Import merges native folder names, skips same-folder source
+fingerprints, retains per-file errors and commits one guarded transaction;
+recursive relink preserves the existing authenticated-content rules.
+
+Preparation uses the existing cancelable worker and exact Mutation on commit.
+Recovery accepts partially published new assets only when the pending manifest
+declares them; unknown catalog additions still refuse recovery. The initial
+integrated run passes 61 focused JavaScript and all 521 web Rust tests. An
+atomic API deprecation and truthful ImportTree progress are corrected; their
+six source-browser and three import cases pass on the affected reruns, with
+all-target Clippy and the offline embedded build. See
+`evidence/f5-approved-folders-gate.json`. Actual Windows qualification and
+deployment remain pending; this entry accepts no new parity row.
+
 ## Native timeline and Inspector gesture qualification
 
 Source `9f7dcc4` adds native selected-group trim and adjacent Roll, explicit safe

@@ -656,6 +656,19 @@ rendered-equivalence qualification remains pending.
 
 ## Checks
 
+Native Library actions include **Import source folder** and, for offline
+assets, **Search folder for missing files**. The source chooser browses the
+configured project root in bounded pages; open a child folder and choose it
+explicitly. Folder import preserves the native hierarchy, merges existing
+folder names and reports imported/skipped/error counts in collapsed details.
+Preparation can be canceled before commit. Recursive missing-file search uses
+the existing metadata and content-identity restrictions.
+
+Library-only qualification can run without `--gpu-device` or
+`--software-preview`: the existing default disables preview, creating no GPU
+adapter. This does not verify playback, render effects or export. Use a separate
+project root and finite resource-limited service; preserve active editors.
+
 ```bash
 node --test web/test/*.test.js
 cargo check -p vv-web

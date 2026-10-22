@@ -1,0 +1,99 @@
+{
+  "date": "2026-10-22",
+  "scope": "Approved source browser, native ImportTree, recursive RelinkFolder and guarded partial-publication recovery",
+  "status": "implementation gate passed; actual Windows workflow pending",
+  "javascript_unique": 61,
+  "rust_unique": 521,
+  "affected_rerun": [
+    "asset_jobs::tests::native_tree_import_cancel_and_source_folder_catalog_changes_never_publish_metadata",
+    "asset_jobs::tests::native_tree_import_merges_native_hierarchy_skips_same_folder_fingerprints_and_persists_compact_receipts",
+    "asset_jobs::tests::native_tree_import_prunes_empty_sources_without_creating_an_invented_folder"
+  ],
+  "source_files": 99,
+  "source_manifest_sha256": "6682b6d364df2396cdd71537b76c7d7502b021c77940bc5e7fb1b3b1b1c1a413",
+  "full_gate_log_sha256": "3cba60675e9012fca2f51178fe4e3c022dbda78e5a0572e5f3c8c45a82baf11e",
+  "final_gate_log_sha256": "8809f96413278f5447b0d1c3a8e7744fdb50aa239d655b5956ddb4d7887dcee2",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792690650.7970035,
+    "validation": "approved-library-folders",
+    "oracle_binary": "/home/marco/.cache/venturi-build/target/debug/examples/verify_preview",
+    "oracle_sha256": "4bc1fec43f162edafdc476110888b65b11e7091c077f7ba2a22007a1b9f0af3d",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "4120ad19c192029dfd3c571975fb2ed8a5ca5cd4205f37def7a679bb4395a20a",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "checks": [
+    "cargo fmt --all",
+    "61 focused JavaScript tests and source syntax checks",
+    "all 521 vv-web Rust tests",
+    "six source browser cases after atomic API rename",
+    "three tree import cases after progress fix",
+    "vv-web all-target Clippy with warnings denied",
+    "offline embedded vv-web build"
+  ],
+  "reused_checks": [
+    "24 unchanged native desktop library cases and native all-target Clippy from f5-shared-native-library-gate.json",
+    "unchanged preset/API focused JavaScript coverage from f5-shared-native-library-gate.json"
+  ],
+  "resource_limits": {
+    "host": "halo2",
+    "cpu_cores": 1,
+    "memory_bytes": 4294967296,
+    "swap_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "runtime_max_seconds": 1800,
+    "one_owned_workload": true,
+    "minimum_memory_and_disk_headroom_bytes": 8589934592
+  },
+  "sessions_preserved": {
+    "8790": {
+      "project_name": "CPU_shared_library_UI_check.vvproj",
+      "generation": "5",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips"
+        ],
+        "position": 5
+      }
+    },
+    "8811": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "generation": "1",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "8812": {
+      "project_name": "Venturi_Native_UI.vvproj",
+      "generation": "0",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  },
+  "remaining": [
+    "Actual Windows chooser/import/merge/relink/restart workflow",
+    "Canonical NAS root and compatible shared deployment",
+    "Real CIFS/NFS locking, publication and recovery qualification",
+    "Native permissive replacement with differently authored media remains unavailable; authenticated-content rules retained"
+  ],
+  "accepted_ledger": {
+    "done": 46,
+    "partial": 44,
+    "excluded": 2
+  }
+}

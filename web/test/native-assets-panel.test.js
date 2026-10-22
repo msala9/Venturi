@@ -6,7 +6,7 @@ function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{reso
 async function settle(){for(let index=0;index<4;index++)await new Promise(resolve=>setImmediate(resolve));}
 const foldersRevision='f'.repeat(64);
 const assetRevision='a'.repeat(64);
-function harness({pageReader,folderReader,projectReader,libraryCommit,projectCommit}={}){
+function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit}={}){
   const original={document:globalThis.document,Option:globalThis.Option};
   class Element extends EventTarget{
     constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
@@ -26,7 +26,7 @@ function harness({pageReader,folderReader,projectReader,libraryCommit,projectCom
   let context={project_name:'project.vvproj',project_epoch:'epoch',generation:'7',command_epoch:'commands',media:[{id:'media-a',name:'Shot A'},{id:'media-b',name:'Shot B'}],selected_ids:['media-a']},writable=true;
   let items=[{id:'asset-a',revision:'rev-a',name:'Reusable shot',media_count:2,file_count:1,archived:false,can_restore_previous:true}];
   let folders=[{id:'outer',name:'Shots',parent:null},{id:'inner',name:'Day 1',parent:'outer'},{id:'other',name:'Other',parent:null}];
-  const pages=[],folderReads=[],projectReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],imported=[],notices=[],deleteGate=deferred();
+  const pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],imported=[],notices=[],deleteGate=deferred();
   let delayDelete=false;
   const panel=createNativeAssetPanel({root,getContext:()=>context,canCommit:()=>writable,notice:text=>notices.push(text),onImported:ids=>imported.push(ids),
     makeLibraryMutation:operation=>nativeAssetMutation(context,'client',operation,'relink-command'),
@@ -42,6 +42,7 @@ function harness({pageReader,folderReader,projectReader,libraryCommit,projectCom
         return pageReader?pageReader(pages.length-1,path,items):Promise.resolve({page:0,pages:1,total:items.length,items:structuredClone(items)});
       }
       if(path==='/projects'){projectReads.push({path,options});return projectReader?projectReader(projectReads.length-1,options):Promise.resolve({importable_media:[{name:'Shot.mov',path_token:'Shot.mov'},{name:'Sound.wav',path_token:'Sound.wav'}]});}
+      if(path.startsWith('/media/sources?')){const query=new URL(path,'http://fixture').searchParams,directory=query.get('directory_token');sourceReads.push({path,options});return sourceReader?sourceReader(sourceReads.length-1,query,options):Promise.resolve({project_epoch:context.project_epoch,directory_token:directory,parent_token:directory?'':null,page:0,pages:1,entries:directory?[]:[{kind:'directory',name:'Takes',path_token:'Takes'}]});}
       if(path==='/native-assets/prepare' || path==='/native-assets/commands/prepare'){const gate=deferred();prepares.push({...gate,body:structuredClone(body),options});return gate.promise;}
       if(path.startsWith('/native-assets/items/published?'))return Promise.resolve({id:'published',revision:'published-revision',name:'Newly captured asset',media_count:1,file_count:1,archived:false,can_restore_previous:false});
       if(options.method==='DELETE'){deletes.push({path,options});return delayDelete?deleteGate.promise:Promise.resolve({state:'canceled'});}
@@ -54,8 +55,8 @@ function harness({pageReader,folderReader,projectReader,libraryCommit,projectCom
   const button=text=>find(node=>node.tag==='button' && node.textContent===text,`button ${text}`);
   const field=label=>find(node=>node.getAttribute('aria-label')===label,label);
   const status=()=>find(node=>node.getAttribute('role')==='status','panel status').textContent;
-  const job=(index=0,patch={})=>{const {project_epoch,if_generation,action,operation}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:operation?'library_edit':action.kind,bytes:0,total_bytes:32,result:operation?{asset_id:operation.edit.id,revision:operation.edit.revision,missing_count:0,relinked_files:1}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
-  return {panel,root,pages,folderReads,projectReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,imported,notices,button,field,status,job,deleteGate,
+  const job=(index=0,patch={})=>{const {project_epoch,if_generation,action,operation}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:operation?'library_edit':action.kind,bytes:0,total_bytes:32,result:operation?.edit.action==='import_tree'?{imported_assets:1,skipped_files:1,error_count:1,created_folders:1,root_folder_id:'import-root',folders_revision:foldersRevision,errors:[{path_token:'Takes/bad.mov',code:'BAD_MEDIA',message:'Native probe failed'}]}:operation?{asset_id:operation.edit.id,revision:operation.edit.revision,missing_count:0,relinked_files:1}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
+  return {panel,root,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,imported,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),
     context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setItems:value=>{items=value;},setFolders:value=>{folders=value;},delayDelete:()=>{delayDelete=true;},
     change(label,value){const node=field(label);node.value=value;node.dispatchEvent(new Event('change'));},
     chooseAssets(indexes){const node=field('Native assets');for(const [index,option] of node.children.entries())option.selected=indexes.includes(index);node.dispatchEvent(new Event('change'));},
@@ -331,5 +332,34 @@ test('canceling Relink before its late prepare acknowledgment deletes the owned 
     h.setItems([offlineAsset()]);await h.open();h.button('Relink missing native asset files').click();await settle();h.chooseFiles(['Shot.mov']);h.button('Relink selected source files').click();
     h.button('Cancel native asset relink').click();assert.equal(h.deletes.length,0);h.prepares[0].resolve(h.job());await settle();
     assert.equal(h.deletes.length,1);assert.match(h.deletes[0].path,/jobs\/job-1\?project_epoch=epoch/);assert.equal(h.libraryWrites.length+h.projectWrites.length,0);assert.equal(h.prepares.length,1);assert.match(h.status(),/canceled.*project unchanged/i);
+  }finally{h.destroy();}
+});
+
+test('folder import captures the chosen parent and refreshes the native root with ready per-file errors retained',async()=>{
+  const h=harness({libraryCommit:(_operation,body)=>{
+    h.setFolders([{id:'outer',name:'Shots',parent:null},{id:'inner',name:'Day 1',parent:'outer'},{id:'import-root',name:'Takes',parent:'inner'}]);
+    h.setItems([{id:'new-asset',revision:assetRevision,name:'New shot',folder:'import-root',effective_folder:'import-root',media_count:1,file_count:1,missing_count:0,archived:false}]);
+    return Promise.resolve({command_id:body.command_id,project_epoch:'epoch',imported_assets:1,skipped_files:1,error_count:1,created_folders:1,root_folder_id:'import-root',folders_revision:foldersRevision});
+  }});try{
+    await h.open();h.button('Import source folder').click();await settle();assert.equal(h.button('Choose this source folder').disabled,true);assert.equal(h.prepares.length,0);
+    h.change('Import into native library folder','inner');h.button('Open folder Takes').click();await settle();h.button('Choose this source folder').click();await settle();
+    const body=h.prepares[0].body;assert.deepEqual(body.operation.edit,{action:'import_tree',directory_token:'Takes',parent:'inner',folders_revision:foldersRevision});
+    h.prepares[0].resolve(h.job());await settle();assert.deepEqual(h.preparedWrites,[body]);assert.equal(h.libraryWrites.length,1);assert.equal(h.projectWrites.length,0);assert.equal(h.field('Native asset folder').value,'import-root');assert.ok(h.texts().some(text=>/Takes\/bad.mov.*BAD_MEDIA.*Native probe failed/.test(text)));assert.match(h.status(),/1 assets.*1 skipped.*1 errors.*timeline unchanged/);
+  }finally{h.destroy();}
+});
+
+test('recursive Relink uses its native asset revision and folder cancellation disposes the owned preparation',async()=>{
+  const h=harness();try{
+    h.setItems([offlineAsset()]);await h.open();h.button('Search folder for missing files').click();await settle();h.button('Open folder Takes').click();await settle();h.button('Choose this source folder').click();await settle();
+    assert.deepEqual(h.prepares[0].body.operation.edit,{action:'relink_folder',id:'asset-a',revision:assetRevision,directory_token:'Takes'});
+    h.button('Cancel source folder choice').click();h.prepares[0].resolve(h.job());await settle();assert.equal(h.deletes.length,1);assert.equal(h.libraryWrites.length,0);assert.equal(h.projectWrites.length,0);
+    h.button('Relink missing native asset files').click();await settle();assert.equal(h.projectReads.length,1);assert.equal(h.field('Approved source files').children.length,2);
+  }finally{h.destroy();}
+});
+
+test('an invalidated folder chooser aborts its source read and cannot start a command after a late response',async()=>{
+  const stale=deferred(),h=harness({sourceReader:()=>stale.promise});try{
+    await h.open();h.button('Import source folder').click();assert.equal(h.sourceReads.length,1);h.setContext({...h.context(),project_epoch:'new-epoch'});h.panel.invalidate();assert.equal(h.sourceReads[0].options.signal.aborted,true);
+    stale.resolve({project_epoch:'epoch',directory_token:'',parent_token:null,page:0,pages:1,entries:[{kind:'directory',name:'Old',path_token:'Old'}]});await settle();await h.open();assert.throws(()=>h.button('Open folder Old'),/Expected/);assert.equal(h.prepares.length+h.libraryWrites.length,0);
   }finally{h.destroy();}
 });

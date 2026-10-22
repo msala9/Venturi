@@ -181,6 +181,16 @@ real shared filesystem transaction workflow remain open. Halo2 currently has
 no CIFS/NFS mount. Keep `shared_library`/`shared_presets` partial; do not infer
 NAS qualification from isolated filesystem tests or the ds4 HTTP archive.
 
+The next connected increment adds the approved source folder browser, native
+ImportTree and recursive RelinkFolder. Its implementation gate passes 61 focused
+JavaScript and all 521 web Rust cases; the two small corrections pass affected
+reruns, all-target Clippy and the embedded build. See
+`evidence/f5-approved-folders-gate.json`. Qualify its complete folder import,
+duplicate merge/skip, contextual recovery and restart workflow in one isolated
+Windows browser tab. This library workflow can use the existing GPU-disabled
+server mode; it does not need to wait for the shared GPU. Keep rendering and
+physical device acceptance separate and preserve every protected editor.
+
 ### F6 — AI Review
 
 Capabilities: `compare_take_AB`, `replace_take_atomic`.

@@ -1,5 +1,35 @@
 use super::*;
 
+#[tokio::test]
+async fn source_browser_capacity_does_not_block_the_editor_and_releases_after_rejected_snapshot() {
+    let root =
+        std::env::temp_dir().join(format!("vv-source-capacity-{}", crate::asset_jobs::nonce()));
+    let host = Host::start(&root).unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let query = crate::files::SourcesQuery {
+        project_epoch: before["project_epoch"].as_str().unwrap().into(),
+        directory_token: String::new(),
+        page: 0,
+    };
+    let permit = host.1.clone().try_acquire_owned().unwrap();
+    assert_eq!(
+        host.source_browser(query.clone()).await.unwrap_err().1,
+        "SOURCE_BROWSER_BUSY"
+    );
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    drop(permit);
+    let mut stale = query.clone();
+    stale.project_epoch = "stale".into();
+    assert_eq!(
+        host.source_browser(stale).await.unwrap_err().1,
+        "REVISION_CONFLICT"
+    );
+    assert!(host.source_browser(query).await.is_ok());
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn inspector_selection_is_read_only_and_rejects_stale_snapshot_identity() {
     use vv_core::{Clip, ClipSource};

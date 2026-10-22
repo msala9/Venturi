@@ -6,6 +6,114 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn native_asset_source_browser_http_is_lease_free_epoch_bound_strict_and_embeds_picker() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-native-source-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    std::fs::create_dir_all(root.join("Footage/Sub")).unwrap();
+    std::fs::create_dir_all(root.join(".private")).unwrap();
+    std::fs::write(root.join("Footage/take.png"), b"listing does not probe").unwrap();
+    let host = Host::start(&root).unwrap();
+    host.call(Action::Lease("another-editor".into()))
+        .await
+        .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let epoch = before["project_epoch"].as_str().unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    for (path, expected) in [
+        (
+            format!("/api/v1/media/sources?project_epoch={epoch}"),
+            StatusCode::OK,
+        ),
+        (
+            format!("/api/v1/media/sources?project_epoch={epoch}&directory_token=Footage"),
+            StatusCode::OK,
+        ),
+        (
+            "/api/v1/media/sources".into(),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "/api/v1/media/sources?project_epoch=stale".into(),
+            StatusCode::CONFLICT,
+        ),
+        (
+            format!("/api/v1/media/sources?project_epoch={epoch}&directory_token=.."),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            format!("/api/v1/media/sources?project_epoch={epoch}&force=true"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            format!("/api/v1/media/sources?project_epoch={epoch}&page=999"),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        let request = Request::builder()
+            .uri(&path)
+            .header("host", "127.0.0.1:8787")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.clone().oneshot(request).await.unwrap();
+        let status = response.status();
+        if expected == StatusCode::OK {
+            assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+        }
+        let body: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+        assert_eq!(status, expected, "{path}: {body}");
+        if expected == StatusCode::OK {
+            assert_eq!(body["project_epoch"], epoch);
+            assert!(
+                body["entries"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .all(|item| item["name"] != ".private")
+            );
+            if body["directory_token"] == "Footage" {
+                assert!(
+                    body["entries"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .any(|item| item["path_token"] == "Footage/take.png"
+                            && item["kind"] == "media")
+                );
+            }
+        }
+    }
+    let request = Request::builder()
+        .uri("/js/source-picker.js")
+        .header("host", "127.0.0.1:8787")
+        .body(Body::empty())
+        .unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert!(
+        response.headers()[header::CONTENT_TYPE]
+            .to_str()
+            .unwrap()
+            .contains("javascript")
+    );
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn inspector_selection_http_uses_one_guarded_read_without_a_writer_client() {
     let root =
         std::env::temp_dir().join(format!("vv-selection-http-{}", crate::asset_jobs::nonce()));

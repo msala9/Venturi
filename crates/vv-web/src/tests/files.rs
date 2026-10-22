@@ -1,6 +1,79 @@
 use super::*;
 
 #[test]
+fn approved_nested_sources_open_and_reopen_offline_without_broadening_project_file_names() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    std::fs::create_dir_all(root.join("approved/nested")).unwrap();
+    let source = root.join("approved/nested/clip.mp4");
+    std::fs::write(&source, b"not probed").unwrap();
+    assert_eq!(
+        root_media_token(&root, &source).unwrap(),
+        "approved/nested/clip.mp4"
+    );
+    assert!(files.media_file(&source).is_ok());
+    let query = SourcesQuery {
+        project_epoch: "e".into(),
+        directory_token: "approved".into(),
+        page: 0,
+    };
+    let response = files.source_browser(&query).unwrap();
+    assert_eq!(
+        response["entries"],
+        json!([{"kind":"directory","name":"nested","path_token":"approved/nested"}])
+    );
+    let mut project = Project::default();
+    let media = project.media_pool.insert(vv_core::MediaItem {
+        path: PathBuf::from("approved/nested/clip.mp4"),
+        meta: vv_core::MediaMeta {
+            duration_frames: 48,
+            fps: vv_core::Rational::new(24, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 123,
+        compound: None,
+        folder: None,
+    });
+    assert!(
+        files
+            .save(&project, "approved/project.vvproj", true)
+            .is_err()
+    );
+    assert!(files.load("approved/project.vvproj").is_err());
+    assert!(
+        files
+            .media_import_tokens(&["approved/nested/clip.mp4".into()])
+            .is_err(),
+        "Legacy flat import DTO is unchanged"
+    );
+    files.save(&project, "nested-sources.vvproj", true).unwrap();
+    assert_eq!(
+        files.load("nested-sources.vvproj").unwrap().media_pool[media].path,
+        source
+    );
+    std::fs::remove_dir_all(root.join("approved")).unwrap();
+    assert_eq!(
+        files.load("nested-sources.vvproj").unwrap().media_pool[media].path,
+        source
+    );
+    let outside = root.with_extension("outside");
+    std::fs::create_dir_all(outside.join("nested")).unwrap();
+    std::os::unix::fs::symlink(&outside, root.join("approved")).unwrap();
+    assert!(files.load("nested-sources.vvproj").is_err());
+    assert!(files.media_file(&source).is_err());
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+    std::fs::remove_dir_all(outside).unwrap();
+}
+
+#[test]
 fn pasted_image_paths_open_only_the_exact_native_managed_directory_and_regular_file() {
     let root = root();
     let files = Files::new(&root).unwrap();

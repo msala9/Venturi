@@ -183,6 +183,7 @@ struct PreparedLibraryEdit {
     sources: Vec<OtioWitness>,
     files: Vec<Witness>,
     media: Vec<(PathBuf, Option<String>)>,
+    tree: Option<crate::files::SourceTreeWitness>,
 }
 impl PreparedLibraryEdit {
     fn summary(&self) -> Value {
@@ -342,7 +343,14 @@ impl Jobs {
                         run_media_import(&inner, &work, tokens, MEDIA_IMPORT_BUDGET)
                             .map(Finished::Import)
                     } else if let Some((edit, completion)) = &work.edit {
-                        if matches!(edit, asset_store::Edit::Relink { .. }) {
+                        if matches!(edit, asset_store::Edit::ImportTree { .. }) {
+                            run_import_tree(&inner, &work, edit, completion.clone())
+                                .map(Finished::Edit)
+                        } else if matches!(
+                            edit,
+                            asset_store::Edit::Relink { .. }
+                                | asset_store::Edit::RelinkFolder { .. }
+                        ) {
                             run_relink(&inner, &work, edit, completion.clone()).map(Finished::Edit)
                         } else {
                             inner
@@ -354,6 +362,7 @@ impl Jobs {
                                         sources: vec![],
                                         files: vec![],
                                         media: vec![],
+                                        tree: None,
                                     })
                                 })
                         }
@@ -456,7 +465,13 @@ impl Jobs {
             return Ok(job.value());
         }
         reserve(&mut jobs)?;
-        let witness_reservation = if let asset_store::Edit::Relink {
+        let witness_reservation = if matches!(
+            &edit,
+            asset_store::Edit::ImportTree { .. } | asset_store::Edit::RelinkFolder { .. }
+        ) {
+            reserve_witnesses(&jobs, MAX_FILES * 4)?;
+            MAX_FILES * 4
+        } else if let asset_store::Edit::Relink {
             id,
             revision,
             path_tokens,
@@ -570,12 +585,16 @@ impl Jobs {
             sources,
             files,
             media,
+            tree,
         } = prepared;
-        if sources.is_empty() && files.is_empty() && media.is_empty() {
+        if sources.is_empty() && files.is_empty() && media.is_empty() && tree.is_none() {
             self.0.store.commit_edit(edit, &job.cancel)?;
         } else {
             self.0.store.commit_edit_checked(edit, &job.cancel, || {
                 roots(&self.0)?;
+                if let Some(tree) = tree {
+                    tree.validate(&self.0.root, &self.0.directory, &job.cancel)?;
+                }
                 for source in sources {
                     source.validate(&self.0)?;
                 }
@@ -1455,15 +1474,17 @@ impl Budget {
 }
 fn live_source(inner: &Inner, source: &PinnedSource, import: bool) -> Result<()> {
     roots(inner)?;
-    let live = if import {
+    if import {
         let (dir, name, _) = store_location(&inner.store, &source.path)?;
-        asset_store::regular(&dir, &name)?
+        let live = asset_store::regular(&dir, &name)?;
+        if crate::source::file_identity(&live)? != source.identity {
+            return Err(source_changed());
+        }
     } else {
-        crate::files::open_root_media(&inner.root, &inner.directory, &source.path)?
-    };
-    if crate::source::file_identity(&source.file)? != source.identity
-        || crate::source::file_identity(&live)? != source.identity
-    {
+        let token = crate::files::root_media_token(&inner.root, &source.path)?;
+        crate::files::validate_approved_file(&inner.root, &inner.directory, &token, &source.file)?;
+    }
+    if crate::source::file_identity(&source.file)? != source.identity {
         return Err(source_changed());
     }
     Ok(())
@@ -1879,13 +1900,38 @@ fn run_relink(
     edit: &asset_store::Edit,
     completion: crate::asset_journal::Completion,
 ) -> Result<PreparedLibraryEdit> {
-    let asset_store::Edit::Relink {
-        id,
-        revision,
-        path_tokens,
+    let scan = if let asset_store::Edit::RelinkFolder {
+        directory_token, ..
     } = edit
-    else {
-        return Err(ApiError::invalid("Choose a native asset relink"));
+    {
+        Some(crate::files::scan_media_tree(
+            &inner.root,
+            &inner.directory,
+            directory_token,
+            &work.cancel,
+        )?)
+    } else {
+        None
+    };
+    let scanned_tokens;
+    let (id, revision, path_tokens) = match edit {
+        asset_store::Edit::Relink {
+            id,
+            revision,
+            path_tokens,
+        } => (id, revision, path_tokens),
+        asset_store::Edit::RelinkFolder { id, revision, .. } => {
+            scanned_tokens = scan
+                .as_ref()
+                .ok_or_else(ApiError::missing)?
+                .tree
+                .files
+                .iter()
+                .map(|(path, _)| crate::files::root_media_token(&inner.root, path))
+                .collect::<Result<Vec<_>>>()?;
+            (id, revision, &scanned_tokens)
+        }
+        _ => return Err(ApiError::invalid("Choose a native asset relink")),
     };
     roots(inner)?;
     let lock = inner.store.lock()?;
@@ -1904,11 +1950,12 @@ fn run_relink(
             .file_name()
             .and_then(|name| name.to_str())
             .ok_or_else(ApiError::missing)?;
-        if names.insert(name.to_owned(), token).is_some() {
+        if names.contains_key(name) && scan.is_none() {
             return Err(ApiError::invalid(
                 "Selected replacement file names are ambiguous",
             ));
         }
+        names.entry(name.to_owned()).or_insert(token);
     }
     let original_missing: HashSet<_> = missing
         .iter()
@@ -2005,6 +2052,157 @@ fn run_relink(
         sources,
         files,
         media,
+        tree: scan.map(|scan| scan.witness),
+    })
+}
+fn run_import_tree(
+    inner: &Inner,
+    work: &Work,
+    edit: &asset_store::Edit,
+    completion: crate::asset_journal::Completion,
+) -> Result<PreparedLibraryEdit> {
+    let asset_store::Edit::ImportTree {
+        directory_token, ..
+    } = edit
+    else {
+        return Err(ApiError::invalid("Choose a native folder import"));
+    };
+    roots(inner)?;
+    let budget = Budget {
+        start: Instant::now(),
+        cancel: work.cancel.clone(),
+    };
+    let scan = crate::files::scan_media_tree(
+        &inner.root,
+        &inner.directory,
+        directory_token,
+        &work.cancel,
+    )?;
+    let plan =
+        inner
+            .store
+            .plan_import_tree(edit, &scan.tree, &completion.command_id, &work.cancel)?;
+    let prefix = format!(
+        "tree-{:x}",
+        Sha256::digest(completion.command_id.as_bytes())
+    );
+    let mut assets = Vec::new();
+    let mut sources = Vec::new();
+    let mut files = Vec::new();
+    let mut skipped = 0;
+    let mut errors = Vec::new();
+    let mut total = 0_u64;
+    for (index, (path, folder)) in scan.tree.files.iter().enumerate() {
+        budget.check(inner.store.media())?;
+        let token = crate::files::root_media_token(&inner.root, path)?;
+        let witness = otio_witness(inner, &token)?;
+        let destination_folder = match folder {
+            Some(folder) => plan
+                .folders
+                .get(*folder)
+                .cloned()
+                .ok_or_else(ApiError::missing)?,
+            None => None,
+        };
+        let result = (|| {
+            let file = crate::files::open_approved_media(&inner.root, &inner.directory, &token)?;
+            let size = file.metadata().map_err(|_| ApiError::io())?.len();
+            total = total
+                .checked_add(size)
+                .ok_or_else(|| ApiError::invalid("Asset byte budget exceeded"))?;
+            if total > MAX_ASSET {
+                return Err(ApiError::conflict(
+                    "ASSET_BYTE_BUDGET",
+                    "Folder import exceeds its 2 GiB total byte budget",
+                ));
+            }
+            if size > MAX_FILE {
+                return Err(ApiError::invalid("Asset file exceeds 512 MiB"));
+            }
+            if let Ok(mut jobs) = inner.jobs.lock()
+                && let Some(job) = jobs.iter_mut().find(|job| job.id == work.id)
+            {
+                job.total = total;
+            }
+            let source_hash = fingerprint(&file)?;
+            if plan
+                .present
+                .contains(&(source_hash, destination_folder.clone()))
+            {
+                probe(&file, path, &work.cancel)?;
+                skipped += 1;
+                return Ok(());
+            }
+            let source = PinnedSource {
+                path: path.clone(),
+                identity: crate::source::file_identity(&file)?,
+                file,
+            };
+            let copied = copy(inner, &source, work, &budget)?;
+            let mut project = vv_core::Project::default();
+            let id = project.media_pool.insert(vv_core::MediaItem {
+                path: copied.path,
+                meta: copied.meta,
+                content_hash: copied.source_hash,
+                compound: None,
+                folder: None,
+            });
+            let payload = ClipboardPayload::new(
+                vv_core::clipboard::ClipboardOrigin {
+                    instance: 0,
+                    epoch: 0,
+                },
+                &project,
+                &[id],
+                &[],
+            );
+            let asset = AssetFile {
+                version: 1,
+                name: vv_session::file_label(path),
+                folder: destination_folder,
+                payload: payload.to_text(),
+            };
+            asset_payload::decode(&asset)?;
+            files.push(copied.witness);
+            assets.push((format!("{prefix}-a{index}"), asset));
+            Ok(())
+        })();
+        witness.validate(inner)?;
+        sources.push(witness);
+        if let Err(error) = result {
+            if matches!(
+                error.1,
+                "ASSET_CANCELED"
+                    | "ASSET_TIMEOUT"
+                    | "ASSET_DISK_FULL"
+                    | "ASSET_SOURCE_CHANGED"
+                    | "SOURCE_CHANGED"
+                    | "ASSET_BYTE_BUDGET"
+            ) {
+                return Err(error);
+            }
+            errors.push(json!({"path_token":token,"code":error.1,"message":error.2}));
+        }
+    }
+    scan.witness
+        .validate(&inner.root, &inner.directory, &work.cancel)?;
+    for source in &sources {
+        source.validate(inner)?;
+    }
+    for file in &files {
+        file.validate()?;
+    }
+    budget.check(inner.store.media())?;
+    let edit =
+        inner
+            .store
+            .prepare_import_tree(plan, assets, skipped, errors, completion, &work.cancel)?;
+    Ok(PreparedLibraryEdit {
+        edit,
+        sources,
+        files,
+        media: vec![],
+        tree: Some(scan.witness),
     })
 }
 fn validate_relink_match(
@@ -2124,39 +2322,7 @@ fn entry_identity(meta: &std::fs::Metadata) -> String {
 }
 fn otio_entry(inner: &Inner, token: &str) -> Result<(Option<std::fs::Metadata>, Option<String>)> {
     project_root(inner)?;
-    crate::files::root_media_token(&inner.root, &inner.root.join(token))?;
-    let managed = token.strip_prefix("Pasted Images/");
-    let child = if managed.is_some() {
-        crate::clipboard_image::directory(&inner.directory)?
-    } else {
-        None
-    };
-    if managed.is_some() && child.is_none() {
-        return Ok((None, Some("absent".into())));
-    }
-    let directory = child.as_ref().unwrap_or(&inner.directory);
-    let parent = child
-        .as_ref()
-        .map(|child| {
-            child
-                .metadata()
-                .map(|meta| format!("{}:{}", meta.dev(), meta.ino()))
-                .map_err(|_| ApiError::io())
-        })
-        .transpose()?;
-    let path = PathBuf::from(format!("/proc/self/fd/{}", directory.as_raw_fd()))
-        .join(managed.unwrap_or(token));
-    let entry = match std::fs::symlink_metadata(path) {
-        Ok(meta) => Some(meta),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
-        Err(_) => return Err(ApiError::io()),
-    };
-    if let Some(child) = child {
-        let live =
-            crate::clipboard_image::directory(&inner.directory)?.ok_or_else(source_changed)?;
-        asset_store::same_directory(&child, &live).map_err(|_| source_changed())?;
-    }
-    Ok((entry, parent))
+    crate::files::source_entry(&inner.root, &inner.directory, token)
 }
 fn otio_witness(inner: &Inner, token: &str) -> Result<OtioWitness> {
     let (metadata, parent) = otio_entry(inner, token)?;

@@ -468,21 +468,30 @@ fn preflight(root: &File, assets: &File, manifest: &Manifest, recovery: bool) ->
     }
     if let Some(roster) = &manifest.roster {
         let live = active_roster(assets)?;
-        if live.len() != roster.len() {
-            return Err(changed());
-        }
-        for (live, expected) in live.iter().zip(roster) {
-            if live.name != expected.name {
-                return Err(changed());
-            }
-            if live.identity != expected.identity
-                && !manifest
-                    .targets
-                    .iter()
-                    .any(|target| target.asset && target.name == live.name && recovery)
+        let mut expected: std::collections::HashMap<_, _> = roster
+            .iter()
+            .map(|entry| (entry.name.as_str(), entry))
+            .collect();
+        for live in &live {
+            if let Some(original) = expected.remove(live.name.as_str()) {
+                if live.identity != original.identity
+                    && !manifest
+                        .targets
+                        .iter()
+                        .any(|target| target.asset && target.name == live.name && recovery)
+                {
+                    return Err(changed());
+                }
+            } else if !recovery
+                || !manifest.targets.iter().any(|target| {
+                    target.asset && target.name == live.name && target.before.is_none()
+                })
             {
                 return Err(changed());
             }
+        }
+        if !expected.is_empty() {
+            return Err(changed());
         }
     }
     for target in &manifest.targets {

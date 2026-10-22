@@ -55,6 +55,16 @@ pub struct AssetRef {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Edit {
+    ImportTree {
+        directory_token: String,
+        parent: Option<String>,
+        folders_revision: String,
+    },
+    RelinkFolder {
+        id: String,
+        revision: String,
+        directory_token: String,
+    },
     Relink {
         id: String,
         revision: String,
@@ -107,6 +117,8 @@ impl Edit {
         matches!(
             self,
             Self::Relink { .. }
+                | Self::RelinkFolder { .. }
+                | Self::ImportTree { .. }
                 | Self::CreateFolder { .. }
                 | Self::RenameFolder { .. }
                 | Self::MoveFolder { .. }
@@ -114,6 +126,15 @@ impl Edit {
                 | Self::MoveAssets { .. }
         )
     }
+}
+pub(crate) struct TreeImportPlan {
+    tree: Tree,
+    original_revision: String,
+    before: Option<Before>,
+    roster: Vec<asset_journal::RosterEntry>,
+    pub folders: Vec<Option<String>>,
+    pub present: std::collections::HashSet<(u64, Option<String>)>,
+    pub created_folders: usize,
 }
 fn name(id: &str, archived: bool) -> Result<String> {
     if id.is_empty()
@@ -776,7 +797,12 @@ impl Store {
         cancel: &AtomicBool,
     ) -> Result<PreparedEdit> {
         let _global = self.lock()?;
-        if !edit.requires_preparation() || matches!(edit, Edit::Relink { .. }) {
+        if !edit.requires_preparation()
+            || matches!(
+                edit,
+                Edit::Relink { .. } | Edit::RelinkFolder { .. } | Edit::ImportTree { .. }
+            )
+        {
             return Err(ApiError::invalid(
                 "This native asset edit does not require folder preparation",
             ));
@@ -978,8 +1004,11 @@ impl Store {
         mut completion: Completion,
         cancel: &AtomicBool,
     ) -> Result<PreparedEdit> {
-        let Edit::Relink { id, revision, .. } = edit else {
-            return Err(ApiError::invalid("Choose a native asset relink"));
+        let (id, revision) = match edit {
+            Edit::Relink { id, revision, .. } | Edit::RelinkFolder { id, revision, .. } => {
+                (id, revision)
+            }
+            _ => return Err(ApiError::invalid("Choose a native asset relink")),
         };
         let _global = self.lock()?;
         let filename = name(id, false)?;
@@ -1048,6 +1077,153 @@ impl Store {
                 "ASSET_CANCELED",
                 "Asset preparation was canceled",
             ));
+        }
+        Ok(prepared)
+    }
+    pub(crate) fn plan_import_tree(
+        &self,
+        edit: &Edit,
+        source: &vv_session::MediaTree,
+        command_id: &str,
+        cancel: &AtomicBool,
+    ) -> Result<TreeImportPlan> {
+        let Edit::ImportTree {
+            parent,
+            folders_revision,
+            ..
+        } = edit
+        else {
+            return Err(ApiError::invalid("Choose a native folder import"));
+        };
+        let _global = self.lock()?;
+        let (mut tree, revision, before) = self.folders_raw()?;
+        if folders_revision != &revision {
+            return Err(ApiError::conflict(
+                "FOLDERS_CHANGED",
+                "Native asset folders changed; refresh before importing",
+            ));
+        }
+        if let Some(parent) = parent {
+            tree.path(parent)?;
+        }
+        let roster = asset_journal::active_roster(&self.0.assets)?;
+        let mut present = std::collections::HashSet::new();
+        let mut bytes = 0_u64;
+        for entry in &roster {
+            if cancel.load(Ordering::Acquire) {
+                return Err(ApiError::conflict(
+                    "ASSET_CANCELED",
+                    "Asset preparation was canceled",
+                ));
+            }
+            let raw = self
+                .raw_limit(
+                    &entry.name,
+                    MAX_JSON.min(asset_journal::MAX_METADATA.saturating_sub(bytes)),
+                )?
+                .ok_or_else(changed)?;
+            bytes = bytes.saturating_add(raw.bytes.len() as u64);
+            let asset = asset_payload::parse(&raw.bytes)?;
+            let payload = asset_payload::decode(&asset)?;
+            let id = payload
+                .media_ids()
+                .first()
+                .ok_or_else(|| ApiError::invalid("Native asset has no pool item"))?;
+            let item = payload.fragment().media_pool.get(*id).ok_or_else(changed)?;
+            present.insert((item.content_hash, asset.folder));
+        }
+        let original_count = tree.folders.len();
+        let prefix = format!("tree-{:x}", Sha256::digest(command_id.as_bytes()));
+        let mut folders: Vec<Option<String>> = Vec::new();
+        for (index, (label, source_parent)) in source.folders.iter().enumerate() {
+            let parent = match source_parent {
+                Some(parent) => folders
+                    .get(*parent)
+                    .cloned()
+                    .ok_or_else(|| ApiError::invalid("Invalid native import folder order"))?,
+                None => parent.clone(),
+            };
+            let id = if let Some(folder) = tree
+                .folders
+                .iter()
+                .find(|folder| folder.name == *label && folder.parent == parent)
+            {
+                folder.id.clone()
+            } else {
+                let id = format!("{prefix}-f{index}");
+                tree.folders.push(crate::asset_folders::Folder {
+                    id: id.clone(),
+                    name: label.clone(),
+                    parent,
+                });
+                tree.validate()?;
+                id
+            };
+            folders.push(Some(id));
+        }
+        let created_folders = tree.folders.len() - original_count;
+        Ok(TreeImportPlan {
+            tree,
+            original_revision: revision,
+            before,
+            roster,
+            folders,
+            present,
+            created_folders,
+        })
+    }
+    pub(crate) fn prepare_import_tree(
+        &self,
+        plan: TreeImportPlan,
+        assets: Vec<(String, AssetFile)>,
+        skipped: usize,
+        errors: Vec<Value>,
+        mut completion: Completion,
+        cancel: &AtomicBool,
+    ) -> Result<PreparedEdit> {
+        let _global = self.lock()?;
+        if plan.roster.len().saturating_add(assets.len()) > 10000 {
+            return Err(ApiError::invalid(
+                "Native library import exceeds the 10000-asset catalog limit",
+            ));
+        }
+        let bytes = plan.tree.serialize()?;
+        let revision = if plan.created_folders == 0 {
+            plan.original_revision.clone()
+        } else {
+            format!("{:x}", Sha256::digest(&bytes))
+        };
+        let summary = json!({"imported_assets":assets.len(),"skipped_files":skipped,"error_count":errors.len(),"errors":errors,"root_folder_id":plan.folders.first().cloned().flatten(),"folders_revision":revision,"created_folders":plan.created_folders});
+        for key in [
+            "imported_assets",
+            "skipped_files",
+            "error_count",
+            "root_folder_id",
+            "folders_revision",
+            "created_folders",
+        ] {
+            completion.receipt[key] = summary[key].clone();
+        }
+        let mut prepared = PreparedEdit::new(&self.0.directory, completion, summary)?;
+        prepared.roster(plan.roster);
+        prepared.guard(false, "folders.json".into(), plan.before.clone());
+        if plan.created_folders != 0 {
+            prepared.add(false, "folders.json".into(), plan.before, &bytes)?;
+        }
+        for (id, asset) in assets {
+            if cancel.load(Ordering::Acquire) {
+                return Err(ApiError::conflict(
+                    "ASSET_CANCELED",
+                    "Asset preparation was canceled",
+                ));
+            }
+            asset_payload::decode(&asset)?;
+            prepared.add(
+                true,
+                name(&id, false)?,
+                None,
+                &serde_json::to_vec_pretty(&asset).map_err(|_| ApiError::io())?,
+            )?;
         }
         Ok(prepared)
     }

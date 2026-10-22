@@ -1,17 +1,22 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createNativeAssetTransfer,nativeAssetIdentity,nativeAssetMutation} from '../js/native-assets.js';
+import {createNativeAssetTransfer,nativeAssetIdentity,nativeAssetMutation,checkedNativeTreeReport} from '../js/native-assets.js';
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function flush(){for(let index=0;index<12;index++)await Promise.resolve();}
 const capture={kind:'capture',media_id:'9007199254740993',name:'Nested shot'};
 const importing={kind:'import',asset_id:'asset-a',revision:'native-revision'};
 const relinking={kind:'relink',asset_id:'asset-a',revision:'native-revision',path_tokens:['Shot.mov']};
+const importTree={kind:'import_tree',directory_token:'Takes',parent:null,folders_revision:'absent'};
+const relinkFolder={kind:'relink_folder',asset_id:'asset-a',revision:'native-revision',directory_token:'Takes'};
+const treeSummary=()=>({imported_assets:1,skipped_files:2,error_count:1,created_folders:2,root_folder_id:'import-root',folders_revision:'f'.repeat(64)});
+const treeErrors=()=>[{path_token:'Takes/bad.mov',code:'INVALID_MEDIA',message:'The native engine could not read this media'}];
 function harness(action=capture,{onApplied,onStatus,libraryCommit,projectCommit,pauseGuard}={}){
   let context={project_name:'saved.vvproj',project_epoch:'epoch',generation:'7',command_epoch:'commands'},writable=true,sourceValid=true;
   const prepare=deferred(),calls=[],polls=[],pauses=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],statuses=[],applied=[];
-  const job=(state='ready',patch={})=>({id:'job-1',state,project_epoch:'epoch',generation:'7',kind:action.kind==='relink'?'library_edit':action.kind,bytes:0,total_bytes:64,result:action.kind==='relink'?{asset_id:action.asset_id,revision:action.revision,missing_count:1,relinked_files:2}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch});
-  const receipt={command_id:'command-once',project_epoch:'epoch',media_ids:['9007199254740995'],...(action.kind==='relink'?{missing_count:1,relinked_files:2}:{})};
+  const prepared=['relink','relink_folder','import_tree'].includes(action.kind),relink=['relink','relink_folder'].includes(action.kind);
+  const job=(state='ready',patch={})=>({id:'job-1',state,project_epoch:'epoch',generation:'7',kind:prepared?'library_edit':action.kind,bytes:0,total_bytes:64,result:action.kind==='import_tree'?{...treeSummary(),errors:treeErrors()}:relink?{asset_id:action.asset_id,revision:action.revision,missing_count:1,relinked_files:2}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch});
+  const receipt={command_id:'command-once',project_epoch:'epoch',...(action.kind==='import_tree'?treeSummary():{media_ids:['9007199254740995']}),...(relink?{missing_count:1,relinked_files:2}:{})};
   const transfer=createNativeAssetTransfer({
     getContext:()=>context,canCommit:()=>writable,onStatus:value=>{statuses.push(value);onStatus?.(value,transfer);},
     api(path,body,options={}){
@@ -29,7 +34,7 @@ function harness(action=capture,{onApplied,onStatus,libraryCommit,projectCommit,
     makeLibraryMutation:operation=>nativeAssetMutation(context,'client',operation,'command-once'),
     libraryCommit(operation,mutation){libraryWrites.push(operation);if(mutation)preparedWrites.push(mutation);return libraryCommit?libraryCommit(operation,mutation):Promise.resolve(receipt);},
     projectCommit(operation){projectWrites.push(operation);return projectCommit?projectCommit(operation):Promise.resolve(receipt);},
-    async onApplied(value,operation){applied.push({receipt:value,action:operation});await onApplied?.(value,operation);},
+    async onApplied(value,operation,report){applied.push({receipt:value,action:operation,...(report===undefined?{}:{report})});await onApplied?.(value,operation,report);},
   });
   return {transfer,prepare,calls,polls,pauses,deletes,libraryWrites,preparedWrites,projectWrites,statuses,applied,job,receipt,
     run:()=>transfer.run(action,()=>sourceValid),context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setSourceValid:value=>{sourceValid=value;}};
@@ -194,4 +199,21 @@ test('already-applied Relink preparation reconciles its receipt without a second
 test('an unknown Relink commit outcome is never canceled or replayed',async()=>{
   const h=harness(relinking,{libraryCommit:()=>Promise.reject(Object.assign(Error('Relink outcome unknown'),{code:'OUTCOME_UNKNOWN'}))}),pending=h.run(),rejected=assert.rejects(pending,/outcome unknown/);
   h.prepare.resolve(h.job());await rejected;assert.equal(h.libraryWrites.length,1);assert.equal(h.preparedWrites.length,1);assert.equal(h.deletes.length,0);assert.equal(h.applied.length,0);assert.equal(h.calls.length,1);
+});
+
+test('native folder import retains complete ready errors locally while committing only its exact prepared request',async()=>{
+  const h=harness(importTree),pending=h.run(),body=h.calls[0].body;assert.deepEqual(body.operation,{kind:'edit_native_asset_library',edit:{action:'import_tree',directory_token:'Takes',parent:null,folders_revision:'absent'}});
+  h.prepare.resolve(h.job());assert.equal(await pending,h.receipt);assert.equal(h.preparedWrites[0],body);assert.deepEqual(h.applied[0].report.errors,treeErrors());assert.equal('errors' in h.receipt,false);assert.equal(h.projectWrites.length,0);
+  const recovered=harness(importTree),again=recovered.run();recovered.prepare.resolve({state:'applied',receipt:recovered.receipt});await again;assert.equal(recovered.applied[0].report,null);assert.equal(recovered.libraryWrites.length,0);assert.equal(recovered.deletes.length,0);
+});
+
+test('recursive folder Relink keeps asset revision binding and honors cancellation before applying',async()=>{
+  const h=harness(relinkFolder),pending=h.run();assert.deepEqual(h.calls[0].body.operation.edit,{action:'relink_folder',id:'asset-a',revision:'native-revision',directory_token:'Takes'});h.prepare.resolve(h.job());await pending;assert.equal(h.libraryWrites.length,1);assert.equal(h.projectWrites.length,0);
+  const canceled=harness(relinkFolder),stopped=canceled.run();canceled.transfer.cancel();canceled.prepare.resolve(canceled.job());assert.equal(await stopped,null);assert.equal(canceled.libraryWrites.length,0);assert.equal(canceled.deletes.length,1);
+});
+
+test('native folder import reports reject incomplete errors, forged counts and unknown folder revisions',()=>{
+  const value={...treeSummary(),errors:treeErrors()};assert.equal(checkedNativeTreeReport(value,true),value);
+  for(const patch of [{imported_assets:65},{created_folders:129},{root_folder_id:'../outside'},{folders_revision:'invalid'},{errors:[]},{errors:[{path_token:'Takes/bad.mov',code:'BAD',message:''}]}])assert.throws(()=>checkedNativeTreeReport({...value,...patch},true));
+  const empty={imported_assets:0,skipped_files:0,error_count:0,created_folders:0,root_folder_id:null,folders_revision:'absent',errors:[]};assert.equal(checkedNativeTreeReport(empty,true),empty);
 });

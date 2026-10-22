@@ -34,6 +34,7 @@ pub fn router(state: AppState) -> Router {
             get(|| async { Json(json!({"status":"ok","api_version":1})) }),
         )
         .route("/api/v1/session", get(session))
+        .route("/api/v1/media/sources", get(media_sources))
         .route("/api/v1/projects/otio/prepare", post(prepare_otio))
         .route("/api/v1/clipboard", get(clipboard_text))
         .route(
@@ -1860,6 +1861,23 @@ async fn apply_attribute_preset(
 async fn projects(State(state): State<AppState>) -> Result<Json<Value>> {
     state.host.call(Action::Projects).await.map(Json)
 }
+async fn media_sources(
+    State(state): State<AppState>,
+    query: std::result::Result<
+        Query<crate::files::SourcesQuery>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .source_browser(
+            query
+                .map_err(|_| ApiError::invalid("Invalid approved source directory query"))?
+                .0,
+        )
+        .await
+        .map(native_asset_json)
+}
 async fn eq_response(
     State(state): State<AppState>,
     Path((id, channel, index)): Path<(String, String, String)>,
@@ -2032,6 +2050,7 @@ async fn assets(request: Request) -> Response {
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),
         "/js/library.js" => asset!("/web/js/library.js", "text/javascript"),
         "/js/native-assets.js" => asset!("/web/js/native-assets.js", "text/javascript"),
+        "/js/source-picker.js" => asset!("/web/js/source-picker.js", "text/javascript"),
         "/js/native-asset-folders.js" => {
             asset!("/web/js/native-asset-folders.js", "text/javascript")
         }

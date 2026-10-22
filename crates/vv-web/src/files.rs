@@ -12,6 +12,18 @@ use vv_core::Project;
 
 pub(crate) const MAX_PROJECT: u64 = 8 * 1024 * 1024;
 pub const MAX_MEDIA_IMPORTS: usize = 256;
+#[path = "approved_sources.rs"]
+mod approved_sources;
+pub use approved_sources::{SourceBrowserTask, SourceTree, SourceTreeWitness, SourcesQuery};
+pub(crate) use approved_sources::{open_approved_media, source_entry, validate_approved_file};
+pub(crate) fn scan_media_tree(
+    root: &Path,
+    dir: &File,
+    directory_token: &str,
+    cancel: &std::sync::atomic::AtomicBool,
+) -> Result<SourceTree> {
+    approved_sources::scan_media_tree(root, dir, directory_token, cancel)
+}
 pub(crate) fn media_import_tokens(path_tokens: &[String]) -> Result<Vec<String>> {
     if path_tokens.is_empty() || path_tokens.len() > 4096 {
         return Err(ApiError::invalid(
@@ -56,11 +68,7 @@ pub(crate) fn root_media_token(root: &Path, path: &Path) -> Result<String> {
     let token = relative
         .to_str()
         .ok_or_else(|| ApiError::invalid("Media file names must be UTF-8"))?;
-    if let Some(name) = token.strip_prefix("Pasted Images/") {
-        crate::clipboard_image::validate_filename(name)?;
-    } else {
-        Files::name(token)?;
-    }
+    approved_sources::validate_media_token(token)?;
     if root.join(token).as_os_str() != path.as_os_str() {
         return Err(ApiError::invalid(
             "Media must use its exact root-relative path",
@@ -71,38 +79,17 @@ pub(crate) fn root_media_token(root: &Path, path: &Path) -> Result<String> {
 
 pub(crate) fn open_root_media(root: &Path, dir: &File, path: &Path) -> Result<File> {
     let token = root_media_token(root, path)?;
-    let live = File::from(
-        rustix::fs::open(
-            root,
-            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
-            Mode::empty(),
-        )
-        .map_err(|_| ApiError::io())?,
-    );
-    crate::asset_store::same_directory(dir, &live)?;
-    let child;
-    let (parent, name) = if let Some(name) = token.strip_prefix("Pasted Images/") {
-        child = crate::clipboard_image::directory(dir)?.ok_or_else(ApiError::missing)?;
-        (&child, name)
-    } else {
-        (dir, token.as_str())
-    };
-    let file = File::from(
-        openat(
-            parent,
-            name,
-            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK,
-            Mode::empty(),
-        )
-        .map_err(|_| ApiError::missing())?,
-    );
-    if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
-        return Err(ApiError::invalid("Media must be a regular file"));
-    }
-    Ok(file)
+    approved_sources::open_media(root, dir, &token)
 }
 
 impl Files {
+    pub fn source_browser_task(&self, query: SourcesQuery) -> Result<SourceBrowserTask> {
+        SourceBrowserTask::new(&self.root, &self.dir, query)
+    }
+    #[cfg(test)]
+    pub fn source_browser(&self, query: &SourcesQuery) -> Result<Value> {
+        self.source_browser_task(query.clone())?.run()
+    }
     pub fn media_import_tokens(&self, path_tokens: &[String]) -> Result<Vec<String>> {
         media_import_tokens(path_tokens)
     }
@@ -549,21 +536,8 @@ fn validate_root_media_in(project: &mut Project, root: &Path, dir: &File) -> Res
             root.join(&item.path)
         };
         let token = root_media_token(root, &path)?;
-        let child;
-        let entry = if let Some(name) = token.strip_prefix("Pasted Images/") {
-            child = crate::clipboard_image::directory(dir)?;
-            child.as_ref().map(|parent| (parent, name))
-        } else {
-            Some((dir, token.as_str()))
-        };
-        if let Some((parent, name)) = entry {
-            match rustix::fs::statat(parent, name, AtFlags::SYMLINK_NOFOLLOW) {
-                Err(rustix::io::Errno::NOENT) => {}
-                Err(_) => return Err(ApiError::io()),
-                Ok(_) => {
-                    open_root_media(root, dir, &path)?;
-                }
-            }
+        if source_entry(root, dir, &token)?.0.is_some() {
+            open_root_media(root, dir, &path)?;
         }
         item.path = path;
     }

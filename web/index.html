@@ -510,6 +510,9 @@
       <button id="export-cancel" disabled>Cancel export</button>
       <button id="export-refresh" disabled>Refresh export status</button>
       <a id="export-download" hidden download="venturi-export.mp4">Download MP4</a>
+      <button id="export-preview" type="button" disabled>Preview exported video</button>
+      <video id="export-preview-video" aria-label="Exported video preview" width="320" style="max-width:100%" controls preload="none" playsinline hidden></video>
+      <p id="export-preview-status" class="muted" role="status"></p>
       <button id="export-discard" type="button" disabled>Discard saved export…</button>
     </aside>
     <dialog id="export-discard-dialog" aria-labelledby="export-discard-heading" aria-describedby="export-discard-description">

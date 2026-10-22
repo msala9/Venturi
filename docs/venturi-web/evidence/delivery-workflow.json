@@ -1,0 +1,570 @@
+{
+  "status": "in_progress",
+  "scope": "Usable editing workflow; final exported-video browser preview pending",
+  "workflow_base_commit": "8a86e0ec6fbb31a6e011a3433cc6159af65b366f",
+  "build": {
+    "phase": "passed",
+    "validation": "delivery-export-preview",
+    "native_validation_base_commit": "2e9a0946ddb45023bf66bd8c7ea6fe79e8fe4fb1",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "7396a228ecc8d42a601c068312d86f88210d4105cbacdde269df379c5b2de9e0",
+    "javascript": 881,
+    "native_rust_hashes": {
+      "crates/vv-web/src/commands.rs": "c92bb6a783fe39c26199c80b3edd2eeb0acdd354e7a17c9e28c42677da6b2b10",
+      "crates/vv-web/src/inspector.rs": "7af1fe141afa01a45616d1e530a8aeb53f14b19d742677a7ba514b41a87924ec",
+      "crates/vv-web/src/tests/commands.rs": "43d6549dfe4adc2b8c8b88eafc04073d3109c68c49378ec4b7f649789d961a70",
+      "crates/vv-web/src/tests/inspector.rs": "5bde17205afe74070c46215217a2dbadaf61e26616d990ef682115e465c99cae"
+    },
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "acceptance": {
+    "code_hashes": {
+      "web/index.html": "518f03d9f978246eb6a9e36b0a4d8fa27cac7416bc1f79b24a9cec3c9e54a0e7",
+      "web/js/main.js": "422d24b405e0d7171e23d68e6cc7f3953ab09b085a8d6ba363bd735403af39fe",
+      "web/js/export.js": "19447ec6b59786695443a89025b55960d1dc003abf57211010dd98add3d4bf95",
+      "web/test/export-panel.test.js": "bd5070571807f6085cedada13f557de2b29f6c8173e71f2b8a97e29b24e60693"
+    },
+    "javascript_tests": 881,
+    "new_focused_tests": 4,
+    "native_rust_unchanged": true
+  },
+  "workflow": {
+    "project": "Venturi_Editing_Delivery.vvproj",
+    "timeline": "Editing delivery",
+    "timeline_snapshot": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 64,
+          "percent": 100,
+          "width": 64
+        },
+        {
+          "height": 48,
+          "percent": 75,
+          "width": 48
+        },
+        {
+          "height": 32,
+          "percent": 50,
+          "width": 32
+        },
+        {
+          "height": 16,
+          "percent": 25,
+          "width": 16
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "gaps": [],
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Editing delivery",
+      "resolution": {
+        "height": 64,
+        "width": 64
+      },
+      "revision": "e412b0f4cad7978f",
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "media",
+              "length_frames": 12,
+              "linked_group": "0",
+              "media_id": "2",
+              "name": "venturi-smoke.mp4",
+              "retime": {
+                "max_length": 1200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 12,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                36
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 12,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 18,
+              "linked_group": "1",
+              "media_id": "2",
+              "name": "venturi-smoke.mp4",
+              "retime": {
+                "max_length": 1800,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 18,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                -18,
+                12
+              ],
+              "source_in_frames": 18,
+              "source_out_frames": 36,
+              "speed_percent": 100.0,
+              "start_frame": 12,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "6",
+              "kind": "media",
+              "length_frames": 42,
+              "linked_group": "3",
+              "media_id": "2",
+              "name": "venturi-smoke.mp4",
+              "retime": {
+                "max_length": 4200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 42,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                6
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 42,
+              "speed_percent": 100.0,
+              "start_frame": 30,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "media",
+              "length_frames": 12,
+              "linked_group": "0",
+              "media_id": "2",
+              "name": "venturi-smoke.mp4",
+              "retime": {
+                "max_length": 1200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 12,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                36
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 12,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "media",
+              "length_frames": 18,
+              "linked_group": "1",
+              "media_id": "2",
+              "name": "venturi-smoke.mp4",
+              "retime": {
+                "max_length": 1800,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 18,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                -18,
+                12
+              ],
+              "source_in_frames": 18,
+              "source_out_frames": 36,
+              "speed_percent": 100.0,
+              "start_frame": 12,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "7",
+              "kind": "media",
+              "length_frames": 42,
+              "linked_group": "3",
+              "media_id": "2",
+              "name": "venturi-smoke.mp4",
+              "retime": {
+                "max_length": 4200,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 42,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                6
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 42,
+              "speed_percent": 100.0,
+              "start_frame": 30,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "project_sha256": "03534359cbe3a959e29c728c3cc3433c5a4ce86ddf1ddbb08fb2beb37b85400a",
+    "exact_explicit_reopen": true,
+    "exact_candidate_restart": true,
+    "windows_observations": [
+      {
+        "step": "trim-linked-end",
+        "dom": {
+          "clips": [
+            {
+              "data": {
+                "clipId": "1"
+              },
+              "label": "V1 \u00c2\u00b7 venturi-smoke.mp4",
+              "pressed": "true"
+            },
+            {
+              "data": {
+                "clipId": "0"
+              },
+              "label": "A1 \u00c2\u00b7 venturi-smoke.mp4",
+              "pressed": "true"
+            }
+          ],
+          "inspector": [
+            "Source frames 0\u00e2\u20ac\u201c35. Native sampled curves; interpolation belongs to the outgoing key. Shift/Ctrl-click or box-select keys, then drag or edit group deltas. Alt/middle-drag pans; wheel zooms time, Shift-wheel zooms values. Each edit is one Undo. Escape cancels a draft.",
+            "Clip ID: 1",
+            "Start: 0",
+            "Length: 36",
+            "Source in: 0",
+            "Source out: 36"
+          ],
+          "notice": "Command applied"
+        }
+      },
+      {
+        "step": "split-at-18",
+        "dom": {
+          "clips": [
+            {
+              "data": {
+                "clipId": "1"
+              },
+              "label": "V1 \u00c2\u00b7 venturi-smoke.mp4",
+              "pressed": "true"
+            },
+            {
+              "data": {
+                "clipId": "2"
+              },
+              "label": "V1 \u00c2\u00b7 venturi-smoke.mp4",
+              "pressed": "false"
+            },
+            {
+              "data": {
+                "clipId": "0"
+              },
+              "label": "A1 \u00c2\u00b7 venturi-smoke.mp4",
+              "pressed": "true"
+            },
+            {
+              "data": {
+                "clipId": "3"
+              },
+              "label": "A1 \u00c2\u00b7 venturi-smoke.mp4",
+              "pressed": "false"
+            }
+          ],
+          "notice": "Command applied",
+          "time": "00:00:00:18"
+        }
+      },
+      {
+        "step": "close-first-gap",
+        "clips": "V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4V1 gap \u00c2\u00b7 30\u00e2\u20ac\u201c42 framesA1 gap \u00c2\u00b7 30\u00e2\u20ac\u201c42 frames"
+      },
+      {
+        "step": "undo-gap",
+        "clips": "V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4V1 gap \u00c2\u00b7 12\u00e2\u20ac\u201c18 framesV1 gap \u00c2\u00b7 36\u00e2\u20ac\u201c48 framesA1 gap \u00c2\u00b7 12\u00e2\u20ac\u201c18 framesA1 gap \u00c2\u00b7 36\u00e2\u20ac\u201c48 frames"
+      },
+      {
+        "step": "redo-gap",
+        "clips": "V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4V1 gap \u00c2\u00b7 30\u00e2\u20ac\u201c42 framesA1 gap \u00c2\u00b7 30\u00e2\u20ac\u201c42 frames"
+      },
+      {
+        "step": "move-linked-pair-by-cut-paste",
+        "clips": "V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4V1 gap \u00c2\u00b7 30\u00e2\u20ac\u201c90 framesA1 gap \u00c2\u00b7 30\u00e2\u20ac\u201c90 frames"
+      },
+      {
+        "step": "full-composed-playback",
+        "dom": {
+          "media": {
+            "currentTime": 3.264,
+            "duration": 3.264,
+            "ended": true,
+            "metrics": "{\"presented_frames\":78,\"total_frames\":78,\"dropped_frames\":0,\"media_time\":3.264,\"duration\":3.264,\"frame_callback\":true}",
+            "muted": false,
+            "paused": true,
+            "quality": null
+          },
+          "metrics": [
+            "{\"presented_frames\":78,\"total_frames\":78,\"dropped_frames\":0,\"media_time\":3.264,\"duration\":3.264,\"frame_callback\":true}"
+          ],
+          "time": "00:00:03:05"
+        }
+      },
+      {
+        "step": "pause-program",
+        "dom": {
+          "paused": true,
+          "time": "00:00:00:04"
+        }
+      },
+      {
+        "step": "explicit-reopen",
+        "dom": {
+          "clips": "V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4V1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4A1 \u00c2\u00b7 venturi-smoke.mp4",
+          "save": "Saved",
+          "selectedTimeline": "Editing delivery",
+          "undoDisabled": true
+        }
+      },
+      {
+        "step": "replay-after-edit-and-reopen",
+        "dom": {
+          "metrics": [
+            "{\"presented_frames\":72,\"total_frames\":72,\"dropped_frames\":0,\"media_time\":3.008,\"duration\":3.008,\"frame_callback\":true}"
+          ],
+          "time": "00:00:02:23",
+          "video": {
+            "currentTime": 3.008,
+            "duration": 3.008,
+            "ended": true,
+            "muted": false,
+            "paused": true,
+            "src": "/api/v1/preview/program/1792655844182038928/program.mp4?project_epoch=1792655531734560571%3A2&if_generation=0&timeline_id=2&revision=e412b0f4cad7978f&start_frame=0&end_frame=72&width=960"
+          }
+        }
+      },
+      {
+        "step": "export-ready",
+        "dom": {
+          "exportPanel": "\n      \n        Export\n        \n        \u00c3\u2014\n      \n      Native H.264 / AAC \u00c2\u00b7 immutable timeline snapshot\n      \n        Export rangeProgram In/OutWhole timelineCustom frame range\n        In frame\n        Use playhead as In\n        Out frame (exclusive)\n        Use playhead as Out\n        Output sizeLegacy maximum width64\u00c3\u201464 (100%)48\u00c3\u201448 (75%)32\u00c3\u201432 (50%)16\u00c3\u201416 (25%)\n        Maximum output width19201280960640\n        24.000 fps \u00c2\u00b7 timeline\n        Video encoderx264 (CPU) \u00c2\u00b7 availableNVIDIA NVENC \u00c2\u00b7 not checkedVulkan (FFmpeg default device) \u00c2\u00b7 not checked\n        Recheck selected encoder\n        Video decoderSoftware (CPU) \u00c2\u00b7 availableNVIDIA NVDEC \u00c2\u00b7 not checkedVulkan (AMD Radeon AI PRO R9700 (RADV GFX1201)) \u00c2\u00b7 not checked\n        Recheck selected decoder\n        Refresh native codec choices\n        Hardware is checked only on request \u00c2\u00b7 encoder: x264 (CPU) \u00c2\u00b7 available \u00c2\u00b7 decoder: Software (CPU) \u00c2\u00b7 available \u00c2\u00b7 Native build 0.8.1 \u00c2\u00b7 Adapter AMD Radeon AI PRO R9700 (RADV GFX1201)\n        x264 (CPU) \u00c2\u00b7 CRF\n        0\u00e2\u20ac\u201c51 \u00c2\u00b7 Lower values improve quality\n        Encoding speedultrafastsuperfastveryfastfasterfastmediumslowslowerveryslow\n        Include audio\n        Audio encoderAAC \u00e2\u20ac\u201c FFmpegAAC \u00e2\u20ac\u201c FDK \u00c2\u00b7 unavailable\n        Audio bitrate96 kbps128 kbps160 kbps192 kbps256 kbps320 kbps\n        AAC encoding modeTwoloopFast\n        Native audio encoder availability \u00c2\u00b7 no hardware check required\n        Native pipeline performanceDecode 2528.3 fps \u00c2\u00b7 Compose 2233.8 fps \u00c2\u00b7 Encode 1160.1 fps \u00c2\u00b7 Startup 0:00\n        Start export\n      \n      Choose Program In/Out, the whole timeline or a custom frame range. Output percentages use the native timeline dimensions. Software x264/CPU is the initial video choice. Hardware requires an explicit bounded check; decoder support can vary by source, and actual paths appear in job status. Each job has a 10-minute processing and 512 MiB output budget. Completed exports are retained across server restarts. Interrupted jobs are listed for review and do not restart automatically. History is limited to 64 jobs and 2 GiB of output; new jobs are refused when full.\n      Saved exportsChoose a saved export1792655870910606546 \u00c2\u00b7 ready \u00c2\u00b7 frames 0\u00e2\u20ac\u201c72\n      Refresh saved exports\n      1 saved exports \u00c2\u00b7 1/64 history slots\n      READY \u00c2\u00b7 72/72 frames \u00c2\u00b7 Actual encode X264 \u00c2\u00b7 actual decode Software (CPU) \u00c2\u00b7 compose AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) \u00c2\u00b7 Elapsed 0:00 \u00c2\u00b7 718.8 fps \u00c2\u00b7 snapshot frames 0\u00e2\u20ac\u201c72 \u00c2\u00b7 64\u00c3\u201464 \u00c2\u00b7 requested x264 \u00c2\u00b7 CRF 18 veryfast \u00c2\u00b7 requested decode CPU \u00c2\u00b7 scale 100% \u00c2\u00b7 requested AAC 128 kbps two loop\n      Cancel export\n      Refresh export status\n      Download MP4 \u00c2\u00b7 frames 0\u00e2\u20ac\u201c72 \u00c2\u00b7 x264 \u00c2\u00b7 CRF 18 veryfast \u00c2\u00b7 requested decode CPU \u00c2\u00b7 scale 100% \u00c2\u00b7 requested AAC 128 kbps two loop + AAC 128 kbps\n      Discard saved export\u00e2\u20ac\u00a6\n    ",
+          "links": [
+            {
+              "href": "/api/v1/exports/1792655870910606546/export.mp4?project_epoch=1792655531734560571%3A2",
+              "text": "Download MP4 \u00c2\u00b7 frames 0\u00e2\u20ac\u201c72 \u00c2\u00b7 x264 \u00c2\u00b7 CRF 18 veryfast \u00c2\u00b7 requested decode CPU \u00c2\u00b7 scale 100% \u00c2\u00b7 requested AAC 128 kbps two loop + AAC 128 kbps"
+            }
+          ]
+        }
+      },
+      {
+        "step": "persistent-candidate-restart",
+        "dom": {
+          "clips": [
+            "1",
+            "2",
+            "6",
+            "0",
+            "3",
+            "7"
+          ],
+          "exportLink": "/api/v1/exports/1792655870910606546/export.mp4?project_epoch=1792655531734560571%3A2",
+          "project": "Venturi_Editing_Delivery.vvproj",
+          "saved": "Saved",
+          "timeline": "Editing delivery"
+        }
+      }
+    ],
+    "export_validation": {
+      "status": "passed",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 64,
+            "height": 64,
+            "duration": "3.000000",
+            "nb_read_frames": "72"
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2,
+            "duration": "3.008000",
+            "nb_read_frames": "141"
+          }
+        ],
+        "format": {
+          "duration": "3.008000",
+          "size": "73012"
+        }
+      },
+      "audio_segments": [
+        {
+          "start_frame": 0,
+          "rms": 0.08806661446671125,
+          "correlation": 0.9998975926116594,
+          "gain": 1.407929640398088
+        },
+        {
+          "start_frame": 12,
+          "rms": 0.08834555535575651,
+          "correlation": 0.9998420600362727,
+          "gain": 1.417392342750944
+        },
+        {
+          "start_frame": 30,
+          "rms": 0.08809406559029913,
+          "correlation": 0.9998582955316685,
+          "gain": 1.4122772309269704
+        }
+      ],
+      "full_decode_without_errors": true,
+      "output_sha256": "938570ba4db7c32d2decc6e27c0e33bcd6d8f05d04254915aeadd5567e74e51e",
+      "output": "/home/marco/VenturiWeb-delivery-20261022/.exports/1792655870910606546/program.mp4"
+    },
+    "windows_download_sha256": "938570ba4db7c32d2decc6e27c0e33bcd6d8f05d04254915aeadd5567e74e51e"
+  },
+  "runtime": {
+    "unit": "venturi-web-delivery.service",
+    "root": "/home/marco/VenturiWeb-delivery-20261022",
+    "local_url": "http://127.0.0.1:8811",
+    "main_editor_preserved": true
+  },
+  "limits": [
+    "64x64 three-second integrated fixture; no complex high-resolution throughput claim",
+    "Move qualified by native Cut/Paste; physical Canvas drag/DPI remains deferred",
+    "Five-minute browser window continuation and physical A/V latency remain unqualified"
+  ]
+}

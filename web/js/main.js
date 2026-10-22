@@ -1565,9 +1565,11 @@ $("source-video").addEventListener("timeupdate", () => {
   syncSourcePosition();
 });
 for (const event of ["play", "pause", "ended"]) $("source-video").addEventListener(event, () => {
+  if(event==='play' && !$("source-video").paused)exportPanel?.stopPreview();
   $("play").textContent = $("source-video").paused ? "▶ Play" : "❚❚ Pause";
 });
 for (const event of ["play", "pause", "ended"]) $("program-video").addEventListener(event, () => {
+  if(event==='play' && !$("program-video").paused)exportPanel?.stopPreview();
   if (viewerMode === "program") $("play").textContent = $("program-video").paused ? "▶ Play" : "❚❚ Pause";
 });
 async function diagnostics() {
@@ -1578,7 +1580,10 @@ async function diagnostics() {
       : "GPU preview unavailable";
   } catch {}
 }
-exportPanel = createExportPanel({ form: $("export-form"), status: $("export-status"), cancel: $("export-cancel"), refresh: $("export-refresh"), download: $("export-download"), history:{select:$("export-history"),refresh:$("export-history-refresh"),status:$("export-history-status")}, discard:{button:$("export-discard"),dialog:$("export-discard-dialog"),summary:$("export-discard-summary"),status:$("export-discard-status"),confirm:$("export-discard-confirm"),keep:$("export-discard-keep")}, getState: () => {
+exportPanel = createExportPanel({ form: $("export-form"), status: $("export-status"), cancel: $("export-cancel"), refresh: $("export-refresh"), download: $("export-download"), history:{select:$("export-history"),refresh:$("export-history-refresh"),status:$("export-history-status")}, discard:{button:$("export-discard"),dialog:$("export-discard-dialog"),summary:$("export-discard-summary"),status:$("export-discard-status"),confirm:$("export-discard-confirm"),keep:$("export-discard-keep")},
+  preview:{button:$("export-preview"),video:$("export-preview-video"),status:$("export-preview-status")},
+  beforePreview:()=>{fastTransport?.stop();audioScrub?.stop();programPlayer?.stop();sourcePlayer?.pause();},
+  getPreviewContext:()=>({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline_id:timeline?.id,revision:timeline?.revision}),getState: () => {
   if (!timeline || !documentState) return null;
   const end = Math.max(0, ...timeline.tracks.flatMap((track) => track.clips.map((clip) => clip.start_frame + clip.length_frames)));
   return end ? { project_epoch: documentState.project_epoch, if_generation: documentState.generation, timeline_id: timeline.id, revision: timeline.revision, start_frame: 0, end_frame: end, width: 1920, fps: timeline.fps, marks:resolveMarkRange(programMarkState.marks,end),export_scales:timeline.export_scales,has_audio:timeline.tracks.some(track=>track.kind==="audio" && track.clips.length>0) } : null;

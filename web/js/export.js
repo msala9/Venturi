@@ -101,9 +101,10 @@ export function exportRequest(state, values, catalog=null) {
   return { range: {project_epoch:state.project_epoch,if_generation:state.if_generation,timeline_id:state.timeline_id,revision:state.revision,start_frame:start,end_frame:end,width}, settings: { quality, preset, audio: values.audio,...(encoder==='x264'?{}:{encoder}),...(decoder==='software'?{}:{decoder}),...options } };
 }
 
-export function createExportPanel({ form, status, cancel, refresh, download, getState, history=null,discard=null, api = request, storage = sessionStorage,uuid=()=>crypto.randomUUID() }) {
+export function createExportPanel({ form, status, cancel, refresh, download, getState, history=null,discard=null,preview=null,beforePreview=()=>{},getPreviewContext=null, api = request, storage = sessionStorage,uuid=()=>crypto.randomUUID() }) {
   let current = null, timer = null, historySequence=0,statusSequence=0,submitting=false;
   let selectedJob=null,discardReading=false,discardPending=false,discardTarget=null;
+  let previewOwner=null,previewSequence=0;
   const start = form.querySelector("button[type=submit],#export-start");
   const codecUI=form.elements.encoder && form.elements.decoder?{encoder:form.elements.encoder,decoder:form.elements.decoder,status:form.querySelector('[data-export-codec-status]'),encoderProbe:form.querySelector('[data-export-probe="encoder"]'),decoderProbe:form.querySelector('[data-export-probe="decoder"]'),refresh:form.querySelector('[data-export-codecs-refresh]'),qualityLabel:form.querySelector('[data-export-quality-label]'),qualityHint:form.querySelector('[data-export-quality-hint]'),presetField:form.querySelector('[data-export-preset-field]')}:null;
   const rangeUI=form.elements.scope?{scope:form.elements.scope,scale:form.elements.scale_percent,widthField:form.querySelector('[data-export-legacy-width]')}:null;
@@ -190,8 +191,48 @@ export function createExportPanel({ form, status, cancel, refresh, download, get
   if(audioUI){for(const field of [audioUI.codec,audioUI.bitrate,audioUI.coder,form.elements.audio])field.addEventListener('change',()=>{audioExplicit=true;audioFields();codecControls();});audioFields();}
   const path = (reference=current) => `/exports/${encodeURIComponent(reference.id)}?${new URLSearchParams({ project_epoch: reference.epoch })}`;
   const same=reference=>reference?.id===current?.id && reference?.epoch===current?.epoch;
+  const assetPath=reference=>`/api/v1/exports/${encodeURIComponent(reference.id)}/export.mp4?${new URLSearchParams({project_epoch:reference.epoch})}`;
+  const previewContext=()=>getPreviewContext?JSON.stringify(getPreviewContext()):contextKey();
+  const previewAvailable=()=>{
+    if(!preview || !codecVisible || submitting || discardPending || discardReading || discardTarget || discard?.dialog.open || !current || selectedJob?.state!=='ready' || selectedJob.durability_error || download.hidden)return false;
+    try{return same(exportReference(selectedJob));}catch{return false;}
+  };
+  const previewCurrent=owner=>previewOwner===owner && owner.sequence===previewSequence && same(owner.reference) && owner.context===previewContext() && previewAvailable();
+  function stopPreview(message=''){
+    previewSequence++;previewOwner=null;if(!preview)return;
+    preview.video.pause();preview.video.removeAttribute('src');preview.video.load();preview.video.hidden=true;preview.status.textContent=message;
+  }
+  function previewControls(){
+    if(!preview)return;
+    if(previewOwner && !previewCurrent(previewOwner))stopPreview();
+    preview.button.disabled=!previewAvailable() || Boolean(previewOwner?.pending);
+  }
+  if(preview){
+    preview.video.controls=true;preview.video.preload='none';preview.video.autoplay=false;preview.button.disabled=true;
+    preview.button.addEventListener('click',async()=>{
+      if(!previewAvailable() || previewOwner?.pending)return;
+      stopPreview();const owner={sequence:previewSequence,reference:{...current},context:previewContext(),pending:true};previewOwner=owner;previewControls();
+      try{
+        await beforePreview();if(!previewCurrent(owner))return;
+        owner.pending=false;preview.video.src=assetPath(owner.reference);owner.src=preview.video.src;preview.video.hidden=false;preview.video.load();preview.status.textContent='Exported video ready · use the video controls to play';
+      }catch(error){if(previewOwner===owner)stopPreview(`Export preview unavailable · ${error.message}`);}
+      finally{previewControls();}
+    });
+    preview.video.addEventListener('play',async()=>{
+      if(preview.video.paused)return;
+      const owner=previewOwner;
+      if(!owner || !previewCurrent(owner) || preview.video.src!==owner.src || (preview.video.currentSrc && preview.video.currentSrc!==owner.src)){preview.video.pause();return;}
+      try{await beforePreview();if(previewOwner===owner && !previewCurrent(owner))stopPreview();}
+      catch(error){if(previewOwner===owner)stopPreview(`Export preview unavailable · ${error.message}`);}
+    });
+    preview.video.addEventListener('error',()=>{
+      const owner=previewOwner;
+      if(preview.video.error && owner && previewCurrent(owner) && preview.video.src===owner.src && (!preview.video.currentSrc || preview.video.currentSrc===owner.src)){stopPreview('Export preview unavailable · refresh the selected export');previewControls();}
+    });
+    preview.video.addEventListener('keydown',event=>{if(event.code==='Space' || [' ','Spacebar','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key))event.stopPropagation();});
+  }
   function persist() { try { storage.setItem("venturi-export-job", JSON.stringify(current)); } catch {} }
-  function discardControls(){codecControls();if(!discard)return;discard.button.disabled=discardReading || discardPending || submitting || !exportCanDiscard(selectedJob);discard.confirm.disabled=discardPending || !discardTarget || !same(discardTarget);discard.keep.disabled=discardPending;}
+  function discardControls(){codecControls();previewControls();if(!discard)return;discard.button.disabled=discardReading || discardPending || submitting || !exportCanDiscard(selectedJob);discard.confirm.disabled=discardPending || !discardTarget || !same(discardTarget);discard.keep.disabled=discardPending;}
   function closeDiscard(){if(discardPending)return;discardTarget=null;if(discard?.dialog.open)discard.dialog.close();discardControls();}
   function display(job) {
     selectedJob=job;
@@ -208,7 +249,7 @@ export function createExportPanel({ form, status, cancel, refresh, download, get
       if(settings)status.textContent+=` · requested ${exportSettingsLabel(settings)}`;
       download.textContent=`Download MP4 · frames ${output.start_frame}–${output.end_frame}${settings ? ` · ${exportSettingsLabel(settings)}${exportAudioLabel(output)}` : ""}`;
     }
-    if (!download.hidden) download.href = `/api/v1/exports/${encodeURIComponent(current.id)}/export.mp4?${new URLSearchParams({ project_epoch: current.epoch })}`;
+    if (!download.hidden) download.href = assetPath(current);
     clearTimeout(timer);
     if (busy) timer = setTimeout(poll, 500);
     discardControls();
@@ -217,7 +258,7 @@ export function createExportPanel({ form, status, cancel, refresh, download, get
     if (!current || discardPending) return;
     const reference={...current},token=++statusSequence;
     try { const job=await api(path(reference));if(token===statusSequence && same(reference))display(job); }
-    catch (error) { if(token!==statusSequence || !same(reference))return;clearTimeout(timer); status.textContent = `Export status unavailable · ${error.message}`; start.disabled = false; cancel.disabled = true; download.hidden = true;codecControls(); }
+    catch (error) { if(token!==statusSequence || !same(reference))return;clearTimeout(timer); status.textContent = `Export status unavailable · ${error.message}`; start.disabled = false; cancel.disabled = true; download.hidden = true;stopPreview();previewControls();codecControls(); }
   }
   async function loadHistory(){
     if(!history || discardPending)return;const token=++historySequence;history.refresh.disabled=true;history.status.textContent='Reading saved exports…';
@@ -225,7 +266,7 @@ export function createExportPanel({ form, status, cancel, refresh, download, get
       const result=await api('/exports'),jobs=savedExportJobs(result);if(token!==historySequence)return;
       history.select.replaceChildren(new Option('Choose a saved export',''),...jobs.map((job,index)=>new Option(`${job.id} · ${job.state}${job.program?` · frames ${job.program.start_frame}–${job.program.end_frame}`:''}`,String(index))));
       const index=jobs.findIndex(job=>same(exportReference(job)));history.select.value=index<0?'':String(index);
-      history.select.onchange=()=>{if(submitting || discardPending)return;const job=jobs[Number(history.select.value)];if(history.select.value==='' || !job)return;closeDiscard();statusSequence++;clearTimeout(timer);current=exportReference(job);persist();display(job);};
+      history.select.onchange=()=>{if(submitting || discardPending)return;const job=jobs[Number(history.select.value)];if(history.select.value==='' || !job)return;stopPreview();closeDiscard();statusSequence++;clearTimeout(timer);current=exportReference(job);persist();display(job);};
       history.status.textContent=`${jobs.length} saved exports${result.capacity?` · ${result.capacity.used_jobs}/${result.capacity.max_jobs} history slots`:''}`;
     }catch(error){if(token===historySequence)history.status.textContent=`Saved exports unavailable · ${error.message}`;}
     finally{if(token===historySequence)history.refresh.disabled=discardPending;}
@@ -234,6 +275,7 @@ export function createExportPanel({ form, status, cancel, refresh, download, get
   if(discard){
     discard.button.addEventListener('click',async()=>{
       if(discardReading || discardPending || submitting || !current || !exportCanDiscard(selectedJob))return;
+      stopPreview();
       const reference={...current},token=++statusSequence;discardReading=true;discardControls();
       try{
         const job=await api(path(reference));if(token!==statusSequence || !same(reference))return;
@@ -273,7 +315,7 @@ export function createExportPanel({ form, status, cancel, refresh, download, get
       const values = Object.fromEntries(new FormData(form)); values.audio = form.elements.audio.checked && getState()?.has_audio!==false;
       if(audioUI && values.audio){values.audio_coder=audioUI.coder.value;if(!catalogCurrent() || !catalog.audio){if(!audioAvailable())throw Error('Refresh native audio choices before exporting');delete values.audio_codec;delete values.audio_bitrate_kbps;delete values.audio_coder;}}
       const body = exportRequest(getState(), values,codecUI && catalogCurrent()?catalog:null);
-      closeDiscard();submitting=true;statusSequence++;clearTimeout(timer);if(history)history.select.disabled=true;discardControls();
+      stopPreview();closeDiscard();submitting=true;statusSequence++;clearTimeout(timer);if(history)history.select.disabled=true;discardControls();
       start.disabled = true; status.textContent = "Submitting native export…";
       const job = await api("/exports", body);
       current = { id: job.id, epoch: body.range.project_epoch }; persist(); display(job);
@@ -292,5 +334,5 @@ export function createExportPanel({ form, status, cancel, refresh, download, get
   });
   refresh.addEventListener("click", poll);
   try { current = JSON.parse(storage.getItem("venturi-export-job")); if (current?.id && current?.epoch) poll(); else current = null; } catch { current = null; }
-  return { open() { codecVisible=true;rangeFields(true);loadHistory();void loadCatalog(); },invalidate(){if(codecVisible){rangeFields();codecControls();}},useMarks(){if(rangeUI){scopeExplicit=true;rangeUI.scope.value='marks';rangeFields();codecControls();}},close(){codecVisible=false;catalogSequence++;} };
+  return { open() { codecVisible=true;rangeFields(true);previewControls();loadHistory();void loadCatalog(); },invalidate(){previewControls();if(codecVisible){rangeFields();codecControls();}},useMarks(){if(rangeUI){scopeExplicit=true;rangeUI.scope.value='marks';rangeFields();codecControls();}},stopPreview,close(){codecVisible=false;catalogSequence++;stopPreview();previewControls();} };
 }

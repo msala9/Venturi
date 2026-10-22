@@ -8,27 +8,31 @@ const settle=()=>new Promise(resolve=>setImmediate(resolve));
 const job=(id,state='ready')=>({id,project_epoch:`stored:${id}`,state,program:{start_frame:12,end_frame:72,width:960,height:540,audio_present:true,export_settings:{quality:23,preset:'medium'}}});
 const terminalJob=(state='ready',extra={})=>({...job('9007199254740993',state),durable:true,export_revision:'a'.repeat(64),...extra});
 const discardCommand='123e4567-e89b-42d3-a456-426614174000';
-function harness(){
+function harness({withPreview=false,beforePreview=()=>{}}={}){
   const original={Option:globalThis.Option,fetch:globalThis.fetch,setTimeout:globalThis.setTimeout,clearTimeout:globalThis.clearTimeout};
-  const timers=new Map(),requests=[],cancellations=[];let sequence=0,focused=null;
+  const timers=new Map(),requests=[],cancellations=[];let sequence=0,focused=null,transportStops=0,previewContext={project_epoch:'current-project',generation:'7',timeline_id:'current-timeline',revision:'revision'};
   globalThis.setTimeout=(callback)=>{const id=++sequence;timers.set(id,callback);return id;};globalThis.clearTimeout=id=>timers.delete(id);
   globalThis.Option=class{constructor(text,value){this.text=text;this.value=value;}};
   globalThis.fetch=(path,options)=>{const response=deferred();cancellations.push({path,options,...response});return response.promise;};
   class Element extends EventTarget{
-    constructor(){super();this.disabled=false;this.hidden=true;this.textContent='';this.value='';this.children=[];this.href='';this.open=false;}
+    constructor(){super();this.disabled=false;this.hidden=true;this.textContent='';this.value='';this.children=[];this.href='';this.open=false;this.src='';this.currentSrc='';this.paused=true;this.error=null;this.playCalls=0;this.loadCalls=0;this.pauseCalls=0;}
     replaceChildren(...children){this.children=children;}
     dispatchEvent(event){const result=super.dispatchEvent(event);this[`on${event.type}`]?.(event);return result;}
     click(){this.dispatchEvent(new Event('click'));}
     focus(){if(!this.disabled)focused=this;}
     showModal(){this.open=true;}close(){this.open=false;this.dispatchEvent(new Event('close'));}
+    pause(){this.paused=true;this.pauseCalls++;}load(){this.loadCalls++;this.paused=true;this.error=null;}
+    removeAttribute(name){if(name==='src'){this.src='';this.currentSrc='';}}
+    play(){this.playCalls++;this.paused=false;this.currentSrc=this.src;this.dispatchEvent(new Event('play'));return Promise.resolve();}
   }
   const start=new Element(),form=new Element(),status=new Element(),cancel=new Element(),refresh=new Element(),download=new Element(),history={select:new Element(),refresh:new Element(),status:new Element()};
   const discard={button:new Element(),dialog:new Element(),summary:new Element(),status:new Element(),confirm:new Element(),keep:new Element()};
+  const preview={button:new Element(),video:new Element(),status:new Element()};
   form.querySelector=()=>start;form.elements={start:new Element(),end:new Element()};
   const saved=new Map(),storage={getItem:key=>saved.get(key) ?? null,setItem:(key,value)=>saved.set(key,value)};
-  const panel=createExportPanel({form,status,cancel,refresh,download,history,discard,uuid:()=>discardCommand,getState:()=>({end_frame:100}),storage,api:(path,body)=>{const response=deferred();requests.push({path,body,...response});return response.promise;}});
+  const panel=createExportPanel({form,status,cancel,refresh,download,history,discard,preview:withPreview?preview:null,beforePreview:()=>{transportStops++;return beforePreview();},getPreviewContext:()=>previewContext,uuid:()=>discardCommand,getState:()=>({end_frame:100}),storage,api:(path,body)=>{const response=deferred();requests.push({path,body,...response});return response.promise;}});
   function respond(path,value){const request=requests.find(request=>request.path===path && !request.responded);assert.ok(request,`Expected pending ${path}`);request.responded=true;request.resolve(value);return request;}
-  return {panel,form,status,cancel,refresh,download,history,discard,start,requests,cancellations,saved,timers,respond,focused:()=>focused,
+  return {panel,form,status,cancel,refresh,download,history,discard,preview,start,requests,cancellations,saved,timers,respond,focused:()=>focused,transportStops:()=>transportStops,setPreviewContext:value=>previewContext=value,
     async load(jobs){panel.open();respond('/exports',{jobs});await settle();},
     select(index){history.select.value=String(index);history.select.dispatchEvent(new Event('change'));},
     async prepareDiscard(value){discard.button.click();const request=requests.at(-1);assert.match(request.path,/\/exports\/[^/]+\?/);request.resolve(value);await settle();},
@@ -176,4 +180,38 @@ test('a slower earlier history refresh cannot replace a newer explicit history r
     newer.resolve({jobs:[job('export-new')]});await settle();assert.match(h.history.select.children[1].text,/export-new/);
     older.resolve({jobs:[job('export-old')]});await settle();assert.match(h.history.select.children[1].text,/export-new/);assert.equal(h.requests.length,2);assert.equal(h.timers.size,0);
   }finally{h.destroy();}
+});
+
+test('export result preview is explicit, same-origin and uses the saved export epoch without autoplay or extra API polling',async()=>{
+  const h=harness({withPreview:true});try{
+    const ready=job('saved-export');await h.load([ready]);h.select(0);assert.equal(h.preview.button.disabled,false);assert.equal(h.preview.video.src,'');assert.equal(h.preview.video.playCalls,0);assert.equal(h.transportStops(),0);
+    h.preview.button.click();await settle();assert.equal(h.preview.video.src,h.download.href);assert.match(h.preview.video.src,/^\/api\/v1\/exports\/saved-export\/export\.mp4\?project_epoch=stored%3Asaved-export$/);assert.equal(h.preview.video.hidden,false);assert.equal(h.preview.video.preload,'none');assert.equal(h.preview.video.controls,true);assert.equal(h.preview.video.autoplay,false);assert.equal(h.preview.video.playCalls,0);assert.equal(h.transportStops(),1);assert.match(h.preview.status.textContent,/use the video controls/);
+    await h.preview.video.play();await settle();assert.equal(h.transportStops(),2);assert.equal(h.preview.video.paused,false);assert.equal(h.requests.length,1);assert.equal(h.timers.size,0);
+    let stopped=0;for(const key of [' ','ArrowRight','ArrowLeft']){const event=new Event('keydown',{cancelable:true});Object.defineProperty(event,'key',{value:key});event.stopPropagation=()=>stopped++;h.preview.video.dispatchEvent(event);assert.equal(event.defaultPrevented,false);}assert.equal(stopped,3);
+  }finally{h.panel.close();h.destroy();}
+});
+
+test('late preview actions cannot attach an old selection, and closing the drawer releases its current video',async()=>{
+  const pending=deferred(),h=harness({withPreview:true,beforePreview:()=>pending.promise});try{
+    await h.load([job('export-a'),job('export-b')]);h.select(0);h.preview.button.click();assert.equal(h.preview.button.disabled,true);h.select(1);pending.resolve();await settle();assert.equal(h.preview.video.src,'');assert.equal(h.preview.video.hidden,true);
+    h.preview.button.click();await settle();assert.match(h.preview.video.src,/export-b/);const src=h.preview.video.src;
+    h.preview.video.currentSrc='/api/v1/exports/export-a/export.mp4';h.preview.video.error={code:3};h.preview.video.dispatchEvent(new Event('error'));assert.equal(h.preview.video.src,src,'An old resource error must not reset the new attachment');
+    await h.preview.video.play();await settle();const loads=h.preview.video.loadCalls;h.panel.close();assert.equal(h.preview.video.paused,true);assert.equal(h.preview.video.src,'');assert.equal(h.preview.video.hidden,true);assert.ok(h.preview.video.loadCalls>loads);assert.equal(h.preview.button.disabled,true);const stops=h.transportStops();h.preview.button.click();await settle();assert.equal(h.transportStops(),stops);assert.equal(h.preview.video.src,'');
+  }finally{pending.resolve();h.destroy();}
+});
+
+test('project context and status failures stop preview without changing the saved export reference',async()=>{
+  const h=harness({withPreview:true});try{
+    const ready=job('export-a');await h.load([ready]);h.select(0);h.preview.button.click();await settle();const reference=h.saved.get('venturi-export-job'),href=h.download.href;
+    h.setPreviewContext({project_epoch:'different-project',generation:'1',timeline_id:null,revision:null});h.panel.invalidate();assert.equal(h.preview.video.src,'');assert.equal(h.preview.video.hidden,true);assert.equal(h.saved.get('venturi-export-job'),reference);assert.equal(h.download.href,href);
+    h.preview.button.click();await settle();assert.equal(h.preview.video.src,href);h.refresh.click();h.requests.at(-1).reject(Error('Metadata unavailable'));await settle();assert.equal(h.preview.video.src,'');assert.equal(h.preview.button.disabled,true);assert.equal(h.saved.get('venturi-export-job'),reference);
+  }finally{h.panel.close();h.destroy();}
+});
+
+test('discard verification and native media failure release the result player and do not autoplay or replay a write',async()=>{
+  const h=harness({withPreview:true});try{
+    const ready=terminalJob();await h.load([ready]);h.select(0);h.preview.button.click();await settle();await h.preview.video.play();await settle();
+    await h.prepareDiscard(ready);assert.equal(h.preview.video.src,'');assert.equal(h.preview.video.paused,true);assert.equal(h.preview.button.disabled,true);const stops=h.transportStops();h.preview.button.click();await settle();assert.equal(h.transportStops(),stops);
+    h.escapeDiscard();h.preview.button.click();await settle();assert.equal(h.preview.video.src,h.download.href);h.preview.video.currentSrc=h.preview.video.src;h.preview.video.error={code:3};h.preview.video.dispatchEvent(new Event('error'));assert.equal(h.preview.video.src,'');assert.equal(h.preview.video.hidden,true);assert.match(h.preview.status.textContent,/unavailable/);assert.equal(h.requests.filter(request=>request.body).length,0);assert.equal(h.preview.video.playCalls,1);
+  }finally{h.panel.close();h.destroy();}
 });

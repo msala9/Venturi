@@ -18,6 +18,18 @@ export function folderPaths(folders) {
   }).sort((a, b) => a.path.localeCompare(b.path));
 }
 
+export function mediaRowInfo(item) {
+  const type=item.compound_timeline_id?"Timeline":item.is_image?"Still image":item.has_video?"Video":"Audio";
+  const rate=item.fps?.num/item.fps?.den;
+  const seconds=Number.isSafeInteger(item.duration_frames) && item.duration_frames>=0 && Number.isFinite(rate) && rate>0?Math.floor(item.duration_frames/rate):null;
+  const duration=item.is_image?"Still":seconds===null?"—":seconds>=3600?`${Math.floor(seconds/3600)}:${String(Math.floor(seconds/60)%60).padStart(2,"0")}:${String(seconds%60).padStart(2,"0")}`:`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;
+  const metadata=[type];
+  if(item.has_audio && (item.has_video || item.compound_timeline_id))metadata.push(item.audio_stream_count>1?`${item.audio_stream_count} audio streams`:"Audio");
+  if(!item.is_image && item.has_video && Number.isFinite(rate) && rate>0)metadata.push(`${rate.toFixed(3).replace(/\.?0+$/,"")} fps`);
+  if(item.offline)metadata.push("Offline");
+  return {metadata:metadata.join(" · "),duration,glyph:item.compound_timeline_id?"▤":item.is_image?"▣":item.has_video?"▻":"♪"};
+}
+
 export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice,onDemand=()=>{},intersectionObserver=globalThis.IntersectionObserver}) {
   root.replaceChildren();
   state.selected = (state.selected || []).filter((id) => documentState.media.some((item) => item.id === id));
@@ -30,8 +42,8 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   const kind = document.createElement("select"); kind.setAttribute("aria-label", "Media type");
   for (const [id, name] of [["all", "All types"], ["video", "Video"], ["audio", "Audio"], ["image", "Stills"], ["compound", "Timelines / compounds"], ["offline", "Offline"]]) kind.append(new Option(name, id));
   kind.value = state.kind || "all"; toolbar.append(filter, kind); root.append(toolbar);
-  const count = document.createElement("p"); count.className = "muted"; count.setAttribute("aria-live", "polite"); root.append(count);
-  const list = document.createElement("div"); list.setAttribute("role", "group"); list.setAttribute("aria-label", "Project media"); list.tabIndex=0;list.dataset.clipboardOwner='pool';root.append(list);
+  const count = document.createElement("p"); count.className = "catalog-count muted"; count.setAttribute("aria-live", "polite"); root.append(count);
+  const list = document.createElement("div"); list.className="catalog-rows";list.setAttribute("role", "group"); list.setAttribute("aria-label", "Project media"); list.tabIndex=0;list.dataset.clipboardOwner='pool';root.append(list);
   let visible = [],disposed=false;
   const intersecting=new Set(),observer=intersectionObserver?new intersectionObserver(entries=>{
     if(disposed || root.isConnected===false)return;
@@ -42,7 +54,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     const node = document.createElement("button"); node.type = "button"; node.textContent = text; node.disabled = disabled;
     node.addEventListener("click", action); parent.append(node); return node;
   };
-  const operations = document.createElement("details"), summary = document.createElement("summary"); summary.textContent = "Media and folders";
+  const operations = document.createElement("details"), summary = document.createElement("summary"); operations.className="catalog-operations";summary.textContent = "Media and folders";
   operations.open = !!state.open; operations.addEventListener("toggle", () => { state.open = operations.open; }); operations.append(summary); root.insertBefore(operations, list);
   const help = document.createElement("p"); help.className = "muted"; help.textContent = "Ctrl toggles selection; Shift selects a range. Catalog changes support Undo. Removing media keeps its clips offline and preserves source files."; operations.append(help);
   const destination = document.createElement("select"); destination.setAttribute("aria-label", "Destination folder"); destination.append(new Option("Project root", ""));
@@ -69,8 +81,8 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
       relinkForm.onsubmit = (event) => { event.preventDefault(); if (relinkForm.reportValidity()) run({kind: "relink", items: mappings.map(([media_id, select]) => ({media_id, path_token: select.value}))}); };
     } catch (error) { notice(error.message); }
   });
-  const relinkForm = document.createElement("form"); operations.append(relinkForm);
-  const form = document.createElement("form"), nameLabel = document.createElement("label"); nameLabel.className = "field"; nameLabel.textContent = "Folder name";
+  const relinkForm = document.createElement("form"); relinkForm.className="catalog-relink-form";operations.append(relinkForm);
+  const form = document.createElement("form"), nameLabel = document.createElement("label"); form.className="catalog-folder-form";nameLabel.className = "field"; nameLabel.textContent = "Folder name";
   const name = document.createElement("input"); name.required = true; name.maxLength = 128; name.disabled = !writable; nameLabel.append(name); form.append(nameLabel);
   const create = document.createElement("button"); create.textContent = "Create media folder"; create.disabled = !writable; form.append(create); operations.append(form);
   form.addEventListener("submit", (event) => { event.preventDefault(); if (form.reportValidity()) run({kind: "new_folder", name: name.value, parent: filter.value === "*" ? null : filter.value || null}); });
@@ -89,10 +101,14 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     state.folder = filter.value; state.kind = kind.value; list.replaceChildren();
     visible = documentState.media.filter((item) => (!state.query || item.name.toLowerCase().includes(state.query)) && (filter.value === "*" || (item.folder || "") === filter.value) && (kind.value === "all" || (kind.value === "compound" ? !!item.compound_timeline_id : kind.value === "offline" ? item.offline : kind.value === "image" ? item.is_image : kind.value === "audio" ? item.has_audio && !item.has_video : item.has_video && !item.is_image && !item.compound_timeline_id)));
     for (const item of visible) {
-      const card = document.createElement("button"); card.className = "media-item"; card.dataset.mediaId = item.id; card.textContent = `${item.name}${item.offline ? " · OFFLINE" : ""}`;
+      const card = document.createElement("button"); card.type="button";card.className = "media-item"; card.dataset.mediaId = item.id;card.classList.toggle("offline",!!item.offline);
+      const info=mediaRowInfo(item),thumbnailSlot=document.createElement("span"),copy=document.createElement("span"),filename=document.createElement("span"),metadata=document.createElement("small"),duration=document.createElement("span");
+      thumbnailSlot.className="catalog-thumbnail";thumbnailSlot.setAttribute("aria-hidden","true");thumbnailSlot.textContent=info.glyph;
+      copy.className="catalog-copy";filename.className="catalog-filename";filename.textContent=item.name;metadata.className="catalog-metadata";metadata.textContent=info.metadata;copy.append(filename,metadata);
+      duration.className="catalog-duration";duration.textContent=info.duration;card.title=`${item.name} · ${info.metadata} · ${info.duration}`;card.append(thumbnailSlot,copy,duration);
       card.addEventListener("click", (event) => { const selection = mediaSelection(visible, state.selected, state.anchor, item.id, {toggle: event.ctrlKey || event.metaKey, extend: event.shiftKey}); Object.assign(state, selection); update(); });
       card.addEventListener("dblclick", () => onOpen(item.id));
-      const thumbnail=mediaThumbnail(assets,item.id);if(thumbnail?.thumbnailURL){const image = document.createElement("img"); image.alt = ""; image.src = thumbnail.thumbnailURL; card.prepend(image);}
+      const thumbnail=mediaThumbnail(assets,item.id);if(thumbnail?.thumbnailURL){const image = document.createElement("img"); image.alt = ""; image.src = thumbnail.thumbnailURL;thumbnailSlot.replaceChildren(image);}
       list.append(card);
       observer?.observe(card);
     }

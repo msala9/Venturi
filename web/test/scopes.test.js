@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { scopeTarget, scopeURL, matchesScope } from "../js/scopes.js";
+import { scopeTarget, scopeURL, matchesScope, createScopes } from "../js/scopes.js";
 import { createViewer } from "../js/viewer.js";
 
-test("scopes isolate exactly one selected video target and retain integer frame identity", () => {
+test("scopes isolate the native first selected video target and retain integer frame identity", () => {
   const document = { capabilities:{scopes:true}, project_epoch:"p:1",generation:"4" };
   const timeline = { id:"2",revision:"r",tracks:[{kind:"video",clips:[{id:"3",start_frame:12,length_frames:24}]},{kind:"audio",clips:[{id:"4",start_frame:12,length_frames:24}]}] };
   const target=scopeTarget(document,timeline,["3","4"],12);
@@ -16,9 +16,90 @@ test("scopes isolate exactly one selected video target and retain integer frame 
   const url=new URL(scopeURL(state),"http://localhost");
   assert.equal(url.pathname,"/api/v1/preview/scopes/3/Waveform/Parade");
   assert.equal(url.searchParams.get("frame"),"12");assert.equal(url.searchParams.has("clip"),false);
+  assert.equal(url.searchParams.has('selection_key'),false);assert.equal(url.searchParams.has('source_version'),false);
   assert.equal(matchesScope(state,{...state}),true);
-  for(const key of ["clip","first","second","revision","if_generation","project_epoch","frame"])
+  for(const key of ["clip","first","second","revision","if_generation","project_epoch","frame","selection_key","source_version"])
     assert.equal(matchesScope(state,{...state,[key]:"changed"}),false,key);
+});
+
+test('native scope primary ordering uses lane then start then full native ClipId, including read-only locked lanes',()=>{
+  const document={capabilities:{scopes:true},project_epoch:'e:1',generation:'0',media:[{id:'50',content_hash:'9007199254740993'}]},timeline={id:'2',revision:'r',tracks:[{kind:'audio',clips:[{id:'1',start_frame:0,length_frames:100}]},{kind:'video',locked:true,clips:[{id:'9007199254740993',start_frame:12,length_frames:24,media_id:'50'},{id:'10',start_frame:0,length_frames:48},{id:'2',start_frame:0,length_frames:48}]},{kind:'video',clips:[{id:'3',start_frame:0,length_frames:48}]}]};
+  const before=JSON.stringify(timeline),selection=['3','9007199254740993','10','2','1'];
+  assert.equal(scopeTarget(document,timeline,selection,12).clip,'2');assert.equal(JSON.stringify(timeline),before);
+  assert.equal(scopeTarget(document,timeline,['3','9007199254740993'],0),null,'The first native selected video must contain the playhead; another selected active clip does not replace it');
+  const first=scopeTarget(document,timeline,['9007199254740993'],12),withAudio=scopeTarget(document,timeline,['1','9007199254740993'],12);assert.notEqual(first.selection_key,withAudio.selection_key);assert.equal(first.clip,withAudio.clip);
+  assert.notEqual(scopeTarget({...document,media:[{id:'50',content_hash:'changed'}]},timeline,['9007199254740993'],12).source_version,first.source_version);
+});
+
+function scopeHarness(t,{playing=true,decode=async()=>{}}={}){
+  const listeners=()=>{const handlers=new Map();return {addEventListener:(name,fn)=>handlers.set(name,fn),removeEventListener:(name,fn)=>{if(handlers.get(name)===fn)handlers.delete(name);},emit:name=>handlers.get(name)?.()};};
+  const image={hidden:true,src:'',decode,classList:{add(){},remove(){}}},status={textContent:''},empty={hidden:false},context={textContent:''},button=listeners(),selects=[{value:'Waveform',...listeners()},{value:'Parade',...listeners()}];
+  const panel={hidden:false,querySelector:selector=>({'img':image,'output':status,'p':empty,'[data-scope-context]':context,'button':button})[selector],querySelectorAll:()=>selects};
+  let clock=0,current={project_epoch:'p:1',if_generation:'0',timeline_id:'1',revision:'r',frame:0,width:960,clip:'3',selection_key:'["3"]',source_version:'source:1'},timerId=0;
+  const requests=[],timers=new Map();t.mock.method(globalThis,'fetch',(url,options)=>new Promise(resolve=>requests.push({url,options,resolve})));
+  const scopes=createScopes({panel,getTarget:()=>current,isPlaying:()=>playing,now:()=>clock,timers:{setTimeout:(fn,delay)=>{const id=++timerId;timers.set(id,{fn,at:clock+delay});return id;},clearTimeout:id=>timers.delete(id)}});
+  const advance=ms=>{clock+=ms;const pending=[];for(const [id,timer] of [...timers])if(timer.at<=clock){timers.delete(id);pending.push(timer.fn());}return Promise.all(pending);};
+  return {scopes,panel,image,status,context,button,selects,requests,timers,advance,current:()=>current,setTarget:value=>current=value,setFrame:frame=>current={...current,frame},setPlaying:value=>playing=value};
+}
+const png=()=>new Response(new Blob(['native PNG'],{type:'image/png'}));
+
+test('Live scopes are single-flight at four starts per second and coalesce advancing clocks without discarding their completed native frame',async t=>{
+  const h=scopeHarness(t);try{
+    const first=h.scopes.onPlaybackFrame();assert.equal(h.requests.length,1);h.advance(50);h.setFrame(4);h.scopes.onPlaybackFrame();h.advance(50);h.setFrame(8);h.scopes.onPlaybackFrame();assert.equal(h.requests.length,1);
+    h.requests[0].resolve(png());await first;assert.equal(h.image.hidden,false);assert.equal(h.status.textContent,'LIVE · native frame 0');assert.match(h.context.textContent,/timeline frame 0/);assert.match(h.context.textContent,/playhead 8/);assert.equal(h.timers.size,1);
+    h.setFrame(10);h.advance(149);assert.equal(h.requests.length,1);const second=h.advance(1);assert.equal(h.requests.length,2);assert.equal(new URL(h.requests[1].url,'http://localhost').searchParams.get('frame'),'10');
+    h.requests[1].resolve(png());await second;assert.equal(h.status.textContent,'LIVE · native frame 10');h.advance(300);h.scopes.onPlaybackFrame();assert.equal(h.requests.length,2,'A repeated presented frame needs no new native scope render');
+  }finally{h.scopes.destroy();}
+});
+
+test('a ready composition can reveal Color scopes before play without starting a stopped native render',async t=>{
+  const h=scopeHarness(t,{playing:false});try{
+    h.scopes.setVisible(false);h.scopes.setVisible(true,{defer:true});assert.equal(h.panel.hidden,false);assert.equal(h.requests.length,0);assert.equal(h.timers.size,0);assert.match(h.status.textContent,/READY/);
+    h.setPlaying(true);const first=h.scopes.onPlaybackFrame();assert.equal(h.requests.length,1);h.requests[0].resolve(png());await first;assert.equal(h.status.textContent,'LIVE · native frame 0');
+  }finally{h.scopes.destroy();}
+});
+
+test('GPU busy pauses automatic Live scopes until an explicit retry without a lock wait or retry loop',async t=>{
+  const h=scopeHarness(t);try{
+    const first=h.scopes.onPlaybackFrame();h.requests[0].resolve(Response.json({error:{code:'GPU_BUSY'}},{status:409}));await first;assert.match(h.status.textContent,/GPU_BUSY.*Live paused/);
+    for(let frame=1;frame<5;frame++){h.setFrame(frame);h.advance(300);h.scopes.onPlaybackFrame();}assert.equal(h.requests.length,1);assert.equal(h.timers.size,0);
+    const retry=h.scopes.refresh();assert.equal(h.requests.length,2);h.requests[1].resolve(png());await retry;assert.equal(h.status.textContent,'LIVE · native frame 4');
+  }finally{h.scopes.destroy();}
+});
+
+test('Live scope responses reject stale project, generation, timeline, selection and source owners',async t=>{
+  const h=scopeHarness(t);try{
+    for(const [key,value] of [['project_epoch','other:1'],['if_generation','1'],['timeline_id','2'],['revision','next'],['selection_key','["3","4"]'],['source_version','source:2']]){
+      const current=h.current(),first=h.scopes.onPlaybackFrame(),request=h.requests.at(-1);h.setTarget({...current,[key]:value});request.resolve(png());await first;assert.equal(h.image.hidden,true,key);assert.doesNotMatch(h.status.textContent,/^LIVE/);h.scopes.invalidate('CONTEXT CHANGED');h.advance(250);
+    }
+  }finally{h.scopes.destroy();}
+});
+
+test('a native scope PNG still decoding cannot attach after selection changes',async t=>{
+  let decoded,markStarted;const started=new Promise(resolve=>markStarted=resolve);const h=scopeHarness(t,{decode:()=>new Promise(resolve=>{decoded=resolve;markStarted();})});try{
+    const first=h.scopes.onPlaybackFrame();h.requests[0].resolve(png());await started;assert.equal(typeof decoded,'function');h.setTarget({...h.current(),selection_key:'["3","4"]'});decoded();await first;assert.equal(h.image.hidden,true);assert.doesNotMatch(h.status.textContent,/^LIVE/);
+  }finally{h.scopes.destroy();}
+});
+
+test('pause, hidden panels and explicit invalidation cancel pending scope ownership and scheduled work',async t=>{
+  const h=scopeHarness(t);try{
+    const first=h.scopes.onPlaybackFrame();h.setFrame(4);h.requests[0].resolve(png());await first;assert.equal(h.timers.size,1);h.setPlaying(false);h.advance(250);assert.equal(h.requests.length,1);
+    h.setPlaying(true);const second=h.scopes.onPlaybackFrame();assert.equal(h.requests.length,2);h.scopes.setVisible(false);assert.equal(h.requests[1].options.signal.aborted,true);h.requests[1].resolve(png());await second;assert.equal(h.timers.size,0);h.advance(500);h.scopes.onPlaybackFrame();assert.equal(h.requests.length,2);
+  }finally{h.scopes.destroy();}
+});
+
+test('stopped scope reads keep exact frame matching and never schedule background work',async t=>{
+  const h=scopeHarness(t,{playing:false});try{
+    const first=h.scopes.refresh();h.setFrame(1);h.requests[0].resolve(png());await first;assert.equal(h.image.hidden,true);
+    const second=h.scopes.refresh();h.requests[1].resolve(png());await second;assert.equal(h.status.textContent,'CURRENT');assert.match(h.context.textContent,/timeline frame 1/);assert.equal(h.timers.size,0);h.scopes.onPlaybackFrame();assert.equal(h.requests.length,2);
+  }finally{h.scopes.destroy();}
+});
+
+test('changing scope kind coalesces a new native request while retaining the Live start budget',async t=>{
+  const h=scopeHarness(t);try{
+    const first=h.scopes.onPlaybackFrame();h.selects[0].value='Histogram';h.selects[0].emit('change');assert.equal(h.requests.length,1);assert.equal(h.requests[0].options.signal.aborted,true);h.requests[0].resolve(png());await first;
+    h.advance(249);assert.equal(h.requests.length,1);const second=h.advance(1);assert.equal(h.requests.length,2);assert.match(h.requests[1].url,/\/Histogram\/Parade\?/);h.requests[1].resolve(png());await second;assert.equal(h.status.textContent,'LIVE · native frame 0');
+  }finally{h.scopes.destroy();}
 });
 
 test("an obsolete scope response cannot become current after selection changes",async(t)=>{

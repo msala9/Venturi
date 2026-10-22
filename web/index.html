@@ -6,33 +6,55 @@
     <title>Venturi Web</title>
     <link rel="stylesheet" href="/style/tokens.css" />
     <link rel="stylesheet" href="/style/app.css" />
+    <link rel="stylesheet" href="/style/native-shell.css" />
+    <link rel="stylesheet" href="/style/native-browser.css" />
+    <link rel="stylesheet" href="/style/native-inspector.css" />
     <script type="module" src="/js/main.js"></script>
   </head>
   <body>
-    <header>
-      <button id="projects-button" class="brand">
-        V<span>Venturi <small>WEB</small></span></button
-      ><span id="project-name">Untitled project</span
-      ><span id="save-state">No server</span>
-      <div class="spacer"></div>
-      <button id="undo" disabled title="Ctrl+Z">Undo</button
-      ><button id="redo" disabled>Redo</button
-      ><button id="save" disabled>Save</button
-      ><button id="palette-button" title="Ctrl+K">
-        Commands <kbd>Ctrl K</kbd></button
-      ><button id="export-button" class="primary">Export ↗</button>
+    <header class="app-menubar" aria-label="Application menu">
+      <details class="app-menu"><summary>File</summary><div class="menu-items">
+        <button id="projects-button">Open project… <kbd>Ctrl O</kbd></button>
+        <button id="save" disabled>Save <kbd>Ctrl S</kbd></button>
+        <button type="button" data-ui="save-as">Save as… <kbd>Ctrl Shift S</kbd></button>
+        <button id="import-button" disabled>Import media</button
+          ><hr><button id="export-button">Export… <kbd>Ctrl Shift E</kbd></button>
+      </div></details>
+      <details class="app-menu"><summary>Edit</summary><div class="menu-items">
+        <button id="undo" disabled>Undo <kbd>Ctrl Z</kbd></button><button id="redo" disabled>Redo <kbd>Ctrl Shift Z</kbd></button>
+        <button id="split" disabled title="T">Split</button
+          ><button id="delete" disabled>Delete</button
+          ><hr><div id="clipboard-menu"></div><details><summary>Media clipboard</summary><div id="media-clipboard-menu"></div></details>
+      </div></details>
+      <details class="app-menu"><summary>Timeline</summary><div class="menu-items">
+        <button id="insert-media" disabled>Insert media</button
+          ><button id="add-solid" disabled>Add solid</button
+          ><button id="open-compound" type="button" disabled title="Enter · open the selected compound timeline">Open selected compound</button><button id="close-gap" type="button" disabled title="IntlBackslash · close the selected gap on all unlocked tracks and trim overlaps using native ripple delete. Undo restores the edit.">Close selected gap</button
+          ><hr><label>Edit tool <select id="edit-tool"><option value="move">Move / trim</option><option value="slip">Slip</option></select></label><button id="retime-handles" type="button" aria-pressed="false" disabled title="Ctrl+R · toggle speed strips for selected media clips; other clips keep their controls">Selected speed handles</button><label title="Allows a speed resize to replace overlapping clips. Undo restores the edit."><input id="retime-overwrite" type="checkbox" disabled>Overwrite clips (replaces overlaps; Undo)</label
+          ><label title="Allows transition drops to replace an occupied edge or cut. Undo restores the previous transition."><input id="transition-replace" type="checkbox">Replace existing transition</label
+          >
+      </div></details>
+      <details class="app-menu"><summary>Playback</summary><div class="menu-items">
+        <button type="button" data-ui="play">Play / pause <kbd>Space</kbd></button>
+        <label title="Play 80 ms of native Program audio after a timeline seek or Source audio after a frame step; no audio during a pointer drag"><input id="audio-scrub" type="checkbox">Audio scrub</label><label>Output volume <input id="viewer-volume" type="range" min="0" max="1" step="0.01" value="1" aria-label="Viewer output volume"></label><label>Speed <select id="playback-rate" aria-label="Playback speed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label><output id="audio-scrub-status" aria-live="polite"></output><output id="fast-playback-status" aria-live="polite"></output><span id="format" class="muted">—</span>
+      </div></details>
+      <details class="app-menu"><summary>View</summary><div class="menu-items">
+        <button type="button" data-panel="Library">Library</button><button type="button" data-panel="Presets">Presets</button><button type="button" data-panel="History">History</button><hr>
+        <button type="button" data-ui="scopes">Scopes</button><button type="button" data-ui="meters">Audio meters</button><button type="button" data-ui="voiceover">Voiceover…</button>
+        <button type="button" data-ui="review">Compare takes…</button><button type="button" data-ui="annotations">Shot / Take annotations…</button>
+        <button type="button" data-ui="edit-workspace">Edit workspace</button><hr><button id="palette-button">Commands… <kbd>Ctrl K</kbd></button>
+        <details class="diagnostics-menu"><summary>Diagnostics</summary><span id="preview-cache-status" title="Timeline ruler: violet marks cached composed frames; green marks prepared composed movies. Inputs are checked when seeking and before playback.">Cache · unavailable</span><span id="gpu-status">GPU unverified</span><span id="revision">—</span><span id="recovery-status" role="status"></span><button id="demo-button">500 clip fixture</button></details>
+      </div></details>
+      <span id="project-name">Untitled project</span><span id="save-state">No server</span>
     </header>
-    <nav id="workspaces" aria-label="Workspace">
-      <button data-workspace="Edit" aria-pressed="true">Edit</button
-      ><button data-workspace="Color" aria-pressed="false">Color</button
-      ><button data-workspace="Audio" aria-pressed="false">Audio</button
-      ><button data-workspace="Review" aria-pressed="false">Review</button>
-      <div class="spacer"></div>
-      <span class="theme-note">MADROCK THEME</span>
+    <nav id="workspaces" class="native-toolbar" aria-label="Workspace and panels">
+      <button data-panel="Media" aria-selected="true" title="Media browser">▣ Media</button><button data-panel="Effects" aria-selected="false" title="Generators, filters and transitions">✦ Effects</button>
+      <button type="button" data-ui="curves">⌁ Curves</button><button data-workspace="Audio" aria-pressed="false">☷ Mixer</button><button data-workspace="Color" aria-pressed="false">◉ Color</button>
+      <div class="spacer"></div><button id="show-inspector" type="button" aria-label="Show inspector" aria-controls="inspector">☷ Properties</button>
     </nav>
     <dialog id="audio-meters-dialog" aria-labelledby="audio-meters-heading">
       <div class="tools"><h2 id="audio-meters-heading">Native audio meters</h2><button type="button" data-meter-close>Close meters</button></div>
-      <p>Reads an 85 ms window at the Program playhead, including track/master gains and effects. Browser output volume is separate. Live follows Program playback; each reading identifies its frame.</p>
+      <p>Live meters follow Program playback. Read current Program frame analyzes one static 85 ms window, including track/master gains and effects. Browser output volume is separate.</p>
       <div class="tools"><label><input type="checkbox" checked> Live during Program playback</label><button type="button" data-meter-play>Play / pause Program</button><button type="button" data-meter-refresh>Read current Program frame</button><label>Spectrum <select aria-label="Meter spectrum"><option value="">Master output</option></select></label></div>
       <div data-meter-rows></div>
       <svg viewBox="0 0 610 182" role="img" aria-label="Native audio spectrum in Hz and dBFS"></svg>
@@ -142,20 +164,7 @@
       <button type="button" data-speech-close>Close speech analysis</button>
     </dialog>
     <main id="editor" data-workspace="Edit">
-      <aside id="browser" class="panel">
-        <div class="tabs" role="tablist" aria-label="Browser">
-          <button role="tab" aria-selected="true" data-panel="Media">
-            Media</button
-          ><button role="tab" aria-selected="false" data-panel="Effects">
-            Effects</button
-          ><button role="tab" aria-selected="false" data-panel="Library">
-            Library</button
-          ><button role="tab" aria-selected="false" data-panel="Presets">
-            Presets</button
-          ><button role="tab" aria-selected="false" data-panel="History">
-            History
-          </button>
-        </div>
+      <aside id="browser" class="panel" data-browser-panel="Media"><button id="close-browser" class="drawer-close" aria-label="Close media browser">×</button>
         <div class="panel-body">
           <label class="search-label"
             >Search media<input
@@ -168,10 +177,6 @@
           </p>
           <div id="media-list" class="media-list"></div>
           <div id="panel-content" hidden></div>
-        </div>
-        <div class="panel-footer">
-          <button id="import-button" disabled>Import media</button
-          ><button id="demo-button">500 clip fixture</button>
         </div>
       </aside>
       <div
@@ -198,13 +203,13 @@
           <label class="viewer-zoom-status" for="viewer-zoom">View zoom</label><select id="viewer-zoom" aria-label="Viewer zoom" aria-describedby="viewer-zoom-status" title="View only · percentages refer to received preview pixels, not original media pixels"><option value="fit">Fit</option></select>
           <output id="viewer-zoom-status" class="muted viewer-zoom-status" aria-live="polite"></output>
           <button id="fullscreen" aria-label="Fullscreen viewer" title="Ctrl+F · fullscreen viewer">⛶</button>
-          </div>
-          <div class="viewer-tools-row" role="group" aria-label="Viewer editing tools" tabindex="0" title="Scroll horizontally for more viewer tools">
-          <button id="show-inspector" type="button" aria-label="Show inspector" aria-controls="inspector">Inspector</button>
+          <details class="viewer-options"><summary aria-label="Viewer editing tools" title="Viewer tools">•••</summary><div class="viewer-tools-row">
+
           <button id="viewer-transform" type="button" aria-pressed="false" aria-controls="screen" title="Move, scale, rotate, anchor or crop the selected clip. Animated properties create Linear keys at the current frame.">Transform</button>
           <label class="muted" for="viewer-mask-select">Mask</label><select id="viewer-mask-select" class="viewer-mask-select" aria-label="Selected viewer mask" disabled><option value="">Choose a mask</option></select>
           <button id="viewer-mask" type="button" aria-pressed="false" aria-controls="screen" title="Edit the selected mask on a current stopped Program frame. Numeric mask controls remain in the Inspector.">Mask handles</button>
           <button id="viewer-mask-pen" type="button" aria-pressed="false" aria-controls="screen" title="Draw a new Bezier mask: click vertices, drag tangents, click the first point or Enter to finish; Escape cancels.">Draw path</button>
+          </div></details>
           </div>
         </div>
         <div id="screen">
@@ -224,17 +229,17 @@
           </div>
           <span id="preview-state">PREVIEW UNAVAILABLE</span>
           <div id="program-view" hidden>
-            <video id="program-video" controls controlslist="noplaybackrate" playsinline preload="metadata" aria-label="Composed timeline playback"></video>
+            <video id="program-video" playsinline preload="metadata" aria-label="Composed timeline playback"></video>
             <div class="source-toolbar"><span id="program-status" role="status">Prepare composed timeline</span><button id="program-cancel" disabled>Cancel composition</button></div>
           </div>
           <div id="source-view" hidden>
-            <video id="source-video" controls controlslist="noplaybackrate" playsinline preload="metadata" aria-label="Source media playback"></video>
+            <video id="source-video" playsinline preload="metadata" aria-label="Source media playback"></video>
             <img id="source-image" hidden alt="Source still image">
-            <div class="source-toolbar">
+            <details class="source-options"><summary>Source options</summary><div class="source-toolbar">
               <span id="source-status" role="status">Select media and open Source</span>
               <label>Proxy quality <select id="source-quality" aria-label="Source proxy quality"><option value="low">Low · 640</option><option value="medium" selected>Medium · 960</option><option value="high">High · 1920</option></select></label>
               <button id="source-cancel" disabled>Cancel preparation</button>
-              <label>Source position (full file) <input id="source-position" type="range" min="0" max="0" step="1" value="0" disabled></label>
+
               <label>Go to source frame <input id="source-seek-frame" type="number" min="0" step="1" value="0" disabled></label>
               <button id="source-seek" disabled>Seek source</button>
               <output id="source-position-status" aria-live="polite"></output>
@@ -244,26 +249,27 @@
               <label>Source out frame (exclusive) <input id="source-out" type="number" min="1" step="1" value="1"></label>
               <button id="source-mark-in" title="I · current source frame">Set In</button>
               <button id="source-mark-out" title="O · after current source frame">Set Out</button>
-            </div>
+            </div></details>
           </div>
         </div>
-        <div id="program-marks" class="source-toolbar" aria-label="Program export marks">
-          <button id="program-mark-in" type="button" title="I · current Program frame" disabled>Set Program In</button>
-          <button id="program-mark-out" type="button" title="O · after current Program frame" disabled>Set Program Out</button>
-          <output id="program-mark-range" aria-live="polite">Open a native timeline</output>
-        </div>
+        <div class="viewer-seek"><input id="program-position" type="range" min="0" max="0" step="1" value="0" aria-label="Program position" disabled><div id="source-seek-control" hidden><label>Source position (full file) <input id="source-position" type="range" min="0" max="0" step="1" value="0" disabled></label></div></div>
         <div class="transport">
           <button id="step-back" aria-label="Previous frame">◀│</button
           ><button id="play" disabled title="Select Source for media playback">
             ▶ Play</button
           ><button id="step-forward" aria-label="Next frame">│▶</button
           ><output id="timecode">00:00:00:00</output>
-          <label title="Play 80 ms of native Program audio after a timeline seek or Source audio after a frame step; no audio during a pointer drag"><input id="audio-scrub" type="checkbox">Audio scrub</label>
-          <output id="audio-scrub-status" aria-live="polite"></output>
-          <label>Speed <select id="playback-rate" aria-label="Playback speed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label>
+
+
+
+        <div id="program-marks" class="source-toolbar" aria-label="Program export marks">
+          <button id="program-mark-in" type="button" title="I · current Program frame" disabled>I</button>
+          <button id="program-mark-out" type="button" title="O · after current Program frame" disabled>O</button>
+          <output id="program-mark-range" aria-live="polite">Open a native timeline</output>
+        </div>
           <div class="spacer"></div>
-          <span id="format" class="muted">—</span>
-          <output id="fast-playback-status" aria-live="polite"></output>
+
+
         </div>
         <div id="workspace-tools" class="workspace-tools" hidden></div>
         <section id="scopes" aria-label="Native clip scopes" hidden>
@@ -286,12 +292,12 @@
         aria-label="Inspector width"
         aria-orientation="vertical"
         aria-valuemin="220"
-        aria-valuemax="450"
-        aria-valuenow="280"
+        aria-valuemax="900"
+        aria-valuenow="320"
       ></div>
-      <aside id="inspector" class="panel">
+      <aside id="inspector" class="panel" data-inspector-tab="video">
         <div class="panel-heading">
-          <strong>Inspector</strong>
+          <div class="inspector-tabs" role="tablist" aria-label="Properties"><button type="button" data-inspector-tab="video" role="tab" aria-selected="true">Video</button><button type="button" data-inspector-tab="audio" role="tab" aria-selected="false">Audio</button><button type="button" data-inspector-tab="selection" role="tab" aria-selected="false">Selection</button></div>
           <div class="spacer"></div>
           <button id="collapse-inspector" aria-label="Collapse inspector">
             ›
@@ -313,42 +319,23 @@
         aria-valuenow="300"
       ></div>
       <section id="timeline-panel" class="panel">
-        <div class="panel-heading">
-          <select id="timeline-select" aria-label="Active timeline"></select>
-          <button id="open-compound" type="button" disabled title="Enter · open the selected compound timeline">Open selected compound</button>
-          <div class="spacer"></div>
-          <button id="insert-media" disabled>Insert media</button
-          ><button id="add-solid" disabled>Add solid</button
-          ><button id="split" disabled title="T">Split</button
-          ><button id="delete" disabled>Delete</button
-          ><button id="close-gap" type="button" disabled title="IntlBackslash · close the selected gap on all unlocked tracks and trim overlaps using native ripple delete. Undo restores the edit.">Close selected gap</button
-          ><label>Edit tool <select id="edit-tool"><option value="move">Move / trim</option><option value="slip">Slip</option></select></label><button id="snap" aria-pressed="true">Snap</button
-          ><button id="retime-handles" type="button" aria-pressed="false" disabled title="Ctrl+R · toggle speed strips for selected media clips; other clips keep their controls">Selected speed handles</button><label title="Allows a speed resize to replace overlapping clips. Undo restores the edit."><input id="retime-overwrite" type="checkbox" disabled>Overwrite clips (replaces overlaps; Undo)</label
-          ><label title="Allows transition drops to replace an occupied edge or cut. Undo restores the previous transition."><input id="transition-replace" type="checkbox">Replace existing transition</label
-          ><button id="zoom-out" aria-label="Zoom out">−</button
-          ><button id="zoom-in" aria-label="Zoom in">+</button
-          ><button id="fit">Fit</button>
-        </div>
+        <div class="panel-heading timeline-toolbar"><select id="timeline-select" aria-label="Active timeline"></select><div class="spacer"></div><button id="snap" aria-pressed="true">Snap</button
+          ><button id="zoom-out" aria-label="Zoom out">−</button><button id="zoom-in" aria-label="Zoom in">+</button><button id="fit">Fit</button><details class="timeline-list-menu"><summary>Clip list</summary><div id="clip-list" class="clip-list" aria-label="Accessible timeline clips"></div></details></div>
         <nav id="compound-breadcrumb" class="compound-breadcrumb" aria-label="Compound timeline ancestry"></nav>
         <canvas
           id="timeline"
           tabindex="0"
           aria-label="Timeline. Ctrl+A selects all unlocked clips; Alt+Y selects clips from the playhead. Arrow keys seek, Enter opens selected compounds, Alt+Left returns to the parent. T splits, Delete removes. Clip controls follow below."
         ></canvas>
-        <div
-          id="clip-list"
-          class="clip-list"
-          aria-label="Accessible timeline clips"
-        ></div>
       </section>
     </main>
     <footer>
       <span id="connection" role="status">Demo / no server</span
       ><button id="reconnect">Reconnect</button
       ><span id="notice" aria-live="polite">Local navigation ready</span>
-      <button id="recovery-button" aria-label="Recover unsaved edits" hidden>Recovery</button><span id="recovery-status" role="status"></span>
+      <button id="recovery-button" aria-label="Recover unsaved edits" hidden>Recovery</button>
       <div class="spacer"></div>
-      <span id="preview-cache-status" title="Timeline ruler: violet marks cached composed frames; green marks prepared composed movies. Inputs are checked when seeking and before playback.">Cache · unavailable</span><span id="gpu-status">GPU unverified</span><span id="revision">—</span>
+
     </footer>
     <dialog id="projects">
       <form method="dialog">

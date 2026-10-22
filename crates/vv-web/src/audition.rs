@@ -82,7 +82,7 @@ pub fn pin(mut snapshot: FrameSnapshot, files: &Files) -> Result<Task> {
     for (path, expected) in &inputs {
         let file = files.media_file(path)?;
         let identity = file_identity(&file)?;
-        if identity != *expected {
+        if crate::asset_store::stable_identity(&file)? != *expected {
             return Err(changed());
         }
         let fd_path = format!("/proc/self/fd/{}", file.as_raw_fd());

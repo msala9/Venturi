@@ -17,7 +17,7 @@ use std::{
 };
 use vv_session::export::{ExportProgress, ExportSettings};
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProgramQuery {
     pub project_epoch: String,
@@ -67,6 +67,9 @@ impl ProgramQuery {
             Some(origin) => format!("{key}:audio-origin:{origin}"),
             None => key,
         }
+    }
+    pub fn preview_key(&self) -> String {
+        format!("{}:telemetry:v1", self.key())
     }
 }
 pub struct ProgramTask {
@@ -502,12 +505,14 @@ fn identity(path: &Path) -> Result<String> {
         ));
     }
     Ok(format!(
-        "{}:{}:{}:{}:{}",
+        "{}:{}:{}:{}:{}:{}:{}",
         m.dev(),
         m.ino(),
         m.len(),
         m.mtime(),
-        m.mtime_nsec()
+        m.mtime_nsec(),
+        m.ctime(),
+        m.ctime_nsec()
     ))
 }
 pub fn inputs(snapshot: &FrameSnapshot) -> Result<Inputs> {
@@ -556,7 +561,7 @@ impl ProgramTask {
                 self.query.key(),
                 serde_json::to_string(options).unwrap()
             ),
-            None => self.query.key(),
+            None => self.query.preview_key(),
         }
     }
     pub fn validate(&self) -> Result<()> {
@@ -671,6 +676,13 @@ impl ProgramTask {
         if let Some(origin) = self.query.audio_origin_frame {
             descriptor["audio_origin_frame"] = json!(origin);
         }
+        if self.export.is_none() {
+            descriptor["telemetry"] = if settings.audio_for_timeline(tl).is_some() {
+                json!({"state":"pending"})
+            } else {
+                json!({"state":"unavailable","error":"This Program has no native audio"})
+            };
+        }
         descriptor
     }
     pub fn generate(
@@ -696,6 +708,20 @@ impl ProgramTask {
         if durable {
             settings.output_path = directory.join("rendering.mp4");
         }
+        let timeline = &self.snapshot.project.timelines[self.snapshot.timeline];
+        let sample =
+            |frame| vv_audio::mixer::timeline_frame_to_sample(frame, timeline.fps.as_f64(), 48_000);
+        let mut telemetry = if !durable && settings.audio_for_timeline(timeline).is_some() {
+            crate::audio_telemetry::Recorder::new(
+                directory,
+                timeline,
+                sample(self.query.start_frame)..sample(self.query.end_frame),
+            )
+            .ok()
+        } else {
+            None
+        };
+        let metered = telemetry.is_some();
         let result = std::thread::scope(|scope| {
             scope.spawn(|| {
                 let start = Instant::now();
@@ -718,12 +744,21 @@ impl ProgramTask {
             });
             let _done = MonitorDone(&done);
             retry_software_render(cancel, || {
+                let mut observe =
+                    |range, samples: &[f32], snapshot: &vv_audio::mixer::MixSnapshot| {
+                        if let Some(recorder) = &mut telemetry {
+                            recorder.observe(range, samples, snapshot);
+                        }
+                    };
                 self.preview.export_program(
                     &self.snapshot,
                     self.query.end_frame,
                     &settings,
                     progress,
                     cancel,
+                    metered.then_some(
+                        &mut observe as &mut vv_session::audio_render::AudioObserver<'_>,
+                    ),
                 )
             })
         });
@@ -750,6 +785,9 @@ impl ProgramTask {
                 "SOURCE_CHANGED",
                 "Media changed during Program generation",
             ));
+        }
+        if let Some(recorder) = telemetry {
+            let _ = recorder.finish();
         }
         Ok(())
     }

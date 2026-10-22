@@ -64,6 +64,21 @@ test('empty, nonfinite and unchanged numeric Apply never substitutes zero or sen
   const h=harness(t);for(const value of ['', '  ', 'bad', 'Infinity','0'])h.apply('PositionX',value);await settle();assert.deepEqual(h.commands,[]);
 });
 
+test('compact numeric editing commits on completion, keeps typing local and shares the guarded Enter flight',async t=>{
+  let finish;const h=harness(t,{commit:()=>new Promise(resolve=>{finish=resolve;})}),input=h.field('PositionX');
+  input.value='12';input.dispatchEvent(new Event('input'));await settle();assert.deepEqual(h.commands,[]);
+  input.dispatchEvent(new Event('change'));input.parent.parent.dispatchEvent(new Event('submit',{cancelable:true}));await settle();
+  assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0].edit,{action:'transform',parameters:[{param:'PositionX',value:12}]});
+  finish();await settle();h.setFrame(21);input.value='15';input.dispatchEvent(new Event('change'));await settle();assert.equal(h.commands.length,1);assert.match(h.notices.at(-1),/changed/);
+});
+
+test('compact Inspector preserves collapsed crop actions, accessible key navigation and native reset groups',async t=>{
+  const h=harness(t),groups=h.all().filter(node=>node.className==='inspector-property-group');
+  assert.equal(groups.find(node=>node.children[0].textContent==='Transform').open,true);assert.equal(groups.find(node=>node.children[0].textContent==='Crop').open,false);
+  assert.equal(h.field('Toggle Position keyframes at playhead').textContent,'◆');assert.equal(h.field('Previous Position keyframe').textContent,'‹');assert.equal(h.field('Reset crop').textContent,'↺');
+  h.click('Reset crop');await settle();assert.deepEqual(h.commands[0].edit,{action:'reset_transform',params:['CropLeft','CropTop','CropRight','CropBottom','CropSoftness'],reset_flip:false});
+});
+
 test('linked Zoom edit sends only changed axes, while native row diamond always includes both axes',async t=>{
   const h=harness(t);const link=h.field('Link selected Zoom X/Y');link.checked=true;link.dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands,[]);
   h.apply('ZoomY','1.5');await settle();

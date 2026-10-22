@@ -7,6 +7,7 @@ mod asset_probe;
 mod asset_store;
 mod audio;
 mod audio_presets;
+mod audio_telemetry;
 mod audition;
 mod autosave;
 mod catalog;

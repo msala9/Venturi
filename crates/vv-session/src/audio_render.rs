@@ -36,6 +36,10 @@ const READER_QUEUE: usize = 64;
 /// Rendered before every segment of a measure: the loudness filters settle
 /// in it, the true peak interpolates from it.
 const WARM_UP_FRAMES: u64 = PROJECT_SAMPLE_RATE as u64 / 4;
+pub const OBSERVER_FRAMES: u64 = 4096;
+pub const MAX_OBSERVER_INSERTS: usize = 4;
+/// Insert spectra retain cross-snapshot history up to `MAX_OBSERVER_INSERTS`.
+pub type AudioObserver<'a> = dyn FnMut(Range<u64>, &[f32], &MixSnapshot) + Send + 'a;
 
 /// Hands `sink` the mix of the timeline audio frames `range`, in order, at
 /// `PROJECT_SAMPLE_RATE`/`PROJECT_CHANNELS`; `Break` stops the render.
@@ -106,6 +110,50 @@ pub fn render_offline_metered(
     sink: impl FnMut(&[f32], &MixSnapshot) -> ControlFlow<()>,
 ) -> Result<(), ExportError> {
     render_with_meters(project, Mix::Timeline(timeline), range, levels, true, sink)
+}
+
+/// Observers receive prefix hops for spectrum history; only `sink` receives `range`.
+pub fn render_offline_observed(
+    project: &Project,
+    timeline: &Timeline,
+    range: Range<u64>,
+    origin: u64,
+    levels: &mut LevelCache,
+    observer: &mut AudioObserver<'_>,
+    mut sink: impl FnMut(&[f32]) -> ControlFlow<()>,
+) -> Result<(), ExportError> {
+    if origin > range.start || range.start > range.end {
+        return Err(ExportError::Failed("invalid audio render origin".into()));
+    }
+    let mut at = origin;
+    let channels = PROJECT_CHANNELS as usize;
+    let cancel = levels.cancel.clone();
+    render_configured(
+        project,
+        Mix::Timeline(timeline),
+        origin..range.end,
+        levels,
+        true,
+        Some(observer),
+        |chunk, _| {
+            let frames = (chunk.len() / channels) as u64;
+            let skip = range.start.saturating_sub(at).min(frames) as usize * channels;
+            at += frames;
+            if skip == chunk.len() {
+                ControlFlow::Continue(())
+            } else {
+                sink(&chunk[skip..])
+            }
+        },
+    )?;
+    if cancel
+        .as_ref()
+        .is_some_and(|flag| flag.load(Ordering::Relaxed))
+    {
+        Err(ExportError::Cancelled)
+    } else {
+        Ok(())
+    }
 }
 
 /// The level `analysis` describes, from the measures of its segments:
@@ -391,12 +439,50 @@ fn render_with_meters(
     range: Range<u64>,
     levels: &mut LevelCache,
     metered: bool,
+    sink: impl FnMut(&[f32], &MixSnapshot) -> ControlFlow<()>,
+) -> Result<(), ExportError> {
+    render_configured(project, mix, range, levels, metered, None, sink)
+}
+
+fn drain_observation_meters(snapshot: &MixSnapshot) {
+    let _ = snapshot.meters.master().take();
+    for (track, channel) in snapshot.tracks.iter().enumerate() {
+        if let Some(peak) = snapshot.meters.track(track) {
+            let _ = peak.take();
+        }
+        for index in 0..channel.inserts.len() {
+            if let Some(meter) = snapshot
+                .meters
+                .band_meter(vv_core::MixerChannel::Track(track), index)
+            {
+                let _ = meter.take();
+            }
+        }
+    }
+    for index in 0..snapshot.master.inserts.len() {
+        if let Some(meter) = snapshot
+            .meters
+            .band_meter(vv_core::MixerChannel::Master, index)
+        {
+            let _ = meter.take();
+        }
+    }
+}
+
+fn render_configured(
+    project: &Project,
+    mix: Mix,
+    range: Range<u64>,
+    levels: &mut LevelCache,
+    metered: bool,
+    mut observer: Option<&mut AudioObserver<'_>>,
     mut sink: impl FnMut(&[f32], &MixSnapshot) -> ControlFlow<()>,
 ) -> Result<(), ExportError> {
     let ch = PROJECT_CHANNELS as usize;
     let mut audio = StreamingAudio::new(levels);
     let mut state: Option<MixState> = None;
     let mut out = Vec::new();
+    let mut previous_meters = None;
     let mut at = range.start;
     while at < range.end {
         if audio.cache.cancelled() {
@@ -404,20 +490,53 @@ fn render_with_meters(
         }
         let chunk = at..(at + CHUNK_FRAMES).min(range.end);
         let last = chunk.end == range.end;
-        let snapshot = audio.snapshot(project, mix, chunk.clone(), last)?;
+        let mut snapshot = audio.snapshot(project, mix, chunk.clone(), last)?;
+        if let Some(previous) = &previous_meters {
+            snapshot.meters.keep_spectra_of(previous);
+        }
         let mut next = MixState::new(&snapshot);
         if let Some(previous) = &state {
             next.continue_from(previous);
         }
         let state = state.insert(next);
         out.resize((chunk.end - chunk.start) as usize * ch, 0.0);
-        if metered {
+        if let Some(observe) = &mut observer {
+            for (index, part) in out.chunks_mut(OBSERVER_FRAMES as usize * ch).enumerate() {
+                if audio.cache.cancelled() {
+                    return Err(ExportError::Cancelled);
+                }
+                let start = chunk.start + index as u64 * OBSERVER_FRAMES;
+                let end = start + (part.len() / ch) as u64;
+                mix_range_metered(&snapshot, state, start, part);
+                observe(start..end, part, &snapshot);
+                drain_observation_meters(&snapshot);
+            }
+        } else if metered {
             mix_range_metered(&snapshot, state, chunk.start, &mut out);
         } else {
             mix_range_from(&snapshot, state, chunk.start, &mut out);
         }
         if sink(&out, &snapshot).is_break() {
             return Ok(());
+        }
+        if observer.is_some() {
+            let spectra = snapshot
+                .tracks
+                .iter()
+                .chain([&snapshot.master])
+                .flat_map(|channel| &channel.inserts)
+                .filter(|insert| {
+                    matches!(
+                        insert,
+                        vv_audio::mixer::Insert::Eq(_) | vv_audio::mixer::Insert::Compressor(_)
+                    )
+                })
+                .count();
+            previous_meters = if spectra <= MAX_OBSERVER_INSERTS {
+                Some(std::mem::take(&mut snapshot.meters))
+            } else {
+                None
+            };
         }
         at = chunk.end;
     }

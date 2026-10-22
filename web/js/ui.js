@@ -10,10 +10,11 @@ export function installSplitter(
   property,
   initial,
   direction = 1,
+  {storageKey=property} = {},
 ) {
   let value = initial;
   try {
-    value = Number(localStorage.getItem(property)) || initial;
+    value = Number(localStorage.getItem(storageKey)) || initial;
   } catch {}
   const min = Number(element.getAttribute("aria-valuemin"));
   const max = Number(element.getAttribute("aria-valuemax"));
@@ -22,7 +23,7 @@ export function installSplitter(
     editor.style.setProperty(property, `${value}px`);
     element.setAttribute("aria-valuenow", value);
     try {
-      localStorage.setItem(property, value);
+      localStorage.setItem(storageKey, value);
     } catch {}
   };
   set(value);

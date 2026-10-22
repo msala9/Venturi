@@ -1,5 +1,9 @@
 import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons,paneScrollbars } from "./geometry.js";
 import {sourceAssetKey,mediaThumbnail} from '../source-assets.js';
+export function timelineTimecode(frame,fps){
+  const nominal=Math.max(1,Math.round(fps.num/fps.den)),value=Math.max(0,Math.round(frame));
+  return [Math.floor(value/(nominal*3600)),Math.floor(value/(nominal*60))%60,Math.floor(value/nominal)%60,value%nominal].map(part=>String(part).padStart(2,'0')).join(':');
+}
 export function visibleAssetDemand(timeline,view,width,height){
   if(!timeline || width<=HEADER || height<=RULER)return [];
   const layout=timelineLayout(timeline,view,height),[first,last]=visibleRange(width,view,timeline.fps),entries=new Map();
@@ -80,10 +84,10 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
             view,
             timeline.fps,
           ));
-        ctx.fillStyle = clip.display_rgb ? `rgb(${clip.display_rgb.join(",")})` : track.kind === "audio" ? "#285247" : "#383554";
+        ctx.fillStyle = clip.display_rgb ? `rgb(${clip.display_rgb.join(",")})` : track.kind === "audio" ? "#62b38f" : "#5e90bc";
         ctx.fillRect(x + 1, top + 2, Math.max(1,right-x-2), rowHeight - 4);
         ctx.strokeStyle = view.selection.includes(clip.id)
-          ? color("--primary")
+          ? "#eeeeee"
           : color("--border");
         ctx.strokeRect(x + 0.5, top + 2.5, Math.max(2,right-x)-1, rowHeight - 5);
         ctx.fillStyle = color("--violet");
@@ -103,21 +107,22 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         if (asset?.waveform && track.kind === "audio") {
           const { peaks, duration_seconds: duration } = asset.waveform;
           const fps = asset.fps.num / asset.fps.den;
-          ctx.strokeStyle = "#70c8a8";
+          ctx.strokeStyle = "#dcf4e7";
           ctx.beginPath();
           for (let px = Math.max(x, HEADER); px < Math.min(right, width); px += 2) {
             const fraction = (px - x) / (right - x);
             const seconds = (clip.source_in_frames + fraction * (clip.source_out_frames - clip.source_in_frames)) / fps;
             const peak = peaks[Math.floor(seconds / duration * peaks.length)] || 0;
-            ctx.moveTo(px, top + 42 - peak * 12);
-            ctx.lineTo(px, top + 42 + peak * 12);
+            ctx.moveTo(px, top + rowHeight*.58 - peak * Math.min(12,(rowHeight-18)/2));
+            ctx.lineTo(px, top + rowHeight*.58 + peak * Math.min(12,(rowHeight-18)/2));
           }
           ctx.stroke();
         }
-        ctx.fillStyle = color("--text");
-        ctx.fillText(clip.name || `Clip ${clip.id}`, x + 9, top + 24);
-        ctx.fillStyle = color("--muted");
-        ctx.fillText(
+        const darkLabel=clip.display_rgb && clip.display_rgb[0]*.299+clip.display_rgb[1]*.587+clip.display_rgb[2]*.114<110;
+        ctx.fillStyle = darkLabel?"#eeeeee":"#121212";
+        ctx.fillText(clip.name || `Clip ${clip.id}`, x + 9, top + Math.min(24,rowHeight*.35));
+        ctx.fillStyle = darkLabel?"#dddddd":"#202020";
+        if(rowHeight>=60)ctx.fillText(
           `${clip.length_frames} fr${clip.linked_group !== null ? " · linked" : ""}`,
           x + 9,
           top + 41,
@@ -244,7 +249,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       frame += step
     ) {
       const x = frameToX(frame, view, timeline.fps);
-      ctx.fillText(`${frame}f`, x + 4, 14);
+      ctx.fillText(timelineTimecode(frame,timeline.fps), x + 4, 14);
       ctx.fillRect(x, 18, 1, 6);
     }
     for (const original of timeline.markers || []) {

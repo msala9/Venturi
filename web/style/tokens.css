@@ -1,23 +1,23 @@
-/* Proposed MadRock-inspired values. Not claimed as exact official brand CSS. */
+/* Native editor palette and compact workspace dimensions. */
 :root {
   color-scheme: dark;
-  --bg: #0b090e;
-  --surface: #19131d;
-  --raised: #251c29;
-  --border: #3a2c40;
-  --text: #f5eff5;
-  --muted: #b9aaba;
-  --primary: #ff673d;
+  --bg: #191919;
+  --surface: #202020;
+  --raised: #303030;
+  --border: #404040;
+  --text: #eeeeee;
+  --muted: #ababab;
+  --primary: #dc7029;
   --pink: #ff2d8d;
   --violet: #9b59ff;
   --amber: #ffad45;
   --danger: #ff6274;
   --success: #7bcd9b;
   --spacing-unit: 4px;
-  --radius-sm: 5px;
-  --header-height: 44px;
-  --toolbar-height: 36px;
-  --status-height: 26px;
+  --radius-sm: 2px;
+  --header-height: 24px;
+  --toolbar-height: 26px;
+  --status-height: 20px;
   --track-header-width: 150px;
   --font-ui: "Segoe UI", system-ui, -apple-system, sans-serif;
 }

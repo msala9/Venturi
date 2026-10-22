@@ -1,5 +1,18 @@
 # UX/UI specification — professional NLE with AI review
 
+## Owner reference update — 2026-10-22
+
+The five original-editor screenshots supplied by the owner take precedence over
+the earlier exploratory workspace styling below. Match their compact menu and
+panel hierarchy, neutral charcoal/orange palette, media rows, contextual
+Video/Audio/Selection properties and dominant central Viewer. Ordinary editing
+must not reserve rows for a command catalog, diagnostics, clipboard operations
+or all advanced timeline policies. Those actions remain reachable in menus and
+collapsible sections. Media/Properties resize independently; narrow embedded
+browser widths use explicit drawers instead of horizontal overflow. Existing
+functional, accessibility and session-preservation requirements remain.
+
+
 ## Core objective
 
 Port the **capability surface** of the native Venturi UI, not its exact pixel layout. Keep Edit, Color, Audio and Review workspaces; keep editing engine and undo authoritative in Rust. The browser must never pretend to have applied an edit that the server rejected. A user should know *where* a tool is even when its underlying server integration is not complete.

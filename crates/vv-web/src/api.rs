@@ -183,6 +183,7 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/preview/program/{job}/program.mp4",
             get(program_asset),
         )
+        .route("/api/v1/preview/program/{job}/meters", get(program_meters))
         .route("/api/v1/diagnostics", get(diagnostics))
         .route("/api/v1/media/{id}/prepare", post(prepare_source))
         .route(
@@ -198,6 +199,84 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ProgramMetersQuery {
+    project_epoch: String,
+    if_generation: String,
+    timeline_id: String,
+    revision: String,
+    start_frame: i64,
+    end_frame: i64,
+    width: u32,
+    #[serde(default)]
+    audio_origin_frame: Option<i64>,
+    #[serde(default)]
+    from_bin: u64,
+    #[serde(default = "meter_page_limit")]
+    limit: u32,
+    insert_channel: Option<String>,
+    insert_index: Option<usize>,
+}
+fn meter_page_limit() -> u32 {
+    64
+}
+impl ProgramMetersQuery {
+    fn parts(self) -> Result<(ProgramQuery, u64, u32, Option<crate::audition::InsertQuery>)> {
+        if !(1..=64).contains(&self.limit) {
+            return Err(ApiError::invalid(
+                "Choose between 1 and 64 audio telemetry bins",
+            ));
+        }
+        let insert = match (self.insert_channel, self.insert_index) {
+            (None, None) => None,
+            (Some(channel), Some(index))
+                if (channel == "master"
+                    || channel
+                        .parse::<usize>()
+                        .is_ok_and(|value| value < 128 && value.to_string() == channel))
+                    && index < 32 =>
+            {
+                Some(crate::audition::InsertQuery { channel, index })
+            }
+            _ => {
+                return Err(ApiError::invalid(
+                    "Choose a native audio insert channel and index together",
+                ));
+            }
+        };
+        Ok((
+            ProgramQuery {
+                project_epoch: self.project_epoch,
+                if_generation: self.if_generation,
+                timeline_id: self.timeline_id,
+                revision: self.revision,
+                start_frame: self.start_frame,
+                end_frame: self.end_frame,
+                audio_origin_frame: self.audio_origin_frame,
+                width: self.width,
+            },
+            self.from_bin,
+            self.limit,
+            insert,
+        ))
+    }
+}
+async fn program_meters(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<ProgramMetersQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let (query, from, limit, insert) = query
+        .map_err(|_| ApiError::invalid("Invalid prepared Program audio telemetry query"))?
+        .0
+        .parts()?;
+    state.host.call(Action::CheckFrame(query.frame())).await?;
+    state
+        .source
+        .program_meters(&job, &query, from, limit, insert.as_ref())
+        .map(Json)
 }
 async fn audio_meters(
     State(state): State<AppState>,
@@ -1866,6 +1945,10 @@ async fn assets(request: Request) -> Response {
         "/" => asset!("/web/index.html", "text/html; charset=utf-8"),
         "/style/tokens.css" => asset!("/web/style/tokens.css", "text/css"),
         "/style/app.css" => asset!("/web/style/app.css", "text/css"),
+        "/style/native-shell.css" => asset!("/web/style/native-shell.css", "text/css"),
+        "/style/native-browser.css" => asset!("/web/style/native-browser.css", "text/css"),
+        "/style/native-inspector.css" => asset!("/web/style/native-inspector.css", "text/css"),
+
         "/js/main.js" => asset!("/web/js/main.js", "text/javascript"),
         "/js/compound-navigation.js" => asset!("/web/js/compound-navigation.js", "text/javascript"),
         "/js/project-view.js" => asset!("/web/js/project-view.js", "text/javascript"),

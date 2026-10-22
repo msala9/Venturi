@@ -29,6 +29,21 @@ fn web_audio_origin_invalid_lineage_is_rejected_before_encoder_or_compositor_cre
             )
             .is_err()
         );
+        assert!(
+            export_timeline_with_gpu_observed(
+                &project,
+                id,
+                &settings,
+                5..10,
+                &progress,
+                &cancel,
+                || panic!("invalid observed origin must not create a compositor"),
+                |_| Ok(()),
+                1,
+                &mut |_, _, _| panic!("invalid observed origin must not publish telemetry")
+            )
+            .is_err()
+        );
     }
     settings.audio_render_origin = Some(0);
     assert!(

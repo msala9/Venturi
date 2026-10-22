@@ -357,6 +357,13 @@ impl MediaJobs {
                             match published {
                                 Ok(()) => {
                                     job.state = "ready";
+                                    if job.program_query.is_some()
+                                        && let Some(descriptor) = &mut job.descriptor
+                                        && descriptor["audio_present"].as_bool() == Some(true)
+                                    {
+                                        descriptor["telemetry"] = crate::audio_telemetry::descriptor(&directory)
+                                            .unwrap_or_else(|_| json!({"state":"unavailable","error":"Prepared audio telemetry is unavailable"}));
+                                    }
                                     job.bytes = directory_bytes(&directory);
                                     job.touch();
                                 }
@@ -619,6 +626,7 @@ impl MediaJobs {
                 && ((j.key == key && !matches!(j.state, "failed" | "canceled"))
                     || (task.export.is_none()
                         && j.state == "ready"
+                        && j.key.ends_with(":telemetry:v1")
                         && j.program_query
                             .as_ref()
                             .is_some_and(|range| range.contains(&task.query))))
@@ -737,7 +745,7 @@ impl MediaJobs {
         let mut jobs = self.jobs.lock().unwrap();
         let job = jobs
             .iter_mut()
-            .find(|j| j.id == id && j.key == query.key())
+            .find(|j| j.id == id && (j.key == query.preview_key() || j.key == query.key()))
             .ok_or_else(ApiError::missing)?;
         if !cancel && !program::unchanged(&job.inputs) {
             return Err(ApiError::conflict(
@@ -867,7 +875,7 @@ impl MediaJobs {
         let mut jobs = self.jobs.lock().unwrap();
         let job = jobs
             .iter_mut()
-            .find(|j| j.id == id && j.key == query.key())
+            .find(|j| j.id == id && (j.key == query.preview_key() || j.key == query.key()))
             .ok_or_else(ApiError::missing)?;
         if job.state != "ready" {
             return Err(ApiError::conflict(
@@ -884,6 +892,48 @@ impl MediaJobs {
         let file = open_cache_asset(&job.directory.join("program.mp4"))?;
         job.touch();
         Ok(file)
+    }
+    pub fn program_meters(
+        &self,
+        id: &str,
+        query: &ProgramQuery,
+        from_bin: u64,
+        limit: u32,
+        insert: Option<&crate::audition::InsertQuery>,
+    ) -> Result<Value> {
+        if !(1..=64).contains(&limit)
+            || insert.is_some_and(|value| value.channel.len() > 20 || value.index >= 32)
+        {
+            return Err(ApiError::invalid(
+                "Choose a bounded prepared audio telemetry page",
+            ));
+        }
+        let mut jobs = self.jobs.lock().unwrap();
+        let job = jobs
+            .iter_mut()
+            .find(|job| {
+                job.id == id
+                    && (job.key == query.preview_key() || job.key == query.key())
+                    && job.program_query.is_some()
+            })
+            .ok_or_else(ApiError::missing)?;
+        if job.state != "ready" {
+            return Err(ApiError::conflict(
+                "PROGRAM_NOT_READY",
+                "Wait for composed preview preparation",
+            ));
+        }
+        if !program::unchanged(&job.inputs) {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Media changed since Program preparation",
+            ));
+        }
+        let mut page = crate::audio_telemetry::read(&job.directory, from_bin, limit, insert)?;
+        page["job_id"] = json!(id);
+        page["query"] = serde_json::to_value(query).map_err(|_| ApiError::io())?;
+        job.touch();
+        Ok(page)
     }
     fn authorized<'a>(
         jobs: &'a mut VecDeque<Job>,

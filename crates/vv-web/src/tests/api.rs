@@ -2269,6 +2269,50 @@ fn native_asset_folder_edits_reuse_library_operation_and_require_strict_folder_a
 #[tokio::test]
 async fn embedded_editor_module_imports_are_served_with_javascript_mime() {
     use std::collections::{HashSet, VecDeque};
+    let editor = assets(Request::builder().uri("/").body(Body::empty()).unwrap()).await;
+    assert_eq!(editor.status(), StatusCode::OK);
+    let html = to_bytes(editor.into_body(), 512 * 1024).await.unwrap();
+    let html = std::str::from_utf8(&html).unwrap();
+    let stylesheets: Vec<_> = html
+        .split("<link")
+        .skip(1)
+        .filter_map(|tag| {
+            let attributes = tag.split('>').next()?;
+            if !attributes.contains("rel=\"stylesheet\"") {
+                return None;
+            }
+            attributes.split_once("href=\"")?.1.split('"').next()
+        })
+        .collect();
+    for expected in [
+        "/style/native-shell.css",
+        "/style/native-browser.css",
+        "/style/native-inspector.css",
+    ] {
+        assert!(
+            stylesheets.contains(&expected),
+            "Missing native editor stylesheet: {expected}"
+        );
+    }
+    for path in stylesheets {
+        assert!(
+            path.starts_with("/style/") && path.ends_with(".css"),
+            "Unexpected stylesheet path: {path}"
+        );
+        let response = assets(Request::builder().uri(path).body(Body::empty()).unwrap()).await;
+        assert_eq!(
+            response.status(),
+            StatusCode::OK,
+            "Missing embedded stylesheet: {path}"
+        );
+        assert_eq!(
+            response.headers()[header::CONTENT_TYPE],
+            "text/css",
+            "Wrong stylesheet MIME: {path}"
+        );
+        let body = to_bytes(response.into_body(), 256 * 1024).await.unwrap();
+        assert!(!body.is_empty(), "Empty embedded stylesheet: {path}");
+    }
     let mut queue = VecDeque::from(["/js/main.js".to_owned()]);
     let mut seen = HashSet::new();
     while let Some(path) = queue.pop_front() {
@@ -2319,4 +2363,47 @@ async fn embedded_editor_module_imports_are_served_with_javascript_mime() {
     }
     assert!(seen.contains("/js/project-view.js"));
     assert!(seen.contains("/js/timeline/input.js"));
+}
+
+#[test]
+fn prepared_audio_telemetry_query_is_strict_bounded_and_retains_origin() {
+    let body = json!({"project_epoch":"p:1","if_generation":"7","timeline_id":"1","revision":"r","start_frame":120,"end_frame":240,"width":960,"audio_origin_frame":0});
+    let parsed: ProgramMetersQuery = serde_json::from_value(body.clone()).unwrap();
+    let (query, from, limit, insert) = parsed.parts().unwrap();
+    assert_eq!(query.audio_origin_frame, Some(0));
+    assert_eq!((from, limit), (0, 64));
+    assert!(insert.is_none());
+    let mut with_insert = body.clone();
+    with_insert["insert_channel"] = json!("master");
+    with_insert["insert_index"] = json!(2);
+    let (_, _, _, insert) = serde_json::from_value::<ProgramMetersQuery>(with_insert.clone())
+        .unwrap()
+        .parts()
+        .unwrap();
+    assert_eq!(insert.unwrap().index, 2);
+    for patch in [
+        json!({"limit":0}),
+        json!({"limit":65}),
+        json!({"insert_channel":"master"}),
+        json!({"insert_index":0}),
+        json!({"insert_channel":"01","insert_index":0}),
+        json!({"insert_channel":"128","insert_index":0}),
+        json!({"insert_channel":"0","insert_index":32}),
+    ] {
+        let mut invalid = body.clone();
+        for (key, value) in patch.as_object().unwrap() {
+            invalid[key] = value.clone();
+        }
+        assert!(
+            serde_json::from_value::<ProgramMetersQuery>(invalid)
+                .unwrap()
+                .parts()
+                .is_err()
+        );
+    }
+    for (key, value) in [("fps", json!({"num":24,"den":1})), ("from_bin", json!(-1))] {
+        let mut invalid = body.clone();
+        invalid[key] = value;
+        assert!(serde_json::from_value::<ProgramMetersQuery>(invalid).is_err());
+    }
 }

@@ -1,19 +1,24 @@
-# Remaining native audio runtime gaps
+# Native audio runtime and remaining acceptance
 
-Source audit, 2026-10-22. These are production behavior gaps, separate from
-physical microphone, output-device and latency qualification.
+Candidate implementation, 2026-10-22. The native/component gate passes with
+the reference UI integration; actual Windows workflow and device qualification
+remain open. These changes are not yet deployed to the delivered editor.
 
-- `web/js/audio-meters.js` polls independent native meter windows. Each call to
-  `audition::Task::meters` starts a new 4096-sample render and DSP state; it does
-  not consume the continuous Program render's peaks, insert spectra or compressor
-  state. The native mixer consumes continuous `MixMeters` readings with decay.
-  Window readings must remain labeled as such until bounded telemetry follows
-  the actual Program job, audio origin and attached playback clock.
-- `web/js/voiceover.js` finishes a take on Program video `pause` or `ended`.
-  This includes window handoffs and a short remaining cached window. Capture has
-  no coordinated hold/resume protocol. Ignoring those events while continuing
-  microphone capture would include preparation time and misalign the take.
-  Retained takes, native encoding, explicit placement and Undo already exist.
+Program preparation now observes the same native PCM sent to its encoder,
+retaining DSP state from the Play origin. Bounded sidecars contain continuous
+track/master peaks, master spectrum and supported insert readings. Live meters
+follow the verified attached Program job and absolute audio clock, with native
+peak decay/hold. Read current Program frame remains a separately labeled static
+85 ms analysis window. Telemetry failure never changes the encoded movie or
+silently substitutes independent windows for Live readings.
+
+Voiceover now holds and resumes its existing capture across native Program
+window boundaries and buffering. A cumulative native sample ceiling prevents
+recording preparation waits. Held capture does not finalize the take; explicit
+Stop, final EOF or context failure retains and saves the captured part. Existing
+300-second/64 MiB bounds, native encoding, explicit placement and Undo remain.
+Recording past these bounds is not supported. Physical microphone permission,
+input disconnect, monitoring/output and latency acceptance remain open.
 
 The Normalize form follows the native unit boundary: Sample Peak and True Peak
 retain a custom dBFS target; transitions to or from Loudness use the destination

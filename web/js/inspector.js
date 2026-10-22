@@ -4,6 +4,15 @@ import {renderCurves,createZoomLink,zoomParameters} from "./curves.js";
 import {renderEventKeys} from "./eventkeys.js";
 import {renderKeySelection} from "./keyselection.js";
 
+export function inspectorGroup(section,group){
+  if(!['video','audio','selection'].includes(group))throw Error('Choose an Inspector group');
+  section.setAttribute('data-inspector-group',group);return section;
+}
+function inspectorHelp(parent,note,label='Editing this selection'){
+  const help=document.createElement('details'),summary=document.createElement('summary');help.className='inspector-help';summary.textContent=label;help.append(summary,note);parent.append(help);
+}
+function compactReset(button){button.className='inspector-reset';button.title=button.getAttribute?.('aria-label') || button.textContent;button.textContent='↺';return button;}
+
 export function detailIdentity(state) {
   return state ? [state.project_epoch, state.generation, state.timeline, state.revision, state.clip, state.frame,state.key_page].join(":") : null;
 }
@@ -29,10 +38,10 @@ export function compoundSelectionOperation(clip_ids,name,mode='native'){
   if(!Array.isArray(clip_ids) || !clip_ids.length || clip_ids.length>4096 || clip_ids.some(id=>typeof id!=='string' || !id) || new Set(clip_ids).size!==clip_ids.length || typeof name!=='string' || !name.trim() || !['native','keep_track_audio_mix'].includes(mode))throw Error('Choose a current clip selection, compound name and grouping mode');
   return {kind:mode==='native'?'make_native_compound':'make_compound',clip_ids:[...clip_ids],name};
 }
-export function renderBlendMatte(root,detail,{selection,getSelection,canInteract,commit,notice,primaryName=''}){
+export function renderBlendMatte(root,detail,{selection,getSelection,canInteract,commit,notice,primaryName='',visualState}){
   if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || !detail.video || detail.locked)return;
   const captured=structuredClone(selection),identity=JSON.stringify(captured),section=document.createElement('details'),summary=document.createElement('summary'),note=document.createElement('p');
-  section.open=true;summary.textContent='Selected video compositing';note.className='muted';note.textContent=`Values from ${primaryName || 'the first selected video clip'} · changes apply to ${captured.clip_ids.length} selected unlocked video clip${captured.clip_ids.length===1?'':'s'}.`;section.append(summary,note);
+  inspectorGroup(section,'video');section.setAttribute('data-visual-path','selected-compositing');section.className='inspector-compositing';section.open=visualState?.get('selected-compositing') ?? false;summary.textContent='Blending';note.className='muted';note.textContent=`Values from ${primaryName || 'the first selected video clip'} · changes apply to ${captured.clip_ids.length} selected unlocked video clip${captured.clip_ids.length===1?'':'s'}.`;section.append(summary);inspectorHelp(section,note);
   let waiting=false;
   const current=()=>root.isConnected!==false && canInteract() && JSON.stringify(getSelection())===identity;
   const controls=[];
@@ -55,7 +64,7 @@ const CROP_ROWS=[['Crop left',['CropLeft']],['Crop right',['CropRight']],['Crop 
 const CROP_PARAMS=['CropLeft','CropTop','CropRight','CropBottom','CropSoftness'];
 function selectedPropertyControls(root,detail,{selection,getSelection,frame,getFrame,canInteract,canNavigate=canInteract,commit,notice,seek},video){
   if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || detail.video!==video || detail.locked || !Number.isSafeInteger(frame) || frame<0)return null;
-  const captured=structuredClone(selection),identity=JSON.stringify(captured),controls=[],section=document.createElement('details');section.open=true;
+  const captured=structuredClone(selection),identity=JSON.stringify(captured),controls=[],section=inspectorGroup(document.createElement('details'),video?'video':'audio');section.open=true;section.className='inspector-selected';
   if(getFrame()!==frame || JSON.stringify(getSelection())!==identity)return null;
   let waiting=false,outcomeUnknown=false;
   const owns=()=>root.isConnected!==false && section.isConnected!==false && getFrame()===frame && JSON.stringify(getSelection())===identity;
@@ -70,10 +79,10 @@ function selectedPropertyControls(root,detail,{selection,getSelection,frame,getF
     waiting=true;sync();
     return Promise.resolve().then(()=>{if(!current())throw Error('Inspector selection changed; read its current properties before editing');return commit(operation);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;notice(error.message);}).finally(()=>{waiting=false;sync();});
   };
-  const button=(label,edit,parent,available=()=>true)=>{const node=register(document.createElement('button'),available);node.type='button';node.textContent=label;node.setAttribute('aria-label',label);node.addEventListener('click',()=>{if(available())submit(typeof edit==='function'?edit():edit);});parent.append(node);return node;};
+  const button=(label,edit,parent,available=()=>true)=>{const node=register(document.createElement('button'),available);node.type='button';node.textContent=label;node.setAttribute('aria-label',label);node.addEventListener('click',()=>{if(available())submit(typeof edit==='function'?edit():edit);});parent.append(node);if(label.startsWith('Reset '))compactReset(node);return node;};
   const localButton=(label,frame,parent)=>{
     const node=register(document.createElement('button'),()=>typeof seek==='function' && Number.isSafeInteger(frame) && frame>=0,true);node.type='button';node.textContent=label;node.setAttribute('aria-label',label);
-    node.addEventListener('click',()=>{if(!waiting && !outcomeUnknown && navigationCurrent() && typeof seek==='function' && Number.isSafeInteger(frame) && frame>=0)seek(frame);});parent.append(node);
+    node.addEventListener('click',()=>{if(!waiting && !outcomeUnknown && navigationCurrent() && typeof seek==='function' && Number.isSafeInteger(frame) && frame>=0)seek(frame);});parent.append(node);return node;
   };
   const heading=document.createElement('summary');heading.textContent=video?'Selected video properties':'Selected audio gain';section.append(heading);
   root.append(section);
@@ -81,38 +90,40 @@ function selectedPropertyControls(root,detail,{selection,getSelection,frame,getF
 }
 function selectedNumber(parent,label,parameter,controls,apply){
   const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));
-  form.className='property-row';field.className='field';field.textContent=label;
+  form.className='property-row inspector-number';field.className='field';field.textContent=/^(Zoom|Position|Anchor)[XY]$/.test(label)?label.slice(-1):label;
   input.type='number';input.step=parameter.step ?? 'any';input.required=true;input.value=parameter.value;input.min=parameter.min;input.max=parameter.max;input.setAttribute('aria-label',label);field.append(input);
-  const button=controls.register(document.createElement('button'));button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(field,button);
-  form.addEventListener('submit',event=>{event.preventDefault();const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && form.reportValidity())apply(value);});parent.append(form);
+  const button=controls.register(document.createElement('button'));button.className='inspector-number-apply';button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(field,button);
+  const complete=()=>{const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && form.reportValidity())apply(value);};
+  form.addEventListener('submit',event=>{event.preventDefault();complete();});input.addEventListener('change',complete);parent.append(form);
   return input;
 }
 function keyDiamond(parent,label,parameters,controls,edit){
-  const button=controls.button(`Toggle ${label} keyframes at playhead`,edit,parent);button.textContent='◆';
+  const keys=document.createElement('span');keys.className='inspector-key-controls';parent.append(keys);
+  const button=controls.button(`Toggle ${label} keyframes at playhead`,edit,keys);button.textContent='◆';button.title=`Toggle ${label} keyframes at playhead`;
   const known=parameters.every(parameter=>typeof parameter.keyframe_info?.on_keyframe==='boolean');
   if(known)button.setAttribute('aria-pressed',String(parameters.some(parameter=>parameter.keyframe_info.on_keyframe)));
   const previous=known?parameters.map(parameter=>parameter.keyframe_info.previous_frame).filter(Number.isSafeInteger):[],next=known?parameters.map(parameter=>parameter.keyframe_info.next_frame).filter(Number.isSafeInteger):[];
-  controls.localButton(`Previous ${label} keyframe`,previous.length?Math.max(...previous):null,parent);
-  controls.localButton(`Next ${label} keyframe`,next.length?Math.min(...next):null,parent);
+  const previousButton=controls.localButton(`Previous ${label} keyframe`,previous.length?Math.max(...previous):null,keys);previousButton.textContent='‹';previousButton.title=`Previous ${label} keyframe`;
+  const nextButton=controls.localButton(`Next ${label} keyframe`,next.length?Math.min(...next):null,keys);nextButton.textContent='›';nextButton.title=`Next ${label} keyframe`;
 }
 export function renderSelectedVideoProperties(root,detail,options){
   const rows=[...TRANSFORM_ROWS,...CROP_ROWS,['Opacity',['Opacity']]],parameters=new Map(detail.transform?.map(parameter=>[parameter.param,parameter]));
   if(rows.some(([,params])=>params.some(param=>!Number.isFinite(parameters.get(param)?.value))) || !Array.isArray(detail.flip) || detail.flip.length!==2 || detail.flip.some(value=>typeof value!=='boolean'))return;
   const controls=selectedPropertyControls(root,detail,options,true);if(!controls)return;
   const {section}=controls,zoomLink=options.zoomLink || createZoomLink(options.visualState),note=document.createElement('p');note.className='muted';
-  note.textContent=`Values from ${options.primaryName || 'the first selected video clip'} · edits apply to ${options.selection.clip_ids.length} selected unlocked video clip${options.selection.clip_ids.length===1?'':'s'}. Apply changes a constant default or writes a native key at each clip's clamped playhead. Position moves by the same delta; other axes use the shown value.`;section.append(note);
+  note.textContent=`Values from ${options.primaryName || 'the first selected video clip'} · edits apply to ${options.selection.clip_ids.length} selected unlocked video clip${options.selection.clip_ids.length===1?'':'s'}. Apply changes a constant default or writes a native key at each clip's clamped playhead. Position moves by the same delta; other axes use the shown value.`;inspectorHelp(section,note);
   function group(label,groupRows,resetFlip=false){
-    const group=document.createElement('details'),heading=document.createElement('summary');group.open=true;heading.textContent=label;group.append(heading);section.append(group);
+    const group=document.createElement('details'),heading=document.createElement('summary');group.dataset.visualPath=`selected-property:${label}`;group.open=options.visualState?.get(group.dataset.visualPath) ?? label==='Transform';group.className='inspector-property-group';heading.textContent=label;group.append(heading);section.append(group);
     const groupParams=label==='Crop'?CROP_PARAMS:groupRows.flatMap(([,params])=>params);
-    if(label!=='Opacity')controls.button(`Reset ${label.toLowerCase()}`,{action:'reset_transform',params:groupParams,reset_flip:resetFlip},group);
+    if(label!=='Opacity')controls.button(`Reset ${label.toLowerCase()}`,{action:'reset_transform',params:groupParams,reset_flip:resetFlip},heading);
     for(const [rowLabel,params] of groupRows){
-      const row=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent=rowLabel;row.append(legend);group.append(row);
+      const row=document.createElement('div'),legend=document.createElement('span');row.className='inspector-axis-row';legend.className='inspector-row-label';legend.textContent=rowLabel==='Zoom'?'Scale':rowLabel==='Anchor'?'Pivot':rowLabel;row.append(legend);group.append(row);
       for(const param of params)selectedNumber(row,param,parameters.get(param),controls,value=>{
         const changed=zoomParameters(param,zoomLink.get()).filter(axis=>parameters.get(axis).value!==value).map(param=>({param,value}));
         if(changed.length)controls.submit({action:'transform',parameters:changed});
       });
       if(rowLabel==='Zoom'){
-        const field=document.createElement('label'),link=controls.register(document.createElement('input'));link.type='checkbox';link.setAttribute('aria-label','Link selected Zoom X/Y');zoomLink.register(link);field.append(link,' Link Zoom X/Y');row.append(field);
+        const field=document.createElement('label'),link=controls.register(document.createElement('input'));field.className='inspector-zoom-link';field.title='Link Zoom X/Y';link.type='checkbox';link.setAttribute('aria-label','Link selected Zoom X/Y');zoomLink.register(link);field.append(link,'↔');row.append(field);
         link.addEventListener('change',()=>{if(link.checked && parameters.get('ZoomY').value!==parameters.get('ZoomX').value)controls.submit({action:'transform',parameters:[{param:'ZoomY',value:parameters.get('ZoomX').value}]});});
       }
       keyDiamond(row,rowLabel,params.map(param=>parameters.get(param)),controls,{action:'toggle_transform_keys',params});
@@ -122,7 +133,7 @@ export function renderSelectedVideoProperties(root,detail,options){
   }
   const transform=group('Transform',TRANSFORM_ROWS,true);
   for(const [axis,label] of [[0,'Flip horizontal'],[1,'Flip vertical']]){
-    const button=controls.button(label,{action:'flip',axis,enabled:!detail.flip[axis]},transform);button.setAttribute('aria-pressed',String(detail.flip[axis]));
+    const button=controls.button(label,{action:'flip',axis,enabled:!detail.flip[axis]},transform);button.textContent=axis?'↕':'↔';button.title=label;button.setAttribute('aria-pressed',String(detail.flip[axis]));
   }
   controls.button('Reset flip',{action:'reset_transform',params:[],reset_flip:true},transform);
   group('Crop',CROP_ROWS);
@@ -132,7 +143,7 @@ export function renderSelectedVideoProperties(root,detail,options){
 export function renderSelectedAudioGain(root,detail,options){
   if(!Number.isFinite(detail.gain?.value))return;
   const controls=selectedPropertyControls(root,detail,options,false);if(!controls)return;
-  const note=document.createElement('p');note.className='muted';note.textContent=`Values from ${options.primaryName || 'the first selected audio clip'} · edits apply to ${options.selection.clip_ids.length} selected unlocked audio clip${options.selection.clip_ids.length===1?'':'s'}. Apply changes a constant default or writes a native gain key at each clip's clamped playhead.`;controls.section.append(note);
+  const note=document.createElement('p');note.className='muted';note.textContent=`Values from ${options.primaryName || 'the first selected audio clip'} · edits apply to ${options.selection.clip_ids.length} selected unlocked audio clip${options.selection.clip_ids.length===1?'':'s'}. Apply changes a constant default or writes a native gain key at each clip's clamped playhead.`;inspectorHelp(controls.section,note);
   selectedNumber(controls.section,'Selected gain dB',{...detail.gain,min:-100,max:30},controls,value=>{if(value!==detail.gain.value)controls.submit({action:'gain',value});});
   keyDiamond(controls.section,'gain',[detail.gain],controls,{action:'toggle_gain_key'});
   controls.button('Reset gain',{action:'reset_gain'},controls.section);
@@ -144,10 +155,10 @@ export function titleSelectionPatch(before,after){
 export function renderSelectedVideoEffects(root,detail,options){
   const controls=selectedPropertyControls(root,detail,options,true);if(!controls)return [];
   const {section}=controls;section.children[0].textContent='Selected video effects';
-  const note=document.createElement('p');note.className='muted';note.textContent=`Values from ${options.primaryName || 'the first selected video clip'}. Title and Solid controls follow this primary type; edits affect only matching selected clips. Filter parameters affect selected clips already carrying that filter. Rust chooses defaults or keys at each clip's clamped playhead.`;section.append(note);
-  const group=label=>{const node=document.createElement('details'),summary=document.createElement('summary');node.open=true;summary.textContent=label;node.append(summary);section.append(node);return node;};
+  const note=document.createElement('p');note.className='muted';note.textContent=`Values from ${options.primaryName || 'the first selected video clip'}. Title and Solid controls follow this primary type; edits affect only matching selected clips. Filter parameters affect selected clips already carrying that filter. Rust chooses defaults or keys at each clip's clamped playhead.`;inspectorHelp(section,note);
+  const group=label=>{const node=document.createElement('details'),summary=document.createElement('summary');node.dataset.visualPath=`selected-effects:${label}`;node.open=options.visualState?.get(node.dataset.visualPath) ?? !label.includes('background');node.className='inspector-property-group';summary.textContent=label;node.append(summary);section.append(node);return node;};
   function colorRow(parent,label,value,apply){
-    const form=document.createElement('form'),fields={};form.className='property-row';
+    const form=document.createElement('form'),fields={};form.className='property-row inspector-color-row';
     for(const axis of ['r','g','b','a']){const field=document.createElement('label'),input=controls.register(document.createElement('input'));field.className='field';field.textContent=`${label} ${axis.toUpperCase()}`;input.type='number';input.min=0;input.max=1;input.step='any';input.required=true;input.value=value[axis];input.setAttribute('aria-label',field.textContent);fields[axis]=input;field.append(input);form.append(field);}
     const button=controls.register(document.createElement('button'));button.textContent=`Apply ${label}`;button.setAttribute('aria-label',button.textContent);form.append(button);
     form.addEventListener('submit',event=>{event.preventDefault();const rgba=Object.fromEntries(Object.entries(fields).map(([axis,input])=>[axis,Number(input.value)]));if(Object.values(fields).every(input=>String(input.value).trim()) && Object.values(rgba).every(value=>Number.isFinite(value) && value>=0 && value<=1) && form.reportValidity() && JSON.stringify(rgba)!==JSON.stringify(value))apply(rgba);});parent.append(form);
@@ -220,11 +231,11 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   let waiting=false;
   const guardedCommit=async operation=>{if(waiting || disabled || root.isConnected===false || section.isConnected===false || !canInteract())return;waiting=true;try{await Promise.resolve();if(root.isConnected===false || section.isConnected===false || !canInteract())return;return await commit(operation);}finally{waiting=false;}};
   const report = (operation) => guardedCommit(operation).catch((error) => notice(error.message));
-  const section = document.createElement("details"); section.open = true;
+  const section = document.createElement("details");section.dataset.visualPath='clip-properties';section.open = visualState?.get(section.dataset.visualPath) ?? (transformControls || gainControls);section.className='inspector-advanced';
   const heading = document.createElement("summary"); heading.textContent = transformControls && gainControls ? "Properties and keyframes" : "Clip properties and key editors"; section.append(heading);
   const note = document.createElement("p"); note.className = "muted";
   note.textContent = `Native evaluation at timeline frame ${detail.timeline_frame} / source frame ${detail.source_frame}. ${transformControls && gainControls?'Apply sets the default; ◆ writes at the playhead.':'Fade lengths remain local to this clip. Dedicated key and curve editors below use this clip’s source frames.'}`;
-  section.append(note);
+  inspectorHelp(section,note,'Clip evaluation and key editors');
   const refresh = document.createElement("button"); refresh.textContent = "Read at playhead"; refresh.addEventListener("click", reload); section.append(refresh);
   const interpolation = document.createElement("select"); interpolation.setAttribute("aria-label", "Keyframe interpolation");
   for (const name of ["Linear", "Hold", "EaseInOut", "EaseIn", "EaseOut"]) interpolation.append(new Option(name, name));
@@ -296,7 +307,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
 export function renderRetime(root,detail,disabled,getFrame,report,openState,canInteract=()=>true,{selection,getSelection,frame=getFrame(),labelControls=true,speedControls=true,notice=()=>{}}={}) {
   if(selection && (!selection.clip_ids?.length || selection.clip_ids[0]!==detail.clip_id || !detail.retime || detail.locked))return;
   const captured=selection?structuredClone(selection):null,identity=JSON.stringify(captured),ids=captured?.clip_ids || [detail.clip_id],controls=[];
-  const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.visualPath=labelControls && !speedControls?"clip-label":"retime";section.open=openState?.get(section.dataset.visualPath) || false;summary.textContent=labelControls?(speedControls?"Speed, freeze and clip label":"Clip label"):"Selected media speed and freeze";section.append(summary);
+  const section=inspectorGroup(document.createElement("details"),'selection'),summary=document.createElement("summary");section.dataset.visualPath=labelControls && !speedControls?"clip-label":"retime";section.open=openState?.get(section.dataset.visualPath) || false;summary.textContent=labelControls?(speedControls?"Speed, freeze and clip label":"Clip label"):"Selected media speed and freeze";section.append(summary);
   let waiting=false,outcomeUnknown=false;
   const current=()=>!disabled && root.isConnected!==false && section.isConnected!==false && canInteract() && getFrame()===frame && (!captured || JSON.stringify(getSelection?.())===identity);
   const sync=()=>{for(const control of controls)control.disabled=waiting || outcomeUnknown || !current();};
@@ -307,7 +318,7 @@ export function renderRetime(root,detail,disabled,getFrame,report,openState,canI
     waiting=true;sync();
     return Promise.resolve().then(()=>{if(!current())throw Error('Media selection changed; read its current speed before editing');return report(operation);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;notice(error.message);}).finally(()=>{waiting=false;sync();});
   };
-  if(captured){const note=document.createElement('p');note.className='muted';note.textContent=`Values from the first selected media clip · edits apply to ${ids.length} selected unlocked media clip${ids.length===1?'':'s'} and their native linked groups. Freeze clamps the playhead separately to each clip; Undo restores the edit.`;section.append(note);}
+  if(captured){const note=document.createElement('p');note.className='muted';note.textContent=`Values from the first selected media clip · edits apply to ${ids.length} selected unlocked media clip${ids.length===1?'':'s'} and their native linked groups. Freeze clamps the playhead separately to each clip; Undo restores the edit.`;inspectorHelp(section,note);}
   if(labelControls){
     const color=register(document.createElement("select"));color.setAttribute("aria-label","Clip display color");color.append(new Option("Default",""));
     for (const name of detail.display_colors) color.append(new Option(name,name));color.value=detail.display_color || "";

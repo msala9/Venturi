@@ -27,6 +27,24 @@ currently code df50859. Do not disturb the protected port-8790 editor or its
 five unsaved MoveClips operations and Undo history. Re-read every live editor's
 state before deployment; the owner may have begun new work in the candidate.
 
+## Current owner priority — native UI and UX
+
+2026-10-22: the owner supplied five screenshots of the original editor and
+identified poor space use, excessive always-visible controls and a small Viewer.
+Complete this cross-cutting interface block before further isolated feature
+qualification. Preserve the full F1–F7 scope and all existing editing behavior.
+
+Use a compact File/Edit/Timeline/Playback/View menu, native panel toolbar,
+neutral dark palette, compact media rows and Video/Audio/Selection properties.
+Give the video the main central area; put advanced operations in contextual
+menus or collapsible sections. Keep the timeline below the Viewer/Properties
+and the media browser at the side. At narrow browser widths, use explicit
+side drawers without horizontal page overflow. Preserve accessible controls,
+keyboard actions, drafts and native command ownership. Qualify the actual
+Windows browser at desktop sizes and its observed 544-pixel side-panel width,
+then guard any delivered-service upgrade against unsaved work. Build/render
+checks remain on bounded halo2; no new browser installation or local server.
+
 ## Delivery blocks
 
 Current integration checkpoint (2026-10-22): selected Title/Solid/Filter controls

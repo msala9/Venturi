@@ -21,9 +21,10 @@ async function seekMedia(video, seconds, signal, beforeSeek = () => {}) {
   signal.throwIfAborted();beforeSeek(seconds);video.currentTime=seconds;
   await wait("seeked",()=>!video.seeking);
 }
-export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onCache, beforeWindowChange = () => {}, isInternalSeek = () => false, isInternalPause = () => false, api = request, fetcher = fetch, timers = globalThis }) {
+export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onUserPause, onCache, beforeWindowChange = () => {}, isInternalSeek = () => false, isInternalPause = () => false, api = request, fetcher = fetch, timers = globalThis }) {
   let sequence = 0, controller = null, query = null, jobURL = null, state = "stopped", monitor = null, frameCallback = null, suspended = true, presented = 0, cached = null;
   let playbackIntent = false, attached = null, startingPlayback = false, seekingTarget = null, ignoredPauses=0, handoffPause=false;
+  let recordingHold=null,recordingStopped=null;
   const currentState=expected=>getState(undefined,expected?.audio_origin_frame);
   const originMatches=(job,expected)=>expected.audio_origin_frame===undefined || job.program?.audio_origin_frame===expected.audio_origin_frame;
   const setState = (next) => { if(next!=="ready")stopMonitor(); state = next; cancel.disabled = next === "stopped"; cancel.textContent = next === "preparing" ? "Cancel preparation" : "Stop playback"; onState(next); };
@@ -31,7 +32,39 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     const previous=monitor;monitor=null;
     if(previous){timers.clearTimeout(previous.timer);previous.controller.abort();}
   }
-  function pauseLocal() {
+  const ownsAttachment=()=>state==='ready' && attached?.seq===sequence && attached.src===video.src && sameComposition(query,currentState(query));
+  function clockFrame(seconds=video.currentTime){
+    if(!query || !Number.isFinite(seconds) || seconds<0)return null;
+    return Math.max(query.start_frame,Math.min(query.end_frame-1,query.start_frame+Math.floor((seconds+1e-6)*query.fps.num/query.fps.den)));
+  }
+  function telemetryTarget(){
+    if(!ownsAttachment() || video.seeking || typeof attached.jobId!=='string' || !attached.jobId || !Number.isFinite(video.currentTime) || video.currentTime<0)return null;
+    const start=Math.round(query.start_frame*48000*query.fps.den/query.fps.num),end=Math.round(query.end_frame*48000*query.fps.den/query.fps.num);
+    const terminal=video.ended || video.currentTime>=(query.end_frame-query.start_frame)*query.fps.den/query.fps.num;
+    const sample=terminal?end:Math.max(start,Math.min(end-1,start+Math.floor(video.currentTime*48000)));
+    if(!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || !Number.isSafeInteger(sample) || end<=start)return null;
+    const requestQuery=Object.fromEntries(['project_epoch','if_generation','timeline_id','revision','start_frame','end_frame','width','audio_origin_frame'].filter(key=>query[key]!==undefined).map(key=>[key,query[key]]));
+    return {job_id:attached.jobId,query:requestQuery,sample,playing:!video.paused && !suspended && playbackIntent};
+  }
+  function recordingClock(){
+    const live=value=>sameComposition(value,currentState(value));
+    if(recordingHold && state==='preparing' && playbackIntent && live(query))return {...recordingHold,state:(video.playbackRate ?? 1)===1?'holding':'stopped',sequence};
+    if(!ownsAttachment())return recordingStopped && live(query)?{...recordingStopped,sequence}:null;
+    const position=telemetryTarget();if(!position)return null;
+    const start=Math.round(query.start_frame*48000*query.fps.den/query.fps.num),end=Math.round(query.end_frame*48000*query.fps.den/query.fps.num);
+    const atEnd=position.sample===end;
+    const next=atEnd && playbackIntent?getState(query.end_frame,query.audio_origin_frame):null;
+    const continuation=next && validRange(next) && sameComposition(query,next) && next.start_frame===query.end_frame;
+    const speed=video.playbackRate ?? 1;
+    const clockState=!playbackIntent || speed!==1 || atEnd && !continuation?'stopped':atEnd || video.paused || suspended?'holding':'playing';
+    return {state:clockState,project_epoch:query.project_epoch,generation:query.if_generation,timeline_id:query.timeline_id,revision:query.revision,
+      audio_origin_frame:query.audio_origin_frame ?? query.start_frame,window_start_sample:start,window_end_sample:end,sample:position.sample,sequence};
+  }
+  function pauseLocal({notify=false,reason='pause'}={}) {
+    const recording=recordingClock();recordingStopped=recording?{...recording,state:'stopped'}:null;recordingHold=null;
+    const frame=notify && playbackIntent && !suspended && ownsAttachment() && !video.seeking && !isInternalSeek()?clockFrame():null;
+    const playback=notify && reason==='ended'?telemetryTarget():null;
+    const owner=attached,pausedQuery=query,seq=sequence;
     const preparing=state==='preparing';
     playbackIntent = false;
     suspended = true;
@@ -43,6 +76,10 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     pauseMedia();
     if (frameCallback !== null && video.cancelVideoFrameCallback) video.cancelVideoFrameCallback(frameCallback);
     frameCallback = null;
+    if(frame!==null && attached===owner && query===pausedQuery && sequence===seq && ownsAttachment() && video.paused && typeof onUserPause==='function'){
+      onUserPause({frame,query:pausedQuery,reason,playback,isCurrent:()=>attached===owner && query===pausedQuery && sequence===seq && ownsAttachment()});return true;
+    }
+    return false;
   }
   function pauseMedia(){if(video.paused)return;ignoredPauses++;video.pause();}
   function stop() {
@@ -60,8 +97,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   }
   function present(seconds = video.currentTime) {
     if (suspended || !query || !sameComposition(query, currentState(query))) return;
-    const fps = query.fps.num / query.fps.den;
-    onFrame(Math.max(query.start_frame, Math.min(query.end_frame - 1, query.start_frame + Math.floor((seconds + 1e-6) * fps))));
+    const frame=clockFrame(seconds);if(frame!==null)onFrame(frame);
   }
   function scheduleFrame() {
     if (suspended || state!=="ready" || !attached || !video.requestVideoFrameCallback || video.paused || frameCallback !== null) return;
@@ -116,7 +152,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     // inside play(), but the browser can deliver that owned pause event later.
     const atEnd=video.ended || (Number.isFinite(video.duration) && video.duration>0 && video.currentTime>=video.duration-1e-6);
     if(!internal && !handoffPause && state==='preparing')pauseLocal();
-    else if(!internal && state==="ready" && !startingPlayback && !atEnd){playbackIntent=false;suspended=true;}
+    else if(!internal && !handoffPause && state==="ready" && !startingPlayback && !atEnd)pauseLocal({notify:true});
     metrics();
   });
   video.addEventListener("seeking",()=>{
@@ -132,7 +168,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     if(!sameComposition(query,currentState(query))){fail("STALE_REVISION · reconnect before playback");return;}
     present();
     const next=getState(query.end_frame,query.audio_origin_frame);
-    if(!next){playbackIntent=false;suspended=true;status.textContent="End of timeline";return;}
+    if(!next){status.textContent="End of timeline";pauseLocal({notify:true,reason:'ended'});return;}
     if(!sameComposition(query,next) || next.start_frame!==query.end_frame || !validRange(next)){
       fail("Program window changed · prepare again");return;
     }
@@ -142,7 +178,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   video.addEventListener("error", () => {
     if (video.error!==null && video.getAttribute("src")) { cached=null;pauseLocal();status.textContent = "Program media unavailable or changed · prepare again"; setState("failed"); }
   });
-  cancel.addEventListener("click", () => {stop();onStop?.();});
+  cancel.addEventListener("click", () => {if(!pauseLocal({notify:true,reason:'stop'})){stop();onStop?.();}});
   function fail(message) {
     cached=null;pauseLocal();status.textContent=message;setState("failed");onError?.(message);
   }
@@ -154,7 +190,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     if(!sameComposition(owner.current,currentState(owner.current))){fail("STALE_REVISION · reconnect before playback");return false;}
     return true;
   }
-  async function attach(owner, range, url, src, message, rollover) {
+  async function attach(owner, range, url, src, message, rollover, jobId) {
     if(!validRange(range) || range.start_frame>owner.current.start_frame || range.end_frame<owner.current.end_frame || !Number.isSafeInteger(range.fps?.num) || range.fps.num<=0 || !Number.isSafeInteger(range.fps?.den) || range.fps.den<=0)throw new Error("Invalid composed preview range");
     // Stop the old fast-audio tail before changing the movie. Internal pauses in
     // this hook cannot revoke the intent that owns this preparation.
@@ -169,19 +205,22 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       await seekMedia(video,(owner.current.start_frame-range.start_frame)*range.fps.den/range.fps.num,owner.signal,value=>{seekingTarget=value;});
     } finally { if(owner.seq===sequence)seekingTarget=null; }
     if(!live(owner))return;
-    attached={seq:owner.seq,src:video.src};
-    cached={query,url:jobURL,src:video.src};
-    setState("ready");status.textContent=message;monitorDocument(owner.seq);suspended=false;
+    attached={seq:owner.seq,src:video.src,jobId};
+    cached={query,url:jobURL,src:video.src,jobId};
+    recordingHold=null;recordingStopped=null;
+    setState("ready");
+    if(!live(owner) || !ownsAttachment())return;
+    status.textContent=message;monitorDocument(owner.seq);suspended=false;
     if(rollover)present();
     startingPlayback=true;
     queueMicrotask(()=>{if(owner.seq===sequence)startingPlayback=false;});
     try { await video.play(); }
-    catch(error) { if(live(owner) && error.name!=="AbortError"){playbackIntent=false;suspended=true;status.textContent+=" · press Play";} }
+    catch(error) { if(live(owner) && error.name!=="AbortError"){playbackIntent=false;suspended=true;status.textContent+=" · press Play";onState(state);} }
     finally { if(owner.seq===sequence)startingPlayback=false; }
   }
   async function toggle() {
     if (state === "preparing") { stop(); return; }
-    if (state === "ready" && !video.paused && sameComposition(query, currentState(query))) { pauseLocal(); return; }
+    if (state === "ready" && !video.paused && sameComposition(query, currentState(query))) { pauseLocal({notify:true}); return; }
     stop();
     const current = getState();
     if (!current) return;
@@ -189,7 +228,9 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     await prepare(current,false);
   }
   async function prepare(current,rollover) {
+    const recording=rollover?recordingClock():null;
     const seq = ++sequence;
+    recordingHold=recording?.state==='holding'?{...recording,sequence:seq}:null;recordingStopped=null;
     stopMonitor();controller?.abort();attached=null;jobURL=null;suspended=true;startingPlayback=false;seekingTarget=null;
     controller = new AbortController();
     const signal = controller.signal;
@@ -204,7 +245,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
         if (checked?.state === "ready") {
           if(!originMatches(checked,current))throw new Error("Program audio origin changed · prepare again");
           if (!live(owner)) return;
-          await attach(owner,cached.query,cached.url,cached.src,"CACHED COMPOSED PREVIEW · inputs verified",rollover);
+          await attach(owner,cached.query,cached.url,cached.src,"CACHED COMPOSED PREVIEW · inputs verified",rollover,cached.jobId);
           return;
         }
         if (!response.ok && ![404,409].includes(response.status)) throw new Error("Cannot validate the cached composition");
@@ -231,12 +272,12 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       if (job.state !== "ready") throw new Error(job.error === "PREVIEW_STORAGE_PRESSURE" ? "Preview stopped to preserve scratch disk space · free space before preparing again" : job.error === "GPU_BUSY" ? "GPU_BUSY · retry after the inference workload releases the GPU" : job.error === "RENDER_BUSY" ? "The CPU compositor is preparing another job · wait or cancel it" : (job.error || `Composition ${job.state}`));
       const range={...prepared,fps:job.program.fps};
       const src=`/api/v1/preview/program/${encodeURIComponent(job.id)}/program.mp4?${new URLSearchParams(prepared)}`;
-      await attach(owner,range,jobURL,src,`${reused ? "CACHED " : ""}COMPOSED PREVIEW · ${job.program.width}×${job.program.height} · revision ${current.revision.slice(0,8)}`,rollover);
+      await attach(owner,range,jobURL,src,`${reused ? "CACHED " : ""}COMPOSED PREVIEW · ${job.program.width}×${job.program.height} · revision ${current.revision.slice(0,8)}`,rollover,job.id);
       if(!live(owner))return;
       onCache?.();
     } catch (error) {
       if (seq === sequence && !signal.aborted && error.name !== "AbortError") fail(error.message);
     }
   }
-  return { toggle, stop, pauseLocal, state: () => state, range: () => query };
+  return { toggle, stop, pauseLocal, telemetryTarget, recordingClock, state: () => state, range: () => query };
 }

@@ -1,5 +1,84 @@
 use super::*;
 
+#[test]
+fn prepared_meter_pages_require_exact_job_origin_ready_state_and_source_witness_without_rendering()
+{
+    let jobs = MediaJobs::start().unwrap();
+    let directory = jobs.root.join("meter-legacy");
+    std::fs::create_dir(&directory).unwrap();
+    std::fs::write(directory.join("program.mp4"), b"legacy-frozen-output").unwrap();
+    let query = ProgramQuery {
+        project_epoch: "p:1".into(),
+        if_generation: "0".into(),
+        timeline_id: "1".into(),
+        revision: "r".into(),
+        start_frame: 0,
+        end_frame: 48,
+        audio_origin_frame: Some(0),
+        width: 960,
+    };
+    let mut job = cache_fixture_job(directory, "ready", 20);
+    job.id = "meter-legacy".into();
+    job.key = query.key();
+    job.program_query = Some(query.clone());
+    job.source_asset = None;
+    jobs.jobs.lock().unwrap().push_back(job);
+    assert_ne!(query.preview_key(), query.key());
+    assert_eq!(
+        jobs.program_status("meter-legacy", &query, false).unwrap()["state"],
+        "ready"
+    );
+    assert!(jobs.program_asset("meter-legacy", &query).is_ok());
+    assert_eq!(
+        jobs.program_meters("meter-legacy", &query, 0, 16, None)
+            .unwrap_err()
+            .1,
+        "TELEMETRY_UNAVAILABLE"
+    );
+    assert_eq!(
+        jobs.jobs.lock().unwrap().len(),
+        1,
+        "A meter read never enqueues a replacement render"
+    );
+    let mut other = query.clone();
+    other.audio_origin_frame = Some(1);
+    assert_eq!(
+        jobs.program_meters("meter-legacy", &other, 0, 16, None)
+            .unwrap_err()
+            .0,
+        axum::http::StatusCode::NOT_FOUND
+    );
+    assert!(
+        jobs.program_meters("meter-legacy", &query, 0, 65, None)
+            .is_err()
+    );
+    jobs.jobs.lock().unwrap()[0].state = "running";
+    assert_eq!(
+        jobs.program_meters("meter-legacy", &query, 0, 16, None)
+            .unwrap_err()
+            .1,
+        "PROGRAM_NOT_READY"
+    );
+    jobs.jobs.lock().unwrap()[0].state = "ready";
+    jobs.jobs.lock().unwrap()[0].inputs =
+        vec![(jobs.root.join("missing-source"), "old-witness".into())];
+    assert_eq!(
+        jobs.program_meters("meter-legacy", &query, 0, 16, None)
+            .unwrap_err()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    jobs.jobs.lock().unwrap()[0].inputs.clear();
+    jobs.jobs.lock().unwrap()[0].key = query.preview_key();
+    assert_eq!(
+        jobs.program_meters("meter-legacy", &query, 0, 16, None)
+            .unwrap_err()
+            .1,
+        "TELEMETRY_UNAVAILABLE"
+    );
+    assert_eq!(jobs.jobs.lock().unwrap()[0].state, "ready");
+}
+
 fn cache_fixture_job(directory: PathBuf, state: &'static str, bytes: u64) -> Job {
     Job {
         id: "cache-fixture".into(),

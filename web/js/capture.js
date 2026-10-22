@@ -7,8 +7,8 @@ export function captureWav(blob,sampleRate,channels,frames) {
   return new Blob([header,blob],{type:"audio/wav"});
 }
 
-export async function createCapture({signal,onChunk,onDone,onError,channels=1,deviceId="",monitor=false,getInput=microphoneInput,Context=globalThis.AudioContext,Worklet=globalThis.AudioWorkletNode}) {
-  let input=null,context=null,source=null,node=null,finished=false,resolveDone;
+export async function createCapture({signal,onChunk,onDone,onHold,onError,channels=1,deviceId="",monitor=false,getInput=microphoneInput,Context=globalThis.AudioContext,Worklet=globalThis.AudioWorkletNode}) {
+  let input=null,context=null,source=null,node=null,finished=false,resolveDone,segment=0;
   const done=new Promise((resolve)=>{resolveDone=resolve;});
   async function close() {
     node?.disconnect();source?.disconnect();
@@ -24,11 +24,13 @@ export async function createCapture({signal,onChunk,onDone,onError,channels=1,de
     node=new Worklet(context,"venturi-capture",{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1],channelCount:channels,channelCountMode:"explicit",processorOptions:{channels,maxFrames}});
     node.port.onmessage=({data})=>{
       if(data.kind==="chunk")onChunk(data);
+      else if(data.kind==='held' && data.segment===segment && !finished)onHold?.(data);
       else if(data.kind==="done" && !finished){finished=true;resolveDone(data);onDone?.(data);}
     };
     node.onprocessorerror=()=>{onError?.("Audio capture stopped unexpectedly; the captured part is retained");};
     source=context.createMediaStreamSource(input.stream);source.connect(node);node.connect(context.destination);if(monitor)source.connect(context.destination);
     for(const track of input.stream.getAudioTracks())track.addEventListener("ended",()=>onError?.("The audio input disconnected; the captured part is retained"),{once:true});
-    return {sampleRate:context.sampleRate,channels,inputLatency:context.baseLatency || 0,start(){check();node.port.postMessage({kind:"start"});},async stop(){if(!finished)node.port.postMessage({kind:"stop"});let timer;try{return await Promise.race([done,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("Audio capture flush timed out; captured chunks are retained")),2000);})]);}finally{clearTimeout(timer);}},close};
+    const command=(kind,untilFrames)=>{check();if(untilFrames!==undefined && (!Number.isSafeInteger(untilFrames) || untilFrames<0))throw Error('Choose a bounded capture window');node.port.postMessage({kind,segment:++segment,...(untilFrames===undefined?{}:{untilFrames:Math.min(maxFrames,untilFrames)})});};
+    return {sampleRate:context.sampleRate,channels,inputLatency:context.baseLatency || 0,maxFrames,start({untilFrames}={}){command('start',untilFrames);},hold(){command('hold');},resume({untilFrames}={}){command('resume',untilFrames);},async stop(){if(!finished)node.port.postMessage({kind:"stop"});let timer;try{return await Promise.race([done,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error("Audio capture flush timed out; captured chunks are retained")),2000);})]);}finally{clearTimeout(timer);}},close};
   }catch(error){await close();throw error;}
 }

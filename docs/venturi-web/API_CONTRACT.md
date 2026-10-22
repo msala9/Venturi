@@ -911,6 +911,20 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   finalized H.264/AAC native composition with byte Range support. Status and
   delivery reject changed document or media identities. One media job runs,
   with one pending; source and Program share the bounded queue/cache.
+- GET `/api/v1/preview/program/{job}/meters` takes the exact Program query,
+  including its audio origin, plus `from_bin` (default 0), `limit` (1–64,
+  default 64), and optional paired `insert_channel` / `insert_index`.
+  It reads finalized telemetry from that immutable prepared job; it never
+  renders or prepares audio. Replies bind `job_id` and `query` and contain
+  absolute 48 kHz sample ranges, 4096-sample bins, native post-fader track/master
+  peaks, 128 logarithmic display bands from the native FFT, and optional native
+  EQ/compressor spectra and gain reduction. Document and stable media identities
+  must still match. Pages are bounded to 2 MiB and the whole sidecar to 32 MiB.
+  More than four enabled analyzable inserts disables all insert telemetry,
+  explicitly; track/master peaks and the independent master spectrum remain.
+  Unavailable or older jobs do not fall back to an independent render. Legacy
+  durable exports keep their existing key; observed ephemeral previews use a
+  telemetry version suffix. Static `/preview/audio/meters` remains separate.
 - At natural EOF, the browser requests the next window from the prepared movie's
   actual exclusive end, keeping the same document identity. It prepares one
   foreground window at a time and displays the preparation pause. End of the

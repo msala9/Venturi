@@ -2,15 +2,15 @@ export function wheelDelta(x,y,dx,dy,radius,fine=false) {
   const scale=(fine ? 0.2 : 1)/(radius*2.5);let nextX=x+dx*scale,nextY=y-dy*scale;
   const length=Math.hypot(nextX,nextY);if(length>1){nextX/=length;nextY/=length;}return [nextX,nextY];
 }
-export function bindColorWheel(canvas,{x,y,paint,onCommit,onError,canInteract=()=>true}) {
+export function bindColorWheel(canvas,{x,y,paint,onCommit,onReset,onError,canInteract=()=>true}) {
   let gesture=null,waiting=false;
   const live=()=>canvas.isConnected!==false && canInteract();
   const redraw=()=>paint(x,y,!!gesture);
   const cancel=()=>{if(gesture){const previous=gesture;x=previous.x;y=previous.y;gesture=null;try{if(canvas.hasPointerCapture?.(previous.id))canvas.releasePointerCapture(previous.id);}catch{}redraw();}};
-  async function commit(before) {
+  async function commit(before,reset=false) {
     if(!live())return;
     waiting=true;
-    try{await Promise.resolve();if(live())await onCommit(x,y);else{x=before[0];y=before[1];redraw();}}catch(error){x=before[0];y=before[1];redraw();onError(error.message);}finally{waiting=false;}
+    try{await Promise.resolve();if(live())await (reset && onReset?onReset():onCommit(x,y));else{x=before[0];y=before[1];redraw();}}catch(error){x=before[0];y=before[1];redraw();onError(error.message);}finally{waiting=false;}
   }
   canvas.addEventListener("pointerdown",(event)=>{
     if(waiting || !live() || event.button!==0 || event.isPrimary===false)return;canvas.focus();canvas.setPointerCapture(event.pointerId);
@@ -33,10 +33,10 @@ export function bindColorWheel(canvas,{x,y,paint,onCommit,onError,canInteract=()
     if(!direction)return;event.stopPropagation();event.preventDefault();if(waiting || !live())return;
     const before=[x,y];[x,y]=wheelDelta(x,y,direction[0]*2.5,direction[1]*2.5,100,event.shiftKey);redraw();commit(before);
   });
-  canvas.addEventListener("dblclick",()=>{if(waiting || !live() || (!x && !y))return;const before=[x,y];x=0;y=0;redraw();commit(before);});
+  canvas.addEventListener("dblclick",()=>{if(waiting || !live() || (!onReset && !x && !y))return;cancel();const before=[x,y];x=0;y=0;redraw();commit(before,true);});
   redraw();return {cancel};
 }
-function colorWheel(canvas,hues,initial,onCommit,onError,disabled=false,canInteract=()=>true) {
+function colorWheel(canvas,hues,initial,onCommit,onError,disabled=false,canInteract=()=>true,onReset) {
   const ctx=canvas.getContext("2d");let state=initial,active=false,queued=false;
   const paint=(x,y,dragging)=>{
     state=[x,y];active=dragging;if(queued)return;queued=true;
@@ -49,24 +49,27 @@ function colorWheel(canvas,hues,initial,onCommit,onError,disabled=false,canInter
     });
   };
   if(disabled){paint(initial[0],initial[1],false);return {cancel(){}};}
-  return bindColorWheel(canvas,{x:initial[0],y:initial[1],paint,onCommit,onError,canInteract});
+  return bindColorWheel(canvas,{x:initial[0],y:initial[1],paint,onCommit,onReset,onError,canInteract});
 }
 export function renderSelectedFilters(root,detail,{controls,keyRow,openState,notice,timelineSize}){
   if(!detail.filters)return [];
   const gestures=[],section=document.createElement('details'),heading=document.createElement('summary');section.dataset.visualPath='selected-filters';section.open=openState.get('selected-filters') ?? true;heading.textContent='Selected filters and color';section.append(heading);root.append(section);
-  const note=document.createElement('p');note.className='muted';note.textContent='Add affects the selected video clips; existing filters keep their settings. Parameter edits skip clips without this filter. Apply changes a constant default or writes a native key. Moving a filter refuses incompatible peer stack positions.';section.append(note);
-  const choice=controls.register(document.createElement('select'));choice.setAttribute('aria-label','Visual filter type');for(const kind of detail.filters.kinds)choice.append(new Option(kind,kind));if(detail.filters.kinds.length)choice.value=detail.filters.kinds[0];section.append(choice);
-  controls.button('Add visual filter to selection',()=>({action:'filter_presence',filter:choice.value,enabled:true}),section,()=>detail.filters.kinds.includes(choice.value));choice.addEventListener('change',controls.sync);
+  const help=document.createElement('details'),helpTitle=document.createElement('summary'),note=document.createElement('p');help.className='inspector-help';helpTitle.textContent='Editing selected filters';note.className='muted';note.textContent='Add affects the selected video clips; existing filters keep their settings. Parameter edits skip clips without this filter. Apply changes a constant default or writes a native key. Moving a filter refuses incompatible peer stack positions.';help.append(helpTitle,note);section.append(help);
+  const addRow=document.createElement('div');addRow.className='inspector-filter-toolbar';section.append(addRow);
+  const choice=controls.register(document.createElement('select'));choice.setAttribute('aria-label','Visual filter type');for(const kind of detail.filters.kinds)choice.append(new Option(kind,kind));if(detail.filters.kinds.length)choice.value=detail.filters.kinds[0];addRow.append(choice);
+  const add=controls.button('Add visual filter to selection',()=>({action:'filter_presence',filter:choice.value,enabled:true}),addRow,()=>detail.filters.kinds.includes(choice.value));add.textContent='Add';choice.addEventListener('change',controls.sync);
   for(const [index,filter] of detail.filters.stack.entries()){
-    const kind=filter.kind,card=document.createElement('details'),summary=document.createElement('summary');card.dataset.visualPath=`selected-filter:${kind}`;card.open=openState.get(card.dataset.visualPath) ?? true;summary.textContent=`${index+1} · ${kind}`;card.append(summary);section.append(card);
+    const kind=filter.kind,card=document.createElement('details'),summary=document.createElement('summary');card.className='inspector-filter';card.dataset.visualPath=`selected-filter:${kind}`;card.open=openState.get(card.dataset.visualPath) ?? true;summary.textContent=kind;card.append(summary);section.append(card);
     const edit=patch=>controls.submit({action:'filter',filter:kind,patch});
-    const enabled=controls.button(`${kind} enabled`,{action:'filter',filter:kind,patch:{enabled:!filter.enabled}},card);enabled.setAttribute('aria-pressed',String(filter.enabled));
+    const enabled=controls.button(`${kind} enabled`,{action:'filter',filter:kind,patch:{enabled:!filter.enabled}},card);enabled.className='inspector-filter-enabled';enabled.textContent='Enabled';enabled.setAttribute('aria-pressed',String(filter.enabled));
     const reset=(params,flags={})=>({action:'reset_filter',filter:kind,params,reset_enabled:false,reset_color:false,reset_grade:false,...flags});
     const params=[];
     function keyControls(parent,label,values,parameters){keyRow(parent,label,values,{action:'toggle_filter_keys',filter:kind,params:parameters});controls.button(`Reset ${label}`,reset(parameters),parent);params.push(...parameters);}
     function number(parent,label,parameter,range,patch,key){
-      const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));form.className='property-row';field.className='field';field.textContent=label;input.type='number';input.step='any';input.required=true;input.min=range[0];input.max=range[1];input.value=parameter.value;input.setAttribute('aria-label',label);field.append(input);form.append(field);
-      const button=controls.register(document.createElement('button'));button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(button);form.addEventListener('submit',event=>{event.preventDefault();const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && value>=range[0] && value<=range[1] && value!==parameter.value && form.reportValidity())edit(patch(value));});parent.append(form);if(key)keyControls(form,label,[parameter],[key]);return input;
+      const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));form.className='property-row inspector-number';field.className='field';field.textContent=label.startsWith(`${kind} `)?label.slice(kind.length+1):label.replace(/^(Shadows|Midtones|Highlights|Offset)(Luma|Sat)$/,'$2').replace(/^Saturation$/,'Sat');input.type='number';input.step='any';input.required=true;input.min=range[0];input.max=range[1];input.value=parameter.value;input.setAttribute('aria-label',label);field.append(input);form.append(field);
+      const button=controls.register(document.createElement('button'));button.className='inspector-number-apply';button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(button);
+      const complete=()=>{const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && value>=range[0] && value<=range[1] && value!==parameter.value && form.reportValidity())edit(patch(value));};
+      form.addEventListener('submit',event=>{event.preventDefault();complete();});input.addEventListener('change',complete);parent.append(form);if(key)keyControls(form,label,[parameter],[key]);return input;
     }
     if(['BoxBlur','GaussianBlur','DropShadow'].includes(kind))number(card,kind==='DropShadow'?'DropShadow softness':`${kind} radius`,filter.radius,[0,detail.filters.blur_radius_max],radius=>({radius}),{kind:'radius'});
     if(['BoxBlur','GaussianBlur'].includes(kind)){
@@ -83,20 +86,34 @@ export function renderSelectedFilters(root,detail,{controls,keyRow,openState,not
       controls.button('Reset DropShadow color',reset([],{reset_color:true}),card);
     }
     if(kind==='ColorCorrection'){
-      const preset=controls.register(document.createElement('select'));preset.setAttribute('aria-label','Native color preset');preset.append(new Option('Choose a preset…',''));for(const name of detail.filters.grade_presets || [])preset.append(new Option(name,name));preset.value='';card.append(preset);
-      controls.button('Apply native color preset',()=>({action:'grade_preset',preset:preset.value}),card,()=>Boolean(detail.filters.grade_presets?.includes(preset.value)));preset.addEventListener('change',controls.sync);
-      const wheels=document.createElement('div');wheels.className='grade-wheels';card.append(wheels);
+      const presetRow=document.createElement('div');presetRow.className='inspector-filter-toolbar';card.append(presetRow);
+      const preset=controls.register(document.createElement('select'));preset.setAttribute('aria-label','Native color preset');preset.append(new Option('Choose a preset…',''));for(const name of detail.filters.grade_presets || [])preset.append(new Option(name,name));preset.value='';presetRow.append(preset);
+      const applyPreset=controls.button('Apply native color preset',()=>({action:'grade_preset',preset:preset.value}),presetRow,()=>Boolean(detail.filters.grade_presets?.includes(preset.value)));applyPreset.textContent='Apply preset';preset.addEventListener('change',controls.sync);
+      const balance=controls.register(document.createElement('button'));balance.type='button';balance.textContent='Auto balance';balance.dataset.inspectorAutoBalance='';balance.setAttribute('aria-label','Auto balance selected video');balance.addEventListener('click',event=>{if(!controls.available()){event.preventDefault();event.stopPropagation();}});presetRow.append(balance);
+      const wheels=document.createElement('div');wheels.className='grade-wheels';card.append(wheels);const grouped=new Set(),scalarParents=new Map();
+      const coordinates=document.createElement('details'),coordinatesTitle=document.createElement('summary');coordinates.dataset.visualPath='selected-grade-coordinates';coordinates.open=openState.get(coordinates.dataset.visualPath) ?? false;coordinates.className='inspector-grade-coordinates';coordinatesTitle.textContent='Wheel coordinates and numeric grade';coordinates.append(coordinatesTitle);
       for(const wheel of detail.filters.wheels || []){
-        const block=document.createElement('div'),label=document.createElement('strong'),canvas=document.createElement('canvas');label.textContent=wheel.name;block.append(label);wheels.append(block);const x=filter.grade.find(value=>value.param===wheel.x),y=filter.grade.find(value=>value.param===wheel.y);
+        const names=[wheel.x,wheel.y,wheel.luma,wheel.saturation],values=names.map(param=>filter.grade.find(value=>value.param===param));
+        if(new Set(names).size!==4 || values.some(value=>!value || !Number.isFinite(value.value)))continue;
+        for(const name of names)grouped.add(name);
+        const block=document.createElement('div'),label=document.createElement('strong'),canvas=document.createElement('canvas');block.className='inspector-wheel';label.textContent=wheel.name;block.append(label);wheels.append(block);const [x,y]=values;
+        keyControls(block,`${wheel.name} wheel`,values,names.map(param=>({kind:'grade',param})));
         canvas.className='color-wheel';canvas.tabIndex=0;canvas.setAttribute('role','group');canvas.setAttribute('aria-label',`${wheel.name} color wheel; arrows adjust X/Y`);block.append(canvas);
-        gestures.push(colorWheel(canvas,detail.filters.wheel_hues,[x.value,y.value],(x,y)=>edit({grade:[{param:wheel.x,value:x},{param:wheel.y,value:y}]}),notice,false,()=>controls.available()));
+        gestures.push(colorWheel(canvas,detail.filters.wheel_hues,[x.value,y.value],(x,y)=>edit({grade:[{param:wheel.x,value:x},{param:wheel.y,value:y}]}),notice,false,()=>controls.available(),()=>controls.submit(reset(names.slice(0,2).map(param=>({kind:'grade',param}))))));
+        scalarParents.set(wheel.luma,block);scalarParents.set(wheel.saturation,block);
       }
-      for(const parameter of filter.grade || [])number(card,parameter.param,parameter,parameter.range,value=>({grade:[{param:parameter.param,value}]}),{kind:'grade',param:parameter.param});
+      for(const parameter of filter.grade || []){
+        const key={kind:'grade',param:parameter.param},parent=scalarParents.get(parameter.param) || (grouped.has(parameter.param)?coordinates:card);
+        number(parent,parameter.param,parameter,parameter.range,value=>({grade:[{param:parameter.param,value}]}),grouped.has(parameter.param)?null:key);
+        if(grouped.has(parameter.param))controls.button(`Reset ${parameter.param}`,reset([key]),parent);
+      }
+      card.append(coordinates);
       controls.button('Reset ColorCorrection grade',reset([],{reset_grade:true}),card);
     }
-    controls.button(`Reset ${kind} filter`,reset(params,{reset_enabled:true,reset_color:kind==='DropShadow',reset_grade:kind==='ColorCorrection'}),card);
-    for(const [label,to] of [['Move up',index-1],['Move down',index+1]]){const button=controls.register(document.createElement('button'),()=>to>=0 && to<detail.filters.stack.length);button.type='button';button.textContent=`${label} ${kind}`;button.setAttribute('aria-label',button.textContent);button.addEventListener('click',()=>{if(to>=0 && to<detail.filters.stack.length)controls.submit({action:'filter_move',filter:kind,to_index:to});});card.append(button);}
-    controls.button(`Remove ${kind} from selection`,{action:'filter_presence',filter:kind,enabled:false},card);
+    const actions=document.createElement('div');actions.className='inspector-filter-actions';card.append(actions);
+    controls.button(`Reset ${kind} filter`,reset(params,{reset_enabled:true,reset_color:kind==='DropShadow',reset_grade:kind==='ColorCorrection'}),actions);
+    for(const [label,to] of [['Move up',index-1],['Move down',index+1]]){const button=controls.register(document.createElement('button'),()=>to>=0 && to<detail.filters.stack.length);button.type='button';button.textContent=to<index?'↑':'↓';button.title=`${label} ${kind}`;button.setAttribute('aria-label',button.title);button.addEventListener('click',()=>{if(to>=0 && to<detail.filters.stack.length)controls.submit({action:'filter_move',filter:kind,to_index:to});});actions.append(button);}
+    const remove=controls.button(`Remove ${kind} from selection`,{action:'filter_presence',filter:kind,enabled:false},actions);remove.textContent='Remove';
   }
   return gestures;
 }

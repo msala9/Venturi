@@ -4,6 +4,29 @@ export const HEADER = 150,
   MARKER_BOTTOM = 42,
   TRACK = 62,
   MAX_FRAME = 1_000_000_000;
+export const MIN_TIMELINE_SCALE=.1,MAX_TIMELINE_SCALE=800;
+export function timelineScrollBounds(timeline,view,width){
+  const scale=Number.isFinite(view.scale) && view.scale>0?view.scale:60;
+  const fps=timeline?.fps?.num/timeline?.fps?.den;
+  if(!Number.isFinite(fps) || fps<=0)return {maxOrigin:0,maxOffset:0,viewportFrames:0,pixelsPerFrame:0};
+  let end=0;for(const track of timeline.tracks)for(const clip of track.clips)end=Math.max(end,clip.start_frame+clip.length_frames);
+  const viewport=Math.max(1,Number.isFinite(width)?width-HEADER:1),pixelsPerFrame=scale/fps;
+  const maxOffset=Math.max(0,Math.max(20,end/fps+5)*scale-viewport);
+  return {maxOrigin:Math.min(MAX_FRAME,maxOffset/pixelsPerFrame),maxOffset:Math.min(MAX_FRAME*pixelsPerFrame,maxOffset),viewportFrames:viewport/pixelsPerFrame,pixelsPerFrame};
+}
+export function timelineOriginForFrame(timeline,view,width,frame){
+  const bounds=timelineScrollBounds(timeline,view,width),origin=Math.max(0,Math.min(bounds.maxOrigin,Number.isFinite(view.origin)?view.origin:0));
+  if(!Number.isFinite(frame) || frame<0 || !bounds.pixelsPerFrame)return origin;
+  return frame<origin || frame>origin+bounds.viewportFrames?Math.max(0,Math.min(bounds.maxOrigin,frame-bounds.viewportFrames/3)):origin;
+}
+export function kineticScrollStep(offset,velocity,maximum,seconds){
+  if(![offset,velocity,maximum,seconds].every(Number.isFinite) || maximum<0)return {offset:0,velocity:0,moved:false};
+  const dt=Math.max(0,Math.min(.1,seconds)),friction=500*dt;
+  if(!velocity || friction>Math.abs(velocity) || Math.abs(velocity)<15)return {offset:Math.max(0,Math.min(maximum,offset)),velocity:0,moved:false};
+  velocity-=friction*Math.sign(velocity);
+  const raw=offset+velocity*dt,next=Math.max(0,Math.min(maximum,raw));
+  return {offset:next,velocity:next!==raw?0:velocity,moved:next!==offset};
+}
 export function timelineLayout(timeline,view={},height=view.viewportHeight){
   const tracks=timeline?.tracks || [],video=tracks.flatMap((track,index)=>track.kind==='video'?[index]:[]).reverse(),audio=tracks.flatMap((track,index)=>track.kind==='audio'?[index]:[]);
   const rowOrder=[...video,...audio],rowOfTrack=new Map(rowOrder.map((index,row)=>[index,row]));

@@ -161,7 +161,7 @@ test("status failure, nonready result and media error release all ready-cache mo
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function settle(){for(let i=0;i<40;i++)await Promise.resolve();}
-function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek,lineage=false}={}){
+function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState=()=>{},lineage=false}={}){
   class Video extends EventTarget {
     movie="";position=0;readyState=1;seeking=false;paused=true;ended=false;duration=0;plays=0;waitMetadata=false;waitSeek=false;fastPause=false;
     callbacks=new Map();canceled=[];nextCallback=0;
@@ -178,7 +178,7 @@ function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,bef
     load(){}
     finish(range){this.duration=(range.end_frame-range.start_frame)*fps.den/fps.num;this.position=this.duration;this.ended=true;this.pause();this.dispatchEvent(new Event("timeupdate"));this.dispatchEvent(new Event("ended"));}
   }
-  const video=new Video(),status={textContent:""},timers=fakeTimers(),requests=[],frames=[],fetches=[];
+  const video=new Video(),status={textContent:""},timers=fakeTimers(),cancel=new EventTarget(),requests=[],frames=[],fetches=[];
   let playhead=origin,document={project_epoch:"epoch",if_generation:"1",timeline_id:"timeline",revision:"revision",width:960};
   const getState=(start,audioOrigin)=>{
     if(!document)return null;
@@ -186,9 +186,142 @@ function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,bef
     return Number.isSafeInteger(frame) && frame>=0 && frame<total ? {...document,start_frame:frame,end_frame:Math.min(total,frame+Math.floor(300*fps.num/fps.den)),...(lineage?{audio_origin_frame:audioOrigin===undefined?frame:audioOrigin}:{})} : null;
   };
   const ready=(range,id=`window${requests.length}`)=>({id,state:"ready",program:{start_frame:range.start_frame,end_frame:range.end_frame,fps,width:960,height:540,...(lineage?{audio_origin_frame:range.audio_origin_frame}:{})}});
-  const player=createProgramPlayer({video,status,timers,cancel:new EventTarget(),getState,beforeWindowChange,isInternalSeek,onState(){},onFrame:frame=>{frames.push(frame);playhead=frame;},api:async(path,range)=>{requests.push({...range});return api?api(range,ready):ready(range);},fetcher:async(url,options)=>{fetches.push({url,...options});return fetcher?fetcher(url,options):Response.json({state:"ready",...(lineage?{program:{audio_origin_frame:Number(new URL(url,'http://host').searchParams.get('audio_origin_frame'))}}:{})});}});
-  return {video,status,timers,requests,frames,fetches,player,ready,getState,setDocument:value=>{document=value;},setPlayhead:value=>{playhead=value;}};
+  const player=createProgramPlayer({video,status,timers,cancel,getState,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState,onFrame:frame=>{frames.push(frame);playhead=frame;},api:async(path,range)=>{requests.push({...range});return api?api(range,ready):ready(range);},fetcher:async(url,options)=>{fetches.push({url,...options});return fetcher?fetcher(url,options):Response.json({state:"ready",...(lineage?{program:{audio_origin_frame:Number(new URL(url,'http://host').searchParams.get('audio_origin_frame'))}}:{})});}});
+  return {video,status,timers,cancel,requests,frames,fetches,player,ready,getState,setDocument:value=>{document=value;},setPlayhead:value=>{playhead=value;}};
 }
+
+test('toolbar pause, native pause and Stop report the exact owned frame once without replaying presentation callbacks',async()=>{
+  for(const action of ['toolbar','native','stop']){
+    const notifications=[],f=windowFixture({origin:137,fps:{num:30000,den:1001},onUserPause:ticket=>{notifications.push(ticket);assert.equal(ticket.isCurrent(),true);f.setPlayhead(ticket.frame);f.player.stop();}});
+    try{
+      await f.player.toggle();await settle();const range=f.player.range();f.video.position=1.234567;
+      const expected=range.start_frame+Math.floor((f.video.currentTime+1e-6)*range.fps.num/range.fps.den);
+      if(action==='toolbar')await f.player.toggle();else if(action==='native')f.video.pause();else f.cancel.dispatchEvent(new Event('click'));
+      assert.equal(notifications.length,1);assert.equal(notifications[0].frame,expected);assert.equal(notifications[0].reason,action==='stop'?'stop':'pause');assert.equal(notifications[0].query,range);assert.equal(notifications[0].isCurrent(),false);
+      assert.equal(f.player.state(),'stopped');assert.equal(f.video.src,'');assert.equal(f.video.plays,1);assert.equal(f.getState().start_frame,expected);assert.deepEqual(f.frames,[]);assert.equal(f.timers.jobs.size,0);
+      f.video.dispatchEvent(new Event('pause'));f.video.dispatchEvent(new Event('timeupdate'));assert.equal(notifications.length,1);assert.deepEqual(f.frames,[]);
+    }finally{f.player.stop();}
+  }
+});
+
+test('internal fast pause and window handoff do not enter editing; only final whole-timeline EOF reports the last frame',async()=>{
+  const fps={num:30000,den:1001},origin=137,total=origin+Math.floor(300*fps.num/fps.den)+3,notifications=[];
+  let internal=false,handoffs=0;
+  const f=windowFixture({origin,total,fps,isInternalPause:()=>internal,beforeWindowChange:()=>{handoffs++;f.video.pause();},onUserPause:ticket=>{notifications.push(ticket);f.player.stop();}});
+  try{
+    await f.player.toggle();await settle();internal=true;f.video.pause();internal=false;assert.equal(notifications.length,0);await f.video.play();await settle();
+    f.video.finish(f.player.range());await settle();assert.equal(f.requests.length,2);assert.equal(handoffs,1);assert.equal(notifications.length,0);assert.equal(f.player.state(),'ready');
+    f.video.finish(f.player.range());await settle();assert.equal(notifications.length,1);assert.equal(notifications[0].reason,'ended');assert.equal(notifications[0].frame,total-1);assert.equal(f.player.state(),'stopped');assert.equal(f.requests.length,2);
+    f.video.dispatchEvent(new Event('ended'));assert.equal(notifications.length,1);
+  }finally{f.player.stop();}
+});
+
+test('old pause tickets cannot stop a replay of the same cached asset or a newer preparation',async()=>{
+  const tickets=[],f=windowFixture({total:48,onUserPause:ticket=>tickets.push(ticket)});
+  try{
+    await f.player.toggle();await settle();f.video.finish(f.player.range());await settle();assert.equal(tickets.length,1);const old=tickets[0],range=old.query;assert.equal(old.isCurrent(),true);
+    await f.player.toggle();await settle();assert.equal(f.player.range(),range,'covering cache may reuse the same range object');assert.equal(f.requests.length,1);
+    f.video.paused=true;assert.equal(old.isCurrent(),false,'sequence ownership must reject a cached replay even when its video is paused');assert.equal(f.player.state(),'ready');
+    f.video.paused=false;f.video.dispatchEvent(new Event('pause'));assert.equal(tickets.length,1,'a delayed old pause cannot act while the replacement is playing');
+  }finally{f.player.stop();}
+});
+
+test('stale document, detached source and local scrub pause never publish a user-edit frame',async()=>{
+  for(const action of ['document','source','scrub']){
+    const notifications=[],f=windowFixture({onUserPause:ticket=>notifications.push(ticket)});
+    try{
+      await f.player.toggle();await settle();f.video.position=1;
+      if(action==='document')f.setDocument({...f.getState(),revision:'new'});
+      if(action==='source')f.video.movie='foreign-resource';
+      if(action==='scrub')f.player.pauseLocal();else f.video.pause();
+      assert.equal(notifications.length,0);assert.deepEqual(f.frames,[]);
+    }finally{f.player.stop();}
+  }
+});
+
+test('verified Program telemetry uses continuous absolute samples and native audio origin, never a cached unattached resource',async()=>{
+  const fps={num:30000,den:1001},origin=137,f=windowFixture({origin,fps,lineage:true});
+  try{
+    assert.equal(f.player.telemetryTarget(),null);await f.player.toggle();await settle();f.video.position=.125;
+    const target=f.player.telemetryTarget();assert.equal(target.job_id,'window1');assert.equal(target.query.audio_origin_frame,origin);assert.equal(target.sample,Math.round(origin*48000*fps.den/fps.num)+6000);assert.equal(target.playing,true);
+    assert.deepEqual(Object.keys(target.query).sort(),['project_epoch','if_generation','timeline_id','revision','start_frame','end_frame','width','audio_origin_frame'].sort());assert.equal('fps' in target.query,false);
+    target.query.revision='forged';assert.equal(f.player.telemetryTarget().query.revision,'revision');
+    f.player.pauseLocal();assert.equal(f.player.telemetryTarget().playing,false);f.video.position=1e9;const range=f.player.range();assert.equal(f.player.telemetryTarget().sample,Math.round(range.end_frame*48000*fps.den/fps.num));
+    f.player.stop();assert.equal(f.player.telemetryTarget(),null);await f.player.toggle();assert.equal(f.requests.length,1);assert.equal(f.player.telemetryTarget().job_id,'window1');
+    f.video.movie='foreign';assert.equal(f.player.telemetryTarget(),null);
+  }finally{f.player.stop();}
+});
+
+test('short Program EOF exposes its exclusive sample end for the final meter bin while the editing frame remains clamped',async()=>{
+  const tickets=[],f=windowFixture({total:1,onUserPause:ticket=>tickets.push(ticket)});
+  try{
+    await f.player.toggle();await settle();f.video.position=.01;assert.equal(f.player.telemetryTarget().sample,480);
+    f.video.finish(f.player.range());await settle();assert.equal(tickets.length,1);assert.equal(tickets[0].frame,0);assert.equal(tickets[0].playback.sample,1600);assert.equal(tickets[0].playback.playing,false);assert.equal(tickets[0].playback.job_id,'window1');assert.equal(tickets[0].isCurrent(),true);
+    assert.equal(f.player.telemetryTarget().sample,1600);f.player.stop();assert.equal(f.player.telemetryTarget(),null);assert.equal(tickets[0].isCurrent(),false);
+  }finally{f.player.stop();}
+});
+
+test('recording clock holds the verified fractional window end through rollover and announces ready before play',async()=>{
+  const fps={num:30000,den:1001},origin=137,span=Math.floor(300*fps.num/fps.den),ack=deferred(),states=[];let calls=0;
+  const f=windowFixture({origin,total:origin+span+3,fps,lineage:true,
+    api:(range,ready)=>++calls===1?ready(range):ack.promise,
+    onState:state=>states.push({state,clock:f.player.recordingClock()})});
+  try{
+    assert.equal(f.player.recordingClock(),null);await f.player.toggle();
+    const ready=states.find(value=>value.state==='ready').clock;assert.equal(ready.state,'holding');
+    assert.equal(ready.sample,Math.round(origin*48000*fps.den/fps.num));assert.equal(ready.audio_origin_frame,origin);
+    f.video.position=.125;const playing=f.player.recordingClock();assert.equal(playing.state,'playing');assert.equal(playing.sample,ready.sample+6000);
+    const old=f.player.range();f.video.position=(old.end_frame-old.start_frame)*fps.den/fps.num;f.video.ended=true;f.video.pause();
+    const boundary=f.player.recordingClock();assert.equal(boundary.state,'holding');assert.equal(boundary.sample,Math.round(old.end_frame*48000*fps.den/fps.num));
+    f.video.dispatchEvent(new Event('ended'));await settle();
+    assert.equal(f.player.state(),'preparing');assert.deepEqual(f.player.recordingClock(),{...boundary,sequence:f.player.recordingClock().sequence});
+    assert.ok(f.player.recordingClock().sequence>boundary.sequence);
+    f.video.waitMetadata=true;f.video.waitSeek=true;ack.resolve(f.ready(f.requests[1]));await settle();
+    assert.equal(f.player.recordingClock().state,'holding');assert.equal(f.player.recordingClock().sample,boundary.sample);
+    f.video.readyState=1;f.video.dispatchEvent(new Event('loadedmetadata'));await settle();assert.equal(f.player.recordingClock().state,'holding');
+    f.video.seeking=false;f.video.dispatchEvent(new Event('seeked'));await settle();
+    const resumed=f.player.recordingClock();assert.equal(resumed.state,'playing');assert.equal(resumed.window_start_sample,boundary.window_end_sample);assert.equal(resumed.sample,boundary.sample);assert.equal(resumed.audio_origin_frame,origin);
+    assert.equal(states.filter(value=>value.state==='ready').at(-1).clock.state,'holding');
+    f.video.finish(f.player.range());await settle();assert.equal(f.player.recordingClock().state,'stopped');assert.equal(f.player.recordingClock().sample,resumed.window_end_sample);
+  }finally{f.player.stop();}assert.equal(f.player.recordingClock(),null);
+});
+
+test('recording clock stops for pause, nonunit speed, failed continuation and stale owners',async()=>{
+  for(const action of ['pause','speed','stale','foreign']){
+    const f=windowFixture({lineage:true});try{
+      await f.player.toggle();assert.equal(f.player.recordingClock().state,'playing');
+      if(action==='pause')f.player.pauseLocal();
+      if(action==='speed')f.video.playbackRate=2;
+      if(action==='stale')f.setDocument({...f.getState(),revision:'other'});
+      if(action==='foreign')f.video.movie='unowned';
+      if(action==='pause' || action==='speed')assert.equal(f.player.recordingClock().state,'stopped');else assert.equal(f.player.recordingClock(),null);
+    }finally{f.player.stop();}
+  }
+  const ack=deferred();let calls=0;const f=windowFixture({lineage:true,api:(range,ready)=>++calls===1?ready(range):ack.promise});
+  try{
+    await f.player.toggle();f.video.finish(f.player.range());await settle();assert.equal(f.player.recordingClock().state,'holding');
+    ack.reject(Error('GPU_BUSY'));await settle();assert.equal(f.player.state(),'failed');assert.equal(f.player.recordingClock().state,'stopped');
+  }finally{f.player.stop();}
+  const late=deferred();let prepared=0;const canceled=windowFixture({lineage:true,api:(range,ready)=>++prepared===1?ready(range):late.promise});
+  try{
+    await canceled.player.toggle();canceled.video.finish(canceled.player.range());await settle();assert.equal(canceled.player.recordingClock().state,'holding');
+    canceled.player.stop();assert.equal(canceled.player.recordingClock(),null);late.resolve(canceled.ready(canceled.requests[1]));await settle();assert.equal(canceled.player.recordingClock(),null);assert.equal(canceled.video.plays,1);
+  }finally{canceled.player.stop();}
+  const states=[],rejected=windowFixture({lineage:true,onState:state=>states.push({state,clock:rejected.player.recordingClock()})});
+  try{
+    await rejected.player.toggle();rejected.video.play=async()=>{throw Error('Playback blocked');};
+    rejected.video.finish(rejected.player.range());await settle();
+    assert.equal(rejected.player.recordingClock().state,'stopped');assert.equal(states.at(-1).clock.state,'stopped');
+  }finally{rejected.player.stop();}
+});
+
+test('a pending Program preparation and stale composition never expose live telemetry',async()=>{
+  const ack=deferred(),f=windowFixture({api:()=>ack.promise});
+  try{
+    const pending=f.player.toggle();assert.equal(f.player.telemetryTarget(),null);ack.resolve(f.ready(f.requests[0]));await pending;assert.ok(f.player.telemetryTarget());
+    f.setDocument({...f.getState(),revision:'changed'});assert.equal(f.player.telemetryTarget(),null);
+  }finally{f.player.stop();}
+});
 
 test('native DSP playback origin survives multiple fractional windows; manual seek starts a new lineage instead of covering-cache reuse',async()=>{
   const fps={num:30000,den:1001},span=Math.floor(300*fps.num/fps.den),origin=137,f=windowFixture({origin,total:origin+2*span+11,fps,lineage:true});

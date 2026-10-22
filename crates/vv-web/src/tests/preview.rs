@@ -1,6 +1,64 @@
 use super::*;
 use vv_core::Id;
 #[test]
+fn balance_reads_bypassed_native_grade_at_its_source_clock_without_mutation() {
+    let mut session = vv_session::Session::default();
+    let timeline = session.create_timeline(vv_core::Timeline {
+        name: "Bypassed balance".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (64, 64),
+        tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let clip_id = session.project.alloc_clip_id();
+    let mut clip = vv_core::Clip::from_source_range(
+        clip_id,
+        vv_core::ClipSource::SolidColor,
+        7,
+        31,
+        10,
+        vv_core::Rational::one(),
+    );
+    let mut grade = vv_core::ClipFilter::new(vv_core::FilterKind::ColorCorrection);
+    grade.enabled = false;
+    grade
+        .grade
+        .track_mut(vv_core::GradeParam::Saturation)
+        .upsert(13, 1.3, vv_core::Interpolation::Hold);
+    clip.effects.filters.push(grade);
+    session.project.timelines[timeline].tracks[0].insert_sorted(clip);
+    let mut snapshot = FrameSnapshot {
+        project: session.project.clone(),
+        timeline,
+        query: FrameQuery {
+            timeline_id: timeline.raw().to_string(),
+            project_epoch: "test".into(),
+            if_generation: "0".into(),
+            revision: "test".into(),
+            frame: 16,
+            width: 64,
+        },
+        size: (64, 64),
+    };
+    let before = serde_json::to_value(&snapshot.project).unwrap();
+    assert_eq!(
+        balance_grade(&snapshot, clip_id)
+            .unwrap()
+            .get(vv_core::GradeParam::Saturation),
+        1.3
+    );
+    assert_eq!(serde_json::to_value(&snapshot.project).unwrap(), before);
+    snapshot.query.frame = 9;
+    assert!(balance_grade(&snapshot, clip_id).is_err());
+    snapshot.query.frame = 16;
+    snapshot.project.timelines[timeline].tracks[0].clips[0]
+        .effects
+        .filters
+        .clear();
+    assert!(balance_grade(&snapshot, clip_id).is_err());
+}
+#[test]
 fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
     let query = FrameQuery {
         timeline_id: "1".into(),

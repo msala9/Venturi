@@ -205,6 +205,11 @@ fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_th
     };
     let before = serde_json::to_value(&project).unwrap();
     let task = pin(snapshot(project.clone()), &files).unwrap();
+    assert_eq!(
+        task.inputs[0].1,
+        crate::asset_store::stable_identity(&task.files[0].0).unwrap()
+    );
+    assert_eq!(task.files[0].1, file_identity(&task.files[0].0).unwrap());
     let bytes = task.run(Arc::new(AtomicBool::new(false))).unwrap();
     assert_eq!(bytes.len(), 44 + FRAMES * 4);
     std::fs::write(root.join("audition.wav"), bytes).unwrap();
@@ -426,6 +431,16 @@ fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_th
     let silence = muted_task.run(Arc::new(AtomicBool::new(false))).unwrap();
     assert!(silence[44..].iter().all(|b| *b == 0));
     assert!(task.run(Arc::new(AtomicBool::new(true))).is_err());
+    let modified = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
+    let metadata = modified.metadata().unwrap();
+    let legacy_identity = file_identity(&task.files[0].0).unwrap();
+    std::thread::sleep(std::time::Duration::from_millis(2));
+    std::os::unix::fs::FileExt::write_all_at(&modified, &[1], metadata.len() - 1).unwrap();
+    modified
+        .set_times(std::fs::FileTimes::new().set_modified(metadata.modified().unwrap()))
+        .unwrap();
+    assert_eq!(file_identity(&task.files[0].0).unwrap(), legacy_identity);
+    assert_eq!(task.check_inputs().unwrap_err().1, "SOURCE_CHANGED");
     std::fs::write(&path, b"changed").unwrap();
     assert_eq!(
         task.meters(None, Arc::new(AtomicBool::new(false)))

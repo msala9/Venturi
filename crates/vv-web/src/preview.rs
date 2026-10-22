@@ -489,6 +489,7 @@ impl Preview {
         settings: &vv_session::export::ExportSettings,
         progress: &Mutex<vv_session::export::ExportProgress>,
         cancel: &Arc<AtomicBool>,
+        observer: Option<&mut vv_session::audio_render::AudioObserver<'_>>,
     ) -> Result<()> {
         use vv_session::export::ExportError;
         let (device, path) = self.config.as_ref().ok_or_else(unavailable)?;
@@ -519,37 +520,53 @@ impl Preview {
                 .map(|_| ())
                 .map_err(|error| ExportError::Failed(error.to_string()))
         };
-        let result = vv_session::export::export_timeline_with_gpu_cancellable(
-            &snapshot.project,
-            snapshot.timeline,
-            settings,
-            snapshot.query.frame..end,
-            progress,
-            cancel,
-            || {
-                let _local = self.gpu_gate.lock().unwrap_or_else(|p| p.into_inner());
-                let _global = program_lock
-                    .try_clone()
-                    .map_err(|_| failed(unavailable()))?;
-                let (mut compositor, _) = create_compositor(*device).map_err(failed)?;
-                compositor.set_precision(snapshot.project.precision);
-                complete(&compositor)?;
-                Ok(compositor)
-            },
-            |compositor| {
-                let local = self.gpu_gate.lock().unwrap_or_else(|p| p.into_inner());
-                let global = program_lock
-                    .try_clone()
-                    .map_err(|_| failed(unavailable()))?;
-                Ok(GpuPermit {
-                    _global: global,
-                    _local: local,
-                    device: compositor.device().clone(),
-                    poll_failed: &poll_failed,
-                })
-            },
-            2,
-        );
+        let create = || {
+            let _local = self.gpu_gate.lock().unwrap_or_else(|p| p.into_inner());
+            let _global = program_lock
+                .try_clone()
+                .map_err(|_| failed(unavailable()))?;
+            let (mut compositor, _) = create_compositor(*device).map_err(failed)?;
+            compositor.set_precision(snapshot.project.precision);
+            complete(&compositor)?;
+            Ok(compositor)
+        };
+        let acquire = |compositor: &Compositor| {
+            let local = self.gpu_gate.lock().unwrap_or_else(|p| p.into_inner());
+            let global = program_lock
+                .try_clone()
+                .map_err(|_| failed(unavailable()))?;
+            Ok(GpuPermit {
+                _global: global,
+                _local: local,
+                device: compositor.device().clone(),
+                poll_failed: &poll_failed,
+            })
+        };
+        let result = match observer {
+            Some(observer) => vv_session::export::export_timeline_with_gpu_observed(
+                &snapshot.project,
+                snapshot.timeline,
+                settings,
+                snapshot.query.frame..end,
+                progress,
+                cancel,
+                create,
+                acquire,
+                2,
+                observer,
+            ),
+            None => vv_session::export::export_timeline_with_gpu_cancellable(
+                &snapshot.project,
+                snapshot.timeline,
+                settings,
+                snapshot.query.frame..end,
+                progress,
+                cancel,
+                create,
+                acquire,
+                2,
+            ),
+        };
         if poll_failed.load(Ordering::Relaxed) {
             return Err(unavailable());
         }
@@ -630,8 +647,8 @@ fn balance_grade(snapshot: &FrameSnapshot, clip: vv_core::ClipId) -> Result<vv_c
         .effects
         .filters
         .iter()
-        .find(|f| f.kind == vv_core::FilterKind::ColorCorrection && f.enabled)
-        .ok_or_else(|| ApiError::invalid("Enable ColorCorrection on the selected clip first"))?;
+        .find(|f| f.kind == vv_core::FilterKind::ColorCorrection)
+        .ok_or_else(|| ApiError::invalid("Add ColorCorrection on the selected clip first"))?;
     Ok(grade
         .grade
         .value_at(clip.source_frame_at(snapshot.query.frame)))

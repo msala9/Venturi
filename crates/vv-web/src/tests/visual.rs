@@ -107,6 +107,14 @@ fn automatic_grade_values_use_native_source_keys_and_one_atomic_undo() {
         },
     )
     .unwrap();
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .filters[0]
+        .enabled = false;
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .filters
+        .push(core::ClipFilter::new(FilterKind::Exposure));
     let before = serde_json::to_value(&session.project).unwrap();
     let history = session.history.position();
     apply_grade_at_frame(
@@ -149,8 +157,20 @@ fn automatic_grade_values_use_native_source_keys_and_one_atomic_undo() {
     );
     assert!(grade.track(core::GradeParam::ShadowsX).is_constant());
     assert_eq!(grade.track(core::GradeParam::ShadowsX).default, 0.25);
+    let filters = &session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .filters;
+    assert!(
+        !filters[0].enabled,
+        "Editing a bypassed grade must not enable it"
+    );
+    assert_eq!(filters[1], core::ClipFilter::new(FilterKind::Exposure));
+    let after = serde_json::to_value(&session.project).unwrap();
     session.history.undo(&mut session.project);
     assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), after);
+    session.history.undo(&mut session.project);
     for values in [
         vec![],
         vec![GradeValue {

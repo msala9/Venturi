@@ -152,7 +152,7 @@ fn omitted_export_fields_preserve_legacy_canonical_bytes_output_and_cache_identi
         serde_json::to_string(task.export.as_ref().unwrap()).unwrap(),
         legacy
     );
-    assert_eq!(task.key(), format!("export:{preview_key}:{legacy}"));
+    assert_eq!(task.key(), format!("export:{}:{legacy}", task.query.key()));
     assert_eq!(
         task.settings(Path::new("/tmp")).output_size((1920, 1080)),
         (960, 540)
@@ -575,6 +575,42 @@ fn generated_preview_identity_detects_source_replacement_without_timeline_edits(
     let inputs = vec![(path.clone(), identity(&path).unwrap())];
     assert!(unchanged(&inputs));
     std::fs::write(&path, b"second version").unwrap();
+    assert!(!unchanged(&inputs));
+    std::fs::remove_file(path).unwrap();
+}
+
+#[test]
+fn program_source_witness_detects_restored_mtime_and_legacy_cache_witnesses_miss() {
+    let path = std::env::temp_dir().join(format!(
+        "vv-program-ctime-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::write(&path, b"first").unwrap();
+    let file = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
+    let before = file.metadata().unwrap();
+    let inputs = vec![(path.clone(), identity(&path).unwrap())];
+    let legacy = format!(
+        "{}:{}:{}:{}:{}",
+        before.dev(),
+        before.ino(),
+        before.len(),
+        before.mtime(),
+        before.mtime_nsec()
+    );
+    assert!(!unchanged(&vec![(path.clone(), legacy)]));
+    std::thread::sleep(Duration::from_millis(2));
+    std::fs::write(&path, b"other").unwrap();
+    file.set_times(std::fs::FileTimes::new().set_modified(before.modified().unwrap()))
+        .unwrap();
+    assert_eq!(
+        file.metadata().unwrap().modified().unwrap(),
+        before.modified().unwrap()
+    );
+    assert_eq!(file.metadata().unwrap().len(), before.len());
     assert!(!unchanged(&inputs));
     std::fs::remove_file(path).unwrap();
 }

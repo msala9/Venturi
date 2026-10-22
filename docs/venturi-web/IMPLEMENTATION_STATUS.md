@@ -14,6 +14,28 @@ Begin F1 with missing native multi-selection Inspector semantics and connected
 timeline interaction gaps. Report delivered functions, remaining defects and
 actual deployment state without subjective percentages.
 
+## Native reference UI and Color/Audio candidate
+
+The owner supplied the original editor screenshots and prioritized UI/UX fidelity.
+The candidate replaces permanent tool rows with compact application menus,
+compact media rows and Video/Audio/Selection properties; the Viewer receives the
+central space and narrow browsers use side drawers. Existing IDs, native editing
+operations and advanced entrypoints remain. Source controls and Viewer overlays
+open on demand. Timeline pointer inertia, native zoom/content bounds and
+playhead reveal are implemented without adding synthetic OS-wheel momentum.
+
+Color/Audio adds observed native Program telemetry, clock-bound Live meters,
+selected live scopes, compact grouped wheels, guarded Auto Balance, stopped
+Program reconciliation and held/resumed voiceover capture across preparation.
+The five-minute/64 MiB recording limit remains. Physical device acceptance is open.
+
+See evidence/native-ui-gate.json: the full JavaScript suite passes, native audio
+origin/PCM checks pass, the audition identity regression is fixed, embedded JS/CSS
+serving passes, and affected all-target Clippy/build pass on bounded halo2.
+Actual Windows UI/Color/Audio workflow is next; the delivered port-8811 version
+remains df50859 until a guarded upgrade. The source ledger is45 done/45 partial;
+this gate does not by itself close remaining capabilities.
+
 ## F1 implementation â€” integrated qualification in progress
 
 The selected Inspector now follows native per-property target and clock rules:

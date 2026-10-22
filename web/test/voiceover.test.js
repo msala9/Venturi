@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {createVoiceover,voiceoverIdentity,voiceoverPlacement} from "../js/voiceover.js";
+import {createVoiceover,voiceoverIdentity,voiceoverPlacement,voiceoverPlaybackClock} from "../js/voiceover.js";
+import {CaptureBuffer} from '../js/capture-buffer.js';
 
 test("voiceover placement remains bound to the captured native revision and armed tracks while transport advances",()=>{
   const target={project_epoch:"epoch",generation:"2",timeline_id:"1",revision:"revision",start_frame:12,tracks:["2","1"]};
@@ -60,4 +61,46 @@ test("unsaved take discard can be canceled and saved audio is retained on the se
   let allow=false;const h=harness({api:async()=>{throw Error("No receipt");},fetcher:async()=>{throw Error("Offline");},confirmDiscard:()=>allow});await h.voice.open();h.button("start").click();await settle();h.button("stop").click();await settle();
   h.button("discard").click();assert.equal(h.button("start").disabled,true);allow=true;h.button("discard").click();assert.equal(h.button("start").disabled,false);assert.equal(h.nodes["[data-voice-backup]"].hidden,true);assert.match(h.nodes.output.textContent,/Unsaved take discarded/);
   const saved=harness({confirmDiscard:()=>{throw Error("Saved audio must not be deleted");}});await saved.voice.open();saved.button("start").click();await settle();saved.button("stop").click();await settle();saved.button("discard").click();assert.match(saved.nodes.output.textContent,/saved audio remains/);assert.equal(saved.uploads.length,1);assert.equal(saved.button("start").disabled,false);
+});
+
+function rolloverHarness(){
+  const video=new Control();video.paused=true;video.ended=false;video.readyState=4;video.playbackRate=1;
+  let clock={state:'playing',project_epoch:'epoch',generation:'1',timeline_id:'1',revision:'rev',audio_origin_frame:12,window_start_sample:1200,window_end_sample:1203,sample:1200,sequence:1},buffer;
+  const lifecycle={starts:0,resumes:0,holds:0,closed:0,pauses:0},uploads=[];
+  const h=harness({playback:{video,clock:()=>clock,start:async()=>{video.paused=false;video.dispatchEvent(new Event('playing'));},pause(){lifecycle.pauses++;video.paused=true;clock={...clock,state:'stopped'};h.voice.syncPlayback();}},captureFactory:async({onChunk,onDone,onHold})=>{
+    buffer=new CaptureBuffer({channels:1,maxFrames:20,chunkFrames:2,onChunk,onDone,onHold});
+    return {sampleRate:48000,channels:1,start({untilFrames}){lifecycle.starts++;buffer.resume(Math.min(20,untilFrames));},resume({untilFrames}){lifecycle.resumes++;buffer.resume(Math.min(20,untilFrames));},hold(){lifecycle.holds++;buffer.hold();},async stop(){buffer.stop();},async close(){lifecycle.closed++;}};
+  },fetcher:async(url,request)=>{uploads.push(request.body);const id=url.split('/recordings/')[1].split('?')[0];return {ok:true,json:async()=>({id,frames:request.body.size/4,sample_rate:48000,channels:1,format:'wav',path_token:'captured.wav'})};}});
+  h.target.canPlayback=true;
+  return {...h,video,lifecycle,uploads,clock:()=>clock,setClock:value=>{clock={...clock,...value};},push:values=>buffer.push([new Float32Array(values)])};
+}
+
+test('voiceover records across a short Program tail and preparation without uploading early or capturing wait samples',async()=>{
+  const h=rolloverHarness();await h.voice.open();h.button('start').click();await settle();h.push([.1,.2,.3,.9]);assert.equal(h.lifecycle.starts,1);assert.equal(h.uploads.length,0);assert.equal(h.button('stop').disabled,false);
+  h.setClock({state:'holding',sample:1203});h.video.paused=true;h.video.ended=true;h.video.dispatchEvent(new Event('pause'));h.video.dispatchEvent(new Event('ended'));h.voice.syncPlayback();h.push([.9,.9]);await settle();assert.equal(h.uploads.length,0);assert.equal(h.lifecycle.closed,0);
+  h.setClock({state:'holding',window_start_sample:1203,window_end_sample:1207,sample:1203,sequence:2});h.voice.syncPlayback();h.push([.9]);assert.equal(h.lifecycle.resumes,0);
+  h.setClock({state:'playing'});h.video.paused=false;h.video.ended=false;h.video.dispatchEvent(new Event('playing'));h.push([.4,.5,.6,.7,.9]);assert.equal(h.lifecycle.resumes,1);
+  h.setClock({state:'stopped',sample:1207});h.video.paused=true;h.video.ended=true;h.video.dispatchEvent(new Event('ended'));await settle();
+  assert.equal(h.uploads.length,1);assert.deepEqual(Array.from(new Float32Array(await h.uploads[0].arrayBuffer())),Array.from(new Float32Array([.1,.2,.3,.4,.5,.6,.7])));assert.equal(h.lifecycle.closed,1);assert.equal(h.lifecycle.pauses,0);assert.equal(h.button('apply').disabled,false);
+});
+
+test('buffering hold excludes input until actual playing and ignores a stale pause after playback resumed',async()=>{
+  const h=rolloverHarness();await h.voice.open();h.button('start').click();await settle();h.push([.1,.2]);h.setClock({state:'holding',sample:1202});h.video.readyState=2;h.video.dispatchEvent(new Event('waiting'));h.push([.9,.9]);assert.equal(h.lifecycle.holds,1);
+  h.voice.syncPlayback();h.push([.9]);assert.equal(h.lifecycle.resumes,0);h.setClock({state:'playing'});h.video.readyState=4;h.video.dispatchEvent(new Event('playing'));h.video.dispatchEvent(new Event('pause'));h.push([.3,.9]);
+  h.button('stop').click();await settle();assert.equal(h.uploads.length,1);assert.deepEqual(Array.from(new Float32Array(await h.uploads[0].arrayBuffer())),Array.from(new Float32Array([.1,.2,.3])));assert.equal(h.lifecycle.resumes,1);assert.equal(h.lifecycle.pauses,1);
+});
+
+test('cancel or document change while held closes once and never resumes a late Program window',async()=>{
+  for(const changed of [false,true]){
+    const h=rolloverHarness();await h.voice.open();h.button('start').click();await settle();h.push([.1,.2,.3]);h.setClock({state:'holding',sample:1203});h.voice.syncPlayback();
+    if(changed){h.target.revision='new';h.voice.invalidate();}else h.button('stop').click();await settle();
+    h.setClock({state:'playing',window_start_sample:1203,window_end_sample:1207,sample:1203,sequence:2});h.video.paused=false;h.video.dispatchEvent(new Event('playing'));h.voice.syncPlayback();h.push([.9,.9]);await settle();
+    assert.equal(h.lifecycle.resumes,0);assert.equal(h.lifecycle.closed,1);assert.equal(h.uploads.length,1);assert.equal(h.uploads[0].size,12);assert.equal(h.lifecycle.pauses,changed?0:1);
+  }
+});
+
+test('voiceover clock rejects stale context, malformed bounds and a changed playback lineage',async()=>{
+  const h=rolloverHarness(),clock=h.clock();assert.equal(voiceoverPlaybackClock(clock,h.target),clock);
+  for(const patch of [{revision:'new'},{generation:'2'},{sample:1199},{window_end_sample:1200},{sequence:NaN}])assert.equal(voiceoverPlaybackClock({...clock,...patch},h.target),null);
+  await h.voice.open();h.button('start').click();await settle();h.push([.1,.2,.3]);h.setClock({state:'holding',sample:1203});h.voice.syncPlayback();h.setClock({state:'playing',audio_origin_frame:13,window_start_sample:1203,window_end_sample:1207,sample:1203,sequence:2});h.video.paused=false;h.video.dispatchEvent(new Event('playing'));await settle();assert.equal(h.lifecycle.resumes,0);assert.equal(h.uploads.length,1);assert.equal(h.lifecycle.pauses,0);
 });

@@ -26,6 +26,10 @@ import {
   clipsInTimelineRect,
   moveTrackTargets,
   groupMoveStart,
+  MIN_TIMELINE_SCALE,
+  MAX_TIMELINE_SCALE,
+  timelineScrollBounds,
+  kineticScrollStep,
 } from "./geometry.js";
 import {isTextTarget} from '../ui.js';
 import {createPresetDrop} from './preset-drop.js';
@@ -68,11 +72,15 @@ export function createInput({
   onTransitionSelect = () => {},
   onRetimeMenu = () => {},
   onRetimeVisibilityChange = () => {},
+  now = () => performance.now(),
+  requestFrame = callback => window.requestAnimationFrame?.(callback),
+  cancelFrame = id => window.cancelAnimationFrame?.(id),
 }) {
   let gesture = null,
     waiting = false,
     transitionDrag = null,
-    presetDrop = null;
+    presetDrop = null,
+    coast = null;
   const syncLayout=()=>{
     const rect=canvas.getBoundingClientRect(),height=canvas.clientHeight ?? rect.height;
     if(Number.isFinite(height))view.viewportHeight=height;
@@ -97,6 +105,33 @@ export function createInput({
   };
   const modal=()=>Boolean(canvas.ownerDocument?.querySelector?.('dialog[open]'));
   const gapContext=timeline=>JSON.stringify([timeline?.id,timeline?.revision,getGapContext()]);
+  const scrollOffsets=()=>JSON.stringify([view.origin,view.videoScroll,view.audioScroll]);
+  const scrollContext=timeline=>JSON.stringify([gapContext(timeline),view.scale,view.rowHeight,view.videoPaneHeight,view.tool,view.playhead,view.selection,view.selectionAnchor,canvasMapping()]);
+  const scrollBounds=timeline=>timelineScrollBounds(timeline,view,canvas.clientWidth ?? canvas.getBoundingClientRect().width);
+  const panCurrent=g=>getTimeline()===g.timeline && scrollContext(g.timeline)===g.context && scrollOffsets()===g.offsets && !modal() && !canvas.ownerDocument?.hidden && canNavigate();
+  function stopCoast(){const previous=coast;coast=null;if(previous?.frame!==null && previous?.frame!==undefined)cancelFrame(previous.frame);}
+  function coastFrame(owner){
+    let id;id=requestFrame(timestamp=>{
+      if(coast!==owner || owner.frame!==id)return;owner.frame=null;
+      if(gesture || transitionDrag || presetDrop?.active() || waiting || !panCurrent(owner)){stopCoast();return;}
+      const bounds=owner.bounds,layout=syncLayout(),dt=(timestamp-owner.at)/1000;owner.at=timestamp;
+      const horizontal=kineticScrollStep(view.origin*bounds.pixelsPerFrame,owner.vx,bounds.maxOffset,dt);
+      const vertical=kineticScrollStep(owner.pane==='video'?view.videoScroll:view.audioScroll,owner.vy,owner.pane==='video'?layout.videoMaxScroll:owner.pane==='audio'?layout.audioMaxScroll:0,dt);
+      view.origin=bounds.pixelsPerFrame?horizontal.offset/bounds.pixelsPerFrame:0;
+      if(owner.pane==='video')view.videoScroll=vertical.offset;
+      if(owner.pane==='audio')view.audioScroll=vertical.offset;
+      owner.vx=horizontal.velocity;owner.vy=vertical.velocity;owner.offsets=scrollOffsets();
+      if(horizontal.moved || vertical.moved)invalidate();
+      if(owner.vx || owner.vy)coastFrame(owner);else stopCoast();
+    });
+    if(id===undefined || id===null){stopCoast();return;}owner.frame=id;
+  }
+  function releasePan(g){
+    if(!panCurrent(g) || now()-g.lastMove>100 || !Number.isFinite(g.vx) || !Number.isFinite(g.vy))return;
+    const owner={...g,bounds:scrollBounds(g.timeline),vx:g.vx*1.6,vy:g.vy*1.6,at:now(),frame:null};
+    if(Math.abs(owner.vx)<15)owner.vx=0;if(Math.abs(owner.vy)<15)owner.vy=0;
+    if(!owner.vx && !owner.vy)return;coast=owner;coastFrame(owner);
+  }
   const checkGapSelection=()=>{
     if(view.selectedGap && (!selectedGap(getTimeline(),view) || view.selectedGap.context!==gapContext(getTimeline())))view.selectedGap=null;
     return selectedGap(getTimeline(),view);
@@ -119,6 +154,7 @@ export function createInput({
     syncLayout();g.context=transitionContext(g.timeline);invalidate();
   };
   const cancel = (notify=true) => {
+    stopCoast();
     viewportMapping=canvasMapping();
     const previous=gesture;
     const slipping = gesture?.kind === "slip";
@@ -275,6 +311,7 @@ export function createInput({
     gesture={...gesture,fromTransitionBody:true,pointerId:g.pointerId,timeline,context:transitionContext(timeline),source:g.source,sourceIdentity:g.sourceIdentity};return true;
   }
   const down = (event) => {
+    stopCoast();
     if (waiting || gesture || transitionDrag || presetDrop?.active() || modal() || event.defaultPrevented || event.isComposing || !canNavigate()) return;
     const timeline = getTimeline();
     if (!timeline) return;
@@ -306,6 +343,7 @@ export function createInput({
         y,
         origin: view.origin,
         pane:syncLayout().paneAtY(y),videoScroll:view.videoScroll,audioScroll:view.audioScroll,
+        timeline,pointerId:event.pointerId,button:event.button,context:scrollContext(timeline),offsets:scrollOffsets(),sampleAt:now(),lastMove:-Infinity,vx:0,vy:0,
       };
     } else if (event.button !== 0) return;
     else if(['transition','retime','retime_menu','retime_close'].includes(hit.kind)){
@@ -326,6 +364,7 @@ export function createInput({
     invalidate();
   };
   const move = (event,allowRelease=false) => {
+    stopCoast();
     if(presetDrop?.active())return;
     if (!gesture) {
       const timeline = getTimeline(); if (!timeline) return;
@@ -397,14 +436,21 @@ export function createInput({
       if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
       view.draft=fadeDraft(g.clip,g.edge,Math.round((x-g.x)*timeline.fps.num/(view.scale*timeline.fps.den)));
     } else if (g.kind === "pan") {
+      if(event.pointerId!==g.pointerId)return;
+      if(!panCurrent(g) || (!allowRelease && event.buttons!==undefined && !(event.buttons&(g.button===1?4:1)))){cancel();return;}
+      const beforeOrigin=view.origin,beforeVertical=g.pane==='video'?view.videoScroll:g.pane==='audio'?view.audioScroll:0,time=now(),elapsed=(time-g.sampleAt)/1000,bounds=scrollBounds(timeline);
       view.origin = Math.max(
         0,
-        g.origin -
+        Math.min(bounds.maxOrigin,g.origin -
           (x - g.x) / ((view.scale * timeline.fps.den) / timeline.fps.num),
+        ),
       );
       if(g.pane==='video')view.videoScroll=g.videoScroll+y-g.y;
       if(g.pane==='audio')view.audioScroll=g.audioScroll-(y-g.y);
       syncLayout();
+      const dx=(view.origin-beforeOrigin)*bounds.pixelsPerFrame,dy=(g.pane==='video'?view.videoScroll:g.pane==='audio'?view.audioScroll:0)-beforeVertical;
+      if(dx || dy){g.vx=elapsed>0 && elapsed<=.1?dx/elapsed:0;g.vy=elapsed>0 && elapsed<=.1?dy/elapsed:0;g.lastMove=time;}
+      g.sampleAt=time;g.offsets=scrollOffsets();
     } else if (g.kind === "scrub") {
       view.playhead = xToFrame(x, view, timeline.fps);
       onSeek(false);
@@ -495,6 +541,12 @@ export function createInput({
     if (!gesture) return;
     const g = gesture,
       timeline = getTimeline();
+    if(g.kind==='pan'){
+      if(event.pointerId!==g.pointerId || event.button!==g.button)return;
+      move(event,true);if(gesture!==g)return;
+      gesture=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+      releasePan(g);invalidate();return;
+    }
     if(g.kind==='pane_scrollbar'){
       if(event.pointerId!==g.pointerId || event.button!==0)return;
       move(event,true);if(gesture!==g)return;
@@ -629,6 +681,8 @@ export function createInput({
     invalidate();
   };
   const wheel = (event) => {
+    // Browser wheel events already contain the operating system's momentum tail.
+    stopCoast();
     if(event.defaultPrevented || event.metaKey || event.isComposing || event.getModifierState?.('AltGraph') || waiting || modal() || !canNavigate())return;
     onNavigationIntent();
     if(presetDrop?.active() || transitionDrag || gesture)cancel();
@@ -640,8 +694,8 @@ export function createInput({
     if (event.altKey) {
       const oldScale=view.scale;
       view.scale = Math.max(
-        3,
-        Math.min(2000, view.scale * Math.exp(-deltaY * 0.004)),
+        MIN_TIMELINE_SCALE,
+        Math.min(MAX_TIMELINE_SCALE, view.scale * Math.exp(-deltaY * 0.004)),
       );
       view.origin=Math.max(0,view.playhead-(view.playhead-view.origin)*oldScale/view.scale);
     } else if(event.ctrlKey)view.origin=Math.max(0,view.origin+(deltaX || deltaY)/((view.scale*timeline.fps.den)/timeline.fps.num));
@@ -652,10 +706,12 @@ export function createInput({
       if(pane==='audio')view.audioScroll+=deltaY;
       view.origin=Math.max(0,view.origin+deltaX/((view.scale*timeline.fps.den)/timeline.fps.num));
     }
+    view.origin=Math.max(0,Math.min(scrollBounds(timeline).maxOrigin,view.origin));
     syncLayout();
     invalidate();
   };
   const key = (event) => {
+    stopCoast();
     if(presetDrop?.active()){if(event.key==='Escape'){event.preventDefault?.();event.stopPropagation?.();cancel();}return;}
     if(handleSelectionKey(event))return;
     if(handleGapKey(event))return;
@@ -675,6 +731,7 @@ export function createInput({
     const mapping=canvasMapping();
     // Inspector rebuilds can scroll a separate pane without changing Canvas coordinates.
     if(event?.type==='scroll' && mapping===viewportMapping && !modal() && !documentRef?.hidden)return;
+    stopCoast();
     if(presetDrop?.active() || transitionDrag || gesture)cancel();
     viewportMapping=mapping;syncLayout();invalidate();
   };
@@ -695,6 +752,7 @@ export function createInput({
     return true;
   }
   function dragOver(event){
+    stopCoast();
     if(presetDrop?.over(event))return;
     if(!transitionPayload(event) || !currentTransitionDrag())return;
     event.preventDefault();view.draft=placementAt(transitionDrag,...point(event));event.dataTransfer.dropEffect=view.draft.error?'none':'copy';invalidate();
@@ -732,6 +790,10 @@ export function createInput({
   window.addEventListener('dragend',endDrag);
   window.addEventListener('resize',viewportChanged);
   window.addEventListener('scroll',viewportChanged,true);
+  window.addEventListener('pointerdown',stopCoast,true);
+  window.addEventListener('pointermove',stopCoast,true);
+  window.addEventListener('keydown',stopCoast,true);
+  window.addEventListener('wheel',stopCoast,true);
   documentRef?.addEventListener('visibilitychange',visibilityChanged);
   return {
     cancel,
@@ -748,7 +810,7 @@ export function createInput({
     handleSelectionKey,
     transitionDnd:{type:TRANSITION_DRAG_TYPE,start:startTransitionDrag,end:endTransitionDrag},
     presetDnd:presetDrop.dnd,
-    navigationIdle:()=>!gesture && !waiting && !transitionDrag && !presetDrop.active() && !view.draft && !view.lasso,
+    navigationIdle:()=>!gesture && !coast && !waiting && !transitionDrag && !presetDrop.active() && !view.draft && !view.lasso,
     checkPresetDrop:()=>presetDrop.current(),
     destroy() {
       cancel();
@@ -771,6 +833,10 @@ export function createInput({
       window.removeEventListener('dragend',endDrag);
       window.removeEventListener('resize',viewportChanged);
       window.removeEventListener('scroll',viewportChanged,true);
+      window.removeEventListener('pointerdown',stopCoast,true);
+      window.removeEventListener('pointermove',stopCoast,true);
+      window.removeEventListener('keydown',stopCoast,true);
+      window.removeEventListener('wheel',stopCoast,true);
       documentRef?.removeEventListener('visibilitychange',visibilityChanged);
     },
   };

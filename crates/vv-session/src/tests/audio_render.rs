@@ -232,6 +232,154 @@ fn web_audio_origin_windows_match_whole_native_eq_compressor_and_normalization()
 }
 
 #[test]
+fn web_audio_telemetry_observes_the_encoded_origin_pcm_with_continuous_dsp_across_native_source_chunks()
+ {
+    let file = origin_audio_file();
+    let mut project = Project::default();
+    let id = media(&mut project, file.0.clone(), PROJECT_SAMPLE_RATE, 1);
+    project.media_pool[id].meta.duration_frames = 25;
+    for normalize_output in [false, true] {
+        let mut active = audio_track(vec![clip(1, id, 0, 25, 0), clip(2, id, 0, 25, 130)]);
+        active.mix.effects = vec![
+            effect(AudioEffectKind::Equalizer(boosting_eq())),
+            effect(AudioEffectKind::MultibandCompressor(
+                MultibandCompressor::DEFAULT,
+            )),
+        ];
+        let mut silent = audio_track(vec![clip(3, id, 0, 25, 0)]);
+        silent.muted = true;
+        let mut tl = timeline(vec![active, silent]);
+        if normalize_output {
+            tl.master.effects.push(normalize(NormalizeMode::SamplePeak));
+        }
+        let origin = FRAME_SAMPLES;
+        let range = origin + 1234..origin + CHUNK_FRAMES + 25000;
+        let expected = origin_rendered(&project, &tl, range.clone(), origin);
+        let mut bins = Vec::new();
+        let mut observed = Vec::new();
+        let mut peak = 0.0_f32;
+        let mut observer = |hop: Range<u64>, pcm: &[f32], snapshot: &MixSnapshot| {
+            assert!(hop.end <= range.end);
+            assert!(hop.end - hop.start <= OBSERVER_FRAMES);
+            if let Some(previous) = bins.last() {
+                assert_eq!(*previous, hop.start);
+            }
+            bins.push(hop.end);
+            let master = snapshot.meters.master().take();
+            let expected_l = pcm
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .fold(0.0_f32, |peak, frame| peak.max(frame[0].abs()));
+            let expected_r = pcm
+                .as_chunks::<2>()
+                .0
+                .iter()
+                .fold(0.0_f32, |peak, frame| peak.max(frame[1].abs()));
+            assert_eq!(master, (expected_l, expected_r));
+            peak = peak.max(master.0);
+            assert_eq!(snapshot.meters.track(1).unwrap().take(), (0.0, 0.0));
+            let tap = snapshot
+                .meters
+                .spectrum(vv_core::MixerChannel::Track(0), 0)
+                .unwrap();
+            assert!(tap.written() > 0);
+            assert_eq!(tap.read().0.len(), vv_audio::spectrum::SPECTRUM_SIZE);
+            assert!(
+                snapshot
+                    .meters
+                    .band_meter(vv_core::MixerChannel::Track(0), 1)
+                    .is_some()
+            );
+        };
+        render_offline_observed(
+            &project,
+            &tl,
+            range.clone(),
+            origin,
+            &mut LevelCache::default(),
+            &mut observer,
+            |pcm| {
+                observed.extend_from_slice(pcm);
+                ControlFlow::Continue(())
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            observed, expected,
+            "Meter hops must leave every encoded PCM sample unchanged"
+        );
+        assert!(bins.len() > 64);
+        assert!(peak > 0.01);
+    }
+}
+
+#[test]
+fn web_audio_telemetry_prefix_peaks_do_not_leak_into_visible_bins_and_observer_cancellation_is_shared()
+ {
+    let file = origin_audio_file();
+    let mut project = Project::default();
+    let id = media(&mut project, file.0.clone(), PROJECT_SAMPLE_RATE, 1);
+    let tl = timeline(vec![audio_track(vec![clip(1, id, 0, 1, 0)])]);
+    let mut seen = Vec::new();
+    let mut output = Vec::new();
+    render_offline_observed(
+        &project,
+        &tl,
+        OBSERVER_FRAMES * 2..OBSERVER_FRAMES * 4,
+        0,
+        &mut LevelCache::default(),
+        &mut |range, _, snapshot| {
+            let peak = snapshot.meters.master().take();
+            if range.end > OBSERVER_FRAMES * 2 {
+                assert_eq!(
+                    peak,
+                    (0.0, 0.0),
+                    "A loud prefix is not part of these silent output bins"
+                );
+                seen.push(range);
+            }
+        },
+        |pcm| {
+            output.extend_from_slice(pcm);
+            ControlFlow::Continue(())
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        seen,
+        vec![
+            OBSERVER_FRAMES * 2..OBSERVER_FRAMES * 3,
+            OBSERVER_FRAMES * 3..OBSERVER_FRAMES * 4
+        ]
+    );
+    assert!(output.iter().all(|sample| *sample == 0.0));
+    let cancel = Arc::new(AtomicBool::new(false));
+    let mut cache = LevelCache::default();
+    cache.cancel = Some(cancel.clone());
+    let mut published = 0;
+    let mut reads = 0;
+    let result = render_offline_observed(
+        &project,
+        &tl,
+        0..OBSERVER_FRAMES * 3,
+        0,
+        &mut cache,
+        &mut |_, _, _| {
+            reads += 1;
+            cancel.store(true, Ordering::Relaxed);
+        },
+        |pcm| {
+            published += pcm.len();
+            ControlFlow::Continue(())
+        },
+    );
+    assert_eq!(result, Err(ExportError::Cancelled));
+    assert_eq!(reads, 1);
+    assert_eq!(published, 0);
+}
+
+#[test]
 fn web_audio_origin_nested_fractional_windows_use_absolute_native_sample_boundaries() {
     let file = origin_audio_file();
     let mut project = Project::default();

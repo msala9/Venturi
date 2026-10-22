@@ -13,7 +13,9 @@ use vv_core::{Clip, ClipId, FrameIdx, Project, Timeline, TimelineId, TrackKind};
 
 use vv_audio::mixer::{PROJECT_SAMPLE_RATE, timeline_frame_to_sample};
 
-use crate::audio_render::{LevelCache, render_offline, render_offline_from_origin};
+use crate::audio_render::{
+    AudioObserver, LevelCache, render_offline, render_offline_from_origin, render_offline_observed,
+};
 
 use crate::frame_provider::{
     FrameProvider, GpuCompounds, OwnedLayer, media_source_frame, stack_layers, track_layers_at,
@@ -364,6 +366,7 @@ pub fn export_timeline_with_gpu<G>(
         progress,
         cancel,
         None,
+        None,
         create_compositor,
         acquire_gpu,
         cpu_threads,
@@ -390,6 +393,35 @@ pub fn export_timeline_with_gpu_cancellable<G>(
         progress,
         cancel,
         Some(cancel.clone()),
+        None,
+        create_compositor,
+        acquire_gpu,
+        cpu_threads,
+    )
+}
+
+/// Adds bounded observations to the audio already being sent to the encoder.
+pub fn export_timeline_with_gpu_observed<G>(
+    project: &Project,
+    timeline_id: TimelineId,
+    settings: &ExportSettings,
+    range: std::ops::Range<FrameIdx>,
+    progress: &Mutex<ExportProgress>,
+    cancel: &Arc<AtomicBool>,
+    create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
+    acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
+    cpu_threads: usize,
+    observer: &mut AudioObserver<'_>,
+) -> Result<(), ExportError> {
+    export_timeline_configured(
+        project,
+        timeline_id,
+        settings,
+        range,
+        progress,
+        cancel,
+        Some(cancel.clone()),
+        Some(observer),
         create_compositor,
         acquire_gpu,
         cpu_threads,
@@ -404,6 +436,7 @@ fn export_timeline_configured<G>(
     progress: &Mutex<ExportProgress>,
     cancel: &AtomicBool,
     audio_cancel: Option<Arc<AtomicBool>>,
+    audio_observer: Option<&mut AudioObserver<'_>>,
     create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
     acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
     cpu_threads: usize,
@@ -496,20 +529,35 @@ fn export_timeline_configured<G>(
                         Err(_) => ControlFlow::Break(()),
                     }
                 };
-                let rendered = match settings.audio_render_origin {
-                    Some(origin) => render_offline_from_origin(
-                        project,
-                        timeline,
-                        samples,
-                        timeline_frame_to_sample(
-                            origin,
-                            timeline.fps.as_f64(),
-                            PROJECT_SAMPLE_RATE,
+                let rendered = if let Some(observer) = audio_observer {
+                    let origin = settings
+                        .audio_render_origin
+                        .map_or(samples.start, |origin| {
+                            timeline_frame_to_sample(
+                                origin,
+                                timeline.fps.as_f64(),
+                                PROJECT_SAMPLE_RATE,
+                            )
+                        });
+                    render_offline_observed(
+                        project, timeline, samples, origin, levels, observer, sink,
+                    )
+                } else {
+                    match settings.audio_render_origin {
+                        Some(origin) => render_offline_from_origin(
+                            project,
+                            timeline,
+                            samples,
+                            timeline_frame_to_sample(
+                                origin,
+                                timeline.fps.as_f64(),
+                                PROJECT_SAMPLE_RATE,
+                            ),
+                            levels,
+                            sink,
                         ),
-                        levels,
-                        sink,
-                    ),
-                    None => render_offline(project, timeline, samples, levels, sink),
+                        None => render_offline(project, timeline, samples, levels, sink),
+                    }
                 };
                 rendered?;
                 if cancel.load(Ordering::Relaxed) {

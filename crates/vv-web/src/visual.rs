@@ -227,8 +227,8 @@ pub fn apply_grade_at_frame(
     let mut filters = clip.effects.filters.clone();
     let grade = &mut filters
         .iter_mut()
-        .find(|f| f.kind == FilterKind::ColorCorrection && f.enabled)
-        .ok_or_else(|| ApiError::invalid("Enable ColorCorrection on the selected clip first"))?
+        .find(|f| f.kind == FilterKind::ColorCorrection)
+        .ok_or_else(|| ApiError::invalid("Add ColorCorrection on the selected clip first"))?
         .grade;
     let animated = core::GradeParam::ALL.map(|param| {
         core::GradeWheel::of(param).map_or_else(

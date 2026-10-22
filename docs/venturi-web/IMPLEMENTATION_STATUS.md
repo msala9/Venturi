@@ -4,8 +4,9 @@
 
 ## Active completion objective
 
-The next connected implementation gate passes for verified take replacement
-and playback memory admission; see `evidence/f6-verified-take-gate.json`.
+The connected verified-take implementation and Windows/R9700 workflow pass;
+see `evidence/f6-verified-take-gate.json` and
+`evidence/f6-verified-take-workflow.json`.
 Plan/Confirm now bind to the displayed B version, including original stills,
 and exact approved nested/Pasted Images paths survive replacement. The native
 take probe runs outside the Session actor with cancellation and final revision/
@@ -13,9 +14,32 @@ descriptor checks. Source ALL avoids an unused selected-audio buffer; Program
 excludes video outside its requested range while retaining real native eager
 audio and active compound costs. Validation: 224 affected JavaScript cases,
 529 Rust cases with three affected reruns, all-target Clippy and offline build.
-The isolated candidate's Windows/R9700 choose/compare/replace/save/export
-workflow remains pending; these source fixes are not yet deployed on port8814.
-The accepted ledger remains 46 done / 44 partial / 2 excluded.
+The 20-shot/60-take fixture completes 20 linked replacements, followed by a
+Windows stale-B refusal, one-entry replacement/Undo/Redo, Save and isolated
+restart with exact native timeline/media and Review metadata preservation.
+The saved 1280x720 preview matches native R9700 RGBA bytes. A 1920x1080,
+1440-frame H.264/AAC export completes in 16.689 seconds, passes decoded tone/gap
+checks, downloads and reaches natural 60.01-second EOF in the Windows player.
+The reopened Saved project retains the durable export and its download.
+Only `replace_take_atomic` advances to done: 47 done / 43 partial / 2 excluded.
+`compare_take_AB` remains partial for sustained full-resolution comparison and
+physical audio acceptance. Qualified source `a7565f6` ran only on isolated
+port8813 and is stopped Saved; protected port8814 still serves its existing
+`3f4de7f4` binary. The full F1-F7 objective remains active.
+
+Source `eedcae3` completes the native/Web EQ and compressor catalog increment:
+native Mixer now uses the shared catalog, lock, CAS and durable recovery journal,
+preserving legacy Settings and Save drafts. Web refuses pending native recovery.
+Its focused gate passes 9 JavaScript, 11 Web Rust and 45 native cases, all-target
+Clippy and the offline embedded build under eight-CPU/4-GiB/no-swap limits.
+Actual Windows library-only Save leaves the complete Session/history unchanged;
+Apply uses one Undo, Undo/Redo restore exact timelines, and Save/restart retain
+the applied EQ and shared preset. Clip list also closes before Export controls.
+See `evidence/f5-shared-audio-presets-gate.json` and
+`evidence/f5-shared-audio-presets-workflow.json`. The finite GPU-disabled
+qualification service is stopped Saved. Canonical NAS/native-Web filesystem
+coordination and physical desktop acceptance remain open; F5 stays partial.
+This increment is committed and qualified separately from protected port8814.
 
 The updated working candidate is delivered at **http://127.0.0.1:8814/**,
 source `3952711`; see `evidence/current-workspace-delivery.json`. The enabled
@@ -30,7 +54,7 @@ functions and requested a new goal on 2026-10-22. Follow
 [COMPLETION_PLAN.md](COMPLETION_PLAN.md): F1 editing/Inspector, F2 media/playback/
 export, F3 advanced effects/timeline, F4 Color/Audio/recording, F5 shared library/
 presets, F6 AI Review and F7 integrated release. The original baseline was 42
-done and 48 partial; the current accepted ledger contains 46 done and 44 partial
+done and 48 partial; the current accepted ledger contains 47 done and 43 partial
 in-scope capabilities. Continue the connected remaining blocks in that plan.
 Report delivered functions, remaining defects and actual deployment state
 without subjective percentages.

@@ -96,7 +96,10 @@ Twenty-shot montage acceptance additionally covers 60 takes, per-shot flags,
 20 native linked replacements with exact middle keys and unchanged placement,
 restart metadata equality and a full 60-second x264/AAC export. Decoded output
 verifies frame count, source tones and black/silent explicit gaps. This was CPU
-acceptance; current Review-specific R9700 acceptance remains open.
+acceptance. On 2026-10-22, `evidence/f6-verified-take-workflow.json` adds
+Review-specific native/API R9700 pixel parity and a full-HD export/download/
+natural-EOF workflow, qualifying `replace_take_atomic`. Sustained full-resolution
+A/B throughput and physical audio acceptance remain open for `compare_take_AB`.
 
 TS-011 additionally uses two verified own-process SIGKILLs after completed native
 recovery snapshots. Snapshot receipts survive unchanged; recovery copies match

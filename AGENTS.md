@@ -7,8 +7,10 @@ every agent, not just Claude: read it before making changes.
 
 The owner reported that local builds, preview servers and concurrent tests made
 the Windows PC unusable. Keep heavy compilation, rendering and soak tests off
-this workstation. Use halo2 with explicit resource limits, one build job and low
-priority. Local file edits, Git and short SSH orchestration remain appropriate.
+this workstation. The owner explicitly authorized up to eight CPUs on halo2 on
+2026-10-22. Use bounded build concurrency, explicit RAM/I/O limits and low
+priority; retain the no-swap and one-heavy-workload-at-a-time policy. Local file
+edits, Git and short SSH orchestration remain appropriate.
 Do not restart local test fleets or reopen multiple browser test tabs. Preserve
 unsaved sessions when stopping test processes. On halo2, preserve the live editor
 and all foreign inference workloads; GPU use still requires its shared lock.

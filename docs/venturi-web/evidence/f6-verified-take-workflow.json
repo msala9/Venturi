@@ -1,0 +1,368 @@
+{
+  "date": "2026-10-22",
+  "status": "passed; replace_take_atomic qualified, compare_take_AB remains partial",
+  "scope": "Connected choose/compare/replace/save/restart/export on own synthetic 20-shot/60-take fixture",
+  "candidate": {
+    "source_commit": "a7565f69134157cf72adf80ac9fda7ee3b9deba9",
+    "binary_sha256": "7d5b146838ca145d3a5400f699b4785093144dd4af52f4d8bb565f9ad41f8ef3",
+    "port": 8813,
+    "unit": "venturi-verified-take-20261022.service",
+    "final_state": "stopped_saved",
+    "project": "Verified_Take_Montage.vvproj",
+    "project_sha256": "eeed9a9e486a1a4f93261812999b9708e617ede538503f264d630fa89a89aad4",
+    "deployment": "Isolated qualification only; protected port 8814 remains on existing 3f4de7f4 binary"
+  },
+  "fixture": {
+    "shots": 20,
+    "takes": 60,
+    "linked_replacements": 20,
+    "linked_changes": 40,
+    "all_replacements_have_two_changes": true,
+    "shorten_B": 10,
+    "preserve_C": 10,
+    "video_clips": 20,
+    "audio_clips": 20,
+    "fps": {
+      "num": 24,
+      "den": 1
+    },
+    "duration_frames": 1440,
+    "middle_opacity_value": 65,
+    "middle_key_check": "Successful setup asserts native Opacity 65 at each shot middle after all 20 replacements; first replacement also verifies Undo/Redo track equality",
+    "seed_max": "18446744073709551615",
+    "model": "Synthetic montage acceptance fixture",
+    "generated_content_claim": false,
+    "source_sha256": {
+      "Take_A.mp4": "d1afaf61af201d58b070b2b122308b58ec662b58a83b500a3482aadbf3d938db",
+      "Take_B_short.mp4": "79aa11222089ecd2fc779baadfb377609719da9801a61dd9367da4c00c71fd77",
+      "Take_C_long.mp4": "4acf1a843f8db46ec89f7f6beb86068428c1eb16e819fed774542e94eeac88ee"
+    }
+  },
+  "windows": {
+    "environment": "Existing Windows browser; one own work tab",
+    "stale_B": {
+      "strong_descriptor_version_changed": true,
+      "path_token": "Montage_20_A.mp4",
+      "bytes_unchanged": true,
+      "plan_refused_without_edit": true,
+      "mtime_preserved": true
+    },
+    "replacement": {
+      "history_label": "ReplaceTake",
+      "after_source_in": 0,
+      "one_history_entry": true,
+      "clip_ids": [
+        "39",
+        "38"
+      ],
+      "media_id": "59",
+      "previous_media_id": "61",
+      "start_frame": 1368,
+      "length_frames": 72,
+      "native_middle_key_after": {
+        "timeline_frame": 1387,
+        "source_frame": 20,
+        "value": 65
+      },
+      "before_source_in": 1
+    },
+    "states": {
+      "before": {
+        "generation": "0",
+        "unsaved": false,
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "project_sha256": "4b4bf800bcb6a759710d9edb9ac04eb04ee5204437c4cab6edf883695f9b8385"
+      },
+      "stale_b_refused": {
+        "generation": "0",
+        "unsaved": false,
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "project_sha256": "4b4bf800bcb6a759710d9edb9ac04eb04ee5204437c4cab6edf883695f9b8385"
+      },
+      "replaced": {
+        "generation": "1",
+        "unsaved": true,
+        "history": {
+          "labels": [
+            "ReplaceTake"
+          ],
+          "position": 1
+        },
+        "project_sha256": "4b4bf800bcb6a759710d9edb9ac04eb04ee5204437c4cab6edf883695f9b8385"
+      },
+      "undone": {
+        "generation": "2",
+        "unsaved": true,
+        "history": {
+          "labels": [
+            "ReplaceTake"
+          ],
+          "position": 0
+        },
+        "project_sha256": "4b4bf800bcb6a759710d9edb9ac04eb04ee5204437c4cab6edf883695f9b8385"
+      },
+      "redo_saved": {
+        "generation": "3",
+        "unsaved": false,
+        "history": {
+          "labels": [
+            "ReplaceTake"
+          ],
+          "position": 1
+        },
+        "project_sha256": "eeed9a9e486a1a4f93261812999b9708e617ede538503f264d630fa89a89aad4"
+      },
+      "reopened": {
+        "generation": "0",
+        "unsaved": false,
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "project_sha256": "eeed9a9e486a1a4f93261812999b9708e617ede538503f264d630fa89a89aad4"
+      }
+    },
+    "assertions": {
+      "stale_b_session_exact": true,
+      "stale_b_disk_project_exact": true,
+      "undo_timelines_exact": true,
+      "undo_media_except_compound_cache_hash": true,
+      "redo_timelines_exact": true,
+      "redo_media_except_compound_cache_hash": true,
+      "annotations_unchanged_by_replace_and_undo": true,
+      "save_restart_timelines_exact": true,
+      "save_restart_media_exact": true,
+      "save_restart_review_items_exact": true,
+      "save_restart_review_shots_exact": true,
+      "save_restart_project_bytes_sha_exact": true,
+      "original_source_sha256_exact": true,
+      "protected_sessions_exact": true
+    },
+    "normalization": "Only monotonic compound media content_hash ignored for Undo/Redo media-model equality; timeline models exact. Review stale_source is computed from the controlled B descriptor replacement, not stored annotation edits. Save/restart media and Review item/shot comparisons are exact.",
+    "reopened": "Saved project reloaded in Windows; received preview 960x540; File / Export shows one ready saved 1440-frame output and original-epoch download",
+    "screenshots": [
+      {
+        "file": "f6-verified-take-review-windows.jpg",
+        "sha256": "82d1c1d0996217c791a739fea8115182af78c5c9cbded3ca514432731e787e41"
+      },
+      {
+        "file": "f6-verified-take-frame-windows.jpg",
+        "sha256": "d26dbd79d2dba0f9af536189326cf36ce18b907540dc103eed4d47c868559a43"
+      },
+      {
+        "file": "f6-verified-take-export-windows.jpg",
+        "sha256": "7962987034cad3814ffc3535957a2cacfbc824f2839d6d39e2cf5a9a435c46d0"
+      },
+      {
+        "file": "f6-verified-take-reopened-windows.jpg",
+        "sha256": "57a9a52bf274263a88cc8b47383d448aaef48848ee1e5275ef8fe369c4cb2023"
+      }
+    ]
+  },
+  "render": {
+    "adapter": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+    "backend": "Vulkan",
+    "native_adapter": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+    "oracle_sha256": "4bc1fec43f162edafdc476110888b65b11e7091c077f7ba2a22007a1b9f0af3d",
+    "project_sha256": "eeed9a9e486a1a4f93261812999b9708e617ede538503f264d630fa89a89aad4",
+    "frame": 1387,
+    "width": 1280,
+    "height": 720,
+    "rgba_sha256": "521a24d10b82976fe24eb5557e34be4dd848d6e19fa6f482581eb744c722a904",
+    "api_rgba_sha256": "521a24d10b82976fe24eb5557e34be4dd848d6e19fa6f482581eb744c722a904",
+    "byte_exact_native_api": true,
+    "shared_gpu_lock": "HALO_BENCHMARK.lock, nonblocking",
+    "limits": {
+      "memory_max": "4294967296",
+      "memory_swap_max": "0",
+      "cpu_max": [
+        "100000",
+        "100000"
+      ],
+      "nice": 19,
+      "oom_score_adj": 1000
+    }
+  },
+  "export": {
+    "job_id": "1792695468282476802",
+    "durable": true,
+    "state": "ready",
+    "project_epoch": "1792695109141834622:1",
+    "requested_start_frame": 0,
+    "requested_end_frame": 1440,
+    "width": 1920,
+    "height": 1080,
+    "frames": 1440,
+    "fps": "24/1",
+    "video_codec": "h264",
+    "audio_codec": "aac",
+    "encoder": "X264",
+    "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+    "decoder": [
+      {
+        "id": "software",
+        "label": "Software (CPU)"
+      }
+    ],
+    "elapsed_ms": 16689.010381,
+    "throughput_fps": 86.2843252610953,
+    "startup_ms": 49.490853,
+    "sha256": "ee9c61a75d55e46040ee876c2e91e1755a25ac11e1e6e0c4b49dcfbefcacd38a",
+    "bytes": 65720767,
+    "video_duration": 60.0,
+    "audio_duration": 60.01,
+    "audio_windows": [
+      {
+        "start_seconds": 1,
+        "end_seconds": 1.2,
+        "rms": 0.12505816661927133,
+        "positive_zero_crossing_hz": 660.0000000000001
+      },
+      {
+        "start_seconds": 2.7,
+        "end_seconds": 2.8,
+        "rms": 0.0,
+        "positive_zero_crossing_hz": 0.0
+      },
+      {
+        "start_seconds": 3.5,
+        "end_seconds": 3.7,
+        "rms": 0.12537054703115152,
+        "positive_zero_crossing_hz": 874.9999999999992
+      },
+      {
+        "start_seconds": 58,
+        "end_seconds": 58.2,
+        "rms": 0.12493895437653858,
+        "positive_zero_crossing_hz": 434.9999999999938
+      }
+    ],
+    "gap_frame65_rgb": [
+      0,
+      0,
+      0
+    ],
+    "takeC_frame84_rgb": [
+      93,
+      98,
+      96
+    ],
+    "downloaded": true,
+    "windows_playback": {
+      "duration": 60.01,
+      "ended": true,
+      "error": null,
+      "height": 1080,
+      "paused": true,
+      "rate": 1,
+      "src": "/api/v1/exports/1792695468282476802/export.mp4?project_epoch=1792695109141834622%3A1",
+      "time": 60.01,
+      "width": 1920
+    },
+    "recovered_old_epoch_download": true
+  },
+  "resources": {
+    "qualification_cpu": 1,
+    "memory_bytes": 4294967296,
+    "swap": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "tasks": 128,
+    "shared_headroom_min_bytes": 8589934592,
+    "no_workstation_build_or_render": true,
+    "own_runtime_stopped_saved": true,
+    "protected_sessions": {
+      "8790": {
+        "project_name": "CPU_shared_library_UI_check.vvproj",
+        "unsaved": true,
+        "generation": "5",
+        "history": {
+          "labels": [
+            "MoveClips",
+            "MoveClips",
+            "MoveClips",
+            "MoveClips",
+            "MoveClips"
+          ],
+          "position": 5
+        }
+      },
+      "8811": {
+        "project_name": "Venturi_Editing_Delivery.vvproj",
+        "unsaved": true,
+        "generation": "1",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 1
+        }
+      },
+      "8812": {
+        "project_name": "Venturi_Native_UI.vvproj",
+        "unsaved": false,
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        }
+      },
+      "8814": {
+        "project_name": "Venturi_Workspace.vvproj",
+        "unsaved": false,
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        }
+      }
+    }
+  },
+  "reused_evidence": [
+    "m6-review.json",
+    "m6-twenty-shot-montage.json",
+    "m6-take-audio-streams.json",
+    "m6-frozen-take-policies.json",
+    "m6-review-annotations.json",
+    "m6-review-audition-streams.json",
+    "f6-verified-take-gate.json"
+  ],
+  "acceptance": {
+    "replace_take_atomic": "done; TS-021 linked duration/source-clock/animation/audio/freeze/atomic Undo/persistence and actual R9700/render/export covered",
+    "compare_take_AB": "partial; sustained full-resolution comparison throughput and physical audio acceptance remain",
+    "excluded_claims": [
+      "No automatic render or Undo-history restoration across restart",
+      "No compound-wrapper replacement or recursive selection",
+      "No sustained A/B hardware soak or physical audio proof",
+      "No F6 deployment to protected editors",
+      "Full F1-F7 completion remains active"
+    ]
+  },
+  "private_artifact_sha256": {
+    "f6-take-fixture-ready.json": "741164ce146b71e35b926c51d6d4537d64f8d904f659a0b2ebbbe5fb3a7ed9be",
+    "f6-take-runtime.json": "104b9489ac41e5e227be331a9b00800d6d25834afdd458b45e7f4d4e8de8c2e3",
+    "f6-take-shown-b-identity.json": "48ef0f2786efa3f692df4c0f9fa11e7090a00728bfb37b3494dcc01cac079915",
+    "f6-take-before-windows.json": "37224db96199e667020a9ae09fbb1d2eb56650961088739f7e5add245c07e445",
+    "f6-take-stale-b-rejected.json": "6dc19194a141031a11b63cef14c3b85a1a4384f37134d39d5051dd6c659afc31",
+    "f6-take-replaced-windows.json": "864f9d47d8fe4e2c201cdf0670890cf777adae0d1b959110c35b1fe9a6768244",
+    "f6-take-undone-windows.json": "05e30f61f18d3433de9bf59bb7254679612801f238165bbf32855ebb949beb7a",
+    "f6-take-saved-windows.json": "47d4403f1deaf8ea2e895001377af82117a857582da713872602adfb1cff968f",
+    "f6-take-before-final-restart.json": "47d4403f1deaf8ea2e895001377af82117a857582da713872602adfb1cff968f",
+    "f6-take-final-reopened.json": "3a5a0a6185fe46e672c394fc3c2b3e8139a8ca4d974c22843709ec308cff4297",
+    "f6-take-final-restart.json": "4a122f1441e230b8af0ec3c80136908257330964a6283f0eefe3a1b96ddadc85",
+    "f6-take-stopped-saved.json": "de43e79c9341d77a3a748168a1f5d59afe534cd23a77afeca2999b55c6d6badd",
+    "f6-take-export-api.json": "aa26780ac292ca19f134da7d0886117ddae9ff5399f1763dfc61e9a4548d4c78",
+    "f6-take-export-analysis.json": "0af64b0995660b2ef2c635e6f6c1b837b947ed7fda1dde6d455dd339a2a7eaa1",
+    "f6-take-export-playback.json": "bc1afdfb72572526f7df86c278777e2dc620c64a6c3650d0760ceb9e86a376cb",
+    "focused-parity-native-take-status.json": "1ba26985f9da45157691dba24e443d382565ad3f836e2fe011bb5c2bc5da14d6",
+    "focused-parity-web-take-status.json": "71f4c49c4873b98866171a9f26265f43e2509bc4858a149ae71330e7c684c847",
+    "setup-f6-review-fixture-remote.py": "a0f7850738b3fb04e5d585ce91fabd9aa4fae7f8b162fed8f5ee051d88eee39c"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-22",
+  "status": "passed for isolated Windows catalog and clip-list workflow; full F5 remains partial",
+  "final_state": "stopped_saved",
+  "source_commit": "eedcae3e9d9cec2137a96ace42d75d2731a4fa9d",
+  "binary_sha256": "ad8f2d464cbdd229564bfc269217b8f86a8c5b3a3f823ecf37779f6f4a411b5b",
+  "project": "Verified_Take_Montage.vvproj",
+  "project_sha256": "63057c280e10156de7dc3e356ca6bc7d4c89f0eaaf4b376757d2ceb3492a5c71",
+  "library_sha256": "d3138b89569271acf1773f2c6a61ccbdfa1cd2fc53164b48a322ee99185f3cf9",
+  "root": "/home/marco/VenturiWeb-shared-audio-20261022",
+  "gpu": "Disabled for catalog/UI workflow; no render or GPU workload",
+  "limits": [
+    "RuntimeMaxSec=900",
+    "TimeoutStopSec=3",
+    "KillMode=control-group",
+    "Restart=no",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "OOMScoreAdjust=1000",
+    "Nice=19",
+    "IOWeight=10",
+    "TasksMax=128"
+  ],
+  "windows": {
+    "existing_browser": true,
+    "one_work_tab": true,
+    "preset_name": "Shared voice EQ",
+    "band3_gain_db": -3.5,
+    "save_preserves_complete_session": true,
+    "apply_one_undo": true,
+    "undo_exact_native_timeline": true,
+    "redo_exact_native_timeline": true,
+    "save_restart_preserves_native_models": true,
+    "reopened_saved": true,
+    "reopened_custom_preset_visible": true,
+    "clip_list_closes_before_export": true,
+    "export_controls_receive_input": true
+  },
+  "native_qualification": "Production native controller and Mixer/Settings/recovery code qualified by the 45 focused native cases in f5-shared-audio-presets-gate.json; this browser workflow does not claim a physical native desktop session",
+  "protected_unchanged": true,
+  "remaining": [
+    "Canonical NAS root and compatible deployment on each host",
+    "Actual native/Web interprocess catalog coordination on the authoritative shared filesystem",
+    "Physical native desktop UX and full F1-F7 acceptance"
+  ],
+  "screenshots": [
+    "f5-shared-audio-preset-windows.jpg",
+    "f5-shared-audio-preset-reopened-windows.jpg"
+  ],
+  "private_artifact_sha256": {
+    "f5-audio-runtime.json": "d5e31f834d7bbd3d4250d25877674c665fae65885c5578145715015240519092",
+    "f5-audio-before-preset-save.json": "f86c439a77f7c03af55b356759b2deebf9eac4a0a3fbe82ff68db321131f9d13",
+    "f5-audio-after-preset-save.json": "bba112ececbe3e61eb7476dd654e4b8cd5670cd89e9785ee71e0392a2f6f0737",
+    "f5-audio-after-preset-apply.json": "052218b696777ea44bc2dabcf0e9fee9cbe74ece7ca252f9d74256e6e9865a21",
+    "f5-audio-after-preset-undo.json": "9bbf2a19677a1f9c369b394e24ec0a5ec09f85f1859c818c0a69fb50e9a15fe0",
+    "f5-audio-saved.json": "2daa32b8a4a0dfd474c7958cbb10f0491336de5f98200289ff177681c774fe55",
+    "f5-audio-reopened.json": "78c544c4e457b092cc04aedbdb0cdd18168ff705fc8c2fae21614615a6ff1adb"
+  }
+}

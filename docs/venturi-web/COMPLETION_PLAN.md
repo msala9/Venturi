@@ -9,8 +9,9 @@ and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
 Complete all remaining in-scope capabilities against the original native GUI,
 the UX specification and M7 release criteria. FUNCTIONAL_PARITY.csv
 started with 42 done and 48 partial capabilities. The current accepted source
-ledger contains 46 done and 44 partial capabilities after the native compound,
-freeze, independent-timeline/view and static Inspector qualification. The two explicitly NOT-PLANNED
+ledger contains 47 done and 43 partial capabilities after the native compound,
+freeze, independent-timeline/view, static Inspector and verified atomic take
+replacement qualification. The two explicitly NOT-PLANNED
 rows, speed_ramp_reverse and node_graph, remain excluded. Do not relabel partial
 capabilities as finished merely because a small demo, API or component test passes.
 
@@ -220,6 +221,26 @@ Source `3952711` is delivered at port8814 with active R9700 preview; native
 catalogs still use the explicit local library root while canonical NAS/shared
 filesystem acceptance remains open.
 
+Source `eedcae3` connects desktop EQ/compressor controls to the same
+`presets/.venturi-audio-presets.json` catalog as Web. It reuses the native
+transaction journal, shared lock and stale-record checks; Web refuses pending
+native recovery without touching its marker. Legacy Settings values remain
+preserved, existing catalogs are never seeded over, and invalid legacy can use
+an explicit absent-only empty catalog action. Save conflicts retain the draft.
+The connected gate passes 9 JavaScript, 11 Web Rust and 45 native cases,
+all-target native/Web Clippy and the offline embedded build. It uses the newly
+authorized eight-CPU quota with two compiler jobs, 4 GiB RAM and no swap; see
+`evidence/f5-shared-audio-presets-gate.json`.
+
+The isolated Windows workflow also passes library-only Save with unchanged
+Session/history, one-Undo Apply, exact Undo/Redo, Save/restart and the reopened
+preset. Clip list now dismisses before Export and no longer intercepts its
+controls. See `evidence/f5-shared-audio-presets-workflow.json`. Its GPU-disabled
+service is stopped Saved. This qualifies the connected implementation and
+isolated Web workflow; canonical shared-filesystem/native-Web interprocess and
+physical desktop acceptance still remain. Neither F5 capability advances to
+done, and protected port8814 remains unchanged.
+
 ### F6 — AI Review
 
 Capabilities: `compare_take_AB`, `replace_take_atomic`.
@@ -246,9 +267,25 @@ crossing neighbours and conservative compound/audio costs. The native mixer
 really prepares full pitch-corrected clips outside its range, so that allocation
 remains budgeted. The gate passes 224 affected JavaScript and 529 Rust cases,
 three affected worker reruns, all-target Clippy and the offline embedded build;
-see `evidence/f6-verified-take-gate.json`. Actual candidate Windows/R9700 workflow
-is the next acceptance step. Keep both F6 rows partial until their remaining
-applicable acceptance evidence exists; the ledger remains 46 done / 44 partial.
+see `evidence/f6-verified-take-gate.json`.
+
+The connected Windows/R9700 workflow is now qualified on isolated source
+`a7565f6`; see `evidence/f6-verified-take-workflow.json`. The 20-shot/60-take
+fixture completes 20 linked replacements, with explicit shortening/preservation,
+middle animation keys and annotations retained. Replacing the displayed B file
+without changing its bytes or mtime refuses the stale plan without an edit.
+The Windows replacement then uses one Undo entry; Undo/Redo, Save and isolated
+restart preserve the native timeline/media models and Review metadata. The saved
+preview at frame 1387 matches the native R9700 reference byte for byte at 1280x720.
+A native 1920x1080, 1440-frame H.264/AAC export completes, is downloaded, passes
+decoded tone/gap checks and plays to natural 60.01-second EOF in Windows.
+Reopened Windows controls retain the Saved project and durable export download.
+
+Only `replace_take_atomic` advances to done: the ledger is 47 done / 43 partial /
+2 excluded. `compare_take_AB` still needs sustained full-resolution comparison
+and physical audio acceptance. The finite qualification service is stopped
+Saved; this acceptance does not deploy the F6 candidate to protected port8814
+or close the remaining F1-F7 goal.
 
 ### F7 — integrated release
 
@@ -282,7 +319,8 @@ block is difficult or requires outside input.
 
 All builds, renders, heavy tests and prolonged qualification run on halo2, one
 workload at a time. Check at least 8 GiB memory headroom before heavy work. Use
-one CPU, at most 4 GiB RAM, no swap, OOMScoreAdjust=1000, low CPU/I/O priority,
+up to eight CPUs (owner authorization on 2026-10-22), at most 4 GiB RAM, no swap,
+OOMScoreAdjust=1000, low CPU/I/O priority,
 bounded cache/disk use and finite qualification runtimes. Keep routine checks
 short; a release soak needs its own finite, low-load configuration.
 

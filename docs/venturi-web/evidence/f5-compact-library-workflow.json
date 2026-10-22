@@ -1,0 +1,89 @@
+{
+  "date": "2026-10-22",
+  "status": "passed",
+  "source_commit": "3952711ff4ed6857b93b5316b189fd23c652ae14",
+  "binary_sha256": "3f4de7f40dd4a535587d719a8f36971887915bda6c2b49c0602002290e3f17ef",
+  "browser": "Existing Windows browser; one work tab",
+  "preview": "Disabled for this library-only workflow; R9700 rendering qualified separately",
+  "layouts": [
+    {
+      "width": 1440,
+      "height": 900,
+      "page_scroll_width": 1440,
+      "native_panel_width": 198,
+      "native_panel_scroll_width": 198
+    },
+    {
+      "width": 544,
+      "height": 900,
+      "page_scroll_width": 544,
+      "native_panel_width": 268,
+      "native_panel_scroll_width": 268
+    }
+  ],
+  "workflow": [
+    "Folder/search/list/paging and Add to project visible in the primary panel",
+    "Library actions and Asset actions collapsed by default",
+    "Approved chooser breadcrumbs, directory rows, Use folder/Cancel and original accessible names verified",
+    "Repeated Footage import from compact chooser reports0 imports,2 skips,1 visible file error and0 new folders",
+    "Long per-file path/error wraps with panel scrollWidth equal to clientWidth",
+    "Chooser cancel works; no project or catalog changes from the presentation pass",
+    "Narrow layout uses the existing Library drawer; one rounded-pixel hidden Inspector overflow fixed",
+    "Viewport override reset after checks"
+  ],
+  "project_sha256": "1cffaf99717253250778edd2aa6e2d0dc08fca4fc273dec61e22469ef3c8a95a",
+  "catalog_equal_to_previous_workflow": true,
+  "media_timeline_view_equal_to_previous_workflow": true,
+  "protected_sessions": {
+    "8790": {
+      "project_name": "CPU_shared_library_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "5",
+      "history": {
+        "labels": [
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips"
+        ],
+        "position": 5
+      }
+    },
+    "8811": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "unsaved": true,
+      "generation": "1",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "8812": {
+      "project_name": "Venturi_Native_UI.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  },
+  "screenshots": [
+    "f5-compact-library-windows.jpg",
+    "f5-compact-source-picker-windows.jpg",
+    "f5-compact-error-windows.jpg",
+    "f5-compact-library-narrow-windows.jpg"
+  ],
+  "reused_evidence": [
+    "f5-approved-folders-workflow.json",
+    "f3-mask-inspector-workflow.json"
+  ],
+  "accepted_ledger": {
+    "done": 46,
+    "partial": 44,
+    "excluded": 2
+  }
+}

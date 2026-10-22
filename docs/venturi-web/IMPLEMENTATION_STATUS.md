@@ -4,15 +4,23 @@
 
 ## Active completion objective
 
+The updated working candidate is delivered at **http://127.0.0.1:8814/**,
+source `3952711`; see `evidence/current-workspace-delivery.json`. The enabled
+resource-limited halo2 service serves a separate Saved project, active R9700
+preview, native Library and the configured 33-item ds4 HTTP archive. Actual
+Windows preview pixels and the compact panel are visible. Earlier protected
+editors remain unchanged. This candidate advances the full completion objective;
+its canonical native NAS, physical and remaining F1–F7 acceptance stays open.
+
 After accepting the usable editing workflow, the owner resumed all remaining
 functions and requested a new goal on 2026-10-22. Follow
 [COMPLETION_PLAN.md](COMPLETION_PLAN.md): F1 editing/Inspector, F2 media/playback/
 export, F3 advanced effects/timeline, F4 Color/Audio/recording, F5 shared library/
-presets, F6 AI Review and F7 integrated release. The baseline is 42 done and 48
-partial in-scope capabilities; none are newly closed by this planning change.
-Begin F1 with missing native multi-selection Inspector semantics and connected
-timeline interaction gaps. Report delivered functions, remaining defects and
-actual deployment state without subjective percentages.
+presets, F6 AI Review and F7 integrated release. The original baseline was 42
+done and 48 partial; the current accepted ledger contains 46 done and 44 partial
+in-scope capabilities. Continue the connected remaining blocks in that plan.
+Report delivered functions, remaining defects and actual deployment state
+without subjective percentages.
 
 ## Native reference UI and Color/Audio candidate
 
@@ -134,7 +142,13 @@ Source chooser rows/footer controls are compact and long errors/paths wrap
 inside the panel. All accessible action names and transfer/CAS/cancel handlers
 are retained. Its 61 focused JavaScript cases and embedded build pass; unchanged
 Rust/Clippy and renderer gates are reused. See
-`evidence/f5-compact-library-gate.json`; actual final layout verification follows.
+`evidence/f5-compact-library-gate.json`. Actual Windows 1440×900 and 544×900
+qualification passes in `evidence/f5-compact-library-workflow.json`: contextual
+sections, chooser import/cancel and per-file error wrapping work, with page and
+panel scroll widths equal to client widths. A one-pixel hidden narrow Inspector
+border is corrected with a CSS-only rebuild and unchanged checks reused.
+Source `3952711` is delivered at port8814; its actual R9700 preview completes
+at 960×540 and all protected sessions remain unchanged.
 
 ## Native timeline and Inspector gesture qualification
 

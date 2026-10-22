@@ -1,0 +1,124 @@
+{
+  "date": "2026-10-22",
+  "status": "updated working candidate delivered; full completion plan remains active",
+  "url": "http://127.0.0.1:8814/",
+  "source_commit": "3952711ff4ed6857b93b5316b189fd23c652ae14",
+  "binary": "/home/marco/AI-lab/venturi-web/.runtime/vv-web-3f4de7f40dd4",
+  "binary_sha256": "3f4de7f40dd4a535587d719a8f36971887915bda6c2b49c0602002290e3f17ef",
+  "service": "venturi-web-current.service",
+  "enabled": true,
+  "pid": 1747979,
+  "root": "/home/marco/VenturiWeb-current-20261022",
+  "project": "Venturi_Workspace.vvproj",
+  "project_sha256": "b7bb95c4a4f1c5bf690b02e0cc9b210aa63793b6fca73082a8fe10bd3f689155",
+  "session": {
+    "project_name": "Venturi_Workspace.vvproj",
+    "unsaved": false,
+    "generation": "0",
+    "history": {
+      "labels": [],
+      "position": 0
+    }
+  },
+  "preview": {
+    "active_programs": 0,
+    "available": true,
+    "backend": "Vulkan",
+    "device_id": "0x7551",
+    "driver": "radv",
+    "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+    "exact_context_resident": false,
+    "frame_rendered": true,
+    "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+    "resident": false,
+    "software": false,
+    "vendor_id": "0x1002"
+  },
+  "browser": {
+    "environment": "Existing Windows browser",
+    "tab_id": "50",
+    "width": 1280,
+    "height": 720,
+    "page_scroll_width": 1280,
+    "received_preview_pixels": [
+      960,
+      540
+    ],
+    "image_complete": true,
+    "library_visible": true,
+    "layout": "Compact native Library; main Viewer retains central space",
+    "work_tabs": 1
+  },
+  "tunnel": {
+    "pid": 23456,
+    "hidden_window": true,
+    "local_listen": "127.0.0.1:8814",
+    "remote_listen": "127.0.0.1:8814"
+  },
+  "resource_limits": "MemoryCurrent=90021888\nCPUQuotaPerSecUSec=1s\nIOWeight=10\nMemoryMax=4294967296\nMemorySwapMax=0\nTasksMax=128\nOOMScoreAdjust=1000\nNice=19\n",
+  "protected_sessions": {
+    "8790": {
+      "project_name": "CPU_shared_library_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "5",
+      "history": {
+        "labels": [
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips"
+        ],
+        "position": 5
+      }
+    },
+    "8811": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "unsaved": true,
+      "generation": "1",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "8812": {
+      "project_name": "Venturi_Native_UI.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  },
+  "library": {
+    "configured": true,
+    "http_archive": "http://192.168.1.153:8787",
+    "catalog_items": 33,
+    "native_assets": 2,
+    "assets_root": "/home/marco/VenturiWeb-library-folders-20261022/.assets",
+    "presets_root": "/home/marco/VenturiWeb-library-folders-20261022/.presets",
+    "native_NAS_qualified": false
+  },
+  "evidence": [
+    "f5-approved-folders-gate.json",
+    "f5-approved-folders-workflow.json",
+    "f5-compact-library-gate.json",
+    "f5-compact-library-workflow.json",
+    "f3-mask-inspector-workflow.json"
+  ],
+  "screenshot": "current-workspace-windows.jpg",
+  "remaining": [
+    "All remaining F1-F7 requirements from COMPLETION_PLAN.md",
+    "Canonical native NAS root and compatible shared filesystem deployment",
+    "Physical DPI/device acceptance and prolonged uncached held-Slip continuity",
+    "Representative long playback/export, Review and integrated release qualification"
+  ],
+  "accepted_ledger": {
+    "done": 46,
+    "partial": 44,
+    "excluded": 2
+  }
+}

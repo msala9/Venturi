@@ -1,6 +1,27 @@
 # Usable editing workflow — handover
 
-## Current native-style interface
+## Updated working version — 2026-10-22
+
+Open **http://127.0.0.1:8814/** in the existing Windows browser. Code
+`3952711ff4ed6857b93b5316b189fd23c652ae14` includes the native editing gestures,
+mask Inspector/Viewer pen, linked Slip, folder import/recovery and compact
+Library panel. The actual Windows page displays a completed 960×540 R9700
+preview and the two native sample assets. The ds4 HTTP archive is configured
+and currently returns 33 catalog items.
+
+The enabled service is `venturi-web-current.service`, with one CPU, 4 GiB maximum,
+zero swap, low CPU/I/O priority and the shared nonblocking GPU lock. Project
+`Venturi_Workspace.vvproj` lives in `/home/marco/VenturiWeb-current-20261022` and
+starts Saved with empty Undo history. It is a separate copy of the previously
+Saved native UI project; all three earlier editors and their drafts remain.
+Preserve this new editor too once the owner begins work.
+
+See `evidence/current-workspace-delivery.json`. The complete F1–F7 plan remains
+active. Native catalogs currently use an explicitly configured local library
+root; canonical NAS sharing/filesystem qualification and the remaining physical,
+long-workflow and release criteria are still open.
+
+## Earlier native-style interface — retained
 
 Open **http://127.0.0.1:8812/** in the existing Windows browser. The enabled halo2
 service is `venturi-web-native-ui.service`; it uses one CPU, at most 4 GiB,

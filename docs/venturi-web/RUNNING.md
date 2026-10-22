@@ -654,7 +654,32 @@ flattening and arbitrary mixer/compositing preservation remain unavailable.
 These increments have native/API and interaction-state tests; real GUI and
 rendered-equivalence qualification remains pending.
 
-## Checks
+## Updated working delivery
+
+The latest working candidate is **http://127.0.0.1:8814/**, source `3952711`,
+served by the enabled halo2 user unit `venturi-web-current.service`. It uses
+`/home/marco/VenturiWeb-current-20261022/Venturi_Workspace.vvproj` and immutable
+binary `/home/marco/AI-lab/venturi-web/.runtime/vv-web-3f4de7f40dd4` (SHA256
+`3f4de7f40dd4a535587d719a8f36971887915bda6c2b49c0602002290e3f17ef`).
+The existing authenticated Windows SSH tunnel forwards only loopback port 8814;
+re-establish that forward if its SSH process is closed. No Windows server or
+build is involved. Older ports8790/8811/8812 and their projects remain intact.
+
+The service is limited to one CPU, 4 GiB, no swap, Nice=19, IOWeight=10,
+OOMScoreAdjust=1000 and 128 tasks, with no restart loop. GPU preview uses R9700
+and the nonblocking `/tmp/HALO_BENCHMARK.lock`. Re-read every live session and
+preserve browser drafts before stopping/upgrading anything; the owner may now
+use this new workspace too. A rollback can return to the still-running earlier
+native UI on8812 without modifying this project's files or unsaved work.
+
+The ds4 HTTP archive origin is `http://192.168.1.153:8787` (33 catalog items
+observed). Native asset/preset roots are explicitly
+`/home/marco/VenturiWeb-library-folders-20261022/.assets` and `.presets`.
+They contain the qualified local sample library; canonical native NAS sharing
+and real shared-filesystem qualification remain open. See
+`evidence/current-workspace-delivery.json` and `COMPLETION_PLAN.md` for scope.
+
+## Library folder workflow
 
 Native Library actions include **Import source folder** and, for offline
 assets, **Search folder for missing files**. The source chooser browses the
@@ -668,6 +693,8 @@ Library-only qualification can run without `--gpu-device` or
 `--software-preview`: the existing default disables preview, creating no GPU
 adapter. This does not verify playback, render effects or export. Use a separate
 project root and finite resource-limited service; preserve active editors.
+
+## Checks
 
 ```bash
 node --test web/test/*.test.js

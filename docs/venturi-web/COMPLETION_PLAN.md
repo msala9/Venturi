@@ -27,6 +27,15 @@ currently code df50859. Do not disturb the protected port-8790 editor or its
 five unsaved MoveClips operations and Undo history. Re-read every live editor's
 state before deployment; the owner may have begun new work in the candidate.
 
+The updated working delivery is now **http://127.0.0.1:8814/**, source `3952711`;
+see `evidence/current-workspace-delivery.json`. Its enabled
+`venturi-web-current.service` uses `/home/marco/VenturiWeb-current-20261022` and
+the immutable qualified binary. The actual Windows page has a completed R9700
+preview, compact Library and the existing ds4 HTTP archive (33 items observed).
+Preserve this editor and its browser tab alongside 8790/8811/8812. Read all live
+sessions and preserve client drafts before any future deployment. Use isolated
+port8813 for qualification. The full F1–F7 completion scope remains unchanged.
+
 ## Current owner priority — native UI and UX
 
 2026-10-22: the owner supplied five screenshots of the original editor and
@@ -201,6 +210,14 @@ real isolated restart. Project bytes, media/timeline models and library catalog
 remain equal across restart. See `evidence/f5-approved-folders-workflow.json`.
 The finite GPU-disabled service was stopped Saved. This closes the isolated
 browser workflow gap, not the NAS/deployment or full F5 acceptance requirements.
+
+The compact Library presentation passes actual Windows 1440×900 and the
+544×900 drawer, chooser import/cancel and error wrapping. Both page/panel widths
+have no horizontal overflow. The one-pixel hidden Inspector border at narrow
+widths is corrected. See `evidence/f5-compact-library-workflow.json`.
+Source `3952711` is delivered at port8814 with active R9700 preview; native
+catalogs still use the explicit local library root while canonical NAS/shared
+filesystem acceptance remains open.
 
 ### F6 — AI Review
 

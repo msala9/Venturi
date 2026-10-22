@@ -1,0 +1,174 @@
+{
+  "date": "2026-10-22",
+  "status": "passed",
+  "scope": "Native-style editor layout and focused UI interaction qualification; full F1-F7 completion remains active",
+  "source_commit": "f3dcf1c8b6fed838c7e48497922f127b96f9c35b",
+  "binary_sha256": "2aea785298d32a54ee615972c6e6a0c2398023abf09eb0f7308bf4b191aae034",
+  "url": "http://127.0.0.1:8812/",
+  "project": "Venturi_Native_UI.vvproj",
+  "timeline": "Native montage",
+  "runtime": {
+    "unit": "venturi-web-native-ui.service",
+    "pid": 1686539,
+    "root": "/home/marco/VenturiWeb-f1-20261022",
+    "unit_config": "[Unit]\nDescription=Venturi Web native interface delivery\nAfter=network-online.target\n\n[Service]\nType=exec\nExecStart=/home/marco/AI-lab/venturi-web/.runtime/vv-web-2aea785298d3 --listen 127.0.0.1:8812 --projects-root /home/marco/VenturiWeb-f1-20261022 --gpu-device 0x7551 --gpu-lock /tmp/HALO_BENCHMARK.lock --library-url http://192.168.1.153:8787\nEnvironment=VK_DRIVER_FILES=/usr/share/vulkan/icd.d/radeon_icd.json\nEnvironment=TOKIO_WORKER_THREADS=2 RAYON_NUM_THREADS=1 LP_NUM_THREADS=1 OMP_NUM_THREADS=1\nEnvironment=XDG_RUNTIME_DIR=/run/user/1000\nCPUQuota=100%\nMemoryMax=4G\nMemorySwapMax=0\nOOMScoreAdjust=1000\nOOMPolicy=stop\nNice=19\nIOWeight=10\nTasksMax=128\nTimeoutStopSec=5\nKillMode=control-group\nRestart=no\n\n[Install]\nWantedBy=default.target\n",
+    "enabled": true,
+    "actual": {
+      "service": {
+        "ActiveState": "active",
+        "MainPID": "1686539",
+        "MemoryCurrent": "123904000",
+        "MemoryPeak": "166092800",
+        "CPUQuotaPerSecUSec": "1s",
+        "IOWeight": "10",
+        "MemoryMax": "4294967296",
+        "MemorySwapMax": "0",
+        "TasksMax": "128",
+        "OOMScoreAdjust": "1000",
+        "Nice": "19"
+      },
+      "session": {
+        "project_name": "Venturi_Native_UI.vvproj",
+        "unsaved": false,
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        }
+      },
+      "preview": {
+        "active_programs": 0,
+        "available": true,
+        "backend": "Vulkan",
+        "device_id": "0x7551",
+        "driver": "radv",
+        "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+        "exact_context_resident": false,
+        "frame_rendered": true,
+        "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "resident": false,
+        "software": false,
+        "vendor_id": "0x1002"
+      },
+      "both_live_editors_preserved": true,
+      "old_delivery_unsaved": {
+        "project_name": "Venturi_Editing_Delivery.vvproj",
+        "unsaved": true,
+        "generation": "1",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 1
+        }
+      },
+      "main_unsaved": {
+        "project_name": "CPU_shared_library_UI_check.vvproj",
+        "unsaved": true,
+        "generation": "5",
+        "history": {
+          "labels": [
+            "MoveClips",
+            "MoveClips",
+            "MoveClips",
+            "MoveClips",
+            "MoveClips"
+          ],
+          "position": 5
+        }
+      },
+      "enabled": true
+    }
+  },
+  "reference": "Five screenshots of the native editor supplied by the owner",
+  "windows": {
+    "browser": "Existing Windows in-app browser; no halo2 browser installation",
+    "qualification_tab": "46",
+    "delivered_tab": "47",
+    "desktop": {
+      "viewport": [
+        1440,
+        900
+      ],
+      "page_width": 1440,
+      "viewer_surface": [
+        902,
+        490.2
+      ],
+      "inspector_width": 320,
+      "transform_row_heights": [
+        26,
+        26,
+        26,
+        26
+      ],
+      "timeline_height": 264,
+      "horizontal_overflow": false
+    },
+    "baseline_at_544": {
+      "old_page_width": 985,
+      "new_page_width": 545,
+      "rounding_overflow_pixels": 1,
+      "new_panels": "Explicit mutually exclusive drawers; Viewer uses full available width"
+    },
+    "controls": {
+      "file_menu_save_as": true,
+      "numeric_exposure_change_enter": "0.5 to 0.6 acknowledged once",
+      "undo": "0.5 restored",
+      "file_menu_save": "Saved",
+      "contextual_video_audio_selection": true,
+      "key_page_collapsed": true,
+      "typography_collapsed": true,
+      "media_properties_drawer_aria_synchronized": true,
+      "timeline_ruler_seek_frame": 370,
+      "timeline_resize_keyboard": true,
+      "program_seek_frame": 374,
+      "program_playback": "Reached frame391 / 00:00:16:07 and End of timeline; Play restored, movie released, Saved",
+      "console_errors": []
+    },
+    "screenshots": [
+      "native-ui-desktop-windows.jpg",
+      "native-ui-narrow-windows.jpg"
+    ]
+  },
+  "preservation": {
+    "port8790": {
+      "project_name": "CPU_shared_library_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "5",
+      "history": {
+        "labels": [
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips"
+        ],
+        "position": 5
+      }
+    },
+    "port8811": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "unsaved": true,
+      "generation": "1",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "action": "No restart, save, reload or overwrite of either prior editor. Old port8811 browser tab retained with its client drafts. New isolated service/root on port8812."
+  },
+  "reused_evidence": [
+    "native-ui-gate.json",
+    "nativeview-workflow.json",
+    "f3-effects-workflow.json",
+    "delivery-workflow.json"
+  ],
+  "remaining": [
+    "Exact native parity and the full F1-F7/M7 acceptance criteria remain open.",
+    "No new physical microphone, speaker latency, dense timeline or long soak claim.",
+    "The new interface intentionally uses a separate project root; it does not transfer the unsaved port8811 edit."
+  ]
+}

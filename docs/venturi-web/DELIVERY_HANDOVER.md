@@ -1,6 +1,33 @@
 # Usable editing workflow — handover
 
-## Open the candidate
+## Current native-style interface
+
+Open **http://127.0.0.1:8812/** in the existing Windows browser. The enabled halo2
+service is `venturi-web-native-ui.service`; it uses one CPU, at most 4 GiB,
+no swap and the existing shared GPU lock. Code:
+`f3dcf1c8b6fed838c7e48497922f127b96f9c35b`. Binary SHA-256:
+`2aea785298d32a54ee615972c6e6a0c2398023abf09eb0f7308bf4b191aae034`.
+
+The compact native menus, Media/Effects toolbar, contextual Video/Audio/Selection
+Inspector, large central Viewer and docked timeline are now available. File
+contains project open/save/import/export. View contains Library, Presets,
+History and optional diagnostic panels. On narrow windows Media and Properties
+open as explicit drawers. All three splitters remain keyboard accessible.
+
+The current project is `Venturi_Native_UI.vvproj`, timeline **Native montage**,
+in `/home/marco/VenturiWeb-f1-20261022`. This separate root also contains the
+qualified editing/effects/compound projects. New UI evidence and screenshots:
+[evidence/native-ui-workflow.json](evidence/native-ui-workflow.json).
+
+Port 8811 now has an unsaved InsertClips edit; its old service and existing tab
+were preserved. Port 8790 also retains all five unsaved moves. Do not reload,
+restart or save these other editors to upgrade their appearance. The new
+interface does not contain their unsaved changes. The existing 8812 Windows
+tunnel must remain connected. Save any new work before restarting only
+`venturi-web-native-ui.service`. Its previous binary remains available for rollback;
+never apply rollback or restart commands to either protected editor.
+
+## Earlier usable workflow baseline (port 8811)
 
 Current Windows URL: http://127.0.0.1:8811/ through the existing SSH connection.
 The separate halo2 service is `venturi-web-delivery.service`, listening only on

@@ -45,6 +45,19 @@ Windows browser at desktop sizes and its observed 544-pixel side-panel width,
 then guard any delivered-service upgrade against unsaved work. Build/render
 checks remain on bounded halo2; no new browser installation or local server.
 
+
+The native UI block is delivered at **http://127.0.0.1:8812/**, code
+`f3dcf1c8b6fed838c7e48497922f127b96f9c35b`, with the new layout, compact
+Inspector and contextual menus. Actual Windows qualification covers 1440×900,
+1280×720 and the 544-pixel side panel, numeric edit/Undo/Save, seeking, timeline
+resize, drawers and Program playback to EOF. See evidence/native-ui-workflow.json.
+The protected 8790 editor still has its five unsaved moves. Port 8811 acquired
+an unsaved InsertClips command, so neither its service nor its browser tab was
+restarted/reloaded. The new enabled service `venturi-web-native-ui.service`
+uses its own project root and the existing tunnel on 8812. The full ledger
+remains 45 done / 45 partial; this interface acceptance does not close unrelated
+functional or release criteria.
+
 ## Delivery blocks
 
 Current integration checkpoint (2026-10-22): selected Title/Solid/Filter controls

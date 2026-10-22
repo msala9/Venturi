@@ -1,6 +1,6 @@
 {
   "date": "2026-10-22",
-  "status": "native_component_gate_passed_windows_ui_pending",
+  "status": "passed_component_gate_and_windows_native_layout",
   "source_base_commit": "9815cb0495a4c4da379f1ac0b4789d9c4b0ca754",
   "validation": "native-ui-color-audio-editing",
   "source_files_sha256": {
@@ -85,8 +85,9 @@
   },
   "ui_reference": "Five original-editor screenshots supplied by the owner on 2026-10-22. Compact native menus, rows, contextual Inspector tabs and dominant Viewer; narrow drawers replace horizontal overflow.",
   "remaining": [
-    "Actual Windows layout/control qualification and guarded delivery upgrade.",
+    "Prior port8811 has a new unsaved InsertClips command and was preserved. Native UI delivered independently on port8812.",
     "R9700 Color/Audio integrated workflow and physical microphone/output/latency QA.",
     "Remaining full completion-plan F1-F7 criteria; no ledger row is closed solely by this gate."
-  ]
+  ],
+  "workflow": "native-ui-workflow.json"
 }

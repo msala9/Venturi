@@ -9,10 +9,18 @@ and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
 Complete all remaining in-scope capabilities against the original native GUI,
 the UX specification and M7 release criteria. FUNCTIONAL_PARITY.csv
 started with 42 done and 48 partial capabilities. The current accepted source
-ledger contains 44 done and 46 partial capabilities after the native compound
-and freeze workflow (evidence/nativeview-workflow.json). The two explicitly NOT-PLANNED
+ledger contains 45 done and 45 partial capabilities after the native compound,
+freeze and independent-timeline/view qualification. The two explicitly NOT-PLANNED
 rows, speed_ramp_reverse and node_graph, remain excluded. Do not relabel partial
 capabilities as finished merely because a small demo, API or component test passes.
+
+`multiple_timelines_fps` is accepted from the independently created 24 fps Middle
+and 30 fps Outer timelines, native navigation and restart in
+evidence/m4-compound-navigation.json, the native 24000/1001 versus 30000/1001
+navigation regressions, and actual remembered root positions, Save/reopen and
+isolated restart in evidence/nativeview-workflow.json. This acceptance covers
+timeline clocks and native ProjectView persistence; Canvas inertia, dense editing
+performance and the remaining F1/M7 checks remain open.
 
 Preserve the delivered workflow and accessible candidate at Windows port 8811,
 currently code df50859. Do not disturb the protected port-8790 editor or its

@@ -1,6 +1,61 @@
 use super::*;
 
 #[test]
+fn still_preview_alpha_follows_native_pixel_sampling_without_changing_opaque_thumbnails() {
+    let alpha = vec![0, 64, 127, 255, 255, 127, 64, 0];
+    let mut frame = FrameYuv420 {
+        width: 4,
+        height: 2,
+        y: vec![90; 8],
+        chroma: crate::decode::Chroma::Planar {
+            u: vec![128; 2],
+            v: vec![128; 2],
+        },
+        chroma_width: 2,
+        chroma_height: 1,
+        matrix: ColorMatrix::Bt601,
+        full_range: true,
+        alpha: Some(alpha.clone()),
+    };
+    let preview = downscale_to_rgba(&frame, 4, true);
+    let thumbnail = downscale_to_rgba(&frame, 4, false);
+    assert_eq!((preview.width, preview.height), (4, 2));
+    assert_eq!(
+        preview
+            .rgba
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .map(|pixel| pixel[3])
+            .collect::<Vec<_>>(),
+        alpha
+    );
+    for (preview, thumbnail) in preview
+        .rgba
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .zip(thumbnail.rgba.as_chunks::<4>().0)
+    {
+        assert_eq!(&preview[..3], &thumbnail[..3]);
+        assert_eq!(thumbnail[3], 255);
+    }
+    let reduced = downscale_to_rgba(&frame, 2, true);
+    assert_eq!((reduced.width, reduced.height), (2, 1));
+    assert_eq!(reduced.rgba[3], 0);
+    assert_eq!(reduced.rgba[7], 127);
+    frame.alpha = None;
+    assert!(
+        downscale_to_rgba(&frame, 4, true)
+            .rgba
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .all(|pixel| pixel[3] == 255)
+    );
+}
+
+#[test]
 fn generate_thumbnail_scales_down_preserving_aspect_ratio() {
     let dir = std::env::temp_dir().join("vv-media-thumbnail-test");
     std::fs::create_dir_all(&dir).unwrap();

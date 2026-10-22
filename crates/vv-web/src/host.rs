@@ -47,6 +47,9 @@ pub enum Action {
     Clipboard(ClipboardQuery),
     PrepareClipboard(ClipboardRequest),
     ClipboardStatus(String, SourceQuery, bool),
+    CheckClipboardImage(ClipboardImageQuery),
+    PrepareClipboardImage(ClipboardImageQuery, String, Vec<u8>),
+    ClipboardImageStatus(String, SourceQuery, bool),
     PrepareLegacyMediaImport(Mutation, oneshot::Sender<Result<NativeEditPreparation>>),
     MediaImportStatus(String, SourceQuery, bool),
     PrepareNativeAssetEdit(Mutation, oneshot::Sender<Result<NativeEditPreparation>>),
@@ -63,6 +66,12 @@ pub enum Action {
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ClipboardImageQuery {
+    pub project_epoch: String,
+    pub if_generation: String,
+}
 const MAX_RECEIPTS: usize = 4096;
 const MAX_IMPORT_RECEIPT_CACHE: usize = 15 * 1024 * 1024;
 #[derive(Clone, Debug, Deserialize)]
@@ -750,6 +759,14 @@ impl Editor {
             Operation::ImportPreparedMedia { job_id } => {
                 self.import_prepared_media(job_id, &request.project_epoch, &request.if_generation)?;
             }
+            Operation::ImportClipboardImage { job_id, name } => {
+                self.import_clipboard_image(
+                    job_id,
+                    name,
+                    &request.project_epoch,
+                    &request.if_generation,
+                )?;
+            }
             Operation::ImportPreparedOtio {
                 job_id,
                 name,
@@ -1002,6 +1019,15 @@ impl Editor {
         self.asset_jobs
             .prepare_media_import(&request.project_epoch, &request.if_generation, tokens)
     }
+    fn check_clipboard_image(&self, query: &ClipboardImageQuery) -> Result<()> {
+        self.validate_asset_epoch(&query.project_epoch, Some(&query.if_generation))?;
+        if self.session.path().is_none() {
+            return Err(ApiError::invalid(
+                "Save the project before pasting an image",
+            ));
+        }
+        Ok(())
+    }
     fn prepare_legacy_media_import(&mut self, request: Mutation) -> Result<NativeEditPreparation> {
         let path_token = match &request.operation {
             Operation::ImportMedia { path_token } | Operation::ImportOtio { path_token, .. } => {
@@ -1213,6 +1239,53 @@ impl Editor {
         self.media_import_receipt = Some(
             json!({"media_ids":selected.iter().map(|id|id.raw().to_string()).collect::<Vec<_>>(),"errors":payload.errors}),
         );
+        Ok(())
+    }
+    fn import_clipboard_image(
+        &mut self,
+        job: &str,
+        name: &str,
+        epoch: &str,
+        generation: &str,
+    ) -> Result<()> {
+        use vv_core::{Command, CommandLabel, Id, MediaItem, pool::AddEntities};
+        self.check_clipboard_image(&ClipboardImageQuery {
+            project_epoch: epoch.into(),
+            if_generation: generation.into(),
+        })?;
+        let preview = self
+            .asset_jobs
+            .clipboard_image_payload(job, epoch, generation, name)?;
+        let existing = self.session.media_with_path(&preview.path);
+        let build = |project: &mut vv_core::Project, item: &crate::asset_jobs::PreparedMedia| {
+            let mut additions = AddEntities::new(CommandLabel::ImportMedia);
+            let selected = existing.unwrap_or_else(|| {
+                additions.media(
+                    project,
+                    MediaItem {
+                        path: item.path.clone(),
+                        meta: item.meta.clone(),
+                        content_hash: item.content_hash,
+                        compound: None,
+                        folder: None,
+                    },
+                )
+            });
+            (additions, selected)
+        };
+        let mut trial = self.session.project.clone();
+        let (mut additions, _) = build(&mut trial, &preview);
+        additions.apply(&mut trial);
+        crate::files::validate_project(&trial)?;
+        let published = self
+            .asset_jobs
+            .accept_clipboard_image(job, epoch, generation, name)?;
+        let (additions, selected) = build(&mut self.session.project, &published);
+        if !additions.is_empty() {
+            self.session.apply(Box::new(additions));
+        }
+        self.media_import_receipt =
+            Some(json!({"media_ids":[selected.raw().to_string()],"errors":[]}));
         Ok(())
     }
     fn harvest_native_completion(
@@ -1843,6 +1916,33 @@ impl Editor {
                     fallback,
                     request.to_pool,
                 )
+            }
+            Action::CheckClipboardImage(query) => {
+                self.check_clipboard_image(&query)?;
+                Ok(json!({"saved":true,"max_bytes":32 * 1024 * 1024}))
+            }
+            Action::PrepareClipboardImage(query, mime, bytes) => {
+                self.check_clipboard_image(&query)?;
+                self.asset_jobs.prepare_clipboard_image(
+                    &query.project_epoch,
+                    &query.if_generation,
+                    &mime,
+                    bytes,
+                )
+            }
+            Action::ClipboardImageStatus(job, query, cancel) => {
+                if !cancel {
+                    self.validate_asset_epoch(&query.project_epoch, None)?;
+                }
+                let value = self.asset_jobs.status(&job, &query.project_epoch, false)?;
+                if value["kind"] != "clipboard_image" {
+                    return Err(ApiError::missing());
+                }
+                if cancel {
+                    self.asset_jobs.status(&job, &query.project_epoch, true)
+                } else {
+                    Ok(value)
+                }
             }
             Action::ClipboardStatus(job, query, cancel) => {
                 if !cancel {

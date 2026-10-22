@@ -1,6 +1,100 @@
 use super::*;
 
 #[test]
+fn pasted_image_paths_open_only_the_exact_native_managed_directory_and_regular_file() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    std::fs::create_dir(root.join("Pasted Images")).unwrap();
+    let path = root.join("Pasted Images/.Native name.png");
+    std::fs::write(&path, b"native bytes").unwrap();
+    let mut bytes = Vec::new();
+    files
+        .media_file(&path)
+        .unwrap()
+        .read_to_end(&mut bytes)
+        .unwrap();
+    assert_eq!(bytes, b"native bytes");
+    assert_eq!(
+        root_media_token(&root, &path).unwrap(),
+        "Pasted Images/.Native name.png"
+    );
+    for token in [
+        "other/file.png",
+        "Pasted Images/sub/file.png",
+        "Pasted Images/../file.png",
+        "Pasted Images/file.mp4",
+        "Pasted Images/file.PNG",
+        "Pasted Images/..png",
+        "Pasted Images/a\\b.png",
+    ] {
+        assert!(files.media_file(&root.join(token)).is_err(), "{token}");
+    }
+    let link = root.join("Pasted Images/link.png");
+    std::os::unix::fs::symlink(&path, &link).unwrap();
+    assert!(files.media_file(&link).is_err());
+    std::fs::create_dir(root.join("Pasted Images/directory.png")).unwrap();
+    assert!(
+        files
+            .media_file(&root.join("Pasted Images/directory.png"))
+            .is_err()
+    );
+    assert!(
+        files.list().unwrap()["importable_media"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn pasted_image_saved_projects_reopen_and_preserve_missing_managed_images_offline() {
+    let root = root();
+    let files = Files::new(&root).unwrap();
+    std::fs::create_dir(root.join("Pasted Images")).unwrap();
+    let path = root.join("Pasted Images/Image 001.png");
+    std::fs::write(&path, b"native bytes").unwrap();
+    let mut project = Project::default();
+    let media = project.media_pool.insert(vv_core::MediaItem {
+        path: PathBuf::from("Pasted Images/Image 001.png"),
+        meta: vv_core::MediaMeta {
+            duration_frames: vv_core::IMAGE_DURATION_FRAMES,
+            fps: vv_core::Rational::new(25, 1),
+            width: 1,
+            height: 1,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 123,
+        compound: None,
+        folder: None,
+    });
+    files.save(&project, "images.vvproj", true).unwrap();
+    assert_eq!(
+        files.load("images.vvproj").unwrap().media_pool[media].path,
+        path
+    );
+    std::fs::remove_dir_all(root.join("Pasted Images")).unwrap();
+    let offline = files.load("images.vvproj").unwrap();
+    assert_eq!(offline.media_pool[media].path, path);
+    assert_eq!(offline.media_pool[media].content_hash, 123);
+    assert!(files.media_file(&path).is_err());
+    let outside = root.with_extension("outside");
+    std::fs::create_dir(&outside).unwrap();
+    std::os::unix::fs::symlink(&outside, root.join("Pasted Images")).unwrap();
+    assert!(files.load("images.vvproj").is_err());
+    assert!(files.media_file(&path).is_err());
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+    std::fs::remove_dir(outside).unwrap();
+}
+
+#[test]
 fn reusable_otio_parser_rejects_input_and_url_limits_before_any_native_probe() {
     let root = root();
     std::fs::create_dir_all(&root).unwrap();

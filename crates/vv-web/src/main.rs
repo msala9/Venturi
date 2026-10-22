@@ -10,6 +10,7 @@ mod audition;
 mod autosave;
 mod catalog;
 mod clipboard;
+mod clipboard_image;
 mod codecs;
 mod commands;
 mod compound_navigation;
@@ -19,6 +20,7 @@ mod eventkeys;
 mod export_store;
 mod files;
 mod host;
+mod image_derivative;
 mod inspector;
 mod keyselection;
 mod library;
@@ -47,6 +49,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if args.first().is_some_and(|arg| arg == "--asset-probe") {
         return asset_probe::child_main(&args);
+    }
+    if args.first().is_some_and(|arg| arg == "--image-derivative") {
+        return image_derivative::child_main(&args);
     }
     serve()
 }

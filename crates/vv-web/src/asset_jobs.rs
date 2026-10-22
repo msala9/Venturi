@@ -48,13 +48,15 @@ pub struct OtioPayload {
 }
 struct OtioWitness {
     token: String,
+    parent: Option<String>,
     entry: Option<String>,
     file: Option<File>,
     identity: Option<String>,
 }
 impl OtioWitness {
     fn validate(&self, inner: &Inner) -> Result<()> {
-        if otio_entry(inner, &self.token)?.map(|meta| entry_identity(&meta)) != self.entry {
+        let (entry, parent) = otio_entry(inner, &self.token).map_err(|_| source_changed())?;
+        if parent != self.parent || entry.map(|meta| entry_identity(&meta)) != self.entry {
             return Err(source_changed());
         }
         if let Some(file) = &self.file
@@ -82,6 +84,11 @@ struct PreparedClipboard {
     payload: ClipboardPayload,
     witnesses: Vec<OtioWitness>,
     warnings: Vec<String>,
+}
+struct PreparedImage {
+    stage: crate::clipboard_image::Stage,
+    meta: vv_core::MediaMeta,
+    summary: Value,
 }
 impl PreparedClipboard {
     fn validate(&self, inner: &Inner) -> Result<()> {
@@ -195,13 +202,15 @@ struct Job {
     otio_probe_total: Option<usize>,
     otio: Option<PreparedOtio>,
     clipboard: Option<PreparedClipboard>,
+    clipboard_image: Option<PreparedImage>,
+    applied_image: Option<(String, PreparedMedia)>,
 }
 impl Job {
     fn value(&self) -> Value {
         let result = self.result.as_ref().map(|prepared| {
             let payload = asset_payload::decode(&prepared.asset).ok();
             json!({"asset_id":self.asset_id,"revision":self.revision,"name":prepared.asset.name,"media_count":payload.as_ref().map_or(0,|p| p.media_items().count()),"file_count":prepared.files.len(),"bytes":self.bytes})
-        }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary())).or_else(||self.media_import.as_ref().map(PreparedImport::value)).or_else(||self.otio.as_ref().map(PreparedOtio::value)).or_else(||self.clipboard.as_ref().map(PreparedClipboard::value));
+        }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary())).or_else(||self.media_import.as_ref().map(PreparedImport::value)).or_else(||self.otio.as_ref().map(PreparedOtio::value)).or_else(||self.clipboard.as_ref().map(PreparedClipboard::value)).or_else(||self.clipboard_image.as_ref().map(|prepared|prepared.summary.clone()));
         let mut value = json!({"id":self.id,"kind":self.kind,"project_epoch":self.epoch,"generation":self.generation,"state":self.state,"bytes":self.bytes,"total_bytes":self.total,"error":self.error,"result":result});
         if self.kind == "media_import" {
             value["progress"] =
@@ -222,6 +231,7 @@ struct Work {
     media_import: Option<Vec<String>>,
     otio: Option<String>,
     clipboard: Option<ClipboardWork>,
+    clipboard_image: Option<(String, Vec<u8>)>,
 }
 enum Finished {
     Media(Prepared),
@@ -229,6 +239,7 @@ enum Finished {
     Import(PreparedImport),
     Otio(PreparedOtio),
     Clipboard(PreparedClipboard),
+    Image(PreparedImage),
 }
 struct Inner {
     store: Store,
@@ -309,7 +320,9 @@ impl Jobs {
                     {
                         job.state = "running";
                     }
-                    let result = if let Some(clipboard) = &work.clipboard {
+                    let result = if let Some((mime, bytes)) = &work.clipboard_image {
+                        run_clipboard_image(&inner, &work, mime, bytes).map(Finished::Image)
+                    } else if let Some(clipboard) = &work.clipboard {
                         run_clipboard(&inner, &work, clipboard, MEDIA_IMPORT_BUDGET)
                             .map(Finished::Clipboard)
                     } else if let Some(token) = &work.otio {
@@ -338,6 +351,9 @@ impl Jobs {
                                     Finished::Import(prepared) => job.media_import = Some(prepared),
                                     Finished::Otio(prepared) => job.otio = Some(prepared),
                                     Finished::Clipboard(prepared) => job.clipboard = Some(prepared),
+                                    Finished::Image(prepared) => {
+                                        job.clipboard_image = Some(prepared)
+                                    }
                                 }
                             }
                             Ok(_) => {
@@ -378,18 +394,7 @@ impl Jobs {
             ));
         }
         for source in &sources {
-            if source.path.parent() != Some(self.0.root.as_path()) {
-                return Err(ApiError::invalid(
-                    "Asset capture sources must be inside the project root",
-                ));
-            }
-            simple_name(
-                source
-                    .path
-                    .file_name()
-                    .and_then(|n| n.to_str())
-                    .ok_or_else(ApiError::missing)?,
-            )?;
+            crate::files::root_media_token(&self.0.root, &source.path)?;
         }
         self.enqueue(epoch, generation, asset, sources, None)
     }
@@ -439,6 +444,7 @@ impl Jobs {
             media_import: None,
             otio: None,
             clipboard: None,
+            clipboard_image: None,
         };
         let job = Job {
             id,
@@ -464,6 +470,8 @@ impl Jobs {
             otio_probe_total: None,
             otio: None,
             clipboard: None,
+            clipboard_image: None,
+            applied_image: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -590,6 +598,7 @@ impl Jobs {
             media_import: None,
             otio: None,
             clipboard: None,
+            clipboard_image: None,
         };
         let job = Job {
             id,
@@ -619,6 +628,8 @@ impl Jobs {
             otio_probe_total: None,
             otio: None,
             clipboard: None,
+            clipboard_image: None,
+            applied_image: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -653,6 +664,7 @@ impl Jobs {
             media_import: Some(tokens),
             otio: None,
             clipboard: None,
+            clipboard_image: None,
         };
         let job = Job {
             id,
@@ -678,6 +690,8 @@ impl Jobs {
             otio_probe_total: None,
             otio: None,
             clipboard: None,
+            clipboard_image: None,
+            applied_image: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -686,6 +700,126 @@ impl Jobs {
             return Err(busy());
         }
         Ok(value)
+    }
+    pub fn prepare_clipboard_image(
+        &self,
+        epoch: &str,
+        generation: &str,
+        mime: &str,
+        bytes: Vec<u8>,
+    ) -> Result<Value> {
+        binding(epoch, generation)?;
+        crate::clipboard_image::validate(mime, &bytes)?;
+        project_root(&self.0)?;
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        reserve_witnesses(&jobs, 8)?;
+        reserve(&mut jobs)?;
+        let id = format!("asset-{}", nonce());
+        let cancel = Arc::new(AtomicBool::new(false));
+        let total = bytes.len() as u64;
+        let work = Work {
+            id: id.clone(),
+            asset: None,
+            sources: vec![],
+            cancel: cancel.clone(),
+            import: None,
+            edit: None,
+            media_import: None,
+            otio: None,
+            clipboard: None,
+            clipboard_image: Some((mime.into(), bytes)),
+        };
+        let job = Job {
+            id,
+            kind: "clipboard_image",
+            epoch: epoch.into(),
+            generation: generation.into(),
+            state: "queued",
+            bytes: 0,
+            total,
+            error: None,
+            failure: None,
+            asset_id: None,
+            revision: None,
+            cancel,
+            result: None,
+            edit_result: None,
+            edit: None,
+            command_id: None,
+            fingerprint: None,
+            media_import: None,
+            import_completed: 0,
+            import_total: 8,
+            otio_probe_total: None,
+            otio: None,
+            clipboard: None,
+            clipboard_image: None,
+            applied_image: None,
+        };
+        let value = job.value();
+        jobs.push_back(job);
+        if self.0.sender.try_send(work).is_err() {
+            jobs.pop_back();
+            return Err(busy());
+        }
+        Ok(value)
+    }
+    pub fn clipboard_image_payload(
+        &self,
+        id: &str,
+        epoch: &str,
+        generation: &str,
+        name: &str,
+    ) -> Result<PreparedMedia> {
+        let jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        if let Some(item) = applied_image(job, epoch, generation, name)? {
+            return Ok(item);
+        }
+        ready(job, epoch, generation, "clipboard_image")?;
+        project_root(&self.0)?;
+        let prepared = job.clipboard_image.as_ref().ok_or_else(ApiError::missing)?;
+        let target = prepared.stage.preview(name)?;
+        Ok(PreparedMedia {
+            path: target.path,
+            path_token: target.path_token,
+            meta: prepared.meta.clone(),
+            content_hash: 0,
+        })
+    }
+    // Publication and cancellation share the actor's final acceptance mutex.
+    pub fn accept_clipboard_image(
+        &self,
+        id: &str,
+        epoch: &str,
+        generation: &str,
+        name: &str,
+    ) -> Result<PreparedMedia> {
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter_mut()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        if let Some(item) = applied_image(job, epoch, generation, name)? {
+            return Ok(item);
+        }
+        ready(job, epoch, generation, "clipboard_image")?;
+        project_root(&self.0)?;
+        let prepared = job.clipboard_image.as_mut().ok_or_else(ApiError::missing)?;
+        let published = prepared.stage.publish(name, &job.cancel)?;
+        let item = PreparedMedia {
+            path: published.path,
+            path_token: published.path_token,
+            meta: prepared.meta.clone(),
+            content_hash: published.content_hash,
+        };
+        job.applied_image = Some((name.trim().into(), item.clone()));
+        job.state = "applied";
+        job.clipboard_image = None;
+        Ok(item)
     }
     pub fn prepare_clipboard(
         &self,
@@ -721,6 +855,7 @@ impl Jobs {
                 fallback: fallback.map(str::to_owned),
                 to_pool,
             }),
+            clipboard_image: None,
         };
         let job = Job {
             id,
@@ -746,6 +881,8 @@ impl Jobs {
             otio_probe_total: None,
             otio: None,
             clipboard: None,
+            clipboard_image: None,
+            applied_image: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -808,6 +945,7 @@ impl Jobs {
             media_import: None,
             otio: Some(path_token.into()),
             clipboard: None,
+            clipboard_image: None,
         };
         let job = Job {
             id,
@@ -833,6 +971,8 @@ impl Jobs {
             otio_probe_total: None,
             otio: None,
             clipboard: None,
+            clipboard_image: None,
+            applied_image: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -952,6 +1092,7 @@ impl Jobs {
                 job.media_import = None;
                 job.otio = None;
                 job.clipboard = None;
+                job.clipboard_image = None;
                 job.error = Some("ASSET_CANCELED");
                 job.failure = Some(canceled());
             }
@@ -982,6 +1123,7 @@ impl Jobs {
             job.media_import = None;
             job.otio = None;
             job.clipboard = None;
+            job.clipboard_image = None;
             if !matches!(job.state, "running" | "queued") {
                 job.state = "canceled";
                 job.error = Some("ASSET_CANCELED");
@@ -1044,6 +1186,29 @@ impl Jobs {
         asset_payload::decode(&prepared.asset)
     }
 }
+fn applied_image(
+    job: &Job,
+    epoch: &str,
+    generation: &str,
+    name: &str,
+) -> Result<Option<PreparedMedia>> {
+    if job.kind != "clipboard_image" || job.state != "applied" {
+        return Ok(None);
+    }
+    if job.epoch != epoch || job.generation != generation {
+        return Err(ApiError::conflict(
+            "ASSET_CONTEXT_CHANGED",
+            "Project changed; prepare the clipboard image again",
+        ));
+    }
+    match &job.applied_image {
+        Some((saved, item)) if saved == name.trim() => Ok(Some(item.clone())),
+        _ => Err(ApiError::conflict(
+            "ASSET_PUBLISHED",
+            "The clipboard image was already added under another name",
+        )),
+    }
+}
 fn reserve_witnesses(jobs: &VecDeque<Job>, additional: usize) -> Result<()> {
     let retained: usize = jobs
         .iter()
@@ -1072,6 +1237,7 @@ fn reserve_witnesses(jobs: &VecDeque<Job>, additional: usize) -> Result<()> {
                             .filter(|witness| witness.file.is_some())
                             .count()
                     })
+                    + job.clipboard_image.as_ref().map_or(0, |_| 8)
             }
         })
         .sum();
@@ -1202,14 +1368,7 @@ fn live_source(inner: &Inner, source: &PinnedSource, import: bool) -> Result<()>
         let (dir, name, _) = store_location(&inner.store, &source.path)?;
         asset_store::regular(&dir, &name)?
     } else {
-        asset_store::regular(
-            &inner.directory,
-            source
-                .path
-                .file_name()
-                .and_then(|n| n.to_str())
-                .ok_or_else(ApiError::missing)?,
-        )?
+        crate::files::open_root_media(&inner.root, &inner.directory, &source.path)?
     };
     if crate::source::file_identity(&source.file)? != source.identity
         || crate::source::file_identity(&live)? != source.identity
@@ -1257,6 +1416,9 @@ fn header(file: &File, path: &Path) -> Result<()> {
         "png" => n >= 8 && h[..8] == *b"\x89PNG\r\n\x1a\n",
         "jpg" | "jpeg" => n >= 3 && h[..3] == [0xff, 0xd8, 0xff],
         "webp" => n >= 12 && &h[..4] == b"RIFF" && &h[8..12] == b"WEBP",
+        "gif" => n >= 6 && (&h[..6] == b"GIF87a" || &h[..6] == b"GIF89a"),
+        "bmp" => n >= 2 && &h[..2] == b"BM",
+        "tif" | "tiff" => n >= 4 && (&h[..4] == b"II\x2a\0" || &h[..4] == b"MM\0\x2a"),
         "wav" => n >= 12 && (&h[..4] == b"RIFF" || &h[..4] == b"RF64") && &h[8..12] == b"WAVE",
         "mp4" | "m4a" => n >= 8 && &h[4..8] == b"ftyp",
         "mov" => {
@@ -1331,6 +1493,23 @@ fn copy(inner: &Inner, source: &PinnedSource, work: &Work, budget: &Budget) -> R
         .file_name()
         .and_then(|v| v.to_str())
         .ok_or_else(ApiError::missing)?;
+    let managed_name;
+    let source_name = if work.import.is_none()
+        && source_name.starts_with('.')
+        && crate::files::root_media_token(&inner.root, &source.path)?.starts_with("Pasted Images/")
+    {
+        managed_name = format!(
+            "image.{}",
+            source
+                .path
+                .extension()
+                .and_then(|extension| extension.to_str())
+                .ok_or_else(ApiError::missing)?
+        );
+        managed_name.as_str()
+    } else {
+        source_name
+    };
     simple_name(source_name)?;
     header(&source.file, &source.path)?;
     let staging = if work.import.is_some() {
@@ -1584,15 +1763,8 @@ fn project_root(inner: &Inner) -> Result<()> {
 }
 
 fn validate_import_file(inner: &Inner, item: &ImportFile) -> Result<()> {
-    let live = File::from(
-        openat(
-            &inner.directory,
-            item.item.path_token.as_str(),
-            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
-            Mode::empty(),
-        )
-        .map_err(|_| source_changed())?,
-    );
+    let live = crate::files::open_root_media(&inner.root, &inner.directory, &item.item.path)
+        .map_err(|_| source_changed())?;
     if asset_store::stable_identity(&item.file)? != item.identity
         || asset_store::stable_identity(&live)? != item.identity
     {
@@ -1610,15 +1782,8 @@ fn prepare_import_file(
     if cancel.load(Ordering::Acquire) {
         return Err(canceled());
     }
-    let file = File::from(
-        openat(
-            &inner.directory,
-            token,
-            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
-            Mode::empty(),
-        )
-        .map_err(|_| ApiError::missing())?,
-    );
+    let file =
+        crate::files::open_root_media(&inner.root, &inner.directory, &inner.root.join(token))?;
     if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
         return Err(ApiError::invalid("Media must be a regular file"));
     }
@@ -1667,16 +1832,44 @@ fn entry_identity(meta: &std::fs::Metadata) -> String {
         meta.mode()
     )
 }
-fn otio_entry(inner: &Inner, token: &str) -> Result<Option<std::fs::Metadata>> {
-    let path = PathBuf::from(format!("/proc/self/fd/{}", inner.directory.as_raw_fd())).join(token);
-    match std::fs::symlink_metadata(path) {
-        Ok(meta) => Ok(Some(meta)),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(_) => Err(ApiError::io()),
+fn otio_entry(inner: &Inner, token: &str) -> Result<(Option<std::fs::Metadata>, Option<String>)> {
+    project_root(inner)?;
+    crate::files::root_media_token(&inner.root, &inner.root.join(token))?;
+    let managed = token.strip_prefix("Pasted Images/");
+    let child = if managed.is_some() {
+        crate::clipboard_image::directory(&inner.directory)?
+    } else {
+        None
+    };
+    if managed.is_some() && child.is_none() {
+        return Ok((None, Some("absent".into())));
     }
+    let directory = child.as_ref().unwrap_or(&inner.directory);
+    let parent = child
+        .as_ref()
+        .map(|child| {
+            child
+                .metadata()
+                .map(|meta| format!("{}:{}", meta.dev(), meta.ino()))
+                .map_err(|_| ApiError::io())
+        })
+        .transpose()?;
+    let path = PathBuf::from(format!("/proc/self/fd/{}", directory.as_raw_fd()))
+        .join(managed.unwrap_or(token));
+    let entry = match std::fs::symlink_metadata(path) {
+        Ok(meta) => Some(meta),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+        Err(_) => return Err(ApiError::io()),
+    };
+    if let Some(child) = child {
+        let live =
+            crate::clipboard_image::directory(&inner.directory)?.ok_or_else(source_changed)?;
+        asset_store::same_directory(&child, &live).map_err(|_| source_changed())?;
+    }
+    Ok((entry, parent))
 }
 fn otio_witness(inner: &Inner, token: &str) -> Result<OtioWitness> {
-    let metadata = otio_entry(inner, token)?;
+    let (metadata, parent) = otio_entry(inner, token)?;
     if metadata
         .as_ref()
         .is_some_and(|meta| !meta.is_file() || meta.file_type().is_symlink())
@@ -1685,20 +1878,15 @@ fn otio_witness(inner: &Inner, token: &str) -> Result<OtioWitness> {
             "Media links and special files are refused",
         ));
     }
-    let file = openat(
-        &inner.directory,
-        token,
-        OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
-        Mode::empty(),
-    )
-    .ok()
-    .map(File::from);
+    let file =
+        crate::files::open_root_media(&inner.root, &inner.directory, &inner.root.join(token)).ok();
     let identity = file
         .as_ref()
         .map(asset_store::stable_identity)
         .transpose()?;
     let witness = OtioWitness {
         token: token.into(),
+        parent,
         entry: metadata.as_ref().map(entry_identity),
         file,
         identity,
@@ -1742,17 +1930,7 @@ fn clipboard_token(inner: &Inner, path: &Path) -> Result<String> {
     } else {
         inner.root.join(path)
     };
-    if path.parent() != Some(inner.root.as_path()) {
-        return Err(ApiError::invalid(
-            "Clipboard media must be directly inside the configured project root",
-        ));
-    }
-    let token = path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .ok_or_else(|| ApiError::invalid("Invalid clipboard media path"))?;
-    simple_name(token)?;
-    Ok(token.into())
+    crate::files::root_media_token(&inner.root, &path)
 }
 fn clipboard_text(work: &ClipboardWork) -> Result<ClipboardPayload> {
     if work.text.is_empty() {
@@ -1787,6 +1965,68 @@ fn clipboard_text(work: &ClipboardWork) -> Result<ClipboardPayload> {
         })?
         .map_err(|_| ApiError::invalid("Unsupported or malformed native clipboard payload"))
 }
+fn image_disk(inner: &Inner, additional: u64) -> Result<()> {
+    let stat = rustix::fs::fstatvfs(&inner.directory).map_err(|_| ApiError::io())?;
+    if stat.f_bavail.saturating_mul(stat.f_frsize) < RESERVE.saturating_add(additional) {
+        return Err(ApiError::conflict(
+            "ASSET_DISK_FULL",
+            "Clipboard image preparation requires 512 MiB of free disk reserve",
+        ));
+    }
+    Ok(())
+}
+fn run_clipboard_image(
+    inner: &Inner,
+    work: &Work,
+    mime: &str,
+    bytes: &[u8],
+) -> Result<PreparedImage> {
+    project_root(inner)?;
+    image_disk(inner, bytes.len() as u64)?;
+    let start = Instant::now();
+    let stage = crate::clipboard_image::Stage::new(
+        &inner.root,
+        inner.directory.try_clone().map_err(|_| ApiError::io())?,
+        mime,
+        bytes,
+        &work.cancel,
+    )?;
+    stage.validate()?;
+    let meta = crate::asset_probe::probe_root_media(
+        stage.file(),
+        stage.is_image(),
+        &work.cancel,
+        MEDIA_IMPORT_BUDGET.saturating_sub(start.elapsed()),
+    )?;
+    if work.cancel.load(Ordering::Acquire) {
+        return Err(canceled());
+    }
+    project_root(inner)?;
+    stage.verify_content()?;
+    image_disk(inner, 0)?;
+    if !meta.has_video
+        || meta.width == 0
+        || meta.height == 0
+        || meta.width > 32768
+        || meta.height > 32768
+    {
+        return Err(ApiError::invalid("Clipboard image dimensions are invalid"));
+    }
+    let summary = json!({
+        "suggested_name":stage.suggested_name()?,
+        "extension":stage.extension(),
+        "mime":stage.mime(),
+        "bytes":bytes.len(),
+        "width":meta.width,
+        "height":meta.height,
+    });
+    Ok(PreparedImage {
+        stage,
+        meta,
+        summary,
+    })
+}
+
 fn run_clipboard(
     inner: &Inner,
     work: &Work,
@@ -1906,21 +2146,7 @@ fn run_otio(inner: &Inner, work: &Work, token: &str, budget: Duration) -> Result
                 }
                 let remaining = otio_budget(start, budget, &work.cancel)?;
                 project_root(inner)?;
-                if path
-                    .parent()
-                    .and_then(|parent| parent.canonicalize().ok())
-                    .as_ref()
-                    != Some(&inner.root)
-                {
-                    return Err(ApiError::invalid(
-                        "Media must be directly inside the configured project root",
-                    ));
-                }
-                let token = path
-                    .file_name()
-                    .and_then(|name| name.to_str())
-                    .ok_or_else(|| ApiError::invalid("Invalid media name"))?;
-                simple_name(token)?;
+                let token = crate::files::root_media_token(&inner.root, path)?;
                 if let Some(result) = cached.get(path) {
                     offline = result.is_err();
                     return result
@@ -1932,9 +2158,9 @@ fn run_otio(inner: &Inner, work: &Work, token: &str, budget: Duration) -> Result
                         "OTIO import currently supports at most 64 distinct media URLs",
                     ));
                 }
-                let witness = otio_witness(inner, token)?;
+                let witness = otio_witness(inner, &token)?;
                 let probe = if let Some(file) = &witness.file {
-                    probe_import_file(inner, token, file, &work.cancel, remaining)
+                    probe_import_file(inner, &token, file, &work.cancel, remaining)
                         .map(|item| (item.meta, item.content_hash))
                 } else {
                     Err(ApiError::missing())

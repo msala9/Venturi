@@ -48,6 +48,60 @@ pub struct Files {
     dir: File,
     version: RefCell<Option<(String, ProjectVersion)>>,
 }
+
+pub(crate) fn root_media_token(root: &Path, path: &Path) -> Result<String> {
+    let relative = path
+        .strip_prefix(root)
+        .map_err(|_| ApiError::invalid("Media must be in the configured root"))?;
+    let token = relative
+        .to_str()
+        .ok_or_else(|| ApiError::invalid("Media file names must be UTF-8"))?;
+    if let Some(name) = token.strip_prefix("Pasted Images/") {
+        crate::clipboard_image::validate_filename(name)?;
+    } else {
+        Files::name(token)?;
+    }
+    if root.join(token).as_os_str() != path.as_os_str() {
+        return Err(ApiError::invalid(
+            "Media must use its exact root-relative path",
+        ));
+    }
+    Ok(token.to_owned())
+}
+
+pub(crate) fn open_root_media(root: &Path, dir: &File, path: &Path) -> Result<File> {
+    let token = root_media_token(root, path)?;
+    let live = File::from(
+        rustix::fs::open(
+            root,
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|_| ApiError::io())?,
+    );
+    crate::asset_store::same_directory(dir, &live)?;
+    let child;
+    let (parent, name) = if let Some(name) = token.strip_prefix("Pasted Images/") {
+        child = crate::clipboard_image::directory(dir)?.ok_or_else(ApiError::missing)?;
+        (&child, name)
+    } else {
+        (dir, token.as_str())
+    };
+    let file = File::from(
+        openat(
+            parent,
+            name,
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK,
+            Mode::empty(),
+        )
+        .map_err(|_| ApiError::missing())?,
+    );
+    if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
+        return Err(ApiError::invalid("Media must be a regular file"));
+    }
+    Ok(file)
+}
+
 impl Files {
     pub fn media_import_tokens(&self, path_tokens: &[String]) -> Result<Vec<String>> {
         media_import_tokens(path_tokens)
@@ -62,26 +116,7 @@ impl Files {
         crate::library::provenance(&self.dir, path.file_name()?.to_str()?)
     }
     pub fn media_file(&self, path: &Path) -> Result<File> {
-        if path.parent() != Some(self.root.as_path()) {
-            return Err(ApiError::invalid("Media must be in the configured root"));
-        }
-        let name = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .ok_or_else(ApiError::missing)?;
-        Self::name(name)?;
-        let fd = openat(
-            &self.dir,
-            name,
-            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK,
-            Mode::empty(),
-        )
-        .map_err(|_| ApiError::missing())?;
-        let file = File::from(fd);
-        if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
-            return Err(ApiError::invalid("Media must be a regular file"));
-        }
-        Ok(file)
+        open_root_media(&self.root, &self.dir, path)
     }
     #[cfg(test)]
     pub fn probe(&self, name: &str) -> Result<(PathBuf, vv_core::MediaMeta)> {
@@ -89,27 +124,18 @@ impl Files {
         Ok((path, meta))
     }
     pub fn prepare_media(&self, name: &str) -> Result<(PathBuf, vv_core::MediaMeta, u64)> {
-        Self::name(name)?;
-        let listed = self.list()?;
-        if !listed["importable_media"]
-            .as_array()
-            .is_some_and(|items| items.iter().any(|item| item["path_token"] == name))
+        let path = self.root.join(name);
+        root_media_token(&self.root, &path)?;
+        if !name.starts_with("Pasted Images/")
+            && !self.list()?["importable_media"]
+                .as_array()
+                .is_some_and(|items| items.iter().any(|item| item["path_token"] == name))
         {
             return Err(ApiError::invalid(
                 "Choose an importable file listed by the server",
             ));
         }
-        let fd = openat(
-            &self.dir,
-            name,
-            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::CLOEXEC | OFlags::NONBLOCK,
-            Mode::empty(),
-        )
-        .map_err(|_| ApiError::missing())?;
-        let file = File::from(fd);
-        if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
-            return Err(ApiError::invalid("Media must be a regular file"));
-        }
+        let file = self.media_file(&path)?;
         use std::os::fd::AsRawFd;
         let fd_path = PathBuf::from(format!("/proc/self/fd/{}", file.as_raw_fd()));
         let meta = (if vv_media::is_image_path(Path::new(name)) {
@@ -127,7 +153,7 @@ impl Files {
         }
         let hash = vv_media::content_fingerprint(&fd_path)
             .map_err(|_| ApiError::invalid("The native engine could not fingerprint this media"))?;
-        Ok((self.root.join(name), meta, hash))
+        Ok((path, meta, hash))
     }
     pub fn new(root: &Path) -> std::io::Result<Self> {
         std::fs::create_dir_all(root)?;
@@ -322,7 +348,16 @@ impl Files {
         Ok(project)
     }
     fn validate_media(&self, project: &mut Project) -> Result<()> {
-        validate_root_media(project, &self.root)
+        let live = File::from(
+            rustix::fs::open(
+                &self.root,
+                OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                Mode::empty(),
+            )
+            .map_err(|_| ApiError::io())?,
+        );
+        crate::asset_store::same_directory(&self.dir, &live)?;
+        validate_root_media_in(project, &self.root, &self.dir)
     }
     pub fn path(&self, name: &str) -> Result<PathBuf> {
         Self::name(name)?;
@@ -493,6 +528,17 @@ pub(crate) fn parse_otio(
     Ok((imported.project, warnings))
 }
 fn validate_root_media(project: &mut Project, root: &Path) -> Result<()> {
+    let dir = File::from(
+        rustix::fs::open(
+            root,
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|_| ApiError::io())?,
+    );
+    validate_root_media_in(project, root, &dir)
+}
+fn validate_root_media_in(project: &mut Project, root: &Path, dir: &File) -> Result<()> {
     for item in project.media_pool.values_mut() {
         if item.compound.is_some() {
             continue;
@@ -502,21 +548,22 @@ fn validate_root_media(project: &mut Project, root: &Path) -> Result<()> {
         } else {
             root.join(&item.path)
         };
-        let parent = path
-            .parent()
-            .and_then(|parent| parent.canonicalize().ok())
-            .ok_or_else(|| ApiError::invalid("Media must be in the configured root"))?;
-        if parent != root {
-            return Err(ApiError::invalid(
-                "Media must be in the configured root; nested paths are not supported yet",
-            ));
-        }
-        if let Ok(meta) = std::fs::symlink_metadata(&path)
-            && (meta.file_type().is_symlink() || !meta.is_file())
-        {
-            return Err(ApiError::invalid(
-                "Media links and special files are refused",
-            ));
+        let token = root_media_token(root, &path)?;
+        let child;
+        let entry = if let Some(name) = token.strip_prefix("Pasted Images/") {
+            child = crate::clipboard_image::directory(dir)?;
+            child.as_ref().map(|parent| (parent, name))
+        } else {
+            Some((dir, token.as_str()))
+        };
+        if let Some((parent, name)) = entry {
+            match rustix::fs::statat(parent, name, AtFlags::SYMLINK_NOFOLLOW) {
+                Err(rustix::io::Errno::NOENT) => {}
+                Err(_) => return Err(ApiError::io()),
+                Ok(_) => {
+                    open_root_media(root, dir, &path)?;
+                }
+            }
         }
         item.path = path;
     }

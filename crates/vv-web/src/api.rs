@@ -37,6 +37,14 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/projects/otio/prepare", post(prepare_otio))
         .route("/api/v1/clipboard", get(clipboard_text))
         .route(
+            "/api/v1/clipboard/images/prepare",
+            post(prepare_clipboard_image),
+        )
+        .route(
+            "/api/v1/clipboard/images/jobs/{job}",
+            get(clipboard_image_status).delete(cancel_clipboard_image),
+        )
+        .route(
             "/api/v1/clipboard/prepare",
             post(prepare_clipboard).layer(DefaultBodyLimit::max(8 * 1024 * 1024 + 4096)),
         )
@@ -408,6 +416,92 @@ async fn clipboard_text(
             query
                 .map_err(|_| ApiError::invalid("Invalid clipboard query"))?
                 .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn prepare_clipboard_image(
+    State(state): State<AppState>,
+    query: std::result::Result<
+        Query<crate::host::ClipboardImageQuery>,
+        axum::extract::rejection::QueryRejection,
+    >,
+    request: Request,
+) -> Result<Response> {
+    const MAX_BYTES: usize = crate::clipboard_image::MAX_BYTES;
+    static UPLOAD: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(1);
+    let _permit = UPLOAD.try_acquire().map_err(|_| {
+        ApiError::conflict("IMAGE_UPLOAD_BUSY", "Another clipboard image is uploading")
+    })?;
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid clipboard image query"))?
+        .0;
+    let mime = request
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or("")
+        .trim()
+        .to_ascii_lowercase();
+    if !matches!(
+        mime.as_str(),
+        "image/png" | "image/jpeg" | "image/webp" | "image/gif" | "image/bmp" | "image/tiff"
+    ) {
+        return Err(ApiError::invalid("Choose a supported clipboard image type"));
+    }
+    state
+        .host
+        .call(Action::CheckClipboardImage(query.clone()))
+        .await?;
+    let bytes = tokio::time::timeout(
+        std::time::Duration::from_secs(30),
+        axum::body::to_bytes(request.into_body(), MAX_BYTES),
+    )
+    .await
+    .map_err(|_| ApiError::conflict("IMAGE_UPLOAD_TIMEOUT", "Clipboard image upload timed out"))?
+    .map_err(|_| {
+        ApiError(
+            StatusCode::PAYLOAD_TOO_LARGE,
+            "IMAGE_TOO_LARGE",
+            "Clipboard image exceeds the 32 MiB upload limit",
+        )
+    })?;
+    state
+        .host
+        .call(Action::PrepareClipboardImage(query, mime, bytes.to_vec()))
+        .await
+        .map(native_asset_json)
+}
+async fn clipboard_image_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::ClipboardImageStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid clipboard image job query"))?
+                .0,
+            false,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn cancel_clipboard_image(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::ClipboardImageStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid clipboard image cancellation query"))?
+                .0,
+            true,
         ))
         .await
         .map(native_asset_json)
@@ -1681,6 +1775,7 @@ async fn assets(request: Request) -> Response {
         "/js/media-import.js" => asset!("/web/js/media-import.js", "text/javascript"),
         "/js/otio-import.js" => asset!("/web/js/otio-import.js", "text/javascript"),
         "/js/clipboard.js" => asset!("/web/js/clipboard.js", "text/javascript"),
+        "/js/clipboard-image.js" => asset!("/web/js/clipboard-image.js", "text/javascript"),
         "/js/mark-range.js" => asset!("/web/js/mark-range.js", "text/javascript"),
         "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
         "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),

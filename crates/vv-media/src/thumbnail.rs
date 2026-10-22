@@ -18,7 +18,7 @@ pub fn generate_thumbnail(
     max_width: u32,
 ) -> Result<Thumbnail, crate::MediaError> {
     crate::probe::ensure_init();
-    thumbnail(Decoder::open(path)?, path, duration_secs, max_width)
+    thumbnail(Decoder::open(path)?, path, duration_secs, max_width, false)
 }
 
 pub fn generate_thumbnail_bounded(
@@ -31,6 +31,21 @@ pub fn generate_thumbnail_bounded(
         path,
         duration_secs,
         max_width,
+        false,
+    )
+}
+
+/// Browser representation of a still, retaining its straight alpha channel.
+pub fn generate_still_preview_bounded(
+    path: &Path,
+    max_width: u32,
+) -> Result<Thumbnail, crate::MediaError> {
+    thumbnail(
+        Decoder::open_software_bounded(path, 2)?,
+        path,
+        0.0,
+        max_width,
+        true,
     )
 }
 
@@ -39,6 +54,7 @@ fn thumbnail(
     path: &Path,
     duration_secs: f64,
     max_width: u32,
+    preserve_alpha: bool,
 ) -> Result<Thumbnail, crate::MediaError> {
     let target = (duration_secs / 2.0).min(1.0);
     if target > 0.0 {
@@ -47,10 +63,10 @@ fn thumbnail(
     let (_, frame) = decoder
         .next_frame()?
         .ok_or_else(|| crate::MediaError::NoStream(path.display().to_string()))?;
-    Ok(downscale_to_rgba(&frame, max_width))
+    Ok(downscale_to_rgba(&frame, max_width, preserve_alpha))
 }
 
-fn downscale_to_rgba(frame: &FrameYuv420, max_width: u32) -> Thumbnail {
+fn downscale_to_rgba(frame: &FrameYuv420, max_width: u32, preserve_alpha: bool) -> Thumbnail {
     let width = frame.width.min(max_width).max(1);
     let height = ((frame.height as u64 * width as u64) / frame.width.max(1) as u64).max(1) as u32;
     let (kr, kb) = match frame.matrix {
@@ -87,7 +103,14 @@ fn downscale_to_rgba(frame: &FrameYuv420, max_width: u32) -> Thumbnail {
                 r.clamp(0.0, 255.0) as u8,
                 g.clamp(0.0, 255.0) as u8,
                 b.clamp(0.0, 255.0) as u8,
-                255,
+                if preserve_alpha {
+                    frame
+                        .alpha
+                        .as_ref()
+                        .map_or(255, |alpha| alpha[sy * frame.width as usize + sx])
+                } else {
+                    255
+                },
             ]);
         }
     }

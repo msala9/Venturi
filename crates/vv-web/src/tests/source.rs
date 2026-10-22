@@ -566,6 +566,145 @@ fn webp_shared_images_keep_original_bytes_and_use_the_native_thumbnail_path() {
 }
 
 #[test]
+fn bmp_and_tiff_still_sources_get_full_native_png_representations_with_alpha() {
+    use std::io::{Cursor, Read};
+    let service = MediaJobs::start().unwrap();
+    let seed = service.root.join("rgba-seed.png");
+    let size = (320, 18);
+    std::fs::write(
+        &seed,
+        encode_png(&[210, 65, 35, 127].repeat((size.0 * size.1) as usize), size).unwrap(),
+    )
+    .unwrap();
+    for (extension, pixel_format, alpha) in [("bmp", "bgr24", 255), ("tiff", "rgba", 127)] {
+        let path = service.root.join(format!("native-still.{extension}"));
+        vv_media::test_support::ffmpeg(
+            &[
+                "-i",
+                seed.to_str().unwrap(),
+                "-frames:v",
+                "1",
+                "-c:v",
+                extension,
+                "-pix_fmt",
+                pixel_format,
+                "-threads",
+                "1",
+            ],
+            &path,
+        );
+        let original = std::fs::read(&path).unwrap();
+        let spec = SourceSpec {
+            file: File::open(&path).unwrap(),
+            epoch: format!("still:{extension}"),
+            media_id: "1".into(),
+            meta: vv_media::probe_image(&path).unwrap(),
+        };
+        assert_eq!(image_asset(&spec.file).unwrap(), "source.png");
+        let job = service.prepare(cloned_source(&spec), "low").unwrap();
+        assert_eq!(job["source_asset"], "source.png");
+        let id = job["id"].as_str().unwrap();
+        let start = Instant::now();
+        loop {
+            let status = service.status(id, &spec, false).unwrap();
+            if status["state"] == "ready" {
+                break;
+            }
+            assert!(
+                matches!(status["state"].as_str(), Some("queued" | "running")),
+                "{status}"
+            );
+            assert!(start.elapsed() < Duration::from_secs(10));
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        let mut png = Vec::new();
+        service
+            .asset(id, &spec, "source.png")
+            .unwrap()
+            .read_to_end(&mut png)
+            .unwrap();
+        assert!(png.starts_with(b"\x89PNG\r\n\x1a\n"));
+        let mut reader = png::Decoder::new(Cursor::new(png)).read_info().unwrap();
+        let mut rgba = vec![0; reader.output_buffer_size().unwrap()];
+        let info = reader.next_frame(&mut rgba).unwrap();
+        assert_eq!((info.width, info.height), size);
+        assert_eq!(info.color_type, png::ColorType::Rgba);
+        for pixel in rgba[..info.buffer_size()].as_chunks::<4>().0 {
+            assert_eq!(pixel[3], alpha, "{extension}: {pixel:?}");
+            assert!(
+                pixel[0] > 180 && pixel[1] < 90 && pixel[2] < 65,
+                "{extension}: {pixel:?}"
+            );
+        }
+        assert_eq!(std::fs::read(&path).unwrap(), original);
+        assert!(service.asset(id, &spec, "thumb.png").is_ok());
+        assert!(service.asset(id, &spec, "source.mp4").is_err());
+        let rejected = service.root.join(format!("rejected-{extension}"));
+        std::fs::create_dir(&rejected).unwrap();
+        let mut changed = cloned_source(&spec);
+        changed.meta.width += 1;
+        assert!(generate_image(&changed, &rejected, &AtomicBool::new(false)).is_err());
+        assert!(generate_image(&spec, &rejected, &AtomicBool::new(true)).is_err());
+        assert!(
+            !std::fs::read(rejected.join("source.png"))
+                .unwrap()
+                .starts_with(b"\x89PNG\r\n\x1a\n")
+        );
+    }
+}
+
+#[test]
+fn still_source_assets_use_isolated_opaque_thumbnails_without_reencoding_the_original() {
+    use std::io::{Cursor, Read};
+    let service = MediaJobs::start().unwrap();
+    let path = service.root.join("assets-alpha.png");
+    let original = encode_png(&[210, 65, 35, 127].repeat(16 * 16), (16, 16)).unwrap();
+    std::fs::write(&path, &original).unwrap();
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "image-assets:1".into(),
+        media_id: "1".into(),
+        meta: vv_media::probe_image(&path).unwrap(),
+    };
+    let job = service.prepare_assets(cloned_source(&spec)).unwrap();
+    let id = job["id"].as_str().unwrap();
+    let start = Instant::now();
+    loop {
+        let status = service.status(id, &spec, false).unwrap();
+        if status["state"] == "ready" {
+            break;
+        }
+        assert!(
+            matches!(status["state"].as_str(), Some("queued" | "running")),
+            "{status}"
+        );
+        assert!(start.elapsed() < Duration::from_secs(10));
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let mut png = Vec::new();
+    service
+        .asset(id, &spec, "thumb.png")
+        .unwrap()
+        .read_to_end(&mut png)
+        .unwrap();
+    let mut reader = png::Decoder::new(Cursor::new(png)).read_info().unwrap();
+    let mut rgba = vec![0; reader.output_buffer_size().unwrap()];
+    let info = reader.next_frame(&mut rgba).unwrap();
+    assert_eq!((info.width, info.height), (16, 16));
+    assert_eq!(info.color_type, png::ColorType::Rgba);
+    assert!(
+        rgba[..info.buffer_size()]
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .all(|pixel| pixel[3] == 255)
+    );
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    assert!(service.asset(id, &spec, "source.png").is_err());
+    assert!(service.asset(id, &spec, "source.mp4").is_err());
+}
+
+#[test]
 fn still_source_preserves_original_png_bytes_and_alpha_without_creating_a_video() {
     use std::io::Read;
     let service = MediaJobs::start().unwrap();

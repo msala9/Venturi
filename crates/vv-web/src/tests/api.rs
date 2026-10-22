@@ -6,6 +6,191 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn bitmap_clipboard_http_checks_saved_binding_mime_body_limit_and_typed_cancel_before_import()
+{
+    let root = std::env::temp_dir().join(format!("vv-image-http-{}", crate::asset_jobs::nonce()));
+    let host = Host::start(&root).unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let make = |method: &str, path: &str, mime: &str, body: Vec<u8>| {
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("content-type", mime)
+            .body(Body::from(body))
+            .unwrap()
+    };
+    let url = |session: &Value| {
+        format!(
+            "/api/v1/clipboard/images/prepare?project_epoch={}&if_generation={}",
+            session["project_epoch"].as_str().unwrap(),
+            session["generation"].as_str().unwrap()
+        )
+    };
+    let initial = host.call(Action::Session).await.unwrap();
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", &url(&initial), "image/png", vec![1]))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    host.call(Action::Lease("image-http".into())).await.unwrap();
+    host.call(Action::Mutation(
+        None,
+        Mutation {
+            command_id: "image-http-project".into(),
+            client_id: "image-http".into(),
+            command_epoch: Some(initial["command_epoch"].as_str().unwrap().into()),
+            project_epoch: initial["project_epoch"].as_str().unwrap().into(),
+            if_generation: initial["generation"].as_str().unwrap().into(),
+            if_revision: None,
+            operation: crate::commands::Operation::NewProject {
+                name: "Image_HTTP".into(),
+            },
+        },
+    ))
+    .await
+    .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    assert_eq!(
+        app.clone()
+            .oneshot(make(
+                "POST",
+                &(url(&before) + "&path=/tmp/outside"),
+                "image/png",
+                vec![1]
+            ))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    assert_eq!(
+        app.clone()
+            .oneshot(make(
+                "POST",
+                &url(&before),
+                "image/svg+xml",
+                b"<svg/>".to_vec()
+            ))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    let mut foreign = make("POST", &url(&before), "image/png", vec![1]);
+    foreign
+        .headers_mut()
+        .insert(header::ORIGIN, "https://evil.example".parse().unwrap());
+    assert_eq!(
+        app.clone().oneshot(foreign).await.unwrap().status(),
+        StatusCode::FORBIDDEN
+    );
+    assert_eq!(
+        app.clone()
+            .oneshot(make(
+                "POST",
+                &url(&before),
+                "image/png",
+                vec![0; crate::clipboard_image::MAX_BYTES + 1]
+            ))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::PAYLOAD_TOO_LARGE
+    );
+    let mut png_bytes = Vec::new();
+    {
+        let mut encoder = png::Encoder::new(&mut png_bytes, 16, 16);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder
+            .write_header()
+            .unwrap()
+            .write_image_data(&vec![127; 16 * 16 * 4])
+            .unwrap();
+    }
+    let response = app
+        .clone()
+        .oneshot(make("POST", &url(&before), "image/png", png_bytes.clone()))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let job: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    let path = format!(
+        "/api/v1/clipboard/images/jobs/{}?project_epoch={}",
+        job["id"].as_str().unwrap(),
+        before["project_epoch"].as_str().unwrap()
+    );
+    let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        let response = app
+            .clone()
+            .oneshot(make("GET", &path, "image/png", vec![]))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+        if value["state"] == "ready" {
+            assert_eq!(value["result"]["bytes"], png_bytes.len());
+            assert_eq!(value["result"]["width"], 16);
+            break;
+        }
+        assert!(
+            matches!(value["state"].as_str(), Some("queued" | "running")),
+            "{value}"
+        );
+        assert!(std::time::Instant::now() < until);
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    let wrong = path.replace("/clipboard/images/jobs/", "/clipboard/jobs/");
+    assert_eq!(
+        app.clone()
+            .oneshot(make("DELETE", &wrong, "image/png", vec![]))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::NOT_FOUND
+    );
+    let response = app
+        .clone()
+        .oneshot(make("DELETE", &path, "image/png", vec![]))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let canceled: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    assert_eq!(canceled["state"], "canceled");
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    assert!(!root.join("Pasted Images").exists());
+    assert_eq!(
+        app.clone()
+            .oneshot(make("GET", "/js/clipboard-image.js", "image/png", vec![]))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK
+    );
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn clipboard_http_preparation_is_bounded_strict_read_only_and_typed() {
     let root =
         std::env::temp_dir().join(format!("vv-clipboard-http-{}", crate::asset_jobs::nonce()));

@@ -917,13 +917,14 @@ fn same_assets_meta(expected: &vv_core::MediaMeta, actual: &vv_core::MediaMeta) 
         && expected.channels == actual.channels
         && expected.audio_streams == actual.audio_streams
 }
-fn assets_probe(spec: &SourceSpec, path: &Path, identity: &str) -> Result<()> {
+fn assets_probe(spec: &SourceSpec, path: &Path, identity: &str, cancel: &AtomicBool) -> Result<()> {
     let actual = if spec.meta.is_image() {
-        vv_media::probe_image(path)
+        crate::asset_probe::probe(&spec.file, true, cancel)
+            .map_err(|_| ApiError::invalid("Source assets image is unreadable"))?
     } else {
         vv_media::probe_media(path)
-    }
-    .map_err(|_| ApiError::invalid("Source assets media is unreadable"))?;
+            .map_err(|_| ApiError::invalid("Source assets media is unreadable"))?
+    };
     validate_assets_meta(&actual)?;
     if !same_assets_meta(&spec.meta, &actual) || spec.identity()? != identity {
         return Err(ApiError::conflict(
@@ -952,7 +953,7 @@ fn generate_assets(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> 
     let started = Instant::now();
     let identity = spec.identity()?;
     let path = PathBuf::from(format!("/proc/self/fd/{}", spec.file.as_raw_fd()));
-    assets_probe(spec, &path, &identity)?;
+    assets_probe(spec, &path, &identity, cancel)?;
     let budget =
         || ApiError::invalid("Source assets analysis canceled or exceeded its resource budget");
     if !assets_keep_running(directory, cancel, started) {
@@ -960,21 +961,28 @@ fn generate_assets(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> 
     }
     let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
     if spec.meta.has_video {
-        let thumb = vv_media::thumbnail::generate_thumbnail_bounded(
-            &path,
-            if spec.meta.is_image() { 0.0 } else { seconds },
-            256,
-        )
-        .map_err(|_| ApiError::invalid("Source thumbnail generation failed"))?;
-        if !assets_keep_running(directory, cancel, started) {
-            return Err(budget());
+        if spec.meta.is_image() {
+            let thumbnail = owned_image_output(&directory.join("thumb.png"))?;
+            crate::image_derivative::generate_thumbnail(
+                &spec.file,
+                &thumbnail,
+                (spec.meta.width, spec.meta.height),
+                cancel,
+                || assets_keep_running(directory, cancel, started),
+            )?;
+        } else {
+            let thumb = vv_media::thumbnail::generate_thumbnail_bounded(&path, seconds, 256)
+                .map_err(|_| ApiError::invalid("Source thumbnail generation failed"))?;
+            if !assets_keep_running(directory, cancel, started) {
+                return Err(budget());
+            }
+            write_asset(
+                directory,
+                "thumb.png",
+                &encode_png(&thumb.rgba, (thumb.width, thumb.height))?,
+                1024 * 1024,
+            )?;
         }
-        write_asset(
-            directory,
-            "thumb.png",
-            &encode_png(&thumb.rgba, (thumb.width, thumb.height))?,
-            1024 * 1024,
-        )?;
     }
     if spec.meta.has_audio {
         // JSON is larger than the native binary peak cache.
@@ -1000,7 +1008,7 @@ fn generate_assets(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> 
         }
         write_asset(directory, "waveform.json", &bytes, 4 * 1024 * 1024)?;
     }
-    assets_probe(spec, &path, &identity)?;
+    assets_probe(spec, &path, &identity, cancel)?;
     if !assets_keep_running(directory, cancel, started) {
         return Err(budget());
     }
@@ -1377,66 +1385,109 @@ fn generate(
     Ok(())
 }
 
+fn owned_image_output(path: &Path) -> Result<File> {
+    rustix::fs::open(
+        path,
+        rustix::fs::OFlags::RDWR
+            | rustix::fs::OFlags::CREATE
+            | rustix::fs::OFlags::EXCL
+            | rustix::fs::OFlags::NOFOLLOW
+            | rustix::fs::OFlags::CLOEXEC,
+        rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+    )
+    .map(File::from)
+    .map_err(|_| ApiError::io())
+}
 fn image_asset(file: &File) -> Result<&'static str> {
+    image_representation(file).map(|(name, _)| name)
+}
+fn image_representation(file: &File) -> Result<(&'static str, bool)> {
     let mut signature = [0; 12];
     let read = file
         .read_at(&mut signature, 0)
         .map_err(|_| ApiError::io())?;
     if read >= 8 && signature[..8] == *b"\x89PNG\r\n\x1a\n" {
-        Ok("source.png")
+        Ok(("source.png", false))
     } else if read >= 3 && signature[..3] == [0xff, 0xd8, 0xff] {
-        Ok("source.jpg")
+        Ok(("source.jpg", false))
     } else if read == 12 && &signature[..4] == b"RIFF" && &signature[8..12] == b"WEBP" {
-        Ok("source.webp")
+        Ok(("source.webp", false))
+    } else if read >= 2 && &signature[..2] == b"BM"
+        || read >= 4 && (&signature[..4] == b"II\x2a\0" || &signature[..4] == b"MM\0\x2a")
+    {
+        Ok(("source.png", true))
     } else {
         Err(ApiError::invalid(
-            "Source still preview currently supports PNG, JPEG and WebP",
+            "Source still preview supports PNG, JPEG, WebP, BMP and TIFF",
         ))
     }
 }
 fn generate_image(spec: &SourceSpec, directory: &Path, cancel: &AtomicBool) -> Result<()> {
     let before = spec.identity()?;
+    let started = Instant::now();
+    let check = || {
+        if cancel.load(Ordering::Relaxed)
+            || started.elapsed() >= Duration::from_secs(600)
+            || !disk_headroom(directory)
+        {
+            Err(ApiError::invalid(
+                "Image preparation canceled or exceeded its budget",
+            ))
+        } else {
+            Ok(())
+        }
+    };
+    check()?;
     if spec.file.metadata().map_err(|_| ApiError::io())?.len() > MAX_JOB_BYTES {
         return Err(ApiError::invalid("Image exceeds the 512 MiB source budget"));
     }
-    let path = directory.join(image_asset(&spec.file)?);
-    let mut output = File::create(&path).map_err(|_| ApiError::io())?;
-    let mut offset = 0;
-    let mut buffer = [0; 64 * 1024];
-    loop {
-        if cancel.load(Ordering::Relaxed) || offset > MAX_JOB_BYTES || !disk_headroom(directory) {
-            return Err(ApiError::invalid(
-                "Image preparation canceled or exceeded its budget",
-            ));
+    let (asset, convert) = image_representation(&spec.file)?;
+    let path = directory.join(asset);
+    if convert {
+        let output = owned_image_output(&path)?;
+        let thumbnail = owned_image_output(&directory.join("thumb.png"))?;
+        crate::image_derivative::generate(
+            &spec.file,
+            &output,
+            &thumbnail,
+            (spec.meta.width, spec.meta.height),
+            cancel,
+            || check().is_ok() && directory_bytes(directory) <= MAX_JOB_BYTES,
+        )?;
+    } else {
+        let mut output = File::create(&path).map_err(|_| ApiError::io())?;
+        let mut offset = 0;
+        let mut buffer = [0; 64 * 1024];
+        loop {
+            check()?;
+            let read = spec
+                .file
+                .read_at(&mut buffer, offset)
+                .map_err(|_| ApiError::io())?;
+            if read == 0 {
+                break;
+            }
+            offset += read as u64;
+            if offset > MAX_JOB_BYTES {
+                return Err(ApiError::invalid("Image exceeds the source budget"));
+            }
+            output
+                .write_all(&buffer[..read])
+                .map_err(|_| ApiError::io())?;
         }
-        let read = spec
-            .file
-            .read_at(&mut buffer, offset)
-            .map_err(|_| ApiError::io())?;
-        if read == 0 {
-            break;
-        }
-        output
-            .write_all(&buffer[..read])
-            .map_err(|_| ApiError::io())?;
-        offset += read as u64;
     }
-    drop(output);
-    let actual =
-        vv_media::probe_image(&path).map_err(|_| ApiError::invalid("Image is unreadable"))?;
-    if actual.width != spec.meta.width || actual.height != spec.meta.height {
-        return Err(ApiError::conflict(
-            "SOURCE_CHANGED",
-            "Reimport changed image dimensions",
-        ));
+    check()?;
+    if !convert {
+        let thumbnail = owned_image_output(&directory.join("thumb.png"))?;
+        crate::image_derivative::generate_thumbnail(
+            &spec.file,
+            &thumbnail,
+            (spec.meta.width, spec.meta.height),
+            cancel,
+            || check().is_ok() && directory_bytes(directory) <= MAX_JOB_BYTES,
+        )?;
     }
-    let thumb = vv_media::thumbnail::generate_thumbnail_bounded(&path, 0.0, 256)
-        .map_err(|_| ApiError::invalid("Image thumbnail generation failed"))?;
-    std::fs::write(
-        directory.join("thumb.png"),
-        encode_png(&thumb.rgba, (thumb.width, thumb.height))?,
-    )
-    .map_err(|_| ApiError::io())?;
+    check()?;
     if spec.identity()? != before
         || cancel.load(Ordering::Relaxed)
         || directory_bytes(directory) > MAX_JOB_BYTES

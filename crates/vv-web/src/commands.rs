@@ -91,6 +91,10 @@ pub enum Operation {
     ImportPreparedMedia {
         job_id: String,
     },
+    ImportClipboardImage {
+        job_id: String,
+        name: String,
+    },
     PublishNativeAsset {
         job_id: String,
     },
@@ -507,6 +511,7 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             ));
         }
         Operation::ImportPreparedMedia { .. }
+        | Operation::ImportClipboardImage { .. }
         | Operation::ImportPreparedOtio { .. }
         | Operation::PastePreparedClipboard { .. } => {
             return Err(ApiError::invalid(

@@ -1,6 +1,501 @@
 use super::*;
 
 #[test]
+fn clipboard_image_prepares_original_bytes_then_publishes_once_after_native_trial() {
+    let fixture = Fixture::new();
+    let bytes = std::fs::read(&fixture.path).unwrap();
+    let job = fixture
+        .jobs
+        .prepare_clipboard_image("epoch", "7", "image/png", bytes.clone())
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert_eq!(ready["kind"], "clipboard_image");
+    assert_eq!(ready["result"]["mime"], "image/png");
+    assert_eq!(ready["result"]["extension"], "png");
+    assert_eq!(ready["result"]["bytes"], bytes.len());
+    assert_eq!(ready["result"]["width"], 16);
+    assert_eq!(ready["result"]["height"], 16);
+    assert!(
+        !ready["result"]["suggested_name"]
+            .as_str()
+            .unwrap()
+            .is_empty()
+    );
+    let trial = fixture
+        .jobs
+        .clipboard_image_payload(id, "epoch", "7", "Original image")
+        .unwrap();
+    assert_eq!(trial.content_hash, 0);
+    assert!(!trial.path.exists());
+    assert_eq!(
+        trial.path,
+        fixture.project.join("Pasted Images/Original image.png")
+    );
+    assert_eq!(trial.path_token, "Pasted Images/Original image.png");
+    assert!(
+        fixture
+            .jobs
+            .clipboard_image_payload(id, "epoch", "8", "Original image")
+            .is_err()
+    );
+    assert!(
+        fixture
+            .jobs
+            .accept_clipboard_image(id, "other-epoch", "7", "Original image")
+            .is_err()
+    );
+    {
+        let jobs = fixture.jobs.0.jobs.lock().unwrap();
+        reserve_witnesses(&jobs, 248).unwrap();
+        assert_eq!(reserve_witnesses(&jobs, 249).unwrap_err().1, "ASSET_BUSY");
+    }
+    let published = fixture
+        .jobs
+        .accept_clipboard_image(id, "epoch", "7", "Original image")
+        .unwrap();
+    assert_eq!(published.path, trial.path);
+    assert_eq!(
+        serde_json::to_value(&published.meta).unwrap(),
+        serde_json::to_value(&trial.meta).unwrap()
+    );
+    assert_eq!(std::fs::read(&published.path).unwrap(), bytes);
+    assert_eq!(
+        published.content_hash,
+        vv_media::content_fingerprint(&published.path).unwrap()
+    );
+    let retry = fixture
+        .jobs
+        .accept_clipboard_image(id, "epoch", "7", "Original image")
+        .unwrap();
+    assert_eq!(retry.path, published.path);
+    assert_eq!(retry.content_hash, published.content_hash);
+    assert!(
+        fixture
+            .jobs
+            .accept_clipboard_image(id, "epoch", "7", "Different image")
+            .is_err()
+    );
+    assert_eq!(
+        fixture.jobs.status(id, "epoch", true).unwrap()["state"],
+        "applied"
+    );
+    fixture.jobs.cancel_obsolete("new-epoch");
+    assert!(published.path.exists());
+    reserve_witnesses(&fixture.jobs.0.jobs.lock().unwrap(), 256).unwrap();
+    assert_eq!(
+        std::fs::read_dir(published.path.parent().unwrap())
+            .unwrap()
+            .count(),
+        1
+    );
+    fixture.close();
+}
+
+#[test]
+fn clipboard_image_collision_is_editable_and_cancel_or_epoch_change_cleans_staging() {
+    for obsolete in [false, true] {
+        let fixture = Fixture::new();
+        let bytes = std::fs::read(&fixture.path).unwrap();
+        let job = fixture
+            .jobs
+            .prepare_clipboard_image("epoch", "7", "image/png", bytes)
+            .unwrap();
+        let id = job["id"].as_str().unwrap();
+        assert_eq!(fixture.finish(id)["state"], "ready");
+        let folder = fixture.project.join("Pasted Images");
+        std::fs::create_dir_all(&folder).unwrap();
+        let foreign = folder.join("Collision.png");
+        std::fs::write(&foreign, b"foreign existing file").unwrap();
+        let error = fixture
+            .jobs
+            .accept_clipboard_image(id, "epoch", "7", "Collision")
+            .err()
+            .unwrap();
+        assert_eq!(error.1, "IMAGE_NAME_TAKEN");
+        assert_eq!(
+            fixture.jobs.status(id, "epoch", false).unwrap()["state"],
+            "ready"
+        );
+        assert_eq!(std::fs::read(&foreign).unwrap(), b"foreign existing file");
+        assert!(
+            fixture
+                .jobs
+                .clipboard_image_payload(id, "epoch", "7", "Another name")
+                .is_ok()
+        );
+        if obsolete {
+            fixture.jobs.cancel_obsolete("new-epoch");
+        } else {
+            fixture.jobs.status(id, "epoch", true).unwrap();
+        }
+        assert_eq!(
+            fixture.jobs.status(id, "epoch", false).unwrap()["state"],
+            "canceled"
+        );
+        assert!(
+            fixture
+                .jobs
+                .accept_clipboard_image(id, "epoch", "7", "Another name")
+                .is_err()
+        );
+        assert_eq!(
+            std::fs::read_dir(&fixture.project).unwrap().count(),
+            3,
+            "Only the original media, empty stage directory and foreign directory remain"
+        );
+        assert_eq!(
+            std::fs::read_dir(
+                fixture
+                    .project
+                    .join(crate::clipboard_image::STAGING_DIRECTORY)
+            )
+            .unwrap()
+            .count(),
+            0
+        );
+        assert_eq!(std::fs::read(&foreign).unwrap(), b"foreign existing file");
+        fixture.close();
+    }
+}
+
+#[test]
+fn clipboard_image_checks_stage_identity_before_publication_and_preserves_probe_failure() {
+    let fixture = Fixture::new();
+    let bytes = std::fs::read(&fixture.path).unwrap();
+    assert!(
+        fixture
+            .jobs
+            .prepare_clipboard_image("epoch", "7", "image/jpeg", bytes.clone())
+            .is_err()
+    );
+    assert!(
+        fixture
+            .jobs
+            .prepare_clipboard_image("epoch", "7", "image/png", vec![])
+            .is_err()
+    );
+    let job = fixture
+        .jobs
+        .prepare_clipboard_image("epoch", "7", "image/png", bytes)
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(id)["state"], "ready");
+    let staged_path = {
+        let jobs = fixture.jobs.0.jobs.lock().unwrap();
+        let job = jobs.iter().find(|job| job.id == id).unwrap();
+        let file = job.clipboard_image.as_ref().unwrap().stage.file();
+        std::fs::read_link(format!("/proc/self/fd/{}", file.as_raw_fd())).unwrap()
+    };
+    std::fs::write(&staged_path, b"changed after native probe").unwrap();
+    assert!(
+        fixture
+            .jobs
+            .clipboard_image_payload(id, "epoch", "7", "Changed")
+            .is_err()
+    );
+    assert!(
+        fixture
+            .jobs
+            .accept_clipboard_image(id, "epoch", "7", "Changed")
+            .is_err()
+    );
+    assert!(!fixture.project.join("Pasted Images/Changed.png").exists());
+    fixture.jobs.status(id, "epoch", true).unwrap();
+    let malformed = b"\x89PNG\r\n\x1a\ninvalid image body".to_vec();
+    let job = fixture
+        .jobs
+        .prepare_clipboard_image("epoch", "7", "image/png", malformed)
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    let failed = fixture.finish(id);
+    assert_eq!(failed["state"], "failed");
+    let failure = fixture.jobs.read_failure(id, "epoch").unwrap().unwrap();
+    assert_eq!(failed["error"], failure.1);
+    assert!(!fixture.project.join("Pasted Images/Changed.png").exists());
+    fixture.close();
+}
+
+#[test]
+fn clipboard_image_ready_record_eviction_releases_only_owned_stages() {
+    let fixture = Fixture::new();
+    let bytes = std::fs::read(&fixture.path).unwrap();
+    let mut ids = Vec::new();
+    for _ in 0..=MAX_RECORDS {
+        let job = fixture
+            .jobs
+            .prepare_clipboard_image("epoch", "7", "image/png", bytes.clone())
+            .unwrap();
+        let id = job["id"].as_str().unwrap().to_owned();
+        assert_eq!(fixture.finish(&id)["state"], "ready");
+        ids.push(id);
+    }
+    assert!(fixture.jobs.status(&ids[0], "epoch", false).is_err());
+    assert_eq!(fixture.jobs.0.jobs.lock().unwrap().len(), MAX_RECORDS);
+    assert_eq!(std::fs::read_dir(&fixture.project).unwrap().count(), 2);
+    assert_eq!(
+        std::fs::read_dir(
+            fixture
+                .project
+                .join(crate::clipboard_image::STAGING_DIRECTORY)
+        )
+        .unwrap()
+        .count(),
+        MAX_RECORDS
+    );
+    for id in &ids[1..] {
+        fixture.jobs.status(id, "epoch", true).unwrap();
+    }
+    assert_eq!(std::fs::read_dir(&fixture.project).unwrap().count(), 2);
+    assert_eq!(
+        std::fs::read_dir(
+            fixture
+                .project
+                .join(crate::clipboard_image::STAGING_DIRECTORY)
+        )
+        .unwrap()
+        .count(),
+        0
+    );
+    assert!(fixture.path.exists());
+    fixture.close();
+}
+
+#[test]
+fn pasted_images_remain_native_clipboard_dependencies_and_capturable_library_assets() {
+    for name in ["Copied image", ".Hidden image"] {
+        let fixture = Fixture::new();
+        let bytes = std::fs::read(&fixture.path).unwrap();
+        let queued = fixture
+            .jobs
+            .prepare_clipboard_image("epoch", "7", "image/png", bytes.clone())
+            .unwrap();
+        let id = queued["id"].as_str().unwrap();
+        assert_eq!(fixture.finish(id)["state"], "ready");
+        let image = fixture
+            .jobs
+            .accept_clipboard_image(id, "epoch", "7", name)
+            .unwrap();
+        let mut session = vv_session::Session::default();
+        let media = session.project.media_pool.insert(MediaItem {
+            path: image.path.clone(),
+            meta: image.meta.clone(),
+            content_hash: image.content_hash,
+            compound: None,
+            folder: None,
+        });
+        let entry = vv_core::clipboard::ClipboardEntry {
+            track_kind: TrackKind::Video,
+            track_number: 1,
+            relative_start: 0,
+            clip: Clip::from_source_range(
+                session.project.alloc_clip_id(),
+                ClipSource::Media(media),
+                0,
+                24,
+                0,
+                Rational::one(),
+            ),
+            timeline_fps: Rational::new(24, 1),
+            link_tag: None,
+        };
+        for to_pool in [true, false] {
+            let entries = if to_pool { vec![] } else { vec![entry.clone()] };
+            let selected = if to_pool { vec![media] } else { vec![] };
+            let payload = ClipboardPayload::new(
+                ClipboardOrigin {
+                    instance: 1,
+                    epoch: 1,
+                },
+                &session.project,
+                &selected,
+                &entries,
+            );
+            let queued = fixture
+                .jobs
+                .prepare_clipboard("epoch", "7", &payload.to_text(), None, to_pool)
+                .unwrap();
+            let id = queued["id"].as_str().unwrap();
+            assert_eq!(fixture.finish(id)["state"], "ready");
+            let prepared = fixture.jobs.clipboard_payload(id, "epoch", "7").unwrap();
+            assert_eq!(prepared.files().next().unwrap().path, image.path);
+            assert_eq!(
+                prepared.files().next().unwrap().content_hash,
+                image.content_hash
+            );
+            assert_eq!(prepared.clip_entries().len(), if to_pool { 0 } else { 1 });
+            fixture
+                .jobs
+                .mark_clipboard_applied(id, "epoch", "7")
+                .unwrap();
+        }
+        let asset = asset_payload::capture(
+            &session,
+            media,
+            "Pasted image",
+            ClipboardOrigin {
+                instance: 1,
+                epoch: 1,
+            },
+        )
+        .unwrap();
+        let file =
+            crate::files::open_root_media(&fixture.project, &fixture.jobs.0.directory, &image.path)
+                .unwrap();
+        let identity = crate::source::file_identity(&file).unwrap();
+        let queued = fixture
+            .jobs
+            .prepare_capture(
+                "epoch",
+                "7",
+                asset,
+                vec![PinnedSource {
+                    path: image.path.clone(),
+                    file,
+                    identity,
+                }],
+            )
+            .unwrap();
+        let id = queued["id"].as_str().unwrap();
+        assert_eq!(fixture.finish(id)["state"], "ready");
+        fixture
+            .jobs
+            .publish("pasted-image", id, "epoch", "7")
+            .unwrap();
+        let item = fixture.store.item("pasted-image", false).unwrap();
+        let stored = fixture
+            .store
+            .load("pasted-image", item["revision"].as_str().unwrap())
+            .unwrap();
+        let payload = asset_payload::decode(&stored).unwrap();
+        let stored = payload.files().next().unwrap();
+        assert_eq!(std::fs::read(&stored.path).unwrap(), bytes);
+        assert_eq!(
+            stored.path.file_name().unwrap(),
+            if name.starts_with('.') {
+                "image.png"
+            } else {
+                "Copied image.png"
+            }
+        );
+        assert!(image.path.exists());
+        fixture.close();
+    }
+}
+
+#[test]
+fn otio_pasted_image_dependencies_keep_offline_witnesses_and_refuse_late_changes() {
+    let fixture = Fixture::new();
+    let folder = fixture.project.join("Pasted Images");
+    std::fs::create_dir(&folder).unwrap();
+    let image = folder.join("Image.png");
+    let missing = folder.join("Missing.png");
+    std::fs::copy(&fixture.path, &image).unwrap();
+    write_otio(&fixture, "pasted.otio", &[image.clone(), missing.clone()]);
+    let queued = fixture
+        .jobs
+        .prepare_otio("epoch", "7", "pasted.otio")
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let payload = fixture.jobs.otio_payload(id, "epoch", "7").unwrap();
+    assert_eq!(payload.warnings.len(), 1);
+    assert_eq!(
+        payload
+            .project
+            .media_pool
+            .values()
+            .find(|item| item.path == image)
+            .unwrap()
+            .content_hash,
+        vv_media::content_fingerprint(&image).unwrap()
+    );
+    std::fs::copy(&fixture.path, &missing).unwrap();
+    assert_eq!(
+        fixture
+            .jobs
+            .mark_otio_applied(id, "epoch", "7")
+            .unwrap_err()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    fixture.close();
+    for existing_parent in [false, true] {
+        let fixture = Fixture::new();
+        let folder = fixture.project.join("Pasted Images");
+        if existing_parent {
+            std::fs::create_dir(&folder).unwrap();
+        }
+        let witness = otio_witness(&fixture.jobs.0, "Pasted Images/Offline.png").unwrap();
+        assert!(witness.file.is_none());
+        if existing_parent {
+            std::fs::rename(&folder, fixture.project.join("Old images")).unwrap();
+        }
+        std::fs::create_dir(&folder).unwrap();
+        assert_eq!(
+            witness.validate(&fixture.jobs.0).unwrap_err().1,
+            "SOURCE_CHANGED"
+        );
+        fixture.close();
+    }
+}
+
+#[test]
+fn managed_image_parent_links_fail_all_preparations_instead_of_becoming_offline() {
+    for kind in ["clipboard", "otio", "asset"] {
+        let fixture = Fixture::new();
+        let outside = fixture.root.join("foreign");
+        std::fs::create_dir(&outside).unwrap();
+        std::fs::copy(&fixture.path, outside.join("Image.png")).unwrap();
+        std::os::unix::fs::symlink(&outside, fixture.project.join("Pasted Images")).unwrap();
+        let path = fixture.project.join("Pasted Images/Image.png");
+        let mut asset = fixture.asset.clone();
+        let mut payload = asset_payload::decode(&asset).unwrap();
+        for file in payload.files_mut() {
+            file.path = path.clone();
+            file.content_hash = 0;
+        }
+        asset.payload = payload.to_text();
+        let queued = match kind {
+            "clipboard" => fixture
+                .jobs
+                .prepare_clipboard("epoch", "7", &asset.payload, None, true)
+                .unwrap(),
+            "otio" => {
+                write_otio(&fixture, "linked.otio", std::slice::from_ref(&path));
+                fixture
+                    .jobs
+                    .prepare_otio("epoch", "7", "linked.otio")
+                    .unwrap()
+            }
+            _ => {
+                let file = File::open(outside.join("Image.png")).unwrap();
+                let identity = crate::source::file_identity(&file).unwrap();
+                fixture
+                    .jobs
+                    .prepare_capture(
+                        "epoch",
+                        "7",
+                        asset,
+                        vec![PinnedSource {
+                            path,
+                            file,
+                            identity,
+                        }],
+                    )
+                    .unwrap()
+            }
+        };
+        let failed = fixture.finish(queued["id"].as_str().unwrap());
+        assert_eq!(failed["state"], "failed", "{kind}: {failed}");
+        assert!(failed["result"].is_null());
+        fixture.close();
+    }
+}
+
+#[test]
 fn clipboard_worker_preserves_verified_native_payload_and_replaces_untrusted_reuse_hashes() {
     let fixture = Fixture::new();
     let text = fixture.asset.payload.clone();
@@ -213,6 +708,7 @@ fn clipboard_worker_resolves_ordinary_text_fallback_and_pool_noop_without_parsin
         media_import: None,
         otio: None,
         clipboard: None,
+        clipboard_image: None,
     };
     assert_eq!(
         run_clipboard(&fixture.jobs.0, &work, &source, Duration::ZERO)
@@ -430,6 +926,7 @@ fn otio_policy_errors_and_processing_budget_cannot_be_downgraded_to_offline_read
         media_import: None,
         otio: Some("budget.otio".into()),
         clipboard: None,
+        clipboard_image: None,
     };
     assert_eq!(
         run_otio(&fixture.jobs.0, &work, "budget.otio", Duration::ZERO)
@@ -666,6 +1163,7 @@ fn media_import_budget_records_every_unprocessed_file_and_zero_success_cannot_co
         media_import: Some(tokens.clone()),
         otio: None,
         clipboard: None,
+        clipboard_image: None,
     };
     let result = run_media_import(&fixture.jobs.0, &work, &tokens, Duration::ZERO).unwrap();
     assert!(result.items.is_empty());

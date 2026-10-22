@@ -12,6 +12,39 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Native bitmap clipboard import now passes evidence/m4-bitmap-clipboard.json.
+The existing Windows browser proves an explicit system image read, actual Ctrl+V,
+Cancel, editable collision/rename, Add, Source display and one native Undo/Redo.
+The raw bounded upload preserves the original PNG/JPEG/WebP/GIF/BMP/TIFF bytes.
+Only explicit Add publishes a no-overwrite file in Pasted Images beside a saved
+project and applies native AddEntities(ImportMedia). Undo retains that file,
+matching the original desktop. Save As uses the existing flow and requires a new
+paste afterward. Exact managed-directory authorization also covers reopen,
+Source, native clipboard/OTIO reuse and native asset capture; arbitrary nested
+paths and symlinks remain refused.
+
+BMP/TIFF Source now uses a PNG representation from the original native software
+decoder and retains alpha. Conversion and all still-image Source/SourceAssets
+thumbnails run in isolated children with address-space, CPU, output and
+wall-clock limits; a failed conversion does not terminate the editor.
+PNG/JPEG/WebP Source preserves original bytes and GIF keeps
+native regular-media semantics. Finite API proof covers all six actual formats,
+collision retry, cancellation, stale guards, exact command retry and Save/restart.
+Cached halo2 validation passes 405 web Rust, 281 core and
+762 JavaScript tests, targeted multimedia/desktop tests, fmt,
+Clippy all-targets with warnings denied and native build. The main editor and
+its five unsaved edits remain intact; no local build, installation, hardware GPU
+work or main restart occurred. The media-import row remains partial for broader
+large-image, codec, interaction and release qualification; counts stay 39 done
+and 51 partial.
+
+The Windows screenshot exposed a short-viewer layout defect: wrapped Source
+controls consumed the entire picture area at 1280x720. A bounded scrollable
+Source toolbar now leaves the image visible. Final fmt, 762 JavaScript tests and
+native build pass after verifying unchanged Rust hashes against the full run;
+the six-format API and complete Windows interaction proof pass again on that
+final binary. Both temporary tabs, servers and tunnels are closed.
+
 Explicit native clipboard overwrite now passes evidence/m4-clipboard-overwrite.json.
 The Windows control starts unchecked and captures intent before asynchronous
 clipboard reads. Native insert_overwriting handles split/trim/delete, missing
@@ -26,7 +59,7 @@ Clippy all-targets with warnings denied and native build. Finite API and the
 existing Windows browser prove default refusal, explicit replacement, preserved
 gaps, retry, one Undo/Redo and saved-project preservation. No local compilation,
 installation, rendering, hardware GPU use or main-session restart occurred.
-The copy/paste row is accepted; bitmap import remains a separate open workflow.
+The copy/paste row is accepted; the later bitmap evidence above covers its separate media-import entry path.
 
 The preceding native text-clipboard increment passed evidence/m4-native-text-clipboard.json.
 The browser exchanges the original venturi-clipboard/1 text with Rust;
@@ -83,7 +116,7 @@ cgroup events show no OOM. The verified binary is staged without activation.
 
 That increment left explicit native overwrite open. The intentional UI choice
 and linked/crossing/Undo qualification are now covered by the overwrite proof
-above. Native bitmap clipboard import remains open on the media-import row.
+above. The later bitmap evidence above covers its separate media-import entry path.
 
 Native current-project OTIO import now passes
 `evidence/m4-native-otio-merge.json` and its actual Windows screenshot. The

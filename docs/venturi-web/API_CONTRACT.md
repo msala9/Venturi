@@ -1397,7 +1397,7 @@ metadata editing remain available. No foreign workload is stopped.
   `media_count` (selected pool roots), `warnings`, and actual distinct-file
   progress. The existing single worker, one queue slot, eight job records and
   global 256-descriptor budget apply. Parsing/validation is outside the session
-  actor; flat-root source witnesses and isolated native media probes follow the
+  actor; authorized source witnesses and isolated native media probes follow the
   OTIO limits above. No files are copied or allowlists expanded. File hashes are
   independently fingerprinted before native content reuse; missing/unreadable
   entries retain offline metadata with hash zero. Changed critical metadata,
@@ -1444,3 +1444,49 @@ metadata editing remain available. No foreign workload is stopped.
   including different timeline FPS and retained foreign clips. It does not apply
   preset FPS/resolution conversion. Original source IDs are excluded only in the
   same project; numerically equal IDs from a foreign snapshot are valid targets.
+
+### Bitmap clipboard import
+
+- POST `/clipboard/images/prepare?project_epoch=...&if_generation=...` accepts
+  the original encoded image as its raw body, with a canonical Content-Type of
+  `image/png`, `image/jpeg`, `image/webp`, `image/gif`, `image/bmp` or `image/tiff`.
+  The body limit is 32 MiB, with one concurrent upload and a 30-second body
+  deadline. A saved current project is required before reading the body and
+  again before preparation. Unsupported MIME/signature pairs are refused.
+- GET/DELETE `/clipboard/images/jobs/{job}?project_epoch=...` reads/cancels only
+  typed `clipboard_image` jobs. The existing single preparation worker, one
+  queue slot and eight-record limit apply. Ready results contain a suggested
+  name, canonical extension/MIME, encoded byte count and native dimensions.
+  The isolated native probe verifies metadata; SHA-256 verification remains
+  outside the session actor. Cancellation removes only the job's owned stage.
+- Project `import_clipboard_image {job_id,name}` requires the usual writer,
+  epoch, generation and command identity. A native trial precedes publication
+  and one `AddEntities(ImportMedia)` command. The ACK's `media_ids` contains the
+  selected native media ID; `errors` is empty on success. Exact retries retain
+  the original result. `IMAGE_NAME_TAKEN` leaves the prepared job editable.
+  Names are trimmed, limited to 120 UTF-8 bytes and cannot contain separators
+  or control characters. Add never overwrites an existing file.
+- Encoded bytes are preserved in `Pasted Images/<name>.<extension>` next to the
+  saved project. This exact managed child directory is authorized in addition
+  to flat project-root media; arbitrary nested paths remain refused. Root,
+  directory and file witnesses reject replacement and symlinks. Saved-project
+  reopening, Source, native clipboard/OTIO reuse and native asset capture use
+  the same managed-path rules. Undo removes the native media item while keeping
+  its file, matching desktop import; Redo restores the same native identity.
+- The browser obtains an image from an actual empty-text paste event or the
+  explicit Paste image from system clipboard action. Nonempty text retains the
+  native text path. Read permission failure never falls back to another copy.
+  Add/Cancel, an editable name and collision feedback precede mutation. An
+  unsaved project offers the existing Save As flow; the user pastes again after
+  saving. Changed focus/project/selection cancels preparation. A submitted
+  command with an unknown outcome is neither replayed nor canceled blindly.
+- PNG/JPEG/WebP Source assets preserve their original bytes. BMP/TIFF use a
+  native CPU-decoded PNG representation, retaining full admitted dimensions
+  and alpha while leaving the original file unchanged. Full PNG and thumbnail
+  generation run in one isolated child, with a 512 MiB address-space limit,
+  ten CPU seconds, twenty wall-clock seconds, bounded diagnostics/output and
+  cancellation through kill/reap. The parent checks pinned output headers
+  without decoding the representation again. PNG/JPEG/WebP Source and still
+  SourceAssets also use the isolated thumbnail-only mode, preserving the native
+  opaque thumbnail while avoiding a full-frame decode in the editor. GIF retains native
+  regular-media classification and its video Source path.

@@ -19,7 +19,7 @@ export function clipboardAction(event,options={}){
   if(event.type!=='keydown' || event.altKey || event.shiftKey || Boolean(event.ctrlKey)===Boolean(event.metaKey))return null;
   const key=event.key?.toLowerCase();return key==='c'?'copy':key==='x' && options.owner!=='pool'?'cut':null;
 }
-export function bindClipboardEvents({target,getOwner,isDialogOpen=()=>false,copy,paste,onError=()=>{}}){
+export function bindClipboardEvents({target,getOwner,isDialogOpen=()=>false,copy,paste,pasteImage,imageFromEvent,onError=()=>{}}){
   let pending=false,disposed=false;
   const handle=event=>{
     const action=clipboardAction(event,{owner:getOwner(),dialogOpen:isDialogOpen()});
@@ -27,7 +27,11 @@ export function bindClipboardEvents({target,getOwner,isDialogOpen=()=>false,copy
     event.preventDefault();if(pending)return;pending=true;
     try{
       // Native Edit menu events can arrive without a keydown; keep clipboard access in this gesture.
-      const operation=action==='paste'?paste(event.clipboardData.getData('text/plain')):copy({cut:action==='cut'});
+      let operation;
+      if(action==='paste'){
+        const text=event.clipboardData.getData('text/plain'),image=!text && pasteImage && imageFromEvent?imageFromEvent(event.clipboardData):null;
+        operation=image?pasteImage(image):paste(text);
+      }else operation=copy({cut:action==='cut'});
       void Promise.resolve(operation).catch(onError).finally(()=>{pending=false;});
     }catch(error){pending=false;onError(error);}
   };

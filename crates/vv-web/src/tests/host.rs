@@ -1,5 +1,134 @@
 use super::*;
 
+fn clipboard_image_bytes() -> Vec<u8> {
+    let mut bytes = Vec::new();
+    {
+        let mut encoder = png::Encoder::new(&mut bytes, 16, 16);
+        encoder.set_color(png::ColorType::Rgba);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder
+            .write_header()
+            .unwrap()
+            .write_image_data(&vec![127; 16 * 16 * 4])
+            .unwrap();
+    }
+    bytes
+}
+
+fn clipboard_image_pool(project: &vv_core::Project) -> Value {
+    let items = project
+        .media_pool
+        .iter()
+        .map(|(id, item)| {
+            let mut item = item.clone();
+            if item.compound.is_some() {
+                item.content_hash = 0;
+            }
+            (id, item)
+        })
+        .collect::<Vec<_>>();
+    json!(items)
+}
+
+#[test]
+fn bitmap_clipboard_add_is_named_nonoverwriting_retry_safe_and_preserves_its_file_after_undo() {
+    use std::io::Read;
+    let root = std::env::temp_dir().join(format!(
+        "vv-clipboard-image-host-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let query = |editor: &Editor| ClipboardImageQuery {
+        project_epoch: editor.snapshot()["project_epoch"].as_str().unwrap().into(),
+        if_generation: editor.snapshot()["generation"].as_str().unwrap().into(),
+    };
+    assert!(
+        editor
+            .handle(Action::CheckClipboardImage(query(&editor)))
+            .is_err()
+    );
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Clipboard_image".into(),
+        },
+        "image-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let before = editor.snapshot();
+    let before_pool = clipboard_image_pool(&editor.session.project);
+    let bytes = clipboard_image_bytes();
+    let job = editor
+        .handle(Action::PrepareClipboardImage(
+            query(&editor),
+            "image/png".into(),
+            bytes.clone(),
+        ))
+        .unwrap();
+    let ready = native_wait(&mut editor, &job);
+    assert_eq!(ready["state"], "ready");
+    assert_eq!(editor.snapshot(), before);
+    assert!(!root.join("Pasted Images/First image.png").exists());
+    let mut stale = query(&editor);
+    stale.if_generation = "wrong-generation".into();
+    assert!(editor.handle(Action::CheckClipboardImage(stale)).is_err());
+    let position = editor.session.history.position();
+    let paste = request(
+        &editor,
+        Operation::ImportClipboardImage {
+            job_id: job["id"].as_str().unwrap().into(),
+            name: " First image ".into(),
+        },
+        "image-add",
+        None,
+    );
+    let ack = editor.mutation(None, paste.clone()).unwrap();
+    assert_eq!(editor.mutation(None, paste).unwrap(), ack);
+    assert_eq!(ack["media_ids"].as_array().unwrap().len(), 1);
+    assert_eq!(ack["errors"], json!([]));
+    assert_eq!(editor.session.history.position(), position + 1);
+    let path = root.join("Pasted Images/First image.png");
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    let media = editor
+        .session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.path == path)
+        .unwrap()
+        .1;
+    assert_eq!(
+        media.content_hash,
+        vv_media::content_fingerprint(&path).unwrap()
+    );
+    assert_eq!((media.meta.width, media.meta.height), (16, 16));
+    let mut reopened_bytes = Vec::new();
+    editor
+        .files
+        .media_file(&path)
+        .unwrap()
+        .read_to_end(&mut reopened_bytes)
+        .unwrap();
+    assert_eq!(reopened_bytes, bytes);
+    let after = clipboard_image_pool(&editor.session.project);
+    let undo = request(&editor, Operation::Undo, "image-undo", None);
+    editor.mutation(None, undo).unwrap();
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    assert_eq!(clipboard_image_pool(&editor.session.project), before_pool);
+    let redo = request(&editor, Operation::Redo, "image-redo", None);
+    editor.mutation(None, redo).unwrap();
+    assert_eq!(clipboard_image_pool(&editor.session.project), after);
+    let save = request(&editor, Operation::Save, "image-save", None);
+    editor.mutation(None, save).unwrap();
+    drop(editor);
+    let reopened = Editor::new(&root).unwrap();
+    assert_eq!(clipboard_image_pool(&reopened.session.project), after);
+    assert_eq!(std::fs::read(&path).unwrap(), bytes);
+    drop(reopened);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn prepare_clipboard_fixture(editor: &mut Editor, text: Option<String>, to_pool: bool) -> Value {
     let snapshot = editor.snapshot();
     let job = editor

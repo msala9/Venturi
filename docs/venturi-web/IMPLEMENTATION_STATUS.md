@@ -12,6 +12,23 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Master Normalize during multibus compound formation is now qualified against
+the original desktop in `evidence/m4-compound-master-normalize.json`. Two
+disjoint impulse clips on separate buses pass through native low-pass EQ and
+SamplePeak normalization. Real native segmented level measurements show that
+merging edit boundaries changes the measured level and resulting gain in both
+planners. Their normalized PCM matches within 1e-6; bypassing Normalize retains
+the original raw PCM, including chunked mixing, within 1e-6. The measured peak
+ratio also matches the native gain cap. The contract now states this native
+remeasurement explicitly rather than implying invariant normalized loudness.
+
+All five focused native compound PCM tests, audio all-target Clippy with denied
+warnings and fmt check pass on bounded halo2. This adds a native regression and
+documentation without changing production behavior or imposing a new refusal.
+The existing runtime binary is unchanged and the main editor retains its five
+unsaved moves. Physical playback, processed split-bus context and broader
+compound acceptance remain open; ledger counts remain 40 done/50 partial.
+
 Native timeline selection now passes `evidence/m4-native-timeline-selection.json`
 and its existing-Windows-browser screenshot. Ctrl+A with timeline focus selects
 all unlocked clips; Alt+Y selects unlocked clips whose native end is strictly

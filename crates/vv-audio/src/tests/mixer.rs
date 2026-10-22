@@ -440,6 +440,179 @@ fn linear_audio_compound_refuses_a_fractional_extent_that_would_cut_an_audible_s
     );
 }
 
+struct SegmentedCompoundLevels {
+    input: Arc<Vec<f32>>,
+    measured: Vec<(Vec<std::ops::Range<u64>>, f32)>,
+}
+
+impl AudioSource for SegmentedCompoundLevels {
+    fn file(&mut self, path: &Path, stream: usize) -> ClipAudio {
+        assert_eq!(path.to_str(), Some("linear-compound-a.wav"));
+        assert_eq!(stream, 0);
+        ClipAudio::Ready(SampleBlocks::contiguous(self.input.clone(), 0, 2))
+    }
+
+    fn level(&mut self, analysis: LevelAnalysis<'_>) -> LevelReading {
+        use crate::loudness::{LevelMeter, LevelParts};
+
+        assert_eq!(analysis.mode, NormalizeMode::SamplePeak);
+        let snapshot = analysis.snapshot(self, None, (PROJECT_SAMPLE_RATE, 2));
+        let end = analysis.segments.last().unwrap().frames.end;
+        let mut samples = vec![0.0; end as usize * 2];
+        // Both production runs start at zero: their entire preroll fits here.
+        mix_range(&snapshot, 0, &mut samples);
+        let parts: Vec<_> = analysis
+            .segments
+            .iter()
+            .map(|segment| {
+                assert_eq!(segment.frames.start.saturating_sub(segment.preroll), 0);
+                let mut meter = LevelMeter::new(analysis.mode, PROJECT_SAMPLE_RATE, 2);
+                meter.push(
+                    &samples[segment.frames.start as usize * 2..segment.frames.end as usize * 2],
+                );
+                meter.into_parts(&[])
+            })
+            .collect();
+        let level = LevelParts::merge(&parts);
+        self.measured.push((
+            analysis.segments.iter().map(|s| s.frames.clone()).collect(),
+            level,
+        ));
+        LevelReading::Ready(level)
+    }
+}
+
+fn render_segmented_compound_levels(
+    fixture: &LinearCompoundPcm,
+) -> (Vec<f32>, SegmentedCompoundLevels) {
+    let mut source = SegmentedCompoundLevels {
+        input: fixture.inputs[0].clone(),
+        measured: Vec::new(),
+    };
+    let snapshot = MixSnapshot::from_timeline(
+        &fixture.project,
+        &fixture.project.timelines[fixture.timeline],
+        PROJECT_SAMPLE_RATE,
+        2,
+        &mut source,
+    );
+    let mut samples = vec![0.0; fixture.frames * 2];
+    mix_range(&snapshot, 0, &mut samples);
+    (samples, source)
+}
+
+#[test]
+fn linear_audio_compound_master_normalize_remeasures_like_desktop() {
+    let mut fixture = linear_compound_pcm_fixture(Rational::new(24, 1), 0, 6);
+    let media = fixture
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.path == Path::new("linear-compound-a.wav"))
+        .unwrap()
+        .0;
+    let first = linear_compound_pcm_clip(&mut fixture.project, media, 0, 0, 1);
+    let last = linear_compound_pcm_clip(&mut fixture.project, media, 5, 0, 1);
+    fixture.selected = vec![(0, first.id), (1, last.id)];
+    let mut eq = Equalizer::DEFAULT;
+    for band in &mut eq.bands {
+        band.enabled = false;
+    }
+    eq.bands[5].enabled = true;
+    eq.bands[5].freq_hz = 200.0;
+    let outer = &mut fixture.project.timelines[fixture.timeline];
+    outer.tracks = vec![audio_track(vec![first]), audio_track(vec![last])];
+    outer.master = ChannelStrip::default();
+    outer.master.effects = vec![
+        vv_core::AudioEffect::new(AudioEffectKind::Equalizer(eq)),
+        normalize(-30.0),
+    ];
+    let mut impulse = vec![0.0; 48_000 * 2];
+    impulse[1_999 * 2..2_000 * 2].fill(0.9);
+    fixture.inputs[0] = Arc::new(impulse);
+
+    let mut linear = fixture.clone();
+    apply_linear_compound_pcm(&mut linear, &mut vv_core::History::default());
+    let mut legacy = fixture.clone();
+    let plan =
+        vv_core::plan_compound_clip(&legacy.project, legacy.timeline, &legacy.selected).unwrap();
+    let (_, commands) = vv_core::compound_clip_commands(
+        &mut legacy.project,
+        legacy.timeline,
+        &legacy.selected,
+        &plan,
+    );
+    vv_core::History::default().do_command(
+        &mut legacy.project,
+        Box::new(vv_core::CompositeCommand::new(
+            vv_core::CommandLabel::MakeCompoundClip,
+            commands,
+        )),
+    );
+
+    let (before, before_levels) = render_segmented_compound_levels(&fixture);
+    let (after, after_levels) = render_segmented_compound_levels(&linear);
+    let (desktop, desktop_levels) = render_segmented_compound_levels(&legacy);
+    assert_eq!(before_levels.measured.len(), 1);
+    assert_eq!(after_levels.measured.len(), 1);
+    assert_eq!(before_levels.measured[0].0, [0..2_000, 10_000..12_000]);
+    assert_eq!(after_levels.measured[0].0.len(), 1);
+    assert_eq!(after_levels.measured[0].0[0], 0..12_000);
+    assert_eq!(after_levels.measured, desktop_levels.measured);
+    assert_eq!(
+        desktop, after,
+        "The opt-in compound must remeasure like the desktop planner"
+    );
+    for candidate in [&mut fixture, &mut linear, &mut legacy] {
+        candidate.project.timelines[candidate.timeline]
+            .master
+            .effects
+            .last_mut()
+            .unwrap()
+            .enabled = false;
+    }
+    let raw = linear_compound_pcm_render(&fixture, 0);
+    assert_linear_compound_pcm_equal(
+        "bypassed Normalize before versus opt-in",
+        &raw,
+        &linear_compound_pcm_render(&linear, 257),
+    );
+    assert_linear_compound_pcm_equal(
+        "bypassed Normalize before versus desktop",
+        &raw,
+        &linear_compound_pcm_render(&legacy, 257),
+    );
+    // Master Normalize follows outer edit segments; a compound remeasures its gaps too.
+    let original_level = before_levels.measured[0].1;
+    let compound_level = after_levels.measured[0].1;
+    assert!(original_level > 0.0 && original_level < compound_level);
+    let peak = |samples: &[f32]| {
+        samples
+            .iter()
+            .fold(0.0_f32, |maximum, sample| maximum.max(sample.abs()))
+    };
+    let original_gain = normalize_gain(-30.0, LevelReading::Ready(original_level)).unwrap();
+    let compound_gain = normalize_gain(-30.0, LevelReading::Ready(compound_level)).unwrap();
+    let (raw_peak, original_peak, compound_peak) = (peak(&raw), peak(&before), peak(&after));
+    assert!((original_peak - raw_peak * original_gain).abs() <= 1e-6);
+    assert!((compound_peak - raw_peak * compound_gain).abs() <= 1e-6);
+    let ratio = original_gain / compound_gain;
+    assert!((original_peak / compound_peak - ratio).abs() <= ratio * 1e-6);
+    let maximum_difference = before
+        .iter()
+        .zip(&after)
+        .map(|(a, b)| (a - b).abs())
+        .fold(0.0_f32, f32::max);
+    assert!(
+        maximum_difference > 0.1,
+        "The fixture must expose native remeasurement"
+    );
+    eprintln!(
+        "master Normalize native remeasurement: original_level={original_level}, compound_level={compound_level}, desktop_level={}, original_peak={original_peak}, compound_peak={compound_peak}, gain_ratio={ratio}, maximum_pcm_difference={maximum_difference}",
+        desktop_levels.measured[0].1
+    );
+}
+
 const RATE: u32 = 100;
 
 /// Ids unique like a project's: a clip measured alone is found by its id.

@@ -1394,6 +1394,13 @@ and hardware acceptance remain open.
   fractional-FPS phase. Rounded source audio extents must also fit the wrapper,
   preventing a one-sample tail truncation. Appending the wrapper respects the
   128-track cap.
+  An enabled master Normalize retains the original desktop policy: its native
+  measurements follow input edit segments, which merge when clips become a
+  compound. Its resulting level can therefore change even when the raw bus
+  signal is preserved. Actual segmented level measurements and normalized PCM
+  match the original desktop compound planner in
+  `evidence/m4-compound-master-normalize.json`; bypassed Normalize retains the
+  raw signal. This does not allow nonlinear inserts on split child buses.
   Multiple video
   tracks require unmuted tracks, all intervening material selected and no
   changed adjustment/matte/selected-blend dependencies.

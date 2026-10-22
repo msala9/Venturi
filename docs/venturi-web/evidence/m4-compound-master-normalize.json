@@ -1,0 +1,49 @@
+{
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792648505.9538357,
+    "validation": "master-normalize-native-semantics",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "a038bf3dcd4375f389d1a8d752dcb06016f3ddf740fa3611eebce563fad0e305",
+    "test_source_sha256": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "metrics": {
+    "original_level": 0.00015139783,
+    "compound_level": 0.010741826,
+    "desktop_level": 0.010741826,
+    "original_peak": 0.33968636,
+    "compound_peak": 0.031622775,
+    "gain_ratio": 10.741826,
+    "maximum_pcm_difference": 0.3080636
+  },
+  "validation": {
+    "native_compound_pcm_tests": 5,
+    "fmt_check": true,
+    "audio_clippy_all_targets_deny_warnings": true,
+    "native_runtime_binary_unchanged": true,
+    "main_five_unsaved_moves_preserved": true
+  },
+  "status": "passed",
+  "date": "2026-10-22",
+  "scope": "Original desktop and opt-in multibus compound master Normalize semantics with real native segmented level measurements",
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-audio/src/tests/mixer.rs": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce"
+    }
+  },
+  "source_base_commit": "27627581bab08a5952781889177abc0035c45e5c",
+  "controls": [
+    "Two disjoint one-frame impulse clips on different audio buses at 48 kHz/24 fps.",
+    "Native master low-pass EQ followed by enabled SamplePeak Normalize at -30 dB.",
+    "Real LevelAnalysis snapshots and native LevelMeter/LevelParts for original and merged edit segments.",
+    "Final normalized desktop and opt-in PCM match exactly within 1e-6.",
+    "Bypassing Normalize preserves original/desktop/opt-in raw PCM, including chunked native mixing, within 1e-6.",
+    "The changed normalized peak ratio matches native normalize_gain, including its gain cap."
+  ],
+  "limitations": [
+    "An enabled master Normalize can change level after compound formation because native edit segments merge; this matches the original desktop behavior.",
+    "This is in-memory native audio qualification, not physical playback or hardware GPU acceptance.",
+    "No production behavior changed and no new restriction was added."
+  ]
+}

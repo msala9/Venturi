@@ -1,0 +1,177 @@
+{
+  "date": "2026-10-22",
+  "scope": "Actual Windows native library folder workflow on isolated halo2 host",
+  "status": "passed",
+  "source_commit": "130b30ea38b2e2f6b2d2218a8f8c8acb732f15de",
+  "binary": "/home/marco/AI-lab/venturi-web/.runtime/vv-web-dd182e197f1e",
+  "binary_sha256": "dd182e197f1e0904e50191e590fbf85b86c7b87d84ee14520387984723780c3c",
+  "browser": {
+    "environment": "Existing Windows Codex in-app browser",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "work_tabs": 1,
+    "no_browser_install": true
+  },
+  "server": {
+    "listen": "127.0.0.1:8813",
+    "root": "/home/marco/VenturiWeb-library-folders-20261022",
+    "gpu_preview": false,
+    "software_preview": false,
+    "render_acceptance": false,
+    "cpu_cores": 1,
+    "memory_bytes": 4294967296,
+    "swap_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "runtime_max_seconds": 1200
+  },
+  "workflow": [
+    {
+      "action": "Escape from root chooser",
+      "result": "Choice canceled, opening button focused, library unchanged"
+    },
+    {
+      "action": "Import Footage with Audio and Interview children",
+      "imported_assets": 2,
+      "skipped_files": 0,
+      "error_count": 1,
+      "created_folders": 3,
+      "error_file": "Footage/Interview/unreadable.mp4",
+      "details": "Per-file error visible in collapsed import result"
+    },
+    {
+      "action": "Import same source tree at library root",
+      "imported_assets": 0,
+      "skipped_files": 2,
+      "error_count": 1,
+      "created_folders": 0
+    },
+    {
+      "action": "Move only owned 77146-byte cached take.mp4 to retained .offline backup",
+      "result": "Contextual asset actions exposed with missing_count=1"
+    },
+    {
+      "action": "Search Recovery folder for missing file through actual UI",
+      "relinked_files": 1,
+      "missing_count": 0,
+      "asset_id_preserved": true,
+      "restored_media_sha256": "2a89d0065a00ffed3db76e6aae2d05a298932813e52209b5897d4218b9385938"
+    },
+    {
+      "action": "Cancel running repeated tree preparation",
+      "result": "Native asset preparation canceled \u00b7 project unchanged"
+    },
+    {
+      "action": "Import recovered take.mp4 into project",
+      "media_before": 8,
+      "media_after": 9,
+      "history": {
+        "labels": [
+          "ImportMedia"
+        ],
+        "position": 1
+      },
+      "timeline_models_unchanged": true
+    },
+    {
+      "action": "Save, stop own Saved service and start same immutable binary",
+      "project_sha256": "1cffaf99717253250778edd2aa6e2d0dc08fca4fc273dec61e22469ef3c8a95a",
+      "project_bytes": 99034,
+      "project_bytes_equal": true,
+      "media_equal": true,
+      "timelines_equal": true,
+      "catalog_equal": true,
+      "folders_equal": true,
+      "epoch_changed": true
+    },
+    {
+      "action": "Reload owned browser tab and reopen native library",
+      "result": "Saved project, two native assets, three folder entries and zero missing files visible"
+    }
+  ],
+  "catalog": {
+    "tree-acb4dbccb358e4aa747bbd2751049407affb77887778f702b977199817cc4617-a0.json": "373a856704ae7c0b7777e0448c82bf0e5b179f560c9d9107ab6849e85256ce7d",
+    "tree-acb4dbccb358e4aa747bbd2751049407affb77887778f702b977199817cc4617-a1.json.bak": "6fb99ea34f62493df3f456287be83d02200d09a0cb42ad8c722bc9a8b14e5c3d",
+    "tree-acb4dbccb358e4aa747bbd2751049407affb77887778f702b977199817cc4617-a1.json": "6fb99ea34f62493df3f456287be83d02200d09a0cb42ad8c722bc9a8b14e5c3d"
+  },
+  "folders": {
+    "version": 1,
+    "folders": [
+      {
+        "id": "tree-acb4dbccb358e4aa747bbd2751049407affb77887778f702b977199817cc4617-f0",
+        "name": "Footage",
+        "parent": null
+      },
+      {
+        "id": "tree-acb4dbccb358e4aa747bbd2751049407affb77887778f702b977199817cc4617-f1",
+        "name": "Audio",
+        "parent": "tree-acb4dbccb358e4aa747bbd2751049407affb77887778f702b977199817cc4617-f0"
+      },
+      {
+        "id": "tree-acb4dbccb358e4aa747bbd2751049407affb77887778f702b977199817cc4617-f2",
+        "name": "Interview",
+        "parent": "tree-acb4dbccb358e4aa747bbd2751049407affb77887778f702b977199817cc4617-f0"
+      }
+    ]
+  },
+  "model_sha256": {
+    "media": "45ffe2eca8cafc89900d3aff3ad4ed6cb2da75e90e6ea98b3905bcdbf0bac76a",
+    "timelines": "6baf9f76d2bfd4b87457354fda77f0b79da51f6f963a3851dd37ff6b78afff46"
+  },
+  "protected_sessions": {
+    "8790": {
+      "project_name": "CPU_shared_library_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "5",
+      "history": {
+        "labels": [
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips"
+        ],
+        "position": 5
+      }
+    },
+    "8811": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "unsaved": true,
+      "generation": "1",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "8812": {
+      "project_name": "Venturi_Native_UI.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  },
+  "screenshots": [
+    "f5-folders-import-windows.jpg",
+    "f5-folders-relink-windows.jpg",
+    "f5-folders-restarted-windows.jpg"
+  ],
+  "remaining": [
+    "Canonical NAS root and compatible native/web shared deployment",
+    "Real shared-filesystem transaction qualification",
+    "Native permissive relink toward differently authored replacements",
+    "GPU rendering, playback, export and device acceptance are outside this editing-only workflow"
+  ],
+  "accepted_ledger": {
+    "done": 46,
+    "partial": 44,
+    "excluded": 2
+  }
+}

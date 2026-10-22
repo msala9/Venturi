@@ -176,8 +176,8 @@ media reference retention, desktop Refresh/root configuration, and cancellable
 contextual relink with durable result counts. The focused implementation gate
 passes 85 JavaScript, 135 unique web Rust and 24 native library cases, affected
 Clippy and build; see `evidence/f5-shared-native-library-gate.json`.
-Actual Windows relink, the canonical NAS root, compatible deployment and the
-real shared filesystem transaction workflow remain open. Halo2 currently has
+The canonical NAS root, compatible deployment and the real shared filesystem
+transaction workflow remain open. Halo2 currently has
 no CIFS/NFS mount. Keep `shared_library`/`shared_presets` partial; do not infer
 NAS qualification from isolated filesystem tests or the ds4 HTTP archive.
 
@@ -190,6 +190,15 @@ duplicate merge/skip, contextual recovery and restart workflow in one isolated
 Windows browser tab. This library workflow can use the existing GPU-disabled
 server mode; it does not need to wait for the shared GPU. Keep rendering and
 physical device acceptance separate and preserve every protected editor.
+
+That actual Windows workflow passes on source `130b30e`: chooser Escape/focus,
+two assets across three folders with one visible file error, repeat import with
+two skips/no duplicate folders, cancellation during preparation, contextual
+recursive restoration of one offline file, import into the project, Save and
+real isolated restart. Project bytes, media/timeline models and library catalog
+remain equal across restart. See `evidence/f5-approved-folders-workflow.json`.
+The finite GPU-disabled service was stopped Saved. This closes the isolated
+browser workflow gap, not the NAS/deployment or full F5 acceptance requirements.
 
 ### F6 — AI Review
 

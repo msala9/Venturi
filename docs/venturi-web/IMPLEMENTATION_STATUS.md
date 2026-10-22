@@ -75,7 +75,8 @@ files. Preparation has an explicit cancelable job; final application reuses its
 exact guarded Mutation and persists restored/still-missing counts in the command
 and recovery receipt. Repairs preserve native IDs, metadata and fingerprints,
 restore managed paths and retain SHA64 content authentication. Recursive folder
-search and metadata-incompatible replacements remain open.
+search is added in the subsequent approved-folder block; metadata-incompatible
+replacements remain unavailable.
 
 `evidence/f5-shared-native-library-gate.json` records 85 passing focused
 JavaScript cases, 135 unique web Rust cases, 24 native desktop library cases,
@@ -84,8 +85,9 @@ The initial failures exposed legacy read compatibility, path-derived fingerprint
 assumptions and backup journal validation; their corrected affected rerun passed.
 An explicit-prepare HTTP fixture was corrected to wait for ready before commit.
 
-This is a source implementation gate. Actual browser relink, shared filesystem
-qualification and compatible deployment remain pending. A fresh read of halo2
+This is a source implementation gate. Its browser relink is covered by the
+subsequent folder workflow below; shared filesystem qualification and compatible
+deployment remain pending. A fresh read of halo2
 mountinfo found no CIFS/NFS mounts; the halo1 NAS evidence is not a halo2 mount.
 No mount/archive was changed. Protected 8790/8811 edits and the port8812 service
 remain unchanged; neither shared capability is newly accepted. Ledger46done/
@@ -107,8 +109,18 @@ integrated run passes 61 focused JavaScript and all 521 web Rust tests. An
 atomic API deprecation and truthful ImportTree progress are corrected; their
 six source-browser and three import cases pass on the affected reruns, with
 all-target Clippy and the offline embedded build. See
-`evidence/f5-approved-folders-gate.json`. Actual Windows qualification and
-deployment remain pending; this entry accepts no new parity row.
+`evidence/f5-approved-folders-gate.json`.
+
+Source `130b30e` passes the actual Windows workflow in
+`evidence/f5-approved-folders-workflow.json`: chooser cancellation/focus,
+hierarchy import with visible per-file errors, repeated merge/skip without
+duplicates, cancellation of running preparation, contextual recursive relink,
+project import, Save and real isolated restart. The restored file matches its
+original SHA256; library IDs/folders, project bytes and media/timeline models
+survive restart. The finite GPU-disabled service is stopped Saved, all three
+protected editors are unchanged, and no NAS or inference workload was modified.
+Shared filesystem/deployment acceptance remains open; no new parity row is
+accepted by this isolated workflow.
 
 ## Native timeline and Inspector gesture qualification
 

@@ -1,7 +1,7 @@
 import { isTextTarget, installSplitter } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
 import { linkedSelection, playheadSelection,selectedTransition,selectedGap,nativeGapAt } from "./timeline/geometry.js";
-import {isRetimeShortcut} from './timeline/input.js';
+import {isRetimeShortcut,timelineSelectionFocus} from './timeline/input.js';
 import {createRetimeMenu} from './retime-menu.js';
 import {retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} from './retime-visibility.js';
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
@@ -1104,6 +1104,10 @@ ripple.addEventListener("click", () => {
   void canvasTimeline.rippleDelete();
 });
 $("command-list").append(ripple);
+for(const [label,mode] of [['Select all timeline clips','all'],['Select clips from playhead','from_playhead']]){
+  const button=document.createElement('button');button.type='button';button.textContent=label;
+  button.addEventListener('click',()=>{$("palette").close();canvasTimeline.selectTimelineClips(mode);});$("command-list").append(button);
+}
 $("close-gap").addEventListener('click',()=>void canvasTimeline.closeGap());
 $("add-solid").addEventListener("click", () => {
   const track = timeline?.tracks.find((t) => t.kind === "video" && !t.locked);
@@ -1338,6 +1342,7 @@ setInterval(() => {
 }, 30_000);
 document.addEventListener("keydown", (event) => {
   if (event.defaultPrevented || isTextTarget(event.target)) return;
+  if(canvasTimeline.handleSelectionKey(event,{timelineFocused:timelineSelectionFocus(event.target)}))return;
   if(canvasTimeline.handleGapKey(event))return;
   const modifier = event.ctrlKey || event.metaKey;
   if (

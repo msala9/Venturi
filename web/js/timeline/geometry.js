@@ -15,6 +15,16 @@ export function selectedGap(timeline,view){
   const gap=nativeGapAt(timeline,selection.track_id,selection.frame);
   return gap && gap.start_frame===selection.start_frame && gap.length_frames===selection.length_frames?selection:null;
 }
+export function timelineClipSelection(timeline,fromFrame=null){
+  if(!Array.isArray(timeline?.tracks) || (fromFrame!==null && (!Number.isSafeInteger(fromFrame) || fromFrame<0)))return [];
+  const decimal=id=>/^\d{1,20}$/.test(id) && BigInt(id)<=18446744073709551615n;
+  return timeline.tracks.filter(track=>!track.locked).flatMap(track=>{
+    const clips=(track.clips || []).filter(clip=>typeof clip.id==='string' && clip.id.length>0 && (fromFrame===null || clip.start_frame+clip.length_frames>fromFrame));
+    // Native ClipKey sets order each lane by ClipId. Fixture IDs stay opaque.
+    if(clips.every(clip=>decimal(clip.id)))clips.sort((a,b)=>BigInt(a.id)<BigInt(b.id)?-1:BigInt(a.id)>BigInt(b.id)?1:0);
+    return clips.map(clip=>clip.id);
+  });
+}
 export function playheadSelection(timeline, frame) {
   if(!timeline)return [];
   const video=[...timeline.tracks].reverse().filter(track=>track.kind==="video" && !track.muted);

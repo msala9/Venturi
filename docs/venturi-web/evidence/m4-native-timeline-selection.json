@@ -1,0 +1,457 @@
+{
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792647248.7631674,
+    "validation": "selection-frontend",
+    "native_validation_base_commit": "4c79f648e9f91913dacf3db147edc3d8afb7e787",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "a038bf3dcd4375f389d1a8d752dcb06016f3ddf740fa3611eebce563fad0e305",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "native_source_hashes_unchanged": true,
+  "status": "passed",
+  "acceptance": {
+    "code_hashes": {
+      "web/index.html": "98ca39c543392f6846fbaee34416480d21a4369deefb029e5cf489e7cb9814d5",
+      "web/js/main.js": "4f055fee465ef7a76a2bf2302eed2fef3a45e79aa3fc4e00162caa74c3830cb0",
+      "web/js/timeline/geometry.js": "150671f1a54f7f3ad1c124a5f46cb5944e03240fbcc94a3f0f610149b66d8e36",
+      "web/js/timeline/index.js": "bea3dfe6cb1f5b884e62e74b6d916db12aaa8fb36d5cb72e59449c18972b4c9c",
+      "web/js/timeline/input.js": "3d4def36533288ad4f22e9452250727e5398e82eb9fd51eaecba112a662a8919",
+      "web/test/timeline-selection.test.js": "c37fbd1727faba2b352133d47dc926d18ddd83d6d2d3f03c2f5a2d609edd1e91"
+    }
+  },
+  "validation": {
+    "javascript": 840,
+    "native_embedded_build": true,
+    "native_source_hashes_unchanged": true,
+    "native_validation_base_commit": "4c79f648e9f91913dacf3db147edc3d8afb7e787",
+    "native_validation_evidence": "m4-native-gap-ripple.json"
+  },
+  "date": "2026-10-22",
+  "scope": "Native unlocked timeline selection with real Ctrl+A, Alt+Y and explicit palette actions in the existing Windows browser",
+  "windows": {
+    "alt_y_frame10": {
+      "all": [
+        {
+          "id": "0",
+          "label": "V1 \u00b7 Solid color",
+          "pressed": "false"
+        },
+        {
+          "id": "1",
+          "label": "V1 \u00b7 Solid color",
+          "pressed": "true"
+        },
+        {
+          "id": "2",
+          "label": "A1 \u00b7 gap-audio.wav",
+          "pressed": "true"
+        },
+        {
+          "id": "3",
+          "label": "V2 \u00b7 Solid color",
+          "pressed": "false"
+        }
+      ],
+      "openDialog": false,
+      "selected": [
+        "1",
+        "2"
+      ],
+      "timecode": "00:00:00:10"
+    },
+    "ctrl_a_frame10": {
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "timecode": "00:00:00:10"
+    },
+    "text_guard": {
+      "end": 15,
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "start": 0,
+      "value": "Selection check"
+    },
+    "modal_guard": {
+      "openDialog": true,
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ]
+    },
+    "palette_from_frame10": {
+      "openDialog": false,
+      "selected": [
+        "1",
+        "2"
+      ],
+      "timecode": "00:00:00:10"
+    },
+    "global_media_focus": {
+      "focus": "\n            Media",
+      "selected": [
+        "1",
+        "2"
+      ],
+      "timecode": "00:00:00:10"
+    },
+    "frame30_empty": {
+      "selected": [],
+      "timecode": "00:00:01:05"
+    },
+    "palette_all_frame30": {
+      "openDialog": false,
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "timecode": "00:00:01:05"
+    },
+    "gap_to_all": {
+      "closeGapDisabled": true,
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "selectedGaps": 0,
+      "timecode": "00:00:01:05"
+    },
+    "final": {
+      "project": "Close_Gap_Windows_check.vvproj",
+      "redoDisabled": true,
+      "saved": "Saved",
+      "selected": [
+        "1",
+        "2"
+      ],
+      "timecode": "00:00:00:10",
+      "undoDisabled": true
+    },
+    "console_errors": []
+  },
+  "fixture": {
+    "root": "/home/marco/VenturiWeb-selection-20261022-1",
+    "project": {
+      "project": "Close_Gap_Windows_check.vvproj",
+      "sha256": "76f9ad8ecac829fbb0e65b027ae3682c06eaaec11e4d1f1ee0aab31fcd8c1bde"
+    },
+    "timeline": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "gaps": [
+        {
+          "length_frames": 10,
+          "start_frame": 10,
+          "track_id": "0"
+        },
+        {
+          "length_frames": 22,
+          "start_frame": 0,
+          "track_id": "1"
+        }
+      ],
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "cue-5",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 5
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "1",
+          "note": "cue-15",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 15
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "2",
+          "note": "cue-25",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 25
+        }
+      ],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Native gap closure",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "revision": "378fcdda9df716cb",
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": "0",
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 20,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 7,
+              "linked_group": "0",
+              "media_id": "3",
+              "name": "gap-audio.wav",
+              "retime": {
+                "max_length": 700,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 7,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                18
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 8,
+              "speed_percent": 100.0,
+              "start_frame": 22,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "solid_color",
+              "length_frames": 4,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 4,
+              "speed_percent": 100.0,
+              "start_frame": 33,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "2",
+          "kind": "video",
+          "label": "V2",
+          "locked": true,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "source_bytes": 192044,
+    "source_hashes": {
+      "gap-audio.wav": "ede1f6dd33abfce7bb3a45ba79b0ab5f8baae692709dd32214a41da9af55ab13"
+    }
+  },
+  "native_session_unchanged": {
+    "generation": "0",
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "unsaved": false,
+    "stable_project_media_and_timeline": true
+  },
+  "cleanup": {
+    "own_jobs_stopped": true,
+    "remote_8811_closed": true,
+    "original_and_isolated_files_preserved": true,
+    "main_editor_five_unsaved_moves_preserved": true,
+    "main_binary_unchanged": true
+  },
+  "screenshot": {
+    "path": "m4-native-timeline-selection.jpg",
+    "bytes": 86215,
+    "sha256": "9d7d95d465ba531eac863544eadf761fc20535a810ca33d8d96c4012e2d8a7e2"
+  },
+  "limitations": [
+    "Native persistent shift anchor is not implemented or qualified by this increment.",
+    "Ctrl+A is scoped to timeline focus; Alt+Y routes globally outside typing and modal dialogs.",
+    "500-clip Canvas performance, physical pointer/DPI, rendered playback and hardware acceptance remain open."
+  ]
+}

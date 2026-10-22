@@ -12,6 +12,26 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Native timeline selection now passes `evidence/m4-native-timeline-selection.json`
+and its existing-Windows-browser screenshot. Ctrl+A with timeline focus selects
+all unlocked clips; Alt+Y selects unlocked clips whose native end is strictly
+after the playhead. Both actions replace selection without expanding linked
+groups, seeking or editing the native session. The palette exposes the same
+actions. Disabled, muted, frozen and generator clips retain native eligibility;
+locked or already-ended linked peers remain excluded.
+
+Fourteen new deterministic regressions cover exact boundaries, opaque/u64 IDs,
+read-only selection, context changes, focus, IME, modal, pending edit and gesture
+guards. All 840 JavaScript tests and the cached embedded build pass on bounded
+halo2. Rust sources match the prior fully validated `4c79f64` baseline; native
+suites were not rerun for this frontend-only change. Actual Windows Ctrl+A,
+Alt+Y, media-focus routing, text selection, modal refusal, palette actions and
+gap cleanup pass. Native generation stays zero, Undo remains empty and saved
+project/source bytes remain intact. Temporary resources are closed and the main
+editor retains its five unsaved moves. Native persistent shift-anchor behavior
+and TS-014 Canvas performance/pointer/DPI acceptance remain open, so the
+multi-selection row stays partial and ledger counts remain 40 done/50 partial.
+
 Native global ripple deletion now passes `evidence/m4-native-gap-ripple.json`
 and its existing-Windows-browser screenshot. The web exposes empty leading and
 internal gaps from a shared native core resolver, including accessible gap

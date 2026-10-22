@@ -16,6 +16,7 @@ import {
   frameToX,
   nativeGapAt,
   selectedGap,
+  timelineClipSelection,
 } from "./geometry.js";
 import {isTextTarget} from '../ui.js';
 import {createPresetDrop} from './preset-drop.js';
@@ -26,6 +27,16 @@ export function isRetimeShortcut(event,{dialogOpen=false}={}){
 export const TRANSITION_DRAG_TYPE='application/x-venturi-transition';
 export function isCloseGapShortcut(event,{dialogOpen=false}={}){
   return event.code==='IntlBackslash' && !event.defaultPrevented && !event.repeat && !event.isComposing && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.getModifierState?.('AltGraph') && !dialogOpen && !isTextTarget(event.target);
+}
+export function timelineSelectionFocus(target){
+  return Boolean(target?.closest?.('#timeline-panel')) && !target?.closest?.('#browser,#inspector,[data-keyframe-editor],[data-clipboard-owner="pool"]');
+}
+export function timelineSelectionAction(event,{dialogOpen=false,timelineFocused=false}={}){
+  if(dialogOpen || event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229 || event.getModifierState?.('AltGraph') || isTextTarget(event.target))return null;
+  const key=event.key?.toLowerCase();
+  if(key==='a' && timelineFocused && Boolean(event.ctrlKey)!==Boolean(event.metaKey) && !event.altKey && !event.shiftKey)return 'all';
+  if(key==='y' && event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey)return 'from_playhead';
+  return null;
 }
 
 export function createInput({
@@ -128,6 +139,19 @@ export function createInput({
     finally{waiting=false;if(getTimeline()?.id===owner.timelineId && getGapContext()?.project_epoch===owner.epoch && selectionIntent()===intent)view.selection=[];view.selectedGap=null;onSelect();invalidate();}
   }
   const canCloseGap=()=>Boolean(checkGapSelection() && !waiting && !gesture && !transitionDrag && !presetDrop?.active() && !modal() && canEdit());
+  const canSelectTimeline=()=>Boolean(getTimeline() && !waiting && !gesture && !transitionDrag && !presetDrop?.active() && !view.draft && !view.lasso && !modal() && canNavigate());
+  function selectTimelineClips(mode){
+    if(!['all','from_playhead'].includes(mode) || !canSelectTimeline() || (mode==='from_playhead' && (!Number.isSafeInteger(view.playhead) || view.playhead<0)))return false;
+    const timeline=getTimeline(),context=gapContext(timeline),playhead=view.playhead,ids=timelineClipSelection(timeline,mode==='from_playhead'?playhead:null);
+    onNavigationIntent();
+    if(getTimeline()!==timeline || gapContext(timeline)!==context || view.playhead!==playhead || !canSelectTimeline())return false;
+    view.selectedGap=null;view.transitionSelection=null;view.selection=ids;onSelect();invalidate();return true;
+  }
+  function handleSelectionKey(event,{timelineFocused=true}={}){
+    const action=timelineSelectionAction(event,{dialogOpen:modal(),timelineFocused});
+    if(!action || !canSelectTimeline())return false;
+    event.preventDefault?.();event.stopPropagation?.();return selectTimelineClips(action);
+  }
   function selectGap(trackId,frame){
     if(waiting || gesture || transitionDrag || presetDrop?.active() || modal() || !canNavigate())return false;
     const timeline=getTimeline(),gap=nativeGapAt(timeline,trackId,frame);if(!gap)return false;
@@ -515,6 +539,7 @@ export function createInput({
   };
   const key = (event) => {
     if(presetDrop?.active()){if(event.key==='Escape'){event.preventDefault?.();event.stopPropagation?.();cancel();}return;}
+    if(handleSelectionKey(event))return;
     if(handleGapKey(event))return;
     if(!event.defaultPrevented && !event.repeat && !event.isComposing && !gesture && !transitionDrag && !waiting && view.retimeVisible?.size && view.tool!=='slip' && canEdit() && !isTextTarget(event.target) && !documentRef?.querySelector?.('dialog[open]') && !event.ctrlKey && !event.metaKey && !event.altKey && ((event.key==='F10' && event.shiftKey) || (event.key==='ContextMenu' && !event.shiftKey))){
       const timeline=getTimeline(),target=timeline?.tracks.flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id) && clip.retime && !track.locked && view.retimeVisible.has(clip.id)).map(clip=>({clip,track})))[0];
@@ -592,6 +617,9 @@ export function createInput({
     canCloseGap,
     handleGapKey,
     checkGapSelection,
+    selectTimelineClips,
+    canSelectTimeline,
+    handleSelectionKey,
     transitionDnd:{type:TRANSITION_DRAG_TYPE,start:startTransitionDrag,end:endTransitionDrag},
     presetDnd:presetDrop.dnd,
     navigationIdle:()=>!gesture && !waiting && !transitionDrag && !presetDrop.active() && !view.draft && !view.lasso,

@@ -332,7 +332,7 @@ async fn source_audition(
         .host
         .source_snapshot(id.clone(), source_query.clone())
         .await?;
-    let identity = crate::source::file_identity(&spec.file)?;
+    let identity = crate::source::source_version(&spec.file)?;
     let bytes = render_audition(crate::audition::Task::source_options(
         spec,
         query.frame,
@@ -341,7 +341,7 @@ async fn source_audition(
     )?)
     .await?;
     let current = state.host.source_snapshot(id, source_query).await?;
-    if crate::source::file_identity(&current.file)? != identity {
+    if crate::source::source_version(&current.file)? != identity {
         return Err(ApiError::conflict(
             "SOURCE_CHANGED",
             "Audio source changed; seek again",
@@ -388,7 +388,7 @@ async fn source_audio_window(
         .host
         .source_snapshot(id.clone(), source_query.clone())
         .await?;
-    let identity = crate::source::file_identity(&spec.file)?;
+    let identity = crate::source::source_version(&spec.file)?;
     let task = crate::audition::Task::source_options(
         spec,
         payload.query.frame,
@@ -397,7 +397,7 @@ async fn source_audio_window(
     )?;
     let window = render_audio(move |cancel| task.window(payload.window, cancel)).await?;
     let current = state.host.source_snapshot(id, source_query).await?;
-    if crate::source::file_identity(&current.file)? != identity {
+    if crate::source::source_version(&current.file)? != identity {
         return Err(ApiError::conflict(
             "SOURCE_CHANGED",
             "Audio source changed; prepare again",
@@ -1047,7 +1047,7 @@ async fn take_plan(
     let payload = payload
         .map_err(|_| ApiError::invalid("Invalid take replacement preview"))?
         .0;
-    state.host.call(Action::TakePlan(payload)).await.map(Json)
+    state.host.take_plan(payload).await.map(Json)
 }
 async fn recording_upload(
     State(state): State<AppState>,
@@ -1923,12 +1923,12 @@ async fn timeline_command(
 ) -> Result<Json<Value>> {
     state
         .host
-        .call(Action::Mutation(
-            Some(id),
+        .timeline_mutation(
+            id,
             payload
                 .map_err(|_| ApiError::invalid("Invalid command JSON"))?
                 .0,
-        ))
+        )
         .await
         .map(Json)
 }

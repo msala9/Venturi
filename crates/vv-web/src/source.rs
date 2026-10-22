@@ -78,7 +78,7 @@ pub struct SourceSpec {
 }
 impl SourceSpec {
     fn identity(&self) -> Result<String> {
-        file_identity(&self.file)
+        source_version(&self.file)
     }
 }
 pub(crate) fn file_identity(file: &File) -> Result<String> {
@@ -91,6 +91,9 @@ pub(crate) fn file_identity(file: &File) -> Result<String> {
         m.mtime(),
         m.mtime_nsec()
     ))
+}
+pub(crate) fn source_version(file: &File) -> Result<String> {
+    crate::asset_store::stable_identity(file)
 }
 struct Job {
     id: String,
@@ -106,6 +109,7 @@ struct Job {
     descriptor: Option<Value>,
     source_window: Option<Value>,
     source_assets: Option<Value>,
+    source_version: Option<String>,
     inputs: Inputs,
     source_asset: Option<&'static str>,
     export_epoch: Option<String>,
@@ -154,7 +158,7 @@ impl Job {
             .as_ref()
             .and_then(|stored| stored.record.previous_state.as_ref());
         let revision = self.durable.as_ref().map(StoredExport::revision);
-        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"source_window":self.source_window,"source_assets":self.source_assets,"progress":self.progress_value(),"source_asset":self.source_asset,"project_epoch":self.export_epoch,"durable":self.durable.is_some(),"durability_error":self.durability_error,"cancel_requested":self.explicit_cancel,"previous_state":previous,"export_revision":revision})
+        json!({"id":self.id,"state":self.state,"frames":self.progress,"error":self.error,"program":self.descriptor,"source_window":self.source_window,"source_assets":self.source_assets,"source_version":self.source_version,"progress":self.progress_value(),"source_asset":self.source_asset,"project_epoch":self.export_epoch,"durable":self.durable.is_some(),"durability_error":self.durability_error,"cancel_requested":self.explicit_cancel,"previous_state":previous,"export_revision":revision})
     }
     fn persist(&mut self, store: &ExportStore) -> Result<()> {
         let progress = self.progress_value();
@@ -241,6 +245,7 @@ impl MediaJobs {
                     descriptor: Some(stored.record.program.clone()),
                     source_window: None,
                     source_assets: None,
+                    source_version: None,
                     inputs: vec![],
                     source_asset: None,
                     export_epoch: Some(stored.record.epoch.clone()),
@@ -513,6 +518,7 @@ impl MediaJobs {
             descriptor: None,
             source_window,
             source_assets: None,
+            source_version: Some(identity),
             program_query: None,
             inputs: vec![],
             source_asset: Some(source_asset),
@@ -594,6 +600,7 @@ impl MediaJobs {
             directory, cancel: Arc::new(AtomicBool::new(false)), bytes: 0,
             touched: Instant::now(), export: None, descriptor: None, source_window: None,
             source_assets: Some(json!({"source_version":identity,"total_frames":spec.meta.duration_frames,"fps":spec.meta.fps,"has_video":spec.meta.has_video,"has_audio":spec.meta.has_audio,"audio_stream_index":audio_stream_index,"include_waveform":include_waveform})),
+            source_version: None,
             inputs: vec![], source_asset: None, export_epoch: None, program_query: None,
             durable: None, explicit_cancel: false, durability_error: false,
         });
@@ -695,6 +702,7 @@ impl MediaJobs {
             descriptor: Some(descriptor),
             source_window: None,
             source_assets: None,
+            source_version: None,
             program_query: task.export.is_none().then(|| task.query.clone()),
             inputs,
             source_asset: None,
@@ -1395,7 +1403,12 @@ fn measured_directory_bytes(path: &Path) -> std::io::Result<u64> {
     }
     Ok(bytes)
 }
-fn source_working_bytes(meta: &vv_core::MediaMeta, max_width: u32, assets: bool) -> u64 {
+fn source_working_bytes(
+    meta: &vv_core::MediaMeta,
+    max_width: u32,
+    assets: bool,
+    mode: crate::source_audio::AudioMode,
+) -> u64 {
     let pixels = u64::from(meta.width) * u64::from(meta.height);
     let width = meta.width.min(max_width).max(1);
     let height = if meta.width == 0 {
@@ -1415,7 +1428,7 @@ fn source_working_bytes(meta: &vv_core::MediaMeta, max_width: u32, assets: bool)
         0
     };
     // The selected stream can differ from the probe's best-stream channel count.
-    let audio = if meta.has_audio && !assets {
+    let audio = if meta.has_audio && !assets && mode == crate::source_audio::AudioMode::Selected {
         64 * 1024 * 1024 * 4
     } else {
         0
@@ -1438,7 +1451,12 @@ fn source_audio_key(
 }
 fn admit_source_memory(meta: &vv_core::MediaMeta, max_width: u32, assets: bool) -> Result<()> {
     program::admit_memory(
-        source_working_bytes(meta, max_width, assets),
+        source_working_bytes(
+            meta,
+            max_width,
+            assets,
+            crate::source_audio::AudioMode::Selected,
+        ),
         64 * 1024 * 1024,
         ApiError::conflict(
             "SOURCE_MEMORY_PRESSURE",
@@ -1452,13 +1470,26 @@ fn admit_source_audio_memory(
     window: Option<SourceWindow>,
     mode: crate::source_audio::AudioMode,
 ) -> Result<()> {
-    let pressure = || {
-        ApiError::conflict(
-            "SOURCE_MEMORY_PRESSURE",
-            "Not enough native source audio memory budget; choose a shorter window or retry later",
-        )
-    };
-    let mut required = source_working_bytes(meta, max_width, false);
+    program::admit_memory(
+        source_audio_working_bytes(meta, max_width, window, mode)?,
+        64 * 1024 * 1024,
+        source_audio_memory_pressure(),
+    )
+}
+fn source_audio_memory_pressure() -> ApiError {
+    ApiError::conflict(
+        "SOURCE_MEMORY_PRESSURE",
+        "Not enough native source audio memory budget; choose a shorter window or retry later",
+    )
+}
+fn source_audio_working_bytes(
+    meta: &vv_core::MediaMeta,
+    max_width: u32,
+    window: Option<SourceWindow>,
+    mode: crate::source_audio::AudioMode,
+) -> Result<u64> {
+    let pressure = source_audio_memory_pressure;
+    let mut required = source_working_bytes(meta, max_width, false, mode);
     if mode == crate::source_audio::AudioMode::All && meta.has_audio {
         let frames = window.map_or(0..meta.duration_frames, |window| {
             window.start_frame..window.end_frame
@@ -1472,7 +1503,7 @@ fn admit_source_audio_memory(
             )
             .saturating_add(8 * 1024 * 1024);
     }
-    program::admit_memory(required, 64 * 1024 * 1024, pressure())
+    Ok(required)
 }
 fn generate(
     spec: &SourceSpec,

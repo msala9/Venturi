@@ -121,6 +121,39 @@ test('displayed original stills retain the same heartbeat without acquiring a vi
   }finally{h.player.dispose();}
 });
 
+test('verified still identity belongs to the loaded current image and disappears on detach or reset',async()=>{
+  const h=sourceHarness({asset:'source.png',api:()=>({id:'still',state:'ready',source_asset:'source.png',source_version:'pinned-original'})});
+  try{
+    await h.open({id:'image',name:'Original',is_image:true});assert.equal(h.player.verifiedSource(),null);
+    h.image.complete=true;h.image.naturalWidth=64;h.image.dispatchEvent(new Event('load'));
+    assert.deepEqual(h.player.verifiedSource(),{epoch:'epoch:1',media_id:'image',job:'still',source_version:'pinned-original'});assert.equal(h.player.current(),null);
+    h.image.src='/unowned-image.png';assert.equal(h.player.verifiedSource(),null);
+    h.player.reset();assert.equal(h.player.verifiedSource(),null);assert.equal(h.image.src,'');
+  }finally{h.player.dispose();}
+});
+
+test('still FD identity cannot change between prepare and polling or in a ready heartbeat',async()=>{
+  for(const pending of [false,true]){
+    const h=sourceHarness({asset:'source.png',api:()=>({id:'still',state:pending?'queued':'ready',source_asset:'source.png',source_version:'original'}),fetcher:async()=>h.response({id:'still',state:'ready',source_asset:'source.png',source_version:'different'})});
+    try{
+      const opening=h.open({id:'image',name:'Original',is_image:true});await settle();if(pending){await h.advance(300);await opening;}else{await opening;h.image.complete=true;h.image.naturalWidth=64;assert(h.player.verifiedSource());await h.advance(10_000);}
+      assert.equal(h.player.verifiedSource(),null);assert.equal(h.image.src,'');assert.match(h.status.textContent,/Source identity changed.*reopen Source/);assert.equal(h.ready.length,pending?0:1);assert.ok(h.requests.every(value=>value.options.method!=='DELETE'));
+    }finally{h.player.dispose();}
+  }
+});
+
+test('late old still ACKs cannot expose an identity after a newer image, reset or cancellation',async()=>{
+  for(const end of [null,'reset','cancel']){
+    const old=deferred();let count=0;const h=sourceHarness({asset:'source.png',api:()=>++count===1?old.promise:{id:'new',state:'ready',source_asset:'source.png',source_version:'new-file'}});
+    try{
+      const opening=h.open({id:'old',name:'Old',is_image:true});await h.open({id:'new',name:'New',is_image:true},'epoch:2');h.image.complete=true;h.image.naturalWidth=64;
+      const expected={epoch:'epoch:2',media_id:'new',job:'new',source_version:'new-file'};assert.deepEqual(h.player.verifiedSource(),expected);
+      if(end==='reset')h.player.reset();if(end==='cancel')h.cancel.dispatchEvent(new Event('click'));old.resolve({id:'old',state:'ready',source_asset:'source.png',source_version:'old-file'});await opening;
+      h.image.dispatchEvent(new Event('load'));assert.deepEqual(h.player.verifiedSource(),end?null:expected);assert.equal(h.ready.length,1);
+    }finally{h.player.dispose();}
+  }
+});
+
 test('old heartbeat fetch and JSON completions cannot clear a newer epoch, job or source URL',async t=>{
   for(const stage of ['fetch','json'])await t.test(stage,async()=>{
     const pending=deferred();let count=0;const h=sourceHarness({api:()=>({id:++count===1?'old-job':'new-job',state:'ready',source_asset:'source.mp4'}),fetcher:()=>stage==='fetch'?pending.promise:{ok:true,json:()=>pending.promise}});

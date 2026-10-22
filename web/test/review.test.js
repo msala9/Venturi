@@ -51,6 +51,7 @@ function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,res
     };
     const player={
       hold,internalPause:event=>internalEvents.has(event),preparing:()=>preparing,
+      verifiedSource(){return item && !preparing && item.is_image && video.stillLoaded?{epoch,media_id:item.id,source_version:`version-${item.id}`} : null;},
       current(){if(!range || !item || item.is_image)return null;const local=video.ended?range.end_frame-range.start_frame-1:Math.max(0,Math.floor((video.currentTime+1e-6)*item.fps.num/item.fps.den));return {...range,epoch,media_id:item.id,fps:{...item.fps},frame:Math.min(range.end_frame-1,range.start_frame+local)};},
       reset(){sequence++;hold();preparing=false;range=null;if(item)notify('canceled','reset',0);},
       pause(){hold();if(preparing){sequence++;preparing=false;range=null;notify('canceled','pause',0);}},
@@ -65,7 +66,45 @@ function harness(api,{deferSources=false,windowSeconds=60,deferSeek=()=>null,res
   return{review,root,nodes,panes,players,preparations,context,commits,loaded,ready,peak:()=>peak,button:name=>nodes[`[data-review-${name}]`],seek:(pane,frame)=>{panes[pane]['[data-review-frame]'].value=String(frame);panes[pane]['[data-review-seek]'].dispatchEvent(new Event('submit',{cancelable:true}));},setWritable:value=>{writable=value;},submit:()=>nodes.form.dispatchEvent(new Event("submit",{cancelable:true}))};
 }
 async function settle(){for(let n=0;n<4;n++)await new Promise(resolve=>setImmediate(resolve));}
-const planned={source_version:"verified-file",removed_crossings:0,audio_stream_count:2,changes:[{track:"0",clip_id:"1",start_frame:12,previous_length:72,length:60,source_in:0,source_out:75,previous_audio_stream_index:null,audio_stream_index:null}]};
+const planned={source_version:"version-3",removed_crossings:0,audio_stream_count:2,changes:[{track:"0",clip_id:"1",start_frame:12,previous_length:72,length:60,source_in:0,source_out:75,previous_audio_stream_index:null,audio_stream_index:null}]};
+
+test('replacement plans and confirmation use the exact B source version displayed by the native window',async()=>{
+  const calls=[],h=harness(async(_path,body)=>{calls.push(body);return planned;});await h.review.open();
+  h.submit();await settle();assert.equal(calls[0].replacement.source_version,h.players[1].current().source_version);assert.equal(h.button('apply').disabled,false);
+  audition(h,1,1);assert.equal(h.button('apply').disabled,true);await settle();assert.equal(h.button('apply').disabled,false);
+  h.button('apply').click();await settle();assert.equal(h.commits[0].replacement.source_version,'version-3');
+});
+
+test('a divergent native plan version cannot replace the take that was actually displayed',async()=>{
+  const h=harness(async()=>({...planned,source_version:'replaced-file'}));await h.review.open();h.submit();await settle();
+  assert.equal(h.button('apply').disabled,true);assert.equal(h.nodes['[data-review-changes]'].children.length,0);assert.match(h.nodes['[data-review-status]'].textContent,/B source changed.*refresh B/);
+  h.button('apply').click();await settle();assert.equal(h.commits.length,0);h.button('close').click();
+});
+
+test('a changed B attachment without document metadata changes invalidates pending plans and confirmation',async()=>{
+  for(const pending of [false,true]){
+    let resolve;const h=harness(()=>pending?new Promise(done=>{resolve=done;}):Promise.resolve(planned));await h.review.open();h.submit();await settle();
+    const clock=h.players[1].current;h.players[1].current=()=>({...clock(),source_version:'new-inode-same-metadata'});
+    if(pending){resolve(planned);await settle();}else h.button('apply').click();
+    assert.equal(h.commits.length,0);assert.equal(h.button('apply').disabled,true);assert.equal(h.nodes['[data-review-changes]'].children.length,0);assert.match(h.nodes['[data-review-status]'].textContent,/refresh B/);h.button('close').click();
+  }
+});
+
+test('a B reload or dialog close owns late plan responses even when the source file version is unchanged',async()=>{
+  for(const close of [false,true]){
+    let resolve;const h=harness(()=>new Promise(done=>{resolve=done;}));await h.review.open();h.submit();await settle();
+    if(close)h.button('close').click();else{audition(h,1,1);await settle();}
+    resolve(planned);await settle();assert.equal(h.button('apply').disabled,true);assert.equal(h.nodes['[data-review-changes]'].children.length,0);assert.equal(h.commits.length,0);if(!close)h.button('close').click();
+  }
+});
+
+test('still replacement waits for the loaded image FD identity and refuses a changed image binding',async()=>{
+  const calls=[],h=harness(async(_path,body)=>{calls.push(body);return planned;});h.context.document.media[1].is_image=true;await h.review.open();
+  assert.equal(h.button('plan').disabled,true);h.submit();await settle();assert.equal(calls.length,0);
+  h.panes[1].video.stillLoaded=true;h.panes[1].img.dispatchEvent(new Event('load'));assert.equal(h.button('plan').disabled,false);
+  h.submit();await settle();assert.equal(calls[0].replacement.source_version,'version-3');assert.equal(h.button('apply').disabled,false);
+  h.players[1].verifiedSource=()=>({epoch:'epoch',media_id:'3',source_version:'other-file'});h.button('apply').click();await settle();assert.equal(h.commits.length,0);assert.equal(h.button('apply').disabled,true);assert.match(h.nodes['[data-review-status]'].textContent,/refresh B/);h.button('close').click();
+});
 
 test("changing a take discards a late native plan and cannot enable an obsolete confirmation",async()=>{
   let resolvePlan;const h=harness(()=>new Promise(resolve=>{resolvePlan=resolve;}));await h.review.open();assert.deepEqual(h.loaded,["2","3"]);assert.equal(h.button("apply").disabled,true);h.submit();await settle();
@@ -73,7 +112,7 @@ test("changing a take discards a late native plan and cannot enable an obsolete 
 });
 test("a short-take refusal needs explicit policy and confirmation; native refresh during commit remains safe",async()=>{
   const calls=[];const h=harness(async(path,body)=>{calls.push({path,body});if(body.replacement.duration==="preserve")throw Error("The take is too short");return planned;});await h.review.open();h.submit();await settle();assert.match(h.nodes["[data-review-status]"].textContent,/too short/);assert.equal(h.button("apply").disabled,true);assert.equal(h.commits.length,0);
-  h.nodes.form.elements.duration.value="shorten";h.nodes.form.dispatchEvent(new Event("change"));h.submit();await settle();assert.equal(h.button("apply").disabled,false);assert.equal(h.nodes["[data-review-changes]"].children.length,1);h.button("apply").click();await settle();assert.equal(h.root.open,false);assert.deepEqual(h.commits,[{kind:"replace_take",replacement:{clip_id:"1",media_id:"3",source_in:0,duration:"shorten",links:"replace_linked",attributes:"preserve",audio_streams:{policy:'preserve'},source_version:"verified-file"}}]);assert.equal(calls.length,2);
+  h.nodes.form.elements.duration.value="shorten";h.nodes.form.dispatchEvent(new Event("change"));h.submit();await settle();assert.equal(h.button("apply").disabled,false);assert.equal(h.nodes["[data-review-changes]"].children.length,1);h.button("apply").click();await settle();assert.equal(h.root.open,false);assert.deepEqual(h.commits,[{kind:"replace_take",replacement:{clip_id:"1",media_id:"3",source_in:0,duration:"shorten",links:"replace_linked",attributes:"preserve",audio_streams:{policy:'preserve'},source_version:"version-3"}}]);assert.equal(calls.length,2);
 });
 test("stale native documents and read-only ownership cannot confirm a replacement",async()=>{
   const h=harness(async()=>planned);await h.review.open();h.submit();await settle();h.context.query.revision="changed";h.review.invalidate();assert.equal(h.button("apply").disabled,true);h.button("apply").click();await settle();assert.equal(h.commits.length,0);
@@ -392,7 +431,7 @@ test('a frozen target requires explicit choice and Hold Source In confirms every
   const h=harness(async(_path,body)=>{calls.push(body);return {...planned,changes:rows};});h.context.clip.freeze_source_frame=0;await h.review.open();assert.equal(h.nodes.form.elements.frozen.value,'reject');assert.equal(h.button('plan').disabled,true);h.submit();await settle();assert.equal(calls.length,0);assert.match(h.nodes['[data-review-frozen-policy]'].textContent,/frame 0 \(silent\)/);
   frozenChoice(h,'hold_source_in');h.nodes.form.elements.source_in.value='3';h.nodes.form.dispatchEvent(new Event('input'));assert.equal(h.button('plan').disabled,false);assert.match(h.nodes['[data-review-source-in-label]'].textContent,/held frame for every frozen clip/);h.submit();await settle();assert.equal(calls[0].replacement.frozen,'hold_source_in');assert.equal(calls[0].replacement.source_in,3);assert.equal(h.button('apply').disabled,false);
   const labels=h.nodes['[data-review-changes]'].children.map(row=>row.textContent);assert.match(labels[0],/animation source clock \[3, 5000\).*held B frame 3/);assert.match(labels[1],/held frame 11 \(silent\) → held B frame 3/);assert.match(labels[1],/100 → 100 timeline frames/);assert.equal(h.commits.length,0);
-  h.button('apply').click();await settle();assert.equal(h.commits.length,1);assert.equal(h.commits[0].replacement.frozen,'hold_source_in');assert.equal(h.commits[0].replacement.source_in,3);assert.equal(h.commits[0].replacement.source_version,'verified-file');
+  h.button('apply').click();await settle();assert.equal(h.commits.length,1);assert.equal(h.commits[0].replacement.frozen,'hold_source_in');assert.equal(h.commits[0].replacement.source_in,3);assert.equal(h.commits[0].replacement.source_version,'version-3');
 });
 
 test('Unfreeze preserves explicit short-take refusal until Shorten is chosen and confirms the native moving result',async()=>{

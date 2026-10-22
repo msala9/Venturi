@@ -76,6 +76,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       if(!attached(value))return;
       if(job.state!=='ready' || job.id!==value.job || sourceAsset(job)!==value.asset || (job.project_epoch!=null && job.project_epoch!==value.epoch))throw Error('Source cache changed; reopen Source');
       if(value.window && !sameWindow(value.window,job.source_window,value.audioSelection))throw Error('Source window changed; reopen Source');
+      if(value.sourceVersion && job.source_version!==value.sourceVersion)throw Error('Source identity changed; reopen Source');
     }catch(error){
       if(attached(value) && !attempt.signal.aborted)detach(error.message?.includes('reopen Source')?error.message:'Source cache verification failed; reopen Source');
     }finally{
@@ -101,6 +102,8 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       // Prepare deduplicates jobs across clients: obsolete ACKs must never cancel a shared job.
       if (seq !== sequence) return;
       if(typeof job.id!=='string' || !job.id)throw Error('Source preparation returned an invalid job; reopen Source');
+      const sourceVersion=job.source_version;
+      if(sourceVersion!=null && (typeof sourceVersion!=='string' || !sourceVersion || sourceVersion.length>256))throw Error('Source identity is unavailable; reopen Source');
       const id=job.id,asset=sourceAsset(job);
       if(!['source.mp4','source.png','source.jpg','source.webp'].includes(asset))throw Error('Source preparation returned an unsupported asset; reopen Source');
       const path=sourcePath(item.id,id,epoch);jobPath=path;jobState=job.state;
@@ -115,6 +118,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
         job = await response.json();
         if (seq !== sequence) return;
         if(job.id!==id || sourceAsset(job)!==asset)throw Error('Source preparation changed; reopen Source');
+        if(sourceVersion!=null && job.source_version!==sourceVersion)throw Error('Source identity changed; reopen Source');
         jobState=job.state;
       }
       if (job.state !== "ready") throw new Error(`${job.error || `Source ${job.state}`} · reopen Source`);
@@ -128,7 +132,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       ready = !still;
       cancel.disabled = true;
       status.textContent = still ? `${item.name} · ORIGINAL STILL · embedded color profile and transparency preserved` : `${item.name} · SOURCE PROXY · ${quality} · ${audioSelection.mode==='all'?'all audio streams':audioSelection.explicit?`audio stream ${audioSelection.index} (zero-based)`:'first audio stream'}`;
-      binding={sequence:seq,path:jobPath,signal,job:id,asset,epoch,url,element:still?image:video,item,audioSelection};preparing=false;scheduleHeartbeat(binding);
+      binding={sequence:seq,path:jobPath,signal,job:id,asset,epoch,url,element:still?image:video,item,audioSelection,sourceVersion};preparing=false;scheduleHeartbeat(binding);
       const completed=binding;notify('ready');
       if(current(completed))onReady?.({ item, epoch, job:id,audio_mode:audioSelection.mode,audio_stream_index:audioSelection.mode==='all'?null:audioSelection.index });
     } catch (error) {
@@ -182,6 +186,16 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     if(!ready || !value?.window || !value.verified || !attached(value) || (video.seeking && !isInternalSeek()))return null;
     const frame=localFrame(value);if(frame===null)return null;
     return {epoch:value.epoch,media_id:value.item.id,job:value.job,fps:{...value.window.fps},start_frame:value.window.start_frame,end_frame:value.window.end_frame,frame,source_version:value.window.source_version,audio_mode:value.window.audio_mode,audio_stream_index:value.window.audio_stream_index};
+  }
+  function verifiedSource(){
+    const value=binding;
+    if(preparing || nativeSeeking || !value || !attached(value))return null;
+    const clock=value.window?currentWindow():null;
+    if(value.window && !clock)return null;
+    if(!value.window && (value.element===image ? !image.complete || !(image.naturalWidth>0) : video.readyState<1 || video.seeking))return null;
+    const version=clock?.source_version ?? value.sourceVersion;
+    if(typeof version!=='string' || !version)return null;
+    return {epoch:value.epoch,media_id:value.item.id,job:value.job,source_version:version};
   }
   async function seekMedia(seconds,signal){
     const wait=(event,complete)=>{
@@ -324,7 +338,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   cancel.addEventListener('click',cancelPreparation);video.addEventListener('error',videoError);image?.addEventListener?.('error',imageError);
   for(const [name,callback] of [['play',played],['pause',paused],['seeking',seeking],['seeked',seeked],['ended',ended]])video.addEventListener(name,callback);
   const playable=()=>ready && binding && attached(binding);
-  return { open, reset, stop:reset, pause, hold, internalPause:event=>internalPauseEvents.has(event), seekFrame, current:currentWindow, preparing:()=>preparing || nativeSeeking,
+  return { open, reset, stop:reset, pause, hold, internalPause:event=>internalPauseEvents.has(event), seekFrame, current:currentWindow, verifiedSource, preparing:()=>preparing || nativeSeeking,
     dispose(){if(disposed)return;disposed=true;reset();cancel.removeEventListener?.('click',cancelPreparation);video.removeEventListener?.('error',videoError);image?.removeEventListener?.('error',imageError);for(const [name,callback] of [['play',played],['pause',paused],['seeking',seeking],['seeked',seeked],['ended',ended]])video.removeEventListener?.(name,callback);},
     async toggle() {
       if(windowed && preparing){pause();return;}

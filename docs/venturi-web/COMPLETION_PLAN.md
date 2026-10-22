@@ -124,8 +124,9 @@ qualification exercises numeric scrub/sliders, pivot/Flip/crop/softness, Roll,
 linked trim, video/audio fades, constant gain, shared cross-parameter key drag,
 one Undo/Redo and exact five-timeline/ProjectView save/restart. See
 `evidence/f1-native-gestures-workflow.json`. The `properties_static` row is now
-accepted (46 done / 44 partial). Targeted rendered TS017 transform/crop/fade parity,
-physical modifier/DPI and dense 500-clip acceptance remain open. The finite 8813
+accepted (46 done / 44 partial). Targeted TS017 transform/crop/fade references now
+match the native/API frames in `evidence/f3-mask-inspector-workflow.json`.
+Physical modifier/DPI and dense 500-clip acceptance remain open. The finite 8813
 qualification instance is stopped Saved. Stable 8812 still runs `f3dcf1c`; none of
 the three live editors was upgraded/reloaded or had client drafts discarded.
 
@@ -228,6 +229,26 @@ preserving source clocks, audio-stream choices, animation, linked replacements
 and explicit duration/freeze policies. Reuse the existing 20-shot/60-take montage,
 export and recovery evidence where the code is unchanged. Accept the complete
 choose/compare/replace/save/export workflow rather than another isolated API demo.
+
+The connected verified-take increment fixes exact approved nested/Pasted Images
+paths, binds Plan/Confirm to the B file actually displayed (including loaded
+original stills), and moves the native metadata probe outside the Session actor
+into the existing bounded, cancellable subprocess. Final publication rechecks
+the exact request, source descriptor/lineage and project/timeline revisions.
+Its scoped 30-second HTTP deadline covers the 20-second probe/25-second worker
+budget without changing ordinary request deadlines. Strong ctime identity is
+limited to Source/Take/audition/Slip; legacy atomic-save identity and the existing
+shared catalog identity format are preserved.
+
+The same increment removes Source ALL's unused selected-audio memory allowance
+and excludes video outside the requested Program range while retaining active
+crossing neighbours and conservative compound/audio costs. The native mixer
+really prepares full pitch-corrected clips outside its range, so that allocation
+remains budgeted. The gate passes 224 affected JavaScript and 529 Rust cases,
+three affected worker reruns, all-target Clippy and the offline embedded build;
+see `evidence/f6-verified-take-gate.json`. Actual candidate Windows/R9700 workflow
+is the next acceptance step. Keep both F6 rows partial until their remaining
+applicable acceptance evidence exists; the ledger remains 46 done / 44 partial.
 
 ### F7 — integrated release
 

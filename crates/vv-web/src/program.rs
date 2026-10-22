@@ -336,6 +336,7 @@ pub(crate) fn admit_memory(required: u64, reserve: u64, error: ApiError) -> Resu
 fn timeline_decode_pixels(
     project: &vv_core::Project,
     id: vv_core::TimelineId,
+    range: Option<&std::ops::Range<i64>>,
     known: &mut std::collections::HashMap<vv_core::TimelineId, u64>,
     visiting: &mut std::collections::HashSet<vv_core::TimelineId>,
 ) -> u64 {
@@ -351,12 +352,26 @@ fn timeline_decode_pixels(
     let native = u64::from(timeline.resolution.0) * u64::from(timeline.resolution.1);
     let mut pixels = 0u64;
     for (_, track) in timeline.visible_video_tracks() {
+        let mut crossing_clips = std::collections::HashSet::new();
+        let clips: std::collections::HashMap<_, _> =
+            track.clips.iter().map(|clip| (clip.id, clip)).collect();
+        for crossing in &track.crossings {
+            let Some(left) = clips.get(&crossing.left_clip) else {
+                return u64::MAX;
+            };
+            let Some(right) = clips.get(&crossing.right_clip) else {
+                return u64::MAX;
+            };
+            let window = crossing.window(left, right);
+            if range.is_none_or(|range| window.start < range.end && range.start < window.end) {
+                crossing_clips.insert(left.id);
+                crossing_clips.insert(right.id);
+            }
+        }
         let mut largest = [0u64; 2];
-        for clip in track
-            .clips
-            .iter()
-            .filter(|clip| !clip.disabled || !track.crossings.is_empty())
-        {
+        for clip in track.clips.iter().filter(|clip| {
+            (!clip.disabled && clip_intersects(clip, range)) || crossing_clips.contains(&clip.id)
+        }) {
             let decoded = match clip.source {
                 vv_core::ClipSource::Media(media) => {
                     project.media_pool.get(media).map_or(0, |item| {
@@ -364,7 +379,8 @@ fn timeline_decode_pixels(
                             let child_pixels = project.timelines.get(child).map_or(0, |nested| {
                                 u64::from(nested.resolution.0) * u64::from(nested.resolution.1)
                             });
-                            timeline_decode_pixels(project, child, known, visiting)
+                            // Keep the entire active child until native clock/range mapping is bounded here.
+                            timeline_decode_pixels(project, child, None, known, visiting)
                                 .saturating_add(child_pixels)
                         } else if item.meta.has_video {
                             u64::from(item.meta.width) * u64::from(item.meta.height)
@@ -382,7 +398,7 @@ fn timeline_decode_pixels(
             }
         }
         // A crossing may decode both neighbours outside their nominal spans.
-        let active = if track.crossings.is_empty() {
+        let active = if crossing_clips.is_empty() {
             largest[0]
         } else {
             largest[0].saturating_add(largest[1])
@@ -393,12 +409,20 @@ fn timeline_decode_pixels(
     known.insert(id, pixels);
     pixels
 }
-fn program_working_bytes(snapshot: &FrameSnapshot, output: (u32, u32)) -> u64 {
+fn clip_intersects(clip: &vv_core::Clip, range: Option<&std::ops::Range<i64>>) -> bool {
+    range.is_none_or(|range| clip.timeline_start < range.end && range.start < clip.timeline_end())
+}
+fn program_working_bytes(
+    snapshot: &FrameSnapshot,
+    output: (u32, u32),
+    query: &ProgramQuery,
+) -> u64 {
     let timeline = &snapshot.project.timelines[snapshot.timeline];
     let native = u64::from(timeline.resolution.0) * u64::from(timeline.resolution.1);
     let decoded = timeline_decode_pixels(
         &snapshot.project,
         snapshot.timeline,
+        Some(&(query.start_frame..query.end_frame)),
         &mut Default::default(),
         &mut Default::default(),
     );
@@ -432,6 +456,7 @@ fn stretched_working_bytes(
     if timeline.fps.num <= 0 || timeline.fps.den <= 0 {
         return u64::MAX;
     }
+    // Native collect_clips requests whole pitch-corrected clips even outside its range.
     let mut bytes = 0u64;
     for (_, track) in timeline.audible_tracks() {
         for clip in track
@@ -623,7 +648,7 @@ impl ProgramTask {
             .settings(Path::new(""))
             .output_size(self.snapshot.project.timelines[self.snapshot.timeline].resolution);
         admit_memory(
-            program_working_bytes(&self.snapshot, output),
+            program_working_bytes(&self.snapshot, output, &self.query),
             64 * 1024 * 1024,
             ApiError::conflict(
                 "PROGRAM_MEMORY_PRESSURE",

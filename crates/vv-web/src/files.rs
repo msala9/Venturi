@@ -105,6 +105,9 @@ impl Files {
     pub fn media_file(&self, path: &Path) -> Result<File> {
         open_root_media(&self.root, &self.dir, path)
     }
+    pub fn media_token(&self, path: &Path) -> Result<String> {
+        root_media_token(&self.root, path)
+    }
     #[cfg(test)]
     pub fn probe(&self, name: &str) -> Result<(PathBuf, vv_core::MediaMeta)> {
         let (path, meta, _) = self.prepare_media(name)?;

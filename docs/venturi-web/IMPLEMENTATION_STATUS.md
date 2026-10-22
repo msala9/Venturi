@@ -4,6 +4,19 @@
 
 ## Active completion objective
 
+The next connected implementation gate passes for verified take replacement
+and playback memory admission; see `evidence/f6-verified-take-gate.json`.
+Plan/Confirm now bind to the displayed B version, including original stills,
+and exact approved nested/Pasted Images paths survive replacement. The native
+take probe runs outside the Session actor with cancellation and final revision/
+descriptor checks. Source ALL avoids an unused selected-audio buffer; Program
+excludes video outside its requested range while retaining real native eager
+audio and active compound costs. Validation: 224 affected JavaScript cases,
+529 Rust cases with three affected reruns, all-target Clippy and offline build.
+The isolated candidate's Windows/R9700 choose/compare/replace/save/export
+workflow remains pending; these source fixes are not yet deployed on port8814.
+The accepted ledger remains 46 done / 44 partial / 2 excluded.
+
 The updated working candidate is delivered at **http://127.0.0.1:8814/**,
 source `3952711`; see `evidence/current-workspace-delivery.json`. The enabled
 resource-limited halo2 service serves a separate Saved project, active R9700

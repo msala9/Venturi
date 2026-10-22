@@ -1,5 +1,151 @@
 use super::*;
 
+fn take_editor() -> (
+    std::path::PathBuf,
+    Editor,
+    vv_core::TimelineId,
+    crate::take::Preview,
+) {
+    use vv_core::{Clip, ClipSource, Id};
+    let (root, mut editor, old) = native_asset_fixture("take-worker");
+    std::fs::copy(root.join("capture.wav"), root.join("candidate.wav")).unwrap();
+    let (path, meta) = editor.files.probe("candidate.wav").unwrap();
+    let media = editor.session.add_media(path, meta);
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let clip_id = editor.session.project.alloc_clip_id();
+    let rate = Rational::conform_rate(
+        editor.session.project.timelines[id].fps,
+        editor.session.project.media_pool[old].meta.fps,
+    );
+    let track = editor.session.project.timelines[id]
+        .tracks
+        .iter_mut()
+        .find(|track| track.kind == TrackKind::Audio)
+        .unwrap();
+    track.insert_sorted(Clip::from_source_range(
+        clip_id,
+        ClipSource::Media(old),
+        0,
+        1,
+        0,
+        rate,
+    ));
+    editor.session.sync_timeline_media(id);
+    editor.session.save_to(&root.join("takes.vvproj")).unwrap();
+    let preview = crate::take::Preview {
+        query: project_view_request(&editor, id, 0, false).query,
+        replacement: crate::take::Replacement {
+            clip_id: clip_id.0.to_string(),
+            media_id: media.raw().to_string(),
+            source_in: 0,
+            duration: vv_core::take::DurationPolicy::Preserve,
+            links: vv_core::take::LinkPolicy::ReplaceLinked,
+            attributes: vv_core::take::AttributePolicy::Preserve,
+            audio_streams: vv_core::take::AudioStreamPolicy::Preserve,
+            frozen: vv_core::take::FrozenPolicy::Reject,
+            source_version: None,
+        },
+    };
+    (root, editor, id, preview)
+}
+
+#[tokio::test]
+async fn take_worker_capacity_keeps_session_available_and_completed_replay_needs_no_source() {
+    use vv_core::Id;
+    let (root, editor, timeline, preview) = take_editor();
+    let mut command = request(
+        &editor,
+        Operation::ReplaceTake {
+            replacement: preview.replacement.clone(),
+        },
+        "replace-take-worker",
+        Some(timeline),
+    );
+    let before = editor.snapshot();
+    let host = Host::run(editor).unwrap();
+    let permit = host.2.clone().try_acquire_owned().unwrap();
+    assert_eq!(
+        host.take_plan(preview.clone()).await.unwrap_err().1,
+        "TAKE_BUSY"
+    );
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    drop(permit);
+    let plan = host.take_plan(preview).await.unwrap();
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    let Operation::ReplaceTake { replacement } = &mut command.operation else {
+        unreachable!()
+    };
+    replacement.source_version = Some(plan["source_version"].as_str().unwrap().into());
+    let receipt = host
+        .timeline_mutation(timeline.raw().to_string(), command.clone())
+        .await
+        .unwrap();
+    let after = host.call(Action::Session).await.unwrap();
+    assert_ne!(after["generation"], before["generation"]);
+    std::fs::rename(root.join("candidate.wav"), root.join("candidate.offline")).unwrap();
+    let offline = host.call(Action::Session).await.unwrap();
+    let permit = host.2.clone().try_acquire_owned().unwrap();
+    assert_eq!(
+        host.timeline_mutation(timeline.raw().to_string(), command.clone())
+            .await
+            .unwrap(),
+        receipt
+    );
+    command.if_generation.push_str("-changed");
+    assert_eq!(
+        host.timeline_mutation(timeline.raw().to_string(), command)
+            .await
+            .unwrap_err()
+            .1,
+        "COMMAND_ID_REUSED"
+    );
+    assert_eq!(host.call(Action::Session).await.unwrap(), offline);
+    drop(permit);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn take_worker_result_cannot_apply_after_timeline_revision_changes() {
+    use vv_core::Id;
+    let (root, mut editor, timeline, preview) = take_editor();
+    let task = crate::take::Task::new(
+        &editor.session,
+        &editor.files,
+        timeline,
+        &preview.replacement,
+        false,
+    )
+    .unwrap();
+    let verified = task
+        .run(&std::sync::atomic::AtomicBool::new(false))
+        .unwrap();
+    let rename = request(
+        &editor,
+        Operation::RenameTimeline {
+            name: "Changed during verification".into(),
+        },
+        "take-worker-race",
+        Some(timeline),
+    );
+    editor
+        .mutation(Some(timeline.raw().to_string()), rename)
+        .unwrap();
+    let before = editor.snapshot();
+    let project = json!(editor.session.project);
+    assert_eq!(
+        editor
+            .handle(Action::TakePlan(preview, verified))
+            .unwrap_err()
+            .1,
+        "REVISION_CONFLICT"
+    );
+    assert_eq!(editor.snapshot(), before);
+    assert_eq!(json!(editor.session.project), project);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[tokio::test]
 async fn source_browser_capacity_does_not_block_the_editor_and_releases_after_rejected_snapshot() {
     let root =
@@ -583,7 +729,7 @@ fn public_slip_manifest_uses_the_same_pinned_file_version_as_source_windows_with
         result.try_recv().unwrap().unwrap()
     };
     let old = pin(&mut editor);
-    let old_version = crate::source::file_identity(&old.file).unwrap();
+    let old_version = crate::source::source_version(&old.file).unwrap();
     assert_eq!(first["source_version"], old_version);
     assert_eq!(first["fps"], json!(old.meta.fps));
     assert_eq!(first["total_frames"], old.meta.duration_frames);
@@ -598,10 +744,10 @@ fn public_slip_manifest_uses_the_same_pinned_file_version_as_source_windows_with
         .unwrap();
     std::fs::rename(&replacement, &path).unwrap();
     let fresh = pin(&mut editor);
-    let fresh_version = crate::source::file_identity(&fresh.file).unwrap();
+    let fresh_version = crate::source::source_version(&fresh.file).unwrap();
     assert_ne!(fresh_version, old_version);
-    assert_eq!(
-        crate::source::file_identity(&old.file).unwrap(),
+    assert_ne!(
+        crate::source::source_version(&old.file).unwrap(),
         old_version
     );
     assert_eq!(

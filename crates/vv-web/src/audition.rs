@@ -206,7 +206,7 @@ impl Task {
                 ApiError::invalid("Choose an available source audio stream or all streams")
             })?;
         let legacy_selection = spec.meta.audio_streams <= 1;
-        let identity = file_identity(&spec.file)?;
+        let identity = crate::source::source_version(&spec.file)?;
         let mut project = Project::default();
         let fps = spec.meta.fps;
         let end = spec.meta.duration_frames;
@@ -369,11 +369,14 @@ impl Task {
         })
     }
     fn check_inputs(&self) -> Result<()> {
-        if self
-            .files
-            .iter()
-            .all(|(file, before)| file_identity(file).is_ok_and(|now| now == *before))
-            && crate::program::unchanged(&self.inputs)
+        if self.files.iter().all(|(file, before)| {
+            let identity = if self.source_streams.is_some() {
+                crate::source::source_version(file)
+            } else {
+                file_identity(file)
+            };
+            identity.is_ok_and(|now| now == *before)
+        }) && crate::program::unchanged(&self.inputs)
         {
             Ok(())
         } else {

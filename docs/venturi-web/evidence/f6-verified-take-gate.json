@@ -1,0 +1,40 @@
+{
+  "date": "2026-10-22",
+  "status": "implementation gate passed; integrated Windows/R9700 qualification pending",
+  "scope": "Verified displayed-B identity including original stills; exact approved take paths; bounded cancellable take probe outside the Session actor; Source ALL memory and bounded Program video admission",
+  "javascript_unique": 224,
+  "rust_unique": 529,
+  "affected_rerun": 3,
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792694767.1769161,
+    "validation": "verified-take-source-memory",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "a0c99477d2aade3adcd375bf336f5ee167057f769c7a2f96d4fbbbb7d4e03e8c",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "source_files": 107,
+  "source_manifest_sha256": "987ee5e2557b32c266a1ae45405ce3adf1196728fdd5ec2899963239ba23d6a8",
+  "log_tail_sha256": "205c71e6b97565d7a723af404cd3bbc3dc2c39639479e9877d1022e8b0fbc71f",
+  "limits": {
+    "cpu": 1,
+    "memory_bytes": 4294967296,
+    "swap": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "tasks": 128,
+    "runtime_seconds": 1800
+  },
+  "reuse": [
+    "218 unchanged Review/Source JavaScript cases passed before the scoped HTTP deadline change; six API cases passed afterwards",
+    "529 Rust cases passed after narrowing strong ctime identity to Source/Take/audio audition/Slip; legacy persistence identity and shared catalog identity formats preserved",
+    "Three affected take worker regressions passed after boxing preparation; original legacy prepare_media implementation restored unchanged from the previously qualified HEAD",
+    "Final all-target Clippy with warnings denied and offline embedded build passed; renderer/native DSP unchanged"
+  ],
+  "remaining": [
+    "Actual Windows compare/replace/save/export workflow on this candidate",
+    "Sustained ordinary-resolution playback and physical audio/device acceptance",
+    "Conservative active-compound and inter-track memory accounting retained; native eager full-clip pitch stretch costs retained"
+  ]
+}

@@ -13,11 +13,13 @@ export function persistentClientId(storage = sessionStorage, uuid = () => crypto
   } catch { return uuid(); }
 }
 export async function request(path, body, fetcher = fetch) {
+  const replaceTake = body !== undefined && (path === "/review/replace/plan" ||
+    /^\/timelines\/(?:0|[1-9][0-9]*)\/commands$/.test(path) && body?.operation?.kind === "replace_take");
   const response = await fetcher(`/api/v1${path}`, {
     method: body === undefined ? "GET" : "POST",
     headers: body === undefined ? {} : { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(20_000),
+    signal: AbortSignal.timeout(replaceTake ? 30_000 : 20_000),
   });
   let data;
   try {

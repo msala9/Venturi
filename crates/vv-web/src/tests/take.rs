@@ -86,6 +86,253 @@ fn query(session: &Session, id: core::TimelineId) -> FrameQuery {
 }
 
 #[test]
+fn take_worker_snapshot_is_probe_free_and_cancellation_and_restored_mtime_changes_fail_closed() {
+    let (files, session, id, replacement, root) = setup();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let task = Task::new(&session, &files, id, &replacement, false).unwrap();
+    assert_eq!(
+        task.run(&AtomicBool::new(true)).err().unwrap().1,
+        "TAKE_CANCELED"
+    );
+    let task = Task::new(&session, &files, id, &replacement, false).unwrap();
+    let path = root.join("new.wav");
+    let bytes = std::fs::read(&path).unwrap();
+    let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
+    std::fs::write(&path, &bytes).unwrap();
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_times(std::fs::FileTimes::new().set_modified(modified))
+        .unwrap();
+    assert_ne!(
+        crate::source::source_version(&std::fs::File::open(&path).unwrap()).unwrap(),
+        task.version
+    );
+    assert_eq!(
+        task.run(&AtomicBool::new(false)).err().unwrap().1,
+        "SOURCE_CHANGED"
+    );
+    std::fs::write(
+        &path,
+        b"invalid bytes must not be probed by the Session snapshot",
+    )
+    .unwrap();
+    let task = Task::new(&session, &files, id, &replacement, false).unwrap();
+    assert!(task.run(&AtomicBool::new(false)).is_err());
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn verified_take_rejects_changed_source_session_metadata_request_and_planning_mode_without_editing()
+{
+    for failure in ["source", "metadata", "request", "planning"] {
+        let (files, mut session, id, mut replacement, root) = setup();
+        replacement.source_version = Some(
+            crate::source::source_version(&files.media_file(&root.join("new.wav")).unwrap())
+                .unwrap(),
+        );
+        let verified = Task::new(&session, &files, id, &replacement, failure != "planning")
+            .unwrap()
+            .run(&AtomicBool::new(false))
+            .unwrap();
+        match failure {
+            "source" => {
+                let path = root.join("new.wav");
+                let bytes = std::fs::read(&path).unwrap();
+                let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
+                std::fs::write(&path, &bytes).unwrap();
+                std::fs::OpenOptions::new()
+                    .write(true)
+                    .open(path)
+                    .unwrap()
+                    .set_times(std::fs::FileTimes::new().set_modified(modified))
+                    .unwrap();
+            }
+            "metadata" => {
+                let media = core::MediaId::from_raw(replacement.media_id.parse().unwrap());
+                session.project.media_pool[media].meta.channels += 1;
+            }
+            "request" => replacement.source_in = 1,
+            "planning" => (),
+            _ => unreachable!(),
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let history = session.history.position();
+        assert_eq!(
+            apply_verified(&mut session, &files, id, &replacement, &verified)
+                .unwrap_err()
+                .1,
+            "SOURCE_CHANGED",
+            "{failure}"
+        );
+        assert_eq!(session.history.position(), history);
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        drop(verified);
+        drop(files);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
+fn replacement_nested_b_uses_exact_approved_path_not_a_same_named_root_file_and_rejects_parent_links()
+ {
+    let (files, mut session, id, mut replacement, root) = setup();
+    std::fs::create_dir_all(root.join("approved/deep")).unwrap();
+    let nested = root.join("approved/deep/new.wav");
+    std::fs::rename(root.join("new.wav"), &nested).unwrap();
+    vv_media::audio_file::write_audio_file(
+        &root.join("new.wav"),
+        vv_media::audio_file::AudioFileFormat::Wav,
+        &vec![0.25; 12000],
+        48000,
+        1,
+    )
+    .unwrap();
+    let media = core::MediaId::from_raw(replacement.media_id.parse().unwrap());
+    session.project.media_pool[media].path = nested.clone();
+    session.project.media_pool[media].content_hash =
+        vv_media::content_fingerprint(&nested).unwrap();
+    session.sync_timeline_media(id);
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let history = session.history.position();
+    let planned = preview(
+        &session,
+        &files,
+        id,
+        &Preview {
+            query: query(&session, id),
+            replacement: replacement.clone(),
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), history);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    replacement.source_version = Some(planned["source_version"].as_str().unwrap().into());
+    apply(&mut session, &files, id, &replacement).unwrap();
+    assert_eq!(session.history.position(), history + 1);
+    assert!(
+        matches!(session.project.timelines[id].tracks[1].clips[0].source, core::ClipSource::Media(actual) if actual == media)
+    );
+    crate::commands::history(&mut session, &crate::commands::Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    files
+        .save(&session.project, "nested-take.vvproj", true)
+        .unwrap();
+    assert_eq!(
+        files.load("nested-take.vvproj").unwrap().media_pool[media].path,
+        nested
+    );
+    assert!(
+        files
+            .media_import_tokens(&["approved/deep/new.wav".into()])
+            .is_err()
+    );
+    std::fs::rename(root.join("approved"), root.join("previous-approved")).unwrap();
+    std::os::unix::fs::symlink(root.join("previous-approved"), root.join("approved")).unwrap();
+    let history = session.history.position();
+    assert!(apply(&mut session, &files, id, &replacement).is_err());
+    assert_eq!(session.history.position(), history);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn replacement_native_pasted_image_b_preserves_managed_path_original_bytes_and_one_undo() {
+    let (files, mut session, id, mut replacement, root) = setup();
+    std::fs::create_dir(root.join("Pasted Images")).unwrap();
+    let old = root.join("old.png");
+    let pasted = root.join("Pasted Images/.Native B.png");
+    let mut encoder = png::Encoder::new(std::fs::File::create(&old).unwrap(), 2, 2);
+    encoder.set_color(png::ColorType::Rgba);
+    encoder.set_depth(png::BitDepth::Eight);
+    encoder
+        .write_header()
+        .unwrap()
+        .write_image_data(&[127; 16])
+        .unwrap();
+    std::fs::copy(&old, &pasted).unwrap();
+    std::fs::write(
+        root.join(".Native B.png"),
+        b"wrong root file must never be selected",
+    )
+    .unwrap();
+    let original = std::fs::read(&pasted).unwrap();
+    let old_media = session.add_media(old.clone(), vv_media::probe_image(&old).unwrap());
+    let media = session.add_media(pasted.clone(), vv_media::probe_image(&pasted).unwrap());
+    let clip = session.project.timelines[id].tracks[1].clips.remove(0);
+    let rate = core::Rational::conform_rate(
+        session.project.timelines[id].fps,
+        session.project.media_pool[old_media].meta.fps,
+    );
+    session.project.timelines[id].tracks[0]
+        .clips
+        .push(core::Clip::from_source_range(
+            clip.id,
+            core::ClipSource::Media(old_media),
+            0,
+            25,
+            12,
+            rate,
+        ));
+    replacement.media_id = media.raw().to_string();
+    session.sync_timeline_media(id);
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let history = session.history.position();
+    let planned = preview(
+        &session,
+        &files,
+        id,
+        &Preview {
+            query: query(&session, id),
+            replacement: replacement.clone(),
+        },
+    )
+    .unwrap();
+    replacement.source_version = Some(planned["source_version"].as_str().unwrap().into());
+    apply(&mut session, &files, id, &replacement).unwrap();
+    assert_eq!(session.history.position(), history + 1);
+    assert!(
+        matches!(session.project.timelines[id].tracks[0].clips[0].source, core::ClipSource::Media(actual) if actual == media)
+    );
+    assert_eq!(session.project.media_pool[media].path, pasted);
+    assert_eq!(std::fs::read(&pasted).unwrap(), original);
+    crate::commands::history(&mut session, &crate::commands::Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    crate::commands::history(&mut session, &crate::commands::Operation::Redo).unwrap();
+    files
+        .save(&session.project, "pasted-take.vvproj", true)
+        .unwrap();
+    assert_eq!(
+        files.load("pasted-take.vvproj").unwrap().media_pool[media].path,
+        pasted
+    );
+    assert_eq!(std::fs::read(&pasted).unwrap(), original);
+    assert!(
+        files
+            .media_import_tokens(&["Pasted Images/.Native B.png".into()])
+            .is_err()
+    );
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn replacement_preview_is_read_only_and_binds_one_native_undo_to_the_actual_source_file() {
     let (files, mut session, id, mut replacement, root) = setup();
     let before = serde_json::to_value(&session.project.timelines[id]).unwrap();

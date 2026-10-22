@@ -96,6 +96,7 @@ fn cache_fixture_job(directory: PathBuf, state: &'static str, bytes: u64) -> Job
         source_assets: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
+        source_version: None,
         export_epoch: None,
         program_query: None,
         durable: None,
@@ -796,6 +797,7 @@ fn still_source_preserves_original_png_bytes_and_alpha_without_creating_a_video(
         media_id: "1".into(),
         meta: vv_media::probe_image(&path).unwrap(),
     };
+    let identity = spec.identity().unwrap();
     let job = service
         .prepare(
             SourceSpec {
@@ -808,10 +810,13 @@ fn still_source_preserves_original_png_bytes_and_alpha_without_creating_a_video(
         )
         .unwrap();
     assert_eq!(job["source_asset"], "source.png");
+    assert_eq!(job["source_version"], identity);
+    assert!(job["source_window"].is_null());
     let id = job["id"].as_str().unwrap();
     let start = Instant::now();
     loop {
         let status = service.status(id, &spec, false).unwrap();
+        assert_eq!(status["source_version"], identity);
         if status["state"] == "ready" {
             break;
         }
@@ -832,6 +837,29 @@ fn still_source_preserves_original_png_bytes_and_alpha_without_creating_a_video(
     assert!(service.asset(id, &spec, "thumb.png").is_ok());
     assert!(service.asset(id, &spec, "source.mp4").is_err());
     assert!(service.asset(id, &spec, "waveform.json").is_err());
+    assert_eq!(
+        service.prepare(cloned_source(&spec), "high").unwrap()["source_version"],
+        identity
+    );
+    let changed = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
+    let before = changed.metadata().unwrap();
+    std::thread::sleep(Duration::from_millis(2));
+    std::os::unix::fs::FileExt::write_all_at(&changed, &[original[0] ^ 1], 0).unwrap();
+    changed
+        .set_times(std::fs::FileTimes::new().set_modified(before.modified().unwrap()))
+        .unwrap();
+    let after = changed.metadata().unwrap();
+    assert_eq!(
+        (after.len(), after.mtime(), after.mtime_nsec()),
+        (before.len(), before.mtime(), before.mtime_nsec())
+    );
+    assert_ne!(
+        spec.identity().unwrap(),
+        identity,
+        "An in-place rewrite cannot reuse the still proxy after restoring size and mtime"
+    );
+    assert!(service.status(id, &spec, false).is_err());
+    assert!(service.asset(id, &spec, "source.png").is_err());
     std::fs::write(path, b"not an image").unwrap();
     assert!(image_asset(&spec.file).is_err());
 }
@@ -1019,6 +1047,7 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         program_query: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
+        source_version: None,
         export_epoch: None,
         durable: None,
         explicit_cancel: false,
@@ -1063,6 +1092,7 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
             "old-identity".into(),
         )],
         source_asset: None,
+        source_version: None,
         export_epoch: Some("p:1".into()),
         durable: None,
         explicit_cancel: false,
@@ -1221,6 +1251,7 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
         source_assets: None,
         inputs: vec![],
         source_asset: None,
+        source_version: None,
         export_epoch: None,
         program_query: None,
         durable: None,
@@ -1976,6 +2007,7 @@ fn selected_source_audio_validates_before_admission_and_cache_keys_separate_only
     assert_eq!(all_job["source_window"]["audio_mode"], "all");
     assert!(all_job["source_window"]["audio_stream_index"].is_null());
     assert_eq!(all_job["source_window"]["source_version"], identity);
+    assert_eq!(all_job["source_version"], identity);
     assert!(matches!(
         receiver.try_recv().unwrap().1,
         Work::SourceAll(_, _, Some(_))
@@ -2011,34 +2043,100 @@ fn selected_source_audio_validates_before_admission_and_cache_keys_separate_only
 #[test]
 fn source_memory_bounds_original_decode_dimensions_and_selected_audio_without_duration_growth() {
     let mut meta = window_fixture_meta();
-    let tiny = source_working_bytes(&meta, 960, false);
+    let tiny = source_working_bytes(&meta, 960, false, crate::source_audio::AudioMode::Selected);
     meta.width = 3840;
     meta.height = 2160;
-    let large = source_working_bytes(&meta, 960, false);
+    let large = source_working_bytes(&meta, 960, false, crate::source_audio::AudioMode::Selected);
     assert!(large > tiny);
-    assert!(source_working_bytes(&meta, 1920, false) > large);
+    assert!(
+        source_working_bytes(&meta, 1920, false, crate::source_audio::AudioMode::Selected) > large
+    );
     meta.duration_frames *= 100;
-    assert_eq!(source_working_bytes(&meta, 960, false), large);
+    assert_eq!(
+        source_working_bytes(&meta, 960, false, crate::source_audio::AudioMode::Selected),
+        large
+    );
     meta.has_audio = true;
     meta.channels = 1;
-    let selected = source_working_bytes(&meta, 960, false);
+    let selected =
+        source_working_bytes(&meta, 960, false, crate::source_audio::AudioMode::Selected);
     assert_eq!(selected - large, 64 * 1024 * 1024 * 4);
     meta.channels = 8;
     assert_eq!(
-        source_working_bytes(&meta, 960, false),
+        source_working_bytes(&meta, 960, false, crate::source_audio::AudioMode::Selected),
         selected,
         "Best-stream channels cannot bound another selected stream"
     );
-    assert!(source_working_bytes(&meta, 256, true) < selected);
+    assert!(
+        source_working_bytes(&meta, 256, true, crate::source_audio::AudioMode::Selected) < selected
+    );
     meta.has_audio = false;
     meta.duration_frames = vv_core::IMAGE_DURATION_FRAMES;
     assert_eq!(
-        source_working_bytes(&meta, 256, false),
+        source_working_bytes(&meta, 256, false, crate::source_audio::AudioMode::Selected),
         3840 * 2160 * 20 + 64 * 1024 * 1024
     );
     meta.width = 8192;
     meta.height = 8192;
-    assert!(source_working_bytes(&meta, 256, false) > 1024 * 1024 * 1024);
+    assert!(
+        source_working_bytes(&meta, 256, false, crate::source_audio::AudioMode::Selected)
+            > 1024 * 1024 * 1024
+    );
+}
+
+#[test]
+fn source_all_memory_counts_actual_pcm_without_an_unused_selected_buffer_and_keeps_caps() {
+    use crate::source_audio::AudioMode::{All, Selected};
+    let mut meta = window_fixture_meta();
+    meta.width = 1280;
+    meta.height = 720;
+    meta.has_audio = true;
+    meta.sample_rate = 48_000;
+    meta.channels = 2;
+    meta.audio_streams = 2;
+    let window = Some(SourceWindow {
+        start_frame: 0,
+        end_frame: 1440,
+    });
+    let base = source_working_bytes(&meta, 960, false, All);
+    let selected = source_audio_working_bytes(&meta, 960, window, Selected).unwrap();
+    let all = source_audio_working_bytes(&meta, 960, window, All).unwrap();
+    let pcm = crate::source_audio::working_bytes(2, &(0..60 * 48_000)).unwrap();
+    assert_eq!(selected - base, 256 * 1024 * 1024);
+    assert_eq!(all - base, pcm + 8 * 1024 * 1024);
+    let runtime_and_reserve = 128 * 1024 * 1024;
+    assert!(all + runtime_and_reserve < 512 * 1024 * 1024);
+    assert!(
+        all + 256 * 1024 * 1024 + runtime_and_reserve > 512 * 1024 * 1024,
+        "Charging the unused selected buffer rejects an otherwise bounded ALL window"
+    );
+    assert!(selected > all);
+    meta.audio_streams = 64;
+    assert_eq!(
+        source_audio_working_bytes(&meta, 960, window, All)
+            .unwrap_err()
+            .1,
+        "SOURCE_MEMORY_PRESSURE",
+        "The native aggregate PCM cap still applies"
+    );
+    meta.audio_streams = 2;
+    assert_eq!(
+        source_audio_working_bytes(&meta, 960, None, All)
+            .unwrap_err()
+            .1,
+        "SOURCE_MEMORY_PRESSURE",
+        "Unbounded full-file ALL is still refused"
+    );
+    meta.has_audio = false;
+    meta.audio_streams = 0;
+    assert_eq!(
+        source_audio_working_bytes(&meta, 960, window, All).unwrap(),
+        base
+    );
+    assert_eq!(
+        source_audio_working_bytes(&meta, 960, window, Selected).unwrap(),
+        base
+    );
 }
 
 #[test]

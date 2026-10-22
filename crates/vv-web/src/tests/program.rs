@@ -407,7 +407,7 @@ fn program_audio_origin_is_explicit_in_native_settings_and_covering_cache_identi
 fn composition_memory_counts_native_sources_crossings_nested_layers_and_existing_reserves() {
     let mut task = task();
     let id = task.snapshot.timeline;
-    let initial = program_working_bytes(&task.snapshot, (960, 540));
+    let initial = program_working_bytes(&task.snapshot, (960, 540), &task.query);
     let media = task.snapshot.project.media_pool.insert(vv_core::MediaItem {
         path: "memory-only.mp4".into(),
         meta: vv_core::MediaMeta {
@@ -427,14 +427,14 @@ fn composition_memory_counts_native_sources_crossings_nested_layers_and_existing
         folder: None,
     });
     task.snapshot.project.timelines[id].tracks[0].clips[0].source = ClipSource::Media(media);
-    let source = program_working_bytes(&task.snapshot, (960, 540));
+    let source = program_working_bytes(&task.snapshot, (960, 540), &task.query);
     assert!(source > initial);
     let mut later = task.snapshot.project.timelines[id].tracks[0].clips[0].clone();
     later.id = ClipId(2);
     later.timeline_start = 48;
     task.snapshot.project.timelines[id].tracks[0].insert_sorted(later);
     assert_eq!(
-        program_working_bytes(&task.snapshot, (960, 540)),
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
         source,
         "Sequential clips do not retain one decode queue each"
     );
@@ -451,7 +451,7 @@ fn composition_memory_counts_native_sources_crossings_nested_layers_and_existing
                 curve: 0.5,
             },
         });
-    let crossing = program_working_bytes(&task.snapshot, (960, 540));
+    let crossing = program_working_bytes(&task.snapshot, (960, 540), &task.query);
     assert!(crossing > source);
     let child_track = task.snapshot.project.timelines[id].tracks[0].clone();
     let child = task.snapshot.project.timelines.insert(Timeline {
@@ -492,7 +492,7 @@ fn composition_memory_counts_native_sources_crossings_nested_layers_and_existing
     task.snapshot.project.timelines[id]
         .tracks
         .push(nested_track);
-    let nested = program_working_bytes(&task.snapshot, (960, 540));
+    let nested = program_working_bytes(&task.snapshot, (960, 540), &task.query);
     assert!(nested > crossing);
     let reserve = 64 * 1024 * 1024;
     assert!(memory_fits(
@@ -514,14 +514,133 @@ fn composition_memory_counts_native_sources_crossings_nested_layers_and_existing
         reserve
     ));
     task.snapshot.project.timelines[id].tracks[1].muted = true;
-    assert_eq!(program_working_bytes(&task.snapshot, (960, 540)), crossing);
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
+        crossing
+    );
     task.snapshot.project.timelines[id].tracks[1].muted = false;
     task.snapshot.project.timelines[child].tracks[0].clips[0].source = ClipSource::Media(compound);
     assert_eq!(
-        program_working_bytes(&task.snapshot, (960, 540)),
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
         u64::MAX,
         "Invalid recursive media fails closed within the native depth bound"
     );
+}
+
+#[test]
+fn composition_memory_prunes_outside_video_but_counts_crossing_neighbours_and_active_compounds() {
+    let mut task = task();
+    let id = task.snapshot.timeline;
+    let baseline = program_working_bytes(&task.snapshot, (960, 540), &task.query);
+    let mut track = Track::new(TrackKind::Video);
+    for (clip_id, start) in [(2, 96), (3, 144)] {
+        track.insert_sorted(Clip::from_source_range(
+            ClipId(clip_id),
+            ClipSource::SolidColor,
+            0,
+            48,
+            start,
+            Rational::one(),
+        ));
+    }
+    track.crossings.push(vv_core::CrossTransition {
+        left_clip: ClipId(2),
+        right_clip: ClipId(3),
+        transition: vv_core::Transition {
+            kind: vv_core::TransitionKind::CrossDissolve,
+            duration: 8,
+            direction: vv_core::PushDirection::Left,
+            ease: vv_core::Ease::InOut,
+            curve: 0.5,
+        },
+    });
+    task.snapshot.project.timelines[id].tracks.push(track);
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
+        baseline
+    );
+    task.query.start_frame = 96;
+    task.query.end_frame = 100;
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
+        baseline,
+        "An unrelated crossing cannot reserve a second decoder in this window"
+    );
+    task.query.start_frame = 140;
+    task.query.end_frame = 144;
+    task.snapshot.project.timelines[id].tracks[1].clips[1].disabled = true;
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
+        baseline + 1920 * 1080 * 64,
+        "The crossing reads its disabled right neighbour before the nominal clip start"
+    );
+
+    let child_tracks = task.snapshot.project.timelines[id].tracks.clone();
+    let child = task.snapshot.project.timelines.insert(Timeline {
+        name: "Conservative child".into(),
+        fps: Rational::new(24, 1),
+        resolution: (1920, 1080),
+        tracks: child_tracks,
+        markers: vec![],
+        master: Default::default(),
+    });
+    let media = task.snapshot.project.media_pool.insert(vv_core::MediaItem {
+        path: "Compound memory".into(),
+        meta: vv_core::MediaMeta {
+            width: 1920,
+            height: 1080,
+            duration_frames: 192,
+            fps: Rational::new(24, 1),
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: Some(child),
+        folder: None,
+    });
+    let mut wrapper = Track::new(TrackKind::Video);
+    wrapper.insert_sorted(Clip::from_source_range(
+        ClipId(4),
+        ClipSource::Media(media),
+        0,
+        48,
+        240,
+        Rational::one(),
+    ));
+    task.snapshot.project.timelines[id].tracks.push(wrapper);
+    task.query.start_frame = 0;
+    task.query.end_frame = 48;
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
+        baseline,
+        "An inactive wrapper does not decode its child"
+    );
+    task.query.start_frame = 240;
+    task.query.end_frame = 244;
+    let child_pixels = timeline_decode_pixels(
+        &task.snapshot.project,
+        child,
+        None,
+        &mut Default::default(),
+        &mut Default::default(),
+    );
+    let root_pixels = timeline_decode_pixels(
+        &task.snapshot.project,
+        id,
+        Some(&(240..244)),
+        &mut Default::default(),
+        &mut Default::default(),
+    );
+    assert_eq!(
+        root_pixels,
+        child_pixels + 1920 * 1080,
+        "An active compound retains its full child bound and composed texture"
+    );
+    assert!(program_working_bytes(&task.snapshot, (960, 540), &task.query) > baseline);
 }
 
 #[test]
@@ -559,13 +678,29 @@ fn composition_memory_accounts_for_native_whole_clip_pitch_correction_results() 
     clip.pitch_correction = true;
     track.insert_sorted(clip);
     task.snapshot.project.timelines[id].tracks.push(track);
-    let corrected = program_working_bytes(&task.snapshot, (960, 540));
+    let corrected = program_working_bytes(&task.snapshot, (960, 540), &task.query);
     task.snapshot.project.timelines[id].tracks[1].clips[0].pitch_correction = false;
-    let plain = program_working_bytes(&task.snapshot, (960, 540));
+    let plain = program_working_bytes(&task.snapshot, (960, 540), &task.query);
     assert!(corrected > plain + 512 * 1024 * 1024);
     task.snapshot.project.timelines[id].tracks[1].clips[0].pitch_correction = true;
+    task.snapshot.project.timelines[id].tracks[1].clips[0].timeline_start = 30_000;
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
+        corrected,
+        "Native collect_clips eagerly stretches even an out-of-window clip"
+    );
+    task.query.start_frame = 24;
+    task.query.audio_origin_frame = Some(0);
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
+        corrected,
+        "Continuation retains the entire prefix audio bound, including eager stretches"
+    );
     task.snapshot.project.timelines[id].tracks[1].clips[0].freeze = Some(0);
-    assert_eq!(program_working_bytes(&task.snapshot, (960, 540)), plain);
+    assert_eq!(
+        program_working_bytes(&task.snapshot, (960, 540), &task.query),
+        plain
+    );
     assert!(!memory_fits(u64::MAX, u64::MAX, u64::MAX, 0));
 }
 #[test]

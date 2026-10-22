@@ -47,7 +47,13 @@ pub enum Action {
     KeyframeNavigation(String, KeyframeNavigationRequest),
     ProjectView(crate::project_view::Request),
     SlipDetail(String, i64, FrameQuery),
-    TakePlan(crate::take::Preview),
+    PrepareTakePlan(
+        crate::take::Preview,
+        oneshot::Sender<Result<crate::take::Task>>,
+    ),
+    TakePlan(crate::take::Preview, crate::take::Verified),
+    PrepareTakeMutation(String, Mutation, oneshot::Sender<Result<TakePreparation>>),
+    TakeMutation(String, Mutation, crate::take::Verified),
     CompoundNavigation(crate::compound_navigation::Request),
     Review(SourceQuery),
     CapturePreset(crate::presets::Capture),
@@ -147,6 +153,10 @@ pub enum NativeEditPreparation {
     Complete(Value),
     Pending(NativeEditGuard),
 }
+pub enum TakePreparation {
+    Complete(Value),
+    Pending(Box<crate::take::Task>),
+}
 pub struct NativeEditGuard {
     jobs: crate::asset_jobs::Jobs,
     job: String,
@@ -166,7 +176,11 @@ struct PendingNativeEdit {
     epoch: String,
 }
 #[derive(Clone)]
-pub struct Host(mpsc::SyncSender<Message>, Arc<tokio::sync::Semaphore>);
+pub struct Host(
+    mpsc::SyncSender<Message>,
+    Arc<tokio::sync::Semaphore>,
+    Arc<tokio::sync::Semaphore>,
+);
 pub struct Editor {
     pub session: Session,
     files: Files,
@@ -362,6 +376,14 @@ impl Editor {
         Ok(json!({"writable":true,"ttl_seconds":90}))
     }
     pub fn mutation(&mut self, timeline: Option<String>, request: Mutation) -> Result<Value> {
+        self.mutation_with_take(timeline, request, None)
+    }
+    fn mutation_with_take(
+        &mut self,
+        timeline: Option<String>,
+        request: Mutation,
+        verified: Option<&crate::take::Verified>,
+    ) -> Result<Value> {
         if !valid_key(&request.command_id) {
             return Err(ApiError::invalid("Invalid command ID"));
         }
@@ -427,7 +449,7 @@ impl Editor {
         self.otio_import_receipt = None;
         self.clipboard_receipt = None;
         self.timeline_edit_selection = None;
-        let outcome = self.perform(timeline, &request);
+        let outcome = self.perform(timeline, &request, verified);
         if self.session.epoch() != previous_epoch
             || outcome.is_ok()
                 && matches!(
@@ -574,7 +596,12 @@ impl Editor {
         }
         result
     }
-    fn perform(&mut self, timeline: Option<String>, request: &Mutation) -> Result<()> {
+    fn perform(
+        &mut self,
+        timeline: Option<String>,
+        request: &Mutation,
+        verified: Option<&crate::take::Verified>,
+    ) -> Result<()> {
         if request.project_epoch != format!("{}:{}", self.epoch, self.session.epoch())
             || request.if_generation != self.session.history.generation().to_string()
         {
@@ -627,9 +654,18 @@ impl Editor {
                 Operation::PlaceRecording { placement } => {
                     crate::recording::place(&mut self.session, &self.files, id, placement)
                 }
-                Operation::ReplaceTake { replacement } => {
-                    crate::take::apply(&mut self.session, &self.files, id, replacement)
-                }
+                Operation::ReplaceTake { replacement } => crate::take::apply_verified(
+                    &mut self.session,
+                    &self.files,
+                    id,
+                    replacement,
+                    verified.ok_or_else(|| {
+                        ApiError::conflict(
+                            "TAKE_PREPARATION_REQUIRED",
+                            "Verify the current take before replacing clips",
+                        )
+                    })?,
+                ),
                 Operation::CopyClips { clip_ids } => {
                     self.clipboard = Some(crate::clipboard::copy_with_origin(
                         &self.session,
@@ -1828,6 +1864,59 @@ impl Editor {
         );
         Ok(())
     }
+    fn prepare_take_mutation(
+        &mut self,
+        timeline: &str,
+        request: &Mutation,
+    ) -> Result<TakePreparation> {
+        let Operation::ReplaceTake { replacement } = &request.operation else {
+            return Err(ApiError::invalid(
+                "Only take replacement requires take verification",
+            ));
+        };
+        if !valid_key(&request.command_id) {
+            return Err(ApiError::invalid("Invalid command ID"));
+        }
+        let encoded = serde_json::to_vec(&(Some(timeline), request))
+            .map_err(|_| ApiError::invalid("Invalid command"))?;
+        let fingerprint: [u8; 32] = Sha256::digest(&encoded).into();
+        let recorded = self
+            .completed
+            .get(&request.command_id)
+            .cloned()
+            .or_else(|| {
+                self.receipts
+                    .as_ref()
+                    .and_then(|store| store.recorded(&request.command_id))
+                    .map(|(original, value)| (original, Ok(value)))
+            });
+        if let Some((original, value)) = recorded {
+            if original != fingerprint {
+                return Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Command ID was already used with another request",
+                ));
+            }
+            return value.map(TakePreparation::Complete);
+        }
+        self.lease(&request.client_id)?;
+        if request.command_epoch.as_deref().unwrap_or("0") != self.command_epoch.to_string() {
+            return Err(ApiError::conflict(
+                "COMMAND_EPOCH_EXPIRED",
+                "Command receipt epoch expired; refresh without replaying the old command",
+            ));
+        }
+        self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
+        let id = snapshot::timeline_id(&self.session, timeline)?;
+        if request.if_revision.as_deref() != Some(self.session.timeline_revision(id).as_str()) {
+            return Err(ApiError::conflict(
+                "REVISION_CONFLICT",
+                "Timeline changed; refresh before retrying",
+            ));
+        }
+        crate::take::Task::new(&self.session, &self.files, id, replacement, true)
+            .map(|task| TakePreparation::Pending(Box::new(task)))
+    }
     fn validate_frame_identity(
         &self,
         query: &FrameQuery,
@@ -2022,7 +2111,7 @@ impl Editor {
                         .media_file(&self.session.project.media_pool[media].path)
                     {
                         Ok(file) => {
-                            detail["source_version"] = json!(crate::source::file_identity(&file)?)
+                            detail["source_version"] = json!(crate::source::source_version(&file)?)
                         }
                         Err(_) => {
                             detail["preview_available"] = json!(false);
@@ -2035,9 +2124,29 @@ impl Editor {
                 detail["revision"] = json!(query.revision);
                 Ok(detail)
             }
-            Action::TakePlan(request) => {
+            Action::PrepareTakePlan(request, reply) => {
+                let result = self.validate_frame(&request.query).and_then(|(id, _)| {
+                    crate::take::Task::new(
+                        &self.session,
+                        &self.files,
+                        id,
+                        &request.replacement,
+                        false,
+                    )
+                });
+                let _ = reply.send(result);
+                Ok(Value::Null)
+            }
+            Action::TakePlan(request, verified) => {
                 let (id, _) = self.validate_frame(&request.query)?;
-                crate::take::preview(&self.session, &self.files, id, &request)
+                crate::take::preview_verified(&self.session, &self.files, id, &request, &verified)
+            }
+            Action::PrepareTakeMutation(timeline, request, reply) => {
+                let _ = reply.send(self.prepare_take_mutation(&timeline, &request));
+                Ok(Value::Null)
+            }
+            Action::TakeMutation(timeline, request, verified) => {
+                self.mutation_with_take(Some(timeline), request, Some(&verified))
             }
             Action::Review(query) => {
                 if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
@@ -2342,6 +2451,54 @@ fn valid_key(key: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
 }
 impl Host {
+    async fn verify_take(&self, task: crate::take::Task) -> Result<crate::take::Verified> {
+        let permit = self.2.clone().try_acquire_owned().map_err(|_| {
+            ApiError::conflict(
+                "TAKE_BUSY",
+                "Another take is being verified; retry after it finishes",
+            )
+        })?;
+        let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let _cancel_on_drop = crate::audition::CancelOnDrop(cancel.clone());
+        let worker = tokio::task::spawn_blocking(move || {
+            let _permit = permit;
+            task.run(&cancel)
+        });
+        match tokio::time::timeout(Duration::from_secs(25), worker).await {
+            Ok(value) => value.map_err(|_| ApiError::io())?,
+            Err(_) => Err(ApiError::conflict(
+                "TAKE_TIMEOUT",
+                "Take verification exceeded its time budget",
+            )),
+        }
+    }
+    pub async fn take_plan(&self, request: crate::take::Preview) -> Result<Value> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::PrepareTakePlan(request.clone(), tx))
+            .await?;
+        let task = rx.await.map_err(|_| ApiError::io())??;
+        let verified = self.verify_take(task).await?;
+        self.call(Action::TakePlan(request, verified)).await
+    }
+    pub async fn timeline_mutation(&self, timeline: String, request: Mutation) -> Result<Value> {
+        if !matches!(request.operation, Operation::ReplaceTake { .. }) {
+            return self.call(Action::Mutation(Some(timeline), request)).await;
+        }
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::PrepareTakeMutation(
+            timeline.clone(),
+            request.clone(),
+            tx,
+        ))
+        .await?;
+        let task = match rx.await.map_err(|_| ApiError::io())?? {
+            TakePreparation::Complete(value) => return Ok(value),
+            TakePreparation::Pending(task) => *task,
+        };
+        let verified = self.verify_take(task).await?;
+        self.call(Action::TakeMutation(timeline, request, verified))
+            .await
+    }
     pub async fn source_browser(&self, query: crate::files::SourcesQuery) -> Result<Value> {
         let permit = self.1.clone().try_acquire_owned().map_err(|_| {
             ApiError::conflict(
@@ -2561,7 +2718,11 @@ impl Host {
                 editor.autosave.tick(&editor.files, &editor.session);
             }
         });
-        Ok(Self(tx, Arc::new(tokio::sync::Semaphore::new(1))))
+        Ok(Self(
+            tx,
+            Arc::new(tokio::sync::Semaphore::new(1)),
+            Arc::new(tokio::sync::Semaphore::new(1)),
+        ))
     }
     pub async fn call(&self, action: Action) -> Result<Value> {
         let (tx, rx) = oneshot::channel();

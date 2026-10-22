@@ -39,6 +39,58 @@ clip's source trim; null means no eligible neighbor. This metadata is independen
 of the truncated/paged key arrays. Linked row axes combine primary key presence
 with OR, previous positions with max and next positions with min.
 
+## Selected Title, Solid and filter edits
+
+`edit_inspector_selection` additionally accepts strict actions `title {patch}`,
+`toggle_text_key {}`, `title_shadow {enabled}`, `reset_title {fields}`,
+`solid_color {value}`, `toggle_color_key {}`, `filter {filter,patch}`,
+`filter_presence {filter,enabled}`, `filter_move {filter,to_index}`,
+`toggle_filter_keys {filter,params}`, `reset_filter
+{filter,params,reset_enabled,reset_color,reset_grade}`, and
+`grade_preset {preset}`. All retain the selected adapter's writer/CAS,
+complete validation, explicit-target ordering and one native Undo behavior.
+
+The native video primary determines whether Title or Solid controls apply.
+Title patches compare individual primary fields and background members, then
+change only those members on selected text clips. Animated text receives each
+clip's own source-clock key. The text diamond independently toggles each
+text clip's own key presence. The Title shadow shortcut affects only text peers.
+Solid RGBA applies only to selected solids and chooses default versus own-frame
+key; its diamond uses the primary's removal/pin decision. `color_info` is null
+for non-solids. The Solid UI has no invented reset action.
+
+Filter parameter edits affect selected video clips already carrying that native
+kind; missing kinds are skipped. Explicit presence edits add/remove the kind.
+Reorder destinations are exact indices and invalid peer stacks refuse the whole
+request. Row/group diamonds and reset use typed native radius/direction/amount/
+grow/offset/grade targets; no browser curve or DSP evaluation is introduced.
+Scalar rows, text, color and direction expose full-track native neighbor metadata.
+The selected UI sends only changed fields and latches OUTCOME_UNKNOWN until a
+fresh owner is rendered, preventing stale actions from replaying a write.
+
+## Native key-editor navigation
+
+Clip detail adds `timeline_id` and
+`keyframe_clock:{source_frame,source_in,source_out,ticks}`. The animation head is
+unclamped and independent from picture freeze. Up to nine native tick pairs map
+source positions to timeline frames, including exclusive source out. Existing
+key-edit bounds remain unchanged.
+
+POST `/timelines/{id}/clips/{clip}/keyframe-navigation` takes
+`{query:FrameQuery,source_frame}` and returns
+`{project_epoch,generation,timeline_id,revision,clip_id,source_frame,timeline_frame}`.
+The route validates document/timeline identity, dimensions and bounded view
+playhead, clamps the requested source position inclusively to the native trim,
+and calls `Clip::timeline_frame_at`. It is read-only: no writer lease, generation,
+Undo or source mutation. Inspector detail also accepts a bounded view playhead
+past content end; exact frame preview retains its stricter content bounds.
+
+Scalar and typed-value editors draw a native ruler/head. Pointer drafts remain
+local; release submits one mapping read. Existing-key Jump uses the key's native
+`timeline_frame` directly. Read-only navigation remains available independently
+from editing permission. Modal, context, geometry, detach and competing-editor
+cancellation reject obsolete replies; no automatic replay or rate reconstruction.
+
 ## Timeline gap and edit contracts
 
 `move_clips` extends safe movement to newly created lanes while preserving the

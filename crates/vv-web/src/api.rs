@@ -109,6 +109,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/timelines/{id}/timeline.otio", get(export_otio))
         .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
         .route(
+            "/api/v1/timelines/{id}/clips/{clip}/keyframe-navigation",
+            post(keyframe_navigation),
+        )
+        .route(
             "/api/v1/timelines/{id}/presets/capture",
             post(capture_preset),
         )
@@ -1630,6 +1634,26 @@ async fn clip_detail(
         .await
         .map(Json)
 }
+async fn keyframe_navigation(
+    State(state): State<AppState>,
+    Path((id, clip)): Path<(String, String)>,
+    payload: std::result::Result<
+        Json<crate::host::KeyframeNavigationRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid native keyframe navigation request"))?
+        .0;
+    if request.query.timeline_id != id {
+        return Err(ApiError::invalid("Timeline ID does not match the query"));
+    }
+    state
+        .host
+        .call(Action::KeyframeNavigation(clip, request))
+        .await
+        .map(Json)
+}
 async fn clip_key_page(
     State(state): State<AppState>,
     Path((id, clip, page)): Path<(String, String, usize)>,
@@ -1843,6 +1867,7 @@ async fn assets(request: Request) -> Response {
         "/js/program-range.js" => asset!("/web/js/program-range.js", "text/javascript"),
         "/js/export.js" => asset!("/web/js/export.js", "text/javascript"),
         "/js/inspector.js" => asset!("/web/js/inspector.js", "text/javascript"),
+        "/js/keyframe-navigation.js" => asset!("/web/js/keyframe-navigation.js", "text/javascript"),
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
         "/js/eventkeys.js" => asset!("/web/js/eventkeys.js", "text/javascript"),
         "/js/keyselection.js" => asset!("/web/js/keyselection.js", "text/javascript"),

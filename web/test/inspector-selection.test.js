@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {videoPropertySelection,audioPropertySelection,renderSelectedVideoProperties,renderSelectedAudioGain,renderProperties} from '../js/inspector.js';
+import {videoPropertySelection,audioPropertySelection,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects,titleSelectionPatch,renderProperties} from '../js/inspector.js';
 
 const axes=['ZoomX','ZoomY','PositionX','PositionY','Rotation','AnchorX','AnchorY','CropLeft','CropTop','CropRight','CropBottom','CropSoftness','Opacity'];
 const snapshot=()=>({project_epoch:'epoch',generation:'7',timeline:{id:'timeline',revision:'revision',tracks:[
@@ -16,7 +16,7 @@ function detail(video=true){
   };
 }
 const settle=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
-function harness(t,{video=true,commit,editDetail=()=>{}}={}){
+function harness(t,{video=true,effects=false,commit,editDetail=()=>{}}={}){
   const priorDocument=globalThis.document,priorOption=globalThis.Option;
   class Element extends EventTarget{
     constructor(tag){super();this.tagName=tag;this.children=[];this.dataset={};this.style={};this.disabled=false;this.isConnected=true;this.value='';}
@@ -31,10 +31,10 @@ function harness(t,{video=true,commit,editDetail=()=>{}}={}){
   const state=snapshot(),root=new Element('div'),native=detail(video),commands=[],notices=[],seeks=[],visualState=new Map();editDetail(native);
   let allowed=true,frame=20;
   const getSelection=()=>video?videoPropertySelection(state):audioPropertySelection(state);
-  const options={selection:getSelection(),getSelection,frame,getFrame:()=>frame,canInteract:()=>allowed,commit:operation=>{commands.push(operation);return commit?.(operation);},notice:message=>notices.push(message),primaryName:video?'First video':'First audio',visualState,seek:frame=>seeks.push(frame)};
+  const options={selection:getSelection(),getSelection,frame,getFrame:()=>frame,canInteract:()=>allowed,commit:operation=>{commands.push(operation);return commit?.(operation);},notice:message=>notices.push(message),primaryName:video?'First video':'First audio',visualState,timelineSize:[1920,1080],seek:frame=>seeks.push(frame)};
   const all=(node=root)=>[node,...node.children.flatMap(child=>typeof child==='object'?all(child):[])];
   const field=label=>all().find(node=>node['aria-label']===label);
-  const render=()=>video?renderSelectedVideoProperties(root,native,options):renderSelectedAudioGain(root,native,options);
+  const render=()=>effects?renderSelectedVideoEffects(root,native,options):video?renderSelectedVideoProperties(root,native,options):renderSelectedAudioGain(root,native,options);
   render();
   return {state,root,native,commands,notices,seeks,visualState,options,all,field,render,
     click:label=>{assert.ok(field(label),label);field(label).dispatchEvent(new Event('click'));},
@@ -172,4 +172,89 @@ test('selected-target mode removes duplicate legacy Transform/Flip/Gain while Fa
   assert.equal(all.some(node=>node.textContent==='Flip horizontal'),false);assert.equal(all.some(node=>node.textContent==='Link Zoom X/Y'),false);
   const fade=all.find(node=>node.tagName==='label' && node.textContent==='Fade in frames').children[0];fade.value=7;fade.parent.parent.dispatchEvent(new Event('submit',{cancelable:true}));await settle();
   assert.deepEqual(h.commands,[{kind:'set_properties',clip_id:'9',patch:{fade_in:7}}]);
+});
+
+const keyInfo=(on=false,previous=12,next=31)=>({on_keyframe:on,previous_frame:previous,next_frame:next});
+function titleDetail(native){
+  native.title={content:{default:'Default text',value:'Current animated text',keyframes:[[0,'First','Hold']],key_count:100,keyframe_info:keyInfo(true)},font_family:'Server font',font_weight:400,italic:false,underline:false,strikethrough:false,size:96,tracking:0,line_spacing:0,case:'Mixed',align:'Center',anchor:['Center','Middle'],position:[10,-20],color:{r:1,g:1,b:1,a:1},background:{enabled:true,color:{r:0,g:0,b:0,a:1},outline_color:{r:1,g:1,b:1,a:1},outline_width:2,width:0.2,height:0.3,corner_radius:0.1,center:[5,8],opacity:80}};
+}
+function filterDetail(native){
+  const value=(number,on=false)=>({value:number,keyframes:[],key_count:100,keyframe_info:keyInfo(on)});
+  native.filters={kinds:['GaussianBlur','Exposure','DropShadow','ColorCorrection'],blur_radius_max:512,shadow_grow_max:1024,blur_directions:['Both','Horizontal','Vertical'],grade_presets:['Neutral','BlackAndWhite'],wheels:[],stack:[
+    {kind:'GaussianBlur',enabled:true,radius:value(2,true),direction:'Both',direction_info:{value:'Both',keyframe_info:keyInfo(false,10,40)}},
+    {kind:'DropShadow',enabled:true,radius:value(4),grow:value(2),amount:value(80),amount_range:[0,100],offset:[{...value(3),keyframe_info:keyInfo(true,11,40)},{...value(5),keyframe_info:keyInfo(false,15,35)}],color:{r:0,g:0,b:0,a:1}},
+    {kind:'Exposure',enabled:false,amount:value(1),amount_range:[-10,10]},
+  ]};
+}
+
+test('title patches contain only changed fields and never copy unrelated text or peer metadata',()=>{
+  const before={text:'One title',size:96,background:{enabled:true,width:0.2,color:{r:0,g:0,b:0,a:1}}},after={size:96,background:{...before.background,width:0.5}};
+  assert.deepEqual(titleSelectionPatch(before,after),{background:after.background});assert.deepEqual(before.text,'One title');assert.deepEqual(titleSelectionPatch(before,{size:96}),{});
+});
+
+test('selected Title includes native missing placement/case/background controls and emits changed fields only',async t=>{
+  const h=harness(t,{effects:true,editDetail:titleDetail});
+  assert.equal(h.field('Title text').value,'Current animated text');assert.equal(h.field('Title position X (from bottom-left)').value,970);assert.equal(h.field('Title position Y (from bottom-left)').value,520);
+  for(const label of ['Title case','Title horizontal anchor','Title vertical anchor','Background color R','Background outline color A','Background outline width','Background width','Background height','Background corner radius','Background center X','Background center Y','Background opacity'])assert.ok(h.field(label),label);
+  h.apply('Font size',120);await settle();h.field('Title case').value='Upper';h.field('Title case').dispatchEvent(new Event('change'));await settle();h.apply('Title position X (from bottom-left)',1000);await settle();h.apply('Background width',0.5);await settle();
+  assert.deepEqual(h.commands.slice(0,3).map(command=>command.edit),[{action:'title',patch:{size:120}},{action:'title',patch:{case:'Upper'}},{action:'title',patch:{position:[40,-20]}}]);
+  assert.deepEqual(h.commands[3].edit,{action:'title',patch:{background:{...h.native.title.background,width:0.5}}});assert.ok(h.commands.every(command=>command.clip_ids.join(',')==='9,2' && command.timeline_frame===20 && !Object.hasOwn(command,'source_frame')));
+});
+
+test('title text keys and row/background resets use native own-clock actions and complete metadata',async t=>{
+  const h=harness(t,{effects:true,editDetail:titleDetail});h.click('Toggle title text keyframes at playhead');await settle();h.click('Previous title text keyframe');h.click('Next title text keyframe');
+  for(const label of ['Reset title style','Reset title anchor','Reset title background','Reset background corner radius']){h.click(label);await settle();}
+  assert.deepEqual(h.commands.map(command=>command.edit),[{action:'toggle_text_key'},{action:'reset_title',fields:['font_weight','italic']},{action:'reset_title',fields:['anchor']},{action:'reset_title',fields:['background']},{action:'reset_title',fields:['background_corner_radius']}]);assert.deepEqual(h.seeks,[12,31]);
+  assert.equal(h.field('Toggle title text keyframes at playhead')['aria-pressed'],'true');h.apply('Title text','€'.repeat(1400));await settle();assert.equal(h.commands.length,5);assert.match(h.notices.at(-1),/UTF-8/);
+  h.field('Title drop shadow').checked=true;h.field('Title drop shadow').dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands.at(-1).edit,{action:'title_shadow',enabled:true});
+});
+
+test('Solid color uses native evaluated color and a selected diamond without inventing a reset control',async t=>{
+  const h=harness(t,{effects:true,editDetail:native=>{native.color={r:0,g:0,b:0,a:1};native.color_info={value:{r:0.2,g:0.3,b:0.4,a:1},keyframe_info:keyInfo(true,4,33)};}});
+  assert.equal(h.field('Solid color R').value,0.2);h.apply('Solid color R',0.5);await settle();h.click('Toggle solid color keyframes at playhead');await settle();h.click('Next solid color keyframe');
+  assert.deepEqual(h.commands.map(command=>command.edit),[{action:'solid_color',value:{r:0.5,g:0.3,b:0.4,a:1}},{action:'toggle_color_key'}]);assert.deepEqual(h.seeks,[33]);assert.equal(h.all().some(node=>node.textContent==='Reset solid color'),false);assert.equal(h.field('Title text'),undefined);
+});
+
+test('type-specific Title/Solid controls follow the authoritative primary rather than searching other selected types',t=>{
+  const h=harness(t,{effects:true});assert.equal(h.field('Title text'),undefined);assert.equal(h.field('Solid color R'),undefined);
+  const root=new h.Element('div');renderSelectedVideoEffects(root,{...h.native,clip_id:'2',title:{}},h.options);assert.deepEqual(root.children,[]);
+  renderSelectedVideoEffects(root,{...h.native,color_info:null,color:{r:1,g:0,b:0,a:1}},h.options);assert.equal(h.all(root).some(node=>node['aria-label']==='Solid color R'),false);
+});
+
+test('selected filter Apply, direction, enabled and stack operations each send one native selected edit',async t=>{
+  const h=harness(t,{effects:true,editDetail:filterDetail});h.apply('GaussianBlur radius',8);await settle();h.field('GaussianBlur direction').value='Horizontal';h.field('GaussianBlur direction').dispatchEvent(new Event('change'));await settle();h.click('Exposure enabled');await settle();
+  h.click('Move up DropShadow');await settle();h.click('Remove Exposure from selection');await settle();h.field('Visual filter type').value='Exposure';h.click('Add visual filter to selection');await settle();
+  assert.deepEqual(h.commands.map(command=>command.edit),[{action:'filter',filter:'GaussianBlur',patch:{radius:8}},{action:'filter',filter:'GaussianBlur',patch:{direction:'Horizontal'}},{action:'filter',filter:'Exposure',patch:{enabled:true}},{action:'filter_move',filter:'DropShadow',to_index:0},{action:'filter_presence',filter:'Exposure',enabled:false},{action:'filter_presence',filter:'Exposure',enabled:true}]);assert.ok(h.commands.every(command=>command.clip_ids.join(',')==='9,2'));
+  h.apply('GaussianBlur radius','');h.apply('GaussianBlur radius',Infinity);h.click('Move up GaussianBlur');await settle();assert.equal(h.commands.length,6);
+});
+
+test('filter row diamonds/navigation/reset use native full-track metadata and grouped offset parameters',async t=>{
+  const h=harness(t,{effects:true,editDetail:filterDetail});h.click('Toggle DropShadow offset keyframes at playhead');await settle();h.click('Previous DropShadow offset keyframe');h.click('Next DropShadow offset keyframe');h.click('Reset DropShadow offset');await settle();h.click('Reset GaussianBlur filter');await settle();
+  assert.deepEqual(h.commands.map(command=>command.edit),[{action:'toggle_filter_keys',filter:'DropShadow',params:[{kind:'offset',axis:0},{kind:'offset',axis:1}]},{action:'reset_filter',filter:'DropShadow',params:[{kind:'offset',axis:0},{kind:'offset',axis:1}],reset_enabled:false,reset_color:false,reset_grade:false},{action:'reset_filter',filter:'GaussianBlur',params:[{kind:'radius'},{kind:'direction'}],reset_enabled:true,reset_color:false,reset_grade:false}]);assert.deepEqual(h.seeks,[15,35]);assert.equal(h.field('Toggle DropShadow offset keyframes at playhead')['aria-pressed'],'true');
+});
+
+test('ColorCorrection numeric values, presets and resets also use selected native operations',async t=>{
+  const h=harness(t,{effects:true,editDetail:native=>{filterDetail(native);native.filters.stack=[{kind:'ColorCorrection',enabled:true,grade:[{param:'Saturation',value:1,range:[0,2],keyframe_info:keyInfo()}]}];}});
+  assert.equal(h.field('Apply native color preset').disabled,true);h.apply('Saturation',0.5);await settle();h.field('Native color preset').value='BlackAndWhite';h.field('Native color preset').dispatchEvent(new Event('change'));assert.equal(h.field('Apply native color preset').disabled,false);h.click('Apply native color preset');await settle();h.click('Reset ColorCorrection grade');await settle();
+  assert.deepEqual(h.commands.map(command=>command.edit),[{action:'filter',filter:'ColorCorrection',patch:{grade:[{param:'Saturation',value:0.5}]}},{action:'grade_preset',preset:'BlackAndWhite'},{action:'reset_filter',filter:'ColorCorrection',params:[],reset_enabled:false,reset_color:false,reset_grade:true}]);
+});
+
+test('selected effects reject stale context, changed playhead, detached roots and modal/playback guards',async t=>{
+  const h=harness(t,{effects:true,editDetail:native=>{titleDetail(native);filterDetail(native);}}),before=structuredClone(h.state);
+  for(const change of [state=>{state.project_epoch='new';},state=>{state.generation='8';},state=>{state.timeline.id='other';},state=>{state.timeline.revision='other';},state=>{state.selection=['9'];},state=>{state.timeline.tracks[1].locked=true;}]){Object.assign(h.state,structuredClone(before));change(h.state);h.apply('Font size',120);h.apply('GaussianBlur radius',8);h.click('Toggle title text keyframes at playhead');await settle();}
+  Object.assign(h.state,before);h.setFrame(21);h.click('Reset title background');h.setFrame(20);h.allow(false);h.click('Remove Exposure from selection');h.allow(true);h.root.isConnected=false;h.apply('Font size',130);await settle();assert.deepEqual(h.commands,[]);
+  h.root.isConnected=true;h.apply('Font size',130);h.state.generation='new';await settle();assert.deepEqual(h.commands,[]);assert.match(h.notices.at(-1),/changed/);
+});
+
+test('one selected-effects owner blocks duplicate actions and preserves an unknown outcome without replay',async t=>{
+  let reject;const h=harness(t,{effects:true,editDetail:native=>{titleDetail(native);filterDetail(native);},commit:()=>new Promise((resolve,fail)=>{reject=fail;})});
+  h.apply('Font size',120);h.apply('GaussianBlur radius',9);h.click('Toggle title text keyframes at playhead');await settle();assert.equal(h.commands.length,1);h.allow(false);reject(Object.assign(Error('Command outcome unknown'),{code:'OUTCOME_UNKNOWN'}));await settle();
+  const notices=[...h.notices];assert.match(notices.at(-1),/unknown/);assert.ok(h.all().filter(node=>['input','textarea','button','select'].includes(node.tagName)).every(node=>node.disabled));
+  h.click('Reset GaussianBlur filter');h.allow(true);h.click('Toggle title text keyframes at playhead');h.click('Next title text keyframe');await settle();assert.equal(h.commands.length,1);assert.deepEqual(h.seeks,[]);assert.deepEqual(h.notices,notices);
+});
+
+test('selected-effects mode removes duplicate legacy Title/Solid/Filters while preserving primary Fade',async t=>{
+  const h=harness(t,{effects:true,editDetail:native=>{titleDetail(native);filterDetail(native);}}),root=new h.Element('div');
+  renderProperties(root,h.native,{writable:true,getFrame:()=>20,commit:operation=>{h.commands.push(operation);return Promise.resolve();},reload:()=>{},notice:()=>{},visualState:new Map(),canInteract:()=>true,transformControls:false,gainControls:false,compositing:false,titleControls:false,colorControls:false,filterControls:false});
+  assert.equal(h.all(root).some(node=>node.textContent==='Title typography' || node.textContent==='Filters and color'),false);const fade=h.all(root).find(node=>node.tagName==='label' && node.textContent==='Fade out frames').children[0];fade.value=7;fade.parent.parent.dispatchEvent(new Event('submit',{cancelable:true}));await settle();assert.deepEqual(h.commands,[{kind:'set_properties',clip_id:'9',patch:{fade_out:7}}]);
 });

@@ -2,39 +2,41 @@ export function wheelDelta(x,y,dx,dy,radius,fine=false) {
   const scale=(fine ? 0.2 : 1)/(radius*2.5);let nextX=x+dx*scale,nextY=y-dy*scale;
   const length=Math.hypot(nextX,nextY);if(length>1){nextX/=length;nextY/=length;}return [nextX,nextY];
 }
-export function bindColorWheel(canvas,{x,y,paint,onCommit,onError}) {
+export function bindColorWheel(canvas,{x,y,paint,onCommit,onError,canInteract=()=>true}) {
   let gesture=null,waiting=false;
+  const live=()=>canvas.isConnected!==false && canInteract();
   const redraw=()=>paint(x,y,!!gesture);
-  const cancel=()=>{if(gesture){x=gesture.x;y=gesture.y;gesture=null;redraw();}};
+  const cancel=()=>{if(gesture){const previous=gesture;x=previous.x;y=previous.y;gesture=null;try{if(canvas.hasPointerCapture?.(previous.id))canvas.releasePointerCapture(previous.id);}catch{}redraw();}};
   async function commit(before) {
+    if(!live())return;
     waiting=true;
-    try{await onCommit(x,y);}catch(error){x=before[0];y=before[1];redraw();onError(error.message);}finally{waiting=false;}
+    try{await Promise.resolve();if(live())await onCommit(x,y);else{x=before[0];y=before[1];redraw();}}catch(error){x=before[0];y=before[1];redraw();onError(error.message);}finally{waiting=false;}
   }
   canvas.addEventListener("pointerdown",(event)=>{
-    if(waiting || event.button!==0)return;canvas.focus();canvas.setPointerCapture(event.pointerId);
+    if(waiting || !live() || event.button!==0 || event.isPrimary===false)return;canvas.focus();canvas.setPointerCapture(event.pointerId);
     gesture={x,y,lastX:event.clientX,lastY:event.clientY,moved:false,id:event.pointerId};
   });
   canvas.addEventListener("pointermove",(event)=>{
-    if(!gesture)return;
+    if(!gesture || event.pointerId!==gesture.id)return;if(!live() || event.buttons!==undefined && !(event.buttons&1)){cancel();return;}
     const radius=canvas.getBoundingClientRect().width/2-6;
     [x,y]=wheelDelta(x,y,event.clientX-gesture.lastX,event.clientY-gesture.lastY,radius,event.shiftKey);
     gesture.lastX=event.clientX;gesture.lastY=event.clientY;gesture.moved=x!==gesture.x || y!==gesture.y;redraw();
   });
-  canvas.addEventListener("pointerup",()=>{
-    if(!gesture)return;const before=gesture;gesture=null;
+  canvas.addEventListener("pointerup",event=>{
+    if(!gesture || event?.pointerId!==undefined && event.pointerId!==gesture.id)return;if(!live()){cancel();return;}const before=gesture;gesture=null;
     canvas.releasePointerCapture(before.id);redraw();if(before.moved)commit([before.x,before.y]);
   });
   canvas.addEventListener("pointercancel",cancel);canvas.addEventListener("lostpointercapture",cancel);
   canvas.addEventListener("keydown",(event)=>{
     if(event.key==="Escape"){event.stopPropagation();event.preventDefault();cancel();return;}
     const direction={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[event.key];
-    if(!direction)return;event.stopPropagation();event.preventDefault();if(waiting)return;
+    if(!direction)return;event.stopPropagation();event.preventDefault();if(waiting || !live())return;
     const before=[x,y];[x,y]=wheelDelta(x,y,direction[0]*2.5,direction[1]*2.5,100,event.shiftKey);redraw();commit(before);
   });
-  canvas.addEventListener("dblclick",()=>{if(waiting || (!x && !y))return;const before=[x,y];x=0;y=0;redraw();commit(before);});
+  canvas.addEventListener("dblclick",()=>{if(waiting || !live() || (!x && !y))return;const before=[x,y];x=0;y=0;redraw();commit(before);});
   redraw();return {cancel};
 }
-function colorWheel(canvas,hues,initial,onCommit,onError,disabled=false) {
+function colorWheel(canvas,hues,initial,onCommit,onError,disabled=false,canInteract=()=>true) {
   const ctx=canvas.getContext("2d");let state=initial,active=false,queued=false;
   const paint=(x,y,dragging)=>{
     state=[x,y];active=dragging;if(queued)return;queued=true;
@@ -47,9 +49,58 @@ function colorWheel(canvas,hues,initial,onCommit,onError,disabled=false) {
     });
   };
   if(disabled){paint(initial[0],initial[1],false);return {cancel(){}};}
-  return bindColorWheel(canvas,{x:initial[0],y:initial[1],paint,onCommit,onError});
+  return bindColorWheel(canvas,{x:initial[0],y:initial[1],paint,onCommit,onError,canInteract});
 }
-export function renderFilters(root,detail,{disabled,getFrame,commit,notice,openState}) {
+export function renderSelectedFilters(root,detail,{controls,keyRow,openState,notice,timelineSize}){
+  if(!detail.filters)return [];
+  const gestures=[],section=document.createElement('details'),heading=document.createElement('summary');section.dataset.visualPath='selected-filters';section.open=openState.get('selected-filters') ?? true;heading.textContent='Selected filters and color';section.append(heading);root.append(section);
+  const note=document.createElement('p');note.className='muted';note.textContent='Add affects the selected video clips; existing filters keep their settings. Parameter edits skip clips without this filter. Apply changes a constant default or writes a native key. Moving a filter refuses incompatible peer stack positions.';section.append(note);
+  const choice=controls.register(document.createElement('select'));choice.setAttribute('aria-label','Visual filter type');for(const kind of detail.filters.kinds)choice.append(new Option(kind,kind));if(detail.filters.kinds.length)choice.value=detail.filters.kinds[0];section.append(choice);
+  controls.button('Add visual filter to selection',()=>({action:'filter_presence',filter:choice.value,enabled:true}),section,()=>detail.filters.kinds.includes(choice.value));choice.addEventListener('change',controls.sync);
+  for(const [index,filter] of detail.filters.stack.entries()){
+    const kind=filter.kind,card=document.createElement('details'),summary=document.createElement('summary');card.dataset.visualPath=`selected-filter:${kind}`;card.open=openState.get(card.dataset.visualPath) ?? true;summary.textContent=`${index+1} · ${kind}`;card.append(summary);section.append(card);
+    const edit=patch=>controls.submit({action:'filter',filter:kind,patch});
+    const enabled=controls.button(`${kind} enabled`,{action:'filter',filter:kind,patch:{enabled:!filter.enabled}},card);enabled.setAttribute('aria-pressed',String(filter.enabled));
+    const reset=(params,flags={})=>({action:'reset_filter',filter:kind,params,reset_enabled:false,reset_color:false,reset_grade:false,...flags});
+    const params=[];
+    function keyControls(parent,label,values,parameters){keyRow(parent,label,values,{action:'toggle_filter_keys',filter:kind,params:parameters});controls.button(`Reset ${label}`,reset(parameters),parent);params.push(...parameters);}
+    function number(parent,label,parameter,range,patch,key){
+      const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));form.className='property-row';field.className='field';field.textContent=label;input.type='number';input.step='any';input.required=true;input.min=range[0];input.max=range[1];input.value=parameter.value;input.setAttribute('aria-label',label);field.append(input);form.append(field);
+      const button=controls.register(document.createElement('button'));button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(button);form.addEventListener('submit',event=>{event.preventDefault();const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && value>=range[0] && value<=range[1] && value!==parameter.value && form.reportValidity())edit(patch(value));});parent.append(form);if(key)keyControls(form,label,[parameter],[key]);return input;
+    }
+    if(['BoxBlur','GaussianBlur','DropShadow'].includes(kind))number(card,kind==='DropShadow'?'DropShadow softness':`${kind} radius`,filter.radius,[0,detail.filters.blur_radius_max],radius=>({radius}),{kind:'radius'});
+    if(['BoxBlur','GaussianBlur'].includes(kind)){
+      const field=document.createElement('label'),select=controls.register(document.createElement('select'));field.className='field';field.textContent=`${kind} direction`;select.setAttribute('aria-label',field.textContent);for(const value of detail.filters.blur_directions)select.append(new Option(value,value));select.value=filter.direction_info?.value ?? filter.direction;field.append(select);card.append(field);
+      select.addEventListener('change',()=>{if(controls.current() && detail.filters.blur_directions.includes(select.value) && select.value!==(filter.direction_info?.value ?? filter.direction))edit({direction:select.value});});keyControls(field,`${kind} direction`,[filter.direction_info || {}],[{kind:'direction'}]);
+    }
+    if(filter.amount_range)number(card,kind==='Exposure'?'Exposure stops':`${kind} opacity`,filter.amount,filter.amount_range,amount=>({amount}),{kind:'amount'});
+    if(kind==='DropShadow'){
+      number(card,'DropShadow grow',filter.grow,[0,detail.filters.shadow_grow_max],grow=>({grow}),{kind:'grow'});
+      const offset=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent='DropShadow offset';offset.append(legend);card.append(offset);
+      for(const axis of [0,1]){const bound=Number.isFinite(timelineSize?.[axis]) && timelineSize[axis]>0?timelineSize[axis]:8192;number(offset,`DropShadow offset ${axis?'Y':'X'}`,filter.offset[axis],[-bound,bound],value=>({offset:filter.offset.map((own,index)=>index===axis?value:own.value)}));}
+      keyControls(offset,'DropShadow offset',filter.offset,[{kind:'offset',axis:0},{kind:'offset',axis:1}]);
+      for(const axis of ['r','g','b','a'])number(card,`DropShadow color ${axis.toUpperCase()}`,{value:filter.color[axis]},[0,1],value=>({color:{...filter.color,[axis]:value}}));
+      controls.button('Reset DropShadow color',reset([],{reset_color:true}),card);
+    }
+    if(kind==='ColorCorrection'){
+      const preset=controls.register(document.createElement('select'));preset.setAttribute('aria-label','Native color preset');preset.append(new Option('Choose a preset…',''));for(const name of detail.filters.grade_presets || [])preset.append(new Option(name,name));preset.value='';card.append(preset);
+      controls.button('Apply native color preset',()=>({action:'grade_preset',preset:preset.value}),card,()=>Boolean(detail.filters.grade_presets?.includes(preset.value)));preset.addEventListener('change',controls.sync);
+      const wheels=document.createElement('div');wheels.className='grade-wheels';card.append(wheels);
+      for(const wheel of detail.filters.wheels || []){
+        const block=document.createElement('div'),label=document.createElement('strong'),canvas=document.createElement('canvas');label.textContent=wheel.name;block.append(label);wheels.append(block);const x=filter.grade.find(value=>value.param===wheel.x),y=filter.grade.find(value=>value.param===wheel.y);
+        canvas.className='color-wheel';canvas.tabIndex=0;canvas.setAttribute('role','group');canvas.setAttribute('aria-label',`${wheel.name} color wheel; arrows adjust X/Y`);block.append(canvas);
+        gestures.push(colorWheel(canvas,detail.filters.wheel_hues,[x.value,y.value],(x,y)=>edit({grade:[{param:wheel.x,value:x},{param:wheel.y,value:y}]}),notice,false,()=>controls.available()));
+      }
+      for(const parameter of filter.grade || [])number(card,parameter.param,parameter,parameter.range,value=>({grade:[{param:parameter.param,value}]}),{kind:'grade',param:parameter.param});
+      controls.button('Reset ColorCorrection grade',reset([],{reset_grade:true}),card);
+    }
+    controls.button(`Reset ${kind} filter`,reset(params,{reset_enabled:true,reset_color:kind==='DropShadow',reset_grade:kind==='ColorCorrection'}),card);
+    for(const [label,to] of [['Move up',index-1],['Move down',index+1]]){const button=controls.register(document.createElement('button'),()=>to>=0 && to<detail.filters.stack.length);button.type='button';button.textContent=`${label} ${kind}`;button.setAttribute('aria-label',button.textContent);button.addEventListener('click',()=>{if(to>=0 && to<detail.filters.stack.length)controls.submit({action:'filter_move',filter:kind,to_index:to});});card.append(button);}
+    controls.button(`Remove ${kind} from selection`,{action:'filter_presence',filter:kind,enabled:false},card);
+  }
+  return gestures;
+}
+export function renderFilters(root,detail,{disabled,getFrame,commit,notice,openState,canInteract=()=>true}) {
   const controls=[];
   const section=document.createElement("details"),heading=document.createElement("summary");section.dataset.visualPath="filters";section.open=openState.get("filters") || false;heading.textContent="Filters and color";section.append(heading);root.append(section);
   const post=(edit)=>commit({kind:"edit_filter",clip_id:detail.clip_id,edit});const report=(edit)=>post(edit).catch((error)=>notice(error.message));
@@ -84,7 +135,7 @@ export function renderFilters(root,detail,{disabled,getFrame,commit,notice,openS
         controls.push(colorWheel(canvas,detail.filters.wheel_hues,[x.value,y.value],(nx,ny)=>{
           const parameters=[{param:wheel.x,value:nx},{param:wheel.y,value:ny}];
           return x.keyframes.length || y.keyframes.length ? commit({kind:"set_keyframes",clip_id:detail.clip_id,edits:parameters.map(({param,value})=>({target:{kind:"grade",param},timeline_frame:getFrame(),value,interpolation:"Linear"}))}) : post({action:"set",filter:filter.kind,patch:{grade:parameters}});
-        },notice,disabled));
+        },notice,disabled,()=>root.isConnected!==false && canInteract()));
         for(const param of [wheel.x,wheel.y,wheel.luma,wheel.saturation]){const parameter=filter.grade.find((p)=>p.param===param);number(block,param,parameter.value,parameter.range,(value)=>({grade:[{param,value}]}),{kind:"grade",param});}
       }
       for(const parameter of filter.grade.filter((p)=>["LowRange","HighRange"].includes(p.param)))number(card,parameter.param,parameter.value,parameter.range,(value)=>({grade:[{param:parameter.param,value}]}),{kind:"grade",param:parameter.param});

@@ -45,6 +45,44 @@ pub struct Parameter {
     pub param: TransformParam,
     pub value: f32,
 }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TitleField {
+    Text,
+    FontFamily,
+    FontWeight,
+    Italic,
+    Size,
+    Tracking,
+    LineSpacing,
+    Underline,
+    Strikethrough,
+    Case,
+    Align,
+    Anchor,
+    Position,
+    Color,
+    Background,
+    BackgroundEnabled,
+    BackgroundColor,
+    BackgroundOutlineColor,
+    BackgroundOutlineWidth,
+    BackgroundWidth,
+    BackgroundHeight,
+    BackgroundCornerRadius,
+    BackgroundCenter,
+    BackgroundOpacity,
+}
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum FilterParameter {
+    Radius {},
+    Direction {},
+    Amount {},
+    Grow {},
+    Offset { axis: usize },
+    Grade { param: core::GradeParam },
+}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum InspectorEdit {
@@ -68,6 +106,751 @@ pub enum InspectorEdit {
     ToggleGainKey {},
     ResetGain {},
     ResetCompositing {},
+    Title {
+        patch: Box<TitleEdit>,
+    },
+    ToggleTextKey {},
+    TitleShadow {
+        enabled: bool,
+    },
+    ResetTitle {
+        fields: Vec<TitleField>,
+    },
+    SolidColor {
+        value: core::Rgba,
+    },
+    ToggleColorKey {},
+    Filter {
+        filter: core::FilterKind,
+        patch: Box<crate::visual::FilterPatch>,
+    },
+    FilterPresence {
+        filter: core::FilterKind,
+        enabled: bool,
+    },
+    FilterMove {
+        filter: core::FilterKind,
+        to_index: usize,
+    },
+    ToggleFilterKeys {
+        filter: core::FilterKind,
+        params: Vec<FilterParameter>,
+    },
+    ResetFilter {
+        filter: core::FilterKind,
+        params: Vec<FilterParameter>,
+        reset_enabled: bool,
+        reset_color: bool,
+        reset_grade: bool,
+    },
+    GradePreset {
+        preset: String,
+    },
+}
+
+fn changed_title(
+    target: &core::TitleParams,
+    before: &core::TitleParams,
+    after: &core::TitleParams,
+) -> core::TitleParams {
+    let mut out = target.clone();
+    macro_rules! fields {
+        ($($field:ident),*) => {$(if before.$field != after.$field { out.$field = after.$field; })*};
+    }
+    if before.font_family != after.font_family {
+        out.font_family = after.font_family.clone();
+    }
+    fields!(
+        font_weight,
+        italic,
+        size,
+        tracking,
+        line_spacing,
+        underline,
+        strikethrough,
+        case,
+        align,
+        anchor,
+        position,
+        color
+    );
+    macro_rules! background {
+        ($($field:ident),*) => {$(if before.background.$field != after.background.$field { out.background.$field = after.background.$field; })*};
+    }
+    background!(
+        enabled,
+        color,
+        outline_color,
+        outline_width,
+        width,
+        height,
+        corner_radius,
+        center,
+        opacity
+    );
+    if before.content != after.content && target.content.is_constant() {
+        out.content = after.content.clone();
+    }
+    out
+}
+
+fn reset_title_fields(title: &mut core::TitleParams, fields: &[TitleField]) -> Result<()> {
+    let mut seen = std::collections::HashSet::new();
+    if fields.is_empty() || fields.len() > 24 || fields.iter().any(|field| !seen.insert(*field)) {
+        return Err(ApiError::invalid("Choose distinct native title fields"));
+    }
+    let defaults = core::TitleParams::default();
+    for field in fields {
+        match field {
+            TitleField::Text => title.content = defaults.content.clone(),
+            TitleField::FontFamily => title.font_family = defaults.font_family.clone(),
+            TitleField::FontWeight => title.font_weight = defaults.font_weight,
+            TitleField::Italic => title.italic = defaults.italic,
+            TitleField::Size => title.size = defaults.size,
+            TitleField::Tracking => title.tracking = defaults.tracking,
+            TitleField::LineSpacing => title.line_spacing = defaults.line_spacing,
+            TitleField::Underline => title.underline = defaults.underline,
+            TitleField::Strikethrough => title.strikethrough = defaults.strikethrough,
+            TitleField::Case => title.case = defaults.case,
+            TitleField::Align => title.align = defaults.align,
+            TitleField::Anchor => title.anchor = defaults.anchor,
+            TitleField::Position => title.position = defaults.position,
+            TitleField::Color => title.color = defaults.color,
+            TitleField::Background => title.background = defaults.background.clone(),
+            TitleField::BackgroundEnabled => title.background.enabled = defaults.background.enabled,
+            TitleField::BackgroundColor => title.background.color = defaults.background.color,
+            TitleField::BackgroundOutlineColor => {
+                title.background.outline_color = defaults.background.outline_color
+            }
+            TitleField::BackgroundOutlineWidth => {
+                title.background.outline_width = defaults.background.outline_width
+            }
+            TitleField::BackgroundWidth => title.background.width = defaults.background.width,
+            TitleField::BackgroundHeight => title.background.height = defaults.background.height,
+            TitleField::BackgroundCornerRadius => {
+                title.background.corner_radius = defaults.background.corner_radius
+            }
+            TitleField::BackgroundCenter => title.background.center = defaults.background.center,
+            TitleField::BackgroundOpacity => title.background.opacity = defaults.background.opacity,
+        }
+    }
+    Ok(())
+}
+
+impl FilterParameter {
+    fn validate(self, kind: core::FilterKind) -> Result<()> {
+        let valid = match self {
+            Self::Radius {} => kind.is_blur() || kind == core::FilterKind::DropShadow,
+            Self::Direction {} => kind.is_blur(),
+            Self::Amount {} => crate::visual::amount_range(kind).is_ok(),
+            Self::Grow {} => kind == core::FilterKind::DropShadow,
+            Self::Offset { axis } => kind == core::FilterKind::DropShadow && axis < 2,
+            Self::Grade { .. } => kind == core::FilterKind::ColorCorrection,
+        };
+        if !valid {
+            return Err(ApiError::invalid(
+                "That row does not belong to the native filter",
+            ));
+        }
+        Ok(())
+    }
+    fn scalar(self, filter: &core::ClipFilter) -> Option<&core::Keyframed<f32>> {
+        match self {
+            Self::Radius {} => Some(&filter.radius),
+            Self::Amount {} => Some(&filter.amount),
+            Self::Grow {} => Some(&filter.grow),
+            Self::Offset { axis } => Some(&filter.offset[axis]),
+            Self::Grade { param } => Some(filter.grade.track(param)),
+            Self::Direction {} => None,
+        }
+    }
+    fn scalar_mut(self, filter: &mut core::ClipFilter) -> Option<&mut core::Keyframed<f32>> {
+        match self {
+            Self::Radius {} => Some(&mut filter.radius),
+            Self::Amount {} => Some(&mut filter.amount),
+            Self::Grow {} => Some(&mut filter.grow),
+            Self::Offset { axis } => Some(&mut filter.offset[axis]),
+            Self::Grade { param } => Some(filter.grade.track_mut(param)),
+            Self::Direction {} => None,
+        }
+    }
+    fn target(self, kind: core::FilterKind) -> core::KeyframeTarget {
+        match self {
+            Self::Radius {} => core::KeyframeTarget::FilterRadius(kind),
+            Self::Direction {} => core::KeyframeTarget::FilterDirection(kind),
+            Self::Amount {} => core::KeyframeTarget::FilterAmount(kind),
+            Self::Grow {} => core::KeyframeTarget::FilterGrow(kind),
+            Self::Offset { axis } => core::KeyframeTarget::FilterOffset(
+                kind,
+                if axis == 0 {
+                    core::Axis::X
+                } else {
+                    core::Axis::Y
+                },
+            ),
+            Self::Grade { param } => core::KeyframeTarget::Grade(param),
+        }
+    }
+    fn value(self, filter: &core::ClipFilter, frame: i64) -> core::KeyframeValue {
+        match self {
+            Self::Radius {} => {
+                core::KeyframeValue::FilterRadius(filter.kind, filter.radius.value_at(frame))
+            }
+            Self::Direction {} => {
+                core::KeyframeValue::FilterDirection(filter.kind, filter.direction.value_at(frame))
+            }
+            Self::Amount {} => {
+                core::KeyframeValue::FilterAmount(filter.kind, filter.amount.value_at(frame))
+            }
+            Self::Grow {} => {
+                core::KeyframeValue::FilterGrow(filter.kind, filter.grow.value_at(frame))
+            }
+            Self::Offset { axis } => core::KeyframeValue::FilterOffset(
+                filter.kind,
+                if axis == 0 {
+                    core::Axis::X
+                } else {
+                    core::Axis::Y
+                },
+                filter.offset[axis].value_at(frame),
+            ),
+            Self::Grade { param } => {
+                core::KeyframeValue::Grade(param, filter.grade.track(param).value_at(frame))
+            }
+        }
+    }
+    fn on_key(self, filter: &core::ClipFilter, frame: i64) -> bool {
+        match self {
+            Self::Direction {} => filter.direction.keyframe_at(frame).is_some(),
+            _ => self
+                .scalar(filter)
+                .is_some_and(|value| value.keyframe_at(frame).is_some()),
+        }
+    }
+    fn range(self, kind: core::FilterKind) -> Result<(f32, f32)> {
+        Ok(match self {
+            Self::Radius {} => (0.0, core::BLUR_RADIUS_MAX),
+            Self::Amount {} => crate::visual::amount_range(kind)?,
+            Self::Grow {} => (0.0, core::SHADOW_GROW_MAX),
+            Self::Offset { .. } => (-8192.0, 8192.0),
+            Self::Grade { param } => (*param.range().start(), *param.range().end()),
+            Self::Direction {} => return Err(ApiError::invalid("Direction is a native enum")),
+        })
+    }
+}
+
+fn filter_params(
+    kind: core::FilterKind,
+    params: &[FilterParameter],
+    allow_empty: bool,
+) -> Result<()> {
+    let mut seen = std::collections::HashSet::new();
+    if (!allow_empty && params.is_empty())
+        || params.len() > 24
+        || params.iter().any(|param| !seen.insert(*param))
+    {
+        return Err(ApiError::invalid("Choose distinct native filter rows"));
+    }
+    for param in params {
+        param.validate(kind)?;
+    }
+    Ok(())
+}
+
+fn selected_content_commands(
+    id: TimelineId,
+    targets: &[(usize, ClipId, &Clip, i64)],
+    edit: &InspectorEdit,
+    commands: &mut Vec<Box<dyn Command>>,
+) -> Result<()> {
+    let (_, _, primary, primary_frame) = targets[0];
+    match edit {
+        InspectorEdit::TitleShadow { enabled } => {
+            if !matches!(primary.source, ClipSource::Text) || primary.effects.title.is_none() {
+                return Err(ApiError::invalid(
+                    "The native primary video clip must be a title",
+                ));
+            }
+            for &(track, clip_id, clip, _) in targets {
+                if !matches!(clip.source, ClipSource::Text) {
+                    continue;
+                }
+                let mut filters = clip.effects.filters.clone();
+                let kind = core::FilterKind::DropShadow;
+                if *enabled && !filters.iter().any(|filter| filter.kind == kind) {
+                    filters.push(core::ClipFilter::new(kind));
+                }
+                if !*enabled {
+                    filters.retain(|filter| filter.kind != kind);
+                }
+                if filters != clip.effects.filters {
+                    commands.push(Box::new(core::set_clip_filters(
+                        id, track, clip_id, filters,
+                    )));
+                }
+            }
+        }
+        InspectorEdit::Title { .. }
+        | InspectorEdit::ResetTitle { .. }
+        | InspectorEdit::ToggleTextKey {} => {
+            if !matches!(primary.source, ClipSource::Text) || primary.effects.title.is_none() {
+                return Err(ApiError::invalid(
+                    "The native primary video clip must be a title",
+                ));
+            }
+            let before = primary.effects.title.as_ref().unwrap().at(primary_frame);
+            let mut after = before.clone();
+            match edit {
+                InspectorEdit::Title { patch } => after = patch_title(after, patch)?,
+                InspectorEdit::ResetTitle { fields } => reset_title_fields(&mut after, fields)?,
+                _ => {}
+            }
+            for &(track, clip_id, clip, frame) in targets {
+                if !matches!(clip.source, ClipSource::Text) {
+                    continue;
+                }
+                let Some(current) = clip.effects.title.as_ref() else {
+                    continue;
+                };
+                let edited = changed_title(current, &before, &after);
+                if edited != *current {
+                    commands.push(Box::new(core::set_clip_title(id, track, clip_id, edited)));
+                }
+                if matches!(edit, InspectorEdit::ToggleTextKey {}) {
+                    if current.content.keyframe_at(frame).is_some() {
+                        commands.push(Box::new(core::RemoveKeyframe::new(
+                            id,
+                            track,
+                            clip_id,
+                            core::KeyframeTarget::Text,
+                            frame,
+                        )));
+                    } else {
+                        commands.push(Box::new(core::UpsertKeyframe::new(
+                            id,
+                            track,
+                            clip_id,
+                            frame,
+                            core::KeyframeValue::Text(current.content.value_at(frame)),
+                            core::Interpolation::Hold,
+                        )));
+                    }
+                } else if before.content != after.content && !current.content.is_constant() {
+                    commands.push(Box::new(core::UpsertKeyframe::new(
+                        id,
+                        track,
+                        clip_id,
+                        frame,
+                        core::KeyframeValue::Text(after.content.default.clone()),
+                        core::Interpolation::Hold,
+                    )));
+                }
+            }
+        }
+        InspectorEdit::SolidColor { .. } | InspectorEdit::ToggleColorKey {} => {
+            if !matches!(primary.source, ClipSource::SolidColor) {
+                return Err(ApiError::invalid(
+                    "The native primary video clip must be a solid",
+                ));
+            }
+            let primary_color = primary.effects.color.as_ref();
+            let before = primary_color.map_or(core::edit::DEFAULT_SOLID_COLOR, |color| {
+                color.value_at(primary_frame)
+            });
+            let value = if let InspectorEdit::SolidColor { value } = edit {
+                rgba(*value)?;
+                Some(*value)
+            } else {
+                None
+            };
+            let remove =
+                primary_color.is_some_and(|color| color.keyframe_at(primary_frame).is_some());
+            for &(track, clip_id, clip, frame) in targets {
+                if !matches!(clip.source, ClipSource::SolidColor) {
+                    continue;
+                }
+                let color = clip.effects.color.as_ref();
+                if let Some(value) = value {
+                    if value == before {
+                        continue;
+                    }
+                    commands.push(if color.is_none_or(|color| color.is_constant()) {
+                        Box::new(core::SetClipColor::new(id, track, clip_id, value))
+                            as Box<dyn Command>
+                    } else {
+                        Box::new(core::UpsertKeyframe::new(
+                            id,
+                            track,
+                            clip_id,
+                            frame,
+                            core::KeyframeValue::Color(value),
+                            core::Interpolation::Linear,
+                        ))
+                    });
+                } else if remove {
+                    commands.push(Box::new(core::RemoveKeyframe::new(
+                        id,
+                        track,
+                        clip_id,
+                        core::KeyframeTarget::Color,
+                        frame,
+                    )));
+                } else {
+                    if color.is_none() {
+                        commands.push(Box::new(core::SetClipColor::new(
+                            id,
+                            track,
+                            clip_id,
+                            core::edit::DEFAULT_SOLID_COLOR,
+                        )));
+                    }
+                    let own = color.map_or(before, |color| color.value_at(frame));
+                    rgba(own)?;
+                    commands.push(Box::new(core::UpsertKeyframe::new(
+                        id,
+                        track,
+                        clip_id,
+                        frame,
+                        core::KeyframeValue::Color(own),
+                        core::Interpolation::Linear,
+                    )));
+                }
+            }
+        }
+        _ => selected_filter_commands(id, targets, edit, commands)?,
+    }
+    Ok(())
+}
+
+fn validate_filter_patch(
+    kind: core::FilterKind,
+    patch: &crate::visual::FilterPatch,
+) -> Result<Vec<(FilterParameter, f32)>> {
+    let mut values = Vec::new();
+    for (param, value) in [
+        (FilterParameter::Radius {}, patch.radius),
+        (FilterParameter::Amount {}, patch.amount),
+        (FilterParameter::Grow {}, patch.grow),
+    ] {
+        if let Some(value) = value {
+            values.push((param, value));
+        }
+    }
+    if let Some(offset) = patch.offset {
+        for (axis, value) in offset.into_iter().enumerate() {
+            values.push((FilterParameter::Offset { axis }, value));
+        }
+    }
+    for value in &patch.grade {
+        values.push((FilterParameter::Grade { param: value.param }, value.value));
+    }
+    let params: Vec<_> = values.iter().map(|(param, _)| *param).collect();
+    filter_params(kind, &params, true)?;
+    for &(param, value) in &values {
+        bounded(value, param.range(kind)?)?;
+    }
+    if patch.direction.is_some() {
+        FilterParameter::Direction {}.validate(kind)?;
+    }
+    if let Some(color) = patch.color {
+        if kind != core::FilterKind::DropShadow {
+            return Err(ApiError::invalid("Only DropShadow has a color"));
+        }
+        rgba(color)?;
+    }
+    Ok(values)
+}
+
+fn validate_filter_grade(filter: &core::ClipFilter, frame: i64) -> Result<()> {
+    if filter.kind == core::FilterKind::ColorCorrection {
+        for wheel in core::GradeWheel::ALL {
+            let x = filter.grade.track(wheel.x()).value_at(frame);
+            let y = filter.grade.track(wheel.y()).value_at(frame);
+            if !x.is_finite() || !y.is_finite() || x * x + y * y > 1.000001 {
+                return Err(ApiError::invalid(
+                    "Grade wheel offsets must stay inside the unit disc",
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn selected_filter_commands(
+    id: TimelineId,
+    targets: &[(usize, ClipId, &Clip, i64)],
+    edit: &InspectorEdit,
+    commands: &mut Vec<Box<dyn Command>>,
+) -> Result<()> {
+    let (_, _, primary, primary_frame) = targets[0];
+    let kind = match edit {
+        InspectorEdit::Filter { filter, .. }
+        | InspectorEdit::FilterPresence { filter, .. }
+        | InspectorEdit::FilterMove { filter, .. }
+        | InspectorEdit::ToggleFilterKeys { filter, .. }
+        | InspectorEdit::ResetFilter { filter, .. } => *filter,
+        InspectorEdit::GradePreset { .. } => core::FilterKind::ColorCorrection,
+        _ => return Err(ApiError::invalid("Unknown selected Inspector action")),
+    };
+    let primary_filter = primary
+        .effects
+        .filters
+        .iter()
+        .find(|filter| filter.kind == kind);
+    if !matches!(edit, InspectorEdit::FilterPresence { .. }) && primary_filter.is_none() {
+        return Err(ApiError::invalid(
+            "The native primary clip must already have that filter",
+        ));
+    }
+    let patch_values = if let InspectorEdit::Filter { patch, .. } = edit {
+        validate_filter_patch(kind, patch)?
+    } else {
+        Vec::new()
+    };
+    let preset = if let InspectorEdit::GradePreset { preset } = edit {
+        Some(
+            core::GradePreset::ALL
+                .into_iter()
+                .find(|value| format!("{value:?}") == *preset)
+                .ok_or_else(|| ApiError::invalid("Unknown native grade preset"))?,
+        )
+    } else {
+        None
+    };
+    match edit {
+        InspectorEdit::ToggleFilterKeys { params, .. } => filter_params(kind, params, false)?,
+        InspectorEdit::ResetFilter {
+            params,
+            reset_enabled,
+            reset_color,
+            reset_grade,
+            ..
+        } => {
+            filter_params(kind, params, *reset_enabled || *reset_color || *reset_grade)?;
+            if (*reset_color && kind != core::FilterKind::DropShadow)
+                || (*reset_grade && kind != core::FilterKind::ColorCorrection)
+            {
+                return Err(ApiError::invalid(
+                    "Reset fields do not belong to this native filter",
+                ));
+            }
+        }
+        _ => {}
+    }
+    for &(track, clip_id, clip, frame) in targets {
+        let mut filters = clip.effects.filters.clone();
+        let existing = filters.iter().position(|filter| filter.kind == kind);
+        if let InspectorEdit::FilterPresence { enabled, .. } = edit {
+            if *enabled && existing.is_none() {
+                filters.push(core::ClipFilter::new(kind));
+            }
+            if !*enabled {
+                filters.retain(|filter| filter.kind != kind);
+            }
+        } else if let Some(index) = existing {
+            if let InspectorEdit::FilterMove { to_index, .. } = edit {
+                if *to_index >= filters.len() {
+                    return Err(ApiError::invalid(
+                        "Filter destination is outside a selected stack",
+                    ));
+                }
+                let filter = filters.remove(index);
+                filters.insert(*to_index, filter);
+            } else {
+                let own = &mut filters[index];
+                let before = own.clone();
+                let primary_filter = primary_filter.unwrap();
+                let mut keys: Vec<Box<dyn Command>> = Vec::new();
+                match edit {
+                    InspectorEdit::Filter { patch, .. } => {
+                        if let Some(enabled) = patch.enabled
+                            && enabled != primary_filter.enabled
+                        {
+                            own.enabled = enabled;
+                        }
+                        if let Some(color) = patch.color
+                            && color != primary_filter.color
+                        {
+                            own.color = color;
+                        }
+                        for &(param, value) in &patch_values {
+                            if param
+                                .scalar(primary_filter)
+                                .unwrap()
+                                .value_at(primary_frame)
+                                == value
+                            {
+                                continue;
+                            }
+                            let animated = if let FilterParameter::Grade { param } = param {
+                                core::GradeWheel::of(param).map_or_else(
+                                    || !before.grade.track(param).is_constant(),
+                                    |wheel| {
+                                        wheel
+                                            .params()
+                                            .iter()
+                                            .any(|p| !before.grade.track(*p).is_constant())
+                                    },
+                                )
+                            } else {
+                                !param.scalar(&before).unwrap().is_constant()
+                            };
+                            if animated {
+                                let key = match param {
+                                    FilterParameter::Radius {} => {
+                                        core::KeyframeValue::FilterRadius(kind, value)
+                                    }
+                                    FilterParameter::Amount {} => {
+                                        core::KeyframeValue::FilterAmount(kind, value)
+                                    }
+                                    FilterParameter::Grow {} => {
+                                        core::KeyframeValue::FilterGrow(kind, value)
+                                    }
+                                    FilterParameter::Offset { axis } => {
+                                        core::KeyframeValue::FilterOffset(
+                                            kind,
+                                            if axis == 0 {
+                                                core::Axis::X
+                                            } else {
+                                                core::Axis::Y
+                                            },
+                                            value,
+                                        )
+                                    }
+                                    FilterParameter::Grade { param } => {
+                                        core::KeyframeValue::Grade(param, value)
+                                    }
+                                    FilterParameter::Direction {} => unreachable!(),
+                                };
+                                keys.push(Box::new(core::UpsertKeyframe::new(
+                                    id,
+                                    track,
+                                    clip_id,
+                                    frame,
+                                    key,
+                                    core::Interpolation::Linear,
+                                )));
+                            } else {
+                                param.scalar_mut(own).unwrap().default = value;
+                            }
+                        }
+                        if let Some(direction) = patch.direction
+                            && direction != primary_filter.direction.value_at(primary_frame)
+                        {
+                            if before.direction.is_constant() {
+                                own.direction.default = direction;
+                            } else {
+                                keys.push(Box::new(core::UpsertKeyframe::new(
+                                    id,
+                                    track,
+                                    clip_id,
+                                    frame,
+                                    core::KeyframeValue::FilterDirection(kind, direction),
+                                    core::Interpolation::Linear,
+                                )));
+                            }
+                        }
+                        let mut evaluated = own.clone();
+                        for &(param, value) in &patch_values {
+                            if param
+                                .scalar(primary_filter)
+                                .unwrap()
+                                .value_at(primary_frame)
+                                != value
+                            {
+                                param.scalar_mut(&mut evaluated).unwrap().upsert(
+                                    frame,
+                                    value,
+                                    core::Interpolation::Linear,
+                                );
+                            }
+                        }
+                        validate_filter_grade(&evaluated, frame)?;
+                    }
+                    InspectorEdit::ToggleFilterKeys { params, .. } => {
+                        let remove = params
+                            .iter()
+                            .any(|param| param.on_key(primary_filter, primary_frame));
+                        let mut evaluated = before.clone();
+                        for &param in params {
+                            if let Some(values) = param.scalar(&before) {
+                                bounded(values.value_at(frame), param.range(kind)?)?;
+                            }
+                            if remove {
+                                if matches!(param, FilterParameter::Direction {}) {
+                                    evaluated.direction.remove_at(frame);
+                                } else {
+                                    param.scalar_mut(&mut evaluated).unwrap().remove_at(frame);
+                                }
+                                if let Some(values) = param.scalar(&evaluated) {
+                                    bounded(values.value_at(frame), param.range(kind)?)?;
+                                }
+                                keys.push(Box::new(core::RemoveKeyframe::new(
+                                    id,
+                                    track,
+                                    clip_id,
+                                    param.target(kind),
+                                    frame,
+                                )));
+                            } else {
+                                keys.push(Box::new(core::UpsertKeyframe::new(
+                                    id,
+                                    track,
+                                    clip_id,
+                                    frame,
+                                    param.value(&before, frame),
+                                    core::Interpolation::Linear,
+                                )));
+                            }
+                        }
+                        validate_filter_grade(&evaluated, frame)?;
+                    }
+                    InspectorEdit::ResetFilter {
+                        params,
+                        reset_enabled,
+                        reset_color,
+                        reset_grade,
+                        ..
+                    } => {
+                        let defaults = core::ClipFilter::new(kind);
+                        for &param in params {
+                            if matches!(param, FilterParameter::Direction {}) {
+                                own.direction = defaults.direction.clone();
+                            } else {
+                                *param.scalar_mut(own).unwrap() =
+                                    param.scalar(&defaults).unwrap().clone();
+                            }
+                        }
+                        if *reset_enabled {
+                            own.enabled = true;
+                        }
+                        if *reset_color {
+                            own.color = defaults.color;
+                        }
+                        if *reset_grade {
+                            own.grade = defaults.grade;
+                        }
+                        validate_filter_grade(own, frame)?;
+                    }
+                    InspectorEdit::GradePreset { .. } => own.grade.apply_preset(preset.unwrap()),
+                    _ => {}
+                }
+                if filters != clip.effects.filters {
+                    commands.push(Box::new(core::set_clip_filters(
+                        id, track, clip_id, filters,
+                    )));
+                }
+                commands.append(&mut keys);
+                continue;
+            }
+        }
+        if filters != clip.effects.filters {
+            commands.push(Box::new(core::set_clip_filters(
+                id, track, clip_id, filters,
+            )));
+        }
+    }
+    Ok(())
 }
 
 fn inspector_params(params: &[TransformParam], allow_empty: bool) -> Result<()> {
@@ -381,6 +1164,7 @@ pub fn edit_selection(
                 )));
             }
         }
+        _ => selected_content_commands(id, &targets, edit, &mut commands)?,
     }
     if let Some(first) = commands.first() {
         session.apply(Box::new(core::CompositeCommand::new(
@@ -664,6 +1448,79 @@ pub fn viewer_transform(
     }
     Ok(())
 }
+fn patch_title(mut title: core::TitleParams, edit: &TitleEdit) -> Result<core::TitleParams> {
+    if let Some(text) = &edit.text {
+        if text.len() > 4096 {
+            return Err(ApiError::invalid("Title text exceeds 4096 bytes"));
+        }
+        title.content.default = text.clone();
+    }
+    if let Some(family) = &edit.font_family {
+        if family.len() > 128 || family.chars().any(char::is_control) {
+            return Err(ApiError::invalid("Invalid font family"));
+        }
+        title.font_family = family.clone();
+    }
+    if let Some(weight) = edit.font_weight {
+        if !(100..=900).contains(&weight) {
+            return Err(ApiError::invalid("Font weight must be 100–900"));
+        }
+        title.font_weight = weight;
+    }
+    for (field, value, range) in [
+        (&mut title.size, edit.size, (1.0, 1000.0)),
+        (&mut title.tracking, edit.tracking, (-300.0, 1000.0)),
+        (&mut title.line_spacing, edit.line_spacing, (-200.0, 500.0)),
+    ] {
+        if let Some(value) = value {
+            bounded(value, range)?;
+            *field = value;
+        }
+    }
+    for (field, value) in [
+        (&mut title.italic, edit.italic),
+        (&mut title.underline, edit.underline),
+        (&mut title.strikethrough, edit.strikethrough),
+    ] {
+        if let Some(value) = value {
+            *field = value;
+        }
+    }
+    if let Some(value) = edit.case {
+        title.case = value;
+    }
+    if let Some(value) = edit.align {
+        title.align = value;
+    }
+    if let Some(value) = edit.anchor {
+        title.anchor = value;
+    }
+    if let Some(value) = edit.position {
+        for axis in value {
+            bounded(axis, (-1_000_000.0, 1_000_000.0))?;
+        }
+        title.position = value;
+    }
+    if let Some(color) = edit.color {
+        rgba(color)?;
+        title.color = color;
+    }
+    if let Some(background) = &edit.background {
+        rgba(background.color)?;
+        rgba(background.outline_color)?;
+        bounded(background.width, (0.0, 1.0))?;
+        bounded(background.height, (0.0, 1.0))?;
+        bounded(background.outline_width, (0.0, 1000.0))?;
+        bounded(background.corner_radius, (0.0, 0.5))?;
+        bounded(background.opacity, (0.0, 100.0))?;
+        for axis in background.center {
+            bounded(axis, (-1_000_000.0, 1_000_000.0))?;
+        }
+        title.background = background.clone();
+    }
+    Ok(title)
+}
+
 pub fn properties(
     session: &mut Session,
     id: TimelineId,
@@ -695,76 +1552,7 @@ pub fn properties(
         if !matches!(clip.source, ClipSource::Text) {
             return Err(ApiError::invalid("Typography requires a title clip"));
         }
-        let mut title = clip.effects.title.clone().unwrap_or_default();
-        if let Some(text) = &edit.text {
-            if text.len() > 4096 {
-                return Err(ApiError::invalid("Title text exceeds 4096 bytes"));
-            }
-            title.content.default = text.clone();
-        }
-        if let Some(family) = &edit.font_family {
-            if family.len() > 128 || family.chars().any(char::is_control) {
-                return Err(ApiError::invalid("Invalid font family"));
-            }
-            title.font_family = family.clone();
-        }
-        if let Some(weight) = edit.font_weight {
-            if !(100..=900).contains(&weight) {
-                return Err(ApiError::invalid("Font weight must be 100–900"));
-            }
-            title.font_weight = weight;
-        }
-        for (field, value, range) in [
-            (&mut title.size, edit.size, (1.0, 1000.0)),
-            (&mut title.tracking, edit.tracking, (-300.0, 1000.0)),
-            (&mut title.line_spacing, edit.line_spacing, (-200.0, 500.0)),
-        ] {
-            if let Some(value) = value {
-                bounded(value, range)?;
-                *field = value;
-            }
-        }
-        for (field, value) in [
-            (&mut title.italic, edit.italic),
-            (&mut title.underline, edit.underline),
-            (&mut title.strikethrough, edit.strikethrough),
-        ] {
-            if let Some(value) = value {
-                *field = value;
-            }
-        }
-        if let Some(value) = edit.case {
-            title.case = value;
-        }
-        if let Some(value) = edit.align {
-            title.align = value;
-        }
-        if let Some(value) = edit.anchor {
-            title.anchor = value;
-        }
-        if let Some(value) = edit.position {
-            for axis in value {
-                bounded(axis, (-1_000_000.0, 1_000_000.0))?;
-            }
-            title.position = value;
-        }
-        if let Some(color) = edit.color {
-            rgba(color)?;
-            title.color = color;
-        }
-        if let Some(background) = &edit.background {
-            rgba(background.color)?;
-            rgba(background.outline_color)?;
-            bounded(background.width, (0.0, 1.0))?;
-            bounded(background.height, (0.0, 1.0))?;
-            bounded(background.outline_width, (0.0, 1000.0))?;
-            bounded(background.corner_radius, (0.0, 0.5))?;
-            bounded(background.opacity, (0.0, 100.0))?;
-            for axis in background.center {
-                bounded(axis, (-1_000_000.0, 1_000_000.0))?;
-            }
-            title.background = background.clone();
-        }
+        let title = patch_title(clip.effects.title.clone().unwrap_or_default(), edit)?;
         commands.push(Box::new(core::set_clip_title(id, track, clip_id, title)));
     }
     for parameter in &patch.transform {
@@ -1110,13 +1898,57 @@ pub fn keyframes(
 pub fn detail(session: &Session, id: TimelineId, raw: &str, timeline_frame: i64) -> Result<Value> {
     detail_page(session, id, raw, timeline_frame, None)
 }
-fn inspector_keyframe_info(values: &core::Keyframed<f32>, clip: &Clip, frame: i64) -> Value {
+fn inspector_keyframe_info<T: Clone>(
+    values: &core::Keyframed<T>,
+    clip: &Clip,
+    frame: i64,
+) -> Value {
     let in_trim = |value: &i64| (clip.source_in()..clip.source_out()).contains(value);
     json!({
         "on_keyframe":values.keyframe_at(frame).is_some(),
         "previous_frame":values.keyframe_before(frame).filter(in_trim).map(|source| clip.timeline_frame_at(source)),
         "next_frame":values.keyframe_after(frame).filter(in_trim).map(|source| clip.timeline_frame_at(source))
     })
+}
+
+pub fn keyframe_navigation(
+    session: &Session,
+    id: TimelineId,
+    raw: &str,
+    source_frame: i64,
+) -> Result<Value> {
+    if !(0..=crate::commands::MAX_FRAME).contains(&source_frame) {
+        return Err(ApiError::invalid(
+            "Keyframe navigation source frame is out of range",
+        ));
+    }
+    let (_, clip_id, clip) = find(session, id, raw)?;
+    let start = clip.source_in();
+    let end = clip.source_out();
+    if start < 0 || end < start || end > crate::commands::MAX_FRAME {
+        return Err(ApiError::invalid("Invalid native clip source range"));
+    }
+    let source_frame = source_frame.clamp(start, end);
+    Ok(
+        json!({"clip_id":clip_id.0.to_string(),"source_frame":source_frame,"timeline_frame":clip.timeline_frame_at(source_frame)}),
+    )
+}
+
+fn keyframe_clock(clip: &Clip, timeline_frame: i64) -> Value {
+    let start = clip.source_in();
+    let end = clip.source_out();
+    let mut ticks = Vec::new();
+    for index in 0..=8 {
+        let source_frame = start + ((i128::from(end) - i128::from(start)) * index / 8) as i64;
+        if ticks
+            .last()
+            .is_some_and(|value: &Value| value["source_frame"] == source_frame)
+        {
+            continue;
+        }
+        ticks.push(json!({"source_frame":source_frame,"timeline_frame":clip.timeline_frame_at(source_frame)}));
+    }
+    json!({"source_frame":clip.source_frame_at(timeline_frame),"source_in":start,"source_out":end,"ticks":ticks})
 }
 pub fn detail_page(
     session: &Session,
@@ -1144,10 +1976,23 @@ pub fn detail_page(
         .find(|c| c.timeline_start == clip.timeline_end() && c.id != clip.id && !c.is_adjustment());
     let mut result = json!({"clip_id":raw,"source_frame":frame,"timeline_frame":timeline_frame,"locked":session.project.timelines[id].tracks[track].locked,"video":session.project.timelines[id].tracks[track].kind == core::TrackKind::Video,"transform":parameters,"flip":clip.effects.transform.flip,"blend":clip.effects.blend_mode,"blends":core::BlendMode::ALL,"matte":clip.effects.matte.map(|m|format!("{m:?}")).unwrap_or_else(||"None".into()),"mattes":["None","Alpha","AlphaInverted","Luma","LumaInverted"],"gain":{"default":clip.effects.gain_db.default,"value":clip.effects.gain_db.value_at(frame),"keyframes":clip.effects.gain_db.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":clip.effects.gain_db.keyframes().len()},"color":clip.effects.color.as_ref().map(|c|c.default),"fade_in":clip.fade_in,"fade_out":clip.fade_out,"length_frames":clip.timeline_len});
     result["source_size"] = json!(size(session, id, clip));
+    result["keyframe_clock"] = keyframe_clock(clip, timeline_frame);
     result["gain"]["on_keyframe"] = json!(clip.effects.gain_db.keyframe_at(frame).is_some());
     result["gain"]["keyframe_info"] = inspector_keyframe_info(&clip.effects.gain_db, clip, frame);
     result["transitions"] = json!({"in":clip.effects.transition_in,"out":clip.effects.transition_out,"cut_after":lane.crossing_from(clip.id).map(|c|&c.transition),"cut_max_frames":right.map(|r|2*r.timeline_len.min(clip.timeline_len))});
     result["title"] = clip.effects.title.as_ref().map(|title|json!({"content":{"default":title.content.default,"keyframes":title.content.keyframes().iter().take(16).collect::<Vec<_>>(),"key_count":title.content.keyframes().len()},"font_family":title.font_family,"font_weight":title.font_weight,"italic":title.italic,"color":title.color,"size":title.size,"tracking":title.tracking,"line_spacing":title.line_spacing,"underline":title.underline,"strikethrough":title.strikethrough,"case":title.case,"align":title.align,"anchor":title.anchor,"position":title.position,"background":title.background})).unwrap_or(Value::Null);
+    if let Some(title) = &clip.effects.title {
+        result["title"]["content"]["value"] = json!(title.content.value_at(frame));
+        result["title"]["content"]["keyframe_info"] =
+            inspector_keyframe_info(&title.content, clip, frame);
+    }
+    let default_color = core::Keyframed::constant(core::edit::DEFAULT_SOLID_COLOR);
+    let color = clip.effects.color.as_ref().unwrap_or(&default_color);
+    result["color_info"] = if matches!(clip.source, ClipSource::SolidColor) {
+        json!({"value":color.value_at(frame),"keyframe_info":inspector_keyframe_info(color,clip,frame)})
+    } else {
+        Value::Null
+    };
     result["masks"] = crate::masks::detail(clip, frame);
     result["display_color"] = json!(clip.display_color);
     result["display_colors"] = json!(core::ClipColor::ALL);
@@ -1155,6 +2000,25 @@ pub fn detail_page(
         result["retime"] = json!({"speed_percent":clip.speed().as_percent(),"pitch_correction":clip.pitch_correction,"freeze_source_frame":clip.freeze});
     }
     result["filters"] = crate::visual::detail(clip, frame);
+    for (index, filter) in clip.effects.filters.iter().enumerate() {
+        let row = &mut result["filters"]["stack"][index];
+        for (name, values) in [
+            ("radius", &filter.radius),
+            ("amount", &filter.amount),
+            ("grow", &filter.grow),
+        ] {
+            row[name]["keyframe_info"] = inspector_keyframe_info(values, clip, frame);
+        }
+        for axis in 0..2 {
+            row["offset"][axis]["keyframe_info"] =
+                inspector_keyframe_info(&filter.offset[axis], clip, frame);
+        }
+        row["direction_info"] = json!({"value":filter.direction.value_at(frame),"keyframe_info":inspector_keyframe_info(&filter.direction,clip,frame)});
+        for (index, param) in core::GradeParam::ALL.into_iter().enumerate() {
+            row["grade"][index]["keyframe_info"] =
+                inspector_keyframe_info(filter.grade.track(param), clip, frame);
+        }
+    }
     result["filters"]["wheel_hues"] = crate::visual::wheel_palette();
     result["filters"]["wheels"] = crate::visual::wheels();
     result["curves"] = if page.is_some() {

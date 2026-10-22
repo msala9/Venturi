@@ -186,7 +186,8 @@
         aria-valuenow="260"
       ></div>
       <section id="viewer" class="panel">
-        <div class="panel-heading">
+        <div class="panel-heading viewer-heading">
+          <div class="viewer-primary-row">
           <div class="tabs">
             <button id="program-mode" aria-pressed="true">Program</button
             ><button id="source-mode" aria-pressed="false">
@@ -194,15 +195,17 @@
             </button>
           </div>
           <span id="viewer-caption" class="muted">Exact timeline frame</span>
-          <div class="spacer"></div>
+          <label class="viewer-zoom-status" for="viewer-zoom">View zoom</label><select id="viewer-zoom" aria-label="Viewer zoom" aria-describedby="viewer-zoom-status" title="View only · percentages refer to received preview pixels, not original media pixels"><option value="fit">Fit</option></select>
+          <output id="viewer-zoom-status" class="muted viewer-zoom-status" aria-live="polite"></output>
+          <button id="fullscreen" aria-label="Fullscreen viewer" title="Ctrl+F · fullscreen viewer">⛶</button>
+          </div>
+          <div class="viewer-tools-row" role="group" aria-label="Viewer editing tools" tabindex="0" title="Scroll horizontally for more viewer tools">
           <button id="show-inspector" type="button" aria-label="Show inspector" aria-controls="inspector">Inspector</button>
           <button id="viewer-transform" type="button" aria-pressed="false" aria-controls="screen" title="Move, scale, rotate, anchor or crop the selected clip. Animated properties create Linear keys at the current frame.">Transform</button>
           <label class="muted" for="viewer-mask-select">Mask</label><select id="viewer-mask-select" class="viewer-mask-select" aria-label="Selected viewer mask" disabled><option value="">Choose a mask</option></select>
           <button id="viewer-mask" type="button" aria-pressed="false" aria-controls="screen" title="Edit the selected mask on a current stopped Program frame. Numeric mask controls remain in the Inspector.">Mask handles</button>
           <button id="viewer-mask-pen" type="button" aria-pressed="false" aria-controls="screen" title="Draw a new Bezier mask: click vertices, drag tangents, click the first point or Enter to finish; Escape cancels.">Draw path</button>
-          <label class="muted" for="viewer-zoom">View zoom</label><select id="viewer-zoom" aria-label="Viewer zoom" title="View only · percentages refer to received preview pixels, not original media pixels"><option value="fit">Fit</option></select>
-          <output id="viewer-zoom-status" class="muted" aria-live="polite"></output>
-          <button id="fullscreen" aria-label="Fullscreen viewer" title="Ctrl+F · fullscreen viewer">⛶</button>
+          </div>
         </div>
         <div id="screen">
           <section id="slip-view" hidden aria-label="Slip source edges">

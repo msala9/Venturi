@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-22",
+  "status": "implementation_gate_passed_workflow_pending",
+  "validation": "F3-selected-effects-keyclock",
+  "binary_sha256": "0439465c1f09cff20f9f553e61036268200cd3b85b3062f2ec3f2f2b5c483131",
+  "javascript": {
+    "unique_cases": 978,
+    "initial_failed": 2,
+    "focused_rerun_cases": 37,
+    "focused_rerun_passed": true
+  },
+  "vv_web_cases": 461,
+  "fmt": true,
+  "clippy_all_targets_warnings_denied": true,
+  "native_embedded_build": true,
+  "reused_gates": [
+    "f2-media-gate.json native browser-proxy11 and DSP-origin4; no media/DSP code changed"
+  ],
+  "corrections": [
+    "Typed OUTCOME_UNKNOWN retires selected-property owner without replay or overwriting its diagnostic.",
+    "New typed-editor DOM harness supplies/restores devicePixelRatio used by the unchanged legacy draw path."
+  ],
+  "limits": {
+    "host": "halo2",
+    "cpu": 1,
+    "memory_bytes": 4294967296,
+    "swap_bytes": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "tasks": 128,
+    "runtime_seconds": 1800,
+    "cached_tools_only": true,
+    "offline": true
+  },
+  "pending": [
+    "Ordinary-resolution effects montage and exported-file playback",
+    "Selected Title/Solid/filter editing with one Undo and persisted reopen",
+    "Physical key ruler/navigation/focus and compact Viewer visual acceptance",
+    "Root-timeline view memory and pane scrollbars/inertia"
+  ],
+  "delivered_editor_unchanged": true,
+  "parity_rows_closed": 0
+}

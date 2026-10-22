@@ -13,7 +13,7 @@ import { buildProgramWindow } from "./program-range.js";
 import { sourceSampleAtFrame,sourceAudioQuery } from "./source-clock.js";
 import { createSourceSeek } from "./source-seek.js";
 import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "./source-assets.js";
-import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain } from "./inspector.js";
+import { detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
 import {createZoomLink} from './curves.js';
 import { renderMixer } from "./mixer.js";
 import {canRetainAudioPresetDraft} from './audio-presets.js';
@@ -536,7 +536,8 @@ function selected() {
   }
   const inspectorFrame=view.playhead,selectionIdentity=JSON.stringify([...view.selection].sort()),zoomLink=createZoomLink(visualState);
   const inspectorCurrent=()=>inspectorSeq===inspectorSequence && view.playhead===inspectorFrame && JSON.stringify([...view.selection].sort())===selectionIdentity;
-  const canEditInspector=()=>inspectorCurrent() && writable && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]');
+  const canNavigateInspector=()=>inspectorCurrent() && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]');
+  const canEditInspector=()=>canNavigateInspector() && writable;
   const selectionTargets=[];
   for(const [selection,getSelection,video] of [[videoSelection,getVideoSelection,true],[audioSelection,getAudioSelection,false]]){
     if(!selection || timeline.id==='fixture')continue;
@@ -546,15 +547,14 @@ function selected() {
       if(!current() || detail.clip_id!==selection.clip_ids[0])return;
       target.replaceChildren();
       const primary=timeline.tracks.flatMap(track=>track.clips).find(item=>item.id===detail.clip_id);
-      const options={selection,getSelection,frame:inspectorFrame,getFrame:()=>view.playhead,canInteract:()=>current() && canEditInspector(),commit,notice,primaryName:primary?.name,visualState,zoomLink,
+      const options={selection,getSelection,frame:inspectorFrame,getFrame:()=>view.playhead,canInteract:()=>current() && canEditInspector(),canNavigate:()=>current() && canNavigateInspector(),commit,notice,primaryName:primary?.name,visualState,zoomLink,timelineSize:[timeline.resolution.width,timeline.resolution.height],
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;updateTime();seek();selected();}};
-      if(video){renderSelectedVideoProperties(target,detail,options);renderBlendMatte(target,detail,options);}
+      if(video){renderSelectedVideoProperties(target,detail,options);renderBlendMatte(target,detail,options);visualControls.push(...renderSelectedVideoEffects(target,detail,options));}
       else renderSelectedAudioGain(target,detail,options);
     };
     const entry={id:selection.clip_ids[0],target,current,render};selectionTargets.push(entry);
     if(entry.id!==clip?.id){
-      const end=Math.max(1,...timeline.tracks.flatMap(track=>track.clips.map(item=>item.start_frame+item.length_frames)));
-      const query=new URLSearchParams({project_epoch:selection.project_epoch,if_generation:selection.generation,timeline_id:selection.timeline_id,revision:selection.revision,frame:Math.min(inspectorFrame,end-1)});
+      const query=new URLSearchParams({project_epoch:selection.project_epoch,if_generation:selection.generation,timeline_id:selection.timeline_id,revision:selection.revision,frame:inspectorFrame});
       request(`/timelines/${encodeURIComponent(timeline.id)}/clips/${encodeURIComponent(entry.id)}/keys/0?${query}`).then(render).catch(error=>{if(current())target.textContent=error.message;});
     }
   }
@@ -562,8 +562,7 @@ function selected() {
     const target = document.createElement("div"); target.textContent = "Reading native properties…";
     $("inspector-content").append(target);
     const state = inspectorState(clip.id), identity = detailIdentity(state);
-    const end = Math.max(1, ...timeline.tracks.flatMap((t) => t.clips.map((c) => c.start_frame + c.length_frames)));
-    const query = new URLSearchParams({ project_epoch: state.project_epoch, if_generation: state.generation, timeline_id: state.timeline, revision: state.revision, frame: Math.min(view.playhead, end - 1) });
+    const query = new URLSearchParams({ project_epoch: state.project_epoch, if_generation: state.generation, timeline_id: state.timeline, revision: state.revision, frame: inspectorFrame });
     function setKeyPage(page){
       visualState.set(`key-page:${state.project_epoch}:${state.timeline}:${clip.id}`,page);
       visualState.set("key-page-focus",`${state.project_epoch}:${state.timeline}:${clip.id}`);
@@ -575,9 +574,15 @@ function selected() {
       target.replaceChildren();
       selectionTargets.find(entry=>entry.id===clip.id)?.render(detail);
       transformDetail={identity,detail};transformOverlay?.invalidate();syncViewerMasks();maskOverlay?.invalidate();
-      visualControls=renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,transitionDefaults:timeline.transition_defaults,compositing:false,transformControls:false,gainControls:false,zoomLink,
+      visualControls.push(...renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,transitionDefaults:timeline.transition_defaults,compositing:false,transformControls:false,gainControls:false,titleControls:false,colorControls:false,filterControls:false,zoomLink,
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();},
-        canInteract:()=>identity===detailIdentity(inspectorState(clip.id)) && canEditInspector() });
+        canNavigate:()=>identity===detailIdentity(inspectorState(clip.id)) && canNavigateInspector(),
+        navigateSource:async(sourceFrame,{signal}={})=>{
+          if(identity!==detailIdentity(inspectorState(clip.id)) || !canNavigateInspector())throw Error('The keyframe navigation context changed');
+          const payload={query:{project_epoch:state.project_epoch,if_generation:state.generation,timeline_id:state.timeline,revision:state.revision,frame:inspectorFrame,width:960},source_frame:sourceFrame};
+          return request(`/timelines/${encodeURIComponent(state.timeline)}/clips/${encodeURIComponent(clip.id)}/keyframe-navigation`,payload,(url,options)=>fetch(url,{...options,signal:AbortSignal.any([signal,AbortSignal.timeout(5000)].filter(Boolean))}));
+        },
+        canInteract:()=>identity===detailIdentity(inspectorState(clip.id)) && canEditInspector() }));
     }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else{target.textContent = error.message;const entry=selectionTargets.find(entry=>entry.id===clip.id);if(entry?.current())entry.target.textContent=error.message;}} });
   }
   if (clip)

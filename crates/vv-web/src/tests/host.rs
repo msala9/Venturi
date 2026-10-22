@@ -3495,3 +3495,100 @@ fn retries_epochs_revisions_and_writer_lease() {
     assert_eq!(editor.session.project.timelines.len(), 2);
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn keyframe_ruler_navigation_is_revision_bound_read_only_and_can_map_the_exclusive_clip_end() {
+    use vv_core::{Clip, ClipId, ClipSource, Id};
+    let root =
+        std::env::temp_dir().join(format!("vv-keyclock-host-{}", crate::asset_jobs::nonce()));
+    let mut editor = Editor::new(&root).unwrap();
+    let mut track = Track::new(TrackKind::Video);
+    let mut clip = Clip::from_source_range(
+        ClipId(1),
+        ClipSource::SolidColor,
+        100,
+        160,
+        12,
+        Rational::one(),
+    );
+    clip.freeze = Some(100);
+    track.clips.push(clip);
+    let timeline = editor.session.create_timeline(Timeline {
+        name: "Native key ruler".into(),
+        fps: Rational::new(24, 1),
+        resolution: (64, 64),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let query = FrameQuery {
+        timeline_id: timeline.raw().to_string(),
+        project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+        if_generation: editor.session.history.generation().to_string(),
+        revision: editor.session.timeline_revision(timeline),
+        frame: 72,
+        width: 64,
+    };
+    let before = editor.snapshot();
+    let project = json!(editor.session.project);
+    let receipts = editor.completed.len();
+    let navigate = |query: FrameQuery, source_frame| {
+        Action::KeyframeNavigation(
+            "1".into(),
+            KeyframeNavigationRequest {
+                query,
+                source_frame,
+            },
+        )
+    };
+    let value = editor.handle(navigate(query.clone(), 120)).unwrap();
+    assert_eq!(
+        value,
+        json!({"clip_id":"1","source_frame":120,"timeline_frame":32,"project_epoch":query.project_epoch,"generation":query.if_generation,"timeline_id":query.timeline_id,"revision":query.revision})
+    );
+    assert_eq!(
+        editor.handle(navigate(query.clone(), 999)).unwrap()["timeline_frame"],
+        72
+    );
+    assert_eq!(
+        editor.handle(navigate(query.clone(), 0)).unwrap()["timeline_frame"],
+        12
+    );
+    assert!(editor.handle(Action::CheckFrame(query.clone())).is_err());
+    let clock = editor
+        .handle(Action::ClipDetail("1".into(), query.clone(), None))
+        .unwrap();
+    assert_eq!(clock["keyframe_clock"]["source_frame"], 160);
+    for field in [
+        "epoch",
+        "generation",
+        "revision",
+        "timeline",
+        "width",
+        "frame",
+    ] {
+        let mut stale = query.clone();
+        match field {
+            "epoch" => stale.project_epoch.push('x'),
+            "generation" => stale.if_generation = "999".into(),
+            "revision" => stale.revision.push('x'),
+            "timeline" => stale.timeline_id = "999".into(),
+            "width" => stale.width = 0,
+            _ => stale.frame = -1,
+        }
+        assert!(editor.handle(navigate(stale, 120)).is_err(), "{field}");
+    }
+    assert!(editor.handle(navigate(query.clone(), -1)).is_err());
+    let mut within = query;
+    within.frame = 12;
+    let detail = editor
+        .handle(Action::ClipDetail("1".into(), within.clone(), None))
+        .unwrap();
+    assert_eq!(detail["timeline_id"], within.timeline_id);
+    assert_eq!(editor.snapshot(), before);
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.completed.len(), receipts);
+    assert!(editor.lease.is_none());
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}

@@ -90,6 +90,31 @@ scrolling on the first click. Corrections join the next coherent effects/key-rul
 block. Full-resolution composed export, distinct waveform envelopes, physical
 zoom/fullscreen/DPI and broader acceptance remain open; no ledger row is closed.
 
+## F3 selected effects and F1 key-ruler implementation
+
+Title exposes native case, anchor/position and complete background controls.
+Selected Title/Solid/Filter edits preserve peer differences and native own-clock
+key behavior, with atomic group Undo and native reset/key navigation. Filter
+parameters skip peers without the kind; the Title shadow shortcut touches text
+peers only. Unknown write outcomes retire the old controls without replay.
+
+Dedicated scalar/value editors now show native animation heads and an inclusive
+source ruler. Key Jump uses existing native timeline frames; free ruler seeks
+use one guarded read on release. Navigation works without edit permission.
+Inspector detail accepts the bounded view playhead past content end while exact
+preview stays strict. The browser does not reconstruct retiming or freeze clocks.
+
+The block also prevents Canvas focus from scrolling its coordinates and arranges
+the Viewer heading into two compact rows with scrollable tools.
+Bounded halo2 validation passes 978 unique JavaScript cases, with two failed
+new cases corrected and their 37-case focused files rerun, plus461 vv-web tests,
+fmt, all-target Clippy with warnings denied and the embedded native build. One
+correction latches typed unknown write outcomes; the other supplies the legacy
+typed-editor pixel ratio in the new DOM harness. Unchanged media/DSP gates from
+F2 are reused. These checks do not establish integrated montage acceptance. Integrated
+ordinary-resolution effects montage, persistence, export and visual qualification
+are pending. Root timeline view memory and pane scrollbars/inertia remain open.
+
 ## Accepted usable workflow baseline
 
 Blocks A (editing/save), B (playback/export) and C (accessible handover) are

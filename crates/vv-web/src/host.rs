@@ -19,6 +19,13 @@ use tokio::sync::oneshot;
 use vv_core::{Rational, Timeline, Track, TrackKind};
 use vv_session::Session;
 
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct KeyframeNavigationRequest {
+    pub query: FrameQuery,
+    pub source_frame: i64,
+}
+
 pub enum Action {
     MediaRoot(oneshot::Sender<Result<std::fs::File>>),
     Session,
@@ -32,6 +39,7 @@ pub enum Action {
     AudioSnapshot(FrameQuery, oneshot::Sender<Result<crate::audition::Task>>),
     CheckFrame(FrameQuery),
     ClipDetail(String, FrameQuery, Option<usize>),
+    KeyframeNavigation(String, KeyframeNavigationRequest),
     SlipDetail(String, i64, FrameQuery),
     TakePlan(crate::take::Preview),
     CompoundNavigation(crate::compound_navigation::Request),
@@ -1797,6 +1805,15 @@ impl Editor {
         let tl = &self.session.project.timelines[id];
         Ok((id, frame_size(tl.resolution, query.width)?))
     }
+    fn validate_view_frame(&self, query: &FrameQuery) -> Result<(vv_core::TimelineId, (u32, u32))> {
+        let context = self.validate_frame_identity(query)?;
+        if !(0..=commands::MAX_FRAME).contains(&query.frame) {
+            return Err(ApiError::invalid(
+                "Inspector playhead is outside the view range",
+            ));
+        }
+        Ok(context)
+    }
     fn validate_frame(&self, query: &FrameQuery) -> Result<(vv_core::TimelineId, (u32, u32))> {
         let (id, size) = self.validate_frame_identity(query)?;
         let tl = &self.session.project.timelines[id];
@@ -1825,7 +1842,7 @@ impl Editor {
                 Ok(value)
             }
             Action::ClipDetail(clip, query, page) => {
-                let (id, _) = self.validate_frame(&query)?;
+                let (id, _) = self.validate_view_frame(&query)?;
                 let mut detail = match page {
                     Some(page) => crate::inspector::detail_page(
                         &self.session,
@@ -1839,7 +1856,23 @@ impl Editor {
                 detail["project_epoch"] = json!(query.project_epoch);
                 detail["generation"] = json!(query.if_generation);
                 detail["revision"] = json!(query.revision);
+                detail["timeline_id"] = json!(query.timeline_id);
                 Ok(detail)
+            }
+            Action::KeyframeNavigation(clip, request) => {
+                let query = request.query;
+                let (id, _) = self.validate_view_frame(&query)?;
+                let mut value = crate::inspector::keyframe_navigation(
+                    &self.session,
+                    id,
+                    &clip,
+                    request.source_frame,
+                )?;
+                value["project_epoch"] = json!(query.project_epoch);
+                value["generation"] = json!(query.if_generation);
+                value["timeline_id"] = json!(query.timeline_id);
+                value["revision"] = json!(query.revision);
+                Ok(value)
             }
             Action::SlipDetail(clip, center, query) => {
                 let (id, _) = self.validate_frame(&query)?;

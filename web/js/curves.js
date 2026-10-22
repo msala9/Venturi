@@ -1,3 +1,5 @@
+import {createKeyframeNavigation,drawKeyframeHead,keyframeClock,keyframeTimeRange} from './keyframe-navigation.js';
+
 export function zoomParameters(param,linked=false){return linked && ["ZoomX","ZoomY"].includes(param)?[param,param==="ZoomX"?"ZoomY":"ZoomX"]:[param];}
 export function createZoomLink(openState){
   let value=Boolean(openState?.get("zoom-link"));const inputs=new Set();
@@ -78,12 +80,13 @@ export function curveGeometry(curve, range, width, height, selected = null) {
     control: (handle, x, y) => [Math.max(0, Math.min(1, (range.source_start + (x - left) / plotWidth * (range.source_end - range.source_start) - handle.start.source_frame) / (handle.end.source_frame - handle.start.source_frame))), Math.max(-10, Math.min(10, handle.end.value === handle.start.value ? handle.point[1] : (max - (y - top) / plotHeight * (max - min) - handle.start.value) / (handle.end.value - handle.start.value)))]};
 }
 
-export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = () => [], getSelection=()=>null, isBusy, canEdit,canInteract=()=>true, select, selectBox=()=>{}, draftBox=()=>{}, pan=()=>{}, draft, draftHandle, finish, reset}) {
+export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = () => [], getSelection=()=>null, isBusy, canEdit,canInteract=()=>true,beforeBegin=()=>{}, select, selectBox=()=>{}, draftBox=()=>{}, pan=()=>{}, draft, draftHandle, finish, reset}) {
   let gesture = null;
   const available=()=>canvas.isConnected!==false && !isBusy() && canInteract();
   const cancel = () => { if (gesture) { const before=gesture;gesture = null; reset();try{canvas.releasePointerCapture(before.id);}catch{} } };
   canvas.addEventListener("pointerdown", (event) => {
     const g = getGeometry(); if (gesture || !available() || event.isPrimary===false || ![0,1].includes(event.button) || !g) return;
+    beforeBegin();
     const box = canvas.getBoundingClientRect(), x = event.clientX - box.left, y = event.clientY - box.top;
     if(event.button===1 || event.altKey){canvas.focus();canvas.setPointerCapture(event.pointerId);gesture={id:event.pointerId,pan:true,g,x,y,moved:false,point:{x,y}};return;}
     const handle = getHandles().find((h) => Math.hypot(g.x(h.frame) - x, g.y(h.value) - y) <= 9);
@@ -123,10 +126,11 @@ export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = ()
   return {cancel};
 }
 
-export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id,zoomLink=createZoomLink(openState),canInteract}) {
+export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id,zoomLink=createZoomLink(openState),canInteract,canNavigate=canInteract,navigateSource,seek}) {
   const range = detail.curves;
   if (!range?.tracks.length) return null;
-  const fullViewport=()=>({source_start:range.source_start,source_end:range.source_end});
+  const timeRange=keyframeTimeRange(detail,range);
+  const fullViewport=()=>({source_start:timeRange.source_start,source_end:timeRange.source_end});
   function remember(key,value){
     if(!openState)return;
     openState.delete(key);openState.set(key,value);
@@ -147,7 +151,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   if(detail.video){const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.disabled=disabled;zoomLink.register(input);label.append(input," Link Zoom X/Y values and key times");section.append(label);}
   const viewportTools=document.createElement("div");viewportTools.className="tools";
   for(const [label,change] of [["Zoom curve time in",{zoomX:2}],["Zoom curve time out",{zoomX:0.5}],["Zoom curve values in",{zoomY:2}],["Zoom curve values out",{zoomY:0.5}],["Pan curve left",{direction:-1}],["Pan curve right",{direction:1}],["Pan curve values up",{valueDirection:1}],["Pan curve values down",{valueDirection:-1}],["Fit curve",null]]){
-    const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{if(waiting || !geometry)return;drag.cancel();if(!change)viewRange=fullViewport();else viewRange=curveViewport(viewRange,range,current(),geometry,{...change,panX:(change.direction || 0)*(viewRange.source_end-viewRange.source_start)/4,panY:(change.valueDirection || 0)*(geometry.max-geometry.min)/4});rememberViewport();draw();});viewportTools.append(button);
+    const button=document.createElement("button");button.type="button";button.textContent=label;button.addEventListener("click",()=>{if(waiting || !geometry)return;drag.cancel();navigation?.cancel();if(!change)viewRange=fullViewport();else viewRange=curveViewport(viewRange,timeRange,current(),geometry,{...change,panX:(change.direction || 0)*(viewRange.source_end-viewRange.source_start)/4,panY:(change.valueDirection || 0)*(geometry.max-geometry.min)/4});rememberViewport();draw();});viewportTools.append(button);
   }
   section.append(viewportTools);
   const viewportStatus=document.createElement("p");viewportStatus.className="muted";viewportStatus.dataset.curveViewport="";section.append(viewportStatus);
@@ -183,7 +187,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   }
   const groupApply=document.createElement("button");groupApply.textContent="Move selected keys";groupForm.append(groupApply);
   const groupRemove=document.createElement("button");groupRemove.type="button";groupRemove.textContent="Delete selected keys";groupForm.append(groupRemove);section.append(groupForm);
-  let drafting = false, handleDraft = null, geometry = null, waiting = false, disposed = false;
+  let drafting = false, handleDraft = null, geometry = null, waiting = false, disposed = false,navigation=null;
   const owner=createKeyEditorGuard({root,section,disabled,canInteract,commit});
   let selectedFrames=new Set(),groupDraft=null,boxDraft=null,viewRange=fullViewport(),panOrigin=null;
   const events = new AbortController();
@@ -238,7 +242,9 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
       ctx.beginPath(); ctx.arc(g.x(Number(frame.value)), g.y(Number(value.value)), 6, 0, Math.PI * 2); ctx.stroke();
     }
     if(boxDraft){ctx.strokeStyle=color("--violet");ctx.strokeRect(boxDraft.x,boxDraft.y,boxDraft.width,boxDraft.height);}
+    drawKeyframeHead(ctx,g,detail,{sourceFrame:navigation?.sourceFrame(),color:color('--primary')});
     ctx.restore();
+    navigation?.refresh();
   }
   function load() {
     const key = current().keys.find((k) => k.source_frame === previous());
@@ -292,24 +298,26 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
     finally{waiting=false;groupForm.inert=form.inert=false;tracks.disabled=select.disabled=false;}
   }
   const drag = bindCurveGesture(canvas, {
-    getCurve: () => ({keys: current().keys.filter((k) => k.source_frame >= viewRange.source_start && k.source_frame <= viewRange.source_end)}),
+    getCurve: () => ({keys: current().keys.filter((k) => k.source_frame >= Math.max(range.source_start,viewRange.source_start) && k.source_frame <= Math.min(range.source_end,viewRange.source_end))}),
     getGeometry: () => geometry, isBusy: () => waiting, canEdit: () => owner.current(),canInteract:()=>owner.current(),
-    getHandles: () => selectedFrames.size>1?[]:curveHandles(current(), previous()).filter((h) => h.start.source_frame >= viewRange.source_start && h.end.source_frame <= viewRange.source_end),
+    beforeBegin:()=>navigation?.cancel(),
+    getHandles: () => selectedFrames.size>1?[]:curveHandles(current(), previous()).filter((h) => h.start.source_frame >= Math.max(range.source_start,viewRange.source_start) && h.end.source_frame <= Math.min(range.source_end,viewRange.source_end)),
     getSelection:()=>[...selectedFrames],
     select: (key,{toggle}) => { if(toggle){if(selectedFrames.has(key.source_frame))selectedFrames.delete(key.source_frame);else selectedFrames.add(key.source_frame);}else if(!selectedFrames.has(key.source_frame))selectedFrames=new Set([key.source_frame]);select.value=String(key.source_frame);load(); },
     draftBox:box=>{boxDraft=box;draw();},
     selectBox:box=>{if(!box.append)selectedFrames.clear();if(box.moved)for(const key of current().keys)if(key.source_frame>=box.start && key.source_frame<=box.end && key.value>=box.min && key.value<=box.max)selectedFrames.add(key.source_frame);boxDraft=null;select.value=selectedFrames.size?String([...selectedFrames][0]):"";load();},
-    pan:event=>{if(event.final){panOrigin=null;return;}if(!panOrigin)panOrigin={range:viewRange,g:geometry};viewRange=curveViewport(panOrigin.range,range,current(),panOrigin.g,{panX:event.frames,panY:event.value});rememberViewport();draw();},
-    draft: (point,members) => { drafting = true;frame.value=point.frame;value.value=point.value;groupDraft=members?.length>1?curveGroupDraft(current(),range,members,point.frame-previous(),point.value-current().keys.find(key=>key.source_frame===previous()).value):null;status.textContent=groupDraft?`Draft ${members.length} keys · ${groupDraft.deltaFrame} source frames · value ${groupDraft.deltaValue.toPrecision(5)} · release to apply`:`Draft source ${frame.value} · value ${Number(value.value).toPrecision(5)} · release to apply`;draw(); },
+    pan:event=>{if(event.final){panOrigin=null;return;}navigation?.cancel();if(!panOrigin)panOrigin={range:viewRange,g:geometry};viewRange=curveViewport(panOrigin.range,timeRange,current(),panOrigin.g,{panX:event.frames,panY:event.value});rememberViewport();draw();},
+    draft: (point,members) => { point={...point,frame:Math.max(range.source_start,Math.min(range.source_end,point.frame))};drafting = true;frame.value=point.frame;value.value=point.value;groupDraft=members?.length>1?curveGroupDraft(current(),range,members,point.frame-previous(),point.value-current().keys.find(key=>key.source_frame===previous()).value):null;status.textContent=groupDraft?`Draft ${members.length} keys · ${groupDraft.deltaFrame} source frames · value ${groupDraft.deltaValue.toPrecision(5)} · release to apply`:`Draft source ${frame.value} · value ${Number(value.value).toPrecision(5)} · release to apply`;draw(); },
     draftHandle: (index, point) => { handleDraft = {index, point}; mode.value = "Bezier"; handles.hidden = handles.disabled = false; fields[index ? "c2x" : "c1x"].value = point[0]; fields[index ? "c2y" : "c1y"].value = point[1]; status.textContent = "Draft Bezier control · release to apply"; draw(); },
     finish: () => { const group=groupDraft;drafting=false;handleDraft=groupDraft=null;draw();if(group)saveGroup(false,group.deltaFrame,group.deltaValue);else save(); },
     reset: () => { if(panOrigin){viewRange=panOrigin.range;panOrigin=null;rememberViewport();}drafting=false;handleDraft=groupDraft=boxDraft=null;load(); },
   });
-  tracks.addEventListener("change", () => { drag.cancel(); chooseCurve(); });
-  select.addEventListener("change", () => { drag.cancel();selectedFrames=new Set(previous()===null?[]:[previous()]);load(); });
-  groupKeys.addEventListener("change",()=>{drag.cancel();selectedFrames=new Set([...groupKeys.selectedOptions].map(option=>Number(option.value)));select.value=selectedFrames.size?String([...selectedFrames][0]):"";load();});
+  if(keyframeClock(detail) && typeof seek==='function')navigation=createKeyframeNavigation({root:section,scopeRoot:root,detail,getKey:()=>current().keys.find(key=>key.source_frame===previous()),getRange:()=>viewRange,getGeometry:()=>geometry,seek,canNavigate:()=>!waiting && !drafting && !handleDraft && !boxDraft && (canNavigate?.() ?? true),navigateSource,notice,onDraft:draw,label:'curve'});
+  tracks.addEventListener("change", () => { drag.cancel();navigation?.cancel(); chooseCurve(); });
+  select.addEventListener("change", () => { drag.cancel();navigation?.cancel();selectedFrames=new Set(previous()===null?[]:[previous()]);load(); });
+  groupKeys.addEventListener("change",()=>{drag.cancel();navigation?.cancel();selectedFrames=new Set([...groupKeys.selectedOptions].map(option=>Number(option.value)));select.value=selectedFrames.size?String([...selectedFrames][0]):"";load();});
   groupForm.addEventListener("submit",event=>{event.preventDefault();saveGroup();});groupRemove.addEventListener("click",()=>saveGroup(true));
-  canvas.addEventListener("wheel",event=>{event.preventDefault();if(waiting || !geometry)return;drag.cancel();viewRange=curveViewport(viewRange,range,current(),geometry,event.shiftKey?{zoomY:Math.exp(-event.deltaY*0.004)}:{zoomX:Math.exp(-event.deltaY*0.004)});rememberViewport();draw();},{passive:false});
+  canvas.addEventListener("wheel",event=>{event.preventDefault();if(waiting || !geometry)return;drag.cancel();navigation?.cancel();viewRange=curveViewport(viewRange,timeRange,current(),geometry,event.shiftKey?{zoomY:Math.exp(-event.deltaY*0.004)}:{zoomX:Math.exp(-event.deltaY*0.004)});rememberViewport();draw();},{passive:false});
   canvas.addEventListener("keydown",event=>{if(event.key==="Delete" || event.key==="Backspace"){event.preventDefault();event.stopPropagation();saveGroup(true);}else if((event.ctrlKey || event.metaKey) && event.key.toLowerCase()==="a"){event.preventDefault();event.stopPropagation();selectedFrames=new Set(current().keys.filter(key=>key.source_frame>=viewRange.source_start && key.source_frame<=viewRange.source_end).map(key=>key.source_frame));updateGroup();draw();}});
   mode.addEventListener("change", () => { handles.hidden = mode.value !== "Bezier"; handles.disabled = handles.hidden || disabled; });
   form.addEventListener("submit", (event) => { event.preventDefault(); save(); });
@@ -318,5 +326,5 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   window.addEventListener("blur", drag.cancel, {signal: events.signal});
   section.addEventListener("toggle", draw);
   const observer = new ResizeObserver(()=>{drag.cancel();draw();}); observer.observe(canvas); chooseCurve();
-  return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}owner.dispose();drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
+  return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}navigation?.dispose();owner.dispose();drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
 }

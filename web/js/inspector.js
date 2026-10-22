@@ -1,4 +1,4 @@
-import {renderFilters} from "./visual.js";
+import {renderFilters,renderSelectedFilters} from "./visual.js";
 import {renderMasks} from "./masks.js";
 import {renderCurves,createZoomLink,zoomParameters} from "./curves.js";
 import {renderEventKeys} from "./eventkeys.js";
@@ -48,34 +48,36 @@ export function renderBlendMatte(root,detail,{selection,getSelection,canInteract
 const TRANSFORM_ROWS=[['Zoom',['ZoomX','ZoomY']],['Position',['PositionX','PositionY']],['Rotation',['Rotation']],['Anchor',['AnchorX','AnchorY']]];
 const CROP_ROWS=[['Crop left',['CropLeft']],['Crop right',['CropRight']],['Crop top',['CropTop']],['Crop bottom',['CropBottom']],['Crop softness',['CropSoftness']]];
 const CROP_PARAMS=['CropLeft','CropTop','CropRight','CropBottom','CropSoftness'];
-function selectedPropertyControls(root,detail,{selection,getSelection,frame,getFrame,canInteract,commit,notice,seek},video){
+function selectedPropertyControls(root,detail,{selection,getSelection,frame,getFrame,canInteract,canNavigate=canInteract,commit,notice,seek},video){
   if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || detail.video!==video || detail.locked || !Number.isSafeInteger(frame) || frame<0)return null;
   const captured=structuredClone(selection),identity=JSON.stringify(captured),controls=[],section=document.createElement('details');section.open=true;
   if(getFrame()!==frame || JSON.stringify(getSelection())!==identity)return null;
-  let waiting=false;
-  const current=()=>root.isConnected!==false && section.isConnected!==false && getFrame()===frame && canInteract() && JSON.stringify(getSelection())===identity;
-  const sync=()=>{for(const [control,available] of controls)control.disabled=waiting || !current() || !available();};
-  const register=(control,available=()=>true)=>{controls.push([control,available]);control.disabled=waiting || !current() || !available();return control;};
+  let waiting=false,outcomeUnknown=false;
+  const owns=()=>root.isConnected!==false && section.isConnected!==false && getFrame()===frame && JSON.stringify(getSelection())===identity;
+  const current=()=>owns() && canInteract(),navigationCurrent=()=>owns() && canNavigate();
+  const sync=()=>{for(const [control,available,navigation] of controls)control.disabled=waiting || outcomeUnknown || !(navigation?navigationCurrent():current()) || !available();};
+  const register=(control,available=()=>true,navigation=false)=>{controls.push([control,available,navigation]);control.disabled=waiting || outcomeUnknown || !(navigation?navigationCurrent():current()) || !available();return control;};
   const submit=edit=>{
-    if(waiting)return;
+    if(!edit)return;
+    if(waiting || outcomeUnknown)return;
     if(!current()){notice('Inspector selection changed; read its current properties before editing');return;}
     const operation={kind:'edit_inspector_selection',clip_ids:[...captured.clip_ids],timeline_frame:frame,edit};
     waiting=true;sync();
-    Promise.resolve().then(()=>{if(!current())throw Error('Inspector selection changed; read its current properties before editing');return commit(operation);}).catch(error=>notice(error.message)).finally(()=>{waiting=false;sync();});
+    return Promise.resolve().then(()=>{if(!current())throw Error('Inspector selection changed; read its current properties before editing');return commit(operation);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;notice(error.message);}).finally(()=>{waiting=false;sync();});
   };
-  const button=(label,edit,parent)=>{const node=register(document.createElement('button'));node.type='button';node.textContent=label;node.setAttribute('aria-label',label);node.addEventListener('click',()=>submit(typeof edit==='function'?edit():edit));parent.append(node);return node;};
+  const button=(label,edit,parent,available=()=>true)=>{const node=register(document.createElement('button'),available);node.type='button';node.textContent=label;node.setAttribute('aria-label',label);node.addEventListener('click',()=>{if(available())submit(typeof edit==='function'?edit():edit);});parent.append(node);return node;};
   const localButton=(label,frame,parent)=>{
-    const node=register(document.createElement('button'),()=>typeof seek==='function' && Number.isSafeInteger(frame) && frame>=0);node.type='button';node.textContent=label;node.setAttribute('aria-label',label);
-    node.addEventListener('click',()=>{if(!waiting && current() && typeof seek==='function' && Number.isSafeInteger(frame) && frame>=0)seek(frame);});parent.append(node);
+    const node=register(document.createElement('button'),()=>typeof seek==='function' && Number.isSafeInteger(frame) && frame>=0,true);node.type='button';node.textContent=label;node.setAttribute('aria-label',label);
+    node.addEventListener('click',()=>{if(!waiting && !outcomeUnknown && navigationCurrent() && typeof seek==='function' && Number.isSafeInteger(frame) && frame>=0)seek(frame);});parent.append(node);
   };
   const heading=document.createElement('summary');heading.textContent=video?'Selected video properties':'Selected audio gain';section.append(heading);
   root.append(section);
-  return {section,register,button,localButton,submit,current};
+  return {section,register,button,localButton,submit,current,sync,available:()=>!waiting && !outcomeUnknown && current()};
 }
 function selectedNumber(parent,label,parameter,controls,apply){
   const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));
   form.className='property-row';field.className='field';field.textContent=label;
-  input.type='number';input.step='any';input.required=true;input.value=parameter.value;input.min=parameter.min;input.max=parameter.max;input.setAttribute('aria-label',label);field.append(input);
+  input.type='number';input.step=parameter.step ?? 'any';input.required=true;input.value=parameter.value;input.min=parameter.min;input.max=parameter.max;input.setAttribute('aria-label',label);field.append(input);
   const button=controls.register(document.createElement('button'));button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(field,button);
   form.addEventListener('submit',event=>{event.preventDefault();const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && form.reportValidity())apply(value);});parent.append(form);
   return input;
@@ -130,6 +132,63 @@ export function renderSelectedAudioGain(root,detail,options){
   keyDiamond(controls.section,'gain',[detail.gain],controls,{action:'toggle_gain_key'});
   controls.button('Reset gain',{action:'reset_gain'},controls.section);
 }
+export function titleSelectionPatch(before,after){
+  const fields=['text','font_family','font_weight','italic','size','tracking','line_spacing','underline','strikethrough','case','align','anchor','position','color','background'];
+  return Object.fromEntries(fields.filter(field=>Object.hasOwn(after,field) && JSON.stringify(after[field])!==JSON.stringify(before[field])).map(field=>[field,structuredClone(after[field])]));
+}
+export function renderSelectedVideoEffects(root,detail,options){
+  const controls=selectedPropertyControls(root,detail,options,true);if(!controls)return [];
+  const {section}=controls;section.children[0].textContent='Selected video effects';
+  const note=document.createElement('p');note.className='muted';note.textContent=`Values from ${options.primaryName || 'the first selected video clip'}. Title and Solid controls follow this primary type; edits affect only matching selected clips. Filter parameters affect selected clips already carrying that filter. Rust chooses defaults or keys at each clip's clamped playhead.`;section.append(note);
+  const group=label=>{const node=document.createElement('details'),summary=document.createElement('summary');node.open=true;summary.textContent=label;node.append(summary);section.append(node);return node;};
+  function colorRow(parent,label,value,apply){
+    const form=document.createElement('form'),fields={};form.className='property-row';
+    for(const axis of ['r','g','b','a']){const field=document.createElement('label'),input=controls.register(document.createElement('input'));field.className='field';field.textContent=`${label} ${axis.toUpperCase()}`;input.type='number';input.min=0;input.max=1;input.step='any';input.required=true;input.value=value[axis];input.setAttribute('aria-label',field.textContent);fields[axis]=input;field.append(input);form.append(field);}
+    const button=controls.register(document.createElement('button'));button.textContent=`Apply ${label}`;button.setAttribute('aria-label',button.textContent);form.append(button);
+    form.addEventListener('submit',event=>{event.preventDefault();const rgba=Object.fromEntries(Object.entries(fields).map(([axis,input])=>[axis,Number(input.value)]));if(Object.values(fields).every(input=>String(input.value).trim()) && Object.values(rgba).every(value=>Number.isFinite(value) && value>=0 && value<=1) && form.reportValidity() && JSON.stringify(rgba)!==JSON.stringify(value))apply(rgba);});parent.append(form);
+  }
+  if(detail.title){
+    const title=detail.title,parent=group('Selected title typography'),before={...structuredClone(title),text:title.content.value ?? title.content.default};delete before.content;
+    const submit=patch=>{const changed=titleSelectionPatch(before,patch);if(Object.keys(changed).length)controls.submit({action:'title',patch:changed});};
+    const reset=(parent,label,fields)=>controls.button(`Reset ${label}`,{action:'reset_title',fields},parent);
+    function text(label,field,value,multiline=false){
+      const form=document.createElement('form'),row=document.createElement('label'),input=controls.register(document.createElement(multiline?'textarea':'input'));row.className='field';row.textContent=label;if(!multiline)input.type='text';input.value=value;input.maxLength=multiline?4096:128;input.setAttribute('aria-label',label);row.append(input);form.append(row);
+      const button=controls.register(document.createElement('button'));button.textContent=`Apply ${label}`;button.setAttribute('aria-label',button.textContent);form.append(button);form.addEventListener('submit',event=>{event.preventDefault();if(new TextEncoder().encode(input.value).length>(multiline?4096:128))return options.notice(`${label} exceeds its UTF-8 byte limit`);if(form.reportValidity())submit({[field]:input.value});});parent.append(form);return form;
+    }
+    const textForm=text('Title text','text',before.text,true);keyDiamond(textForm,'title text',[title.content],controls,{action:'toggle_text_key'});
+    const fontForm=text('Font family (server)','font_family',title.font_family);reset(fontForm,'title font',['font_family']);
+    for(const [label,field,min,max] of [['Font weight','font_weight',100,900],['Font size','size',1,1000],['Letter tracking','tracking',-300,1000],['Line spacing','line_spacing',-200,500]]){
+      selectedNumber(parent,label,{value:title[field],min,max,step:field==='font_weight'?1:'any'},controls,value=>submit({[field]:value}));reset(parent,label.toLowerCase(),[field]);
+    }
+    function checkbox(parent,label,checked,change){const row=document.createElement('label'),input=controls.register(document.createElement('input'));input.type='checkbox';input.checked=checked;input.setAttribute('aria-label',label);row.append(input,label);input.addEventListener('change',()=>{if(controls.current())change(input.checked);});parent.append(row);}
+    for(const field of ['italic','underline','strikethrough'])checkbox(parent,`Title ${field}`,title[field],value=>submit({[field]:value}));
+    reset(parent,'title style',['font_weight','italic']);reset(parent,'title decorations',['underline','strikethrough']);
+    function choice(parent,label,value,values,change){const row=document.createElement('label'),select=controls.register(document.createElement('select'));row.className='field';row.textContent=label;select.setAttribute('aria-label',label);for(const value of values)select.append(new Option(value,value));select.value=value;row.append(select);select.addEventListener('change',()=>{if(controls.current() && values.includes(select.value))change(select.value);});parent.append(row);}
+    choice(parent,'Title case',title.case,['Mixed','Upper','Lower','Title'],value=>submit({case:value}));reset(parent,'title case',['case']);
+    choice(parent,'Title alignment',title.align,['Left','Center','Right','Justify'],value=>submit({align:value}));reset(parent,'title alignment',['align']);
+    choice(parent,'Title horizontal anchor',title.anchor[0],['Left','Center','Right'],value=>submit({anchor:[value,title.anchor[1]]}));
+    choice(parent,'Title vertical anchor',title.anchor[1],['Top','Middle','Bottom'],value=>submit({anchor:[title.anchor[0],value]}));reset(parent,'title anchor',['anchor']);
+    const size=options.timelineSize,hasSize=Array.isArray(size) && size.length===2 && size.every(value=>Number.isFinite(value) && value>0);
+    for(const axis of [0,1]){const offset=hasSize?size[axis]/2:0;selectedNumber(parent,`Title position ${axis?'Y':'X'}${hasSize?' (from bottom-left)':' (from center)'}`,{value:title.position[axis]+offset,min:hasSize?-size[axis]:-1_000_000,max:hasSize?size[axis]*2:1_000_000},controls,value=>submit({position:title.position.map((current,index)=>index===axis?value-offset:current)}));}reset(parent,'title position',['position']);
+    colorRow(parent,'Title color',title.color,color=>submit({color}));reset(parent,'title color',['color']);
+    const background=group('Selected title background'),bg=title.background,backgroundPatch=patch=>submit({background:{...structuredClone(bg),...patch}});
+    checkbox(background,'Title background enabled',bg.enabled,enabled=>backgroundPatch({enabled}));reset(background,'title background',['background']);
+    if(bg.enabled){
+    colorRow(background,'Background color',bg.color,color=>backgroundPatch({color}));colorRow(background,'Background outline color',bg.outline_color,outline_color=>backgroundPatch({outline_color}));
+    reset(background,'background color',['background_color']);reset(background,'background outline color',['background_outline_color']);
+    for(const [label,field,min,max] of [['Background outline width','outline_width',0,100],['Background width','width',0,1],['Background height','height',0,1],['Background corner radius','corner_radius',0,0.5],['Background opacity','opacity',0,100]]){selectedNumber(background,label,{value:bg[field],min,max},controls,value=>backgroundPatch({[field]:value}));reset(background,label.toLowerCase(),[`background_${field}`]);}
+    for(const axis of [0,1])selectedNumber(background,`Background center ${axis?'Y':'X'}`,{value:bg.center[axis],min:hasSize?-size[axis]:-1_000_000,max:hasSize?size[axis]:1_000_000},controls,value=>backgroundPatch({center:bg.center.map((current,index)=>index===axis?value:current)}));
+    reset(background,'background center',['background_center']);
+    }
+    const shadow=detail.filters?.stack.some(filter=>filter.kind==='DropShadow');checkbox(parent,'Title drop shadow',shadow,enabled=>controls.submit({action:'title_shadow',enabled}));
+  }
+  const solid=Object.hasOwn(detail,'color_info')?detail.color_info:detail.color?{value:detail.color}:null;
+  if(solid){
+    const parent=group('Selected solid color'),info=solid;
+    colorRow(parent,'Solid color',info.value,value=>controls.submit({action:'solid_color',value}));keyDiamond(parent,'solid color',[info],controls,{action:'toggle_color_key'});
+  }
+  return renderSelectedFilters(section,detail,{controls,keyRow:(parent,label,parameters,edit)=>keyDiamond(parent,label,parameters,controls,edit),openState:options.visualState || new Map(),notice:options.notice,timelineSize:options.timelineSize});
+}
 export function transformPatch(param,value,linked=false){return {transform:zoomParameters(param,linked).map(param=>({param,value}))};}
 export function keyframeOperation(clip, target, frame, value, interpolation = "Linear",linked=false) {
   if (!Number.isSafeInteger(frame) || frame < 0) throw new Error("Choose an integer timeline frame");
@@ -142,7 +201,7 @@ export function keyPageIndex(value,total) {
   if(!Number.isSafeInteger(page) || page<1 || page>total)throw Error(`Choose a key page from 1 to ${total}`);
   return page-1;
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract,transitionDefaults,compositing=true,transformControls=true,gainControls=true,zoomLink:sharedZoomLink }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,zoomLink:sharedZoomLink }) {
   const disabled = !writable || detail.locked;
   if(detail.key_page){
     const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
@@ -153,7 +212,9 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     if(visualState?.get("key-page-focus")===scope){visualState.delete("key-page-focus");queueMicrotask(()=>{if(input.isConnected)input.focus({preventScroll:true});});}
   }
   const zoomLink=sharedZoomLink || createZoomLink(visualState);
-  const report = (operation) => commit(operation).catch((error) => notice(error.message));
+  let waiting=false;
+  const guardedCommit=async operation=>{if(waiting || disabled || root.isConnected===false || section.isConnected===false || !canInteract())return;waiting=true;try{await Promise.resolve();if(root.isConnected===false || section.isConnected===false || !canInteract())return;return await commit(operation);}finally{waiting=false;}};
+  const report = (operation) => guardedCommit(operation).catch((error) => notice(error.message));
   const section = document.createElement("details"); section.open = true;
   const heading = document.createElement("summary"); heading.textContent = transformControls && gainControls ? "Properties and keyframes" : "Clip properties and key editors"; section.append(heading);
   const note = document.createElement("p"); note.className = "muted";
@@ -202,7 +263,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
       const button = document.createElement("button"); button.textContent = label; button.disabled = disabled; button.setAttribute("aria-pressed", detail.flip[index]);
       button.addEventListener("click", () => { const flip = [...detail.flip]; flip[index] = !flip[index]; report(propertyOperation(detail.clip_id, { flip })); }); section.append(button);
     }
-    if (detail.color) {
+    if (colorControls && detail.color) {
       const form = document.createElement("form"); const fields = {};
       for (const name of ["r", "g", "b", "a"]) {
         const label = document.createElement("label"); label.className = "field"; label.textContent = `Color ${name.toUpperCase()}`;
@@ -217,12 +278,12 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   number("Fade out frames", detail.fade_out, 0, detail.length_frames, (fade_out) => ({ fade_out }));
   root.append(section);
   renderRetime(root,detail,disabled,getFrame,report,visualState,canInteract);
-  const controls=detail.video ? renderFilters(root,detail,{disabled,getFrame,commit,notice,openState:visualState}) : [];
-  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract});if(curves)controls.push(curves);
-  const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope,canInteract});if(eventKeys)controls.push(eventKeys);
+  const controls=detail.video && filterControls ? renderFilters(root,detail,{disabled,getFrame,commit:guardedCommit,notice,openState:visualState,canInteract}) : [];
+  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract,seek,canNavigate,navigateSource});if(curves)controls.push(curves);
+  const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope,canInteract,seek,canNavigate,navigateSource});if(eventKeys)controls.push(eventKeys);
   const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload,canInteract});if(keySelection)controls.push(keySelection);
   if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState,seek,canInteract});
-  if (detail.title) renderTitle(root,detail,disabled,report);
+  if (titleControls && detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report,transitionDefaults,notice);
   return controls;
 }

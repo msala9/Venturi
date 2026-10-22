@@ -206,6 +206,732 @@ fn selection_fixture() -> (Session, TimelineId, Vec<String>) {
     (session, id, vec![second, first])
 }
 
+fn selected_titles() -> (Session, TimelineId, Vec<String>) {
+    let (mut session, id, mut ids) = selection_fixture();
+    for (track, text) in [(0, "Primary"), (2, "Peer")] {
+        let clip = &mut session.project.timelines[id].tracks[track].clips[0];
+        clip.source = ClipSource::Text;
+        let mut title = core::TitleParams::default();
+        title.content.default = text.into();
+        title.font_family = text.into();
+        title.background.height = if track == 0 { 0.2 } else { 0.7 };
+        title.background.width = if track == 0 { 0.1 } else { 0.6 };
+        clip.effects.title = Some(title);
+    }
+    let clip_id = session.project.alloc_clip_id();
+    let solid = Clip::from_source_range(clip_id, ClipSource::SolidColor, 0, 50, 0, Rational::one());
+    let mut track = Track::new(TrackKind::Video);
+    track.insert_sorted(solid);
+    session.project.timelines[id].tracks.push(track);
+    ids.push(clip_id.0.to_string());
+    (session, id, ids)
+}
+
+#[test]
+fn selected_titles_patch_only_primary_changed_fields_and_background_members_with_own_text_keys_and_one_undo()
+ {
+    let (mut session, id, ids) = selected_titles();
+    let primary = &mut session.project.timelines[id].tracks[0].clips[0];
+    let title = primary.effects.title.as_mut().unwrap();
+    for (frame, text) in [(12, "Start"), (20, "At playhead"), (30, "End")] {
+        title
+            .content
+            .upsert(frame, text.into(), core::Interpolation::Hold);
+    }
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let position = session.history.position();
+    let mut background = title_background(&session, id, 0);
+    background.width = 0.4;
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Title {
+            patch: Box::new(TitleEdit {
+                text: Some("Changed".into()),
+                size: Some(120.0),
+                font_family: Some("Primary".into()),
+                background: Some(background),
+                ..Default::default()
+            }),
+        },
+    )
+    .unwrap();
+    let timeline = &session.project.timelines[id];
+    let primary = timeline.tracks[0].clips[0].effects.title.as_ref().unwrap();
+    let peer = timeline.tracks[2].clips[0].effects.title.as_ref().unwrap();
+    assert_eq!(
+        primary.content.keyframe_at(20),
+        Some(("Changed".into(), core::Interpolation::Hold))
+    );
+    assert_eq!(primary.content.keyframe_at(12).unwrap().0, "Start");
+    assert_eq!(peer.content.default, "Changed");
+    assert!(peer.content.is_constant());
+    assert_eq!(peer.font_family, "Peer");
+    assert_eq!(peer.size, 120.0);
+    assert_eq!(peer.background.width, 0.4);
+    assert_eq!(peer.background.height, 0.7);
+    assert!(timeline.tracks[3].clips[0].effects.title.is_none());
+    assert_eq!(timeline.tracks[2].clips[0].freeze, Some(7));
+    assert_eq!(session.history.position(), position + 1);
+    let after = serde_json::to_value(timeline).unwrap();
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    session.history.redo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        after
+    );
+    let generation = session.history.generation();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Title {
+            patch: Box::new(TitleEdit {
+                size: Some(120.0),
+                ..Default::default()
+            }),
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.generation(), generation);
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ResetTitle {
+            fields: vec![TitleField::BackgroundWidth],
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        title_background(&session, id, 2).width,
+        core::TitleBackground::default().width
+    );
+    assert_eq!(title_background(&session, id, 2).height, 0.7);
+}
+
+fn title_background(session: &Session, id: TimelineId, track: usize) -> core::TitleBackground {
+    session.project.timelines[id].tracks[track].clips[0]
+        .effects
+        .title
+        .as_ref()
+        .unwrap()
+        .background
+        .clone()
+}
+
+#[test]
+fn selected_title_diamonds_toggle_each_peers_own_presence_while_solid_diamonds_follow_primary_and_preserve_own_colors()
+ {
+    let (mut session, id, ids) = selected_titles();
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .title
+        .as_mut()
+        .unwrap()
+        .content
+        .upsert(20, "Own primary".into(), core::Interpolation::Hold);
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    selected_edit(&mut session, id, &ids, 108, InspectorEdit::ToggleTextKey {}).unwrap();
+    assert!(
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .title
+            .as_ref()
+            .unwrap()
+            .content
+            .keyframe_at(20)
+            .is_none()
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .title
+            .as_ref()
+            .unwrap()
+            .content
+            .keyframe_at(40),
+        Some(("Peer".into(), core::Interpolation::Hold))
+    );
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    let (mut session, id, ids) = selection_fixture();
+    let red = core::Rgba {
+        r: 0.8,
+        g: 0.1,
+        b: 0.2,
+        a: 0.5,
+    };
+    let green = core::Rgba {
+        r: 0.1,
+        g: 0.7,
+        b: 0.2,
+        a: 0.8,
+    };
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .color = Some(core::Keyframed::constant(red));
+    session.project.timelines[id].tracks[2].clips[0]
+        .effects
+        .color = Some(core::Keyframed::constant(green));
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ToggleColorKey {},
+    )
+    .unwrap();
+    for (track, frame, value) in [(0, 20, red), (2, 40, green)] {
+        assert_eq!(
+            session.project.timelines[id].tracks[track].clips[0]
+                .effects
+                .color
+                .as_ref()
+                .unwrap()
+                .keyframe_at(frame),
+            Some((value, core::Interpolation::Linear))
+        );
+    }
+    let target = core::Rgba {
+        r: 0.3,
+        g: 0.4,
+        b: 0.9,
+        a: 0.6,
+    };
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::SolidColor { value: target },
+    )
+    .unwrap();
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .color
+            .as_ref()
+            .unwrap()
+            .default,
+        green
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .color
+            .as_ref()
+            .unwrap()
+            .value_at(40),
+        target
+    );
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ToggleColorKey {},
+    )
+    .unwrap();
+    for (track, frame) in [(0, 20), (2, 40)] {
+        assert!(
+            session.project.timelines[id].tracks[track].clips[0]
+                .effects
+                .color
+                .as_ref()
+                .unwrap()
+                .keyframe_at(frame)
+                .is_none()
+        );
+    }
+}
+
+#[test]
+fn selected_filters_preserve_peer_stack_and_unchanged_axes_using_native_default_or_own_clock_key_then_reset_undo_redo()
+ {
+    let (mut session, id, ids) = selected_titles();
+    let kind = core::FilterKind::DropShadow;
+    let mut first = core::ClipFilter::new(kind);
+    first.radius.default = 5.0;
+    first.offset[0].default = 1.0;
+    first.offset[1].default = 2.0;
+    let mut peer = core::ClipFilter::new(kind);
+    peer.radius.default = 17.0;
+    peer.offset[0].default = 70.0;
+    peer.offset[1].upsert(35, 8.0, core::Interpolation::Hold);
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .filters = vec![first];
+    session.project.timelines[id].tracks[2].clips[0]
+        .effects
+        .filters = vec![core::ClipFilter::new(core::FilterKind::Exposure), peer];
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let position = session.history.position();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Filter {
+            filter: kind,
+            patch: Box::new(crate::visual::FilterPatch {
+                radius: Some(5.0),
+                offset: Some([1.0, 10.0]),
+                ..Default::default()
+            }),
+        },
+    )
+    .unwrap();
+    let peer = &session.project.timelines[id].tracks[2].clips[0]
+        .effects
+        .filters;
+    assert_eq!(peer[0].kind, core::FilterKind::Exposure);
+    assert_eq!(peer[1].radius.default, 17.0);
+    assert_eq!(peer[1].offset[0].default, 70.0);
+    assert_eq!(
+        peer[1].offset[1].keyframe_at(40),
+        Some((10.0, core::Interpolation::Linear))
+    );
+    assert_eq!(
+        peer[1].offset[1].keyframe_at(35),
+        Some((8.0, core::Interpolation::Hold))
+    );
+    assert!(
+        session.project.timelines[id].tracks[3].clips[0]
+            .effects
+            .filters
+            .is_empty()
+    );
+    assert_eq!(session.history.position(), position + 1);
+    let changed = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    session.history.redo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        changed
+    );
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ResetFilter {
+            filter: kind,
+            params: vec![FilterParameter::Offset { axis: 1 }],
+            reset_enabled: false,
+            reset_color: false,
+            reset_grade: false,
+        },
+    )
+    .unwrap();
+    let filters = &session.project.timelines[id].tracks[2].clips[0]
+        .effects
+        .filters;
+    assert!(filters[1].offset[1].is_constant());
+    assert_eq!(filters[1].offset[0].default, 70.0);
+    assert_eq!(filters[1].radius.default, 17.0);
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::FilterPresence {
+            filter: kind,
+            enabled: true,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        session.project.timelines[id].tracks[3].clips[0]
+            .effects
+            .filters
+            .len(),
+        1
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .filters[1]
+            .radius
+            .default,
+        17.0
+    );
+}
+
+#[test]
+fn selected_filter_enum_and_grade_keys_follow_native_rows_and_presets_without_overwriting_other_filters()
+ {
+    let (mut session, id, ids) = selection_fixture();
+    for track in [0, 2] {
+        let clip = &mut session.project.timelines[id].tracks[track].clips[0];
+        let mut blur = core::ClipFilter::new(core::FilterKind::GaussianBlur);
+        blur.direction.default = if track == 0 {
+            core::BlurDirection::Horizontal
+        } else {
+            core::BlurDirection::Vertical
+        };
+        clip.effects.filters = vec![
+            blur,
+            core::ClipFilter::new(core::FilterKind::ColorCorrection),
+        ];
+    }
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::ToggleFilterKeys {
+            filter: core::FilterKind::GaussianBlur,
+            params: vec![FilterParameter::Direction {}],
+        },
+    )
+    .unwrap();
+    for (track, frame, value) in [
+        (0, 20, core::BlurDirection::Horizontal),
+        (2, 40, core::BlurDirection::Vertical),
+    ] {
+        assert_eq!(
+            session.project.timelines[id].tracks[track].clips[0]
+                .effects
+                .filters[0]
+                .direction
+                .keyframe_at(frame),
+            Some((value, core::Interpolation::Linear))
+        );
+    }
+    let peer = &mut session.project.timelines[id].tracks[2].clips[0]
+        .effects
+        .filters[1];
+    peer.grade
+        .track_mut(core::GradeParam::ShadowsX)
+        .upsert(35, 0.1, core::Interpolation::Hold);
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::Filter {
+            filter: core::FilterKind::ColorCorrection,
+            patch: Box::new(crate::visual::FilterPatch {
+                grade: vec![crate::visual::GradeValue {
+                    param: core::GradeParam::ShadowsY,
+                    value: 0.2,
+                }],
+                ..Default::default()
+            }),
+        },
+    )
+    .unwrap();
+    let peer = &session.project.timelines[id].tracks[2].clips[0]
+        .effects
+        .filters[1];
+    assert!(
+        peer.grade
+            .track(core::GradeParam::ShadowsY)
+            .keyframe_at(40)
+            .is_some()
+    );
+    assert!(
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .filters[1]
+            .grade
+            .track(core::GradeParam::ShadowsY)
+            .is_constant()
+    );
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::GradePreset {
+            preset: "BlackAndWhite".into(),
+        },
+    )
+    .unwrap();
+    let peer = &session.project.timelines[id].tracks[2].clips[0]
+        .effects
+        .filters;
+    assert_eq!(
+        peer[1].grade.track(core::GradeParam::Saturation).default,
+        0.0
+    );
+    assert!(
+        peer[1]
+            .grade
+            .track(core::GradeParam::ShadowsY)
+            .keyframe_at(40)
+            .is_some()
+    );
+    assert!(peer[0].direction.keyframe_at(40).is_some());
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::GradePreset {
+            preset: "Neutral".into(),
+        },
+    )
+    .unwrap();
+    assert!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .filters[1]
+            .grade
+            .track(core::GradeParam::ShadowsY)
+            .is_constant()
+    );
+}
+
+#[test]
+fn selected_content_actions_refuse_bad_primary_later_targets_and_invalid_rows_atomically_with_strict_dtos()
+ {
+    for case in 0..8 {
+        let (mut session, id, mut ids) = selected_titles();
+        let kind = core::FilterKind::DropShadow;
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .filters = vec![
+            core::ClipFilter::new(kind),
+            core::ClipFilter::new(core::FilterKind::Exposure),
+        ];
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .filters = vec![core::ClipFilter::new(kind)];
+        let edit = match case {
+            0 => {
+                session.project.timelines[id].tracks[2].locked = true;
+                InspectorEdit::Title {
+                    patch: Box::new(TitleEdit {
+                        size: Some(120.0),
+                        ..Default::default()
+                    }),
+                }
+            }
+            1 => {
+                session.project.timelines[id].tracks[2].kind = TrackKind::Audio;
+                InspectorEdit::ToggleTextKey {}
+            }
+            2 => {
+                ids.push(format!("0{}", ids[0]));
+                InspectorEdit::ToggleTextKey {}
+            }
+            3 => InspectorEdit::FilterMove {
+                filter: kind,
+                to_index: 1,
+            },
+            4 => InspectorEdit::ToggleFilterKeys {
+                filter: kind,
+                params: vec![FilterParameter::Offset { axis: 2 }],
+            },
+            5 => InspectorEdit::Title {
+                patch: Box::new(TitleEdit {
+                    size: Some(f32::NAN),
+                    ..Default::default()
+                }),
+            },
+            6 => InspectorEdit::SolidColor {
+                value: core::Rgba::WHITE,
+            },
+            _ => InspectorEdit::Filter {
+                filter: kind,
+                patch: Box::new(crate::visual::FilterPatch {
+                    amount: Some(101.0),
+                    ..Default::default()
+                }),
+            },
+        };
+        let before = serde_json::to_value(&session.project).unwrap();
+        let generation = session.history.generation();
+        assert!(
+            selected_edit(&mut session, id, &ids, 108, edit).is_err(),
+            "case {case}"
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            before,
+            "case {case}"
+        );
+        assert_eq!(session.history.generation(), generation);
+    }
+    for value in [
+        json!({"action":"toggle_text_key","extra":1}),
+        json!({"action":"toggle_color_key","value":null}),
+        json!({"action":"filter","filter":"Exposure","patch":{"unknown":1}}),
+        json!({"action":"toggle_filter_keys","filter":"BoxBlur","params":[{"kind":"radius","extra":true}]}),
+    ] {
+        assert!(
+            serde_json::from_value::<InspectorEdit>(value.clone()).is_err(),
+            "{value}"
+        );
+    }
+}
+
+#[test]
+fn selected_content_metadata_exposes_dense_native_key_neighbors_and_unclamped_clock_with_inclusive_out_navigation()
+ {
+    let (mut session, id, ids) = selected_titles();
+    let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+    clip.effects.color = Some(core::Keyframed::constant(core::Rgba::WHITE));
+    clip.effects.filters = vec![core::ClipFilter::new(core::FilterKind::GaussianBlur)];
+    for frame in 0..80 {
+        clip.effects.title.as_mut().unwrap().content.upsert(
+            frame,
+            format!("Frame {frame}"),
+            core::Interpolation::Hold,
+        );
+        clip.effects.color.as_mut().unwrap().upsert(
+            frame,
+            core::Rgba::WHITE,
+            core::Interpolation::Linear,
+        );
+        clip.effects.filters[0]
+            .radius
+            .upsert(frame, frame as f32, core::Interpolation::Linear);
+        clip.effects.filters[0].direction.upsert(
+            frame,
+            core::BlurDirection::Both,
+            core::Interpolation::Hold,
+        );
+    }
+    let raw = &ids[1];
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    let value = detail(&session, id, raw, 140).unwrap();
+    for info in [
+        &value["title"]["content"]["keyframe_info"],
+        &value["filters"]["stack"][0]["radius"]["keyframe_info"],
+        &value["filters"]["stack"][0]["direction_info"]["keyframe_info"],
+    ] {
+        assert_eq!(info["on_keyframe"], true);
+        assert_eq!(info["previous_frame"], 139);
+        assert_eq!(info["next_frame"], 141);
+    }
+    let past = detail(&session, id, raw, 500).unwrap();
+    let clip = &session.project.timelines[id].tracks[0].clips[0];
+    assert_eq!(
+        past["keyframe_clock"]["source_frame"],
+        clip.source_frame_at(500)
+    );
+    assert_ne!(past["keyframe_clock"]["source_frame"], past["source_frame"]);
+    let out = keyframe_navigation(&session, id, raw, 1_000_000).unwrap();
+    assert_eq!(out["source_frame"], clip.source_out());
+    assert_eq!(
+        out["timeline_frame"],
+        clip.timeline_frame_at(clip.source_out())
+    );
+    assert_eq!(past["keyframe_clock"]["ticks"].as_array().unwrap().len(), 9);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+}
+
+#[test]
+fn selected_title_shadow_filters_only_titles_and_solid_metadata_never_exposes_controls_for_other_sources()
+ {
+    let (mut session, id, ids) = selected_titles();
+    let primary_id = ids[1].clone();
+    session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .color = Some(core::Keyframed::constant(core::Rgba::WHITE));
+    assert!(detail(&session, id, &primary_id, 108).unwrap()["color_info"].is_null());
+    let solid_id = ids[2].clone();
+    let solid = detail(&session, id, &solid_id, 108).unwrap();
+    assert_eq!(
+        solid["color_info"]["value"],
+        json!(core::edit::DEFAULT_SOLID_COLOR)
+    );
+    assert_eq!(solid["color_info"]["keyframe_info"]["on_keyframe"], false);
+    let mut existing = core::ClipFilter::new(core::FilterKind::DropShadow);
+    existing.enabled = false;
+    existing.radius.default = 23.0;
+    session.project.timelines[id].tracks[2].clips[0]
+        .effects
+        .filters
+        .push(existing.clone());
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let position = session.history.position();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::TitleShadow { enabled: true },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(
+        session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .filters
+            .len(),
+        1
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[2].clips[0]
+            .effects
+            .filters,
+        vec![existing]
+    );
+    assert!(
+        session.project.timelines[id].tracks[3].clips[0]
+            .effects
+            .filters
+            .is_empty()
+    );
+    let generation = session.history.generation();
+    selected_edit(
+        &mut session,
+        id,
+        &ids,
+        108,
+        InspectorEdit::TitleShadow { enabled: true },
+    )
+    .unwrap();
+    assert_eq!(session.history.generation(), generation);
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    session.history.redo(&mut session.project);
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    assert!(
+        selected_edit(
+            &mut session,
+            id,
+            &[solid_id],
+            108,
+            InspectorEdit::TitleShadow { enabled: true }
+        )
+        .is_err()
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.generation(), generation);
+    assert!(
+        serde_json::from_value::<InspectorEdit>(
+            json!({"action":"title_shadow","enabled":true,"extra":1})
+        )
+        .is_err()
+    );
+}
+
 fn selected_edit(
     session: &mut Session,
     id: TimelineId,

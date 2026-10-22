@@ -273,7 +273,7 @@ export function createInput({
     const timeline = getTimeline();
     if (!timeline) return;
     onNavigationIntent();
-    canvas.focus();
+    canvas.focus({preventScroll:true});
     const [x, y] = point(event);
     viewportMapping=canvasMapping();
     const hit = hitTest(x, y, timeline, view,canvas.getBoundingClientRect().width);
@@ -322,7 +322,7 @@ export function createInput({
     if (!gesture) {
       const timeline = getTimeline(); if (!timeline) return;
       const [x,y] = point(event), hit = hitTest(x,y,timeline,view,canvas.getBoundingClientRect().width);
-      canvas.title = hit.marker ? `${hit.marker.note || "Marker"} · ${hit.marker.start_frame}f · drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : hit.kind==='retime_menu'?'Choose a native speed preset · keyboard: select clip and press Shift+F10':hit.kind==='retime_close'?'Hide this clip’s speed strip':hit.kind==='retime' ? `Speed handle · drag the right endpoint to resize at native speed${view.retimeOverwrite?' · OVERWRITE clips enabled':''}` : hit.kind==='transition_body'?'Click to select this transition · Alt+drag its body to copy · handles resize':hit.kind==='transition' ? `${hit.slot==='cut_after'?'Cross transition':`Transition ${hit.slot}`} · ${hit.duration}f · drag to change duration` : hit.kind==='fade' ? `Fade ${hit.edge} · ${hit.clip[`fade_${hit.edge}`]}f · drag to change this clip's fade` : '';
+      canvas.title = hit.marker ? `${hit.marker.note || "Marker"} Â· ${hit.marker.start_frame}f Â· drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : hit.kind==='retime_menu'?'Choose a native speed preset Â· keyboard: select clip and press Shift+F10':hit.kind==='retime_close'?'Hide this clipâ€™s speed strip':hit.kind==='retime' ? `Speed handle Â· drag the right endpoint to resize at native speed${view.retimeOverwrite?' Â· OVERWRITE clips enabled':''}` : hit.kind==='transition_body'?'Click to select this transition Â· Alt+drag its body to copy Â· handles resize':hit.kind==='transition' ? `${hit.slot==='cut_after'?'Cross transition':`Transition ${hit.slot}`} Â· ${hit.duration}f Â· drag to change duration` : hit.kind==='fade' ? `Fade ${hit.edge} Â· ${hit.clip[`fade_${hit.edge}`]}f Â· drag to change this clip's fade` : '';
       if(canvas.style)canvas.style.cursor = hit.kind==='divider'?'ns-resize':['fade','transition','retime'].includes(hit.kind) ? 'ew-resize' : ['header_flag','retime_menu','retime_close'].includes(hit.kind)?'pointer':hit.kind==='transition_body'?'copy':hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
       const hover=hit.clip?.id ?? null;if(view.hoverFadeClip!==hover){view.hoverFadeClip=hover;invalidate();}
       return;

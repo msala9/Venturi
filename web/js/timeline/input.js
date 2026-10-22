@@ -113,12 +113,18 @@ export function createInput({
   const selectionIntent=()=>JSON.stringify([view.selection,view.selectionAnchor,view.transitionSelection,view.selectedGap]);
   const projectEpoch=()=>getGapContext()?.project_epoch ?? null;
   const checkSelectionAnchor=()=>view.selectionAnchor=reconcileSelectionAnchor(getTimeline(),view.selectionAnchor,projectEpoch());
+  const scrollbarOwned=g=>getTimeline()===g.timeline && gapContext(g.timeline)===g.gapContext && transitionContext(g.timeline)===g.context;
+  const setScrollbarOffset=(g,offset)=>{
+    view[g.pane==='video'?'videoScroll':'audioScroll']=g.pane==='video'?g.maxOffset-offset:offset;
+    syncLayout();g.context=transitionContext(g.timeline);invalidate();
+  };
   const cancel = (notify=true) => {
     viewportMapping=canvasMapping();
     const previous=gesture;
     const slipping = gesture?.kind === "slip";
     const pointerId=gesture?.pointerId;
     if(previous?.kind==='divider' && getTimeline()===previous.timeline && gapContext(previous.timeline)===previous.gapContext)view.videoPaneHeight=previous.beforeHeight;
+    if(previous?.kind==='pane_scrollbar' && scrollbarOwned(previous))view[previous.pane==='video'?'videoScroll':'audioScroll']=previous.beforeScroll;
     gesture = null;
     transitionDrag = null;
     presetDrop?.dnd.end();
@@ -134,7 +140,7 @@ export function createInput({
       restored=true;
       if(previous.selectionPublished && selectionIntent()!==intent){if(view.transitionSelection)onTransitionSelect(view.transitionSelection);else onSelect();}
     }
-    if(!restored && !previous?.selectionBefore && !['lasso','divider','pan','header_flag'].includes(previous?.kind) && view.selectedGap){view.selectedGap=null;if(notify)onSelect();}
+    if(!restored && !previous?.selectionBefore && !['lasso','divider','pan','header_flag','pane_scrollbar'].includes(previous?.kind) && view.selectedGap){view.selectedGap=null;if(notify)onSelect();}
     if(slipping)onSlip({phase:"cancel"});
     if(pointerId!==undefined && canvas.hasPointerCapture(pointerId))canvas.releasePointerCapture(pointerId);
     invalidate();
@@ -276,8 +282,10 @@ export function createInput({
     canvas.focus({preventScroll:true});
     const [x, y] = point(event);
     viewportMapping=canvasMapping();
-    const hit = hitTest(x, y, timeline, view,canvas.getBoundingClientRect().width);
-    if(event.button===0 && hit.kind==='divider'){
+    const hit = hitTest(x, y, timeline, view,canvas.clientWidth ?? canvas.getBoundingClientRect().width);
+    if(event.button===0 && hit.kind==='pane_scrollbar'){
+      gesture={...hit,x,y,pointerId:event.pointerId,timeline,gapContext:gapContext(timeline),context:transitionContext(timeline),beforeScroll:view[hit.pane==='video'?'videoScroll':'audioScroll'],moved:false};
+    }else if(event.button===0 && hit.kind==='divider'){
       const layout=syncLayout();
       gesture={kind:'divider',x,y,pointerId:event.pointerId,timeline,gapContext:gapContext(timeline),beforeHeight:view.videoPaneHeight,initialHeight:layout.videoHeight,viewportHeight:view.viewportHeight};
     }else if(event.button===0 && hit.kind==='header_flag'){
@@ -321,7 +329,8 @@ export function createInput({
     if(presetDrop?.active())return;
     if (!gesture) {
       const timeline = getTimeline(); if (!timeline) return;
-      const [x,y] = point(event), hit = hitTest(x,y,timeline,view,canvas.getBoundingClientRect().width);
+      const [x,y] = point(event), hit = hitTest(x,y,timeline,view,canvas.clientWidth ?? canvas.getBoundingClientRect().width);
+      if(hit.kind==='pane_scrollbar'){canvas.title=`Scroll ${hit.pane} tracks`;if(canvas.style)canvas.style.cursor='ns-resize';return;}
       canvas.title = hit.marker ? `${hit.marker.note || "Marker"} Â· ${hit.marker.start_frame}f Â· drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : hit.kind==='retime_menu'?'Choose a native speed preset Â· keyboard: select clip and press Shift+F10':hit.kind==='retime_close'?'Hide this clipâ€™s speed strip':hit.kind==='retime' ? `Speed handle Â· drag the right endpoint to resize at native speed${view.retimeOverwrite?' Â· OVERWRITE clips enabled':''}` : hit.kind==='transition_body'?'Click to select this transition Â· Alt+drag its body to copy Â· handles resize':hit.kind==='transition' ? `${hit.slot==='cut_after'?'Cross transition':`Transition ${hit.slot}`} Â· ${hit.duration}f Â· drag to change duration` : hit.kind==='fade' ? `Fade ${hit.edge} Â· ${hit.clip[`fade_${hit.edge}`]}f Â· drag to change this clip's fade` : '';
       if(canvas.style)canvas.style.cursor = hit.kind==='divider'?'ns-resize':['fade','transition','retime'].includes(hit.kind) ? 'ew-resize' : ['header_flag','retime_menu','retime_close'].includes(hit.kind)?'pointer':hit.kind==='transition_body'?'copy':hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
       const hover=hit.clip?.id ?? null;if(view.hoverFadeClip!==hover){view.hoverFadeClip=hover;invalidate();}
@@ -330,6 +339,13 @@ export function createInput({
     const timeline = getTimeline(),
       [x, y] = point(event),
       g = gesture;
+    if(g.kind==='pane_scrollbar'){
+      if(event.pointerId!==g.pointerId)return;
+      if(!scrollbarOwned(g) || modal() || !canNavigate() || (!allowRelease && event.buttons!==undefined && !(event.buttons&1))){cancel();return;}
+      g.moved ||= Math.hypot(x-g.x,y-g.y)>=4;
+      if(g.moved && g.travel>0)setScrollbarOffset(g,Math.max(0,Math.min(g.maxOffset,g.offset+(y-g.y)*g.maxOffset/g.travel)));
+      return;
+    }
     if(g.kind==='divider'){
       if(event.pointerId!==g.pointerId)return;
       if(timeline!==g.timeline || gapContext(timeline)!==g.gapContext || view.viewportHeight!==g.viewportHeight || modal() || !canNavigate()){cancel();return;}
@@ -479,6 +495,12 @@ export function createInput({
     if (!gesture) return;
     const g = gesture,
       timeline = getTimeline();
+    if(g.kind==='pane_scrollbar'){
+      if(event.pointerId!==g.pointerId || event.button!==0)return;
+      move(event,true);if(gesture!==g)return;
+      if(!g.moved && g.travel>0){const [,y]=point(event);setScrollbarOffset(g,Math.max(0,Math.min(g.maxOffset,(y-g.top-g.thumbHeight/2)*g.maxOffset/g.travel)));}
+      gesture=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);invalidate();return;
+    }
     if(g.kind==='divider' || g.kind==='header_flag'){
       if(event.pointerId!==g.pointerId || event.button!==0)return;
       if(g.kind==='divider'){
@@ -607,29 +629,28 @@ export function createInput({
     invalidate();
   };
   const wheel = (event) => {
+    if(event.defaultPrevented || event.metaKey || event.isComposing || event.getModifierState?.('AltGraph') || waiting || modal() || !canNavigate())return;
     onNavigationIntent();
     if(presetDrop?.active() || transitionDrag || gesture)cancel();
     const timeline = getTimeline();
     if (!timeline) return;
     event.preventDefault();
-    const [x,y] = point(event),layout=syncLayout();
-    if (event.ctrlKey || event.metaKey) {
-      const anchor = xToFrame(x, view, timeline.fps);
+    const [,y] = point(event),layout=syncLayout(),unit=event.deltaMode===1?16:event.deltaMode===2?Math.max(1,layout.height-RULER):1;
+    const deltaY=(event.deltaY || 0)*unit,deltaX=(event.deltaX || 0)*unit;
+    if (event.altKey) {
+      const oldScale=view.scale;
       view.scale = Math.max(
         3,
-        Math.min(2000, view.scale * Math.exp(-event.deltaY * 0.004)),
+        Math.min(2000, view.scale * Math.exp(-deltaY * 0.004)),
       );
-      view.origin = Math.max(
-        0,
-        anchor -
-          (x - HEADER) / ((view.scale * timeline.fps.den) / timeline.fps.num),
-      );
-    } else if (event.shiftKey)view.rowHeight=Math.max(40,Math.min(160,layout.rowHeight*Math.exp(-event.deltaY/200)));
+      view.origin=Math.max(0,view.playhead-(view.playhead-view.origin)*oldScale/view.scale);
+    } else if(event.ctrlKey)view.origin=Math.max(0,view.origin+(deltaX || deltaY)/((view.scale*timeline.fps.den)/timeline.fps.num));
+    else if (event.shiftKey)view.rowHeight=Math.max(40,Math.min(160,layout.rowHeight*Math.exp(-deltaY/200)));
     else{
       const pane=layout.paneAtY(y);
-      if(pane==='video')view.videoScroll-=event.deltaY;
-      if(pane==='audio')view.audioScroll+=event.deltaY;
-      view.origin=Math.max(0,view.origin+(event.deltaX || 0)/((view.scale*timeline.fps.den)/timeline.fps.num));
+      if(pane==='video')view.videoScroll-=deltaY;
+      if(pane==='audio')view.audioScroll+=deltaY;
+      view.origin=Math.max(0,view.origin+deltaX/((view.scale*timeline.fps.den)/timeline.fps.num));
     }
     syncLayout();
     invalidate();

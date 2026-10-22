@@ -40,6 +40,7 @@ pub enum Action {
     CheckFrame(FrameQuery),
     ClipDetail(String, FrameQuery, Option<usize>),
     KeyframeNavigation(String, KeyframeNavigationRequest),
+    ProjectView(crate::project_view::Request),
     SlipDetail(String, i64, FrameQuery),
     TakePlan(crate::take::Preview),
     CompoundNavigation(crate::compound_navigation::Request),
@@ -184,6 +185,7 @@ pub struct Editor {
     media_import_receipt: Option<Value>,
     otio_import_receipt: Option<Value>,
     clipboard_receipt: Option<Value>,
+    persisted_view: vv_core::ProjectView,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
@@ -239,7 +241,9 @@ impl Editor {
                 (None, HashMap::new())
             }
         };
+        let persisted_view = session.project.view.clone();
         let mut editor = Self {
+            persisted_view,
             presets,
             audio_presets,
             assets,
@@ -413,6 +417,15 @@ impl Editor {
         self.otio_import_receipt = None;
         self.clipboard_receipt = None;
         let outcome = self.perform(timeline, &request);
+        if self.session.epoch() != previous_epoch
+            || outcome.is_ok()
+                && matches!(
+                    request.operation,
+                    Operation::Save | Operation::SaveAs { .. }
+                )
+        {
+            self.persisted_view = self.session.project.view.clone();
+        }
         let media_import_receipt = self.media_import_receipt.take();
         let otio_import_receipt = self.otio_import_receipt.take();
         let clipboard_receipt = self.clipboard_receipt.take();
@@ -1822,8 +1835,84 @@ impl Editor {
         }
         Ok((id, size))
     }
+    fn record_project_view(&mut self, request: crate::project_view::Request) -> Result<Value> {
+        self.lease(&request.client_id)?;
+        let (source, _) = self.validate_view_frame(&request.query)?;
+        if request.if_view_revision.len() != 64
+            || !request
+                .if_view_revision
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            return Err(ApiError::invalid(
+                "Choose the current native project view revision",
+            ));
+        }
+        if crate::project_view::snapshot(&self.session.project).1 != request.if_view_revision {
+            return Err(ApiError::conflict(
+                "VIEW_REVISION_CONFLICT",
+                "The project view changed; read it before remembering this position",
+            ));
+        }
+        let (root, frame) = if request.ancestors.is_empty() {
+            (source, request.query.frame)
+        } else {
+            let mapped = crate::compound_navigation::navigate(
+                &self.session,
+                source,
+                &crate::compound_navigation::Request {
+                    query: request.query.clone(),
+                    action: crate::compound_navigation::Navigation::Exit {
+                        ancestors: request.ancestors,
+                    },
+                },
+            )?;
+            let root = snapshot::timeline_id(
+                &self.session,
+                mapped["timeline_id"].as_str().ok_or_else(ApiError::io)?,
+            )?;
+            (root, mapped["frame"].as_i64().ok_or_else(ApiError::io)?)
+        };
+        let view = crate::project_view::record(&self.session.project, root, frame);
+        let changed = view != self.session.project.view;
+        let mut saved = false;
+        if request.persist
+            && !self.session.has_unsaved_changes()
+            && view != self.persisted_view
+            && let Some(name) = self
+                .session
+                .path()
+                .and_then(|path| path.file_name())
+                .and_then(|name| name.to_str())
+                .map(str::to_owned)
+        {
+            let mut project = self.session.project.clone();
+            project.view = view.clone();
+            self.files.save(&project, &name, false)?;
+            self.session.project.view = view.clone();
+            self.session.mark_saved();
+            self.persisted_view = view.clone();
+            if crate::resume::remember(&self.files, &name).is_err() {
+                self.persistence_notice = Some(
+                    "The project view was saved, but automatic reopen metadata could not be updated. Existing recovery metadata was preserved.",
+                );
+            }
+            saved = true;
+        } else {
+            self.session.project.view = view.clone();
+        }
+        let (value, revision) = crate::project_view::snapshot(&self.session.project);
+        Ok(json!({
+            "project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),
+            "generation":self.session.history.generation().to_string(),
+            "view":value,"view_revision":revision,"changed":changed,"saved":saved,
+            "persisted":self.session.path().is_some() && self.persisted_view == view,
+            "persistence_notice":self.persistence_notice,
+        }))
+    }
     fn handle(&mut self, action: Action) -> Result<Value> {
         match action {
+            Action::ProjectView(request) => self.record_project_view(request),
             Action::CompoundNavigation(request) => {
                 request.validate()?;
                 let (id, _) = self.validate_frame_identity(&request.query)?;

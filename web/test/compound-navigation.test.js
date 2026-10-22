@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createCompoundNavigation,compoundTarget,compoundNavigationAction,MAX_COMPOUND_DEPTH} from '../js/compound-navigation.js';
 
-function harness(){
+function harness(options={}){
   const timeline=(id,tracks)=>({id,name:`Timeline ${id}`,revision:`${id}-r1`,fps:{num:24,den:1},tracks:[{id:'v',clips:tracks}]});
   const a=timeline('a',[{id:'wrapper',media_id:'mb',kind:'media',start_frame:100,length_frames:50,freeze_source_frame:0},{id:'ordinary',media_id:'file',kind:'media'}]),b=timeline('b',[{id:'nested',media_id:'mc',kind:'media'}]),c=timeline('c',[]);
   let state={document:{project_epoch:'epoch',generation:'0',timelines:[a,b,c],media:[{id:'mb',compound_timeline_id:'b',content_hash:'mb1'},{id:'mc',compound_timeline_id:'c',content_hash:'mc1'},{id:'file',compound_timeline_id:null}]},timeline:a,frame:9999,selection:['wrapper','ordinary'],viewport:{origin:88,scale:240,scrollY:34,selection:['wrapper','ordinary']}};
@@ -12,7 +12,7 @@ function harness(){
     append(...nodes){this.children.push(...nodes);}replaceChildren(...nodes){this.children=[...nodes];}setAttribute(key,value){this.attributes.set(key,value);}addEventListener(key,fn){this.listeners.set(key,fn);}
   }
   const root=new Node('nav'),button=new Node('button'),documentRef={createElement:tag=>new Node(tag)};
-  const nav=createCompoundNavigation({getState:()=>state,canNavigate:()=>allowed,stop:()=>stops++,root,openButton:button,documentRef,notice:text=>notices.push(text),install(timeline,frame,viewport){nav.invalidate();installed.push({timeline,frame,viewport:structuredClone(viewport)});state={...state,timeline,frame,selection:viewport?.selection || [],viewport:viewport || {origin:0,scale:240,scrollY:0,selection:[]}};nav.invalidate();},api:(path,body,options)=>new Promise((resolve,reject)=>requests.push({path,body:structuredClone(body),options,resolve,reject}))});
+  const nav=createCompoundNavigation({...options,getState:()=>state,canNavigate:()=>allowed,stop:()=>stops++,root,openButton:button,documentRef,notice:text=>notices.push(text),install(timeline,frame,viewport){nav.invalidate();installed.push({timeline,frame,viewport:structuredClone(viewport)});state={...state,timeline,frame,selection:viewport?.selection || [],viewport:viewport || {origin:0,scale:240,scrollY:0,selection:[]}};nav.invalidate();},api:(path,body,options)=>new Promise((resolve,reject)=>requests.push({path,body:structuredClone(body),options,resolve,reject}))});
   const reply=(request,patch={})=>{
     const {query,action}=request.body,parent=state.document.timelines.find(item=>item.id===query.timeline_id),clip=parent.tracks.flatMap(track=>track.clips).find(clip=>action.clip_ids?.includes(clip.id) && state.document.media.some(item=>item.id===clip.media_id && item.compound_timeline_id));
     const id=action.kind==='enter'?state.document.media.find(item=>item.id===clip.media_id).compound_timeline_id:action.ancestors[0].timeline_id;
@@ -101,4 +101,15 @@ test('compound shortcuts exclude modal, text, buttons, composition, repeat, modi
 
 test('late replies reconcile project changes even when no explicit invalidate occurred',async()=>{
   const h=harness();await h.enter();h.state().selection=['nested'];const pending=h.nav.enter(),request=h.requests.at(-1),response=h.reply(request);h.state().document.project_epoch='new';h.state().document.timelines=[h.state().timeline];request.resolve(response);assert.equal(await pending,false);assert.equal(h.nav.state().ancestors.length,0);assert.equal(h.root.children.some(node=>node.tag==='button'),false);assert.equal(h.installed.length,1);
+});
+
+
+test('remembering the root view precedes compound entry and canceled preparation cannot navigate',async()=>{
+  let release;const remembered=new Promise(resolve=>{release=resolve;}),h=harness({beforeNavigate:()=>remembered});
+  const pending=h.nav.enter();assert.equal(h.requests.length,0);assert.equal(h.stops(),1);release();await Promise.resolve();
+  assert.equal(h.requests.length,1);h.requests[0].resolve(h.reply(h.requests[0]));assert.equal(await pending,true);
+  let cancelRelease;const canceled=harness({beforeNavigate:()=>new Promise(resolve=>{cancelRelease=resolve;})});
+  const abandoned=canceled.nav.enter();canceled.nav.cancel();cancelRelease();assert.equal(await abandoned,false);assert.equal(canceled.requests.length,0);assert.equal(canceled.installed.length,0);
+  const rejected=harness({beforeNavigate:()=>Promise.reject(Error('View could not be remembered'))});
+  assert.equal(await rejected.nav.enter(),false);assert.equal(rejected.requests.length,0);assert.deepEqual(rejected.notices,['View could not be remembered']);
 });

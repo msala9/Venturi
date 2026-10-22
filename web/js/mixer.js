@@ -25,6 +25,11 @@ export function renderMixer(root, timeline, { writable, commit, notice, open = f
 }
 export function effectName(effect) {return typeof effect.kind === "string" ? effect.kind : Object.keys(effect.kind)[0];}
 export function chainOperation(channel,effects) {return {kind:"set_audio_effects",channel,effects};}
+export function normalizationModeTarget(previousMode,nextMode,target,catalog) {
+  const next=catalog.find(value=>value.mode===nextMode);
+  if(!next || !catalog.some(value=>value.mode===previousMode))throw new Error("Choose a native normalization mode");
+  return (previousMode==='Loudness')!==(nextMode==='Loudness')?next.default:target;
+}
 function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timeline,query,audioPresets) {
   const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.mixerPath=`${track.channel}:effects`;section.open=openPaths.has(section.dataset.mixerPath);summary.textContent=`${track.label} inserts (${track.effects.length})`;section.append(summary);root.append(section);
   let built=false;
@@ -85,11 +90,12 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
           for(const details of [card,section,root])details.addEventListener('toggle',refresh);
         }
         if(kind === "Normalize") {
+          let previousMode=data.mode;
           const mode=select(`${track.label} normalization mode`,data,"mode",catalog.normalization.map((value)=>value.mode));
           const range=()=>catalog.normalization.find((value)=>value.mode===data.mode);
           const target=number(`${track.label} normalization target`,data,"target_db",range().range);
-          select(`${track.label} clip level policy`,data,"set_level",["Independent","Relative"]);
-          mode.addEventListener("change",()=>{const value=range();data.target_db=value.default;target.min=value.range[0];target.max=value.range[1];target.value=value.default;});
+          if(track.channel!=="master")select(`${track.label} clip level policy`,data,"set_level",["Independent","Relative"]);
+          mode.addEventListener("change",()=>{const value=range();data.target_db=normalizationModeTarget(previousMode,data.mode,data.target_db,catalog.normalization);previousMode=data.mode;target.min=value.range[0];target.max=value.range[1];target.value=data.target_db;});
         }
         const apply=document.createElement("button");apply.textContent=`Apply ${track.label} insert ${index+1}`;apply.disabled=disabled;form.append(apply);
         form.addEventListener("submit",(event)=>{event.preventDefault();if(form.reportValidity())report(track.effects.map((entry,i)=>i===index ? draft : entry));});

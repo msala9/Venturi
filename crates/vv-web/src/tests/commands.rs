@@ -940,6 +940,491 @@ fn multitrack_compound_fixture() -> (Session, TimelineId, Vec<ClipId>) {
     (session, id, clips)
 }
 
+fn desktop_compound_oracle(
+    session: &Session,
+    id: TimelineId,
+    clips: &[ClipId],
+    name: &str,
+) -> Session {
+    let mut oracle = Session::default();
+    oracle.project = session.project.clone();
+    let targets: Vec<_> = oracle.project.timelines[id]
+        .tracks
+        .iter()
+        .enumerate()
+        .flat_map(|(track, lane)| {
+            lane.clips
+                .iter()
+                .filter(|clip| clips.contains(&clip.id))
+                .map(move |clip| (track, clip.id))
+        })
+        .collect();
+    let mut plan = core::plan_compound_clip(&oracle.project, id, &targets).unwrap();
+    plan.nested_timeline.name = name.into();
+    let (media, mut native) =
+        core::compound_clip_commands(&mut oracle.project, id, &targets, &plan);
+    native.push(Box::new(core::RenameTimeline::new(media, name.into())));
+    oracle.apply(Box::new(CompositeCommand::new(
+        CommandLabel::MakeCompoundClip,
+        native,
+    )));
+    oracle.sync_timeline_media(id);
+    oracle
+}
+
+#[test]
+fn native_compound_matches_desktop_regrouping_for_muted_nonlinear_normalized_and_external_compositing_contexts_with_one_undo()
+ {
+    for case in 0..4 {
+        let (mut session, id, mut clips) = multitrack_compound_fixture();
+        match case {
+            0 => {
+                let timeline = &mut session.project.timelines[id];
+                timeline.tracks[1].muted = true;
+                timeline.tracks[2].mix.pan = -0.4;
+                timeline.tracks[3].solo = true;
+                timeline.tracks[3].muted = true;
+                timeline.tracks[2].mix.effects.push(core::AudioEffect::new(
+                    core::AudioEffectKind::Equalizer(core::Equalizer::DEFAULT),
+                ));
+                timeline.tracks[3].mix.effects.push(core::AudioEffect::new(
+                    core::AudioEffectKind::MultibandCompressor(core::MultibandCompressor::DEFAULT),
+                ));
+            }
+            1 => {
+                let extra_id = session.project.alloc_clip_id();
+                let timeline = &mut session.project.timelines[id];
+                let lane = &mut timeline.tracks[2];
+                lane.clips[0].timeline_len = 24;
+                let mut extra = lane.clips[0].clone();
+                extra.id = extra_id;
+                extra.timeline_start = 24;
+                extra.linked_group = None;
+                lane.insert_sorted(extra);
+                clips.push(extra_id);
+                lane.mix
+                    .effects
+                    .push(core::AudioEffect::new(core::AudioEffectKind::Normalize {
+                        target_db: -6.0,
+                        mode: core::NormalizeMode::SamplePeak,
+                        set_level: core::SetLevel::Relative,
+                    }));
+            }
+            2 => {
+                let extra = core::Clip::from_source_range(
+                    session.project.alloc_clip_id(),
+                    core::ClipSource::Adjustment,
+                    0,
+                    48,
+                    0,
+                    core::Rational::one(),
+                );
+                let mut intervening = core::Track::new(TrackKind::Video);
+                intervening.insert_sorted(extra);
+                let timeline = &mut session.project.timelines[id];
+                timeline.tracks[1].clips[0].effects.blend_mode = core::BlendMode::Multiply;
+                timeline.tracks[1].clips[0].effects.matte = Some(core::MatteMode::Luma);
+                timeline.tracks.insert(1, intervening);
+            }
+            _ => {
+                let extra_id = session.project.alloc_clip_id();
+                let extra = core::Clip::from_source_range(
+                    extra_id,
+                    core::ClipSource::SolidColor,
+                    0,
+                    48,
+                    48,
+                    core::Rational::one(),
+                );
+                let lane = &mut session.project.timelines[id].tracks[1];
+                lane.insert_sorted(extra);
+                lane.crossings.push(core::CrossTransition {
+                    left_clip: clips[1],
+                    right_clip: extra_id,
+                    transition: core::Transition {
+                        kind: core::TransitionKind::CrossDissolve,
+                        duration: 12,
+                        direction: core::PushDirection::Left,
+                        ease: core::Ease::InOut,
+                        curve: 0.5,
+                    },
+                });
+            }
+        }
+        session.sync_timeline_media(id);
+        let parent = serde_json::to_value(&session.project.timelines[id]).unwrap();
+        let count = session.project.timelines.len();
+        let pool = session.project.media_pool.len();
+        let position = session.history.position();
+        let name = "Native regrouping";
+        let mut oracle = desktop_compound_oracle(&session, id, &clips, name);
+        // The linked audio peer is omitted explicitly, as with native GUI selection expansion.
+        let requested: Vec<_> = clips
+            .iter()
+            .filter(|clip| **clip != clips[2])
+            .map(|clip| clip.0.to_string())
+            .collect();
+        apply(
+            &mut session,
+            id,
+            &Operation::MakeNativeCompound {
+                clip_ids: requested,
+                name: name.into(),
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            serde_json::to_value(&oracle.project).unwrap(),
+            "case {case}"
+        );
+        assert_eq!(session.history.position(), position + 1);
+        assert_eq!(
+            session.history.labels().last(),
+            Some(CommandLabel::MakeCompoundClip)
+        );
+        let after = serde_json::to_value(&session.project.timelines[id]).unwrap();
+        for state in [&mut session, &mut oracle] {
+            apply(state, id, &Operation::Undo).unwrap();
+        }
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            parent
+        );
+        assert_eq!(session.project.timelines.len(), count);
+        assert_eq!(session.project.media_pool.len(), pool);
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            serde_json::to_value(&oracle.project).unwrap(),
+            "native Undo, case {case}"
+        );
+        for state in [&mut session, &mut oracle] {
+            apply(state, id, &Operation::Redo).unwrap();
+        }
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            after
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            serde_json::to_value(&oracle.project).unwrap(),
+            "native Redo, case {case}"
+        );
+    }
+}
+
+#[test]
+fn native_compound_matches_desktop_cpu_pcm_after_regrouping_nonlinear_buses_without_claiming_before_after_invariance()
+ {
+    let root = std::env::temp_dir().join(format!(
+        "vv-native-compound-pcm-{}-{}",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    let path = root.join("native.wav");
+    let samples: Vec<_> = (0..4800)
+        .map(|sample| (sample as f32 * std::f32::consts::TAU * 731.0 / 48000.0).sin() * 0.2)
+        .collect();
+    vv_media::audio_file::write_audio_file(
+        &path,
+        vv_media::audio_file::AudioFileFormat::Wav,
+        &samples,
+        48000,
+        1,
+    )
+    .unwrap();
+    let (mut session, id, clips) = multitrack_compound_fixture();
+    let audio_media = match session.project.timelines[id].tracks[2].clips[0].source {
+        core::ClipSource::Media(media) => media,
+        _ => unreachable!(),
+    };
+    session.project.media_pool[audio_media].path = path;
+    session.project.media_pool[audio_media].meta.channels = 1;
+    for track in [2, 3] {
+        session.project.timelines[id].tracks[track].clips[0].timeline_len = 2;
+    }
+    let timeline = &mut session.project.timelines[id];
+    timeline.tracks[2].mix.pan = -0.2;
+    timeline.tracks[2].mix.effects = vec![
+        core::AudioEffect::new(core::AudioEffectKind::Equalizer(core::Equalizer::DEFAULT)),
+        core::AudioEffect::new(core::AudioEffectKind::MultibandCompressor(
+            core::MultibandCompressor::DEFAULT,
+        )),
+    ];
+    timeline.tracks[3]
+        .mix
+        .effects
+        .push(core::AudioEffect::new(core::AudioEffectKind::Mono));
+    timeline.master.gain_db = -4.0;
+    session.sync_timeline_media(id);
+    let oracle = desktop_compound_oracle(&session, id, &clips, "Native PCM");
+    apply(
+        &mut session,
+        id,
+        &Operation::MakeNativeCompound {
+            clip_ids: clips.iter().map(|clip| clip.0.to_string()).collect(),
+            name: "Native PCM".into(),
+        },
+    )
+    .unwrap();
+    let render = |state: &Session| {
+        let mut levels = vv_session::audio_render::LevelCache::default();
+        levels.threads = 1;
+        let mut output = Vec::new();
+        vv_session::audio_render::render_offline(
+            &state.project,
+            &state.project.timelines[id],
+            0..4000,
+            &mut levels,
+            |samples| {
+                output.extend_from_slice(samples);
+                std::ops::ControlFlow::Continue(())
+            },
+        )
+        .unwrap();
+        output
+    };
+    let actual = render(&session);
+    let expected = render(&oracle);
+    assert_eq!(actual.len(), 8000);
+    assert!(actual.iter().any(|sample| sample.abs() > 0.001));
+    assert_eq!(
+        actual, expected,
+        "The web native path must match the desktop AFTER regrouping"
+    );
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_compound_keeps_structural_locked_linked_overlap_and_depth_safety_and_legacy_wire_unchanged()
+ {
+    for case in 0..5 {
+        let (mut session, id, clips) = multitrack_compound_fixture();
+        let mut name = "Native refusal".to_string();
+        match case {
+            0 => session.project.timelines[id].tracks[2].locked = true,
+            1 => {
+                let extra_id = session.project.alloc_clip_id();
+                let lane = &mut session.project.timelines[id].tracks[0];
+                lane.clips[0].timeline_len = 12;
+                lane.insert_sorted(core::Clip::from_source_range(
+                    extra_id,
+                    core::ClipSource::SolidColor,
+                    0,
+                    12,
+                    12,
+                    core::Rational::one(),
+                ));
+            }
+            2 => name = "Invalid\nname".into(),
+            3 => {
+                while session.project.timelines.len() < 64 {
+                    let copy = session.project.timelines[id].clone();
+                    session.project.timelines.insert(copy);
+                }
+            }
+            _ => {
+                let mut previous = None;
+                for depth in 0..15 {
+                    let mut lane = core::Track::new(TrackKind::Video);
+                    lane.insert_sorted(core::Clip::from_source_range(
+                        session.project.alloc_clip_id(),
+                        previous.map_or(core::ClipSource::SolidColor, core::ClipSource::Media),
+                        0,
+                        48,
+                        0,
+                        core::Rational::one(),
+                    ));
+                    let child = session.project.timelines.insert(Timeline {
+                        name: format!("Child {depth}"),
+                        fps: core::Rational::new(24, 1),
+                        resolution: (16, 16),
+                        tracks: vec![lane],
+                        markers: vec![],
+                        master: Default::default(),
+                    });
+                    previous = Some(session.project.media_pool.insert(core::MediaItem {
+                        path: format!("Child {depth}").into(),
+                        meta: core::MediaMeta {
+                            duration_frames: 48,
+                            fps: core::Rational::new(24, 1),
+                            width: 16,
+                            height: 16,
+                            has_video: true,
+                            has_audio: false,
+                            sample_rate: 0,
+                            channels: 0,
+                            audio_streams: 0,
+                            file: Default::default(),
+                        },
+                        content_hash: 0,
+                        compound: Some(child),
+                        folder: None,
+                    }));
+                }
+                session.project.timelines[id].tracks[0].clips[0].source =
+                    core::ClipSource::Media(previous.unwrap());
+                crate::files::validate_project(&session.project).unwrap();
+            }
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let generation = session.history.generation();
+        let position = session.history.position();
+        assert!(
+            apply(
+                &mut session,
+                id,
+                &Operation::MakeNativeCompound {
+                    clip_ids: vec![clips[0].0.to_string(), clips[1].0.to_string()],
+                    name
+                }
+            )
+            .is_err(),
+            "case {case}"
+        );
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.generation(), generation);
+        assert_eq!(session.history.position(), position);
+    }
+    let legacy = Operation::MakeCompound {
+        clip_ids: vec!["1".into()],
+        name: "Legacy".into(),
+    };
+    assert_eq!(
+        serde_json::to_string(&legacy).unwrap(),
+        "{\"kind\":\"make_compound\",\"clip_ids\":[\"1\"],\"name\":\"Legacy\"}"
+    );
+    assert!(serde_json::from_value::<Operation>(serde_json::json!({"kind":"make_native_compound","clip_ids":["1"],"name":"Strict","mode":"linear"})).is_err());
+}
+
+#[test]
+fn selected_freeze_raw_playhead_matches_native_per_clip_clamp_for_jl_spans_rates_and_existing_freeze_with_atomic_undo()
+ {
+    for (frame, already_frozen) in [
+        (0, false),
+        (40, false),
+        (MAX_FRAME, false),
+        (MAX_FRAME, true),
+    ] {
+        let (mut session, id, _) = close_gap_fixture(false);
+        let mut selected = Vec::new();
+        for track in [0, 1] {
+            let clip = session.project.timelines[id].tracks[track]
+                .clips
+                .iter_mut()
+                .find(|clip| clip.linked_group.is_some())
+                .unwrap();
+            clip.set_speed(
+                if track == 0 {
+                    core::Rational::new(3, 2)
+                } else {
+                    core::Rational::new(1, 2)
+                },
+                core::Rational::new(4, 5),
+            );
+            if already_frozen && track == 1 {
+                clip.freeze = Some(88);
+            }
+            selected.push((track, clip.id));
+        }
+        session.sync_timeline_media(id);
+        let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+        let expected: Vec<_> = selected
+            .iter()
+            .map(|&(track, clip_id)| {
+                let clip = session.project.timelines[id].clip(track, clip_id).unwrap();
+                clip.picture_frame_at(frame.clamp(clip.timeline_start, clip.timeline_end() - 1))
+            })
+            .collect();
+        let mut oracle = Session::default();
+        oracle.project = session.project.clone();
+        oracle.apply(Box::new(core::SetClipFreeze::new(
+            id,
+            selected.clone(),
+            Some(frame),
+        )));
+        oracle.sync_timeline_media(id);
+        let position = session.history.position();
+        apply(
+            &mut session,
+            id,
+            &Operation::SetFreeze {
+                clip_ids: vec![selected[0].1.0.to_string()],
+                frame: Some(frame),
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            serde_json::to_value(&session.project).unwrap(),
+            serde_json::to_value(&oracle.project).unwrap()
+        );
+        assert_eq!(session.history.position(), position + 1);
+        assert_eq!(
+            session.history.labels().last(),
+            Some(CommandLabel::FreezeFrame)
+        );
+        for ((track, clip_id), held) in selected.iter().zip(&expected) {
+            let clip = session.project.timelines[id]
+                .clip(*track, *clip_id)
+                .unwrap();
+            assert_eq!(clip.freeze, Some(*held));
+        }
+        if already_frozen {
+            assert_eq!(expected[1], 88);
+        }
+        let after = serde_json::to_value(&session.project.timelines[id]).unwrap();
+        apply(&mut session, id, &Operation::Undo).unwrap();
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            before
+        );
+        apply(&mut session, id, &Operation::Redo).unwrap();
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            after
+        );
+        for bad in [Some(-1), Some(MAX_FRAME + 1)] {
+            let before = serde_json::to_value(&session.project).unwrap();
+            let generation = session.history.generation();
+            assert!(
+                apply(
+                    &mut session,
+                    id,
+                    &Operation::SetFreeze {
+                        clip_ids: vec![selected[0].1.0.to_string()],
+                        frame: bad
+                    }
+                )
+                .is_err()
+            );
+            assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+            assert_eq!(session.history.generation(), generation);
+        }
+        session.project.timelines[id].tracks[1].locked = true;
+        let before = serde_json::to_value(&session.project).unwrap();
+        let generation = session.history.generation();
+        assert_eq!(
+            apply(
+                &mut session,
+                id,
+                &Operation::SetFreeze {
+                    clip_ids: vec![selected[0].1.0.to_string()],
+                    frame: Some(frame)
+                }
+            )
+            .unwrap_err()
+            .1,
+            "TRACK_LOCKED"
+        );
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.generation(), generation);
+    }
+}
+
 #[test]
 fn neutral_multitrack_compound_preserves_layers_gain_links_and_one_step_undo() {
     let (mut session, id, clips) = multitrack_compound_fixture();

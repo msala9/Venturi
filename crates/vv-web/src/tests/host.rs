@@ -1,5 +1,355 @@
 use super::*;
 
+fn project_view_request(
+    editor: &Editor,
+    id: vv_core::TimelineId,
+    frame: i64,
+    persist: bool,
+) -> crate::project_view::Request {
+    use vv_core::Id;
+    crate::project_view::Request {
+        client_id: "test-client".into(),
+        query: FrameQuery {
+            timeline_id: id.raw().to_string(),
+            project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+            if_generation: editor.session.history.generation().to_string(),
+            revision: editor.session.timeline_revision(id),
+            frame,
+            width: 16,
+        },
+        if_view_revision: crate::project_view::snapshot(&editor.session.project).1,
+        ancestors: vec![],
+        persist,
+    }
+}
+
+#[test]
+fn project_view_flush_is_native_metadata_only_and_dirty_edits_wait_for_explicit_save() {
+    use vv_core::Id;
+    let root = std::env::temp_dir().join(format!(
+        "vv-project-view-host-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "View".into(),
+        },
+        "view-create",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "view-clip",
+        Some(id),
+    );
+    editor.mutation(Some(id.raw().to_string()), add).unwrap();
+    let save = request(&editor, Operation::Save, "view-baseline", None);
+    editor.mutation(None, save).unwrap();
+    let before = editor.snapshot();
+    let before_project = json!(editor.session.project);
+    let receipts = editor.completed.len();
+    let view_request = project_view_request(&editor, id, 12, true);
+    let first = editor.handle(Action::ProjectView(view_request)).unwrap();
+    assert_eq!(first["persisted"], true);
+    assert_eq!(first["saved"], true);
+    assert_eq!(first["view"]["active_timeline"], id.raw().to_string());
+    assert_eq!(first["view"]["playheads"][id.raw().to_string()], 12);
+    let after = editor.snapshot();
+    for field in ["generation", "history", "unsaved", "timelines", "media"] {
+        assert_eq!(after[field], before[field], "{field}");
+    }
+    let mut project = json!(editor.session.project);
+    project["view"] = before_project["view"].clone();
+    assert_eq!(project, before_project);
+    assert_eq!(editor.completed.len(), receipts);
+    let path = root.join("View.vvproj");
+    let identity = crate::source::file_identity(&std::fs::File::open(&path).unwrap()).unwrap();
+    let same = project_view_request(&editor, id, 12, true);
+    let second = editor.handle(Action::ProjectView(same)).unwrap();
+    assert_eq!(second["saved"], false);
+    assert_eq!(
+        crate::source::file_identity(&std::fs::File::open(&path).unwrap()).unwrap(),
+        identity
+    );
+    let saved_bytes = std::fs::read(&path).unwrap();
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 24,
+            length_frames: 24,
+        },
+        "view-dirty-clip",
+        Some(id),
+    );
+    editor.mutation(Some(id.raw().to_string()), add).unwrap();
+    let dirty = editor.snapshot();
+    let remember = project_view_request(&editor, id, 30, true);
+    let ack = editor.handle(Action::ProjectView(remember)).unwrap();
+    assert_eq!(ack["saved"], false);
+    assert_eq!(ack["persisted"], false);
+    assert_eq!(std::fs::read(&path).unwrap(), saved_bytes);
+    let after = editor.snapshot();
+    for field in ["generation", "history", "unsaved", "timelines", "media"] {
+        assert_eq!(after[field], dirty[field], "{field}");
+    }
+    let save = request(&editor, Operation::Save, "view-explicit-save", None);
+    editor.mutation(None, save).unwrap();
+    let same = project_view_request(&editor, id, 30, true);
+    assert_eq!(
+        editor.handle(Action::ProjectView(same)).unwrap()["saved"],
+        false
+    );
+    let remember = project_view_request(&editor, id, 44, false);
+    editor.handle(Action::ProjectView(remember)).unwrap();
+    let copy = request(
+        &editor,
+        Operation::SaveAs {
+            name: "View_copy".into(),
+        },
+        "view-copy",
+        None,
+    );
+    editor.mutation(None, copy).unwrap();
+    let same = project_view_request(&editor, id, 44, true);
+    assert_eq!(
+        editor.handle(Action::ProjectView(same)).unwrap()["saved"],
+        false
+    );
+    drop(editor);
+    let mut reopened = Editor::new(&root).unwrap();
+    assert_eq!(
+        reopened.snapshot()["view"]["playheads"][id.raw().to_string()],
+        44
+    );
+    let open = request(
+        &reopened,
+        Operation::OpenProject {
+            path_token: "View.vvproj".into(),
+        },
+        "view-open",
+        None,
+    );
+    reopened.mutation(None, open).unwrap();
+    let same = project_view_request(&reopened, id, 30, true);
+    assert_eq!(
+        reopened.handle(Action::ProjectView(same)).unwrap()["saved"],
+        false
+    );
+    drop(reopened);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn project_view_rejects_foreign_writer_stale_cas_and_external_file_changes_without_mutation() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-project-view-conflict-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "View_conflict".into(),
+        },
+        "view-conflict-create",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let initial = project_view_request(&editor, id, 10, false);
+    editor.handle(Action::ProjectView(initial)).unwrap();
+    let before = editor.snapshot();
+    let model = json!(editor.session.project);
+    let bytes = std::fs::read(root.join("View_conflict.vvproj")).unwrap();
+    for field in [
+        "writer",
+        "view",
+        "epoch",
+        "generation",
+        "timeline",
+        "frame",
+        "width",
+    ] {
+        let mut invalid = project_view_request(&editor, id, 15, true);
+        match field {
+            "writer" => invalid.client_id = "foreign-writer".into(),
+            "view" => invalid.if_view_revision = "f".repeat(64),
+            "epoch" => invalid.query.project_epoch = "stale".into(),
+            "generation" => invalid.query.if_generation = "999".into(),
+            "timeline" => invalid.query.timeline_id = "999".into(),
+            "frame" => invalid.query.frame = -1,
+            _ => invalid.query.width = 0,
+        }
+        assert!(
+            editor.handle(Action::ProjectView(invalid)).is_err(),
+            "{field}"
+        );
+        assert_eq!(editor.snapshot(), before);
+        assert_eq!(json!(editor.session.project), model);
+    }
+    assert_eq!(
+        std::fs::read(root.join("View_conflict.vvproj")).unwrap(),
+        bytes
+    );
+    // A changed view on an empty timeline still clamps to frame zero; select another native root to force a real view change.
+    let other = editor.session.create_timeline(Timeline {
+        name: "Other".into(),
+        fps: Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![Track::new(TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let save = request(&editor, Operation::Save, "view-conflict-baseline", None);
+    editor.mutation(None, save).unwrap();
+    let before = json!(editor.session.project);
+    let saved_view = editor.persisted_view.clone();
+    std::fs::write(root.join("View_conflict.vvproj"), b"foreign file preserved").unwrap();
+    let conflict = project_view_request(&editor, other, 0, true);
+    assert_eq!(
+        editor.handle(Action::ProjectView(conflict)).unwrap_err().1,
+        "SAVE_CONFLICT"
+    );
+    assert_eq!(json!(editor.session.project), before);
+    assert_eq!(editor.persisted_view, saved_view);
+    assert_eq!(
+        std::fs::read(root.join("View_conflict.vvproj")).unwrap(),
+        b"foreign file preserved"
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn project_view_nested_roots_use_native_inverse_clocks_fallbacks_and_every_parent_revision() {
+    use vv_core::{Clip, ClipSource, Id};
+    for fallback in [false, true] {
+        let root = std::env::temp_dir().join(format!(
+            "vv-project-view-nested-{}",
+            crate::asset_jobs::nonce()
+        ));
+        let mut editor = Editor::new(&root).unwrap();
+        let make = |name: &str, fps| Timeline {
+            name: name.into(),
+            fps,
+            resolution: (16, 16),
+            tracks: vec![Track::new(TrackKind::Video)],
+            markers: vec![],
+            master: Default::default(),
+        };
+        let outer = editor
+            .session
+            .create_timeline(make("Root", Rational::new(24, 1)));
+        let child = editor
+            .session
+            .create_timeline(make("Child", Rational::new(30, 1)));
+        let inner = editor
+            .session
+            .create_timeline(make("Inner", Rational::new(60, 1)));
+        let solid = Clip::from_source_range(
+            editor.session.project.alloc_clip_id(),
+            ClipSource::SolidColor,
+            0,
+            120,
+            0,
+            Rational::one(),
+        );
+        editor.session.project.timelines[inner].tracks[0].insert_sorted(solid);
+        let child_media = editor
+            .session
+            .project
+            .media_pool
+            .iter()
+            .find(|(_, item)| item.compound == Some(child))
+            .unwrap()
+            .0;
+        let inner_media = editor
+            .session
+            .project
+            .media_pool
+            .iter()
+            .find(|(_, item)| item.compound == Some(inner))
+            .unwrap()
+            .0;
+        let outer_clip = editor.session.project.alloc_clip_id();
+        let child_clip = editor.session.project.alloc_clip_id();
+        let mut wrapper = Clip::from_source_range(
+            outer_clip,
+            ClipSource::Media(child_media),
+            30,
+            90,
+            12,
+            Rational::new(4, 5),
+        );
+        if fallback {
+            wrapper.freeze = Some(30);
+        }
+        editor.session.project.timelines[outer].tracks[0].insert_sorted(wrapper);
+        editor.session.project.timelines[child].tracks[0].insert_sorted(Clip::from_source_range(
+            child_clip,
+            ClipSource::Media(inner_media),
+            20,
+            80,
+            20,
+            Rational::new(1, 2),
+        ));
+        let ancestors = vec![
+            crate::compound_navigation::Ancestor {
+                timeline_id: outer.raw().to_string(),
+                revision: editor.session.timeline_revision(outer),
+                clip_id: Some(outer_clip.0.to_string()),
+                entry_playhead: 17,
+            },
+            crate::compound_navigation::Ancestor {
+                timeline_id: child.raw().to_string(),
+                revision: editor.session.timeline_revision(child),
+                clip_id: Some(child_clip.0.to_string()),
+                entry_playhead: 21,
+            },
+        ];
+        let generation = editor.session.history.generation();
+        let position = editor.session.history.position();
+        let timelines = json!(editor.session.project.timelines);
+        let mut remember = project_view_request(&editor, inner, 60, true);
+        remember.ancestors = ancestors.clone();
+        let result = editor.handle(Action::ProjectView(remember)).unwrap();
+        assert_eq!(result["view"]["active_timeline"], outer.raw().to_string());
+        assert_eq!(
+            result["view"]["playheads"][outer.raw().to_string()],
+            if fallback { 17 } else { 20 }
+        );
+        assert_eq!(result["view"]["playheads"].as_object().unwrap().len(), 1);
+        assert_eq!(result["persisted"], false);
+        assert_eq!(editor.session.history.generation(), generation);
+        assert_eq!(editor.session.history.position(), position);
+        assert_eq!(json!(editor.session.project.timelines), timelines);
+        editor.session.apply(Box::new(vv_core::MoveClips::new(
+            child,
+            vec![(child_clip, 0, 0, 21)],
+        )));
+        let before = json!(editor.session.project);
+        let mut stale = project_view_request(&editor, inner, 60, false);
+        stale.ancestors = ancestors;
+        assert_eq!(
+            editor.handle(Action::ProjectView(stale)).unwrap_err().1,
+            "REVISION_CONFLICT"
+        );
+        assert_eq!(json!(editor.session.project), before);
+        drop(editor);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
 #[test]
 fn public_slip_manifest_uses_the_same_pinned_file_version_as_source_windows_without_editing() {
     use vv_core::{Clip, ClipSource, Id, MediaItem, MediaMeta};

@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-22",
+  "status": "native_and_component_gate_passed_browser_pending",
+  "source_base_commit": "2cc98bb94668ac379041edf38b00b802dc0ce248",
+  "source_files_sha256": {
+    "crates/vv-web/src/api.rs": "7ae77d2f32183c0f3609989549c0a77b2f0bbcc6a57a30df097affc7269e6da9",
+    "crates/vv-web/src/commands.rs": "f8bc58f2bb92d550bf3b81d3ca92726a4ba7d602ba641e9c848b87ed97c38538",
+    "crates/vv-web/src/host.rs": "8a69d8f1eb255309e81c4ef8423a26274e00c5a6a90d2100e272907abc17a733",
+    "crates/vv-web/src/main.rs": "ead88b4c134aafe8f6b4752f1f84ecb0b7d75bdbfa25d3970f804f8fc95fc527",
+    "crates/vv-web/src/project_view.rs": "a540ec54e6f9521aad1cb6cf2a37d93eb6c3cdc87c16dd1ad1cc0f677e8010dd",
+    "crates/vv-web/src/snapshot.rs": "6a26a7bbe76cdc39a0eb1d649fbac8365b9c7ce9b2aef43f0e78fab0fd446fe2",
+    "crates/vv-web/src/tests/commands.rs": "22876ab6533abf7aee2895d43a216308c13acf13014ab6f73afa820b12e4e66d",
+    "crates/vv-web/src/tests/host.rs": "e1130897477293541a513a62d93d2e219a779ec67ad7cb2796c6440fff474edc",
+    "crates/vv-web/src/tests/project_view.rs": "02e8cab00c954a84e370dc477d7004ba8ae390eac990101b16a9fed9d3493ebd",
+    "crates/vv-web/src/tests/snapshot.rs": "b182b15daf9e085937fb49b4d4abdc357681d67f667a96a6487bce6c4fb80d14",
+    "web/js/compound-navigation.js": "25a5af3c36a159979608cded4fe8a76e62a91677550f1b00a699013c290dc944",
+    "web/js/inspector.js": "8cf9d0044ef408cb56c44c896161d3c73aff27123f5021648ba2d2a71b7162f5",
+    "web/js/main.js": "f3e8a227fd458cecf38e83a4d7004125e4a1e48227b37df8b3ef91e5008c811e",
+    "web/js/mixer.js": "c5a300cb8ad027044dbf55f48c5d76aa74c276882ab6609b4e4b840d870f6efc",
+    "web/js/project-view.js": "dbc6fd89693fa20553954bea40f8a238fb569cf9435a47adc3d7e1c63163b16f",
+    "web/js/timeline/draw.js": "338e037adf2bf5f9162c06f7df2256278f3209bf1f2f81d619720ca6a4a8b279",
+    "web/js/timeline/geometry.js": "cee0ec13fdfa561374e0c39e422af2d3685b75654b34e1b110a0b85b16a16edf",
+    "web/js/timeline/input.js": "65096863e2edeeb4e5c2131ef4c243a78c3ba4be9d3bd9a40deac563f9465adc",
+    "web/test/compound-navigation.test.js": "70a18ccb08d78be4a4ea3dbeb2cb7b8cb5c0998594644c73d279f26951e9d8cc",
+    "web/test/mixer.test.js": "ecb5693487d2937a5143d0a6f1e22ef2bd55899a8b376aadd7d919caa083a622",
+    "web/test/project-view.test.js": "6f44e0e9d6db8b5d0c9c0aa573e921093c539a8f118a993959161b92552c1f14",
+    "web/test/retime-inspector.test.js": "bc23a9ac494b7f141ef93e1e8d3d5cea297b69f7eb2d2a62e481a3d2bf6e6b8d",
+    "web/test/timeline-layout.test.js": "6459d3f4655cadee2c127b6d26fd5658ae13033a386a4ec0747863886271d1c5"
+  },
+  "validation": "F1-F3-native-view-compound-retime-scrollbars",
+  "javascript": {
+    "unique_cases": 1007,
+    "initial_passed": 997,
+    "initial_failed": 10,
+    "correction": "nativeProjectView destructured loop variable shadowed the view argument in its own initializer; renamed the local position.",
+    "focused_project_view_passed": 10,
+    "other_unchanged_cases_reused": 997
+  },
+  "native": {
+    "vv_web_passed": 471,
+    "rustfmt": "passed",
+    "clippy_vv_web_all_targets": "passed -D warnings",
+    "build": "passed",
+    "binary_sha256": "71c4b56329ffe31dff504fbcd23df000de3c54e0ff8ae5c13a37b97f3102e515"
+  },
+  "implemented": [
+    "Explicit original-native compound grouping, retaining legacy Keep track audio mix payload and safeguards.",
+    "Selected media Speed/Freeze and native linked expansion/per-clip frame clamping.",
+    "Native ProjectView and independent metadata CAS, serial/coalesced stopped navigation writes and guarded clean-only persistence.",
+    "Root/compound level switches reset viewport to native defaults; project epoch changes restore saved active timeline/playheads.",
+    "Video/audio pane scrollbar rails and guarded local pointer gestures; native Alt/Ctrl/Shift wheel modifiers.",
+    "Normalize preserves target within dBFS modes and hides track SetLevel on the Master."
+  ],
+  "limits": {
+    "host": "halo2",
+    "cpu": 1,
+    "memory_gib": 4,
+    "swap": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "tasks_max": 128,
+    "runtime_seconds": 1800,
+    "offline_cached_tools": true,
+    "concurrent_workloads": 1
+  },
+  "remaining": [
+    "Actual browser qualification of this compound/view/retime/scrollbar block.",
+    "Native inertia, editing during Program playback, moving transition/mask montage and other full-plan requirements remain open.",
+    "Continuous Program audio telemetry and voiceover window handoff are concrete production gaps; see AUDIO_RUNTIME_GAPS.md.",
+    "Delivered service at Windows port 8811 still runs baseline df50859; this gate is not a deployment.",
+    "No functional parity capability row is closed by this gate alone."
+  ]
+}

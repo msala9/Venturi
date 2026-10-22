@@ -135,6 +135,7 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/projects", get(projects))
         .route("/api/v1/recovery", get(recovery_status))
         .route("/api/v1/projects/commands", post(project_command))
+        .route("/api/v1/projects/view", post(project_view))
         .route(
             "/api/v1/timelines/{id}/commands",
             post(timeline_command).layer(DefaultBodyLimit::max(256 * 1024)),
@@ -1631,6 +1632,22 @@ async fn clip_detail(
     state
         .host
         .call(Action::ClipDetail(clip, query, None))
+        .await
+        .map(Json)
+}
+async fn project_view(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::project_view::Request>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid project view request"))?
+        .0;
+    state
+        .host
+        .call(Action::ProjectView(request))
         .await
         .map(Json)
 }

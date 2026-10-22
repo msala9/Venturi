@@ -1,6 +1,39 @@
 use super::*;
 
 #[test]
+fn session_snapshot_exposes_normalized_native_view_without_a_history_or_media_change() {
+    use vv_core::{Id, TimelineId};
+    let mut session = Session::default();
+    let id = session.create_timeline(vv_core::Timeline {
+        name: "View metadata".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![],
+        markers: vec![],
+        master: Default::default(),
+    });
+    session.project.view.active_timeline = Some(id);
+    session
+        .project
+        .view
+        .playheads
+        .extend([(id, 200), (TimelineId::from_raw(999), 1)]);
+    let model = json!(session.project);
+    let generation = session.history.generation();
+    let position = session.history.position();
+    let dirty = session.has_unsaved_changes();
+    let value = super::session(&session, "instance");
+    assert_eq!(value["view"]["active_timeline"], id.raw().to_string());
+    assert_eq!(value["view"]["playheads"][id.raw().to_string()], 0);
+    assert_eq!(value["view"]["playheads"].as_object().unwrap().len(), 1);
+    assert_eq!(value["view_revision"].as_str().unwrap().len(), 64);
+    assert_eq!(json!(session.project), model);
+    assert_eq!(session.history.generation(), generation);
+    assert_eq!(session.history.position(), position);
+    assert_eq!(session.has_unsaved_changes(), dirty);
+}
+
+#[test]
 fn native_timeline_gaps_include_leading_and_internal_ranges_only_on_unlocked_lanes() {
     let mut editor = Session::default();
     let id = editor.create_timeline(vv_core::Timeline {

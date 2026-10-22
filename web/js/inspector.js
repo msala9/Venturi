@@ -13,17 +13,22 @@ function propertySelection({project_epoch,generation,timeline,selection}={},kind
   const all=new Set(timeline.tracks.flatMap(track=>track.clips.map(clip=>clip.id)));
   if(selection.some(id=>!all.has(id)))return null;
   const selected=new Set(selection),decimal=id=>/^\d{1,20}$/.test(id) && BigInt(id)<=18446744073709551615n;
-  const clip_ids=timeline.tracks.filter(track=>track.kind===kind && !track.locked).flatMap(track=>{
-    const clips=track.clips.filter(clip=>selected.has(clip.id));
-    // Native panel targets sort by start, preserving ClipKey order for ties.
+  const clip_ids=timeline.tracks.filter(track=>(kind==='media' || track.kind===kind) && !track.locked).flatMap(track=>{
+    const clips=track.clips.filter(clip=>selected.has(clip.id) && (kind!=='media' || clip.kind==='media'));
+    // Inspector properties sort by start; native speed targets keep ClipKey order.
     if(clips.every(clip=>decimal(clip.id)))clips.sort((a,b)=>BigInt(a.id)<BigInt(b.id)?-1:BigInt(a.id)>BigInt(b.id)?1:0);
-    clips.sort((a,b)=>a.start_frame-b.start_frame);
+    if(kind!=='media')clips.sort((a,b)=>a.start_frame-b.start_frame);
     return clips.map(clip=>clip.id);
   });
   return clip_ids.length && clip_ids.length<=4096?{project_epoch,generation,timeline_id:timeline.id,revision:timeline.revision,selection:[...selection].sort(),clip_ids}:null;
 }
 export function videoPropertySelection(state){return propertySelection(state,'video');}
 export function audioPropertySelection(state){return propertySelection(state,'audio');}
+export function retimePropertySelection(state){return propertySelection(state,'media');}
+export function compoundSelectionOperation(clip_ids,name,mode='native'){
+  if(!Array.isArray(clip_ids) || !clip_ids.length || clip_ids.length>4096 || clip_ids.some(id=>typeof id!=='string' || !id) || new Set(clip_ids).size!==clip_ids.length || typeof name!=='string' || !name.trim() || !['native','keep_track_audio_mix'].includes(mode))throw Error('Choose a current clip selection, compound name and grouping mode');
+  return {kind:mode==='native'?'make_native_compound':'make_compound',clip_ids:[...clip_ids],name};
+}
 export function renderBlendMatte(root,detail,{selection,getSelection,canInteract,commit,notice,primaryName=''}){
   if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || !detail.video || detail.locked)return;
   const captured=structuredClone(selection),identity=JSON.stringify(captured),section=document.createElement('details'),summary=document.createElement('summary'),note=document.createElement('p');
@@ -201,7 +206,7 @@ export function keyPageIndex(value,total) {
   if(!Number.isSafeInteger(page) || page<1 || page>total)throw Error(`Choose a key page from 1 to ${total}`);
   return page-1;
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,zoomLink:sharedZoomLink }) {
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,retimeControls=true,zoomLink:sharedZoomLink }) {
   const disabled = !writable || detail.locked;
   if(detail.key_page){
     const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
@@ -277,7 +282,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   number("Fade in frames", detail.fade_in, 0, detail.length_frames, (fade_in) => ({ fade_in }));
   number("Fade out frames", detail.fade_out, 0, detail.length_frames, (fade_out) => ({ fade_out }));
   root.append(section);
-  renderRetime(root,detail,disabled,getFrame,report,visualState,canInteract);
+  renderRetime(root,detail,disabled,getFrame,report,visualState,canInteract,{speedControls:retimeControls,notice});
   const controls=detail.video && filterControls ? renderFilters(root,detail,{disabled,getFrame,commit:guardedCommit,notice,openState:visualState,canInteract}) : [];
   const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract,seek,canNavigate,navigateSource});if(curves)controls.push(curves);
   const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope,canInteract,seek,canNavigate,navigateSource});if(eventKeys)controls.push(eventKeys);
@@ -288,27 +293,41 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   return controls;
 }
 
-export function renderRetime(root,detail,disabled,getFrame,report,openState,canInteract=()=>true) {
-  const apply=operation=>{if(disabled || !canInteract())return;report(operation);};
-  const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.visualPath="retime";section.open=openState?.get("retime") || false;summary.textContent="Speed, freeze and clip label";section.append(summary);
-  const color=document.createElement("select");color.setAttribute("aria-label","Clip display color");color.disabled=disabled;color.append(new Option("Default",""));
-  for (const name of detail.display_colors) color.append(new Option(name,name));color.value=detail.display_color || "";
-  const applyColor=document.createElement("button");applyColor.textContent="Apply clip label";applyColor.disabled=disabled;applyColor.addEventListener("click",()=>apply({kind:"set_display_color",clip_ids:[detail.clip_id],color:color.value || null}));section.append(color,applyColor);
-  if (detail.retime) {
+export function renderRetime(root,detail,disabled,getFrame,report,openState,canInteract=()=>true,{selection,getSelection,frame=getFrame(),labelControls=true,speedControls=true,notice=()=>{}}={}) {
+  if(selection && (!selection.clip_ids?.length || selection.clip_ids[0]!==detail.clip_id || !detail.retime || detail.locked))return;
+  const captured=selection?structuredClone(selection):null,identity=JSON.stringify(captured),ids=captured?.clip_ids || [detail.clip_id],controls=[];
+  const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.visualPath=labelControls && !speedControls?"clip-label":"retime";section.open=openState?.get(section.dataset.visualPath) || false;summary.textContent=labelControls?(speedControls?"Speed, freeze and clip label":"Clip label"):"Selected media speed and freeze";section.append(summary);
+  let waiting=false,outcomeUnknown=false;
+  const current=()=>!disabled && root.isConnected!==false && section.isConnected!==false && canInteract() && getFrame()===frame && (!captured || JSON.stringify(getSelection?.())===identity);
+  const sync=()=>{for(const control of controls)control.disabled=waiting || outcomeUnknown || !current();};
+  const register=node=>{controls.push(node);node.disabled=!current();return node;};
+  const apply=operation=>{
+    if(waiting || outcomeUnknown)return;
+    if(!current()){notice('Media selection changed; read its current speed before editing');return;}
+    waiting=true;sync();
+    return Promise.resolve().then(()=>{if(!current())throw Error('Media selection changed; read its current speed before editing');return report(operation);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;notice(error.message);}).finally(()=>{waiting=false;sync();});
+  };
+  if(captured){const note=document.createElement('p');note.className='muted';note.textContent=`Values from the first selected media clip · edits apply to ${ids.length} selected unlocked media clip${ids.length===1?'':'s'} and their native linked groups. Freeze clamps the playhead separately to each clip; Undo restores the edit.`;section.append(note);}
+  if(labelControls){
+    const color=register(document.createElement("select"));color.setAttribute("aria-label","Clip display color");color.append(new Option("Default",""));
+    for (const name of detail.display_colors) color.append(new Option(name,name));color.value=detail.display_color || "";
+    const applyColor=register(document.createElement("button"));applyColor.type='button';applyColor.textContent="Apply clip label";applyColor.addEventListener("click",()=>apply({kind:"set_display_color",clip_ids:[detail.clip_id],color:color.value || null}));section.append(color,applyColor);
+  }
+  if (speedControls && detail.retime) {
     const form=document.createElement("form"),label=document.createElement("label");label.className="field";label.textContent="Speed percent";
-    const percent=document.createElement("input");percent.type="number";percent.min=1;percent.max=10000;percent.step="any";percent.value=detail.retime.speed_percent;percent.required=true;percent.disabled=disabled;label.append(percent);form.append(label);
-    const fit=document.createElement("select");fit.setAttribute("aria-label","Speed duration policy");fit.disabled=disabled;
+    const percent=register(document.createElement("input"));percent.type="number";percent.min=1;percent.max=10000;percent.step="any";percent.value=detail.retime.speed_percent;percent.required=true;label.append(percent);form.append(label);
+    const fit=register(document.createElement("select"));fit.setAttribute("aria-label","Speed duration policy");
     for (const [value,text] of [["keep_length","Keep length (capped by source)"],["resize","Resize safely, leave neighbours"],["ripple","Ripple unlocked tracks"]]) fit.append(new Option(text,value));fit.value="ripple";form.append(fit);
-    const pitchLabel=document.createElement("label");pitchLabel.textContent="Preserve pitch";const pitch=document.createElement("input");pitch.type="checkbox";pitch.checked=detail.retime.pitch_correction;pitch.disabled=disabled;pitchLabel.append(pitch);form.append(pitchLabel);
-    const applySpeed=document.createElement("button");applySpeed.textContent="Apply speed";applySpeed.disabled=disabled;form.append(applySpeed);
-    form.addEventListener("submit",(event)=>{event.preventDefault();if(form.reportValidity())apply({kind:"set_speed",clip_ids:[detail.clip_id],percent:Number(percent.value),pitch_correction:pitch.checked,fit:fit.value});});section.append(form);
+    const pitchLabel=document.createElement("label");pitchLabel.textContent="Preserve pitch";const pitch=register(document.createElement("input"));pitch.type="checkbox";pitch.checked=detail.retime.pitch_correction;pitchLabel.append(pitch);form.append(pitchLabel);
+    const applySpeed=register(document.createElement("button"));applySpeed.textContent="Apply speed";form.append(applySpeed);
+    form.addEventListener("submit",(event)=>{event.preventDefault();const value=Number(percent.value);if(String(percent.value).trim() && Number.isFinite(value) && value>=1 && value<=10000 && ['keep_length','resize','ripple'].includes(fit.value) && form.reportValidity())apply({kind:"set_speed",clip_ids:[...ids],percent:value,pitch_correction:pitch.checked,fit:fit.value});});section.append(form);
     const status=document.createElement("p");status.className="muted";status.textContent=detail.retime.freeze_source_frame === null ? "Normal motion · edits include linked clips" : `Frozen at source frame ${detail.retime.freeze_source_frame} · linked clips follow native freeze semantics`;section.append(status);
-    for (const [text,frame] of [["Freeze at playhead",()=>getFrame()],["Unfreeze",()=>null]]) {
-      const button=document.createElement("button");button.textContent=text;button.disabled=disabled;button.addEventListener("click",()=>apply({kind:"set_freeze",clip_ids:[detail.clip_id],frame:frame()}));section.append(button);
+    for (const [text,value] of [["Freeze at playhead",frame],["Unfreeze",null]]) {
+      const button=register(document.createElement("button"));button.type='button';button.textContent=text;button.addEventListener("click",()=>{if(value===null || Number.isSafeInteger(value) && value>=0 && value<=1_000_000_000)apply({kind:"set_freeze",clip_ids:[...ids],frame:value});});section.append(button);
     }
     if(openState?.get('retime-focus')===detail.clip_id){openState.delete('retime-focus');section.open=true;queueMicrotask(()=>{if(percent.isConnected && !percent.disabled)percent.focus({preventScroll:true});});}
   }
-  root.append(section);
+  root.append(section);sync();
 }
 
 function renderTitle(root, detail, disabled, report) {

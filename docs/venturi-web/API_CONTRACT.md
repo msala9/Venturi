@@ -91,6 +91,37 @@ local; release submits one mapping read. Existing-key Jump uses the key's native
 from editing permission. Modal, context, geometry, detach and competing-editor
 cancellation reject obsolete replies; no automatic replay or rate reconstruction.
 
+## Native project view and compound grouping
+
+Session snapshots expose native `view:{active_timeline,playheads}` with canonical
+string timeline IDs and `view_revision` (SHA-256 of the normalized view JSON).
+Remembered frames clamp to current content, and removed timelines are pruned.
+POST `/projects/view` accepts the strict object
+`{client_id,query:FrameQuery,if_view_revision,ancestors,persist:false}`. A writer
+lease, document/timeline identity and independent view CAS protect this metadata
+write. Ancestors use the existing native compound Exit request, including every
+parent revision, wrapper ID and entry playhead. Rust maps the child position back
+to the root timeline. The response carries epoch, generation, normalized view,
+view revision, changed/persisted/saved flags and any persistence notice.
+
+Remembering a position creates no edit, Undo, generation or media/cache change.
+`persist:true` uses the existing guarded project save only for a clean, named
+project whose view differs from its actual saved view. Dirty projects retain the
+view in memory until ordinary Save. Disk conflict/symlink/backup/fsync guards and
+automatic reopen metadata remain in force. The browser serializes/coalesces
+stopped navigation intents; playback frames do not produce metadata writes.
+Project epoch changes restore saved active timeline and playheads. Root and
+compound level switches reset selection, scroll and zoom to the native 60 px/s.
+
+Timeline `make_native_compound {clip_ids,name}` invokes the original desktop
+`plan_compound_clip` and `compound_clip_commands` with linked target expansion,
+locks, bounds, depth and full-result overlap validation, grouped into one Undo.
+The native child retains host gain but resets other child bus settings; wrappers
+inherit the lowest selected host lanes. Compositing and normalization context can
+change as in the original GUI. This explicit Native grouping action does not
+promise invariant before/after PCM or compositing. The existing `make_compound`
+wire payload and conservative Keep track audio mix extension remain unchanged.
+
 ## Timeline gap and edit contracts
 
 `move_clips` extends safe movement to newly created lanes while preserving the

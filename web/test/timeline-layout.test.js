@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {timelineLayout,clipsInTimelineRect,clickTimelineSelection,clipSelectionAnchor,moveTrackTargets,dragRangeAt,groupDragBounds,groupMoveStart,validateDraft,hitTest,frameToX,snapFrame,HEADER,RULER,TRACK,MAX_FRAME} from '../js/timeline/geometry.js';
+import {timelineLayout,paneScrollbars,clipsInTimelineRect,clickTimelineSelection,clipSelectionAnchor,moveTrackTargets,dragRangeAt,groupDragBounds,groupMoveStart,validateDraft,hitTest,frameToX,snapFrame,HEADER,RULER,TRACK,MAX_FRAME} from '../js/timeline/geometry.js';
 import {createInput} from '../js/timeline/input.js';
 import {presetApplication} from '../js/timeline/preset-drop.js';
 
@@ -128,14 +128,14 @@ test('group move clamps the raw candidate before snapping and clamps again to fo
 });
 
 function harness(){
-  const previous=globalThis.window,handlers=new Map(),windowHandlers=new Map(),captures=new Set(),commands=[],notices=[],timeline=fixture(),view=viewport();
-  let writable=true,modal=false,selectionChanged=()=>{},rectOverrides={};
+  const previous=globalThis.window,handlers=new Map(),windowHandlers=new Map(),captures=new Set(),commands=[],notices=[],seeks=[],timeline=fixture(),view=viewport();
+  let writable=true,navigable=true,modal=false,selectionChanged=()=>{},rectOverrides={};
   const document={querySelector:()=>modal?{}:null,addEventListener(){},removeEventListener(){}};
   globalThis.window={document,devicePixelRatio:1,addEventListener:(name,handler)=>windowHandlers.set(name,handler),removeEventListener:name=>windowHandlers.delete(name)};
   const canvas={ownerDocument:document,clientWidth:1200,clientHeight:view.viewportHeight,style:{},getBoundingClientRect:()=>({left:0,top:0,width:1200,height:canvas.clientHeight,...rectOverrides}),addEventListener:(name,handler)=>handlers.set(name,handler),removeEventListener:name=>handlers.delete(name),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
-  const input=createInput({canvas,getTimeline:()=>timeline,getGapContext:()=>({project_epoch:'epoch',generation:'0'}),view,invalidate(){},onSelect(){selectionChanged();},onSeek(){},onCommand:async operation=>commands.push(operation),onNotice:message=>notices.push(message),canEdit:()=>writable});
+  const input=createInput({canvas,getTimeline:()=>timeline,getGapContext:()=>({project_epoch:'epoch',generation:'0'}),view,invalidate(){},onSelect(){selectionChanged();},onSeek(...args){seeks.push(args);},onCommand:async operation=>commands.push(operation),onNotice:message=>notices.push(message),canEdit:()=>writable,canNavigate:()=>navigable});
   const send=(type,x,y,extra={})=>handlers.get(type)({clientX:x,clientY:y,pointerId:1,button:0,buttons:1,preventDefault(){},...extra});
-  return {timeline,view,canvas,commands,notices,captures,handlers,windowHandlers,input,send,setWritable:value=>writable=value,setModal:value=>modal=value,setRect:value=>rectOverrides=value,setOnSelect:value=>selectionChanged=value,destroy(){input.destroy();globalThis.window=previous;}};
+  return {timeline,view,canvas,commands,notices,seeks,captures,handlers,windowHandlers,input,send,setWritable:value=>writable=value,setNavigable:value=>navigable=value,setModal:value=>modal=value,setRect:value=>rectOverrides=value,setOnSelect:value=>selectionChanged=value,destroy(){input.destroy();globalThis.window=previous;}};
 }
 
 test('Inspector scroll queued by selection preserves a clip drag when fractional Canvas mapping is unchanged',async()=>{
@@ -183,6 +183,105 @@ test('wheel scrolls only the pointed pane and Shift zooms rows without a native 
     h.send('wheel',300,RULER+10,{deltaY:-30,deltaX:0});assert.equal(h.view.videoScroll,30);assert.equal(h.view.audioScroll,0);
     h.send('wheel',300,150,{deltaY:20,deltaX:0});assert.equal(h.view.videoScroll,30);assert.equal(h.view.audioScroll,20);
     h.send('wheel',300,150,{deltaY:-20,deltaX:0,shiftKey:true});assert.ok(h.view.rowHeight>TRACK);assert.equal(h.view.origin,0);assert.deepEqual(h.commands,[]);
+  }finally{h.destroy();}
+});
+
+test('native pane scrollbar geometry reverses video offset, clamps the thumb and disappears without overflow',()=>{
+  const timeline=fixture(),view={...viewport(),viewportHeight:220,videoPaneHeight:80,videoScroll:0,audioScroll:0},before=structuredClone(timeline);
+  const [video,audio]=paneScrollbars(timeline,view,1200);
+  assert.deepEqual([video.pane,audio.pane],['video','audio']);assert.equal(video.offset,video.maxOffset);assert.equal(audio.offset,0);
+  assert.equal(video.left,1190);assert.equal(video.right,1198);assert.equal(video.top,RULER+2);
+  assert.ok(video.thumbHeight>=16);assert.ok(Math.abs(video.thumbTop+video.thumbHeight-video.bottom)<1e-9);assert.equal(audio.thumbTop,audio.top);
+  const atLimit=paneScrollbars(timeline,{...view,videoScroll:100000,audioScroll:100000},1200);
+  assert.equal(atLimit[0].offset,0);assert.equal(atLimit[1].offset,atLimit[1].maxOffset);
+  assert.deepEqual(paneScrollbars(timeline,viewport(),1200),[]);assert.deepEqual(paneScrollbars(timeline,view,HEADER+5),[]);
+  assert.deepEqual(timeline,before);
+});
+
+test('pane rails win hit testing over clips only inside the visible native rail',()=>{
+  const timeline=fixture(),view={...viewport(),viewportHeight:220,videoPaneHeight:80};
+  for(const bar of paneScrollbars(timeline,view,1200)){
+    const y=(bar.top+bar.bottom)/2;
+    assert.equal(hitTest(1194,y,timeline,view,1200).pane,bar.pane);
+    assert.notEqual(hitTest(1189,y,timeline,view,1200).kind,'pane_scrollbar');
+  }
+  assert.equal(hitTest(1194,timelineLayout(timeline,view).divider.top+4,timeline,view,1200).kind,'divider');
+});
+
+test('pane rail clicks center on release, preserve selection and work in a read-only session',async()=>{
+  const h=harness();try{
+    h.canvas.clientHeight=220;h.view.videoPaneHeight=80;h.view.selection=['10'];h.view.selectionAnchor=clipSelectionAnchor(h.timeline,'10','epoch');h.view.playhead=7;h.setWritable(false);
+    const selection=structuredClone([h.view.selection,h.view.selectionAnchor,h.view.playhead]),before=structuredClone(h.timeline);let notifications=0;h.setOnSelect(()=>notifications++);
+    const [video,audio]=paneScrollbars(h.timeline,h.view,1200,h.canvas.clientHeight);
+    h.send('pointerdown',1194,video.top);assert.equal(h.view.videoScroll,0);assert.equal(h.captures.size,1);
+    await h.send('pointerup',1194,video.top,{buttons:0});assert.equal(h.view.videoScroll,video.maxOffset);assert.equal(h.view.audioScroll,0);
+    h.send('pointerdown',1194,audio.bottom);await h.send('pointerup',1194,audio.bottom,{buttons:0});assert.equal(h.view.audioScroll,audio.maxOffset);
+    assert.deepEqual([h.view.selection,h.view.selectionAnchor,h.view.playhead],selection);assert.equal(notifications,0);assert.deepEqual(h.commands,[]);assert.deepEqual(h.seeks,[]);assert.deepEqual(h.timeline,before);assert.equal(h.captures.size,0);
+  }finally{h.destroy();}
+});
+
+test('captured scrollbar drag maps pixel travel independently and clamps either end without commands',async()=>{
+  for(const pane of ['video','audio']){
+    const h=harness();try{
+      h.canvas.clientHeight=220;h.view.videoPaneHeight=80;
+      const bar=paneScrollbars(h.timeline,h.view,1200,h.canvas.clientHeight).find(bar=>bar.pane===pane),y=bar.thumbTop+bar.thumbHeight/2,delta=pane==='video'?-12:12;
+      h.send('pointerdown',1194,y);h.send('pointermove',1194,y+delta);
+      const expected=Math.max(0,Math.min(bar.maxOffset,bar.offset+delta*bar.maxOffset/bar.travel));
+      assert.ok(Math.abs(h.view[pane==='video'?'videoScroll':'audioScroll']-(pane==='video'?bar.maxOffset-expected:expected))<1e-9);
+      h.send('pointermove',1194,pane==='video'?-1000:1000);await h.send('pointerup',1194,pane==='video'?-1000:1000,{buttons:0});
+      assert.equal(h.view[pane==='video'?'videoScroll':'audioScroll'],bar.maxOffset);assert.equal(h.view[pane==='video'?'audioScroll':'videoScroll'],0);assert.deepEqual(h.commands,[]);assert.equal(h.captures.size,0);
+    }finally{h.destroy();}
+  }
+});
+
+test('scrollbar cancellation rolls back only its owned offset and never clears the current clip or gap selection',async()=>{
+  for(const abort of ['escape','capture','modal','navigation']){
+    const h=harness();try{
+      h.canvas.clientHeight=220;h.view.videoPaneHeight=80;h.view.selection=['10'];h.view.selectionAnchor=clipSelectionAnchor(h.timeline,'10','epoch');
+      const before=structuredClone([h.view.selection,h.view.selectionAnchor]),bar=paneScrollbars(h.timeline,h.view,1200,h.canvas.clientHeight)[0],y=bar.thumbTop+bar.thumbHeight/2;
+      h.send('pointerdown',1194,y);h.send('pointermove',1194,y-12);assert.ok(h.view.videoScroll>0);
+      if(abort==='escape')h.handlers.get('keydown')({key:'Escape'});
+      if(abort==='capture')h.handlers.get('pointercancel')({pointerId:1});
+      if(abort==='modal'){h.setModal(true);await h.send('pointerup',1194,y-12,{buttons:0});}
+      if(abort==='navigation'){h.setNavigable(false);await h.send('pointerup',1194,y-12,{buttons:0});}
+      assert.equal(h.view.videoScroll,0);assert.deepEqual([h.view.selection,h.view.selectionAnchor],before);assert.equal(h.captures.size,0);assert.deepEqual(h.commands,[]);
+    }finally{h.destroy();}
+  }
+  const h=harness();try{
+    h.canvas.clientHeight=220;h.view.videoPaneHeight=80;const gap={timeline_id:'timeline',revision:'revision',track_id:'0',frame:0,start_frame:0,length_frames:20,context:JSON.stringify(['timeline','revision',{project_epoch:'epoch',generation:'0'}])};h.timeline.tracks[0].clips[0].start_frame=20;h.timeline.gaps=[{track_id:'0',start_frame:0,length_frames:20}];h.view.selectedGap=gap;
+    const bar=paneScrollbars(h.timeline,h.view,1200,h.canvas.clientHeight)[0],y=bar.thumbTop+bar.thumbHeight/2;h.send('pointerdown',1194,y);h.send('pointermove',1194,y-12);h.handlers.get('keydown')({key:'Escape'});assert.equal(h.view.selectedGap,gap);
+  }finally{h.destroy();}
+});
+
+test('stale scrollbar release cannot overwrite a new timeline offset or newer selection intent',async()=>{
+  const h=harness();try{
+    h.canvas.clientHeight=220;h.view.videoPaneHeight=80;
+    const bar=paneScrollbars(h.timeline,h.view,1200,h.canvas.clientHeight)[0],y=bar.thumbTop+bar.thumbHeight/2;h.send('pointerdown',1194,y);h.send('pointermove',1194,y-12);
+    h.timeline.revision='new';h.view.videoScroll=42;h.view.selection=['20'];h.view.selectionAnchor=clipSelectionAnchor(h.timeline,'20','epoch');
+    await h.send('pointerup',1194,y-30,{buttons:0});assert.equal(h.view.videoScroll,42);assert.deepEqual(h.view.selection,['20']);assert.equal(h.view.selectionAnchor.clip_id,'20');assert.equal(h.captures.size,0);assert.deepEqual(h.commands,[]);
+  }finally{h.destroy();}
+});
+
+test('native wheel modifiers use Alt playhead-centered zoom, Ctrl horizontal pan and Shift row zoom',()=>{
+  const h=harness();try{
+    h.canvas.clientHeight=220;h.view.videoPaneHeight=80;h.view.playhead=20;h.view.origin=5;
+    const screenFrame=frameToX(h.view.playhead,h.view,h.timeline.fps),oldScale=h.view.scale;
+    h.send('wheel',900,100,{deltaY:-20,deltaX:0,altKey:true});assert.ok(h.view.scale>oldScale);assert.ok(Math.abs(frameToX(h.view.playhead,h.view,h.timeline.fps)-screenFrame)<1e-9);
+    const scale=h.view.scale,origin=h.view.origin;h.send('wheel',900,100,{deltaY:40,deltaX:0,ctrlKey:true});assert.equal(h.view.scale,scale);assert.ok(h.view.origin>origin);assert.equal(h.view.videoScroll,0);
+    const row=h.view.rowHeight ?? TRACK,origin2=h.view.origin;h.send('wheel',900,100,{deltaY:-20,deltaX:0,shiftKey:true});assert.ok(h.view.rowHeight>row);assert.equal(h.view.origin,origin2);assert.equal(h.view.scale,scale);
+    assert.deepEqual(h.commands,[]);assert.deepEqual(h.seeks,[]);
+  }finally{h.destroy();}
+});
+
+test('wheel normalizes line deltas and leaves Meta, blocked navigation, modals and consumed events untouched',()=>{
+  const h=harness();try{
+    h.canvas.clientHeight=220;h.view.videoPaneHeight=80;h.send('wheel',300,150,{deltaY:1,deltaX:0,deltaMode:1});assert.equal(h.view.audioScroll,16);
+    for(const guard of ['meta','modal','navigation','prevented']){
+      h.setModal(guard==='modal');h.setNavigable(guard!=='navigation');const before=structuredClone(h.view);let prevented=false;
+      h.send('wheel',300,150,{deltaY:20,deltaX:10,metaKey:guard==='meta',defaultPrevented:guard==='prevented',preventDefault(){prevented=true;}});
+      assert.deepEqual(h.view,before);assert.equal(prevented,false);
+    }
+    assert.deepEqual(h.commands,[]);
   }finally{h.destroy();}
 });
 

@@ -50,6 +50,18 @@ export function timelineLayout(timeline,view={},height=view.viewportHeight){
   return {rowOrder,rowOfTrack,rowHeight,height,videoPane,audioPane,divider:{top:videoPane.bottom,bottom:audioPane.top},videoHeight,videoHeightRange:[minimum,available-minimum],videoScroll,audioScroll,videoMaxScroll,audioMaxScroll,trackTop,trackAtY,dragTarget,newTrackTop,paneAtY,pane,clipRect};
 }
 export function timelineLayoutStamp(view){return [view.viewportHeight,view.rowHeight,view.videoPaneHeight,view.videoScroll,view.audioScroll];}
+export function paneScrollbars(timeline,view,width,height=view.viewportHeight){
+  if(!Number.isFinite(width) || width<=HEADER+10)return [];
+  const layout=timelineLayout(timeline,view,height);
+  return ['video','audio'].flatMap(pane=>{
+    const box=pane==='video'?layout.videoPane:layout.audioPane,maxOffset=pane==='video'?layout.videoMaxScroll:layout.audioMaxScroll;
+    const top=box.top+2,bottom=box.bottom-2,railHeight=bottom-top;
+    if(maxOffset<=0 || railHeight<=0)return [];
+    const offset=pane==='video'?maxOffset-layout.videoScroll:layout.audioScroll;
+    const thumbHeight=Math.min(railHeight,Math.max(16,railHeight*railHeight/(railHeight+maxOffset))),travel=railHeight-thumbHeight;
+    return [{kind:'pane_scrollbar',pane,left:width-10,right:width-2,top,bottom,offset,maxOffset,thumbHeight,travel,thumbTop:top+travel*offset/maxOffset}];
+  });
+}
 export function clipsInTimelineRect(timeline,view,box,{visible=true}={}){
   const layout=timelineLayout(timeline,view);
   return timeline.tracks.flatMap((track,index)=>track.locked?[]:track.clips.filter(clip=>{
@@ -368,6 +380,8 @@ export function hitTest(x, y, timeline, view, width=Infinity) {
     }
   }
   if (y < RULER) return { kind: "scrub" };
+  const scrollbar=paneScrollbars(timeline,view,width).find(bar=>x>=bar.left && x<=bar.right && y>=bar.top && y<=bar.bottom);
+  if(scrollbar)return scrollbar;
   const layout=timelineLayout(timeline,view);
   if(layout.divider.bottom>layout.divider.top && y>=layout.divider.top && y<layout.divider.bottom)return {kind:'divider'};
   const track = layout.trackAtY(y);

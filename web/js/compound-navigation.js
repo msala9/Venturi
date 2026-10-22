@@ -19,12 +19,12 @@ export function compoundNavigationAction(event,{dialogOpen=false,idle=true,hasAn
   if(event.key==='Enter' && !event.altKey && !event.target?.closest?.('button,a,[role="button"]'))return 'enter';
   return back?'exit':null;
 }
-export function createCompoundNavigation({getState,canNavigate=()=>true,install,stop=()=>{},notice=()=>{},root=null,openButton=null,documentRef=globalThis.document,api=(path,body,options)=>request(path,body,(url,init)=>fetch(url,{...init,signal:AbortSignal.any([init.signal,options.signal])}))}){
-  let ancestry=[],epoch=null,pending=null,serial=0,renderKey=null,installing=false;
+export function createCompoundNavigation({getState,canNavigate=()=>true,install,stop=()=>{},beforeNavigate=()=>{},notice=()=>{},root=null,openButton=null,documentRef=globalThis.document,api=(path,body,options)=>request(path,body,(url,init)=>fetch(url,{...init,signal:AbortSignal.any([init.signal,options.signal])}))}){
+  let ancestry=[],epoch=null,pending=null,serial=0,navigationIntent=0,renderKey=null,installing=false;
   const available=state=>Boolean(state?.document && state.timeline && state.timeline.id!=='fixture' && state.document.timelines.includes(state.timeline) && validFrame(state.frame) && Array.isArray(state.selection) && canNavigate());
   const stamp=(state,sourceIds=state.selection)=>JSON.stringify([state.document.project_epoch,state.document.generation,state.timeline.id,state.timeline.revision,state.frame,[...state.selection].sort(),state.viewport,
     clips(state.timeline).filter(clip=>state.selection.includes(clip.id) || sourceIds.includes(clip.id)).map(clip=>[clip,state.document.media.find(item=>item.id===clip.media_id)])]);
-  function cancel(){if(!pending)return;const old=pending;pending=null;old.controller.abort();renderKey=null;}
+  function cancel(){navigationIntent++;if(!pending)return;const old=pending;pending=null;old.controller.abort();renderKey=null;}
   function reconcile(state){
     const next=state?.document?.project_epoch ?? null;
     if(epoch!==next){cancel();ancestry=[];epoch=next;}
@@ -55,12 +55,12 @@ export function createCompoundNavigation({getState,canNavigate=()=>true,install,
     const state=getState();reconcile(state);if(pending && !current(pending))cancel();render();
   }
   async function navigate(action,ids,index){
-    cancel();let state=getState();reconcile(state);
+    cancel();let state=getState();reconcile(state);const intent=navigationIntent;
     if(!available(state)){render();return false;}
     const target=action==='enter'?compoundTarget(state,ids ?? state.selection):null;
     if(action==='enter' && (!target || ancestry.length>=MAX_COMPOUND_DEPTH || target.timeline_id===state.timeline.id || ancestry.some(item=>item.timeline_id===target.timeline_id))){render();return false;}
     if(action==='exit' && (!Number.isInteger(index) || index<0 || index>=ancestry.length)){render();return false;}
-    stop();state=getState();
+    stop();try{const remembered=beforeNavigate();if(remembered?.then)await remembered;}catch(error){notice(error.message);return false;}if(intent!==navigationIntent)return false;state=getState();
     if(!available(state)){render();return false;}
     const selected=action==='enter'?compoundTarget(state,ids ?? state.selection):null;
     if(action==='enter' && (!selected || selected.timeline_id!==target.timeline_id || JSON.stringify(selected.clip_ids)!==JSON.stringify(target.clip_ids))){render();return false;}

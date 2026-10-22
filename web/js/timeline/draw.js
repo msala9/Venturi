@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons,paneScrollbars } from "./geometry.js";
 import {sourceAssetKey,mediaThumbnail} from '../source-assets.js';
 export function visibleAssetDemand(timeline,view,width,height){
   if(!timeline || width<=HEADER || height<=RULER)return [];
@@ -296,6 +296,10 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
     if(view.draft?.kind==='preset_application'){
       const draft=view.draft,label=`Preset ${draft.name} · ${draft.count} clip(s)${draft.error?` · blocked: ${draft.error}`:' · release to apply with one Undo'}`;
       const x=HEADER+8,y=Math.max(RULER+16,height-16);ctx.fillStyle=color('--raised');ctx.fillRect(x-4,y-8,Math.max(1,width-x),17);ctx.fillStyle=draft.error?color('--danger'):color('--text');ctx.fillText(label,x,y,Math.max(1,width-x-4));
+    }
+    for(const bar of paneScrollbars(timeline,view,width,height)){
+      ctx.fillStyle='#0000005a';ctx.fillRect(bar.left,bar.top,bar.right-bar.left,bar.bottom-bar.top);
+      ctx.fillStyle='#aaa';ctx.fillRect(bar.left+1,bar.thumbTop+1,bar.right-bar.left-2,Math.max(0,bar.thumbHeight-2));
     }
     onPaint?.(performance.now() - started,{timeline_id:timeline.id,revision:timeline.revision,items:visibleAssetDemand(timeline,view,width,height)});
   };

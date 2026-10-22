@@ -31,6 +31,7 @@ mod preset_store;
 mod presets;
 mod preview;
 mod program;
+mod project_view;
 mod receipts;
 mod recording;
 mod resume;

@@ -57,6 +57,10 @@ pub enum Operation {
         clip_ids: Vec<String>,
         name: String,
     },
+    MakeNativeCompound {
+        clip_ids: Vec<String>,
+        name: String,
+    },
     CopyClips {
         clip_ids: Vec<String>,
     },
@@ -579,6 +583,30 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             } else {
                 session.apply(Box::new(core::RenameTimeline::new(media, name.clone())));
             }
+        }
+        Operation::MakeNativeCompound { clip_ids, name } => {
+            timeline_name(name)?;
+            if session.project.timelines.len() >= 64 {
+                return Err(ApiError::invalid("Timeline limit reached"));
+            }
+            let selected = refs(tl, clip_ids)?;
+            if selected.len() > 4096 {
+                return Err(ApiError::invalid(
+                    "Compound selection exceeds 4096 linked clips",
+                ));
+            }
+            let mut plan = core::plan_compound_clip(&session.project, id, &selected)
+                .ok_or_else(ApiError::missing)?;
+            plan.nested_timeline.name = name.clone();
+            let ids = selected.iter().map(|(_, clip)| *clip).collect();
+            for track in [plan.video_track, plan.audio_track].into_iter().flatten() {
+                free(tl, track, plan.range_start, plan.len, &ids)?;
+            }
+            let mut trial = session.project.clone();
+            compound_command(&mut trial, id, &selected, &plan, None, name).apply(&mut trial);
+            crate::files::validate_project(&trial)?;
+            let command = compound_command(&mut session.project, id, &selected, &plan, None, name);
+            session.apply(command);
         }
         Operation::MakeCompound { clip_ids, name } => {
             timeline_name(name)?;

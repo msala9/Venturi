@@ -78,7 +78,9 @@ fn clip_snapshot(session: &Session, timeline: &vv_core::Timeline, clip: &vv_core
 }
 
 pub fn session(session: &Session, epoch: &str) -> Value {
+    let (view, view_revision) = crate::project_view::snapshot(&session.project);
     json!({"api_version":1,"project_epoch":format!("{epoch}:{}",session.epoch()),"generation":session.history.generation().to_string(),
+      "view":view,"view_revision":view_revision,
       "project_name":session.path().and_then(|p|p.file_name()).map(|p|p.to_string_lossy()),"unsaved":session.has_unsaved_changes(),
       "history":{"position":session.history.position(),"labels":session.history.labels().map(|l|format!("{l:?}")).collect::<Vec<_>>()},
       "audio_effects":crate::audio::catalog(),

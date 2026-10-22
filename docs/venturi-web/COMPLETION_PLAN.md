@@ -60,15 +60,17 @@ functional or release criteria.
 
 ## Delivery blocks
 
-The next native mask/Slip source block is committed at `b06948b`; its focused
-implementation gate is recorded in `evidence/f3-mask-inspector-gate.json`.
-Its isolated runtime start was deferred by the shared GPU lock. Reuse the
-passing focused checks and the retained three native reference frames; run
-the remaining Windows workflow/render comparison once hardware is available.
-Do not count native-only references as native/API parity or upgrade any
-protected editor to bypass qualification. During the hardware wait, continue
-F5 native/web catalog coordination and asset missing-file recovery as one
-connected source block. The accepted ledger remains 46 done / 44 partial.
+The native mask/Slip source block `b06948b` now has actual Windows and R9700
+qualification on integrated source `130b30e`. See
+`evidence/f3-mask-inspector-workflow.json`: native Rectangle/Subtract Ellipse/
+Intersect Path, source-clock scalar/path keys, Viewer pen/vertex movement,
+reset/Undo, linked Slip in both directions, Undo/Redo and exact Save/restart.
+Three retained transform/crop/fade references now match the API byte for byte;
+three newly edited mask frames match native/API at both 320×180 and 1280×720.
+Physical DPI and prolonged uncached held-Slip window continuity remain open.
+Keep progressing the connected F5 shared library workflow and compact interface;
+do not upgrade protected editors to bypass qualification. The accepted ledger
+remains 46 done / 44 partial.
 
 Current integration checkpoint (2026-10-22): selected Title/Solid/Filter controls
 and native key navigation are implemented through bbf0fbb. The existing Windows

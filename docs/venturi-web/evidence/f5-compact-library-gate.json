@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-22",
+  "status": "implementation gate passed; actual compact Windows layout pending",
+  "scope": "Compact native Library and approved source chooser markup/CSS",
+  "javascript_unique": 61,
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792692001.922578,
+    "validation": "compact-native-library",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "f7d8d6132a203339bbd20c8ee087ed0ad460727f61d4a2d0e6bad4bea35678e8",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "source_files": 99,
+  "source_manifest_sha256": "233e069d22d02b4406197ccc06eb4b5192511dccaafb645f39980cb74e3cc800",
+  "log_sha256": "02700603bae322af998aac3e7ee25ffe62e9e8b32c0d8f9c82d71ebbce76c30e",
+  "reused": [
+    "Unchanged Rust/Clippy gate in f5-approved-folders-gate.json",
+    "Transfer/CAS/cancellation and actual folder workflow in f5-approved-folders-workflow.json",
+    "Unchanged renderer and actual mask/Slip workflow in f3-mask-inspector-workflow.json"
+  ],
+  "sessions_preserved": {
+    "8790": {
+      "project_name": "CPU_shared_library_UI_check.vvproj",
+      "unsaved": true,
+      "generation": "5",
+      "history": {
+        "labels": [
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips"
+        ],
+        "position": 5
+      }
+    },
+    "8811": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "unsaved": true,
+      "generation": "1",
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "8812": {
+      "project_name": "Venturi_Native_UI.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  },
+  "changes": [
+    "Folder filter, search, asset list, paging and Add to project remain primary",
+    "Capture, archived filter, folder management and help in collapsed Library actions",
+    "Rename/archive/restore/download and offline repair in collapsed Asset actions",
+    "Cancel shown during transfer",
+    "Compact source chooser rows, breadcrumbs, footer and bounded scrolling list",
+    "Long file paths and errors wrap within the panel"
+  ],
+  "accepted_ledger": {
+    "done": 46,
+    "partial": 44,
+    "excluded": 2
+  }
+}

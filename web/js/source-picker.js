@@ -13,20 +13,21 @@ export function checkedSourceDirectory(value,epoch,directory,page){
 
 export function createSourcePicker({root,getContext,isCurrent=()=>true,canChoose=()=>true,canCancel=()=>true,api,onChoose,onCancel=()=>{},onStatus=()=>{},returnFocus=document.activeElement}){
   const epoch=getContext()?.project_epoch,heading=document.createElement('p'),crumbs=document.createElement('nav'),entries=document.createElement('div'),pager=document.createElement('div'),actions=document.createElement('div'),status=document.createElement('p');
+  root.className='native-source-picker';heading.className='native-source-heading';crumbs.className='native-source-crumbs';entries.className='native-source-entries';pager.className='native-source-paging';actions.className='native-source-actions';status.className='native-source-status';
   crumbs.setAttribute('aria-label','Approved source folder breadcrumbs');entries.setAttribute('aria-label','Approved source entries');status.setAttribute('role','status');heading.textContent='Choose an approved source folder';root.append(heading,crumbs,entries,pager,actions,status);
   root.addEventListener('keydown',event=>{if(event.key==='Escape' && !event.defaultPrevented && current() && canCancel()){event.preventDefault();event.stopPropagation();cancelChoice();}else if(event.target?.tagName==='BUTTON' && [' ','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))event.stopPropagation();});
   let disposed=false,reading=false,chosen=false,sequence=0,controller=null,view=null,focusTarget=null;
   const controls=new Map(),current=()=>!disposed && root.isConnected!==false && epoch && getContext()?.project_epoch===epoch && isCurrent();
   const message=text=>{if(current()){status.textContent=text;onStatus(text);}};
   const sync=()=>{for(const [node,enabled] of controls)node.disabled=!current() || reading || chosen || !canChoose() || node.isConnected===false || !enabled();cancel.disabled=!current() || !canCancel();};
-  const button=(parent,text,action,enabled=()=>true)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',()=>{if(!current() || reading || chosen || !canChoose() || !enabled() || node.isConnected===false)return;action();});parent.append(node);controls.set(node,enabled);return node;};
+  const button=(parent,text,action,enabled=()=>true,short=null)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.setAttribute('aria-label',text);node.title=text;if(short!==null)node.setAttribute('data-compact-label',short);node.addEventListener('click',()=>{if(!current() || reading || chosen || !canChoose() || !enabled() || node.isConnected===false)return;action();});parent.append(node);controls.set(node,enabled);return node;};
   const clearRows=()=>{for(const [node] of controls)if(node!==choose && node!==cancel)controls.delete(node);crumbs.replaceChildren();entries.replaceChildren();pager.replaceChildren();};
   const choose=button(actions,'Choose this source folder',()=>{
     if(!view?.directory_token)return;chosen=true;sync();
     Promise.resolve().then(()=>{if(!current() || !canChoose())throw new DOMException('Source folder selection changed','AbortError');return onChoose(view.directory_token);}).catch(error=>{if(current()){message(error.message);chosen=false;sync();}});
-  },()=>Boolean(view?.directory_token));
+  },()=>Boolean(view?.directory_token),'Use folder');
   function cancelChoice(){if(!current() || !canCancel())return;dispose();onCancel();if(returnFocus?.isConnected!==false && !returnFocus?.disabled)returnFocus?.focus?.({preventScroll:true});}
-  const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cancel source folder choice';cancel.addEventListener('click',cancelChoice);actions.append(cancel);
+  const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Cancel source folder choice';cancel.setAttribute('aria-label',cancel.textContent);cancel.title=cancel.textContent;cancel.setAttribute('data-compact-label','Cancel');cancel.addEventListener('click',cancelChoice);actions.append(cancel);
   async function load(directory='',page=0){
     if(!current() || chosen || !canChoose())return false;
     controller?.abort();controller=new AbortController();const signal=controller.signal,id=++sequence;reading=true;sync();message('Reading approved source folder…');
@@ -34,11 +35,11 @@ export function createSourcePicker({root,getContext,isCurrent=()=>true,canChoose
       const response=await api(`/media/sources?${new URLSearchParams({project_epoch:epoch,directory_token:directory,page:String(page)})}`,undefined,{signal});
       if(!current() || signal.aborted || id!==sequence)return false;
       const next=checkedSourceDirectory(response,epoch,directory,page);clearRows();view=next;
-      button(crumbs,'Project source root',()=>void load(''));
+      button(crumbs,'Project source root',()=>void load(''),()=>true,'Root');
       let path='';for(const part of directory.split('/').filter(Boolean)){path=path?`${path}/${part}`:part;const target=path;button(crumbs,part,()=>void load(target));}
-      button(pager,'Parent source folder',()=>void load(next.parent_token),()=>next.parent_token!==null);
-      focusTarget=null;for(const entry of next.entries){if(entry.kind==='directory'){const open=button(entries,`Open folder ${entry.name}`,()=>void load(entry.path_token));focusTarget ||= open;}else{const item=document.createElement('p');item.textContent=entry.name;entries.append(item);}}
-      button(pager,'Previous source page',()=>void load(directory,page-1),()=>page>0);button(pager,'Next source page',()=>void load(directory,page+1),()=>page+1<next.pages);
+      button(pager,'Parent source folder',()=>void load(next.parent_token),()=>next.parent_token!==null,'Up');
+      focusTarget=null;for(const entry of next.entries){if(entry.kind==='directory'){const open=button(entries,`Open folder ${entry.name}`,()=>void load(entry.path_token),()=>true,entry.name);open.className='native-source-directory';focusTarget ||= open;}else{const item=document.createElement('p');item.textContent=entry.name;entries.append(item);}}
+      button(pager,'Previous source page',()=>void load(directory,page-1),()=>page>0,'‹');button(pager,'Next source page',()=>void load(directory,page+1),()=>page+1<next.pages,'›');
       message(`${directory || 'Project source root'} · page ${page+1} of ${next.pages}${directory?'':' · open a folder to select it'}`);return true;
     }catch(error){if(current() && id===sequence && error.name!=='AbortError'){view=null;clearRows();message(error.message);}return false;}
     finally{if(id===sequence){reading=false;sync();if(current() && canChoose() && (document.activeElement===returnFocus || document.activeElement===document.body))(focusTarget || (view?.directory_token?choose:cancel)).focus?.({preventScroll:true});}}

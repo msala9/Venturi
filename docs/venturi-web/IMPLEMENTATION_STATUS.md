@@ -49,17 +49,22 @@ the last verified pictures with a seeking indicator.
 
 `evidence/f3-mask-inspector-gate.json` records 187 unique focused JavaScript and
 51 unique focused Rust cases, affected all-target Clippy and the cached build.
-The staged binary is ready, but its actual Windows mask/Slip workflow and
-native/API render comparison remain pending: the shared GPU lock refused the
-isolated runtime start. Three native-only reference frames are retained; they
-are not proof of API equality. No editor was restarted and no acceptance row
-was closed. Port 8812 still serves `f3dcf1c`, with 8790 and 8811 retaining their
-unsaved commands.
+After the shared GPU became available, the actual Windows workflow passed on
+integrated source `130b30e`; see `evidence/f3-mask-inspector-workflow.json`.
+Rectangle width/feather, Add/Subtract/Intersect composition, native scalar/path
+keys at source12/24 on 150% media, Viewer pen and vertex edits, reset/Undo and
+Path navigation after Slip were exercised. Both Slip directions change all
+three linked source bounds together while retaining placement/length/fades/gain;
+Undo/Redo and full timeline/media/view/mask metadata equality on Save/restart pass.
 
-While GPU qualification is unavailable, F5 source work addresses native/web
-catalog coordination and missing-file relinking. Native cached manifests and
-uncoordinated writes are a real shared-library gap; HTTP access to the ds4 media
-archive alone does not establish shared native assets/presets acceptance.
+The three retained transform/crop/fade frames now match native/API RGBA bytes.
+Three newly edited mask frames match byte for byte at both 320×180 and the
+project's full 1280×720 on R9700/Vulkan. One HD attempt deferred before work when
+the lock was busy; a subsequent free-lock observation allowed the bounded pass.
+Physical DPI and prolonged uncached held-Slip continuity remain open. Only the
+own isolated Saved runtime was restarted/stopped. Protected editors remain
+unchanged; port8812 still serves `f3dcf1c`, with 8790/8811 retaining unsaved edits.
+No broad capability row is closed by these focused improvements alone.
 
 ## Shared native library coordination and relink implementation
 
@@ -121,6 +126,15 @@ survive restart. The finite GPU-disabled service is stopped Saved, all three
 protected editors are unchanged, and no NAS or inference workload was modified.
 Shared filesystem/deployment acceptance remains open; no new parity row is
 accepted by this isolated workflow.
+
+The following compact Library pass keeps the folder/search/list/paging and
+Add to project actions primary. Capture, archived filters, folder management,
+help and selected-asset maintenance move into closed contextual sections.
+Source chooser rows/footer controls are compact and long errors/paths wrap
+inside the panel. All accessible action names and transfer/CAS/cancel handlers
+are retained. Its 61 focused JavaScript cases and embedded build pass; unchanged
+Rust/Clippy and renderer gates are reused. See
+`evidence/f5-compact-library-gate.json`; actual final layout verification follows.
 
 ## Native timeline and Inspector gesture qualification
 

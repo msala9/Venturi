@@ -1,0 +1,385 @@
+{
+  "date": "2026-10-22",
+  "status": "passed within stated scope",
+  "source_commit": "130b30ea38b2e2f6b2d2218a8f8c8acb732f15de",
+  "source_implementation": "b06948b",
+  "browser": {
+    "environment": "Existing Windows browser",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "work_tabs": 1
+  },
+  "project": {
+    "root": "/home/marco/VenturiWeb-masks-20261022",
+    "name": "Venturi_Native_Masks.vvproj",
+    "sha256": "af4955301ae4bc5e1ab780a703cf11218df29a10afd99ad339ad62b0ac9fa6b9",
+    "timeline_id": "5",
+    "size": [
+      1280,
+      720
+    ],
+    "fps": [
+      24,
+      1
+    ]
+  },
+  "workflow": [
+    "Native Rectangle added on 150% media at timeline368/source12",
+    "Width500, Feather32, Width Linear keys12=500 and24=360; previous-key navigation returns timeline368",
+    "Reset Width returns native640; Undo restores both keys and500 at source12",
+    "Viewer rectangle movement stores CenterX39.826644 and CenterY-19.913322 in Y-up layer pixels",
+    "Ellipse uses Subtract, width220 and height180",
+    "Actual Viewer pen closes a four-vertex Path; Path uses Intersect",
+    "Path key12 set in Inspector; Viewer vertex drag creates distinct key24",
+    "Reset all masks clears all three with one Undo; Undo restores full geometry and animation",
+    "Slip left moves all three linked150% video/audio sources0..42 to6..48; reverse drag restores0..42; Undo/Redo verified",
+    "After Slip, Path navigation maps source12\u2192timeline364 and source24\u2192timeline372",
+    "Save, stop own Saved runtime and restart same immutable binary; timeline/media/view and evaluated mask/key metadata equal"
+  ],
+  "mask_shapes_and_modes": [
+    {
+      "shape": "Rectangle",
+      "mode": "Add"
+    },
+    {
+      "shape": "Ellipse",
+      "mode": "Subtract"
+    },
+    {
+      "shape": "Path",
+      "mode": "Intersect"
+    }
+  ],
+  "width_keys": [
+    [
+      12,
+      500.0,
+      "Linear"
+    ],
+    [
+      24,
+      360.0,
+      "Linear"
+    ]
+  ],
+  "path_keys": [
+    [
+      12,
+      {
+        "points": [
+          {
+            "in_handle": [
+              0.0,
+              0.0
+            ],
+            "out_handle": [
+              0.0,
+              0.0
+            ],
+            "point": [
+              -135.10836791992188,
+              134.98390197753906
+            ]
+          },
+          {
+            "in_handle": [
+              0.0,
+              0.0
+            ],
+            "out_handle": [
+              0.0,
+              0.0
+            ],
+            "point": [
+              199.15098571777344,
+              113.648193359375
+            ]
+          },
+          {
+            "in_handle": [
+              0.0,
+              0.0
+            ],
+            "out_handle": [
+              0.0,
+              0.0
+            ],
+            "point": [
+              177.81527709960938,
+              -163.71595764160156
+            ]
+          },
+          {
+            "in_handle": [
+              0.0,
+              0.0
+            ],
+            "out_handle": [
+              0.0,
+              0.0
+            ],
+            "point": [
+              -106.6607666015625,
+              -149.4921417236328
+            ]
+          }
+        ]
+      },
+      "Linear"
+    ],
+    [
+      24,
+      {
+        "points": [
+          {
+            "in_handle": [
+              0.0,
+              0.0
+            ],
+            "out_handle": [
+              0.0,
+              0.0
+            ],
+            "point": [
+              -135.10836791992188,
+              134.98390197753906
+            ]
+          },
+          {
+            "in_handle": [
+              0.0,
+              0.0
+            ],
+            "out_handle": [
+              0.0,
+              0.0
+            ],
+            "point": [
+              163.5914764404297,
+              85.20059204101562
+            ]
+          },
+          {
+            "in_handle": [
+              0.0,
+              0.0
+            ],
+            "out_handle": [
+              0.0,
+              0.0
+            ],
+            "point": [
+              177.81527709960938,
+              -163.71595764160156
+            ]
+          },
+          {
+            "in_handle": [
+              0.0,
+              0.0
+            ],
+            "out_handle": [
+              0.0,
+              0.0
+            ],
+            "point": [
+              -106.6607666015625,
+              -149.4921417236328
+            ]
+          }
+        ]
+      },
+      "Linear"
+    ]
+  ],
+  "feather": 32,
+  "slip": {
+    "clip_ids": [
+      "10",
+      "8",
+      "9"
+    ],
+    "before": [
+      0,
+      42
+    ],
+    "left_drag": [
+      6,
+      48
+    ],
+    "right_drag": [
+      0,
+      42
+    ],
+    "placement_length_speed_fades_gain_unchanged": true
+  },
+  "native_api_transform_crop_fade": {
+    "status": "passed",
+    "mode": "web-f1",
+    "width": 320,
+    "height": 180,
+    "timeline_id": "5",
+    "project_sha256": "713af3f2871a42609ed73d72a0d5dcafa057e7c28a1e1f9b518672a59afb2053",
+    "limits": {
+      "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-focused-parity-web-f1-2-20261022.service",
+      "memory_max": "4294967296",
+      "memory_swap_max": "0",
+      "cpu_max": [
+        "100000",
+        "100000"
+      ],
+      "nice": 19,
+      "oom_score_adj": 1000
+    },
+    "frames": [
+      {
+        "frame": 0,
+        "sha256": "6f77f852d070d718abceaf639531c5424c1abecf4b2b603c640169f3546be7a1",
+        "byte_exact_native_api": true
+      },
+      {
+        "frame": 8,
+        "sha256": "fc5fe5514e497861d76edd10c2b1b1bfb7d726e66ee6aced57c17adabbe26c9c",
+        "byte_exact_native_api": true
+      },
+      {
+        "frame": 24,
+        "sha256": "0ecf5077d568a52b4d84a9b60810a4f36a56510d1310761fecce510975d7d334",
+        "byte_exact_native_api": true
+      }
+    ],
+    "query_identity": {
+      "project_epoch": "1792691267676082613:1",
+      "generation": "0"
+    },
+    "adapter": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": false,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    }
+  },
+  "native_api_masks_320": {
+    "status": "passed",
+    "mode": "native-masks",
+    "width": 320,
+    "height": 180,
+    "timeline_id": "5",
+    "project_sha256": "af4955301ae4bc5e1ab780a703cf11218df29a10afd99ad339ad62b0ac9fa6b9",
+    "limits": {
+      "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-focused-parity-native-masks-20261022.service",
+      "memory_max": "4294967296",
+      "memory_swap_max": "0",
+      "cpu_max": [
+        "100000",
+        "100000"
+      ],
+      "nice": 19,
+      "oom_score_adj": 1000
+    },
+    "frames": [
+      {
+        "frame": 368,
+        "sha256": "ef312cabefb9c5aeb798a4d81b02da042177002a167108f197a259c6e6c0b272",
+        "byte_exact_native_api": true
+      },
+      {
+        "frame": 376,
+        "sha256": "17392edc92526fafcdf0a885a368e8ebf1f94766b4ac204d3cf63dd6d760a7fe",
+        "byte_exact_native_api": true
+      },
+      {
+        "frame": 384,
+        "sha256": "03cb58db95803987fbc37a41fca8c2ab27c9e05b1422554dbc1f9614d6d05e18",
+        "byte_exact_native_api": true
+      }
+    ],
+    "oracle_sha256": "4bc1fec43f162edafdc476110888b65b11e7091c077f7ba2a22007a1b9f0af3d",
+    "native_adapter": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)"
+  },
+  "native_api_masks_1280": {
+    "status": "passed",
+    "mode": "native-masks",
+    "width": 1280,
+    "height": 720,
+    "timeline_id": "5",
+    "project_sha256": "af4955301ae4bc5e1ab780a703cf11218df29a10afd99ad339ad62b0ac9fa6b9",
+    "limits": {
+      "path": "/sys/fs/cgroup/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-focused-parity-native-masks-2-20261022.service",
+      "memory_max": "4294967296",
+      "memory_swap_max": "0",
+      "cpu_max": [
+        "100000",
+        "100000"
+      ],
+      "nice": 19,
+      "oom_score_adj": 1000
+    },
+    "frames": [
+      {
+        "frame": 368,
+        "sha256": "ffaa3d780ee1155d75e9386362d4971d25207cd4dbec691e2fff6b77afada5b5",
+        "byte_exact_native_api": true
+      },
+      {
+        "frame": 376,
+        "sha256": "5d24140e22ebdb5e47ea0242dc428e38bea4f7abdcb3af604e8e4f5cb258573d",
+        "byte_exact_native_api": true
+      },
+      {
+        "frame": 384,
+        "sha256": "01681c01a08b15b7d04fa78ebe5ecef5b45c5f86c6dae61cdf54e7626e0173d7",
+        "byte_exact_native_api": true
+      }
+    ],
+    "oracle_sha256": "4bc1fec43f162edafdc476110888b65b11e7091c077f7ba2a22007a1b9f0af3d",
+    "native_adapter": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)"
+  },
+  "save_restart": {
+    "timelines_sha256": "7333a14c5f85da2c9c5af7a044e67801ff07a0bd3a1d8c430a81029414bb35d1",
+    "media_sha256": "520b8f8bb6344a9e26f0c05bb056945f237d2ed491403a732259c587601a6c1c",
+    "view": {
+      "active_timeline": "5",
+      "playheads": {
+        "1": 0,
+        "2": 24,
+        "4": 380,
+        "5": 376
+      }
+    },
+    "masks_sha256": "60a10ca2e8ab6d0a6ce73028ea6264347c98d5a93c3b117ba745ee1da8008479",
+    "equal": true
+  },
+  "screenshot": "f3-mask-inspector-windows.jpg",
+  "limits": {
+    "host": "halo2",
+    "cpu_cores": 1,
+    "memory_bytes": 4294967296,
+    "swap_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "shared_gpu_lock": "nonblocking; no foreign process modified",
+    "no_windows_build_or_render": true
+  },
+  "remaining": [
+    "Physical DPI100/150 and complete device/interaction acceptance",
+    "Continuous uncached dual-edge Slip during a held prolonged pointer gesture",
+    "Broader F1/F3 effects/transitions/title, playback/export and release requirements"
+  ],
+  "accepted_ledger": {
+    "done": 46,
+    "partial": 44,
+    "excluded": 2
+  }
+}

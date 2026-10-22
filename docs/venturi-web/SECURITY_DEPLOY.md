@@ -54,7 +54,9 @@ a clean session, native project/media/depth validation, an 8 MiB regular-file
 NOFOLLOW read, and a new no-replace destination before changing the session
 epoch. The original file and backup are preserved. Save As can preserve dirty
 current edits first. Unsaved-edit snapshots are separate from these saved-version
-backups (see below); durable render queues remain pending.
+backups (see below). Completed exports now have bounded durable history and
+downloads; interrupted export records are retained for review and never restart
+their work automatically. Interactive Source/Program render jobs remain transient.
 
 These complement the loopback Host/Origin/JSON/CSP boundaries and bounded
 queues. Save now compares the current file's descriptor identity and SHA-256
@@ -65,8 +67,13 @@ publication narrow concurrent-change windows; they cannot lock an uncooperative
 external writer between the final check and rename. An external desktop editor
 should still be closed while saving the same project from the web.
 
-Long soak, durable jobs and a complete public-host threat review
-remain open. No background service or public listener is enabled.
+The full editing soak and release review remain open. The failed/interrupted
+earlier backend soaks are retained as failure evidence, not release acceptance.
+The owner's current delivery uses an enabled, unprivileged, resource-limited
+loopback service on halo2, reached through the existing SSH tunnel. Earlier
+protected editor services remain live. No public listener is enabled by this
+deployment. See `evidence/current-workspace-delivery.json` and
+`RELEASE_CHECKLIST.md`; deployment must preserve dirty sessions and client drafts.
 
 Last-saved project reopening uses a private, bounded version-1 cursor containing
 only the root token and SHA-256. Atomic writes and NOFOLLOW reads preserve
@@ -88,3 +95,11 @@ make all acknowledged edits, Undo chains or render jobs durable across crashes.
 ## License and brand
 
 Venturi is GPL-3.0-or-later. Preserve copyright/license notices and review distribution/network implications with proper legal guidance as relevant. Do not automatically copy the MadRock mark into a project intended for distribution without rights confirmation.
+
+The dated offline inventory in `evidence/f7-license-inventory.json` records the
+root LICENSE and Cargo.lock hashes, cached crate license metadata and installed
+FFmpeg configuration. Its dependency closure is deliberately conservative:
+offline Cargo metadata cannot resolve an uncached `tokio-stream` package, so the
+inventory includes optional, platform and development edges. Uncached manifests
+remain explicit. It is not an exact linked-binary manifest or a completed
+distribution/license review. No packages were downloaded to collect it.

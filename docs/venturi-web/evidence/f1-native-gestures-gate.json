@@ -1,0 +1,42 @@
+{
+  "date": "2026-10-22",
+  "status": "passed",
+  "source_commit": "9f7dcc4de34c6650b79255eb03687176ef532216",
+  "binary_sha256": "77e800ef9cc4c5e9635b5a47d56df94e4abe23fe056811fa682c8960dc561dc2",
+  "unstripped_binary_sha256": "e72cf68fea6ffb23b42720e393980ef0df0aaa090819c8393e58a83599f454e2",
+  "javascript": {
+    "unique_tests": 1082,
+    "passed": 1082,
+    "method": "Full suite:1081 passed; one legacy trim/Alt-pan fixture updated and its affected test file passed. Unchanged passing files reused."
+  },
+  "rust": {
+    "crate": "vv-web",
+    "unique_tests": 493,
+    "passed": 493,
+    "method": "Full suite:490 passed; three new Host/API fixtures corrected to create a project first, then their focused rerun passed. Native trim/copy and mixed-key oracle cases are included in this count."
+  },
+  "checks": [
+    "cargo fmt --all",
+    "cargo clippy --locked --offline -p vv-session -p vv-web --all-targets -- -D warnings",
+    "cargo build --locked --offline -p vv-web"
+  ],
+  "limits": {
+    "host": "halo2",
+    "cpu_cores": 1,
+    "memory_gib": 4,
+    "swap_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "tasks_max": 128,
+    "runtime_max_seconds": 1800,
+    "offline_cached_toolchain": true
+  },
+  "initial_corrections": [
+    "Missing JavaScript function closing brace fixed before suite execution.",
+    "Native ClipId/private-field test setup and import compile corrections.",
+    "New Host/API tests now create a native project before accessing its timeline.",
+    "Clippy-owned slice/import corrections; final all-target pass."
+  ],
+  "acceptance": "Implementation gate and focused Windows workflow; no full-workspace/M7/physical-DPI/performance claim."
+}

@@ -9,8 +9,8 @@ and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
 Complete all remaining in-scope capabilities against the original native GUI,
 the UX specification and M7 release criteria. FUNCTIONAL_PARITY.csv
 started with 42 done and 48 partial capabilities. The current accepted source
-ledger contains 45 done and 45 partial capabilities after the native compound,
-freeze and independent-timeline/view qualification. The two explicitly NOT-PLANNED
+ledger contains 46 done and 44 partial capabilities after the native compound,
+freeze, independent-timeline/view and static Inspector qualification. The two explicitly NOT-PLANNED
 rows, speed_ramp_reverse and node_graph, remain excluded. Do not relabel partial
 capabilities as finished merely because a small demo, API or component test passes.
 
@@ -55,7 +55,7 @@ The protected 8790 editor still has its five unsaved moves. Port 8811 acquired
 an unsaved InsertClips command, so neither its service nor its browser tab was
 restarted/reloaded. The new enabled service `venturi-web-native-ui.service`
 uses its own project root and the existing tunnel on 8812. The full ledger
-remains 45 done / 45 partial; this interface acceptance does not close unrelated
+was 45 done / 45 partial at that delivery; this interface acceptance does not close unrelated
 functional or release criteria.
 
 ## Delivery blocks
@@ -95,6 +95,18 @@ Resolve timeline row ordering/selection and gesture gaps needed for reliable
 ordinary editing. Accept one multi-track editing/Inspector workflow with linked
 audio, locks, one-command gestures, Undo/Redo, saved reopen and relevant pointer,
 keyboard and DPI checks. Existing accepted Blend/Matte behavior must remain valid.
+
+The integrated native-gesture block is implemented and pushed at `9f7dcc4`. Its
+bounded halo2 gate passes 1082 unique JavaScript and 493 unique vv-web tests,
+all-target Clippy and build, reusing unchanged passing cases. Actual Windows
+qualification exercises numeric scrub/sliders, pivot/Flip/crop/softness, Roll,
+linked trim, video/audio fades, constant gain, shared cross-parameter key drag,
+one Undo/Redo and exact five-timeline/ProjectView save/restart. See
+`evidence/f1-native-gestures-workflow.json`. The `properties_static` row is now
+accepted (46 done / 44 partial). Targeted rendered TS017 transform/crop/fade parity,
+physical modifier/DPI and dense 500-clip acceptance remain open. The finite 8813
+qualification instance is stopped Saved. Stable 8812 still runs `f3dcf1c`; none of
+the three live editors was upgraded/reloaded or had client drafts discarded.
 
 ### F2 — media, playback and export
 

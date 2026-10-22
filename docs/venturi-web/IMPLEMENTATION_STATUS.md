@@ -38,6 +38,28 @@ remains df50859 with an unsaved InsertClips operation and is preserved. The
 source ledger is45 done/45 partial;
 this gate does not by itself close remaining capabilities.
 
+## Native timeline and Inspector gesture qualification
+
+Source `9f7dcc4` adds native selected-group trim and adjacent Roll, explicit safe
+versus overwrite policy, Alt-duplicate with exact fresh-copy selection receipts,
+constant-only gain lines, shared cross-parameter key picks and native pointer
+key movement with value changes limited to the grabbed scalar. Numeric fields
+support direct scrub; Rotation/Crop/Opacity have compact sliders. Selection
+shows a guarded native table. Native limits, linked groups and one Undo remain
+in Rust. The existing native UI layout is retained.
+
+`evidence/f1-native-gestures-gate.json` records 1082 unique JavaScript and 493
+unique vv-web cases, fmt, affected all-target Clippy and cached build on bounded
+halo2. `evidence/f1-native-gestures-workflow.json` records actual Windows 1440×900
+scrub/sliders, pivot/Flip/crop/softness, Roll, linked trim, singular video/audio
+fades, gain line, mixed-key drag, Undo/Redo and exact save/restart. All five
+timeline models and ProjectView match; selected native properties/keys match.
+The properties_static row is accepted, bringing the ledger to 46 done / 44 partial.
+Targeted rendered transform/crop/fade parity and physical Alt/DPI/500-clip checks
+remain explicit; the earlier 43-frame mask/blend/transition matrix does not cover
+these cases. The finite 8813 service/tunnel is stopped Saved and its tab closed.
+The native UI at 8812 remains `f3dcf1c`; 8790 and 8811 retain their unsaved work.
+
 ## F1 implementation â€” integrated qualification in progress
 
 The selected Inspector now follows native per-property target and clock rules:

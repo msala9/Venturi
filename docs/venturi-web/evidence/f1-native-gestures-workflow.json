@@ -1,0 +1,262 @@
+{
+  "date": "2026-10-22",
+  "status": "passed",
+  "scope": "Focused native timeline and Inspector gesture workflow; full F1-F7/M7 goal remains active.",
+  "source_commit": "9f7dcc4de34c6650b79255eb03687176ef532216",
+  "binary_sha256": "77e800ef9cc4c5e9635b5a47d56df94e4abe23fe056811fa682c8960dc561dc2",
+  "browser": "Existing Windows in-app browser; one temporary work tab48, no browser installed on halo2",
+  "viewport": [
+    1440,
+    900
+  ],
+  "runtime": {
+    "unit": "venturi-f1-gestures-20261022.service",
+    "port": 8813,
+    "limits": [
+      "CPU1",
+      "Memory4GiB",
+      "Swap0",
+      "Nice19",
+      "IOWeight10",
+      "OOMScoreAdjust1000",
+      "Tasks128",
+      "RuntimeMaxSec1200"
+    ],
+    "adapter": "AMD Radeon AI PRO R9700 (RADV GFX1201), Vulkan, 0x7551",
+    "shared_gpu_lock": "/tmp/HALO_BENCHMARK.lock, nonblocking",
+    "final_state": "Saved; temporary service and Windows tunnel stopped, work tab closed, viewport override reset"
+  },
+  "project": {
+    "path": "/home/marco/VenturiWeb-f1-gestures-20261022/Venturi_F1_Interactions.vvproj",
+    "sha256": "7fb3569f706f4010137234c0cb3a5e02682b5796b28ccc95a55bd34ace7d4ed9",
+    "bytes": 98102,
+    "timeline": "Native montage",
+    "fps": "24/1",
+    "resolution": [
+      1280,
+      720
+    ],
+    "media": "Existing own fixture media hardlinked into isolated root; no large copies"
+  },
+  "workflow": {
+    "number_scrub": "Rotation0 ->10 with one Transform command; Undo0 and Redo10 observed.",
+    "static_properties": "AnchorX24, horizontal Flip, CropLeft40, CropSoftness1 via compact slider keyboard.",
+    "roll": "Clip5 length120->112; adjacent clip6 start120->112,length120->128; one TrimClips command. One Undo restores original pair and Redo restores roll.",
+    "video_fade": "Clip5 fade_in0->16 through its top handle; singular native Transform.",
+    "gain_line": "Audio8 gain0->9.30196475982666 dB; linked video10 and audio9 unchanged.",
+    "audio_fade": "Audio8 fade_in0->8; linked peers unchanged.",
+    "linked_trim": "Video10/audio8/audio9 length32->28 in one TrimClips; one Undo32 and Redo28 observed for all three.",
+    "selection_summary": "Actual Selection tab shows native video/audio track IDs, names, start, length and source clock. Correct three linked rows observed.",
+    "mixed_keys": "PositionX/Rotation keys both source24->32; Rotation10->10.038399696350098, PositionX stays0, unselected PositionY stays source24/value0. One Undo restores all selected keys24; Redo restores exact final state.",
+    "save_restart": "File Save, Saved confirmed, finite service stopped/restarted and browser reloaded. All five normalized timelines and full ProjectView exactly equal, as are selected native curves/transform/flip/fades; only epoch/generation change.",
+    "console_errors": []
+  },
+  "keys_after_drag": [
+    {
+      "name": "Transform \u00b7 PositionX",
+      "default": 0.0,
+      "keys": [
+        {
+          "controls": [
+            [
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            [
+              0.6666666865348816,
+              0.6666666865348816
+            ]
+          ],
+          "interpolation": "Linear",
+          "source_frame": 32,
+          "timeline_frame": 32,
+          "value": 0.0
+        }
+      ]
+    },
+    {
+      "name": "Transform \u00b7 PositionY",
+      "default": 0.0,
+      "keys": [
+        {
+          "controls": [
+            [
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            [
+              0.6666666865348816,
+              0.6666666865348816
+            ]
+          ],
+          "interpolation": "Linear",
+          "source_frame": 24,
+          "timeline_frame": 24,
+          "value": 0.0
+        }
+      ]
+    },
+    {
+      "name": "Transform \u00b7 Rotation",
+      "default": 10.0,
+      "keys": [
+        {
+          "controls": [
+            [
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            [
+              0.6666666865348816,
+              0.6666666865348816
+            ]
+          ],
+          "interpolation": "Linear",
+          "source_frame": 32,
+          "timeline_frame": 32,
+          "value": 10.038399696350098
+        }
+      ]
+    }
+  ],
+  "keys_after_undo": [
+    {
+      "name": "Transform \u00b7 PositionX",
+      "default": 0.0,
+      "keys": [
+        {
+          "controls": [
+            [
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            [
+              0.6666666865348816,
+              0.6666666865348816
+            ]
+          ],
+          "interpolation": "Linear",
+          "source_frame": 24,
+          "timeline_frame": 24,
+          "value": 0.0
+        }
+      ]
+    },
+    {
+      "name": "Transform \u00b7 PositionY",
+      "default": 0.0,
+      "keys": [
+        {
+          "controls": [
+            [
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            [
+              0.6666666865348816,
+              0.6666666865348816
+            ]
+          ],
+          "interpolation": "Linear",
+          "source_frame": 24,
+          "timeline_frame": 24,
+          "value": 0.0
+        }
+      ]
+    },
+    {
+      "name": "Transform \u00b7 Rotation",
+      "default": 10.0,
+      "keys": [
+        {
+          "controls": [
+            [
+              0.3333333432674408,
+              0.3333333432674408
+            ],
+            [
+              0.6666666865348816,
+              0.6666666865348816
+            ]
+          ],
+          "interpolation": "Linear",
+          "source_frame": 24,
+          "timeline_frame": 24,
+          "value": 10.0
+        }
+      ]
+    }
+  ],
+  "persistence": {
+    "all_five_timeline_models_equal": true,
+    "project_view_equal": true,
+    "selected_native_detail_equal": true,
+    "saved_generation": "21",
+    "reopened_generation": "0",
+    "history_reset_only_on_restart": true
+  },
+  "preservation": {
+    "8790": {
+      "project_name": "CPU_shared_library_UI_check.vvproj",
+      "generation": "5",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips"
+        ],
+        "position": 5
+      }
+    },
+    "8811": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "generation": "1",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "8812": {
+      "project_name": "Venturi_Native_UI.vvproj",
+      "generation": "0",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  },
+  "deployment": {
+    "native_ui_url": "http://127.0.0.1:8812/",
+    "native_ui_code": "f3dcf1c8b6fed838c7e48497922f127b96f9c35b",
+    "gesture_source_pushed": true,
+    "gesture_candidate_not_installed_in_live_editor": true
+  },
+  "screenshots": [
+    "f1-native-gestures-windows.jpg"
+  ],
+  "reused_evidence": [
+    "f1-selected-inspector.json",
+    "native-ui-workflow.json",
+    "nativeview-workflow.json",
+    "f1-native-gestures-gate.json"
+  ],
+  "acceptance": {
+    "properties_static": "accepted using native per-property/selection oracle tests, earlier selected Inspector workflow and this actual static/gesture/Undo/save/restart pass",
+    "transform_crop_softness": "interaction and persistence pass; targeted native/API rendered frame equivalence remains open",
+    "anchor_flip": "interaction and persistence pass; targeted native/API rendered frame equivalence remains open",
+    "clip_fades": "video/audio interactions and persistence pass; targeted fade-frame/audio output acceptance remains open"
+  },
+  "remaining": [
+    "Physical modifier Alt-duplicate gesture, 100/150 percent DPI and dense500-clip qualification are not claimed by this pass.",
+    "No new playback/export/physical microphone or speaker latency claim.",
+    "Existing43-frame parity matrix does not cover these transform/crop/clip-fade cases.",
+    "No unsaved live editor was restarted, saved or reloaded."
+  ]
+}

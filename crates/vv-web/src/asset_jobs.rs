@@ -1596,6 +1596,20 @@ struct Copied {
     source_hash: u64,
     hash: u64,
 }
+fn reopen_written_stage(file: File, directory: &File, name: &str) -> Result<File> {
+    file.sync_all().map_err(|_| ApiError::io())?;
+    let written = file.metadata().map_err(|_| ApiError::io())?;
+    // CIFS can finalize write timestamps only when the last writer closes.
+    drop(file);
+    let file = asset_store::regular(directory, name)?;
+    let reopened = file.metadata().map_err(|_| ApiError::io())?;
+    if (written.dev(), written.ino(), written.len())
+        != (reopened.dev(), reopened.ino(), reopened.len())
+    {
+        return Err(source_changed());
+    }
+    Ok(file)
+}
 fn copy(inner: &Inner, source: &PinnedSource, work: &Work, budget: &Budget) -> Result<Copied> {
     copy_checked(inner, source, work, budget, None, |_, _, _| Ok(()))
 }
@@ -1688,8 +1702,11 @@ fn copy_checked(
             return Err(source_changed());
         }
     }
-    file.sync_all().map_err(|_| ApiError::io())?;
+    let file = reopen_written_stage(file, staging, &partial.name)?;
     let before = asset_store::stable_identity(&file)?;
+    if digest(&file, budget, staging)? != hash {
+        return Err(source_changed());
+    }
     let meta = probe(&file, &source.path, &work.cancel)?;
     budget.check(staging)?;
     if asset_store::stable_identity(&file)? != before

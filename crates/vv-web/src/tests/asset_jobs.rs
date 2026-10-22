@@ -1,5 +1,54 @@
 use super::*;
 
+#[test]
+fn asset_copy_closes_writer_before_pinning_readonly_stage_and_refuses_replacement() {
+    let root = std::env::temp_dir().join(format!(
+        "venturi-stage-reopen-{}-{}",
+        std::process::id(),
+        nonce()
+    ));
+    std::fs::create_dir(&root).unwrap();
+    let directory = File::open(&root).unwrap();
+    let stage = root.join("stage.part");
+    let bytes = b"owned copied media bytes";
+    let mut writer = File::create(&stage).unwrap();
+    writer.write_all(bytes).unwrap();
+    let written = writer.metadata().unwrap();
+    let mut pinned = reopen_written_stage(writer, &directory, "stage.part").unwrap();
+    let meta = pinned.metadata().unwrap();
+    assert_eq!(
+        (meta.dev(), meta.ino(), meta.len()),
+        (written.dev(), written.ino(), written.len())
+    );
+    let mut actual = Vec::new();
+    pinned.read_to_end(&mut actual).unwrap();
+    assert_eq!(actual, bytes);
+    assert!(pinned.write_all(b"must not write").is_err());
+    drop(pinned);
+
+    let writer = File::options().write(true).open(&stage).unwrap();
+    std::fs::rename(&stage, root.join("original.part")).unwrap();
+    std::fs::write(&stage, bytes).unwrap();
+    assert_eq!(
+        reopen_written_stage(writer, &directory, "stage.part")
+            .err()
+            .unwrap()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    std::fs::remove_file(&stage).unwrap();
+    std::os::unix::fs::symlink(root.join("original.part"), &stage).unwrap();
+    let writer = File::options()
+        .write(true)
+        .open(root.join("original.part"))
+        .unwrap();
+    assert!(reopen_written_stage(writer, &directory, "stage.part").is_err());
+    std::fs::remove_file(&stage).unwrap();
+    std::fs::remove_file(root.join("original.part")).unwrap();
+    drop(directory);
+    std::fs::remove_dir(&root).unwrap();
+}
+
 fn tree_edit(fixture: &Fixture, directory: &str) -> asset_store::Edit {
     asset_store::Edit::ImportTree {
         directory_token: directory.into(),

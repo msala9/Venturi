@@ -39,6 +39,7 @@ pub enum Action {
     AudioSnapshot(FrameQuery, oneshot::Sender<Result<crate::audition::Task>>),
     CheckFrame(FrameQuery),
     ClipDetail(String, FrameQuery, Option<usize>),
+    InspectorSelection(crate::selection::Request),
     KeyframeNavigation(String, KeyframeNavigationRequest),
     ProjectView(crate::project_view::Request),
     SlipDetail(String, i64, FrameQuery),
@@ -185,6 +186,7 @@ pub struct Editor {
     media_import_receipt: Option<Value>,
     otio_import_receipt: Option<Value>,
     clipboard_receipt: Option<Value>,
+    timeline_edit_selection: Option<Vec<String>>,
     persisted_view: vv_core::ProjectView,
 }
 impl Editor {
@@ -255,6 +257,7 @@ impl Editor {
             media_import_receipt: None,
             otio_import_receipt: None,
             clipboard_receipt: None,
+            timeline_edit_selection: None,
             session,
             files,
             epoch: std::time::SystemTime::now()
@@ -416,6 +419,7 @@ impl Editor {
         self.media_import_receipt = None;
         self.otio_import_receipt = None;
         self.clipboard_receipt = None;
+        self.timeline_edit_selection = None;
         let outcome = self.perform(timeline, &request);
         if self.session.epoch() != previous_epoch
             || outcome.is_ok()
@@ -429,6 +433,7 @@ impl Editor {
         let media_import_receipt = self.media_import_receipt.take();
         let otio_import_receipt = self.otio_import_receipt.take();
         let clipboard_receipt = self.clipboard_receipt.take();
+        let timeline_edit_selection = self.timeline_edit_selection.take();
         if self.session.epoch() != previous_epoch {
             self.asset_jobs
                 .cancel_obsolete(&format!("{}:{}", self.epoch, self.session.epoch()));
@@ -451,7 +456,8 @@ impl Editor {
         if self.completed.len() >= MAX_RECEIPTS
             || ((media_import_receipt.is_some()
                 || otio_import_receipt.is_some()
-                || clipboard_receipt.is_some())
+                || clipboard_receipt.is_some()
+                || timeline_edit_selection.is_some())
                 && self.import_receipt_cache_full())
         {
             self.completed.clear();
@@ -480,6 +486,7 @@ impl Editor {
             if let Some(report)=clipboard_receipt {
                 for field in ["media_ids","clip_ids","changed"] {value[field]=report[field].clone();}
             }
+            if let Some(ids)=timeline_edit_selection {value["clip_ids"]=json!(ids);}
             if matches!(request.operation,Operation::CopyClips{..}|Operation::CopyMedia{..}|Operation::CutClips{..}) {
                 value["clipboard_revision"]=json!(self.clipboard.as_ref().and_then(|clipboard|clipboard.revision(&self.session)));
             }
@@ -655,6 +662,18 @@ impl Editor {
                     attributes,
                     *keyframes,
                 ),
+                Operation::MoveClips {
+                    duplicate: true, ..
+                } => {
+                    let ids = commands::move_clips_with_selection(
+                        &mut self.session,
+                        id,
+                        &request.operation,
+                    )?;
+                    self.session.sync_timeline_media(id);
+                    self.timeline_edit_selection = Some(ids);
+                    Ok(())
+                }
                 _ => commands::apply(&mut self.session, id, &request.operation),
             };
         }
@@ -1929,6 +1948,16 @@ impl Editor {
                 value["project_epoch"] = json!(query.project_epoch);
                 value["generation"] = json!(query.if_generation);
                 Ok(value)
+            }
+            Action::InspectorSelection(request) => {
+                let (id, _) = self.validate_view_frame(&request.query)?;
+                let rows = crate::selection::rows(
+                    &self.session,
+                    id,
+                    request.query.frame,
+                    &request.clip_ids,
+                )?;
+                Ok(json!({"query":request.query,"rows":rows}))
             }
             Action::ClipDetail(clip, query, page) => {
                 let (id, _) = self.validate_view_frame(&query)?;

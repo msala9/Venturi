@@ -1,5 +1,31 @@
 import {createKeyframeNavigation,drawKeyframeHead,keyframeClock,keyframeTimeRange} from './keyframe-navigation.js';
 
+export const keyPickIdentity=pick=>JSON.stringify([pick.target,pick.source_frame]);
+export function createKeyPickSelection(openState,scope){
+  const stateKey=`all-keys:${scope}`,stored=openState?.get(stateKey),listeners=new Set(),gestureListeners=new Set();
+  let picks=[];
+  try{picks=(stored?.ids || (Array.isArray(stored)?stored:stored?.after || [])).map(id=>{const [target,source_frame]=JSON.parse(id);return {target,source_frame};});}catch{}
+  const valid=values=>Array.isArray(values) && values.length<=2048 && values.every(pick=>pick?.target && typeof pick.target.kind==='string' && Number.isSafeInteger(pick.source_frame)) && new Set(values.map(keyPickIdentity)).size===values.length;
+  if(!valid(picks))picks=[];
+  const get=()=>structuredClone(picks);
+  const set=(values,{focus=false}={})=>{
+    if(!valid(values))throw Error('Choose at most 2048 distinct native keys');
+    const changed=JSON.stringify(picks)!==JSON.stringify(values);picks=structuredClone(values);
+    if(openState){openState.delete(stateKey);openState.set(stateKey,{ids:picks.map(keyPickIdentity),focus});const keys=[...openState.keys()].filter(key=>key.startsWith('all-keys:'));for(const key of keys.slice(0,Math.max(0,keys.length-32)))openState.delete(key);}
+    if(changed)for(const listener of listeners)listener();
+  };
+  return {get,set,replace(before,after,options){const removed=new Set(before.map(keyPickIdentity));set([...new Map([...picks.filter(pick=>!removed.has(keyPickIdentity(pick))),...after].map(pick=>[keyPickIdentity(pick),pick])).values()],options);},select(pick,additive=false){const exists=picks.some(value=>keyPickIdentity(value)===keyPickIdentity(pick));set(additive || exists?(exists?picks:[...picks,pick]):[pick]);},beginGesture(){for(const listener of gestureListeners)listener();},onGesture(listener){gestureListeners.add(listener);return ()=>gestureListeners.delete(listener);},subscribe(listener){listeners.add(listener);return ()=>listeners.delete(listener);}};
+}
+export function pointerKeyOperation(clip,picks,delta,grabbed=null,linkZoom=false){
+  if(!Array.isArray(picks) || !picks.length || picks.length>2048 || picks.some(pick=>!pick?.target || !Number.isSafeInteger(pick.source_frame)) || new Set(picks.map(keyPickIdentity)).size!==picks.length || !Number.isSafeInteger(delta))throw Error('Choose distinct native keys and an integer frame delta');
+  if(grabbed && (!Number.isFinite(grabbed.value) || !picks.some(pick=>keyPickIdentity(pick)===keyPickIdentity(grabbed))))throw Error('Drag a selected native scalar key');
+  return {kind:'edit_key_selection',clip_id:clip,edit:{picks:structuredClone(picks),link_zoom:Boolean(linkZoom),action:grabbed?{kind:'drag',delta_source_frames:delta,grabbed:structuredClone(grabbed)}:{kind:'move',delta_source_frames:delta}}};
+}
+export function pointerCurveDraft(curve,frames,grabbed,point){
+  const selected=new Set(frames),delta=Math.round(point.frame-grabbed.source_frame),value=Math.max(curve.min,Math.min(curve.max,point.value));
+  return {deltaFrame:delta,value,keys:curve.keys.filter(key=>selected.has(key.source_frame)).map(key=>({...key,source_frame:key.source_frame+delta,value:key.source_frame===grabbed.source_frame?value:key.value}))};
+}
+
 export function zoomParameters(param,linked=false){return linked && ["ZoomX","ZoomY"].includes(param)?[param,param==="ZoomX"?"ZoomY":"ZoomX"]:[param];}
 export function createZoomLink(openState){
   let value=Boolean(openState?.get("zoom-link"));const inputs=new Set();
@@ -80,41 +106,48 @@ export function curveGeometry(curve, range, width, height, selected = null) {
     control: (handle, x, y) => [Math.max(0, Math.min(1, (range.source_start + (x - left) / plotWidth * (range.source_end - range.source_start) - handle.start.source_frame) / (handle.end.source_frame - handle.start.source_frame))), Math.max(-10, Math.min(10, handle.end.value === handle.start.value ? handle.point[1] : (max - (y - top) / plotHeight * (max - min) - handle.start.value) / (handle.end.value - handle.start.value)))]};
 }
 
-export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = () => [], getSelection=()=>null, isBusy, canEdit,canInteract=()=>true,beforeBegin=()=>{}, select, selectBox=()=>{}, draftBox=()=>{}, pan=()=>{}, draft, draftHandle, finish, reset}) {
+export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = () => [], getSelection=()=>null,getSelectionIdentity=()=>null, isBusy, canEdit,canInteract=()=>true,beforeBegin=()=>{}, select, selectBox=()=>{}, draftBox=()=>{}, pan=()=>{}, draft, draftHandle, finish, reset}) {
   let gesture = null;
   const available=()=>canvas.isConnected!==false && !isBusy() && canInteract();
+  const viewport=()=>{const rect=canvas.getBoundingClientRect();return JSON.stringify([rect.left,rect.top,rect.width,rect.height]);};
   const cancel = () => { if (gesture) { const before=gesture;gesture = null; reset();try{canvas.releasePointerCapture(before.id);}catch{} } };
+  function updatePoint(event){
+    const box=canvas.getBoundingClientRect(),x=event.clientX-box.left,y=event.clientY-box.top;
+    if(gesture.moved && x===gesture.lastX && y===gesture.lastY)return;
+    if(!gesture.moved && Math.hypot(x-gesture.x,y-gesture.y)<3)return;
+    gesture.moved=true;gesture.lastX=x;gesture.lastY=y;
+    if(gesture.box || gesture.pan){gesture.point={x,y};if(gesture.box)draftBox({x:Math.min(x,gesture.x),y:Math.min(y,gesture.y),width:Math.abs(x-gesture.x),height:Math.abs(y-gesture.y)});else pan({frames:gesture.g.frame(gesture.x)-gesture.g.frame(x),value:gesture.g.value(gesture.y)-gesture.g.value(y),final:false});}
+    else if(gesture.handle){gesture.point=gesture.g.control(gesture.handle,x,y);draftHandle(gesture.handle.index,gesture.point);}
+    else{gesture.point={frame:gesture.g.frame(gesture.g.x(gesture.key.source_frame)+x-gesture.x),value:gesture.g.value(y)};draft(gesture.point,gesture.members);}
+  }
   canvas.addEventListener("pointerdown", (event) => {
     const g = getGeometry(); if (gesture || !available() || event.isPrimary===false || ![0,1].includes(event.button) || !g) return;
     beforeBegin();
     const box = canvas.getBoundingClientRect(), x = event.clientX - box.left, y = event.clientY - box.top;
-    if(event.button===1 || event.altKey){canvas.focus();canvas.setPointerCapture(event.pointerId);gesture={id:event.pointerId,pan:true,g,x,y,moved:false,point:{x,y}};return;}
+    if(event.button===1 || event.altKey){canvas.focus();canvas.setPointerCapture(event.pointerId);gesture={id:event.pointerId,pan:true,g,x,y,viewport:viewport(),selectionIdentity:getSelectionIdentity(),moved:false,point:{x,y}};return;}
     const handle = getHandles().find((h) => Math.hypot(g.x(h.frame) - x, g.y(h.value) - y) <= 9);
     if (handle && canEdit()) {
       canvas.focus(); canvas.setPointerCapture(event.pointerId);
-      gesture = {id: event.pointerId, handle, g, x, y, moved: false, point: handle.point}; return;
+      gesture = {id: event.pointerId, handle, g, x, y,viewport:viewport(),selectionIdentity:getSelectionIdentity(), moved: false, point: handle.point}; return;
     }
     const key = getCurve().keys.find((k) => Math.hypot(g.x(k.source_frame) - x, g.y(k.value) - y) <= 10);
-    if(!key){canvas.focus();canvas.setPointerCapture(event.pointerId);gesture={id:event.pointerId,box:true,append:event.ctrlKey || event.metaKey || event.shiftKey,g,x,y,moved:false,point:{x,y}};return;}
+    if(!key){canvas.focus();canvas.setPointerCapture(event.pointerId);gesture={id:event.pointerId,box:true,append:event.ctrlKey || event.metaKey || event.shiftKey,g,x,y,viewport:viewport(),selectionIdentity:getSelectionIdentity(),moved:false,point:{x,y}};return;}
     canvas.focus(); select(key,{toggle:event.ctrlKey || event.metaKey || event.shiftKey});
     const members=getSelection();if(members && !members.includes(key.source_frame))return;
     if (!canEdit()) return;
     canvas.setPointerCapture(event.pointerId);
-    gesture = {id: event.pointerId, key, members, g: getGeometry(), x, y, moved: false, point: {frame: key.source_frame, value: key.value}};
+    gesture = {id: event.pointerId, key, members,selectionIdentity:getSelectionIdentity(),viewport:viewport(), g: getGeometry(), x, y, moved: false, point: {frame: key.source_frame, value: key.value}};
   });
   canvas.addEventListener("pointermove", (event) => {
     if (!gesture || event.pointerId !== gesture.id) return;
-    if(!available() || !gesture.box && !gesture.pan && !canEdit()){cancel();return;}
-    const box = canvas.getBoundingClientRect(), x = event.clientX - box.left, y = event.clientY - box.top;
-    if (!gesture.moved && Math.hypot(x - gesture.x, y - gesture.y) < 3) return;
-    gesture.moved = true;
-    if(gesture.box || gesture.pan){gesture.point={x,y};if(gesture.box)draftBox({x:Math.min(x,gesture.x),y:Math.min(y,gesture.y),width:Math.abs(x-gesture.x),height:Math.abs(y-gesture.y)});else pan({frames:gesture.g.frame(gesture.x)-gesture.g.frame(x),value:gesture.g.value(gesture.y)-gesture.g.value(y),final:false});}
-    else if (gesture.handle) { gesture.point = gesture.g.control(gesture.handle, x, y); draftHandle(gesture.handle.index, gesture.point); }
-    else { gesture.point = {frame: gesture.g.frame(gesture.g.x(gesture.key.source_frame) + x - gesture.x), value: gesture.g.value(gesture.g.y(gesture.key.value) + y - gesture.y)}; draft(gesture.point,gesture.members); }
+    if(!available() || gesture.viewport!==viewport() || gesture.selectionIdentity!==getSelectionIdentity() || !gesture.box && !gesture.pan && !canEdit()){cancel();return;}
+    updatePoint(event);
   });
   canvas.addEventListener("pointerup", (event) => {
     if (!gesture || event.pointerId !== gesture.id) return;
-    if(!available() || !gesture.box && !gesture.pan && !canEdit()){cancel();return;}
+    if(!available() || gesture.viewport!==viewport() || gesture.selectionIdentity!==getSelectionIdentity() || !gesture.box && !gesture.pan && !canEdit()){cancel();return;}
+    const x=event.clientX-canvas.getBoundingClientRect().left,y=event.clientY-canvas.getBoundingClientRect().top;
+    if(gesture.moved || Math.hypot(x-gesture.x,y-gesture.y)>=3)updatePoint(event);
     const before = gesture; gesture = null; canvas.releasePointerCapture(event.pointerId);
     if(before.pan){pan({final:true});return;}
     if(before.box){selectBox({start:before.g.frame(Math.min(before.x,before.point.x)),end:before.g.frame(Math.max(before.x,before.point.x)),min:Math.min(before.g.value(before.y),before.g.value(before.point.y)),max:Math.max(before.g.value(before.y),before.g.value(before.point.y)),append:before.append,moved:before.moved});return;}
@@ -126,7 +159,7 @@ export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = ()
   return {cancel};
 }
 
-export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id,zoomLink=createZoomLink(openState),canInteract,canNavigate=canInteract,navigateSource,seek}) {
+export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id,zoomLink=createZoomLink(openState),canInteract,canNavigate=canInteract,navigateSource,seek,keySelection}) {
   const range = detail.curves;
   if (!range?.tracks.length) return null;
   const timeRange=keyframeTimeRange(detail,range);
@@ -268,7 +301,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
     viewRange=openState?.get(viewportKey()) || fullViewport();
     groupKeys.replaceChildren(...current().keys.map(key=>new Option(`Source ${key.source_frame} · ${key.value}`,String(key.source_frame))));
     const stored=openState?.get(selectionKey());
-    selectedFrames=new Set(retainedKeySelection(stored,current().keys.map(key=>key.source_frame),previous()===null?[]:[previous()]));
+    selectedFrames=new Set(keySelection?keySelection.get().filter(pick=>JSON.stringify(pick.target)===JSON.stringify(current().target)).map(pick=>pick.source_frame):retainedKeySelection(stored,current().keys.map(key=>key.source_frame),previous()===null?[]:[previous()]));
     if(previous()===null && selectedFrames.size)select.value=String([...selectedFrames][0]);
     load();
     if(openState?.get(selectionKey())?.focus && !disabled && section.open){remember(selectionKey(),[...selectedFrames]);queueMicrotask(()=>{if(!disposed && canvas.isConnected && document.activeElement===document.body)canvas.focus({preventScroll:true});});}
@@ -276,55 +309,69 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   }
   async function save(deleting = false) {
     if (waiting || !owner.current() || (!deleting && !form.reportValidity())) return;
-    const before=previous()===null?[]:[previous()];
+    const before=previous()===null?[]:[previous()],sharedBefore=keySelection?.get();let sharedAfter=null;
     try {
       const operation = curveKeyOperation(detail.clip_id, current().target, previous(), Number(frame.value), deleting ? null : Number(value.value), mode.value, ["c1x", "c1y", "c2x", "c2y"].map((key) => Number(fields[key].value)),zoomLink.get());
       waiting = true; form.inert = true; tracks.disabled = select.disabled = true;
       openState?.set("curves-key", deleting ? "" : frame.value);
       remember(selectionKey(),{before,after:deleting?[]:[Number(frame.value)],focus:true});
+      keySelection?.replace(before.map(source_frame=>({target:current().target,source_frame})),deleting?[]:[{target:current().target,source_frame:Number(frame.value)}],{focus:true});sharedAfter=keySelection?.get();
       await owner.commit(operation);
-    } catch (error) { notice(error.message);if(!disposed)load();remember(selectionKey(),{before,after:before,focus:true});if(!disposed && canvas.isConnected)canvas.focus({preventScroll:true}); }
+    } catch (error) { if(keySelection && JSON.stringify(keySelection.get())===JSON.stringify(sharedAfter))keySelection.set(sharedBefore,{focus:true});notice(error.message);if(!disposed)load();remember(selectionKey(),{before,after:before,focus:true});if(!disposed && canvas.isConnected)canvas.focus({preventScroll:true}); }
     finally { waiting = false; form.inert = false; tracks.disabled = select.disabled = false; }
   }
   async function saveGroup(deleting=false,deltaFrame=Number(groupFields.frame.value),deltaValue=Number(groupFields.value.value)){
     if(waiting || !owner.current() || !selectedFrames.size || (!deleting && !groupForm.reportValidity()))return;
-    const before=[...selectedFrames];
+    const before=[...selectedFrames],sharedBefore=keySelection?.get();let sharedAfter=null;
     try{
       const operation=curveGroupOperation(detail.clip_id,current().target,before,deleting?0:deltaFrame,deleting?0:deltaValue,deleting,zoomLink.get());
       waiting=true;groupForm.inert=form.inert=true;tracks.disabled=select.disabled=true;
       remember(selectionKey(),{before,after:deleting?[]:before.map(frame=>frame+deltaFrame),focus:true});
+      keySelection?.replace(before.map(source_frame=>({target:current().target,source_frame})),deleting?[]:before.map(source_frame=>({target:current().target,source_frame:source_frame+deltaFrame})),{focus:true});sharedAfter=keySelection?.get();
       await owner.commit(operation);
-    }catch(error){remember(selectionKey(),{before,after:before,focus:true});notice(error.message);if(!disposed && canvas.isConnected)canvas.focus({preventScroll:true});}
+    }catch(error){if(keySelection && JSON.stringify(keySelection.get())===JSON.stringify(sharedAfter))keySelection.set(sharedBefore,{focus:true});remember(selectionKey(),{before,after:before,focus:true});notice(error.message);if(!disposed && canvas.isConnected)canvas.focus({preventScroll:true});}
     finally{waiting=false;groupForm.inert=form.inert=false;tracks.disabled=select.disabled=false;}
+  }
+  async function savePointer(point){
+    if(waiting || !owner.current())return;
+    const target=current().target,source_frame=previous(),before=keySelection?.get() || [...selectedFrames].map(source_frame=>({target,source_frame})),deleting=point===null,delta=deleting?0:Math.round(point.frame-source_frame),grabbed=deleting?null:{target,source_frame,value:Math.max(current().min,Math.min(current().max,point.value))};
+    if(!before.length || !deleting && !delta && current().keys.find(key=>key.source_frame===source_frame)?.value===grabbed.value)return;
+    const after=deleting?[]:before.map(pick=>({...pick,source_frame:pick.source_frame+delta}));
+    try{const operation=pointerKeyOperation(detail.clip_id,before,delta,grabbed,zoomLink.get());if(deleting)operation.edit.action={kind:'delete'};waiting=true;form.inert=groupForm.inert=true;keySelection?.set(after,{focus:true});remember(selectionKey(),{before:[...selectedFrames],after:after.filter(pick=>JSON.stringify(pick.target)===JSON.stringify(target)).map(pick=>pick.source_frame),focus:true});await owner.commit(operation);}
+    catch(error){if(!keySelection || JSON.stringify(keySelection.get())===JSON.stringify(after))keySelection?.set(before,{focus:true});notice(error.message);}
+    finally{waiting=false;form.inert=groupForm.inert=false;}
   }
   const drag = bindCurveGesture(canvas, {
     getCurve: () => ({keys: current().keys.filter((k) => k.source_frame >= Math.max(range.source_start,viewRange.source_start) && k.source_frame <= Math.min(range.source_end,viewRange.source_end))}),
     getGeometry: () => geometry, isBusy: () => waiting, canEdit: () => owner.current(),canInteract:()=>owner.current(),
-    beforeBegin:()=>navigation?.cancel(),
+    beforeBegin:()=>{navigation?.cancel();keySelection?.beginGesture();},
     getHandles: () => selectedFrames.size>1?[]:curveHandles(current(), previous()).filter((h) => h.start.source_frame >= Math.max(range.source_start,viewRange.source_start) && h.end.source_frame <= Math.min(range.source_end,viewRange.source_end)),
     getSelection:()=>[...selectedFrames],
-    select: (key,{toggle}) => { if(toggle){if(selectedFrames.has(key.source_frame))selectedFrames.delete(key.source_frame);else selectedFrames.add(key.source_frame);}else if(!selectedFrames.has(key.source_frame))selectedFrames=new Set([key.source_frame]);select.value=String(key.source_frame);load(); },
+    getSelectionIdentity:()=>keySelection?JSON.stringify(keySelection.get()):JSON.stringify([...selectedFrames]),
+    select: (key,{toggle}) => { if(keySelection)keySelection.select({target:current().target,source_frame:key.source_frame},toggle);else if(toggle)selectedFrames.add(key.source_frame);else if(!selectedFrames.has(key.source_frame))selectedFrames=new Set([key.source_frame]);select.value=String(key.source_frame);load(); },
     draftBox:box=>{boxDraft=box;draw();},
-    selectBox:box=>{if(!box.append)selectedFrames.clear();if(box.moved)for(const key of current().keys)if(key.source_frame>=box.start && key.source_frame<=box.end && key.value>=box.min && key.value<=box.max)selectedFrames.add(key.source_frame);boxDraft=null;select.value=selectedFrames.size?String([...selectedFrames][0]):"";load();},
+    selectBox:box=>{const chosen=box.moved?current().keys.filter(key=>key.source_frame>=box.start && key.source_frame<=box.end && key.value>=box.min && key.value<=box.max).map(key=>({target:current().target,source_frame:key.source_frame})):[];if(keySelection){const values=box.append?keySelection.get():[];keySelection.set([...new Map([...values,...chosen].map(pick=>[keyPickIdentity(pick),pick])).values()]);}else{if(!box.append)selectedFrames.clear();for(const pick of chosen)selectedFrames.add(pick.source_frame);}boxDraft=null;select.value=selectedFrames.size?String([...selectedFrames][0]):"";load();},
     pan:event=>{if(event.final){panOrigin=null;return;}navigation?.cancel();if(!panOrigin)panOrigin={range:viewRange,g:geometry};viewRange=curveViewport(panOrigin.range,timeRange,current(),panOrigin.g,{panX:event.frames,panY:event.value});rememberViewport();draw();},
-    draft: (point,members) => { point={...point,frame:Math.max(range.source_start,Math.min(range.source_end,point.frame))};drafting = true;frame.value=point.frame;value.value=point.value;groupDraft=members?.length>1?curveGroupDraft(current(),range,members,point.frame-previous(),point.value-current().keys.find(key=>key.source_frame===previous()).value):null;status.textContent=groupDraft?`Draft ${members.length} keys · ${groupDraft.deltaFrame} source frames · value ${groupDraft.deltaValue.toPrecision(5)} · release to apply`:`Draft source ${frame.value} · value ${Number(value.value).toPrecision(5)} · release to apply`;draw(); },
+    draft: (point,members) => { point={...point,frame:Math.max(range.source_start,Math.min(range.source_end,point.frame))};drafting = true;frame.value=point.frame;value.value=point.value;groupDraft=pointerCurveDraft(current(),members || [previous()],{source_frame:previous()},point);status.textContent=`Draft ${keySelection?.get().length || members?.length || 1} keys · ${groupDraft.deltaFrame} source frames · grabbed value ${groupDraft.value.toPrecision(5)} · release to apply`;draw(); },
     draftHandle: (index, point) => { handleDraft = {index, point}; mode.value = "Bezier"; handles.hidden = handles.disabled = false; fields[index ? "c2x" : "c1x"].value = point[0]; fields[index ? "c2y" : "c1y"].value = point[1]; status.textContent = "Draft Bezier control · release to apply"; draw(); },
-    finish: () => { const group=groupDraft;drafting=false;handleDraft=groupDraft=null;draw();if(group)saveGroup(false,group.deltaFrame,group.deltaValue);else save(); },
+    finish: point => { const scalar=Boolean(groupDraft);drafting=false;handleDraft=groupDraft=null;draw();if(scalar)savePointer(point);else save(); },
     reset: () => { if(panOrigin){viewRange=panOrigin.range;panOrigin=null;rememberViewport();}drafting=false;handleDraft=groupDraft=boxDraft=null;load(); },
   });
   if(keyframeClock(detail) && typeof seek==='function')navigation=createKeyframeNavigation({root:section,scopeRoot:root,detail,getKey:()=>current().keys.find(key=>key.source_frame===previous()),getRange:()=>viewRange,getGeometry:()=>geometry,seek,canNavigate:()=>!waiting && !drafting && !handleDraft && !boxDraft && (canNavigate?.() ?? true),navigateSource,notice,onDraft:draw,label:'curve'});
   tracks.addEventListener("change", () => { drag.cancel();navigation?.cancel(); chooseCurve(); });
-  select.addEventListener("change", () => { drag.cancel();navigation?.cancel();selectedFrames=new Set(previous()===null?[]:[previous()]);load(); });
-  groupKeys.addEventListener("change",()=>{drag.cancel();navigation?.cancel();selectedFrames=new Set([...groupKeys.selectedOptions].map(option=>Number(option.value)));select.value=selectedFrames.size?String([...selectedFrames][0]):"";load();});
+  select.addEventListener("change", () => { drag.cancel();navigation?.cancel();selectedFrames=new Set(previous()===null?[]:[previous()]);keySelection?.set([...selectedFrames].map(source_frame=>({target:current().target,source_frame})));load(); });
+  groupKeys.addEventListener("change",()=>{drag.cancel();navigation?.cancel();selectedFrames=new Set([...groupKeys.selectedOptions].map(option=>Number(option.value)));keySelection?.set([...selectedFrames].map(source_frame=>({target:current().target,source_frame})));select.value=selectedFrames.size?String([...selectedFrames][0]):"";load();});
   groupForm.addEventListener("submit",event=>{event.preventDefault();saveGroup();});groupRemove.addEventListener("click",()=>saveGroup(true));
   canvas.addEventListener("wheel",event=>{event.preventDefault();if(waiting || !geometry)return;drag.cancel();navigation?.cancel();viewRange=curveViewport(viewRange,timeRange,current(),geometry,event.shiftKey?{zoomY:Math.exp(-event.deltaY*0.004)}:{zoomX:Math.exp(-event.deltaY*0.004)});rememberViewport();draw();},{passive:false});
-  canvas.addEventListener("keydown",event=>{if(event.key==="Delete" || event.key==="Backspace"){event.preventDefault();event.stopPropagation();saveGroup(true);}else if((event.ctrlKey || event.metaKey) && event.key.toLowerCase()==="a"){event.preventDefault();event.stopPropagation();selectedFrames=new Set(current().keys.filter(key=>key.source_frame>=viewRange.source_start && key.source_frame<=viewRange.source_end).map(key=>key.source_frame));updateGroup();draw();}});
+  canvas.addEventListener("keydown",event=>{if(event.key==="Delete" || event.key==="Backspace"){event.preventDefault();event.stopPropagation();if(keySelection)savePointer(null);else saveGroup(true);}else if((event.ctrlKey || event.metaKey) && event.key.toLowerCase()==="a"){event.preventDefault();event.stopPropagation();selectedFrames=new Set(current().keys.filter(key=>key.source_frame>=viewRange.source_start && key.source_frame<=viewRange.source_end).map(key=>key.source_frame));keySelection?.set([...selectedFrames].map(source_frame=>({target:current().target,source_frame})));updateGroup();draw();}});
   mode.addEventListener("change", () => { handles.hidden = mode.value !== "Bezier"; handles.disabled = handles.hidden || disabled; });
   form.addEventListener("submit", (event) => { event.preventDefault(); save(); });
   remove.addEventListener("click", () => save(true));
   duplicate.addEventListener("click", () => { select.value = "";selectedFrames.clear();updateGroup(); frame.value = Math.min(range.source_end, Number(frame.value) + 1); remove.disabled = duplicate.disabled = true; status.textContent = "Duplicate draft · choose a free source frame and Apply"; draw(); });
   window.addEventListener("blur", drag.cancel, {signal: events.signal});
   section.addEventListener("toggle", draw);
+  const unsubscribe=keySelection?.subscribe(()=>{selectedFrames=new Set(keySelection.get().filter(pick=>JSON.stringify(pick.target)===JSON.stringify(current().target)).map(pick=>pick.source_frame));if(!selectedFrames.has(previous()))select.value=selectedFrames.size?String([...selectedFrames][0]):'';load();});
+  const stopNavigation=keySelection?.onGesture(()=>navigation?.cancel());
   const observer = new ResizeObserver(()=>{drag.cancel();draw();}); observer.observe(canvas); chooseCurve();
-  return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}navigation?.dispose();owner.dispose();drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
+  return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}unsubscribe?.();stopNavigation?.();navigation?.dispose();owner.dispose();drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
 }

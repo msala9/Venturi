@@ -6,7 +6,7 @@ import {frameToX,RULER,TRACK,transitionPlacement,timelineLayout} from '../js/tim
 
 function harness({crossing=false,occupied=false,commit}={}){
   const transition={kind:'Push',duration:20,direction:'Up',ease:'InOut',curve:0.375};
-  const clip=(id,start_frame,length_frames)=>({id,kind:'media',start_frame,length_frames,linked_group:null,fade_in:0,fade_out:0});
+  const clip=(id,start_frame,length_frames)=>({id,kind:'media',start_frame,length_frames,linked_group:null,fade_in:0,fade_out:0,trim_limits:{start:[0,start_frame+length_frames-1],end:[start_frame+1,100000]}});
   const source=clip('9007199254740993',20,100),neighbor=clip('9007199254740995',120,80),target=clip('9007199254740997',240,60);
   if(!crossing)source.transition_in=structuredClone(transition);
   if(occupied)target.transition_in={...transition,kind:'CrossDissolve',duration:10,ease:'None'};
@@ -56,7 +56,7 @@ test('unmodified transition-body drag uses the existing safe clip move and nativ
     h.send('pointerdown',22);h.send('pointermove',12);assert.deepEqual(h.commands,[]);assert.equal(h.view.draft.kind,'move');assert.equal(h.selections(),0,'Pointer drafts do not trigger native inspector reads');
     await h.send('pointerup',5,{pointerId:2,buttons:0});assert.equal(h.captured(1),true);await h.send('pointerup',11,{buttons:0});
     assert.deepEqual(h.commands,[{kind:'safe_move',moves:[{clip_id:h.source.id,to_track:'v1',to_start_frame:9}]}]);assert.equal(h.view.transitionSelection,null);assert.equal(h.captured(1),false);assert.equal(h.selections(),1);
-    h.send('pointerdown',20.2);await h.send('pointerup',21.2,{buttons:0});assert.deepEqual(h.commands[1],{kind:'trim',clip_id:h.source.id,edge:'start',frame:21});
+    h.send('pointerdown',20.2);await h.send('pointerup',21.2,{buttons:0});assert.deepEqual(h.commands[1],{kind:'trim_group',clip_id:h.source.id,clip_ids:[h.source.id],edge:'start',frame:21,overwrite:false});
   }finally{h.destroy();}
 });
 

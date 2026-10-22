@@ -1,6 +1,30 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { detailIdentity, propertyOperation, keyframeOperation,transformPatch,keyPageIndex,transitionSelectionOperation } from "../js/inspector.js";
+import { detailIdentity, propertyOperation, keyframeOperation,transformPatch,keyPageIndex,transitionSelectionOperation,editingShortcutAllowed,selectionInspectorRows,bindInspectorNumber } from "../js/inspector.js";
+
+test('global editing shortcuts leave modal, text, media, composing and repeated keys to their current owner',()=>{
+  const event={key:'Delete',target:{closest:()=>null},getModifierState:()=>false};assert.equal(editingShortcutAllowed(event),true);
+  for(const change of [{defaultPrevented:true},{repeat:true},{isComposing:true},{keyCode:229},{getModifierState:name=>name==='AltGraph'},{target:{closest:()=>({})}}])assert.equal(editingShortcutAllowed({...event,...change}),false);
+  assert.equal(editingShortcutAllowed(event,{dialogOpen:true}),false);
+  assert.equal(editingShortcutAllowed({...event,repeat:true},{allowRepeat:true}),true);assert.equal(editingShortcutAllowed({...event,repeat:true,isComposing:true},{allowRepeat:true}),false);
+});
+
+test('selection summary accepts native own-clock rows only for the complete captured query and selection',()=>{
+  const query={project_epoch:'epoch',if_generation:'4',timeline_id:'tl',revision:'revision',frame:370,width:320},clip_ids=['v','a'],rows=[{clip_id:'v',track_id:'0',kind:'video',name:'Video',start_frame:10,length_frames:20,source_frame:90,locked:false},{clip_id:'a',track_id:'1',kind:'audio',name:'Audio',start_frame:20,length_frames:40,source_frame:73,locked:true}],value={query:{...query},rows};
+  assert.deepEqual(selectionInspectorRows(value,{query,clip_ids}),rows);
+  for(const bad of [{...value,query:{...query,frame:371}},{...value,rows:rows.slice(0,1)},{...value,rows:[rows[0],rows[0]]},{...value,rows:[rows[0],{...rows[1],source_frame:NaN}]}])assert.throws(()=>selectionInspectorRows(bad,{query,clip_ids}));
+  assert.equal(rows[0].source_frame,90);
+});
+
+test('Inspector numeric scrubs stay local until final release and restore typed state on Escape, stale ownership or blur',()=>{
+  const events={},windowEvents={},commits=[];let allowed=true,captured=false;
+  const input={value:'10',min:'-100',max:'100',isConnected:true,disabled:false,addEventListener:(name,handler)=>events[name]=handler,setPointerCapture(){captured=true;},hasPointerCapture:()=>captured,releasePointerCapture(){captured=false;events.lostpointercapture();}},windowRef={addEventListener:(name,handler)=>windowEvents[name]=handler,removeEventListener:name=>delete windowEvents[name]};
+  const control=bindInspectorNumber(input,{canInteract:()=>allowed,apply:()=>commits.push(Number(input.value)),windowRef});const point=(x,extra={})=>({button:0,pointerId:1,buttons:1,clientX:x,preventDefault(){},stopPropagation(){},...extra});
+  events.pointerdown(point(0));events.pointermove(point(10));assert.equal(input.value,'20');assert.deepEqual(commits,[]);events.pointerup(point(15));assert.deepEqual(commits,[25]);
+  for(const cancel of [()=>events.keydown({...point(0),key:'Escape'}),()=>{allowed=false;},()=>windowEvents.blur()]){allowed=true;input.value='12.5';events.pointerdown(point(0));events.pointermove(point(10));cancel();events.pointerup(point(15));assert.equal(input.value,'12.5');}
+  assert.deepEqual(commits,[25]);allowed=true;events.pointerdown(point(0));events.pointerup(point(0));assert.deepEqual(commits,[25]);
+  events.pointerdown(point(0));events.pointermove(point(10,{shiftKey:true}));events.pointerup(point(10,{shiftKey:true}));assert.equal(commits.at(-1),13.5);control.dispose();assert.equal(windowEvents.blur,undefined);
+});
 
 test('selected transition edits preserve native fields and canonical cut anchor without mutating the snapshot',()=>{
   const target={track_id:'0',clip_id:'9007199254740993',slot:'cut_after',max:48,transition:{kind:'Push',duration:13,direction:'Up',ease:'InOut',curve:0.625}},before=structuredClone(target);

@@ -32,8 +32,10 @@ The five-minute/64 MiB recording limit remains. Physical device acceptance is op
 See evidence/native-ui-gate.json: the full JavaScript suite passes, native audio
 origin/PCM checks pass, the audition identity regression is fixed, embedded JS/CSS
 serving passes, and affected all-target Clippy/build pass on bounded halo2.
-Actual Windows UI/Color/Audio workflow is next; the delivered port-8811 version
-remains df50859 until a guarded upgrade. The source ledger is45 done/45 partial;
+Actual Windows UI qualification is recorded in evidence/native-ui-workflow.json.
+The enabled native UI service is available at port8812, code f3dcf1c; port8811
+remains df50859 with an unsaved InsertClips operation and is preserved. The
+source ledger is45 done/45 partial;
 this gate does not by itself close remaining capabilities.
 
 ## F1 implementation â€” integrated qualification in progress
@@ -68,10 +70,11 @@ large-source decode or full-resolution throughput. The actual Canvas new-track
 gesture produced no command. Inspection identified an unrelated Inspector
 scroll canceling the drag; its correction and integrated recheck are pending.
 
-F1 residuals remain explicit: native key-editor ruler/playhead navigation,
-root-timeline view memory, painted pane scrollbars/inertial scrolling and the
-applicable physical pointer/DPI/500-clip acceptance. No ledger row is newly
-closed by the implementation gate alone.
+Subsequent native-view and native-UI blocks implement key-editor navigation,
+root-timeline view memory, painted pane scrollbars and pointer inertia. Their
+actual Windows workflows are recorded separately. Applicable physical
+pointer/DPI/500-clip acceptance and the remaining Inspector gestures remain
+explicit; implementation checks alone do not close the ledger.
 
 ## F2 implementation â€” combined validation pending
 

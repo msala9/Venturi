@@ -137,6 +137,45 @@ export function groupMoveStart(timeline,view,primaryId,targets,reference){
   const primary=timeline.tracks.flatMap(track=>track.clips).find(clip=>clip.id===primaryId);
   return clamp(snapFrame(candidate,edges,view,timeline.fps,10,primary.length_frames));
 }
+export function trimGroupDraft(timeline,view,primaryId,selected,edge,raw,neighborId=null,overwrite=false){
+  const entries=timeline.tracks.flatMap(track=>track.clips.map(clip=>({track,clip}))),primary=entries.find(item=>item.clip.id===primaryId),neighbor=entries.find(item=>item.clip.id===neighborId);
+  const fail=error=>({kind:'trim_group',changes:[],error});
+  if(!primary || !['start','end'].includes(edge) || !Number.isSafeInteger(raw))return fail('Invalid trim target');
+  const opposite=edge==='start'?'end':'start',value=(clip,side)=>side==='start'?clip.start_frame:clip.start_frame+clip.length_frames;
+  if(neighborId && (!neighbor || neighbor.track!==primary.track || value(primary.clip,edge)!==value(neighbor.clip,opposite)))return fail('Roll requires adjacent clips');
+  const first=linkedSelection(timeline,neighborId?[primaryId]:selected.includes(primaryId)?selected:[primaryId]),second=neighborId?linkedSelection(timeline,[neighborId]):[];
+  if(first.some(id=>second.includes(id)))return fail('Roll groups overlap');
+  const members=entries.filter(item=>first.includes(item.clip.id) || second.includes(item.clip.id)).map(item=>({...item,edge:second.includes(item.clip.id)?opposite:edge}));
+  const original=value(primary.clip,edge);let minimum=0,maximum=MAX_FRAME;
+  for(const member of members){
+    const {clip,track,edge:side}=member,limits=clip.trim_limits?.[side],offset=value(clip,side)-original;
+    if(track.locked)return fail('Unlock the selected clips and their linked tracks before editing');
+    if(!Array.isArray(limits) || limits.length!==2 || !limits.every(Number.isSafeInteger) || limits[0]>limits[1])return fail('Native trim limits unavailable');
+    let [low,high]=limits;
+    for(const other of members)if(other.track===track && other.clip.id!==clip.id && other.edge===side){
+      if(side==='end' && other.clip.start_frame>=value(clip,'end'))high=Math.min(high,other.clip.start_frame);
+      if(side==='start' && value(other.clip,'end')<=clip.start_frame)low=Math.max(low,value(other.clip,'end'));
+    }
+    minimum=Math.max(minimum,low-offset);maximum=Math.min(maximum,high-offset);
+  }
+  if(minimum>maximum)return fail('No shared source handles for this trim');
+  const clamp=frame=>Math.max(minimum,Math.min(maximum,frame)),exclude=new Set(members.map(item=>item.clip.id));
+  let target=clamp(raw);
+  if(view.snap){const candidates=entries.filter(item=>!exclude.has(item.clip.id)).flatMap(({clip})=>[clip.start_frame,value(clip,'end')]);candidates.push(view.playhead);target=clamp(snapFrame(target,candidates,view,timeline.fps));}
+  const delta=target-original,changes=members.map(({clip,track,edge:side})=>({clip_id:clip.id,to_track:track.id,to_start_frame:clip.start_frame+(side==='start'?delta:0),length_frames:clip.length_frames+(side==='start'?-delta:delta)}));
+  const validation=validateDraft(timeline,changes),error=overwrite?validateDraft({...timeline,tracks:timeline.tracks.map(track=>({...track,clips:track.clips.filter(clip=>exclude.has(clip.id))}))},changes):validation;
+  return {kind:'trim_group',changes,error,target,original,operation:{kind:'trim_group',clip_id:primaryId,clip_ids:[...selected],edge,frame:target,...(neighborId?{roll_neighbor_id:neighborId}:{}),overwrite:Boolean(overwrite)}};
+}
+export function gainLine(clip,track,view,fps){
+  if(track.kind!=='audio' || clip.gain_constant!==true || !Number.isFinite(clip.gain_db) || !Array.isArray(clip.gain_bounds) || clip.gain_bounds.length!==2 || !clip.gain_bounds.every(Number.isFinite) || clip.gain_bounds[0]>=0 || clip.gain_bounds[1]<=0)return null;
+  const bounds=clip.gain_bounds,offset=Math.max(-1,Math.min(1,clip.gain_db>=0?clip.gain_db/bounds[1]:-clip.gain_db/bounds[0]));
+  return {offset,bounds,left:frameToX(clip.start_frame,view,fps),right:frameToX(clip.start_frame+clip.length_frames,view,fps)};
+}
+export function gainDraft(clip,track,view,fps,dy){
+  const line=gainLine(clip,track,view,fps);if(!line)return null;
+  const half=(timelineLayout({tracks:[track]},view).rowHeight-4)/2,offset=Math.max(-1,Math.min(1,line.offset-dy/half));
+  return {kind:'gain',clip_id:clip.id,gain_db:Math.fround(offset>=0?offset*line.bounds[1]:-offset*line.bounds[0]),original:clip.gain_db};
+}
 export function trackHeaderButtons(track){
   return [{flag:'locked',label:'L',left:34,right:58},...(track.kind==='video'?[{flag:'muted',label:'V',left:62,right:86}]:[{flag:'solo',label:'S',left:62,right:86},{flag:'muted',label:'M',left:90,right:114},{flag:'armed',label:'R',left:118,right:142}])];
 }
@@ -440,11 +479,15 @@ export function hitTest(x, y, timeline, view, width=Infinity) {
         const handle=fadeHandles(clip,view,timeline.fps).filter(handle=>Math.abs(x-handle.x)<=9).sort((a,b)=>Math.abs(x-a.x)-Math.abs(x-b.x))[0];
         if(handle)return {kind:'fade',edge:handle.edge,track,clip};
       }
-      return {
-        kind: x - left < 8 ? "trim_start" : right - x < 8 ? "trim_end" : "move",
-        track,
-        clip,
-      };
+      const width=right-left;
+      for(const [distance,edge] of [[x-left,'start'],[right-x,'end']]){
+        const neighbor=timeline.tracks[track].clips.find(other=>other.id!==clip.id && (edge==='start'?other.start_frame+other.length_frames===clip.start_frame:other.start_frame===clip.start_frame+clip.length_frames));
+        if(neighbor && distance<Math.min(4,width/6))return {kind:edge==='start'?'trim_start':'trim_end',track,clip,roll_neighbor_id:neighbor.id};
+        if(distance<Math.min(8,width/3)+(neighbor?Math.min(4,width/6):0))return {kind:edge==='start'?'trim_start':'trim_end',track,clip};
+      }
+      const gain=gainLine(clip,timeline.tracks[track],view,timeline.fps);
+      if(gain && !timeline.tracks[track].locked && view.tool!=='slip' && Math.abs(y-(top+rowHeight/2-gain.offset*(rowHeight-4)/2))<=5)return {kind:'gain',track,clip};
+      return {kind:'move',track,clip};
     }
   }
   return { kind: "blank", track };

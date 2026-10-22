@@ -38,6 +38,7 @@ mod recording;
 mod resume;
 mod retime;
 mod reviewmeta;
+mod selection;
 mod silence;
 mod slip;
 mod snapshot;

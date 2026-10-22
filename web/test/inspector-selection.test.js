@@ -35,8 +35,8 @@ function harness(t,{video=true,effects=false,commit,editDetail=()=>{}}={}){
   const all=(node=root)=>[node,...node.children.flatMap(child=>typeof child==='object'?all(child):[])];
   const field=label=>all().find(node=>node['aria-label']===label);
   const render=()=>effects?renderSelectedVideoEffects(root,native,options):video?renderSelectedVideoProperties(root,native,options):renderSelectedAudioGain(root,native,options);
-  render();
-  return {state,root,native,commands,notices,seeks,visualState,options,all,field,render,
+  const control=render();
+  return {state,root,native,commands,notices,seeks,visualState,options,all,field,render,control,
     click:label=>{assert.ok(field(label),label);field(label).dispatchEvent(new Event('click'));},
     apply(label,value){const input=field(label);assert.ok(input,label);input.value=value;input.parent.parent.dispatchEvent(new Event('submit',{cancelable:true}));},
     allow:value=>{allowed=value;},setFrame:value=>{frame=value;},Element};
@@ -70,6 +70,14 @@ test('compact numeric editing commits on completion, keeps typing local and shar
   input.dispatchEvent(new Event('change'));input.parent.parent.dispatchEvent(new Event('submit',{cancelable:true}));await settle();
   assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0].edit,{action:'transform',parameters:[{param:'PositionX',value:12}]});
   finish();await settle();h.setFrame(21);input.value='15';input.dispatchEvent(new Event('change'));await settle();assert.equal(h.commands.length,1);assert.match(h.notices.at(-1),/changed/);
+});
+
+test('native Inspector slider drafts cancel without a release replay and explicit later drags commit once',async t=>{
+  const h=harness(t),slider=h.field('CropLeft slider'),number=h.field('CropLeft');
+  slider.dispatchEvent(new Event('pointerdown'));slider.value=5;slider.dispatchEvent(new Event('input'));assert.equal(number.value,5);assert.deepEqual(h.commands,[]);
+  const escape=new Event('keydown',{cancelable:true});Object.defineProperty(escape,'key',{value:'Escape'});slider.dispatchEvent(escape);slider.dispatchEvent(new Event('change'));await settle();assert.equal(Number(number.value),0);assert.deepEqual(h.commands,[]);
+  slider.dispatchEvent(new Event('pointerdown'));slider.value=8;slider.dispatchEvent(new Event('input'));slider.dispatchEvent(new Event('change'));slider.dispatchEvent(new Event('change'));await settle();assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0].edit,{action:'transform',parameters:[{param:'CropLeft',value:8}]});
+  slider.dispatchEvent(new Event('pointerdown'));slider.value=12;slider.dispatchEvent(new Event('input'));h.control.cancel();slider.dispatchEvent(new Event('change'));await settle();assert.equal(Number(number.value),8);assert.equal(h.commands.length,1);
 });
 
 test('compact Inspector preserves collapsed crop actions, accessible key navigation and native reset groups',async t=>{

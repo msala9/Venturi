@@ -200,6 +200,28 @@ pub(crate) fn key_frames(
         .ok_or_else(ApiError::missing)
 }
 
+pub(crate) fn key_value(
+    session: &Session,
+    id: TimelineId,
+    clip: &Clip,
+    lane: usize,
+    target: &Target,
+    frame: i64,
+) -> Result<(f32, core::Interpolation)> {
+    curves(session, id, clip, lane)
+        .into_iter()
+        .find(|curve| &curve.target == target)
+        .and_then(|curve| {
+            curve
+                .track
+                .keyframes()
+                .iter()
+                .find(|key| key.0 == frame)
+                .map(|key| (key.1, key.2))
+        })
+        .ok_or_else(ApiError::missing)
+}
+
 pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &Edit) -> Result<()> {
     let mut commands = edit_commands(session, id, raw, edit)?;
     if edit.link_zoom

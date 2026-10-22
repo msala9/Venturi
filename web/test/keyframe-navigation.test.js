@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createKeyframeNavigation,drawKeyframeHead,keyframeNavigationResult,keyframeTimeRange} from '../js/keyframe-navigation.js';
-import {renderCurves} from '../js/curves.js';
+import {renderCurves,createKeyPickSelection,curveGeometry} from '../js/curves.js';
 import {renderEventKeys} from '../js/eventkeys.js';
+import {renderKeySelection} from '../js/keyselection.js';
 
 const detail=()=>({project_epoch:'epoch',generation:'7',timeline_id:'2',revision:'revision',clip_id:'3',timeline_frame:415,source_frame:30,freeze_source_frame:20,video:false,
   keyframe_clock:{source_frame:30,source_in:20,source_out:40,ticks:[{source_frame:20,timeline_frame:400},{source_frame:30,timeline_frame:415},{source_frame:40,timeline_frame:430}]},
@@ -44,7 +45,7 @@ class Element {
   hasPointerCapture(id){return this.captures.has(id);}
   releasePointerCapture(id){this.captures.delete(id);this.emit('lostpointercapture',{pointerId:id});}
 }
-function harness({renderer=null,read}={}){
+function harness({renderer=null,read,editable=false,keySelection}={}){
   const previous=new Map(['document','window','Option','ResizeObserver','getComputedStyle','devicePixelRatio'].map(key=>[key,globalThis[key]]));
   const document=new Element('document',null);document.ownerDocument=document;document.hidden=false;document.modal=false;document.querySelector=()=>document.modal?{}:null;document.createElement=tag=>new Element(tag,document);document.body=new Element('body',document);document.activeElement=document.body;
   class Observer{observe(){}disconnect(){}}
@@ -53,7 +54,7 @@ function harness({renderer=null,read}={}){
   const root=new Element('details',document);root.open=true;const native=detail(),seeks=[],requests=[],notices=[],commands=[];let allowed=true,key=native.curves.tracks[0].keys[1];
   const options={seek:frame=>seeks.push(frame),canNavigate:()=>allowed,navigateSource:(source,options)=>{requests.push({source,...options});return read?read(source,options,native):Promise.resolve(ack(native,source,source===40?430:415));},notice:message=>notices.push(message)};
   const geometry={left:20,plotWidth:260,top:12,plotHeight:100,x:source=>20+(source-20)*13,frame:x=>Math.round(20+(x-20)/13)};
-  const control=renderer?renderer(root,native,{...options,disabled:true,canInteract:()=>false,commit:operation=>commands.push(operation),openState:new Map([['curves',true],['event-keys',true]])}):createKeyframeNavigation({root,detail:native,getKey:()=>key,getRange:()=>({source_start:20,source_end:40}),getGeometry:()=>geometry,...options});
+  const control=renderer?renderer(root,native,{...options,disabled:!editable,canInteract:()=>editable && allowed,commit:operation=>commands.push(operation),openState:new Map([['curves',true],['event-keys',true]]),keySelection}):createKeyframeNavigation({root,detail:native,getKey:()=>key,getRange:()=>({source_start:20,source_end:40}),getGeometry:()=>geometry,...options});
   const all=(node=root)=>[node,...node.children.filter(child=>typeof child==='object').flatMap(all)];
   const ruler=()=>all().find(node=>node.className?.includes('keyframe-ruler'));
   const jump=()=>all().find(node=>node.textContent?.startsWith('Go to selected'));
@@ -120,5 +121,29 @@ test('actual scalar and typed-value editors expose readonly key jumps and native
       select.value='30';select.emit('change');h.jump().emit('click');assert.deepEqual(h.seeks,[415]);assert.deepEqual(h.requests,[]);
       const ruler=h.ruler();ruler.emit('pointerdown',{clientX:400});ruler.emit('pointerup',{clientX:400});await settle();assert.equal(h.requests.length,1);assert.equal(h.requests[0].source,40);assert.deepEqual(h.seeks,[415,430]);assert.deepEqual(h.commands,[]);
     }finally{h.restore();}
+  }
+});
+
+test('actual scalar, value and cross-parameter editors share additive selection and one native grabbed-value drag',async()=>{
+  const state=new Map(),selected=createKeyPickSelection(state,'3'),scalar={kind:'transform',param:'PositionX'},text={kind:'text'};selected.set([{target:scalar,source_frame:20},{target:scalar,source_frame:30},{target:text,source_frame:30}]);
+  const h=harness({renderer:renderCurves,editable:true,keySelection:selected});let events,list;
+  try{
+    const options={disabled:false,canInteract:()=>true,commit:operation=>h.commands.push(operation),notice:message=>h.notices.push(message),openState:new Map([['event-keys',true],['all-keys',true]]),keySelection:selected};
+    events=renderEventKeys(h.root,h.native,options);list=renderKeySelection(h.root,h.native,options);
+    const eventCanvas=h.all().find(node=>node.className==='curve-graph event-key-graph'),pickList=h.all().find(node=>node.getAttribute('aria-label')==='Keys across parameters');
+    eventCanvas.emit('pointerdown',{clientX:40,clientY:134,ctrlKey:true});eventCanvas.emit('pointerup',{clientX:40,clientY:134,ctrlKey:true});
+    assert.equal(selected.get().length,4);assert.equal(pickList.selectedOptions.length,4);assert.deepEqual(h.commands,[]);
+    const before=selected.get(),canvas=h.all().find(node=>node.className==='curve-graph'),g=curveGeometry(h.native.curves.tracks[0],{source_start:20,source_end:40},300,190),x=canvas.rect.left+g.x(20),y=canvas.rect.top+g.y(0);
+    canvas.emit('pointerdown',{clientX:x+1,clientY:y+2,shiftKey:true});canvas.emit('pointermove',{clientX:x+10,clientY:y-10,shiftKey:true});assert.deepEqual(h.commands,[]);
+    canvas.emit('pointerup',{clientX:x+25,clientY:y-20,shiftKey:true});await settle();
+    const delta=g.frame(g.x(20)+24)-20;assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0],{kind:'edit_key_selection',clip_id:'3',edit:{picks:before,link_zoom:false,action:{kind:'drag',delta_source_frames:delta,grabbed:{target:scalar,source_frame:20,value:g.value(g.y(0)-20)}}}});
+    assert.deepEqual(selected.get(),before.map(pick=>({...pick,source_frame:pick.source_frame+delta})));assert.deepEqual(h.notices,[]);
+  }finally{events?.cancel();list?.cancel();h.restore();}
+});
+
+test('actual scalar drag rejects changed cross-parameter selection and current editing permission before release',async()=>{
+  for(const stale of ['selection','permission']){
+    const selected=createKeyPickSelection(new Map(),'3'),scalar={kind:'transform',param:'PositionX'};selected.set([{target:scalar,source_frame:20}]);const h=harness({renderer:renderCurves,editable:true,keySelection:selected});
+    try{const canvas=h.all().find(node=>node.className==='curve-graph'),g=curveGeometry(h.native.curves.tracks[0],{source_start:20,source_end:40},300,190),x=canvas.rect.left+g.x(20),y=canvas.rect.top+g.y(0);canvas.emit('pointerdown',{clientX:x,clientY:y});canvas.emit('pointermove',{clientX:x+15,clientY:y-10});if(stale==='selection')selected.select({target:{kind:'text'},source_frame:30},true);else h.setAllowed(false);canvas.emit('pointerup',{clientX:x+25,clientY:y-20});await settle();assert.deepEqual(h.commands,[]);assert.equal(canvas.captures.size,0);}finally{h.restore();}
   }
 });

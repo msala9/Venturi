@@ -30,6 +30,8 @@ import {
   MAX_TIMELINE_SCALE,
   timelineScrollBounds,
   kineticScrollStep,
+  trimGroupDraft,
+  gainDraft,
 } from "./geometry.js";
 import {isTextTarget} from '../ui.js';
 import {createPresetDrop} from './preset-drop.js';
@@ -269,25 +271,25 @@ export function createInput({
       if(selectionIntent()===intent && current?.id===timelineId && selected && ['kind','duration','direction','ease','curve'].every(key=>selected.transition[key]===draft.transition[key]))selectTransition(draft.selection);
     }catch(error){onNotice(error.message);}finally{waiting=false;}
   }
-  const clipViewport=()=>{const rect=canvas.getBoundingClientRect();return JSON.stringify([view.scale,view.origin,view.scrollY,timelineLayoutStamp(view),view.tool,view.snap,view.playhead,rect.left,rect.top,rect.width,rect.height]);};
+  const clipViewport=()=>{const rect=canvas.getBoundingClientRect();return JSON.stringify([view.scale,view.origin,view.scrollY,timelineLayoutStamp(view),view.tool,view.snap,view.retimeOverwrite,view.playhead,rect.left,rect.top,rect.width,rect.height]);};
   function clipSelectionOwned(g){return getTimeline()===g.timeline && gapContext(g.timeline)===g.selectionContext && selectionIntent()===g.selectionIntent;}
   function clipSelectionCurrent(g){return clipSelectionOwned(g) && clipViewport()===g.selectionViewport && !modal() && canNavigate();}
   function beginClipGesture(hit,event,x,y,timeline,notify=true){
     if(!canNavigate())return false;
     const before={ids:[...view.selection],anchor:checkSelectionAnchor(),gap:structuredClone(view.selectedGap || null),transition:structuredClone(view.transitionSelection || null)};
     const modifiers={shift:Boolean(event.shiftKey),toggle:Boolean(event.ctrlKey || event.metaKey),projectEpoch:projectEpoch()};
-    if(hit.kind!=='fade'){
+    if(!['fade','gain'].includes(hit.kind)){
       const selected=clickTimelineSelection(timeline,before,hit.clip.id,modifiers,view);if(!selected)return false;
       if(modifiers.shift || modifiers.toggle || !before.ids.includes(hit.clip.id)){view.selection=selected.ids;view.selectionAnchor=selected.anchor;}
       view.selectedGap=null;view.transitionSelection=null;if(notify)onSelect();
     }
-    gesture={...hit,x,y,frame:xToFrame(x,view,timeline.fps),moved:false,timeline,pointerId:event.pointerId};
-    if(hit.kind!=='fade')Object.assign(gesture,{selectionBefore:before,selectionPublished:notify,clickModifiers:modifiers,selectionContext:gapContext(timeline),selectionViewport:clipViewport(),selectionIntent:selectionIntent()});
-    if(hit.kind==='fade'){
-      if(!canEdit()){gesture=null;onNotice('A writable idle session is required to edit a fade');return false;}
-      gesture.timeline=timeline;gesture.pointerId=event.pointerId;
+    gesture={...hit,x,y,frame:xToFrame(x,view,timeline.fps),moved:false,timeline,pointerId:event.pointerId,duplicate:hit.kind==='move' && Boolean(event.altKey)};
+    if(!['fade','gain'].includes(hit.kind))Object.assign(gesture,{selectionBefore:before,selectionPublished:notify,clickModifiers:modifiers,selectionContext:gapContext(timeline),selectionViewport:clipViewport(),selectionIntent:selectionIntent()});
+    if(['fade','gain'].includes(hit.kind)){
+      if(!canEdit()){gesture=null;onNotice('A writable idle session is required to edit this clip');return false;}
+      gesture.context=transitionContext(timeline);
     }
-    if(view.tool==='slip'){
+    if(view.tool==='slip' && !['fade','gain'].includes(hit.kind)){
       const linked=linkedSelection(timeline,[hit.clip.id]),affected=timeline.tracks.flatMap(track=>track.clips.filter(clip=>linked.includes(clip.id)).map(clip=>({track,clip})));
       if(affected.some(({track,clip})=>track.locked || !clip.slip_range)){gesture=null;onNotice('Slip requires unlocked source clips and their linked handles');return false;}
       gesture.kind='slip';gesture.min=Math.max(...affected.map(({clip})=>clip.slip_range[0]));gesture.max=Math.min(...affected.map(({clip})=>clip.slip_range[1]));onSlip({phase:'begin',clip_id:hit.clip.id,delta:0});
@@ -298,7 +300,7 @@ export function createInput({
     if(!g.selectionBefore || g.moved)return true;
     if(!canEdit()){cancel(false);onNotice('A writable idle session is required to edit these clips');return false;}
     const ids=g.kind!=='slip' && g.selectionBefore.ids.includes(g.clip.id)?[...g.selectionBefore.ids]:unlockedLinkedSelection(g.timeline,[g.clip.id]);
-    const affected=linkedSelection(g.timeline,ids);
+    const affected=linkedSelection(g.timeline,g.roll_neighbor_id?[g.clip.id,g.roll_neighbor_id]:ids);
     if(g.timeline.tracks.some(track=>track.locked && track.clips.some(clip=>affected.includes(clip.id)))){cancel(false);onNotice('Unlock the selected clips and their linked tracks before editing');return false;}
     view.selection=ids;
     view.selectionAnchor=clipSelectionAnchor(g.timeline,g.clip.id,projectEpoch());view.selectedGap=null;view.transitionSelection=null;
@@ -336,7 +338,7 @@ export function createInput({
     } else if(event.button===0 && hit.kind==='transition_body'){
       if(event.altKey && !canEdit()){onNotice('A writable idle session is required to duplicate a transition');return;}
       gesture={...hit,kind:event.altKey?'transition_copy':'transition_body',x,y,moved:false,pointerId:event.pointerId,timeline,context:transitionContext(timeline),source:structuredClone(hit.selection),sourceIdentity:sourceIdentity(timeline,hit.selection),transition:structuredClone(hit.transition),modifiers:{ctrlKey:event.ctrlKey,shiftKey:event.shiftKey}};
-    } else if (event.button === 1 || event.altKey) {
+    } else if (event.button === 1 || (event.altKey && !hit.clip)) {
       gesture = {
         kind: "pan",
         x,
@@ -372,6 +374,9 @@ export function createInput({
       if(hit.kind==='pane_scrollbar'){canvas.title=`Scroll ${hit.pane} tracks`;if(canvas.style)canvas.style.cursor='ns-resize';return;}
       canvas.title = hit.marker ? `${hit.marker.note || "Marker"} Â· ${hit.marker.start_frame}f Â· drag to move, range edges resize, Alt+drag a point to extend, double-click to edit` : hit.kind==='retime_menu'?'Choose a native speed preset Â· keyboard: select clip and press Shift+F10':hit.kind==='retime_close'?'Hide this clipâ€™s speed strip':hit.kind==='retime' ? `Speed handle Â· drag the right endpoint to resize at native speed${view.retimeOverwrite?' Â· OVERWRITE clips enabled':''}` : hit.kind==='transition_body'?'Click to select this transition Â· Alt+drag its body to copy Â· handles resize':hit.kind==='transition' ? `${hit.slot==='cut_after'?'Cross transition':`Transition ${hit.slot}`} Â· ${hit.duration}f Â· drag to change duration` : hit.kind==='fade' ? `Fade ${hit.edge} Â· ${hit.clip[`fade_${hit.edge}`]}f Â· drag to change this clip's fade` : '';
       if(canvas.style)canvas.style.cursor = hit.kind==='divider'?'ns-resize':['fade','transition','retime'].includes(hit.kind) ? 'ew-resize' : ['header_flag','retime_menu','retime_close'].includes(hit.kind)?'pointer':hit.kind==='transition_body'?'copy':hit.marker ? hit.edge ? "ew-resize" : "grab" : "";
+      if(hit.kind==='gain'){canvas.title='Drag clip gain vertically · constant audio gain only';if(canvas.style)canvas.style.cursor='ns-resize';}
+      if(hit.roll_neighbor_id){canvas.title='Roll adjacent cut · both linked groups';if(canvas.style)canvas.style.cursor='ew-resize';}
+      if(hit.kind==='move' && event.altKey){canvas.title=`Duplicate linked selection${view.retimeOverwrite?' · OVERWRITE enabled':''}`;if(canvas.style)canvas.style.cursor='copy';}
       const hover=hit.clip?.id ?? null;if(view.hoverFadeClip!==hover){view.hoverFadeClip=hover;invalidate();}
       return;
     }
@@ -430,11 +435,11 @@ export function createInput({
       if(event.buttons!==undefined && !(event.buttons&1)){cancel();return;}
       if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
       view.draft={...(g.kind==='retime'?retimeDraft(g,x-g.x,timeline,view):transitionDraft(g,x-g.x,view,timeline.fps)),track_id:timeline.tracks[g.track].id};
-    } else if(g.kind==='fade'){
+    } else if(g.kind==='fade' || g.kind==='gain'){
       if(event.pointerId!==g.pointerId)return;
-      if(timeline!==g.timeline || !canEdit()){cancel();onNotice('Fade gesture cancelled because the editing session changed');return;}
+      if(!transitionCurrent(g) || canvas.ownerDocument?.hidden || (!allowRelease && event.buttons!==undefined && !(event.buttons&1))){cancel();return;}
       if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
-      view.draft=fadeDraft(g.clip,g.edge,Math.round((x-g.x)*timeline.fps.num/(view.scale*timeline.fps.den)));
+      view.draft=g.kind==='gain'?gainDraft(g.clip,timeline.tracks[g.track],view,timeline.fps,y-g.y):fadeDraft(g.clip,g.edge,Math.round((x-g.x)*timeline.fps.num/(view.scale*timeline.fps.den)));
     } else if (g.kind === "pan") {
       if(event.pointerId!==g.pointerId)return;
       if(!panCurrent(g) || (!allowRelease && event.buttons!==undefined && !(event.buttons&(g.button===1?4:1)))){cancel();return;}
@@ -472,6 +477,10 @@ export function createInput({
       const ids=linkedSelection(timeline,[g.clip.id]);
       view.draft={kind:"slip",target:delta,error:null,changes:timeline.tracks.flatMap((track)=>track.clips.filter((clip)=>ids.includes(clip.id)).map((clip)=>({clip_id:clip.id,to_track:track.id,to_start_frame:clip.start_frame,length_frames:clip.length_frames})))};
       onSlip({phase:"draft",clip_id:g.clip.id,delta});
+    } else if(g.kind==='trim_start' || g.kind==='trim_end'){
+      if(Math.hypot(x-g.x,y-g.y)<4 && !g.moved)return;g.moved=true;
+      const edge=g.kind==='trim_start'?'start':'end',original=edge==='start'?g.clip.start_frame:g.clip.start_frame+g.clip.length_frames;
+      view.draft=trimGroupDraft(timeline,view,g.clip.id,view.selection,edge,Math.round(original+(x-g.x)*timeline.fps.num/(view.scale*timeline.fps.den)),g.roll_neighbor_id,view.retimeOverwrite===true);
     } else {
       if (Math.hypot(x - g.x, y - g.y) < 4 && !g.moved) return;
       g.moved = true;
@@ -534,6 +543,11 @@ export function createInput({
         kind: g.kind,
         target,
       };
+      if(g.duplicate){
+        view.draft.duplicate=true;
+        if(view.retimeOverwrite && view.draft.error==='Overlap · safe move blocked')view.draft.error=validateDraft({...timeline,tracks:timeline.tracks.map(track=>({...track,clips:track.clips.filter(clip=>affected.includes(clip.id))}))},changes);
+        if(!view.draft.error && !view.retimeOverwrite && changes.some(change=>!change.to_new_track && timeline.tracks.find(track=>track.id===change.to_track)?.clips.some(clip=>change.to_start_frame<clip.start_frame+clip.length_frames && change.to_start_frame+change.length_frames>clip.start_frame)))view.draft.error='Overlap · safe duplicate blocked';
+      }
     }
     invalidate();
   };
@@ -624,6 +638,11 @@ export function createInput({
       const [x,y]=point(event);
       if(g.moved || Math.hypot(x-g.x,y-g.y)>=4){g.moved=true;view.draft={...(g.kind==='retime'?retimeDraft(g,x-g.x,timeline,view):transitionDraft(g,x-g.x,view,timeline.fps)),track_id:timeline.tracks[g.track].id};}
     }
+    if(g.kind==='fade' || g.kind==='gain'){
+      if(event.pointerId!==g.pointerId || event.button!==0)return;
+      if(!transitionCurrent(g) || canvas.ownerDocument?.hidden){cancel();return;}
+      move(event,true);if(gesture!==g)return;
+    }
     const draft=view.draft;
     if(g.kind==='fade' && event.pointerId!==g.pointerId)return;
     if(g.kind==='fade' && (timeline!==g.timeline || !canEdit())){cancel();onNotice('Fade gesture cancelled because the editing session changed');return;}
@@ -642,15 +661,16 @@ export function createInput({
     if (g.kind === "marker" && !g.moved) { view.playhead=g.marker.start_frame;onSeek(true); }
     const markerChanged = g.kind !== "marker" || (draft && (draft.marker.start_frame!==g.marker.start_frame || draft.marker.duration_frames!==g.marker.duration_frames));
     const bodyChanged=!g.fromTransitionBody || draft?.changes?.some(change=>timeline.tracks.some(track=>track.clips.some(clip=>clip.id===change.clip_id && (track.id!==change.to_track || clip.start_frame!==change.to_start_frame || clip.length_frames!==change.length_frames))));
-    if (draft && g.moved && markerChanged && bodyChanged && !(g.kind === "slip" && draft.target === 0) && !(g.kind==='fade' && draft.frames===draft.original) && !(g.kind==='transition' && draft.duration===g.duration) && !(g.kind==='retime' && draft.end_frame===g.end_frame)) {
+    if (draft && g.moved && markerChanged && bodyChanged && !(g.kind === "slip" && draft.target === 0) && !(g.kind==='fade' && draft.frames===draft.original) && !(g.kind==='gain' && draft.gain_db===draft.original) && !(draft.kind==='trim_group' && draft.target===draft.original) && !(g.kind==='transition' && draft.duration===g.duration) && !(g.kind==='retime' && draft.end_frame===g.end_frame)) {
       if (draft.error) onNotice(draft.error);
       else {
         waiting = true;
         try {
           const operation =
-            ['transition','retime'].includes(g.kind) ? draft.operation : g.kind==='fade' ? {kind:'set_properties',clip_id:g.clip.id,patch:{[`fade_${g.edge}`]:draft.frames}} : g.kind === "marker" ? {kind:"move_marker",marker_id:g.marker.id,start_frame:draft.marker.start_frame,duration_frames:draft.marker.duration_frames} : g.kind === "move"
-              ? draft.new_video_tracks || draft.new_audio_tracks ? {
+            draft.kind==='trim_group' || ['transition','retime'].includes(g.kind) ? draft.operation : g.kind==='gain'?{kind:'set_properties',clip_id:g.clip.id,patch:{gain_db:draft.gain_db}}:g.kind==='fade' ? {kind:'set_properties',clip_id:g.clip.id,patch:{[`fade_${g.edge}`]:draft.frames}} : g.kind === "marker" ? {kind:"move_marker",marker_id:g.marker.id,start_frame:draft.marker.start_frame,duration_frames:draft.marker.duration_frames} : g.kind === "move"
+              ? draft.duplicate || draft.new_video_tracks || draft.new_audio_tracks ? {
                   kind:'move_clips',new_video_tracks:draft.new_video_tracks,new_audio_tracks:draft.new_audio_tracks,
+                  ...(draft.duplicate?{duplicate:true,overwrite:view.retimeOverwrite===true}:{}),
                   moves:draft.changes.map(change=>({clip_id:change.clip_id,to_start_frame:change.to_start_frame,to_track:change.to_new_track?{kind:'new',depth:change.to_new_track.depth}:{kind:'existing',track_id:change.to_track}})),
                 } : {
                   kind: "safe_move",
@@ -668,7 +688,14 @@ export function createInput({
                   edge: g.kind === "trim_start" ? "start" : "end",
                   frame: draft.target,
                 };
-          await onCommand(operation);
+          const owner=draft.duplicate?{epoch:projectEpoch(),timelineId:timeline.id,selection:[...view.selection],anchor:structuredClone(view.selectionAnchor),ids:new Set(timeline.tracks.flatMap(track=>track.clips.map(clip=>clip.id)))}:null;
+          const receipt=await onCommand(operation);
+          if(owner && receipt?.project_epoch===owner.epoch && projectEpoch()===owner.epoch && getTimeline()?.id===owner.timelineId && receipt.generation===getGapContext()?.generation && Array.isArray(receipt.clip_ids) && receipt.clip_ids.length===draft.changes.length && new Set(receipt.clip_ids).size===receipt.clip_ids.length){
+            const current=getTimeline(),present=new Set(current.tracks.flatMap(track=>track.clips.map(clip=>clip.id))),expected=owner.selection.filter(id=>present.has(id));
+            if(!view.transitionSelection && !view.selectedGap && JSON.stringify(view.selection)===JSON.stringify(expected) && JSON.stringify(view.selectionAnchor)===JSON.stringify(reconcileSelectionAnchor(current,owner.anchor,owner.epoch)) && receipt.clip_ids.every(id=>typeof id==='string' && !owner.ids.has(id) && present.has(id))){
+              view.selection=[...receipt.clip_ids];view.selectionAnchor=firstSelectionAnchor(current,view.selection,owner.epoch);onSelect();
+            }
+          }
         } catch (error) {
           onNotice(error.message);
         } finally {

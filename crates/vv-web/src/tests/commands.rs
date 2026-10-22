@@ -1,4 +1,616 @@
 use super::*;
+use serde_json::json;
+
+#[test]
+fn group_trim_uses_native_handle_clamp_and_follower_offsets_with_one_undo() {
+    let (mut session, id, _) = close_gap_fixture(false);
+    let primary = session.project.timelines[id].tracks[0]
+        .clips
+        .iter()
+        .find(|clip| clip.linked_group.is_some())
+        .unwrap()
+        .id;
+    session.project.timelines[id].tracks[0]
+        .clip_mut(primary)
+        .unwrap()
+        .conform(core::Rational::new(2, 1));
+    session.project.timelines[id].tracks[0]
+        .clip_mut(primary)
+        .unwrap()
+        .freeze = Some(8);
+    let targets = refs(&session.project.timelines[id], &[primary.0.to_string()]).unwrap();
+    let before = session.project.clone();
+    let position = session.history.position();
+    let mut oracle = Session::default();
+    oracle.project = before.clone();
+    let native = targets
+        .iter()
+        .map(|&(track, clip)| {
+            Box::new(core::TrimClip::new(
+                id,
+                track,
+                clip,
+                TrimEdge::Start,
+                before.timelines[id]
+                    .clip(track, clip)
+                    .unwrap()
+                    .timeline_start
+                    - 4,
+            )) as Box<dyn Command>
+        })
+        .collect();
+    oracle.apply(Box::new(CompositeCommand::new(
+        CommandLabel::TrimClips,
+        native,
+    )));
+    oracle.sync_timeline_media(id);
+    apply(
+        &mut session,
+        id,
+        &Operation::TrimGroup {
+            clip_id: primary.0.to_string(),
+            clip_ids: vec![primary.0.to_string()],
+            edge: Edge::Start,
+            frame: 0,
+            roll_neighbor_id: None,
+            overwrite: false,
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    oracle.history.undo(&mut oracle.project);
+    oracle.sync_timeline_media(id);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    assert_eq!(
+        json!(session.project.timelines[id]),
+        json!(before.timelines[id])
+    );
+    let generation = session.history.generation();
+    apply(
+        &mut session,
+        id,
+        &Operation::TrimGroup {
+            clip_id: primary.0.to_string(),
+            clip_ids: vec![primary.0.to_string()],
+            edge: Edge::Start,
+            frame: 36,
+            roll_neighbor_id: None,
+            overwrite: false,
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.generation(), generation);
+    apply(&mut session, id, &Operation::Redo).unwrap();
+    oracle.history.redo(&mut oracle.project);
+    oracle.sync_timeline_media(id);
+    assert_eq!(json!(session.project), json!(oracle.project));
+}
+
+#[test]
+fn native_roll_trims_only_both_contact_groups_and_regular_group_cannot_cross_itself() {
+    let (mut session, id, media) = close_gap_fixture(false);
+    for track in &mut session.project.timelines[id].tracks {
+        track.clips.clear();
+    }
+    let clips: Vec<_> = (0..2)
+        .map(|index| {
+            let clip = core::Clip::from_source_range(
+                session.project.alloc_clip_id(),
+                core::ClipSource::Media(media),
+                10,
+                34,
+                index * 24,
+                core::Rational::one(),
+            );
+            let clip_id = clip.id;
+            session.project.timelines[id].tracks[0].insert_sorted(clip);
+            clip_id
+        })
+        .collect();
+    let mut roll = Vec::new();
+    for (index, clip_id) in clips.iter().enumerate() {
+        let clip = session.project.timelines[id].tracks[0]
+            .clip_mut(*clip_id)
+            .unwrap();
+        clip.linked_group = Some(core::LinkGroupId(index as u64 + 1));
+        clip.source_offset = 10;
+        clip.effects
+            .transform
+            .track_mut(core::TransformParam::PositionX)
+            .upsert(12, 3.0, core::Interpolation::Hold);
+        let mut audio = clip.clone();
+        audio.id = session.project.alloc_clip_id();
+        audio.timeline_start += 8;
+        let audio_id = audio.id;
+        session.project.timelines[id].tracks[1].insert_sorted(audio);
+        roll.push((
+            0,
+            *clip_id,
+            if index == 0 {
+                TrimEdge::End
+            } else {
+                TrimEdge::Start
+            },
+            32,
+        ));
+        roll.push((
+            1,
+            audio_id,
+            if index == 0 {
+                TrimEdge::End
+            } else {
+                TrimEdge::Start
+            },
+            40,
+        ));
+    }
+    let unrelated = session.project.alloc_clip_id();
+    let mut lane = core::Track::new(TrackKind::Video);
+    lane.locked = true;
+    lane.insert_sorted(core::Clip::from_source_range(
+        unrelated,
+        core::ClipSource::SolidColor,
+        0,
+        12,
+        80,
+        core::Rational::one(),
+    ));
+    session.project.timelines[id].tracks.push(lane);
+    let before = session.project.clone();
+    let steps = session.history.position();
+    let mut oracle = Session::default();
+    oracle.project = before.clone();
+    let native = roll
+        .into_iter()
+        .map(|(track, clip, edge, frame)| {
+            Box::new(core::TrimClip::new(id, track, clip, edge, frame)) as Box<dyn Command>
+        })
+        .collect();
+    oracle.apply(Box::new(CompositeCommand::new(
+        CommandLabel::TrimClips,
+        native,
+    )));
+    oracle.sync_timeline_media(id);
+    apply(
+        &mut session,
+        id,
+        &Operation::TrimGroup {
+            clip_id: clips[0].0.to_string(),
+            clip_ids: vec![clips[0].0.to_string(), unrelated.0.to_string()],
+            edge: Edge::End,
+            frame: 32,
+            roll_neighbor_id: Some(clips[1].0.to_string()),
+            overwrite: false,
+        },
+    )
+    .unwrap();
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    oracle.history.undo(&mut oracle.project);
+    oracle.sync_timeline_media(id);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    assert_eq!(
+        json!(session.project.timelines[id]),
+        json!(before.timelines[id])
+    );
+    apply(&mut session, id, &Operation::Redo).unwrap();
+    oracle.history.redo(&mut oracle.project);
+    oracle.sync_timeline_media(id);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    let (mut session, id, clips) = fixture();
+    apply(
+        &mut session,
+        id,
+        &Operation::TrimGroup {
+            clip_id: clips[0].0.to_string(),
+            clip_ids: clips.iter().map(|clip| clip.0.to_string()).collect(),
+            edge: Edge::End,
+            frame: 100,
+            roll_neighbor_id: None,
+            overwrite: false,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        session.project.timelines[id].tracks[0]
+            .clip(clips[0])
+            .unwrap()
+            .timeline_end(),
+        48
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[0]
+            .clip(clips[1])
+            .unwrap()
+            .timeline_end(),
+        96
+    );
+}
+
+#[test]
+fn group_trim_refuses_locked_malformed_and_partial_overwrites_before_mutation() {
+    let (mut session, id, clips) = fixture();
+    let legacy = json!({"kind":"trim","clip_id":clips[0].0.to_string(),"edge":"end","frame":20});
+    let parsed: Operation = serde_json::from_value(legacy.clone()).unwrap();
+    assert_eq!(json!(parsed), legacy);
+    let request = |ids, neighbor, overwrite| Operation::TrimGroup {
+        clip_id: clips[0].0.to_string(),
+        clip_ids: ids,
+        edge: Edge::End,
+        frame: 60,
+        roll_neighbor_id: neighbor,
+        overwrite,
+    };
+    let before = json!(session.project);
+    let generation = session.history.generation();
+    for operation in [
+        request(vec![clips[0].0.to_string()], None, false),
+        request(
+            vec![clips[0].0.to_string(), format!("0{}", clips[0].0)],
+            None,
+            true,
+        ),
+        request(
+            vec![clips[0].0.to_string()],
+            Some(clips[1].0.to_string()),
+            true,
+        ),
+    ] {
+        assert!(apply(&mut session, id, &operation).is_err());
+        assert_eq!(json!(session.project), before);
+        assert_eq!(session.history.generation(), generation);
+    }
+    let mut oracle = Session::default();
+    oracle.project = session.project.clone();
+    let original_timeline = json!(session.project.timelines[id]);
+    let mut commands = Vec::new();
+    core::make_room_for_ranges(
+        &mut oracle.project,
+        id,
+        &[(0, 24, 60)],
+        &[(0, clips[0])],
+        &mut commands,
+    );
+    commands.push(Box::new(core::TrimClip::new(
+        id,
+        0,
+        clips[0],
+        TrimEdge::End,
+        60,
+    )));
+    oracle.apply(Box::new(CompositeCommand::new(
+        CommandLabel::TrimClips,
+        commands,
+    )));
+    oracle.sync_timeline_media(id);
+    apply(
+        &mut session,
+        id,
+        &request(vec![clips[0].0.to_string()], None, true),
+    )
+    .unwrap();
+    assert_eq!(json!(session.project), json!(oracle.project));
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(json!(session.project.timelines[id]), original_timeline);
+    // Linked overwrite peers must all participate, including locked audio lanes.
+    let mut peer = session.project.timelines[id].tracks[0]
+        .clip(clips[1])
+        .unwrap()
+        .clone();
+    peer.id = session.project.alloc_clip_id();
+    peer.linked_group = Some(core::LinkGroupId(7));
+    session.project.timelines[id].tracks[0]
+        .clip_mut(clips[1])
+        .unwrap()
+        .linked_group = peer.linked_group;
+    session.project.timelines[id].tracks[1].insert_sorted(peer);
+    for locked in [false, true] {
+        session.project.timelines[id].tracks[1].locked = locked;
+        let before = json!(session.project);
+        let generation = session.history.generation();
+        assert_eq!(
+            apply(
+                &mut session,
+                id,
+                &request(vec![clips[0].0.to_string()], None, true)
+            )
+            .unwrap_err()
+            .1,
+            if locked {
+                "TRACK_LOCKED"
+            } else {
+                "LINKED_OVERWRITE"
+            }
+        );
+        assert_eq!(json!(session.project), before);
+        assert_eq!(session.history.generation(), generation);
+    }
+    let (mut linked, id, _) = close_gap_fixture(false);
+    let primary = linked.project.timelines[id].tracks[0]
+        .clips
+        .iter()
+        .find(|clip| clip.linked_group.is_some())
+        .unwrap()
+        .id;
+    linked.project.timelines[id].tracks[1].locked = true;
+    let before = json!(linked.project);
+    assert_eq!(
+        apply(
+            &mut linked,
+            id,
+            &Operation::TrimGroup {
+                clip_id: primary.0.to_string(),
+                clip_ids: vec![primary.0.to_string()],
+                edge: Edge::Start,
+                frame: 34,
+                roll_neighbor_id: None,
+                overwrite: false
+            }
+        )
+        .unwrap_err()
+        .1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(json!(linked.project), before);
+}
+
+#[test]
+fn alt_duplicate_returns_only_native_copy_ids_and_relinks_copies_with_new_tracks() {
+    let (mut session, id, moves) = new_track_move_fixture();
+    let before = session.project.clone();
+    let steps = session.history.position();
+    let mut oracle = Session::default();
+    oracle.project = before.clone();
+    let mut native: Vec<Box<dyn Command>> = Vec::new();
+    for kind in [
+        TrackKind::Video,
+        TrackKind::Video,
+        TrackKind::Audio,
+        TrackKind::Audio,
+    ] {
+        native.push(Box::new(core::AddTrack::new(id, kind)));
+    }
+    let copies: Vec<_> = moves
+        .iter()
+        .enumerate()
+        .map(|(index, movement)| {
+            let (track, clip_id) =
+                clip_ref(&oracle.project.timelines[id], &movement.clip_id).unwrap();
+            let original = oracle.project.timelines[id].clip(track, clip_id).unwrap();
+            let mut copy = original.clone();
+            copy.timeline_start = movement.to_start_frame;
+            copy.linked_group = None;
+            let group = original.linked_group;
+            copy.id = oracle.project.alloc_clip_id();
+            ([4, 6, 3][index], copy, group)
+        })
+        .collect();
+    let expected_ids: Vec<_> = copies
+        .iter()
+        .map(|(_, clip, _)| clip.id.0.to_string())
+        .collect();
+    native.extend(core::insert_overwriting(&mut oracle.project, id, copies));
+    oracle.apply(Box::new(CompositeCommand::new(
+        CommandLabel::DuplicateClips,
+        native,
+    )));
+    oracle.sync_timeline_media(id);
+    let operation = Operation::MoveClips {
+        new_video_tracks: 2,
+        new_audio_tracks: 2,
+        moves,
+        duplicate: true,
+        overwrite: false,
+    };
+    let ids = move_clips_with_selection(&mut session, id, &operation).unwrap();
+    session.sync_timeline_media(id);
+    assert_eq!(ids, expected_ids);
+    assert_eq!(session.history.position(), steps + 1);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    for index in 0..before.timelines[id].tracks.len() {
+        assert_eq!(
+            json!(session.project.timelines[id].tracks[index]),
+            json!(before.timelines[id].tracks[index])
+        );
+    }
+    let originals: HashSet<_> = before.timelines[id]
+        .tracks
+        .iter()
+        .flat_map(|track| track.clips.iter().filter_map(|clip| clip.linked_group))
+        .collect();
+    let copied = session.project.timelines[id].tracks[4].clips[0]
+        .linked_group
+        .unwrap();
+    assert!(!originals.contains(&copied));
+    assert_eq!(
+        session.project.timelines[id].tracks[6].clips[0].linked_group,
+        Some(copied)
+    );
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    oracle.history.undo(&mut oracle.project);
+    oracle.sync_timeline_media(id);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    assert_eq!(
+        json!(session.project.timelines[id]),
+        json!(before.timelines[id])
+    );
+    apply(&mut session, id, &Operation::Redo).unwrap();
+    oracle.history.redo(&mut oracle.project);
+    oracle.sync_timeline_media(id);
+    assert_eq!(json!(session.project), json!(oracle.project));
+}
+
+#[test]
+fn duplicate_self_overwrite_matches_native_split_ids_and_safe_mode_is_atomic() {
+    let (mut session, id, clips) = fixture();
+    let before = session.project.clone();
+    let generation = session.history.generation();
+    let operation = |overwrite| Operation::MoveClips {
+        new_video_tracks: 0,
+        new_audio_tracks: 0,
+        moves: vec![TrackMove {
+            clip_id: clips[0].0.to_string(),
+            to_track: MoveTrack::Existing {
+                track_id: "0".into(),
+            },
+            to_start_frame: 6,
+        }],
+        duplicate: true,
+        overwrite,
+    };
+    assert_eq!(
+        apply(&mut session, id, &operation(false)).unwrap_err().1,
+        "OVERLAP"
+    );
+    assert_eq!(json!(session.project), json!(before));
+    assert_eq!(session.history.generation(), generation);
+    let mut oracle = Session::default();
+    oracle.project = before.clone();
+    let mut copy = oracle.project.timelines[id].tracks[0]
+        .clip(clips[0])
+        .unwrap()
+        .clone();
+    copy.id = oracle.project.alloc_clip_id();
+    copy.timeline_start = 6;
+    let expected = copy.id;
+    let native = core::insert_overwriting(
+        &mut oracle.project,
+        id,
+        vec![(0, copy, None::<core::LinkGroupId>)],
+    );
+    oracle.apply(Box::new(CompositeCommand::new(
+        CommandLabel::DuplicateClips,
+        native,
+    )));
+    oracle.sync_timeline_media(id);
+    assert_eq!(
+        move_clips_with_selection(&mut session, id, &operation(true)).unwrap(),
+        vec![expected.0.to_string()]
+    );
+    session.sync_timeline_media(id);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    assert_eq!(
+        session.project.timelines[id].tracks[0]
+            .clip(clips[0])
+            .unwrap()
+            .timeline_len,
+        6
+    );
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    oracle.history.undo(&mut oracle.project);
+    oracle.sync_timeline_media(id);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    assert_eq!(
+        json!(session.project.timelines[id]),
+        json!(before.timelines[id])
+    );
+    apply(&mut session, id, &Operation::Redo).unwrap();
+    oracle.history.redo(&mut oracle.project);
+    oracle.sync_timeline_media(id);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    let legacy = json!({"kind":"move_clips","new_video_tracks":0,"new_audio_tracks":0,"moves":[]});
+    let parsed: Operation = serde_json::from_value(legacy.clone()).unwrap();
+    assert_eq!(json!(parsed), legacy);
+    for patch in [
+        json!({"duplicate":1}),
+        json!({"overwrite":"true"}),
+        json!({"unknown":false}),
+    ] {
+        let mut value = legacy.clone();
+        value
+            .as_object_mut()
+            .unwrap()
+            .extend(patch.as_object().unwrap().clone());
+        assert!(serde_json::from_value::<Operation>(value).is_err());
+    }
+    let (mut session, id, clips) = fixture();
+    session.project.timelines[id].tracks[0]
+        .clip_mut(clips[1])
+        .unwrap()
+        .timeline_len = 80;
+    let mut oracle = Session::default();
+    oracle.project = session.project.clone();
+    let mut copy = oracle.project.timelines[id].tracks[0]
+        .clip(clips[0])
+        .unwrap()
+        .clone();
+    copy.id = oracle.project.alloc_clip_id();
+    copy.timeline_start = 60;
+    let expected = copy.id;
+    let native = core::insert_overwriting(
+        &mut oracle.project,
+        id,
+        vec![(0, copy, None::<core::LinkGroupId>)],
+    );
+    oracle.apply(Box::new(CompositeCommand::new(
+        CommandLabel::DuplicateClips,
+        native,
+    )));
+    oracle.sync_timeline_media(id);
+    let operation = Operation::MoveClips {
+        new_video_tracks: 0,
+        new_audio_tracks: 0,
+        moves: vec![TrackMove {
+            clip_id: clips[0].0.to_string(),
+            to_track: MoveTrack::Existing {
+                track_id: "0".into(),
+            },
+            to_start_frame: 60,
+        }],
+        duplicate: true,
+        overwrite: true,
+    };
+    let ids = move_clips_with_selection(&mut session, id, &operation).unwrap();
+    session.sync_timeline_media(id);
+    assert_eq!(ids, vec![expected.0.to_string()]);
+    assert_eq!(session.project.timelines[id].tracks[0].clips.len(), 4);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    let (mut session, id, clips) = fixture();
+    session.project.timelines[id].tracks[0]
+        .clip_mut(clips[1])
+        .unwrap()
+        .timeline_len = 80;
+    let before = session.project.clone();
+    let mut oracle = Session::default();
+    oracle.project = before.clone();
+    let position = session.history.position();
+    edit::move_clips(
+        &mut oracle.project,
+        &mut oracle.history,
+        id,
+        vec![(clips[0], 0, 0, 60)],
+    );
+    oracle.sync_timeline_media(id);
+    let operation = Operation::MoveClips {
+        new_video_tracks: 0,
+        new_audio_tracks: 0,
+        moves: vec![TrackMove {
+            clip_id: clips[0].0.to_string(),
+            to_track: MoveTrack::Existing {
+                track_id: "0".into(),
+            },
+            to_start_frame: 60,
+        }],
+        duplicate: false,
+        overwrite: true,
+    };
+    assert!(
+        move_clips_with_selection(&mut session, id, &operation)
+            .unwrap()
+            .is_empty()
+    );
+    session.sync_timeline_media(id);
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(json!(session.project), json!(oracle.project));
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(
+        json!(session.project.timelines[id]),
+        json!(before.timelines[id])
+    );
+}
 
 #[test]
 fn batch_compositing_accepts_500_targets_as_one_undo_and_preserves_redo_on_noop() {
@@ -2252,6 +2864,8 @@ fn move_clips_creates_native_role_depths_atomically_with_exact_undo_redo() {
             new_video_tracks: 2,
             new_audio_tracks: 2,
             moves: moves.clone(),
+            duplicate: false,
+            overwrite: false,
         },
     )
     .unwrap();
@@ -2315,6 +2929,8 @@ fn move_clips_creates_native_role_depths_atomically_with_exact_undo_redo() {
             new_video_tracks: 0,
             new_audio_tracks: 0,
             moves: noop,
+            duplicate: false,
+            overwrite: false,
         },
     )
     .unwrap();
@@ -2338,6 +2954,8 @@ fn move_clips_rejects_invalid_late_destinations_and_linked_plans_before_any_add_
         new_video_tracks: video,
         new_audio_tracks: audio,
         moves,
+        duplicate: false,
+        overwrite: false,
     };
     let mut cases = Vec::new();
     let mut bad = moves.clone();
@@ -2453,6 +3071,8 @@ fn move_clips_strict_dto_and_existing_collision_preserve_legacy_safe_move() {
                 new_video_tracks: 0,
                 new_audio_tracks: 0,
                 moves: vec![movement],
+                duplicate: false,
+                overwrite: false,
             }
         )
         .unwrap_err()
@@ -2484,6 +3104,8 @@ fn move_clips_strict_dto_and_existing_collision_preserve_legacy_safe_move() {
         &Operation::MoveClips {
             new_video_tracks: 1,
             new_audio_tracks: 0,
+            duplicate: false,
+            overwrite: false,
             moves: vec![
                 TrackMove {
                     clip_id: first.clone(),

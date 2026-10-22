@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {timelineLayout,paneScrollbars,clipsInTimelineRect,clickTimelineSelection,clipSelectionAnchor,moveTrackTargets,dragRangeAt,groupDragBounds,groupMoveStart,validateDraft,hitTest,frameToX,snapFrame,timelineScrollBounds,timelineOriginForFrame,kineticScrollStep,MIN_TIMELINE_SCALE,MAX_TIMELINE_SCALE,HEADER,RULER,TRACK,MAX_FRAME} from '../js/timeline/geometry.js';
 import {createInput} from '../js/timeline/input.js';
 import {presetApplication} from '../js/timeline/preset-drop.js';
+import {trimGroupDraft,gainLine,gainDraft} from '../js/timeline/geometry.js';
 
 const clip=(id,group=null)=>({id,start_frame:0,length_frames:10,linked_group:group,fade_in:0,fade_out:0});
 const fixture=()=>({id:'timeline',revision:'revision',fps:{num:24,den:1},markers:[],tracks:[
@@ -130,15 +131,15 @@ test('group move clamps the raw candidate before snapping and clamps again to fo
 
 function harness(){
   const previous=globalThis.window,handlers=new Map(),windowHandlers=new Map(),captures=new Set(),commands=[],notices=[],seeks=[],timeline=fixture(),view=viewport();
-  let writable=true,navigable=true,modal=false,selectionChanged=()=>{},rectOverrides={},clock=0,frameId=0,currentTimeline=timeline;
+  let writable=true,navigable=true,modal=false,selectionChanged=()=>{},rectOverrides={},clock=0,frameId=0,currentTimeline=timeline,commit=null;
   const frames=new Map();
   const document={querySelector:()=>modal?{}:null,addEventListener(){},removeEventListener(){}};
   globalThis.window={document,devicePixelRatio:1,addEventListener:(name,handler)=>windowHandlers.set(name,handler),removeEventListener:name=>windowHandlers.delete(name)};
   const canvas={ownerDocument:document,clientWidth:1200,clientHeight:view.viewportHeight,style:{},getBoundingClientRect:()=>({left:0,top:0,width:1200,height:canvas.clientHeight,...rectOverrides}),addEventListener:(name,handler)=>handlers.set(name,handler),removeEventListener:name=>handlers.delete(name),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
-  const input=createInput({canvas,getTimeline:()=>currentTimeline,getGapContext:()=>({project_epoch:'epoch',generation:'0'}),view,invalidate(){},onSelect(){selectionChanged();},onSeek(...args){seeks.push(args);},onCommand:async operation=>commands.push(operation),onNotice:message=>notices.push(message),canEdit:()=>writable,canNavigate:()=>navigable,now:()=>clock,requestFrame:fn=>{const id=++frameId;frames.set(id,fn);return id;},cancelFrame:id=>frames.delete(id)});
+  const input=createInput({canvas,getTimeline:()=>currentTimeline,getGapContext:()=>({project_epoch:'epoch',generation:'0'}),view,invalidate(){},onSelect(){selectionChanged();},onSeek(...args){seeks.push(args);},onCommand:async operation=>{commands.push(operation);return commit?.(operation);},onNotice:message=>notices.push(message),canEdit:()=>writable,canNavigate:()=>navigable,now:()=>clock,requestFrame:fn=>{const id=++frameId;frames.set(id,fn);return id;},cancelFrame:id=>frames.delete(id)});
   const send=(type,x,y,extra={})=>handlers.get(type)({clientX:x,clientY:y,pointerId:1,button:0,buttons:1,preventDefault(){},...extra});
   const advance=ms=>clock+=ms,tick=ms=>{clock+=ms;const pending=[...frames];frames.clear();for(const [,fn] of pending)fn(clock);};
-  return {timeline,view,canvas,commands,notices,seeks,captures,handlers,windowHandlers,input,send,frames,advance,tick,setTimeline:value=>currentTimeline=value,setWritable:value=>writable=value,setNavigable:value=>navigable=value,setModal:value=>modal=value,setRect:value=>rectOverrides=value,setOnSelect:value=>selectionChanged=value,destroy(){input.destroy();globalThis.window=previous;}};
+  return {timeline,view,canvas,commands,notices,seeks,captures,handlers,windowHandlers,input,send,frames,advance,tick,setCommit:value=>commit=value,setTimeline:value=>currentTimeline=value,setWritable:value=>writable=value,setNavigable:value=>navigable=value,setModal:value=>modal=value,setRect:value=>rectOverrides=value,setOnSelect:value=>selectionChanged=value,destroy(){input.destroy();globalThis.window=previous;}};
 }
 
 test('Inspector scroll queued by selection preserves a clip drag when fractional Canvas mapping is unchanged',async()=>{
@@ -409,4 +410,86 @@ test('native ruler uses non-drop nominal timecode for integer and fractional tim
  assert.equal(timelineTimecode(1800,{num:30000,den:1001}),'00:01:00:00');
  assert.equal(timelineTimecode(107999,{num:30000,den:1001}),'00:59:59:29');
  assert.equal(timelineTimecode(24,{num:24,den:1}),'00:00:01:00');
+});
+
+function trimFixture(){
+  const timeline=fixture();for(const track of timeline.tracks)for(const clip of track.clips){clip.start_frame=20;clip.length_frames=40;clip.trim_limits={start:[10,59],end:[21,90]};}
+  timeline.tracks[2].clips[0].start_frame=30;timeline.tracks[2].clips[0].trim_limits={start:[25,69],end:[31,100]};return timeline;
+}
+test('selected trim combines native follower offsets, clamps before and after snapping, and preserves the model',()=>{
+  const timeline=trimFixture(),view={...viewport(),snap:true,playhead:26},before=JSON.stringify(timeline);
+  let draft=trimGroupDraft(timeline,view,'10',['10','11','20'],'start',0);
+  assert.equal(draft.target,15);assert.deepEqual(draft.changes.map(change=>[change.clip_id,change.to_start_frame,change.length_frames]),[['10',15,45],['11',15,45],['20',25,45]]);
+  view.playhead=61;draft=trimGroupDraft(timeline,view,'10',['10','11','20'],'start',1000);assert.equal(draft.target,59);assert.equal(draft.error,null);
+  assert.deepEqual(draft.operation,{kind:'trim_group',clip_id:'10',clip_ids:['10','11','20'],edge:'start',frame:59,overwrite:false});assert.equal(JSON.stringify(timeline),before);
+  timeline.tracks[1].locked=true;assert.match(trimGroupDraft(timeline,view,'10',['10'],'start',30).error,/Unlock/);
+  timeline.tracks[1].locked=false;delete timeline.tracks[1].clips[0].trim_limits;assert.match(trimGroupDraft(timeline,view,'10',['10'],'start',30).error,/Native trim limits/);
+});
+test('Roll uses opposite adjacent edges and their linked peers while ignoring unrelated selected clips',()=>{
+  const timeline=trimFixture(),view=viewport(),right={...clip('right','right-group'),start_frame:60,length_frames:40,trim_limits:{start:[40,99],end:[61,120]}};
+  timeline.tracks[0].clips.push(right);timeline.tracks[1].clips.push({...right,id:'right-audio'});timeline.tracks[2].locked=true;
+  const draft=trimGroupDraft(timeline,view,'10',['10','11','20'],'end',75,'right');
+  assert.equal(draft.error,null);assert.equal(draft.target,75);assert.deepEqual(draft.changes.map(change=>[change.clip_id,change.to_start_frame,change.length_frames]),[['10',20,55],['right',75,25],['11',20,55],['right-audio',75,25]]);
+  assert.equal(draft.operation.roll_neighbor_id,'right');assert.match(trimGroupDraft(timeline,view,'10',['10'],'start',25,'right').error,/adjacent/);
+  timeline.tracks[1].locked=true;assert.match(trimGroupDraft(timeline,view,'10',['10'],'end',75,'right').error,/Unlock/);
+});
+test('safe trim refuses foreign overlap, explicit overwrite preserves group validation and same-edge clips cannot cross',()=>{
+  const timeline=trimFixture(),view=viewport();timeline.tracks[0].clips.push({...clip('outside'),start_frame:65,length_frames:10});
+  assert.match(trimGroupDraft(timeline,view,'10',['10'],'end',80).error,/Overlap/);
+  assert.equal(trimGroupDraft(timeline,view,'10',['10'],'end',80,null,true).error,null);
+  timeline.tracks[0].clips.push({...clip('selected'),start_frame:80,length_frames:10,trim_limits:{start:[70,89],end:[81,110]}});
+  const draft=trimGroupDraft(timeline,view,'10',['10','selected'],'end',100,null,true);assert.equal(draft.target,80);assert.equal(draft.error,null);
+});
+test('adjacent cut hit zones distinguish Roll and trim and shrink on tiny clips',()=>{
+  const timeline=trimFixture(),view=viewport(),y=timelineLayout(timeline,view).trackTop(0)+30;
+  timeline.tracks[0].clips.push({...clip('right'),start_frame:60,length_frames:40});
+  assert.equal(hitTest(frameToX(60,view,timeline.fps)-2,y,timeline,view).roll_neighbor_id,'right');
+  const trim=hitTest(frameToX(60,view,timeline.fps)-7,y,timeline,view);assert.equal(trim.kind,'trim_end');assert.equal(trim.roll_neighbor_id,undefined);
+  view.scale=24;timeline.tracks[0].clips[0].length_frames=3;const middle=hitTest(frameToX(21.5,view,timeline.fps),y,timeline,view);assert.equal(middle.kind,'move');
+});
+test('selected pointer trim and Roll commit once at final release, cancel atomically and ignore unrelated Roll selection',async()=>{
+  for(const roll of [false,true]){const h=harness();try{
+    const prepared=trimFixture();h.timeline.tracks=prepared.tracks;h.view.selection=['10','11','20'];
+    if(roll){h.timeline.tracks[0].clips.push({...clip('right'),start_frame:60,length_frames:40,trim_limits:{start:[40,99],end:[61,120]}});h.timeline.tracks[2].locked=true;}
+    const y=timelineLayout(h.timeline,h.view).trackTop(0)+30,x=frameToX(roll?60:20,h.view,h.timeline.fps)+(roll?-2:2);
+    h.send('pointerdown',x,y);h.send('pointermove',x+50,y);assert.deepEqual(h.commands,[]);assert.equal(h.view.draft.error,null);
+    await h.send('pointerup',x+100,y,{buttons:0});assert.equal(h.commands.length,1);assert.equal(h.commands[0].kind,'trim_group');assert.equal(h.commands[0].frame,roll?70:30);assert.equal(h.commands[0].roll_neighbor_id,roll?'right':undefined);assert.equal(h.captures.size,0);
+    h.send('pointerdown',x,y);h.send('pointermove',x+50,y);h.handlers.get('keydown')({key:'Escape'});await h.send('pointerup',x+100,y,{buttons:0});assert.equal(h.commands.length,1);
+  }finally{h.destroy();}}
+});
+test('native constant gain line is audio-only, piecewise bounded, and omitted for animated gains',()=>{
+  const timeline=fixture(),view=viewport(),track=timeline.tracks[1],clip=track.clips[0];Object.assign(clip,{gain_db:0,gain_constant:true,gain_bounds:[-100,30]});
+  assert.equal(gainLine(clip,track,view,timeline.fps).offset,0);assert.equal(gainDraft(clip,track,view,timeline.fps,-29).gain_db,30);assert.equal(gainDraft(clip,track,view,timeline.fps,29).gain_db,-100);
+  assert.equal(gainLine(clip,{...track,kind:'video'},view,timeline.fps),null);assert.equal(gainLine({...clip,gain_constant:false},track,view,timeline.fps),null);
+  const y=timelineLayout(timeline,view).trackTop(1)+TRACK/2,x=frameToX(5,view,timeline.fps);assert.equal(hitTest(x,y,timeline,view).kind,'gain');track.locked=true;assert.notEqual(hitTest(x,y,timeline,view).kind,'gain');
+});
+test('gain and fade release use final coordinates and full context guards while retaining selection',async()=>{
+  for(const kind of ['gain','fade'])for(const abort of [null,'modal','hidden','selection','scale','readonly']){const h=harness();try{
+    const track=h.timeline.tracks[1],clip=track.clips[0];Object.assign(clip,{gain_db:0,gain_constant:true,gain_bounds:[-100,30]});h.view.selection=['20'];
+    const y=timelineLayout(h.timeline,h.view).trackTop(1)+(kind==='gain'?31:14),x=frameToX(5,h.view,h.timeline.fps);
+    h.send('pointerdown',kind==='gain'?x:frameToX(.4,h.view,h.timeline.fps),y);
+    if(abort==='modal')h.setModal(true);if(abort==='hidden')h.canvas.ownerDocument.hidden=true;if(abort==='selection')h.view.selection=['30'];if(abort==='scale')h.view.scale*=2;if(abort==='readonly')h.setWritable(false);
+    await h.send('pointerup',kind==='gain'?x:frameToX(2,h.view,h.timeline.fps),y+(kind==='gain'?-10:0),{buttons:0});
+    assert.equal(h.commands.length,abort?0:1,`${kind}/${abort}`);if(!abort){assert.equal(h.commands[0].kind,'set_properties');assert.deepEqual(h.view.selection,['20']);assert.equal(h.commands[0].clip_id,'11');}assert.equal(h.captures.size,0);
+  }finally{h.destroy();}}
+});
+test('Alt body drag duplicates linked selection with one atomic DTO, safe overlap refusal and middle-button pan retained',async()=>{
+  for(const overwrite of [false,true]){const h=harness();try{
+    h.view.selection=['10','11'];h.view.retimeOverwrite=overwrite;const y=timelineLayout(h.timeline,h.view).trackTop(0)+30,x=frameToX(5,h.view,h.timeline.fps);
+    h.send('pointerdown',x,y,{altKey:true});h.send('pointermove',x+120,y,{altKey:true});assert.equal(h.view.draft.duplicate,true);assert.deepEqual(h.commands,[]);await h.send('pointerup',x+120,y,{altKey:true,buttons:0});
+    assert.equal(h.commands.length,1);assert.equal(h.commands[0].kind,'move_clips');assert.equal(h.commands[0].duplicate,true);assert.equal(h.commands[0].overwrite,overwrite);assert.equal(h.commands[0].moves.length,2);assert.equal(h.timeline.tracks[0].clips[0].start_frame,0);
+    h.send('pointerdown',x,y,{altKey:true});await h.send('pointerup',x+40,y,{altKey:true,buttons:0});assert.equal(h.commands.length,overwrite?2:1);
+    const count=h.commands.length;h.send('pointerdown',x,y,{button:1,buttons:4});await h.send('pointerup',x+40,y,{button:1,buttons:0});assert.equal(h.commands.length,count);
+  }finally{h.destroy();}}
+});
+test('duplicate ACK selects only authoritative fresh copies and cannot replace newer selection or another project receipt',async()=>{
+  for(const late of [null,'selection','epoch','old-id']){const h=harness();try{
+    h.view.selection=['10','11'];h.setCommit(()=>{
+      h.timeline.tracks[0].clips.push({...clip('100','copies'),start_frame:12});h.timeline.tracks[1].clips.push({...clip('101','copies'),start_frame:12});
+      if(late==='selection'){h.view.selection=['20'];h.view.selectionAnchor=clipSelectionAnchor(h.timeline,'20','epoch');}
+      return {project_epoch:late==='epoch'?'foreign':'epoch',generation:'0',clip_ids:late==='old-id'?['10','11']:['100','101']};
+    });
+    const y=timelineLayout(h.timeline,h.view).trackTop(0)+30,x=frameToX(5,h.view,h.timeline.fps);h.send('pointerdown',x,y,{altKey:true});await h.send('pointerup',x+120,y,{altKey:true,buttons:0});
+    assert.equal(h.commands.length,1);assert.deepEqual(h.view.selection,late==='selection'?['20']:late?['10','11']:['100','101']);assert.equal(h.view.selectionAnchor.clip_id,late==='selection'?'20':late?'10':'100');
+  }finally{h.destroy();}}
 });

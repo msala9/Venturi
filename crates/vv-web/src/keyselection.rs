@@ -62,11 +62,51 @@ pub struct Pick {
     pub source_frame: i64,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct Grabbed {
+    pub target: inspector::Target,
+    pub source_frame: i64,
+    pub value: f32,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Action {
-    Move { delta_source_frames: i64 },
+    Move {
+        delta_source_frames: i64,
+    },
+    Drag {
+        delta_source_frames: i64,
+        grabbed: Grabbed,
+    },
     Delete,
-    Interpolation { interpolation: core::Interpolation },
+    Interpolation {
+        interpolation: core::Interpolation,
+    },
+}
+
+fn validate_move(
+    clip: &Clip,
+    rows: &[(KeyframeTarget, Vec<i64>)],
+    picks: &[(KeyframeTarget, i64)],
+    selected: &HashSet<(KeyframeTarget, i64)>,
+    delta: i64,
+) -> Result<()> {
+    let bounds =
+        clip.source_frame_at(clip.timeline_start)..=clip.source_frame_at(clip.timeline_end() - 1);
+    for &(target, frame) in picks {
+        let next = frame
+            .checked_add(delta)
+            .filter(|next| bounds.contains(next))
+            .ok_or_else(|| ApiError::invalid("Keep all keys inside the visible source range"))?;
+        let frames = &rows.iter().find(|(row, _)| *row == target).unwrap().1;
+        if frames.contains(&next) && !selected.contains(&(target, next)) {
+            return Err(ApiError::conflict(
+                "KEYFRAME_COLLISION",
+                "An unselected key occupies a destination",
+            ));
+        }
+    }
+    Ok(())
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -124,23 +164,7 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &Edit) -> Re
         Action::Move {
             delta_source_frames,
         } => {
-            let bounds = clip.source_frame_at(clip.timeline_start)
-                ..=clip.source_frame_at(clip.timeline_end() - 1);
-            for &(target, frame) in &picks {
-                let next = frame
-                    .checked_add(delta_source_frames)
-                    .filter(|next| bounds.contains(next))
-                    .ok_or_else(|| {
-                        ApiError::invalid("Keep all keys inside the visible source range")
-                    })?;
-                let frames = &rows.iter().find(|(row, _)| *row == target).unwrap().1;
-                if frames.contains(&next) && !selected.contains(&(target, next)) {
-                    return Err(ApiError::conflict(
-                        "KEYFRAME_COLLISION",
-                        "An unselected key occupies a destination",
-                    ));
-                }
-            }
+            validate_move(clip, &rows, &picks, &selected, delta_source_frames)?;
             if delta_source_frames != 0 {
                 session.apply(Box::new(core::MoveKeyframes::new(
                     id,
@@ -150,6 +174,94 @@ pub fn edit(session: &mut Session, id: TimelineId, raw: &str, edit: &Edit) -> Re
                     delta_source_frames,
                 )));
             }
+        }
+        Action::Drag {
+            delta_source_frames,
+            ref grabbed,
+        } => {
+            let target = Target::Scalar(grabbed.target.clone()).native();
+            if !edit.picks.iter().any(|pick| {
+                pick.target.native() == target && pick.source_frame == grabbed.source_frame
+            }) {
+                return Err(ApiError::invalid("The grabbed scalar key must be selected"));
+            }
+            validate_move(clip, &rows, &picks, &selected, delta_source_frames)?;
+            let (old_value, interpolation) = curves::key_value(
+                session,
+                id,
+                clip,
+                lane,
+                &grabbed.target,
+                grabbed.source_frame,
+            )?;
+            let mut value_changed = old_value != grabbed.value;
+            let destination = grabbed
+                .source_frame
+                .checked_add(delta_source_frames)
+                .ok_or_else(|| ApiError::invalid("Keyframe frame overflow"))?;
+            let mut commands = vec![inspector::keyframe_command_at(
+                session,
+                id,
+                raw,
+                &inspector::Keyframe {
+                    target: grabbed.target.clone(),
+                    timeline_frame: clip.timeline_start,
+                    value: Some(grabbed.value),
+                    interpolation,
+                },
+                Some(destination),
+            )?];
+            if edit.link_zoom {
+                let twin = match grabbed.target {
+                    inspector::Target::Transform {
+                        param: TransformParam::ZoomX,
+                    } => Some(TransformParam::ZoomY),
+                    inspector::Target::Transform {
+                        param: TransformParam::ZoomY,
+                    } => Some(TransformParam::ZoomX),
+                    _ => None,
+                };
+                if let Some(param) = twin {
+                    let target = inspector::Target::Transform { param };
+                    if let Ok((value, twin_interpolation)) =
+                        curves::key_value(session, id, clip, lane, &target, grabbed.source_frame)
+                    {
+                        value_changed |=
+                            value != grabbed.value || twin_interpolation != interpolation;
+                        commands.push(inspector::keyframe_command_at(
+                            session,
+                            id,
+                            raw,
+                            &inspector::Keyframe {
+                                target,
+                                timeline_frame: clip.timeline_start,
+                                value: Some(grabbed.value),
+                                interpolation,
+                            },
+                            Some(destination),
+                        )?);
+                    }
+                }
+            }
+            if delta_source_frames == 0 && !value_changed {
+                return Ok(());
+            }
+            if delta_source_frames != 0 {
+                commands.insert(
+                    0,
+                    Box::new(core::MoveKeyframes::new(
+                        id,
+                        lane,
+                        clip_id,
+                        picks,
+                        delta_source_frames,
+                    )),
+                );
+            }
+            session.apply(Box::new(core::CompositeCommand::new(
+                core::CommandLabel::SetKeyframe,
+                commands,
+            )));
         }
         Action::Delete => session.apply(Box::new(core::CompositeCommand::new(
             core::CommandLabel::SetKeyframe,

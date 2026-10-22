@@ -42,6 +42,200 @@ fn fixture() -> (Session, TimelineId, String) {
     s.project.timelines[id].tracks[0].insert_sorted(clip);
     (s, id, raw.0.to_string())
 }
+
+#[test]
+fn pointer_drag_matches_native_mixed_time_move_and_grabbed_only_value_with_one_undo() {
+    use vv_core::Command;
+    let (mut s, id, raw) = fixture();
+    let clip = &mut s.project.timelines[id].tracks[0].clips[0];
+    let clip_id = clip.id;
+    clip.effects
+        .transform
+        .track_mut(TransformParam::ZoomX)
+        .upsert(20, 1.5, Interpolation::Hold);
+    clip.effects
+        .transform
+        .track_mut(TransformParam::ZoomY)
+        .upsert(10, 0.7, Interpolation::Hold);
+    let mut request = selection();
+    request.picks.push(Pick {
+        target: Target::Scalar(inspector::Target::Transform {
+            param: TransformParam::ZoomX,
+        }),
+        source_frame: 20,
+    });
+    request.action = Action::Drag {
+        delta_source_frames: 3,
+        grabbed: Grabbed {
+            target: inspector::Target::Transform {
+                param: TransformParam::ZoomX,
+            },
+            source_frame: 10,
+            value: 1.75,
+        },
+    };
+    let before = serde_json::to_value(&s.project).unwrap();
+    let mut expected = s.project.clone();
+    let picks = vec![
+        (KeyframeTarget::TransformParam(TransformParam::ZoomX), 10),
+        (KeyframeTarget::TransformParam(TransformParam::ZoomY), 10),
+        (KeyframeTarget::TransformParam(TransformParam::ZoomX), 20),
+        (KeyframeTarget::TransformParam(TransformParam::Opacity), 10),
+        (KeyframeTarget::Color, 12),
+        (KeyframeTarget::Text, 14),
+        (
+            KeyframeTarget::FilterDirection(core::FilterKind::GaussianBlur),
+            16,
+        ),
+    ];
+    core::MoveKeyframes::new(id, 0, clip_id, picks, 3).apply(&mut expected);
+    for param in [TransformParam::ZoomX, TransformParam::ZoomY] {
+        core::UpsertKeyframe::new(
+            id,
+            0,
+            clip_id,
+            13,
+            core::KeyframeValue::TransformParam(param, 1.75),
+            Interpolation::EaseIn,
+        )
+        .apply(&mut expected);
+    }
+    let position = s.history.position();
+    edit(&mut s, id, &raw, &request).unwrap();
+    assert_eq!(s.history.position(), position + 1);
+    assert_eq!(
+        serde_json::to_value(&s.project).unwrap(),
+        serde_json::to_value(expected).unwrap()
+    );
+    let clip = inspector::find(&s, id, &raw).unwrap().2;
+    assert_eq!(
+        clip.effects
+            .transform
+            .track(TransformParam::ZoomX)
+            .keyframes()[1],
+        (23, 1.5, Interpolation::Hold)
+    );
+    assert_eq!(
+        clip.effects
+            .transform
+            .track(TransformParam::Opacity)
+            .keyframes()[0]
+            .1,
+        1.0
+    );
+    let after = serde_json::to_value(&s.project).unwrap();
+    s.history.undo(&mut s.project);
+    assert_eq!(serde_json::to_value(&s.project).unwrap(), before);
+    s.history.redo(&mut s.project);
+    assert_eq!(serde_json::to_value(&s.project).unwrap(), after);
+}
+
+#[test]
+fn pointer_drag_rejects_stale_grab_invalid_value_collision_and_locks_before_moving_any_key() {
+    for case in 0..8 {
+        let (mut s, id, raw) = fixture();
+        let mut request = selection();
+        let mut grabbed = Grabbed {
+            target: inspector::Target::Transform {
+                param: TransformParam::ZoomX,
+            },
+            source_frame: 10,
+            value: 1.5,
+        };
+        let mut delta = 2;
+        match case {
+            0 => grabbed.source_frame = 11,
+            1 => grabbed.value = f32::NAN,
+            2 => grabbed.value = -1.0,
+            3 => delta = i64::MAX,
+            4 => delta = -20,
+            5 => s.project.timelines[id].tracks[0].locked = true,
+            6 => s.project.timelines[id].tracks[0].clips[0]
+                .effects
+                .transform
+                .track_mut(TransformParam::Opacity)
+                .upsert(12, 0.2, Interpolation::Hold),
+            _ => {
+                grabbed.target = inspector::Target::FilterOffset {
+                    filter: core::FilterKind::GaussianBlur,
+                    axis: 2,
+                }
+            }
+        }
+        request.action = Action::Drag {
+            delta_source_frames: delta,
+            grabbed,
+        };
+        let before = serde_json::to_value(&s.project).unwrap();
+        let position = s.history.position();
+        assert!(edit(&mut s, id, &raw, &request).is_err(), "case {case}");
+        assert_eq!(s.history.position(), position, "case {case}");
+        assert_eq!(
+            serde_json::to_value(&s.project).unwrap(),
+            before,
+            "case {case}"
+        );
+    }
+}
+
+#[test]
+fn pointer_vertical_only_drag_updates_existing_twin_but_does_not_create_missing_twin() {
+    let (mut s, id, raw) = fixture();
+    let mut request = selection();
+    request.picks.truncate(1);
+    request.action = Action::Drag {
+        delta_source_frames: 0,
+        grabbed: Grabbed {
+            target: inspector::Target::Transform {
+                param: TransformParam::ZoomX,
+            },
+            source_frame: 10,
+            value: 1.0,
+        },
+    };
+    let position = s.history.position();
+    edit(&mut s, id, &raw, &request).unwrap();
+    assert_eq!(s.history.position(), position);
+    s.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(TransformParam::ZoomY)
+        .upsert(10, 0.5, Interpolation::Hold);
+    edit(&mut s, id, &raw, &request).unwrap();
+    assert_eq!(s.history.position(), position + 1);
+    assert_eq!(
+        s.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .track(TransformParam::ZoomY)
+            .keyframes()[0],
+        (10, 1.0, Interpolation::EaseIn)
+    );
+    s.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(TransformParam::ZoomY)
+        .remove_at(10);
+    request.action = Action::Drag {
+        delta_source_frames: 0,
+        grabbed: Grabbed {
+            target: inspector::Target::Transform {
+                param: TransformParam::ZoomX,
+            },
+            source_frame: 10,
+            value: 1.4,
+        },
+    };
+    edit(&mut s, id, &raw, &request).unwrap();
+    assert!(
+        s.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .track(TransformParam::ZoomY)
+            .keyframes()
+            .is_empty()
+    );
+}
 fn selection() -> Edit {
     Edit {
         picks: vec![

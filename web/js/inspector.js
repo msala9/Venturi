@@ -1,12 +1,41 @@
 import {renderFilters,renderSelectedFilters} from "./visual.js";
 import {renderMasks} from "./masks.js";
-import {renderCurves,createZoomLink,zoomParameters} from "./curves.js";
+import {renderCurves,createZoomLink,zoomParameters,createKeyPickSelection} from "./curves.js";
 import {renderEventKeys} from "./eventkeys.js";
 import {renderKeySelection} from "./keyselection.js";
 
 export function inspectorGroup(section,group){
   if(!['video','audio','selection'].includes(group))throw Error('Choose an Inspector group');
   section.setAttribute('data-inspector-group',group);return section;
+}
+export function editingShortcutAllowed(event,{dialogOpen=false,allowRepeat=false}={}){
+  return !dialogOpen && !event.defaultPrevented && (allowRepeat || !event.repeat) && !event.isComposing && event.keyCode!==229 && !event.getModifierState?.('AltGraph') && !event.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"]),dialog,video,audio,.app-menu[open]');
+}
+export function selectionInspectorRows(value,{query,clip_ids}){
+  if(!value?.query || !Object.keys(query).every(key=>value.query[key]===query[key]) || !Array.isArray(value.rows) || value.rows.length!==clip_ids.length || new Set(clip_ids).size!==clip_ids.length || value.rows.length>2048)throw Error('The native selection summary changed');
+  const requested=new Set(clip_ids),seen=new Set();
+  for(const row of value.rows){if(!requested.has(row.clip_id) || seen.has(row.clip_id) || typeof row.track_id!=='string' || !['video','audio'].includes(row.kind) || typeof row.name!=='string' || typeof row.locked!=='boolean' || !Number.isSafeInteger(row.start_frame) || row.start_frame<0 || !Number.isSafeInteger(row.length_frames) || row.length_frames<1 || !Number.isSafeInteger(row.source_frame))throw Error('The native selection summary changed');seen.add(row.clip_id);}
+  return value.rows;
+}
+export function renderInspectorSelection(root,rows){
+  const table=document.createElement('table'),head=document.createElement('thead'),heading=document.createElement('tr'),body=document.createElement('tbody');table.className='inspector-selection-table';table.setAttribute('aria-label','Selected clips');
+  for(const name of ['Kind','Track','Name','Start','Length','Source frame']){const cell=document.createElement('th');cell.scope='col';cell.textContent=name;heading.append(cell);}head.append(heading);
+  for(const row of rows){const line=document.createElement('tr');for(const value of [row.kind,row.track_id,row.name,row.start_frame,row.length_frames,row.source_frame]){const cell=document.createElement('td');cell.textContent=String(value);line.append(cell);}body.append(line);}
+  table.append(head,body);root.className='inspector-selection-summary';root.replaceChildren(table);
+}
+export function bindInspectorNumber(input,{canInteract,apply,speed=1,windowRef=input.ownerDocument?.defaultView ?? globalThis.window}){
+  let gesture=null;
+  const live=()=>input.isConnected!==false && !input.disabled && canInteract();
+  const release=id=>{try{if(input.hasPointerCapture?.(id))input.releasePointerCapture(id);}catch{}};
+  const cancel=()=>{if(!gesture)return;const before=gesture;gesture=null;input.value=before.text;release(before.id);};
+  const draft=event=>{const distance=event.clientX-gesture.x;if(!gesture.moved && Math.abs(distance)<3)return;event.preventDefault?.();gesture.moved=true;const bound=(value,fallback)=>String(value ?? '').trim() && Number.isFinite(Number(value))?Number(value):fallback,min=bound(input.min,-Infinity),max=bound(input.max,Infinity);const value=gesture.value+distance*speed*(event.shiftKey ? 0.1 : 1);input.value=String(Number(Math.max(min,Math.min(max,value)).toFixed(6)));};
+  input.addEventListener('pointerdown',event=>{if(gesture || !live() || event.button!==0 || event.isPrimary===false || event.ctrlKey || event.metaKey || event.altKey || !String(input.value).trim() || !Number.isFinite(Number(input.value)))return;gesture={id:event.pointerId,x:event.clientX,text:input.value,value:Number(input.value),moved:false};input.setPointerCapture?.(event.pointerId);});
+  input.addEventListener('pointermove',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live() || event.buttons!==undefined && !(event.buttons&1)){cancel();return;}draft(event);});
+  input.addEventListener('pointerup',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live()){cancel();return;}if(gesture.moved || Math.abs(event.clientX-gesture.x)>=3)draft(event);const before=gesture;gesture=null;release(before.id);if(before.moved && Number(input.value)!==before.value)apply();});
+  input.addEventListener('pointercancel',cancel);input.addEventListener('lostpointercapture',cancel);input.addEventListener('blur',cancel);
+  input.addEventListener('keydown',event=>{if(event.key==='Escape' && gesture){event.preventDefault();event.stopPropagation();cancel();}});
+  windowRef?.addEventListener?.('blur',cancel);
+  return {cancel,dispose(){cancel();windowRef?.removeEventListener?.('blur',cancel);}};
 }
 function inspectorHelp(parent,note,label='Editing this selection'){
   const help=document.createElement('details'),summary=document.createElement('summary');help.className='inspector-help';summary.textContent=label;help.append(summary,note);parent.append(help);
@@ -66,8 +95,8 @@ function selectedPropertyControls(root,detail,{selection,getSelection,frame,getF
   if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || detail.video!==video || detail.locked || !Number.isSafeInteger(frame) || frame<0)return null;
   const captured=structuredClone(selection),identity=JSON.stringify(captured),controls=[],section=inspectorGroup(document.createElement('details'),video?'video':'audio');section.open=true;section.className='inspector-selected';
   if(getFrame()!==frame || JSON.stringify(getSelection())!==identity)return null;
-  let waiting=false,outcomeUnknown=false;
-  const owns=()=>root.isConnected!==false && section.isConnected!==false && getFrame()===frame && JSON.stringify(getSelection())===identity;
+  let waiting=false,outcomeUnknown=false,disposed=false;const gestures=[];
+  const owns=()=>!disposed && root.isConnected!==false && section.isConnected!==false && getFrame()===frame && JSON.stringify(getSelection())===identity;
   const current=()=>owns() && canInteract(),navigationCurrent=()=>owns() && canNavigate();
   const sync=()=>{for(const [control,available,navigation] of controls)control.disabled=waiting || outcomeUnknown || !(navigation?navigationCurrent():current()) || !available();};
   const register=(control,available=()=>true,navigation=false)=>{controls.push([control,available,navigation]);control.disabled=waiting || outcomeUnknown || !(navigation?navigationCurrent():current()) || !available();return control;};
@@ -86,7 +115,7 @@ function selectedPropertyControls(root,detail,{selection,getSelection,frame,getF
   };
   const heading=document.createElement('summary');heading.textContent=video?'Selected video properties':'Selected audio gain';section.append(heading);
   root.append(section);
-  return {section,register,button,localButton,submit,current,sync,available:()=>!waiting && !outcomeUnknown && current()};
+  return {section,register,button,localButton,submit,current,sync,own:gesture=>gestures.push(gesture),available:()=>!waiting && !outcomeUnknown && current(),cancel(){disposed=true;for(const gesture of gestures)gesture.dispose?.();}};
 }
 function selectedNumber(parent,label,parameter,controls,apply,displayLabel){
   const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));
@@ -94,7 +123,18 @@ function selectedNumber(parent,label,parameter,controls,apply,displayLabel){
   input.type='number';input.step=parameter.step ?? 'any';input.required=true;input.value=parameter.value;input.min=parameter.min;input.max=parameter.max;input.setAttribute('aria-label',label);field.append(input);
   const button=controls.register(document.createElement('button'));button.className='inspector-number-apply';button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(field,button);
   const complete=()=>{const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && form.reportValidity())apply(value);};
-  form.addEventListener('submit',event=>{event.preventDefault();complete();});input.addEventListener('change',complete);parent.append(form);
+  form.addEventListener('submit',event=>{event.preventDefault();complete();});input.addEventListener('change',complete);
+  input.title='Drag to adjust; Shift for fine control. Click to type. Escape cancels a drag.';controls.own(bindInspectorNumber(input,{canInteract:()=>controls.available(),apply:complete,speed:/Zoom/.test(label) ? 0.01 : /Rotation|Opacity/.test(label) ? 0.5 : 1}));
+  if(/^(Rotation|Opacity|CropLeft|CropRight|CropTop|CropBottom|CropSoftness)$/.test(label)){
+    const slider=controls.register(document.createElement('input'));slider.type='range';slider.min=label==='Rotation'?-180:parameter.min;slider.max=label==='Rotation'?180:parameter.max;slider.step=label==='Rotation' || label==='Opacity'?0.5:1;slider.value=parameter.value;slider.className='inspector-inline-slider';slider.setAttribute('aria-label',`${label} slider`);field.className+=' inspector-slider-field';field.append(slider);
+    let before=null,canceled=false;
+    slider.addEventListener('pointerdown',()=>{if(controls.available()){canceled=false;before=input.value;}});slider.addEventListener('input',()=>{if(!canceled && controls.available())input.value=slider.value;});
+    slider.addEventListener('change',()=>{if(!canceled && controls.available()){input.value=slider.value;complete();}before=null;});
+    const cancel=()=>{if(before!==null){input.value=before;slider.value=before;before=null;canceled=true;}};slider.addEventListener('pointercancel',cancel);slider.addEventListener('blur',cancel);slider.addEventListener('keydown',event=>{if(event.key==='Escape' && before!==null){event.preventDefault();event.stopPropagation();cancel();}else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key)){canceled=false;before=input.value;}});
+    const windowRef=input.ownerDocument?.defaultView ?? globalThis.window;windowRef?.addEventListener?.('blur',cancel);controls.own({dispose(){cancel();windowRef?.removeEventListener?.('blur',cancel);}});
+    input.addEventListener('change',()=>{slider.value=input.value;});
+  }
+  parent.append(form);
   return input;
 }
 function keyDiamond(parent,label,parameters,controls,edit){
@@ -139,6 +179,7 @@ export function renderSelectedVideoProperties(root,detail,options){
   group('Crop',CROP_ROWS);
   group('Opacity',[['Opacity',['Opacity']]]);
   controls.button('Reset compositing',{action:'reset_compositing'},section);
+  return controls;
 }
 export function renderSelectedAudioGain(root,detail,options){
   if(!Number.isFinite(detail.gain?.value))return;
@@ -147,6 +188,7 @@ export function renderSelectedAudioGain(root,detail,options){
   selectedNumber(controls.section,'Selected gain dB',{...detail.gain,min:-100,max:30},controls,value=>{if(value!==detail.gain.value)controls.submit({action:'gain',value});});
   keyDiamond(controls.section,'gain',[detail.gain],controls,{action:'toggle_gain_key'});
   controls.button('Reset gain',{action:'reset_gain'},controls.section);
+  return controls;
 }
 export function titleSelectionPatch(before,after){
   const fields=['text','font_family','font_weight','italic','size','tracking','line_spacing','underline','strikethrough','case','align','anchor','position','color','background'];
@@ -203,7 +245,7 @@ export function renderSelectedVideoEffects(root,detail,options){
     const parent=group('Selected solid color'),info=solid;
     colorRow(parent,'Solid color',info.value,value=>controls.submit({action:'solid_color',value}));keyDiamond(parent,'solid color',[info],controls,{action:'toggle_color_key'});
   }
-  return renderSelectedFilters(section,detail,{controls,keyRow:(parent,label,parameters,edit)=>keyDiamond(parent,label,parameters,controls,edit),openState:options.visualState || new Map(),notice:options.notice,timelineSize:options.timelineSize});
+  return [...renderSelectedFilters(section,detail,{controls,keyRow:(parent,label,parameters,edit)=>keyDiamond(parent,label,parameters,controls,edit),openState:options.visualState || new Map(),notice:options.notice,timelineSize:options.timelineSize}),controls];
 }
 export function transformPatch(param,value,linked=false){return {transform:zoomParameters(param,linked).map(param=>({param,value}))};}
 export function keyframeOperation(clip, target, frame, value, interpolation = "Linear",linked=false) {
@@ -296,9 +338,10 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   root.append(section);
   renderRetime(root,detail,disabled,getFrame,report,visualState,canInteract,{speedControls:retimeControls,notice});
   const controls=detail.video && filterControls ? renderFilters(root,detail,{disabled,getFrame,commit:guardedCommit,notice,openState:visualState,canInteract}) : [];
-  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract,seek,canNavigate,navigateSource});if(curves)controls.push(curves);
-  const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope,canInteract,seek,canNavigate,navigateSource});if(eventKeys)controls.push(eventKeys);
-  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload,canInteract});if(keySelection)controls.push(keySelection);
+  const selectedKeys=createKeyPickSelection(visualState,scope ?? detail.clip_id);
+  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract,seek,canNavigate,navigateSource,keySelection:selectedKeys});if(curves)controls.push(curves);
+  const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope,canInteract,seek,canNavigate,navigateSource,keySelection:selectedKeys});if(eventKeys)controls.push(eventKeys);
+  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload,canInteract,keySelection:selectedKeys});if(keySelection)controls.push(keySelection);
   if(detail.video)renderMasks(root,detail,{disabled,getFrame,commit,notice,openState:visualState,seek,canInteract});
   if (titleControls && detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report,transitionDefaults,notice);

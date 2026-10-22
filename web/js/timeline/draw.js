@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons,paneScrollbars } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,gainLine,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons,paneScrollbars } from "./geometry.js";
 import {sourceAssetKey,mediaThumbnail} from '../source-assets.js';
 export function timelineTimecode(frame,fps){
   const nominal=Math.max(1,Math.round(fps.num/fps.den)),value=Math.max(0,Math.round(frame));
@@ -129,6 +129,13 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           top + 41,
         );
         ctx.restore();
+        const gaining=view.draft?.kind==='gain' && view.draft.clip_id===clip.id;
+        const gain=gainLine(gaining?{...clip,gain_db:view.draft.gain_db}:clip,track,view,timeline.fps);
+        if(gain){
+          const y=top+rowHeight/2-gain.offset*(rowHeight-4)/2;
+          ctx.save();ctx.strokeStyle=gaining?color('--primary'):color('--text');ctx.globalAlpha=gaining?0.9:0.5;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(right,y);ctx.stroke();ctx.restore();
+          if(gaining){ctx.fillStyle=color('--text');ctx.fillText(`${view.draft.gain_db.toFixed(1)} dB`,Math.max(x+8,HEADER+5),top+rowHeight-12);}
+        }
         const speed=speedStrips.get(clip.id);
         if(speed){
           const active=view.draft?.kind==='retime' && view.draft.clip_id===clip.id,end=active?view.draft.right:speed.right;
@@ -201,6 +208,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
             : color("--primary");
           ctx.strokeRect(x, top + 5, end - x, rowHeight - 10);
           if(view.draft.kind === "slip"){ctx.fillStyle=color("--text");ctx.fillText(`Slip ${view.draft.target>=0?"+":""}${view.draft.target}f`,x+6,top+rowHeight-15);}
+          if(view.draft.kind==='trim_group' || view.draft.duplicate){ctx.fillStyle=color('--text');ctx.fillText(`${view.draft.duplicate?'Duplicate':view.draft.operation?.roll_neighbor_id?'Roll':'Trim'}${view.draft.operation?.overwrite || (view.draft.duplicate && view.retimeOverwrite)?' · OVERWRITE':''}`,Math.max(HEADER+5,x+6),top+rowHeight-15);}
           if(view.draft.kind==='retime'){
             const label=`Speed length ${draft.length_frames}f · end ${view.draft.end_frame}f${view.draft.validation_pending?' · linked validation on release':''}${view.draft.operation.overwrite?' · OVERWRITE':''}${view.draft.error?` · ${view.draft.error}`:''}`,labelX=Math.max(HEADER+5,x+6);
             ctx.fillStyle=color('--raised');ctx.fillRect(labelX-3,top+rowHeight-33,Math.max(180,Math.min(width-labelX,label.length*7)),15);ctx.fillStyle=color('--text');ctx.fillText(label,labelX,top+rowHeight-25);

@@ -6,6 +6,99 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn inspector_selection_http_uses_one_guarded_read_without_a_writer_client() {
+    let root =
+        std::env::temp_dir().join(format!("vv-selection-http-{}", crate::asset_jobs::nonce()));
+    let host = Host::start(&root).unwrap();
+    let initial = host.call(Action::Session).await.unwrap();
+    let create = crate::commands::Mutation {
+        command_id: "selection-project".into(),
+        client_id: "owner".into(),
+        command_epoch: initial["command_epoch"].as_str().map(str::to_owned),
+        project_epoch: initial["project_epoch"].as_str().unwrap().into(),
+        if_generation: initial["generation"].as_str().unwrap().into(),
+        if_revision: None,
+        operation: crate::commands::Operation::NewProject {
+            name: "Selection".into(),
+        },
+    };
+    host.call(Action::Mutation(None, create)).await.unwrap();
+    let initial = host.call(Action::Session).await.unwrap();
+    let timeline = initial["timelines"][0]["id"].as_str().unwrap().to_owned();
+    let add = crate::commands::Mutation {
+        command_id: "selection-base".into(),
+        client_id: "owner".into(),
+        command_epoch: initial["command_epoch"].as_str().map(str::to_owned),
+        project_epoch: initial["project_epoch"].as_str().unwrap().into(),
+        if_generation: initial["generation"].as_str().unwrap().into(),
+        if_revision: Some(initial["timelines"][0]["revision"].as_str().unwrap().into()),
+        operation: crate::commands::Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 48,
+        },
+    };
+    host.call(Action::Mutation(Some(timeline.clone()), add))
+        .await
+        .unwrap();
+    let session = host.call(Action::Session).await.unwrap();
+    let current = host.call(Action::Timeline(timeline.clone())).await.unwrap();
+    let clip = current["tracks"][0]["clips"][0]["id"].as_str().unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let body = json!({"query":{"timeline_id":timeline,"project_epoch":session["project_epoch"],"if_generation":session["generation"],"revision":current["revision"],"frame":99,"width":16},"clip_ids":[clip]});
+    for case in 0..5 {
+        let mut body = body.clone();
+        let path = if case == 1 { "999" } else { &timeline };
+        let expected = match case {
+            0 => StatusCode::OK,
+            1 => StatusCode::UNPROCESSABLE_ENTITY,
+            2 => {
+                body["query"]["if_generation"] = json!("999");
+                StatusCode::CONFLICT
+            }
+            3 => {
+                body["extra"] = json!(true);
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+            _ => {
+                body["clip_ids"] = json!([clip, clip]);
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+        };
+        let request = Request::builder()
+            .method("POST")
+            .uri(format!("/api/v1/timelines/{path}/inspector-selection"))
+            .header("host", "127.0.0.1:8787")
+            .header("content-type", "application/json")
+            .body(Body::from(body.to_string()))
+            .unwrap();
+        let response = app.clone().oneshot(request).await.unwrap();
+        assert_eq!(response.status(), expected, "case {case}");
+        if case == 0 {
+            assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+            let read: Value =
+                serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap())
+                    .unwrap();
+            assert_eq!(read["query"], body["query"]);
+            assert_eq!(read["rows"][0]["source_frame"], 47);
+        }
+    }
+    assert_eq!(host.call(Action::Session).await.unwrap(), session);
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn audio_preset_http_library_is_native_strict_retry_safe_and_project_independent() {
     use sha2::Digest;
     let root = std::env::temp_dir().join(format!(

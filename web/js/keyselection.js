@@ -18,7 +18,7 @@ export function mergeCrossSelection(stored,visible,chosen) {
   if(result.length>2048)throw Error("Select at most 2048 keys across all pages");
   return result;
 }
-export function renderKeySelection(root,detail,{disabled,commit,notice,openState,scope=detail.clip_id,zoomLink,reload,canInteract}) {
+export function renderKeySelection(root,detail,{disabled,commit,notice,openState,scope=detail.clip_id,zoomLink,reload,canInteract,keySelection}) {
   const rows=[...(detail.curves?.tracks || []),...(detail.event_keys || [])];
   const total=rows.reduce((sum,row)=>sum+row.key_count,0);
   if(!total)return null;
@@ -33,7 +33,7 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   const note=document.createElement("p");note.className="muted";note.textContent="Select keys with Ctrl/Shift. Selection retains keys from other parameters and pages. Move preserves native values and interpolation. Missing keys reject the whole action. Link Zoom includes existing twins. Each action is one Undo.";section.append(note);
   const filter=document.createElement("select");filter.setAttribute("aria-label","Cross-parameter key row");filter.append(new Option("All parameters on this page",""));rows.forEach((row,index)=>filter.append(new Option(`${row.name} (${row.key_count} keys)`,String(index))));filter.value=openState?.get("all-keys-row") || "";section.append(filter);
   const form=document.createElement("form"),list=document.createElement("select");list.multiple=true;list.size=8;list.setAttribute("aria-label","Keys across parameters");list.disabled=disabled;
-  const stored=openState?.get(stateKey);let selectedIds=stored?.ids || (Array.isArray(stored)?stored:stored?.after || []),shown=[],picks=[];form.append(list);
+  const stored=openState?.get(stateKey);let selectedIds=keySelection?keySelection.get().map(identity):stored?.ids || (Array.isArray(stored)?stored:stored?.after || []),shown=[],picks=[];form.append(list);
   const clear=document.createElement("button");clear.type="button";clear.textContent="Clear keys on all pages";form.append(clear);
   const status=document.createElement("p");status.className="muted";status.setAttribute("aria-live","polite");form.append(status);
   const linkedLabel=document.createElement("label"),linked=document.createElement("input");linked.type="checkbox";linked.checked=Boolean(openState?.get("key-selection-zoom-link"));linked.disabled=disabled;linkedLabel.append(linked," Link Zoom X/Y key times and interpolation");form.append(linkedLabel);
@@ -68,22 +68,23 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
       const operation=keySelectionOperation(detail.clip_id,before,action,linked.checked);
       waiting=true;form.inert=true;update();
       const after=action.kind==="delete"?[]:before.map(pick=>({...pick,source_frame:pick.source_frame+(action.kind==="move"?action.delta_source_frames:0)}));
-      selectedIds=after.map(identity);remember({ids:selectedIds,focus:true});
+      selectedIds=after.map(identity);if(keySelection)keySelection.set(after,{focus:true});else remember({ids:selectedIds,focus:true});
       await owner.commit(operation);
-    }catch(error){selectedIds=before.map(identity);remember({ids:selectedIds,focus:true});notice(error.message);if(disposed)reload?.();else if(list.isConnected)list.focus({preventScroll:true});}
+    }catch(error){selectedIds=before.map(identity);if(keySelection)keySelection.set(before,{focus:true});else remember({ids:selectedIds,focus:true});notice(error.message);if(disposed)reload?.();else if(list.isConnected)list.focus({preventScroll:true});}
     finally{waiting=false;form.inert=false;if(!disposed)show();}
   }
-  list.addEventListener("change",()=>{try{selectedIds=mergeCrossSelection(selectedIds,picks,[...list.selectedOptions].map(option=>picks[Number(option.value)]));remember({ids:selectedIds});update();}catch(error){notice(error.message);show();}});
+  list.addEventListener("change",()=>{try{selectedIds=mergeCrossSelection(selectedIds,picks,[...list.selectedOptions].map(option=>picks[Number(option.value)]));if(keySelection)keySelection.set(selected());else remember({ids:selectedIds});update();}catch(error){notice(error.message);show();}});
   filter.addEventListener("change",()=>{openState?.set("all-keys-row",filter.value);show();});
-  clear.addEventListener("click",()=>{selectedIds=[];remember({ids:selectedIds});show();});
+  clear.addEventListener("click",()=>{selectedIds=[];if(keySelection)keySelection.set([]);else remember({ids:selectedIds});show();});
   list.addEventListener("keydown",event=>{if(event.key==="Delete" || event.key==="Backspace"){event.preventDefault();event.stopPropagation();send({kind:"delete"});}});
   if(!zoomLink)linked.addEventListener("change",()=>openState?.set("key-selection-zoom-link",linked.checked));
   mode.addEventListener("change",()=>{controls.hidden=mode.value!=="Bezier";controls.disabled=controls.hidden || disabled;});
   form.addEventListener("submit",event=>{event.preventDefault();send({kind:"move",delta_source_frames:Number(delta.value)});});
   interpolate.addEventListener("click",()=>{try{if(mode.value==="Bezier" && !values.every(input=>input.reportValidity()))return;send({kind:"interpolation",interpolation:curveInterpolation(mode.value,values.map(input=>Number(input.value)))});}catch(error){notice(error.message);}});
+  const unsubscribe=keySelection?.subscribe(()=>{selectedIds=keySelection.get().map(identity);show();});
   remove.addEventListener("click",()=>send({kind:"delete"}));show();
   return {cancel(){
     if(document.activeElement===list)remember({ids:selectedIds,focus:true});
-    owner.dispose();disposed=true;
+    unsubscribe?.();owner.dispose();disposed=true;
   }};
 }

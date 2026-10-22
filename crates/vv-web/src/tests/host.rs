@@ -1,5 +1,124 @@
 use super::*;
 
+#[test]
+fn inspector_selection_is_read_only_and_rejects_stale_snapshot_identity() {
+    use vv_core::{Clip, ClipSource};
+    let root =
+        std::env::temp_dir().join(format!("vv-selection-host-{}", crate::asset_jobs::nonce()));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Selection".into(),
+        },
+        "selection-create",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let raw = editor.session.project.alloc_clip_id();
+    editor.session.project.timelines[id].tracks[0].insert_sorted(Clip::from_source_range(
+        raw,
+        ClipSource::SolidColor,
+        10,
+        106,
+        24,
+        Rational::new(1, 2),
+    ));
+    editor.lease = None;
+    editor.lease("other-writer").unwrap();
+    let before = editor.snapshot();
+    let project = json!(editor.session.project);
+    let receipts = editor.completed.len();
+    let query = project_view_request(&editor, id, 400, false).query;
+    let response = editor
+        .handle(Action::InspectorSelection(crate::selection::Request {
+            query: query.clone(),
+            clip_ids: vec![raw.0.to_string()],
+        }))
+        .unwrap();
+    assert_eq!(response["query"], json!(query));
+    assert_eq!(response["rows"][0]["source_frame"], 104);
+    assert_eq!(editor.snapshot(), before);
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.completed.len(), receipts);
+    assert_eq!(editor.lease.as_ref().unwrap().0, "other-writer");
+    for case in 0..4 {
+        let mut stale = query.clone();
+        match case {
+            0 => stale.project_epoch.push_str("-old"),
+            1 => stale.if_generation = "99".into(),
+            2 => stale.revision.push_str("-old"),
+            _ => stale.frame = -1,
+        }
+        assert!(
+            editor
+                .handle(Action::InspectorSelection(crate::selection::Request {
+                    query: stale,
+                    clip_ids: vec![raw.0.to_string()]
+                }))
+                .is_err()
+        );
+    }
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn duplicate_receipt_returns_only_native_copies_and_replay_keeps_the_same_ids() {
+    use vv_core::Id;
+    let root =
+        std::env::temp_dir().join(format!("vv-duplicate-host-{}", crate::asset_jobs::nonce()));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Duplicate".into(),
+        },
+        "duplicate-create",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 48,
+        },
+        "duplicate-base",
+        Some(id),
+    );
+    editor.mutation(Some(id.raw().to_string()), add).unwrap();
+    let original = editor.session.project.timelines[id].tracks[0].clips[0].id;
+    let operation = serde_json::from_value(json!({"kind":"move_clips","new_video_tracks":0,"new_audio_tracks":0,"duplicate":true,"overwrite":true,"moves":[{"clip_id":original.0.to_string(),"to_track":{"kind":"existing","track_id":"0"},"to_start_frame":12}]})).unwrap();
+    let request = request(&editor, operation, "duplicate-selection", Some(id));
+    let position = editor.session.history.position();
+    let first = editor
+        .mutation(Some(id.raw().to_string()), request.clone())
+        .unwrap();
+    let copies = first["clip_ids"].as_array().unwrap();
+    assert_eq!(copies.len(), 1);
+    let copied = copies[0].as_str().unwrap();
+    assert_ne!(copied, original.0.to_string());
+    let clip = editor.session.project.timelines[id].tracks[0]
+        .clips
+        .iter()
+        .find(|clip| clip.id.0.to_string() == copied)
+        .unwrap();
+    assert_eq!((clip.timeline_start, clip.timeline_len), (12, 48));
+    assert_eq!(editor.session.history.position(), position + 1);
+    let after = json!(editor.session.project);
+    let replay = editor
+        .mutation(Some(id.raw().to_string()), request)
+        .unwrap();
+    assert_eq!(first, replay);
+    assert_eq!(json!(editor.session.project), after);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn project_view_request(
     editor: &Editor,
     id: vv_core::TimelineId,

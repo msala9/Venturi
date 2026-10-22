@@ -109,6 +109,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/timelines/{id}/timeline.otio", get(export_otio))
         .route("/api/v1/timelines/{id}/clips/{clip}", get(clip_detail))
         .route(
+            "/api/v1/timelines/{id}/inspector-selection",
+            post(inspector_selection),
+        )
+        .route(
             "/api/v1/timelines/{id}/clips/{clip}/keyframe-navigation",
             post(keyframe_navigation),
         )
@@ -1697,6 +1701,27 @@ async fn compound_navigation(
         .await
         .map(Json)
 }
+async fn inspector_selection(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<
+        Json<crate::selection::Request>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid Inspector selection query"))?
+        .0;
+    if request.query.timeline_id != id {
+        return Err(ApiError::invalid("Timeline ID does not match the query"));
+    }
+    state
+        .host
+        .call(Action::InspectorSelection(request))
+        .await
+        .map(Json)
+}
+
 async fn clip_detail(
     State(state): State<AppState>,
     Path((id, clip)): Path<(String, String)>,

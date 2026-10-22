@@ -13,7 +13,7 @@ import { buildProgramWindow } from "./program-range.js";
 import { sourceSampleAtFrame,sourceAudioQuery } from "./source-clock.js";
 import { createSourceSeek } from "./source-seek.js";
 import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "./source-assets.js";
-import { inspectorGroup, detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,retimePropertySelection,compoundSelectionOperation,renderRetime,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
+import { inspectorGroup,editingShortcutAllowed,selectionInspectorRows,renderInspectorSelection, detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,retimePropertySelection,compoundSelectionOperation,renderRetime,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
 import {createZoomLink} from './curves.js';
 import { renderMixer } from "./mixer.js";
 import {canRetainAudioPresetDraft} from './audio-presets.js';
@@ -85,11 +85,14 @@ let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));}
 function updateBrowserToggle(){for(const button of document.querySelectorAll('#workspaces [data-panel]'))button.setAttribute('aria-expanded',String(innerWidth<=760?editor.classList.contains('browser-drawer-open'):!editor.classList.contains('browser-collapsed')));}
+let inspectorSelectionRead=null;
 function setInspectorTab(tab){
   if(!['video','audio','selection'].includes(tab))return;
   $('inspector').dataset.inspectorTab=tab;
   for(const button of document.querySelectorAll('button[data-inspector-tab]'))button.setAttribute('aria-selected',String(button.dataset.inspectorTab===tab));
+  if(tab==='selection')inspectorSelectionRead?.read();else inspectorSelectionRead?.cancel();
 }
+function globalEditingShortcut(event,{allowRepeat=false}={}){return editingShortcutAllowed(event,{dialogOpen:Boolean(document.querySelector('dialog[open]')),allowRepeat}) && !isTextTarget(event.target);}
 function revealBrowser(name){
   const same=($('browser').dataset.browserPanel || 'Media')===name;
   if(innerWidth<=760){const open=!(same && editor.classList.contains('browser-drawer-open') && ['Media','Effects'].includes(name));editor.classList.toggle('browser-drawer-open',open);if(open)editor.classList.remove('inspector-drawer-open');}
@@ -316,6 +319,7 @@ installSplitter($("left-splitter"), editor, "--left", innerWidth<=1350?210:240,1
 installSplitter($("right-splitter"), editor, "--right", 320, -1,{storageKey:"venturi-native-layout:right"});
 installSplitter($("timeline-splitter"), editor, "--bottom", Math.round(innerHeight*.30), -1,{storageKey:"venturi-native-layout:bottom"});
 document.addEventListener("keydown", (event) => {
+  if(!globalEditingShortcut(event))return;
   if (
     (event.ctrlKey || event.metaKey) &&
     event.key.toLowerCase() === "k" &&
@@ -515,6 +519,7 @@ function syncSelectionActions(){
   $("close-gap").disabled=disabled || !canvasTimeline.canCloseGap();
 }
 function selected() {
+  inspectorSelectionRead?.cancel();inspectorSelectionRead=null;
   if(view.selection.length || view.transitionSelection)view.selectedGap=null;
   canvasTimeline.checkGapSelection();
   view.selectionAnchor=view.transitionSelection || view.selectedGap?null:reconcileSelectionAnchor(timeline,view.selectionAnchor,documentState?.project_epoch ?? null);
@@ -580,6 +585,17 @@ function selected() {
   const inspectorCurrent=()=>inspectorSeq===inspectorSequence && view.playhead===inspectorFrame && JSON.stringify([...view.selection].sort())===selectionIdentity;
   const canNavigateInspector=()=>inspectorCurrent() && !busy && !unresolved && viewerMode==='program' && programPlayer?.state()==='stopped' && !document.querySelector('dialog[open]');
   const canEditInspector=()=>canNavigateInspector() && writable;
+  if(view.selection.length && timeline && timeline.id!=='fixture'){
+    const target=inspectorGroup(document.createElement('div'),'selection'),query={project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:inspectorFrame,width:320},clip_ids=[...view.selection];target.textContent=`${clip_ids.length} selected clips`;$('inspector-content').append(target);
+    let pending=null,complete=false;
+    const current=()=>inspectorCurrent() && target.isConnected && documentState?.project_epoch===query.project_epoch && documentState?.generation===query.if_generation && timeline?.id===query.timeline_id && timeline?.revision===query.revision && $('inspector').dataset.inspectorTab==='selection';
+    inspectorSelectionRead={cancel(){const before=pending;pending=null;before?.abort();},read(){
+      if(pending || complete || !current())return;
+      if(clip_ids.length>2048){target.textContent='Select at most 2048 clips to read the native selection summary';return;}
+      const controller=new AbortController();pending=controller;target.textContent=`Reading ${clip_ids.length} selected native clips…`;
+      request(`/timelines/${encodeURIComponent(query.timeline_id)}/inspector-selection`,{query,clip_ids},(url,options)=>fetch(url,{...options,signal:controller.signal})).then(value=>{if(pending!==controller || !current())return;renderInspectorSelection(target,selectionInspectorRows(value,{query,clip_ids}));complete=true;}).catch(error=>{if(pending===controller && current() && error.name!=='AbortError')target.textContent=error.message;}).finally(()=>{if(pending===controller)pending=null;});
+    }};
+  }
   const selectionTargets=[];
   for(const [selection,getSelection,role] of [[videoSelection,getVideoSelection,'video'],[audioSelection,getAudioSelection,'audio'],[retimeSelection,getRetimeSelection,'media']]){
     if(!selection || timeline.id==='fixture')continue;
@@ -591,8 +607,8 @@ function selected() {
       const primary=timeline.tracks.flatMap(track=>track.clips).find(item=>item.id===detail.clip_id);
       const options={selection,getSelection,frame:inspectorFrame,getFrame:()=>view.playhead,canInteract:()=>current() && canEditInspector(),canNavigate:()=>current() && canNavigateInspector(),commit,notice,primaryName:primary?.name,visualState,zoomLink,timelineSize:[timeline.resolution.width,timeline.resolution.height],
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;updateTime();seek();selected();void projectView?.update();}};
-      if(role==='video'){renderSelectedVideoProperties(target,detail,options);renderBlendMatte(target,detail,options);visualControls.push(...renderSelectedVideoEffects(target,detail,options));}
-      else if(role==='audio')renderSelectedAudioGain(target,detail,options);
+      if(role==='video'){const properties=renderSelectedVideoProperties(target,detail,options);if(properties)visualControls.push(properties);renderBlendMatte(target,detail,options);visualControls.push(...renderSelectedVideoEffects(target,detail,options));}
+      else if(role==='audio'){const gain=renderSelectedAudioGain(target,detail,options);if(gain)visualControls.push(gain);}
       else renderRetime(target,detail,false,options.getFrame,commit,visualState,options.canInteract,{selection,getSelection,frame:inspectorFrame,labelControls:false,notice});
     };
     const entry={id:selection.clip_ids[0],target,current,render};selectionTargets.push(entry);
@@ -751,6 +767,7 @@ function selected() {
     inspectorGroup(mixerDetail,'audio');
   }
   for(const child of $('inspector-content').children)if(!child.dataset.inspectorGroup && !child.dataset.inspectorCommon)inspectorGroup(child,'selection');
+  if($('inspector').dataset.inspectorTab==='selection')inspectorSelectionRead?.read();
 }
 function syncPlayheadSelection(render) {
   if(!selectionFollowsPlayhead || viewerMode!=="program" || !timeline || view.draft || view.lasso || view.transitionSelection)return;
@@ -890,8 +907,7 @@ $("snap").addEventListener("click", () => {
 $("transition-replace").addEventListener('change',()=>{canvasTimeline.cancel();view.transitionReplace=$("transition-replace").checked;notice(view.transitionReplace?'Replacing existing transitions is enabled for drops; Undo restores the previous settings':'Transition drops refuse occupied slots');});
 function updateRetimeControls(){
   const state=retimeVisibilityState(timeline,view.selection,view.retimeVisible);view.retime=state.any;
-  if(!state.any)view.retimeOverwrite=false;
-  retimeMenu?.invalidate();$("retime-handles").setAttribute('aria-pressed',String(state.pressed));$("retime-handles").disabled=state.disabled;$("retime-overwrite").disabled=!state.any;$("retime-overwrite").checked=view.retimeOverwrite;canvasTimeline.invalidate();
+  retimeMenu?.invalidate();$("retime-handles").setAttribute('aria-pressed',String(state.pressed));$("retime-handles").disabled=state.disabled;$("retime-overwrite").disabled=!timeline || !writable || busy || Boolean(unresolved);$("retime-overwrite").checked=view.retimeOverwrite;canvasTimeline.invalidate();
 }
 $("retime-handles").addEventListener('click',()=>{
   const state=retimeVisibilityState(timeline,view.selection,view.retimeVisible);
@@ -901,7 +917,7 @@ $("retime-handles").addEventListener('click',()=>{
 });
 $("retime-handles").addEventListener('keydown',event=>{if(event.key===' ' || event.key==='Enter')event.stopPropagation();});
 $("retime-overwrite").addEventListener('change',()=>{
-  canvasTimeline.cancel();view.retimeOverwrite=view.retime && $("retime-overwrite").checked;updateRetimeControls();notice(view.retimeOverwrite?'Overwrite clips enabled · speed edits may replace overlaps; Undo restores them':'Speed resize refuses overlaps');
+  canvasTimeline.cancel();view.retimeOverwrite=$("retime-overwrite").checked;updateRetimeControls();notice(view.retimeOverwrite?'Timeline overwrite enabled · trim, Alt-duplicate and speed drags may replace overlapping clips; Undo restores them':'Timeline drags refuse overlaps');
 });
 document.addEventListener('keydown',event=>{if(isRetimeShortcut(event,{dialogOpen:Boolean(document.querySelector('dialog[open]'))})){event.preventDefault();event.stopPropagation();$("retime-handles").click();}});
 $("edit-tool").addEventListener("change",()=>{canvasTimeline.cancel();view.tool=$("edit-tool").value;slipView?.reset();notice(view.tool === "slip" ? "Slip tool · drag right to advance source; linked clips follow" : "Move / trim tool");});
@@ -952,7 +968,7 @@ $('program-position').addEventListener('change',()=>{syncPlayheadSelection(false
 $("step-back").addEventListener("click", () => step(-1));
 $("step-forward").addEventListener("click", () => step(1));
 document.addEventListener("keydown", (event) => {
-  if (isTextTarget(event.target)) return;
+  if (!globalEditingShortcut(event,{allowRepeat:true})) return;
   if (event.altKey) return;
   const mark=markRangeAction(event,{textTarget:isTextTarget(event.target),dialogOpen:Boolean(document.querySelector('dialog[open]'))});
   if(mark){event.preventDefault();$(viewerMode==='source'?mark==='in'?'source-mark-in':'source-mark-out':mark==='in'?'program-mark-in':'program-mark-out').click();}
@@ -1480,7 +1496,7 @@ setInterval(() => {
     });
 }, 30_000);
 document.addEventListener("keydown", (event) => {
-  if (event.defaultPrevented || isTextTarget(event.target)) return;
+  if (!globalEditingShortcut(event)) return;
   if(canvasTimeline.handleSelectionKey(event,{timelineFocused:timelineSelectionFocus(event.target)}))return;
   if(canvasTimeline.handleGapKey(event))return;
   const modifier = event.ctrlKey || event.metaKey;

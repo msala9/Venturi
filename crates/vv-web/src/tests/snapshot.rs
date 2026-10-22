@@ -59,6 +59,10 @@ fn native_timeline_gaps_include_leading_and_internal_ranges_only_on_unlocked_lan
         editor.project.timelines[id].tracks[track].insert_sorted(clip);
     }
     editor.project.timelines[id].tracks[3].locked = true;
+    editor.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .gain_db
+        .upsert(0, -3.0, vv_core::Interpolation::Linear);
     let before = serde_json::to_value(&editor.project).unwrap();
     let generation = editor.history.generation();
     let position = editor.history.position();
@@ -67,6 +71,24 @@ fn native_timeline_gaps_include_leading_and_internal_ranges_only_on_unlocked_lan
     for (index, track) in snapshot["tracks"].as_array().unwrap().iter().enumerate() {
         for clip in track["clips"].as_array().unwrap() {
             assert_eq!(clip["audio_stream_index"], index + 1);
+            let native = editor.project.timelines[id].tracks[index]
+                .clips
+                .iter()
+                .find(|native| native.id.0.to_string() == clip["id"].as_str().unwrap())
+                .unwrap();
+            let start =
+                vv_core::edit::trim_range(&editor.project, native, vv_core::TrimEdge::Start);
+            let end = vv_core::edit::trim_range(&editor.project, native, vv_core::TrimEdge::End);
+            assert_eq!(
+                clip["trim_limits"],
+                json!({"start":[start.0.max(0),start.1.min(crate::commands::MAX_FRAME)],"end":[end.0.max(0),end.1.min(crate::commands::MAX_FRAME)]})
+            );
+            assert_eq!(clip["gain_db"], json!(native.effects.gain_db.default));
+            assert_eq!(clip["gain_constant"], native.effects.gain_db.is_constant());
+            assert_eq!(
+                clip["gain_bounds"],
+                json!([vv_core::GAIN_DB_MIN, vv_core::GAIN_DB_MAX])
+            );
         }
     }
     assert_eq!(

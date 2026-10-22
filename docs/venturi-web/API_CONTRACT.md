@@ -1782,3 +1782,47 @@ metadata editing remain available. No foreign workload is stopped.
   SourceAssets also use the isolated thumbnail-only mode, preserving the native
   opaque thumbnail while avoiding a full-frame decode in the editor. GIF retains native
   regular-media classification and its video Source path.
+
+
+## Native timeline and Inspector gestures
+
+`trim_group {clip_id,clip_ids,edge,frame,roll_neighbor_id?,overwrite?}` uses the
+native selection-or-primary linked group. Each target keeps its own edge offset;
+source limits and the same-edge no-cross rule constrain the entire group. A Roll
+uses only the adjacent pair and their linked groups, with opposite edges. The
+requested frame is clamped before application. A missing or locked linked peer
+rejects the whole operation. Safe mode refuses intersections; `overwrite:true`
+uses native room-making and still refuses partial linked/locked side effects.
+Every successful edit has one native history entry; an unchanged trim keeps Redo.
+Legacy `trim` remains compatible for existing clients and receipts.
+
+Timeline clip summaries expose native `trim_limits {start:[min,max],end:[min,max]}`
+and constant audio-line `gain_db`, `gain_constant`, `gain_bounds`. The audio line
+edits only a constant clip gain and uses the existing native default setter.
+Animated gain remains available through Inspector/keyframe controls.
+
+`move_clips` additionally accepts optional `duplicate` and `overwrite` booleans;
+both default false and are omitted when false in serialized receipts. Alt-drag
+copies the selected linked group with new native IDs and link groups. Explicit
+overwrite follows native insertion, including source self-overlap. The ACK's
+`clip_ids` identifies only the fresh copies, excluding room-making residuals.
+New-track creation and the edit are one command. Replaying the same command ID
+returns the same IDs without allocating additional clips.
+
+`edit_key_selection` also accepts
+`action:{kind:"drag",delta_source_frames,grabbed:{target,source_frame,value}}`.
+All selected scalar/value keys move in source time; only the grabbed scalar key
+and its existing linked Zoom twin receive the grabbed value and interpolation.
+The entire move/value operation preflights source bounds, collisions, native
+parameter limits, picks and track locks before one composite command. Numeric
+per-row group delta remains an explicit operation with its existing meaning.
+
+`POST /api/v1/timelines/{id}/inspector-selection` accepts
+`{query:FrameQuery,clip_ids:[...]}` and returns `{query,rows:[...]}`. It is a
+read-only, no-store actor snapshot and needs no writer lease. It accepts at most
+2048 distinct native IDs and rejects stale query identity or any missing clip.
+Rows contain clip/track IDs, video/audio kind, name, timeline start/length,
+locked state and each native clamped Inspector source clock, video first and
+then audio in track/start order. As in the desktop Inspector, this clock is
+independent of the held render frame on frozen media. No media probe, file read,
+GPU work or history mutation is performed for this table.

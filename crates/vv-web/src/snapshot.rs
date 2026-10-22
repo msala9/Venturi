@@ -73,8 +73,14 @@ fn clip_snapshot(session: &Session, timeline: &vv_core::Timeline, clip: &vv_core
         ClipSource::Adjustment => ("adjustment", None, "Adjustment".into()),
     };
     let slip_range = vv_core::edit::slip_range(&session.project, clip);
+    let trim = |edge| {
+        let (minimum, maximum) = vv_core::edit::trim_range(&session.project, clip, edge);
+        [minimum.max(0), maximum.min(crate::commands::MAX_FRAME)]
+    };
+    let start_trim = trim(vv_core::TrimEdge::Start);
+    let end_trim = trim(vv_core::TrimEdge::End);
     json!({"id":clip.id.0.to_string(),"name":name,"kind":kind,"media_id":media_id,"audio_stream_index":clip.audio_stream_index,"start_frame":clip.timeline_start,"length_frames":clip.timeline_len,"retime":crate::retime::metadata(&session.project,timeline,clip),
-            "source_in_frames":clip.source_in(),"source_out_frames":clip.source_out(),"slip_range":slip_range,"linked_group":clip.linked_group.map(|g|g.0.to_string()),"disabled":clip.disabled,"fade_in":clip.fade_in,"fade_out":clip.fade_out,"transition_in":clip.effects.transition_in,"transition_out":clip.effects.transition_out,"speed_percent":clip.speed().as_percent(),"freeze_source_frame":clip.freeze,"display_color":clip.display_color,"display_rgb":clip.display_color.map(|color|{let (r,g,b)=color.rgb();[r,g,b]})})
+            "source_in_frames":clip.source_in(),"source_out_frames":clip.source_out(),"slip_range":slip_range,"trim_limits":{"start":start_trim,"end":end_trim},"gain_db":clip.effects.gain_db.default,"gain_constant":clip.effects.gain_db.is_constant(),"gain_bounds":[vv_core::GAIN_DB_MIN,vv_core::GAIN_DB_MAX],"linked_group":clip.linked_group.map(|g|g.0.to_string()),"disabled":clip.disabled,"fade_in":clip.fade_in,"fade_out":clip.fade_out,"transition_in":clip.effects.transition_in,"transition_out":clip.effects.transition_out,"speed_percent":clip.speed().as_percent(),"freeze_source_frame":clip.freeze,"display_color":clip.display_color,"display_rgb":clip.display_color.map(|color|{let (r,g,b)=color.rgb();[r,g,b]})})
 }
 
 pub fn session(session: &Session, epoch: &str) -> Value {

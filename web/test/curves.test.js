@@ -1,6 +1,35 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {bindCurveGesture, curveGeometry, curveHandles, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport,createZoomLink,zoomParameters,createKeyEditorGuard} from "../js/curves.js";
+import {bindCurveGesture, curveGeometry, curveHandles, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport,createZoomLink,zoomParameters,createKeyEditorGuard,createKeyPickSelection,keyPickIdentity,pointerKeyOperation,pointerCurveDraft} from "../js/curves.js";
+
+test('native graph selection inserts additive picks, retains peers/pages and shares exact view identities',()=>{
+  const state=new Map(),selection=createKeyPickSelection(state,'epoch:tl:clip'),a={target:{kind:'transform',param:'PositionX'},source_frame:10},b={target:{kind:'text'},source_frame:3000};let changes=0;
+  const unsubscribe=selection.subscribe(()=>changes++);selection.select(a);selection.select(b,true);selection.select(a,true);selection.select(a);
+  assert.deepEqual(selection.get(),[a,b]);assert.equal(changes,2);assert.deepEqual(state.get('all-keys:epoch:tl:clip').ids,[keyPickIdentity(a),keyPickIdentity(b)]);
+  selection.replace([a],[{...a,source_frame:12}],{focus:true});assert.deepEqual(selection.get(),[b,{...a,source_frame:12}]);assert.equal(state.get('all-keys:epoch:tl:clip').focus,true);
+  const copy=selection.get();copy[0].source_frame=99;assert.equal(selection.get()[0].source_frame,3000);unsubscribe();selection.set([]);assert.equal(changes,3);
+  assert.throws(()=>selection.set([a,a]));assert.throws(()=>selection.set([{...a,source_frame:1.5}]));
+});
+
+test('native pointer payload moves complete cross-parameter picks but carries only the grabbed scalar value',()=>{
+  const target={kind:'transform',param:'PositionX'},picks=[{target,source_frame:10},{target,source_frame:20},{target:{kind:'text'},source_frame:10}],grabbed={target,source_frame:10,value:7};
+  assert.deepEqual(pointerKeyOperation('clip',picks,3,grabbed,true),{kind:'edit_key_selection',clip_id:'clip',edit:{picks,link_zoom:true,action:{kind:'drag',delta_source_frames:3,grabbed}}});
+  assert.deepEqual(pointerKeyOperation('clip',picks,2).edit.action,{kind:'move',delta_source_frames:2});
+  const curve={min:-10,max:10,keys:[{source_frame:10,value:2,interpolation:'Hold'},{source_frame:20,value:9,interpolation:'EaseIn'}]},draft=pointerCurveDraft(curve,[10,20],picks[0],{frame:13,value:20});
+  assert.deepEqual(draft.keys,[{source_frame:13,value:10,interpolation:'Hold'},{source_frame:23,value:9,interpolation:'EaseIn'}]);assert.equal(curve.keys[0].source_frame,10);
+  assert.throws(()=>pointerKeyOperation('clip',picks,1,{...grabbed,source_frame:99}));assert.throws(()=>pointerKeyOperation('clip',picks,1.5,grabbed));
+});
+
+test('native curve drag samples final release with relative time and absolute cursor value, rejecting changed peer selection or viewport',()=>{
+  const events={},commands=[],resets=[];let stamp='original',left=0;
+  const canvas={isConnected:true,addEventListener:(name,handler)=>events[name]=handler,focus(){},setPointerCapture(){},releasePointerCapture(){events.lostpointercapture();},getBoundingClientRect:()=>({left,top:0,width:100,height:100})};
+  bindCurveGesture(canvas,{getCurve:()=>({keys:[{source_frame:10,value:20}]}),getGeometry:()=>({x:x=>x,y:y=>100-y,frame:Math.round,value:y=>100-y}),getSelection:()=>[10],getSelectionIdentity:()=>stamp,isBusy:()=>false,canEdit:()=>true,select(){},draft(){},finish:point=>commands.push(point),reset:()=>resets.push(true)});
+  const point=(x,y,extra={})=>({button:0,pointerId:1,buttons:1,clientX:x,clientY:y,...extra});
+  events.pointerdown(point(11,82));events.pointermove(point(15,70));assert.deepEqual(commands,[]);events.pointerup(point(19,60));assert.deepEqual(commands,[{frame:18,value:40}]);
+  events.pointerdown(point(11,82));events.pointerup(point(11,82));assert.equal(commands.length,1);
+  events.pointerdown(point(10,80));events.pointermove(point(20,70));stamp='peer-changed';events.pointerup(point(25,60));assert.equal(commands.length,1);
+  events.pointerdown(point(10,80));events.pointermove(point(20,70));left=1;events.pointerup(point(25,60));assert.equal(commands.length,1);assert.ok(resets.length>=3);
+});
 
 test("zoom link synchronizes all visible toggles without a native mutation and leaves other parameters independent",()=>{
   const state=new Map(),link=createZoomLink(state);

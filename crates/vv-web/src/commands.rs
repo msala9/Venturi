@@ -140,11 +140,25 @@ pub enum Operation {
         new_video_tracks: usize,
         new_audio_tracks: usize,
         moves: Vec<TrackMove>,
+        #[serde(default, skip_serializing_if = "is_false")]
+        duplicate: bool,
+        #[serde(default, skip_serializing_if = "is_false")]
+        overwrite: bool,
     },
     Trim {
         clip_id: String,
         edge: Edge,
         frame: FrameIdx,
+    },
+    TrimGroup {
+        clip_id: String,
+        clip_ids: Vec<String>,
+        edge: Edge,
+        frame: FrameIdx,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        roll_neighbor_id: Option<String>,
+        #[serde(default, skip_serializing_if = "is_false")]
+        overwrite: bool,
     },
     Split {
         clip_ids: Vec<String>,
@@ -415,7 +429,7 @@ pub struct TrackMove {
     pub to_track: MoveTrack,
     pub to_start_frame: FrameIdx,
 }
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Edge {
     Start,
@@ -1159,14 +1173,15 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 tracks,
             );
         }
-        Operation::MoveClips {
-            new_video_tracks,
-            new_audio_tracks,
-            moves,
-        } => {
+        Operation::MoveClips { .. } => {
             let generation = session.history.generation();
-            move_to_tracks(session, id, *new_video_tracks, *new_audio_tracks, moves)?;
+            move_clips_with_selection(session, id, operation)?;
             if session.history.generation() == generation {
+                return Ok(());
+            }
+        }
+        Operation::TrimGroup { .. } => {
+            if !trim_group(session, id, operation)? {
                 return Ok(());
             }
         }
@@ -1421,13 +1436,43 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     session.sync_timeline_media(id);
     Ok(())
 }
+/// The caller synchronizes timeline media after a changed native edit, as `apply` does.
+pub fn move_clips_with_selection(
+    session: &mut Session,
+    id: TimelineId,
+    operation: &Operation,
+) -> Result<Vec<String>> {
+    let Operation::MoveClips {
+        new_video_tracks,
+        new_audio_tracks,
+        moves,
+        duplicate,
+        overwrite,
+    } = operation
+    else {
+        return Err(ApiError::invalid(
+            "Choose a native move or duplicate operation",
+        ));
+    };
+    move_to_tracks(
+        session,
+        id,
+        *new_video_tracks,
+        *new_audio_tracks,
+        moves,
+        *duplicate,
+        *overwrite,
+    )
+}
 fn move_to_tracks(
     session: &mut Session,
     id: TimelineId,
     new_video_tracks: usize,
     new_audio_tracks: usize,
     moves: &[TrackMove],
-) -> Result<()> {
+    duplicate: bool,
+    overwrite: bool,
+) -> Result<Vec<String>> {
     let tl = &session.project.timelines[id];
     let track_count = tl.tracks.len();
     let total = track_count
@@ -1511,17 +1556,17 @@ fn move_to_tracks(
             "Every linked clip must be included in the move",
         ));
     }
-    let mut trial = session.project.clone();
-    for kind in std::iter::repeat_n(TrackKind::Video, new_video_tracks)
-        .chain(std::iter::repeat_n(TrackKind::Audio, new_audio_tracks))
-    {
-        core::AddTrack::new(id, kind).apply(&mut trial);
-    }
-    let target = &trial.timelines[id];
+    let excluded = if duplicate {
+        HashSet::new()
+    } else {
+        seen.clone()
+    };
     let mut destinations = Vec::with_capacity(plan.len());
     for &(clip_id, from, to, start) in &plan {
         let len = tl.clip(from, clip_id).unwrap().timeline_len;
-        free(target, to, start, len, &seen)?;
+        if !overwrite && to < track_count {
+            free(tl, to, start, len, &excluded)?;
+        }
         destinations.push((to, start, start + len));
     }
     destinations.sort_unstable();
@@ -1534,27 +1579,360 @@ fn move_to_tracks(
             "Selected destinations overlap",
         ));
     }
-    core::MoveClips::new(id, plan.clone()).apply(&mut trial);
-    crate::files::validate_project(&trial)?;
-    if new_video_tracks == 0
+    if overwrite {
+        overwrite_targets(tl, &destinations, &excluded)?;
+    }
+    if !duplicate
+        && new_video_tracks == 0
         && new_audio_tracks == 0
         && plan.iter().all(|&(clip_id, from, to, start)| {
             from == to && tl.clip(from, clip_id).unwrap().timeline_start == start
         })
     {
-        return Ok(());
+        return Ok(Vec::new());
     }
-    let mut commands: Vec<Box<dyn Command>> =
-        std::iter::repeat_n(TrackKind::Video, new_video_tracks)
-            .chain(std::iter::repeat_n(TrackKind::Audio, new_audio_tracks))
-            .map(|kind| Box::new(core::AddTrack::new(id, kind)) as Box<dyn Command>)
+    // Build against the original allocator; the trial alone consumes its IDs.
+    let mut trial = session.project.clone();
+    let (mut command, _) = movement_command(
+        &mut trial,
+        id,
+        new_video_tracks,
+        new_audio_tracks,
+        &plan,
+        duplicate,
+        overwrite,
+    );
+    command.apply(&mut trial);
+    validate_edge_trial(&session.project, &trial, id, &excluded)?;
+    let (command, copies) = movement_command(
+        &mut session.project,
+        id,
+        new_video_tracks,
+        new_audio_tracks,
+        &plan,
+        duplicate,
+        overwrite,
+    );
+    session.apply(command);
+    Ok(copies.into_iter().map(|clip| clip.0.to_string()).collect())
+}
+fn movement_command(
+    project: &mut core::Project,
+    id: TimelineId,
+    video: usize,
+    audio: usize,
+    plan: &[(ClipId, usize, usize, FrameIdx)],
+    duplicate: bool,
+    overwrite: bool,
+) -> (Box<dyn Command>, Vec<ClipId>) {
+    let mut copied_ids = Vec::new();
+    let mut commands: Vec<Box<dyn Command>> = std::iter::repeat_n(TrackKind::Video, video)
+        .chain(std::iter::repeat_n(TrackKind::Audio, audio))
+        .map(|kind| Box::new(core::AddTrack::new(id, kind)) as Box<dyn Command>)
+        .collect();
+    if duplicate {
+        let copies: Vec<_> = plan
+            .iter()
+            .map(|&(clip_id, from, to, start)| {
+                let original = project.timelines[id].clip(from, clip_id).unwrap();
+                let mut clip = original.clone();
+                clip.timeline_start = start;
+                clip.linked_group = None;
+                (to, clip, original.linked_group)
+            })
             .collect();
-    commands.push(Box::new(core::MoveClips::new(id, plan)));
-    session.apply(Box::new(CompositeCommand::new(
-        CommandLabel::MoveClips,
-        commands,
-    )));
+        let copies = copies
+            .into_iter()
+            .map(|(track, mut clip, group)| {
+                clip.id = project.alloc_clip_id();
+                copied_ids.push(clip.id);
+                (track, clip, group)
+            })
+            .collect();
+        commands.extend(core::insert_overwriting(project, id, copies));
+    } else {
+        if overwrite {
+            let ranges = plan
+                .iter()
+                .map(|&(clip, from, to, start)| {
+                    (
+                        to,
+                        start,
+                        start + project.timelines[id].clip(from, clip).unwrap().timeline_len,
+                    )
+                })
+                .collect::<Vec<_>>();
+            let exclude = plan
+                .iter()
+                .map(|&(clip, from, _, _)| (from, clip))
+                .collect::<Vec<_>>();
+            core::make_room_for_ranges(project, id, &ranges, &exclude, &mut commands);
+        }
+        commands.push(Box::new(core::MoveClips::new(id, plan.to_vec())));
+    }
+    (
+        Box::new(CompositeCommand::new(
+            if duplicate {
+                CommandLabel::DuplicateClips
+            } else {
+                CommandLabel::MoveClips
+            },
+            commands,
+        )),
+        copied_ids,
+    )
+}
+fn overwrite_targets(
+    timeline: &Timeline,
+    ranges: &[(usize, FrameIdx, FrameIdx)],
+    excluded: &HashSet<ClipId>,
+) -> Result<()> {
+    for &(track, start, end) in ranges {
+        let Some(lane) = timeline.tracks.get(track) else {
+            continue;
+        };
+        for target in lane.clips.iter().filter(|clip| {
+            !excluded.contains(&clip.id) && clip.timeline_start < end && clip.timeline_end() > start
+        }) {
+            unlocked(timeline, track)?;
+            let Some(group) = target.linked_group else {
+                continue;
+            };
+            for (index, member_lane) in timeline.tracks.iter().enumerate() {
+                for member in member_lane
+                    .clips
+                    .iter()
+                    .filter(|clip| clip.linked_group == Some(group))
+                {
+                    unlocked(timeline, index)?;
+                    if excluded.contains(&member.id)
+                        || member.timeline_start >= end
+                        || member.timeline_end() <= start
+                        || !ranges.contains(&(index, start, end))
+                    {
+                        return Err(ApiError::conflict(
+                            "LINKED_OVERWRITE",
+                            "Overwrite must cover every affected linked member with the same interval",
+                        ));
+                    }
+                }
+            }
+        }
+    }
     Ok(())
+}
+fn validate_edge_trial(
+    before: &core::Project,
+    trial: &core::Project,
+    id: TimelineId,
+    excluded: &HashSet<ClipId>,
+) -> Result<()> {
+    let original = &before.timelines[id];
+    let result = &trial.timelines[id];
+    let after: HashMap<_, _> = result
+        .tracks
+        .iter()
+        .flat_map(|track| track.clips.iter().map(|clip| (clip.id, clip)))
+        .collect();
+    let mut groups = HashMap::new();
+    for (index, lane) in original.tracks.iter().enumerate() {
+        if lane.locked
+            && serde_json::to_value(lane).map_err(|_| ApiError::io())?
+                != serde_json::to_value(&result.tracks[index]).map_err(|_| ApiError::io())?
+        {
+            return Err(ApiError::conflict(
+                "TRACK_LOCKED",
+                "The edit would change a locked track",
+            ));
+        }
+        for clip in lane
+            .clips
+            .iter()
+            .filter(|clip| !excluded.contains(&clip.id))
+        {
+            if let Some(group) = clip.linked_group {
+                let change = after.get(&clip.id).map(|next| {
+                    (
+                        next.timeline_start - clip.timeline_start,
+                        next.source_offset - clip.source_offset,
+                        next.timeline_len - clip.timeline_len,
+                    )
+                });
+                if groups
+                    .insert(group, change)
+                    .is_some_and(|previous| previous != change)
+                {
+                    return Err(ApiError::conflict(
+                        "LINKED_OVERWRITE",
+                        "The edit would change only part of a linked group",
+                    ));
+                }
+            }
+        }
+    }
+    crate::files::validate_project(trial)
+}
+fn trim_group(session: &mut Session, id: TimelineId, operation: &Operation) -> Result<bool> {
+    let Operation::TrimGroup {
+        clip_id: raw,
+        clip_ids: ids,
+        edge,
+        frame,
+        roll_neighbor_id,
+        overwrite,
+    } = operation
+    else {
+        return Err(ApiError::invalid("Choose a native group trim operation"));
+    };
+    let (edge, frame, neighbor, overwrite) =
+        (*edge, *frame, roll_neighbor_id.as_deref(), *overwrite);
+    let valid_id = |raw: &str| {
+        !raw.is_empty() && raw.len() <= 20 && raw.bytes().all(|byte| byte.is_ascii_digit())
+    };
+    if !(0..=MAX_FRAME).contains(&frame)
+        || ids.is_empty()
+        || ids.len() > 4096
+        || !valid_id(raw)
+        || neighbor.is_some_and(|raw| !valid_id(raw))
+    {
+        return Err(ApiError::invalid(
+            "Choose 1 to 4096 clips and a bounded trim frame",
+        ));
+    }
+    let timeline = &session.project.timelines[id];
+    let primary = clip_ref(timeline, raw)?;
+    unlocked(timeline, primary.0)?;
+    let mut explicit = HashSet::new();
+    for raw in ids {
+        if raw.is_empty()
+            || raw.len() > 20
+            || !raw.bytes().all(|byte| byte.is_ascii_digit())
+            || !explicit.insert(clip_ref(timeline, raw)?.1)
+        {
+            return Err(ApiError::invalid("Choose distinct unsigned clip IDs"));
+        }
+    }
+    let mut targets = if neighbor.is_some() || !explicit.contains(&primary.1) {
+        refs(timeline, std::slice::from_ref(raw))?
+    } else {
+        refs(timeline, ids)?
+    }
+    .into_iter()
+    .map(|reference| (reference, edge))
+    .collect::<Vec<_>>();
+    if let Some(raw) = neighbor {
+        let other = clip_ref(timeline, raw)?;
+        let clip = timeline.clip(primary.0, primary.1).unwrap();
+        let peer = timeline.clip(other.0, other.1).unwrap();
+        if other.0 != primary.0
+            || other == primary
+            || match edge {
+                Edge::Start => peer.timeline_end() != clip.timeline_start,
+                Edge::End => clip.timeline_end() != peer.timeline_start,
+            }
+        {
+            return Err(ApiError::invalid(
+                "Roll requires the adjacent clip on the same track",
+            ));
+        }
+        let opposite = match edge {
+            Edge::Start => Edge::End,
+            Edge::End => Edge::Start,
+        };
+        for reference in refs(timeline, &[raw.to_owned()])? {
+            if targets.iter().any(|(selected, _)| *selected == reference) {
+                return Err(ApiError::conflict(
+                    "LINKED_GROUP",
+                    "The two roll sides cannot share a linked group",
+                ));
+            }
+            targets.push((reference, opposite));
+        }
+    }
+    if targets.len() > 4096 {
+        return Err(ApiError::invalid("Trim exceeds 4096 linked clips"));
+    }
+    let value = |clip: &core::Clip, edge| match edge {
+        Edge::Start => clip.timeline_start,
+        Edge::End => clip.timeline_end(),
+    };
+    let original = value(timeline.clip(primary.0, primary.1).unwrap(), edge);
+    let (mut minimum, mut maximum) = (0, MAX_FRAME);
+    for &((track, clip_id), own_edge) in &targets {
+        let clip = timeline.clip(track, clip_id).unwrap();
+        let offset = value(clip, own_edge) - original;
+        let (mut lower, mut upper) = edit::trim_range(&session.project, clip, own_edge.native());
+        lower = lower.max(0);
+        upper = upper.min(MAX_FRAME);
+        for &((other_track, other_id), other_edge) in &targets {
+            if other_track != track || other_id == clip_id || other_edge != own_edge {
+                continue;
+            }
+            let peer = timeline.clip(other_track, other_id).unwrap();
+            match own_edge {
+                Edge::End if peer.timeline_start >= clip.timeline_end() => {
+                    upper = upper.min(peer.timeline_start)
+                }
+                Edge::Start if peer.timeline_end() <= clip.timeline_start => {
+                    lower = lower.max(peer.timeline_end())
+                }
+                _ => {}
+            }
+        }
+        minimum = minimum.max(lower.saturating_sub(offset));
+        maximum = maximum.min(upper.saturating_sub(offset));
+    }
+    if minimum > maximum {
+        return Err(ApiError::invalid(
+            "The trim group has no common native range",
+        ));
+    }
+    let delta = frame.clamp(minimum, maximum) - original;
+    if delta == 0 {
+        return Ok(false);
+    }
+    let excluded: HashSet<_> = targets.iter().map(|((_, clip), _)| *clip).collect();
+    let mut trims = Vec::with_capacity(targets.len());
+    let mut grown = Vec::new();
+    for &((track, clip_id), own_edge) in &targets {
+        let clip = timeline.clip(track, clip_id).unwrap();
+        let next = value(clip, own_edge) + delta;
+        let (start, len) = match own_edge {
+            Edge::Start => (next, clip.timeline_end() - next),
+            Edge::End => (clip.timeline_start, next - clip.timeline_start),
+        };
+        range(start, len)?;
+        if !overwrite {
+            free(timeline, track, start, len, &excluded)?;
+        }
+        if let Some(range) = edit::grown_range(clip, track, own_edge.native(), next) {
+            grown.push(range);
+        }
+        trims.push((track, clip_id, own_edge, next));
+    }
+    if overwrite {
+        overwrite_targets(timeline, &grown, &excluded)?;
+    }
+    let build = |project: &mut core::Project| {
+        let mut commands: Vec<Box<dyn Command>> = Vec::new();
+        if overwrite {
+            let exclude = targets
+                .iter()
+                .map(|(reference, _)| *reference)
+                .collect::<Vec<_>>();
+            core::make_room_for_ranges(project, id, &grown, &exclude, &mut commands);
+        }
+        commands.extend(trims.iter().map(|&(track, clip, edge, frame)| {
+            Box::new(core::TrimClip::new(id, track, clip, edge.native(), frame)) as Box<dyn Command>
+        }));
+        Box::new(CompositeCommand::new(CommandLabel::TrimClips, commands)) as Box<dyn Command>
+    };
+    let mut trial = session.project.clone();
+    build(&mut trial).apply(&mut trial);
+    validate_edge_trial(&session.project, &trial, id, &excluded)?;
+    let command = build(&mut session.project);
+    session.apply(command);
+    Ok(true)
 }
 fn close_gap(session: &mut Session, id: TimelineId, track: &str, frame: FrameIdx) -> Result<()> {
     let before = &session.project.timelines[id];

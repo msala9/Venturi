@@ -5,8 +5,8 @@ import {frameToX,RULER,TRACK,transitionHandles,timelineLayout} from '../js/timel
 
 function fixture(crossing=false){
   const transition={kind:'Push',duration:20,direction:'Up',ease:'InOut',curve:0.375};
-  const left={id:'9007199254740993',kind:'media',start_frame:20,length_frames:100,fade_in:10,fade_out:10,linked_group:null,transition_in:{...transition,duration:10},transition_out:crossing?null:{...transition}};
-  const right={id:'9007199254740995',kind:'media',start_frame:120,length_frames:80,fade_in:10,fade_out:10,linked_group:null};
+  const left={id:'9007199254740993',kind:'media',start_frame:20,length_frames:100,fade_in:10,fade_out:10,linked_group:null,trim_limits:{start:[20,119],end:[21,120]},transition_in:{...transition,duration:10},transition_out:crossing?null:{...transition}};
+  const right={id:'9007199254740995',kind:'media',start_frame:120,length_frames:80,fade_in:10,fade_out:10,linked_group:null,trim_limits:{start:[120,199],end:[121,200]}};
   const track={id:'v1',kind:'video',locked:false,clips:[left,right],crossings:crossing?[{left_clip:left.id,right_clip:right.id,start_frame:110,end_frame:130,kind:transition.kind,transition:{...transition}}]:[]};
   return {timeline:{id:'t1',revision:'r1',fps:{num:24,den:1},tracks:[track]},view:{scale:240,origin:0,scrollY:0,selection:[],snap:false,playhead:0,tool:'select'},left,right,transition};
 }
@@ -106,13 +106,13 @@ test('open dialogs block transition capture and cancel existing duration drafts 
   }
 });
 
-test('Alt keeps transition handle priority and pans outside markers; fade, Slip and bottom trim remain independent',async()=>{
+test('Alt keeps transition handle priority and pans blank time; fade, Slip and bottom trim remain independent',async()=>{
   const h=harness();
   try{
     h.send('pointerdown',30,{altKey:true});h.send('pointermove',37,{altKey:true});await h.send('pointerup',37,{altKey:true,buttons:0});assert.equal(h.commands[0].kind,'set_transition');assert.equal(h.commands[0].transition.duration,17);
-    h.send('pointerdown',60,{altKey:true});h.send('pointermove',67,{altKey:true});await h.send('pointerup',67,{altKey:true,buttons:0});assert.equal(h.commands.length,1);
+    h.send('pointerdown',240,{altKey:true});h.send('pointermove',247,{altKey:true});await h.send('pointerup',247,{altKey:true,buttons:0});assert.equal(h.commands.length,1);
     h.view.origin=0;h.send('pointerdown',30,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+14});h.send('pointermove',35,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+14});await h.send('pointerup',35,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+14,buttons:0});assert.equal(h.commands[1].kind,'set_properties');assert.equal(h.commands[1].patch.fade_in,15);
     h.view.tool='slip';assert.deepEqual(transitionHandles(h.timeline.tracks[0],h.view,h.timeline.fps),[]);
-    h.view.tool='select';h.send('pointerdown',20,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+TRACK-3});h.send('pointermove',21,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+TRACK-3});await h.send('pointerup',21,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+TRACK-3,buttons:0});assert.equal(h.commands[2].kind,'trim');
+    h.view.tool='select';h.send('pointerdown',20,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+TRACK-3});h.send('pointermove',21,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+TRACK-3});await h.send('pointerup',21,{clientY:8+timelineLayout(h.timeline,h.view).trackTop(0)+TRACK-3,buttons:0});assert.deepEqual(h.commands[2],{kind:'trim_group',clip_id:h.left.id,clip_ids:[h.left.id],edge:'start',frame:21,overwrite:false});
   }finally{h.destroy();}
 });

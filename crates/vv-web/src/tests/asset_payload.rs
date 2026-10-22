@@ -9,6 +9,99 @@ const ORIGIN: ClipboardOrigin = ClipboardOrigin {
     epoch: 7,
 };
 
+#[test]
+fn clipboard_validation_accepts_multiple_roots_clip_entries_and_intentional_offline_references() {
+    let (session, compound, timeline, file) = fixture();
+    let entry = ClipboardEntry {
+        track_kind: TrackKind::Video,
+        track_number: 1,
+        relative_start: 0,
+        clip: session.project.timelines[timeline].tracks[0].clips[0].clone(),
+        timeline_fps: Rational::new(24, 1),
+        link_tag: Some(7),
+    };
+    validate_clipboard_capture(
+        &session.project,
+        &[compound, file],
+        std::slice::from_ref(&entry),
+    )
+    .unwrap();
+    let payload = ClipboardPayload::new(
+        ORIGIN,
+        &session.project,
+        &[compound, file],
+        std::slice::from_ref(&entry),
+    );
+    validate_clipboard(&payload).unwrap();
+    assert_eq!(payload.media_ids().len(), 2);
+    assert_eq!(payload.clip_entries().len(), 1);
+    let mut offline_project = Project::default();
+    let mut offline = entry;
+    offline.clip.source = ClipSource::Media(offline_project.media_pool.alloc());
+    validate_clipboard_capture(&offline_project, &[], std::slice::from_ref(&offline)).unwrap();
+    let offline = ClipboardPayload::new(ORIGIN, &offline_project, &[], &[offline]);
+    validate_clipboard(&offline).unwrap();
+    assert_eq!(offline.files().count(), 0);
+    assert!(
+        validate_clipboard_capture(&session.project, &[MediaId::from_raw(u64::MAX - 1)], &[])
+            .is_err()
+    );
+}
+
+#[test]
+fn clipboard_validation_rejects_unselected_entities_bad_entry_geometry_and_cycles_before_copy() {
+    let (session, compound, timeline, file) = fixture();
+    let parse = |asset: AssetFile| {
+        ClipboardPayload::from_text(&asset.payload)
+            .unwrap()
+            .unwrap()
+    };
+    assert!(
+        validate_clipboard(&parse(wire(&session.project, vec![file], vec![]))).is_err(),
+        "Unrelated compound entities are not imported"
+    );
+    let entry = ClipboardEntry {
+        track_kind: TrackKind::Video,
+        track_number: 128,
+        relative_start: 0,
+        clip: session.project.timelines[timeline].tracks[0].clips[0].clone(),
+        timeline_fps: Rational::new(24, 1),
+        link_tag: None,
+    };
+    validate_clipboard_capture(&session.project, &[], std::slice::from_ref(&entry)).unwrap();
+    for case in 0..5 {
+        let mut invalid = entry.clone();
+        match case {
+            0 => invalid.track_number = 0,
+            1 => invalid.track_number = 129,
+            2 => invalid.relative_start = -1,
+            3 => invalid.timeline_fps = Rational::new(241, 1),
+            _ => invalid.clip.timeline_len = i64::MIN,
+        }
+        assert!(
+            validate_clipboard_capture(&session.project, &[], &[invalid]).is_err(),
+            "{case}"
+        );
+    }
+    let mut cyclic = session.project.clone();
+    cyclic.timelines[timeline].tracks[0].clips[0].source = ClipSource::Media(compound);
+    assert!(validate_clipboard_capture(&cyclic, &[compound], &[]).is_err());
+}
+
+#[test]
+fn clipboard_capture_bounds_unique_file_dependencies_before_native_fragment_copy() {
+    let (session, _, _, file) = fixture();
+    let mut project = Project::default();
+    let mut selected = Vec::new();
+    for index in 0..65 {
+        let mut item = session.project.media_pool[file].clone();
+        item.path = format!("/root/file-{index}.png").into();
+        selected.push(project.media_pool.insert(item));
+    }
+    validate_clipboard_capture(&project, &selected[..64], &[]).unwrap();
+    assert!(validate_clipboard_capture(&project, &selected, &[]).is_err());
+}
+
 fn fixture() -> (Session, MediaId, TimelineId, MediaId) {
     let mut session = Session::default();
     let file = session.project.media_pool.insert(MediaItem {

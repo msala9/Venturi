@@ -24,6 +24,7 @@ import { createLibraryPanel } from "./library.js";
 import {createNativeAssetPanel} from './native-assets.js';
 import {createMediaImportPanel} from './media-import.js';
 import {createOtioImportPanel} from './otio-import.js';
+import {createClipboard,bindClipboardEvents,clipboardBlocked} from './clipboard.js';
 import { createVoiceover } from "./voiceover.js";
 import { createReview } from "./review.js";
 import { createReviewMetadata } from "./reviewmeta.js";
@@ -48,6 +49,9 @@ let catalog = null;
 let silencePanel = null;
 let sharedLibrary = null;
 let nativeAssets=null,mediaImport=null,otioImport=null,libraryMode='shared';
+let clipboard=null,clipboardFocus='timeline',clipboardFocusSequence=0;
+const clipboardButtons=[];
+let clipboardStatus=null,clipboardRetry=null,clipboardCancel=null;
 const sharedLibraryRoot=document.createElement('div'),nativeAssetsRoot=document.createElement('div');
 function openLibraryPanel(mode=libraryMode){
   libraryMode=mode;void sharedLibrary?.cancel();nativeAssets?.hide();
@@ -455,6 +459,7 @@ function syncSelectionActions(){
   $("delete").disabled=disabled || (target?target.locked:!view.selection.length);
 }
 function selected() {
+  syncClipboardControls();
   compoundNavigation?.invalidate();
   updateRetimeControls();
   trackViewerSelection();
@@ -613,11 +618,11 @@ function selected() {
     const name=document.createElement("input");name.value="Compound";name.required=true;name.maxLength=128;compoundLabel.append(name);
     const make=document.createElement("button");make.textContent="Make compound from selection";make.disabled=!view.selection.length;compound.append(compoundLabel,make);
     compound.addEventListener("submit",async(event)=>{event.preventDefault();try{await commit({kind:"make_compound",clip_ids:view.selection,name:name.value});view.selection=[];selected();canvasTimeline.invalidate();}catch(error){notice(error.message);}});fieldset.append(compound);
-    const clipboardNote=document.createElement("p");clipboardNote.className="muted";clipboardNote.textContent=`Clip clipboard: ${documentState.clipboard_count || 0} · current project · native FPS conversion`;fieldset.append(clipboardNote);
-    for(const [label,operation,disabled] of [["Copy clips",()=>({kind:"copy_clips",clip_ids:view.selection}),!view.selection.length],["Paste clips safely",()=>({kind:"paste_clips",frame:view.playhead}),!documentState.clipboard_count]]) {
-      const button=document.createElement("button");button.textContent=label;button.disabled=disabled;button.addEventListener("click",()=>commit(operation()).catch((error)=>notice(error.message)));fieldset.append(button);
+    const clipboardNote=document.createElement("p");clipboardNote.className="muted";clipboardNote.textContent=`Native clipboard: ${documentState.clipboard_count || 0} clips · ${documentState.clipboard_media_count || 0} media · native FPS conversion`;fieldset.append(clipboardNote);
+    for(const [label,action,disabled] of [["Copy clips",'copy',!view.selection.length],["Cut clips",'cut',!view.selection.length],["Paste clips safely",'paste',false]]) {
+      const button=document.createElement("button");button.type='button';button.dataset.clipboardOwner='timeline';button.textContent=label;if(action==='paste')button.title='Paste the retained Venturi copy; Ctrl+V uses the system clipboard';button.disabled=disabled || !writable || busy || !!unresolved;button.addEventListener("click",()=>clipboardCommand('timeline',action));fieldset.append(button);
     }
-    const properties=document.createElement("button");properties.textContent="Paste selected properties";properties.disabled=!view.selection.length || !documentState.clipboard_revision || !writable || busy || !!unresolved;properties.addEventListener("click",()=>pasteAttributes?.open());fieldset.append(properties);
+    const properties=document.createElement("button");properties.textContent="Paste selected properties";properties.disabled=!view.selection.length || !documentState.clipboard_count || !documentState.clipboard_revision || !writable || busy || !!unresolved;properties.addEventListener("click",()=>pasteAttributes?.open());fieldset.append(properties);
     const markerTarget=`${documentState.project_epoch}:${timeline.id}`;
     renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,selectedId:view.markerTarget===markerTarget?view.markerId:null,onSelect:id=>{view.markerTarget=markerTarget;view.markerId=id;},openState:visualState,seek:(frame)=>{view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();}});
     const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
@@ -639,7 +644,7 @@ const canvasTimeline = createTimeline({
   canNavigate:()=>!busy && !unresolved,
   onOpenCompound:ids=>compoundNavigation?.enter(ids),
   onNavigationIntent:()=>compoundNavigation?.cancel(),
-  onNavigationStateChange:()=>{compoundNavigation?.invalidate();queueMicrotask(syncProgramMarks);},
+  onNavigationStateChange:()=>{compoundNavigation?.invalidate();syncClipboardControls();queueMicrotask(syncProgramMarks);},
   view,
   getAssets: () => mediaAssets,
   getCache: () => previewCache?.ranges(),
@@ -689,6 +694,7 @@ function renderTransitionPresets(){
 }
 window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});
 function updateTime() {
+  syncClipboardControls();
   syncProgramMarks();
   trackViewerSelection();
   transformOverlay?.invalidate();
@@ -916,9 +922,9 @@ async function refresh() {
   syncSelectionActions();
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
-  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;nativeAssets?.invalidate();},onOpen:(id)=>{selectedMedia=id;openSource();},notice});
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},notice});
   nativeAssets?.invalidate();
-  mediaImport?.invalidate();otioImport?.invalidate();
+  mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
   if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
   $("viewer-message").textContent = next.capabilities.preview
     ? "Seek a timeline frame"
@@ -957,7 +963,7 @@ async function mutate(operation, project = false,route=null) {
   busy = true;
   compoundNavigation?.invalidate();
   nativeAssets?.invalidate();
-  mediaImport?.invalidate();otioImport?.invalidate();
+  mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
   notice("Applying command…");
   try {
     const receipt = await sendMutation(
@@ -1096,6 +1102,47 @@ mediaImport=createMediaImportPanel({dialog:$("imports"),root:$("import-list"),st
   mediaState.selected=[...ids];selectedMedia=ids.at(-1) || null;catalog?.search(mediaState.query || '');if(selectedMedia)openSource();
 }});
 $("import-button").addEventListener("click",()=>void mediaImport.open());
+function clipboardContext(){
+  if(!documentState)return null;
+  const rect=$("timeline").getBoundingClientRect();
+  return {project_epoch:documentState.project_epoch,generation:documentState.generation,owner:clipboardFocus,
+    timeline_id:timeline?.id!=='fixture'?timeline?.id || null:null,timeline_revision:timeline?.revision || null,frame:view.playhead,
+    clip_ids:[...view.selection],media_ids:[...mediaState.selected],clipboard_revision:documentState.clipboard_revision,
+    clipboard_count:documentState.clipboard_count || 0,clipboard_media_count:documentState.clipboard_media_count || 0,
+    view_stamp:JSON.stringify([view.origin,view.scale,view.scrollY,view.tool,view.transitionSelection,Boolean(view.draft),Boolean(view.lasso),clipboardFocusSequence,rect.left,rect.top,rect.width,rect.height]),
+    source_stamp:JSON.stringify([viewerMode,sourceOpenId])};
+}
+function clipboardWritable(){return writable && !busy && !unresolved && !document.querySelector('dialog[open]') && canvasTimeline.navigationIdle();}
+function setClipboardFocus(owner){if(owner!==clipboardFocus){clipboardFocus=owner;clipboardFocusSequence++;syncClipboardControls();}}
+function syncClipboardControls(){
+  if(!clipboard)return;clipboard.invalidate();const context=clipboardContext(),available=Boolean(context) && clipboardWritable() && !clipboard.busy();
+  for(const item of clipboardButtons)item.node.disabled=!available || item.owner==='timeline' && !context?.timeline_id || !['paste','paste_system'].includes(item.action) && !(item.owner==='pool'?context?.media_ids.length:context?.clip_ids.length);
+  if(clipboardRetry){clipboardRetry.hidden=!clipboard.canRetry();clipboardRetry.disabled=!available || !clipboard.canRetry();}
+  if(clipboardCancel)clipboardCancel.disabled=!clipboard.busy() || !['preparing','reading'].includes(clipboard.state().phase);
+}
+function clipboardCommand(owner,action){setClipboardFocus(owner);void (action==='paste'?clipboard.paste(null):action==='paste_system'?clipboard.pasteSystem():clipboard.copy({cut:action==='cut'})).catch(error=>notice(error.message));}
+clipboard=createClipboard({getContext:clipboardContext,canCommit:clipboardWritable,commit:(operation,project)=>mutate(operation,project),onChange:state=>{if(clipboardStatus)clipboardStatus.textContent=state.message;notice(state.message);syncClipboardControls();},onPasted:(receipt,target)=>{
+  if(target.to_pool && receipt.media_ids.length){
+    setClipboardFocus('pool');
+    mediaState.selected=receipt.media_ids.filter(id=>documentState.media.some(item=>item.id===id));mediaState.anchor=mediaState.selected[0] || null;selectedMedia=mediaState.selected.at(-1) || null;
+    const folder=$("media-list").querySelector('[aria-label="Media folder"]'),kind=$("media-list").querySelector('[aria-label="Media type"]');if(folder)folder.value='*';if(kind)kind.value='all';$("search").value='';catalog?.search('');
+  }else if(!target.to_pool && receipt.clip_ids.length){
+    const clips=timeline.tracks.flatMap(track=>track.clips).filter(clip=>receipt.clip_ids.includes(clip.id));view.selection=clips.map(clip=>clip.id);view.transitionSelection=null;
+    if(clips.length)view.playhead=Math.max(...clips.map(clip=>clip.start_frame+clip.length_frames));selected();updateTime();seek();
+  }
+}});
+function clipboardButton(parent,label,owner,action){const node=document.createElement('button');node.type='button';node.textContent=label;node.dataset.clipboardOwner=owner;if(action==='paste')node.title='Paste the retained Venturi copy; Ctrl+V uses the system clipboard';node.addEventListener('click',()=>clipboardCommand(owner,action));clipboardButtons.push({node,owner,action});parent.append(node);return node;}
+const timelineClipboard=document.createElement('details'),clipboardHeading=document.createElement('summary'),clipboardTools=document.createElement('div');clipboardHeading.textContent='Clipboard';clipboardTools.className='tools';clipboardTools.setAttribute('role','group');clipboardTools.setAttribute('aria-label','Timeline clipboard');timelineClipboard.dataset.clipboardOwner='timeline';timelineClipboard.append(clipboardHeading,clipboardTools);
+clipboardButton(clipboardTools,'Copy clips','timeline','copy');clipboardButton(clipboardTools,'Cut clips','timeline','cut');clipboardButton(clipboardTools,'Paste clips safely','timeline','paste');
+clipboardButton(clipboardTools,'Paste from system clipboard','timeline','paste_system');
+clipboardRetry=document.createElement('button');clipboardRetry.type='button';clipboardRetry.textContent='Copy to system clipboard';clipboardRetry.hidden=true;clipboardRetry.addEventListener('click',()=>void clipboard.retrySystem());clipboardTools.append(clipboardRetry);
+clipboardCancel=document.createElement('button');clipboardCancel.type='button';clipboardCancel.textContent='Cancel clipboard preparation';clipboardCancel.disabled=true;clipboardCancel.addEventListener('click',()=>clipboard.cancel());clipboardTools.append(clipboardCancel);
+clipboardStatus=document.createElement('output');clipboardStatus.setAttribute('aria-label','Clipboard status');clipboardStatus.setAttribute('role','status');clipboardStatus.style.display='block';clipboardStatus.style.height='3em';clipboardStatus.style.overflow='auto';clipboardStatus.textContent=clipboard.state().message;timelineClipboard.append(clipboardStatus);$("timeline-panel").insertBefore(timelineClipboard,$("compound-breadcrumb"));
+const poolClipboard=document.createElement('div');poolClipboard.className='tools';poolClipboard.dataset.clipboardOwner='pool';poolClipboard.setAttribute('role','group');poolClipboard.setAttribute('aria-label','Media clipboard');clipboardButton(poolClipboard,'Copy media','pool','copy');clipboardButton(poolClipboard,'Paste media','pool','paste');clipboardButton(poolClipboard,'Paste from system clipboard','pool','paste_system');$("browser").querySelector('.panel-footer').append(poolClipboard);
+for(const type of ['pointerdown','focusin'])document.addEventListener(type,event=>{const target=event.target,explicit=target?.closest?.('[data-clipboard-owner]')?.dataset.clipboardOwner;if(explicit)setClipboardFocus(explicit);else if(target?.closest?.('#media-list'))setClipboardFocus('pool');else if(target?.closest?.('#timeline-panel,#viewer,#inspector'))setClipboardFocus('timeline');},true);
+document.addEventListener('toggle',syncClipboardControls,true);
+bindClipboardEvents({target:document,getOwner:()=>clipboardFocus,isDialogOpen:()=>Boolean(document.querySelector('dialog[open]')),copy:options=>clipboard.copy(options),paste:text=>clipboard.paste(text),onError:error=>notice(error.message)});
+syncClipboardControls();
 otioImport=createOtioImportPanel({root:$("otio-current-import"),isVisible:()=>$("projects").open,getContext:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),notice,onImported:receipt=>{
   const next=documentState?.timelines.find(item=>item.id===receipt.timeline_ids[0]);
   if(!next)throw Error('The imported timeline is not yet visible in the refreshed project');
@@ -1238,7 +1285,7 @@ setInterval(() => {
     request("/lease", { client_id: clientId }).catch(() => {
       writable = false;
       nativeAssets?.invalidate();
-      mediaImport?.invalidate();otioImport?.invalidate();
+      mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
       $("connection").textContent = "Disconnected · read only";
     });
 }, 30_000);
@@ -1253,12 +1300,8 @@ document.addEventListener("keydown", (event) => {
     moveSelection(
       (event.key === "ArrowLeft" ? -1 : 1) * (event.shiftKey ? 10 : 1),
     );
-  } else if (modifier && event.key.toLowerCase() === "c" && view.selection.length) {
-    event.preventDefault();run({kind:"copy_clips",clip_ids:view.selection});
-  } else if (event.altKey && !modifier && event.key.toLowerCase() === "v") {
+  } else if (event.altKey && !modifier && event.key.toLowerCase() === "v" && !clipboardBlocked(event,{dialogOpen:Boolean(document.querySelector('dialog[open]'))})) {
     event.preventDefault();pasteAttributes?.open();
-  } else if (modifier && event.key.toLowerCase() === "v") {
-    event.preventDefault();run({kind:"paste_clips",frame:view.playhead});
   } else if (modifier && event.key.toLowerCase() === "s") {
     event.preventDefault();
     $("save").click();
@@ -1489,7 +1532,7 @@ const reviewContext=()=>{
 };
 review=createReview({root:$("review-dialog"),canCommit:()=>writable && !busy && !unresolved,commit,notice,getContext:reviewContext});
 reviewMetadata=createReviewMetadata({root:$("review-metadata-dialog"),getContext:reviewContext,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),notice,onCompare:media_id=>review.open({media_id}).catch(error=>notice(error.message))});
-pasteAttributes=createPasteAttributes({root:$("paste-attributes-dialog"),getContext:()=>documentState && timeline?{epoch:documentState.project_epoch,generation:documentState.generation,timeline:timeline.id,revision:timeline.revision,clipboard:documentState.clipboard_revision,clip_ids:[...view.selection]}:null,canCommit:()=>writable && !busy && !unresolved,commit,notice});
+pasteAttributes=createPasteAttributes({root:$("paste-attributes-dialog"),getContext:()=>documentState && timeline?{epoch:documentState.project_epoch,generation:documentState.generation,timeline:timeline.id,revision:timeline.revision,clipboard:documentState.clipboard_count?documentState.clipboard_revision:null,clip_ids:[...view.selection]}:null,canCommit:()=>writable && !busy && !unresolved,commit,notice});
 function presetContext(){
   if(!documentState)return null;
   const ids=timeline?linkedSelection(timeline,view.selection):[],clips=timeline?.tracks.flatMap(track=>track.clips.filter(clip=>ids.includes(clip.id)).map(clip=>({clip,kind:track.kind}))) || [];

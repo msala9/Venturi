@@ -44,6 +44,9 @@ pub enum Action {
     PrepareMediaImport(MediaImportRequest),
     PrepareOtio(OtioImportRequest),
     OtioImportStatus(String, SourceQuery, bool),
+    Clipboard(ClipboardQuery),
+    PrepareClipboard(ClipboardRequest),
+    ClipboardStatus(String, SourceQuery, bool),
     PrepareLegacyMediaImport(Mutation, oneshot::Sender<Result<NativeEditPreparation>>),
     MediaImportStatus(String, SourceQuery, bool),
     PrepareNativeAssetEdit(Mutation, oneshot::Sender<Result<NativeEditPreparation>>),
@@ -82,6 +85,21 @@ pub struct OtioImportRequest {
     pub project_epoch: String,
     pub if_generation: String,
     pub path_token: String,
+}
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ClipboardQuery {
+    pub project_epoch: String,
+    pub if_generation: String,
+    pub clipboard_revision: String,
+}
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ClipboardRequest {
+    pub project_epoch: String,
+    pub if_generation: String,
+    pub text: Option<String>,
+    pub to_pool: bool,
 }
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -146,6 +164,7 @@ pub struct Editor {
     legacy_media_imports: HashMap<String, PendingNativeEdit>,
     media_import_receipt: Option<Value>,
     otio_import_receipt: Option<Value>,
+    clipboard_receipt: Option<Value>,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
@@ -210,6 +229,7 @@ impl Editor {
             legacy_media_imports: HashMap::new(),
             media_import_receipt: None,
             otio_import_receipt: None,
+            clipboard_receipt: None,
             session,
             files,
             epoch: std::time::SystemTime::now()
@@ -235,6 +255,15 @@ impl Editor {
             );
         }
         Ok(editor)
+    }
+    fn clipboard_origin(&self) -> vv_core::clipboard::ClipboardOrigin {
+        let digest = Sha256::digest(self.epoch.as_bytes());
+        let mut instance = [0u8; 8];
+        instance.copy_from_slice(&digest[..8]);
+        vv_core::clipboard::ClipboardOrigin {
+            instance: u64::from_le_bytes(instance),
+            epoch: self.session.epoch(),
+        }
     }
     fn snapshot(&self) -> Value {
         let mut snapshot = snapshot::session(&self.session, &self.epoch);
@@ -269,6 +298,16 @@ impl Editor {
             self.clipboard
                 .as_ref()
                 .and_then(|clipboard| clipboard.revision(&self.session))
+        );
+        snapshot["clipboard_media_count"] = json!(
+            self.clipboard
+                .as_ref()
+                .map_or(0, |clipboard| clipboard.media_count())
+        );
+        snapshot["clipboard_current_project"] = json!(
+            self.clipboard
+                .as_ref()
+                .is_some_and(|clipboard| clipboard.is_current(&self.session))
         );
         snapshot
     }
@@ -351,9 +390,11 @@ impl Editor {
         let previous_epoch = self.session.epoch();
         self.media_import_receipt = None;
         self.otio_import_receipt = None;
+        self.clipboard_receipt = None;
         let outcome = self.perform(timeline, &request);
         let media_import_receipt = self.media_import_receipt.take();
         let otio_import_receipt = self.otio_import_receipt.take();
+        let clipboard_receipt = self.clipboard_receipt.take();
         if self.session.epoch() != previous_epoch {
             self.asset_jobs
                 .cancel_obsolete(&format!("{}:{}", self.epoch, self.session.epoch()));
@@ -374,7 +415,9 @@ impl Editor {
             };
         }
         if self.completed.len() >= MAX_RECEIPTS
-            || ((media_import_receipt.is_some() || otio_import_receipt.is_some())
+            || ((media_import_receipt.is_some()
+                || otio_import_receipt.is_some()
+                || clipboard_receipt.is_some())
                 && self.import_receipt_cache_full())
         {
             self.completed.clear();
@@ -399,6 +442,12 @@ impl Editor {
                 for field in ["timeline_ids","media_ids","folder_id","warnings"] {
                     value[field]=report[field].clone();
                 }
+            }
+            if let Some(report)=clipboard_receipt {
+                for field in ["media_ids","clip_ids","changed"] {value[field]=report[field].clone();}
+            }
+            if matches!(request.operation,Operation::CopyClips{..}|Operation::CopyMedia{..}|Operation::CutClips{..}) {
+                value["clipboard_revision"]=json!(self.clipboard.as_ref().and_then(|clipboard|clipboard.revision(&self.session)));
             }
             if let Operation::ImportNativeAsset { asset_id,revision,.. }=&request.operation
                 && let Some(imported)=self.asset_imports.get(&(self.session.epoch(),asset_id.clone(),revision.clone())) {
@@ -510,9 +559,26 @@ impl Editor {
                     crate::take::apply(&mut self.session, &self.files, id, replacement)
                 }
                 Operation::CopyClips { clip_ids } => {
-                    self.clipboard = Some(crate::clipboard::copy(&self.session, id, clip_ids)?);
+                    self.clipboard = Some(crate::clipboard::copy_with_origin(
+                        &self.session,
+                        id,
+                        clip_ids,
+                        self.clipboard_origin(),
+                    )?);
                     Ok(())
                 }
+                Operation::CutClips {
+                    clip_ids,
+                    clipboard_revision,
+                } => crate::clipboard::cut(
+                    &mut self.session,
+                    id,
+                    clip_ids,
+                    clipboard_revision,
+                    self.clipboard
+                        .as_ref()
+                        .ok_or_else(|| ApiError::invalid("Copy clips before cutting"))?,
+                ),
                 Operation::PasteClips { frame } => crate::clipboard::paste(
                     &mut self.session,
                     id,
@@ -541,6 +607,68 @@ impl Editor {
             };
         }
         match &request.operation {
+            Operation::CopyMedia { media_ids } => {
+                self.clipboard = Some(crate::clipboard::copy_media(
+                    &self.session,
+                    media_ids,
+                    self.clipboard_origin(),
+                )?);
+            }
+            Operation::PastePreparedClipboard {
+                job_id,
+                to_pool,
+                timeline_id,
+                timeline_revision,
+                frame,
+            } => {
+                let target = if *to_pool {
+                    if timeline_id.is_some() || timeline_revision.is_some() || *frame != 0 {
+                        return Err(ApiError::invalid(
+                            "Pool paste does not accept a timeline or frame",
+                        ));
+                    }
+                    None
+                } else {
+                    let id = snapshot::timeline_id(
+                        &self.session,
+                        timeline_id
+                            .as_deref()
+                            .ok_or_else(|| ApiError::invalid("Choose the paste timeline"))?,
+                    )?;
+                    if timeline_revision.as_deref()
+                        != Some(self.session.timeline_revision(id).as_str())
+                    {
+                        return Err(ApiError::conflict(
+                            "REVISION_CONFLICT",
+                            "Paste timeline changed; prepare again",
+                        ));
+                    }
+                    Some(id)
+                };
+                let payload = self.asset_jobs.clipboard_payload(
+                    job_id,
+                    &request.project_epoch,
+                    &request.if_generation,
+                )?;
+                let prepared = crate::clipboard::prepare_paste(
+                    &self.session,
+                    payload,
+                    self.clipboard.as_ref(),
+                    target,
+                    *frame,
+                    *to_pool,
+                )?;
+                self.asset_jobs.mark_clipboard_applied(
+                    job_id,
+                    &request.project_epoch,
+                    &request.if_generation,
+                )?;
+                let report = prepared.apply(&mut self.session);
+                use vv_core::Id;
+                self.clipboard_receipt = Some(
+                    json!({"media_ids":report.media.iter().map(|id|id.raw().to_string()).collect::<Vec<_>>(),"clip_ids":report.clips.iter().map(|id|id.0.to_string()).collect::<Vec<_>>(),"changed":report.changed}),
+                );
+            }
             Operation::PublishNativeAsset { job_id } => self.asset_jobs.publish(
                 &request.command_id,
                 job_id,
@@ -1681,6 +1809,49 @@ impl Editor {
             }
             Action::PrepareNativeAsset(request) => self.prepare_native_asset(request),
             Action::PrepareMediaImport(request) => self.prepare_media_import(request),
+            Action::Clipboard(query) => {
+                self.validate_asset_epoch(&query.project_epoch, Some(&query.if_generation))?;
+                let clipboard = self.clipboard.as_ref().ok_or_else(|| {
+                    ApiError::conflict("CLIPBOARD_EMPTY", "Copy clips or media first")
+                })?;
+                if clipboard.revision(&self.session) != Some(query.clipboard_revision.as_str()) {
+                    return Err(ApiError::conflict(
+                        "CLIPBOARD_STALE",
+                        "The native clipboard changed; copy again",
+                    ));
+                }
+                Ok(
+                    json!({"project_epoch":query.project_epoch,"generation":query.if_generation,"clipboard_revision":query.clipboard_revision,"text":clipboard.text(),"clip_count":clipboard.count(&self.session),"media_count":clipboard.media_count()}),
+                )
+            }
+            Action::PrepareClipboard(request) => {
+                self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
+                let fallback = self.clipboard.as_ref().map(|clipboard| clipboard.text());
+                let text = request.text.as_deref().or(fallback).ok_or_else(|| {
+                    ApiError::conflict("CLIPBOARD_EMPTY", "Copy clips or media first")
+                })?;
+                self.asset_jobs.prepare_clipboard(
+                    &request.project_epoch,
+                    &request.if_generation,
+                    text,
+                    fallback,
+                    request.to_pool,
+                )
+            }
+            Action::ClipboardStatus(job, query, cancel) => {
+                if !cancel {
+                    self.validate_asset_epoch(&query.project_epoch, None)?;
+                }
+                let value = self.asset_jobs.status(&job, &query.project_epoch, false)?;
+                if value["kind"] != "clipboard_import" {
+                    return Err(ApiError::missing());
+                }
+                if cancel {
+                    self.asset_jobs.status(&job, &query.project_epoch, true)
+                } else {
+                    Ok(value)
+                }
+            }
             Action::PrepareOtio(request) => {
                 self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
                 self.asset_jobs.prepare_otio(

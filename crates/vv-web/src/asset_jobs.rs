@@ -73,6 +73,28 @@ struct PreparedOtio {
     payload: OtioPayload,
     witnesses: Vec<OtioWitness>,
 }
+struct ClipboardWork {
+    text: String,
+    fallback: Option<String>,
+    to_pool: bool,
+}
+struct PreparedClipboard {
+    payload: ClipboardPayload,
+    witnesses: Vec<OtioWitness>,
+    warnings: Vec<String>,
+}
+impl PreparedClipboard {
+    fn validate(&self, inner: &Inner) -> Result<()> {
+        project_root(inner)?;
+        for witness in &self.witnesses {
+            witness.validate(inner)?;
+        }
+        Ok(())
+    }
+    fn value(&self) -> Value {
+        json!({"clip_count":self.payload.clip_entries().len(),"media_count":self.payload.media_ids().len(),"warnings":self.warnings})
+    }
+}
 impl PreparedOtio {
     fn validate(&self, inner: &Inner) -> Result<()> {
         project_root(inner)?;
@@ -172,13 +194,14 @@ struct Job {
     import_total: usize,
     otio_probe_total: Option<usize>,
     otio: Option<PreparedOtio>,
+    clipboard: Option<PreparedClipboard>,
 }
 impl Job {
     fn value(&self) -> Value {
         let result = self.result.as_ref().map(|prepared| {
             let payload = asset_payload::decode(&prepared.asset).ok();
             json!({"asset_id":self.asset_id,"revision":self.revision,"name":prepared.asset.name,"media_count":payload.as_ref().map_or(0,|p| p.media_items().count()),"file_count":prepared.files.len(),"bytes":self.bytes})
-        }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary())).or_else(||self.media_import.as_ref().map(PreparedImport::value)).or_else(||self.otio.as_ref().map(PreparedOtio::value));
+        }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary())).or_else(||self.media_import.as_ref().map(PreparedImport::value)).or_else(||self.otio.as_ref().map(PreparedOtio::value)).or_else(||self.clipboard.as_ref().map(PreparedClipboard::value));
         let mut value = json!({"id":self.id,"kind":self.kind,"project_epoch":self.epoch,"generation":self.generation,"state":self.state,"bytes":self.bytes,"total_bytes":self.total,"error":self.error,"result":result});
         if self.kind == "media_import" {
             value["progress"] =
@@ -198,12 +221,14 @@ struct Work {
     edit: Option<(asset_store::Edit, crate::asset_journal::Completion)>,
     media_import: Option<Vec<String>>,
     otio: Option<String>,
+    clipboard: Option<ClipboardWork>,
 }
 enum Finished {
     Media(Prepared),
     Edit(crate::asset_journal::PreparedEdit),
     Import(PreparedImport),
     Otio(PreparedOtio),
+    Clipboard(PreparedClipboard),
 }
 struct Inner {
     store: Store,
@@ -284,7 +309,10 @@ impl Jobs {
                     {
                         job.state = "running";
                     }
-                    let result = if let Some(token) = &work.otio {
+                    let result = if let Some(clipboard) = &work.clipboard {
+                        run_clipboard(&inner, &work, clipboard, MEDIA_IMPORT_BUDGET)
+                            .map(Finished::Clipboard)
+                    } else if let Some(token) = &work.otio {
                         run_otio(&inner, &work, token, MEDIA_IMPORT_BUDGET).map(Finished::Otio)
                     } else if let Some(tokens) = &work.media_import {
                         run_media_import(&inner, &work, tokens, MEDIA_IMPORT_BUDGET)
@@ -309,6 +337,7 @@ impl Jobs {
                                     Finished::Edit(prepared) => job.edit_result = Some(prepared),
                                     Finished::Import(prepared) => job.media_import = Some(prepared),
                                     Finished::Otio(prepared) => job.otio = Some(prepared),
+                                    Finished::Clipboard(prepared) => job.clipboard = Some(prepared),
                                 }
                             }
                             Ok(_) => {
@@ -409,6 +438,7 @@ impl Jobs {
             edit: Some((edit.clone(), completion)),
             media_import: None,
             otio: None,
+            clipboard: None,
         };
         let job = Job {
             id,
@@ -433,6 +463,7 @@ impl Jobs {
             import_total: 0,
             otio_probe_total: None,
             otio: None,
+            clipboard: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -558,6 +589,7 @@ impl Jobs {
             edit: None,
             media_import: None,
             otio: None,
+            clipboard: None,
         };
         let job = Job {
             id,
@@ -586,6 +618,7 @@ impl Jobs {
             import_total: sources_descriptor_reservation,
             otio_probe_total: None,
             otio: None,
+            clipboard: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -619,6 +652,7 @@ impl Jobs {
             edit: None,
             media_import: Some(tokens),
             otio: None,
+            clipboard: None,
         };
         let job = Job {
             id,
@@ -643,6 +677,7 @@ impl Jobs {
             import_total: total,
             otio_probe_total: None,
             otio: None,
+            clipboard: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -651,6 +686,105 @@ impl Jobs {
             return Err(busy());
         }
         Ok(value)
+    }
+    pub fn prepare_clipboard(
+        &self,
+        epoch: &str,
+        generation: &str,
+        text: &str,
+        fallback: Option<&str>,
+        to_pool: bool,
+    ) -> Result<Value> {
+        binding(epoch, generation)?;
+        if text.len() > asset_payload::MAX_ASSET_BYTES
+            || fallback.is_some_and(|text| text.len() > asset_payload::MAX_ASSET_BYTES)
+        {
+            return Err(ApiError::invalid("Native clipboard text exceeds 4 MiB"));
+        }
+        project_root(&self.0)?;
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        reserve_witnesses(&jobs, 64)?;
+        reserve(&mut jobs)?;
+        let id = format!("asset-{}", nonce());
+        let cancel = Arc::new(AtomicBool::new(false));
+        let work = Work {
+            id: id.clone(),
+            asset: None,
+            sources: vec![],
+            cancel: cancel.clone(),
+            import: None,
+            edit: None,
+            media_import: None,
+            otio: None,
+            clipboard: Some(ClipboardWork {
+                text: text.into(),
+                fallback: fallback.map(str::to_owned),
+                to_pool,
+            }),
+        };
+        let job = Job {
+            id,
+            kind: "clipboard_import",
+            epoch: epoch.into(),
+            generation: generation.into(),
+            state: "queued",
+            bytes: 0,
+            total: 0,
+            error: None,
+            failure: None,
+            asset_id: None,
+            revision: None,
+            cancel,
+            result: None,
+            edit_result: None,
+            edit: None,
+            command_id: None,
+            fingerprint: None,
+            media_import: None,
+            import_completed: 0,
+            import_total: 64,
+            otio_probe_total: None,
+            otio: None,
+            clipboard: None,
+        };
+        let value = job.value();
+        jobs.push_back(job);
+        if self.0.sender.try_send(work).is_err() {
+            jobs.pop_back();
+            return Err(busy());
+        }
+        Ok(value)
+    }
+    pub fn clipboard_payload(
+        &self,
+        id: &str,
+        epoch: &str,
+        generation: &str,
+    ) -> Result<ClipboardPayload> {
+        let jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, "clipboard_import")?;
+        let prepared = job.clipboard.as_ref().ok_or_else(ApiError::missing)?;
+        prepared.validate(&self.0)?;
+        Ok(prepared.payload.clone())
+    }
+    pub fn mark_clipboard_applied(&self, id: &str, epoch: &str, generation: &str) -> Result<()> {
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter_mut()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, "clipboard_import")?;
+        job.clipboard
+            .as_ref()
+            .ok_or_else(ApiError::missing)?
+            .validate(&self.0)?;
+        job.state = "applied";
+        job.clipboard = None;
+        Ok(())
     }
     pub fn prepare_otio(&self, epoch: &str, generation: &str, path_token: &str) -> Result<Value> {
         binding(epoch, generation)?;
@@ -673,6 +807,7 @@ impl Jobs {
             edit: None,
             media_import: None,
             otio: Some(path_token.into()),
+            clipboard: None,
         };
         let job = Job {
             id,
@@ -697,6 +832,7 @@ impl Jobs {
             import_total: 65,
             otio_probe_total: None,
             otio: None,
+            clipboard: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -815,6 +951,7 @@ impl Jobs {
                 job.edit_result = None;
                 job.media_import = None;
                 job.otio = None;
+                job.clipboard = None;
                 job.error = Some("ASSET_CANCELED");
                 job.failure = Some(canceled());
             }
@@ -844,6 +981,7 @@ impl Jobs {
             job.edit_result = None;
             job.media_import = None;
             job.otio = None;
+            job.clipboard = None;
             if !matches!(job.state, "running" | "queued") {
                 job.state = "canceled";
                 job.error = Some("ASSET_CANCELED");
@@ -921,6 +1059,13 @@ fn reserve_witnesses(jobs: &VecDeque<Job>, additional: usize) -> Result<()> {
                         .as_ref()
                         .map_or(0, |prepared| prepared.files.len().saturating_mul(3))
                     + job.otio.as_ref().map_or(0, |prepared| {
+                        prepared
+                            .witnesses
+                            .iter()
+                            .filter(|witness| witness.file.is_some())
+                            .count()
+                    })
+                    + job.clipboard.as_ref().map_or(0, |prepared| {
                         prepared
                             .witnesses
                             .iter()
@@ -1578,6 +1723,160 @@ fn otio_budget(start: Instant, budget: Duration, cancel: &AtomicBool) -> Result<
         ));
     }
     Ok(remaining)
+}
+fn clipboard_budget(start: Instant, budget: Duration, cancel: &AtomicBool) -> Result<Duration> {
+    otio_budget(start, budget, cancel).map_err(|error| {
+        if error.1 == "OTIO_IMPORT_BUDGET" {
+            ApiError::conflict(
+                "CLIPBOARD_IMPORT_BUDGET",
+                "Clipboard preparation exceeded its processing budget",
+            )
+        } else {
+            error
+        }
+    })
+}
+fn clipboard_token(inner: &Inner, path: &Path) -> Result<String> {
+    let path = if path.is_absolute() {
+        path.to_owned()
+    } else {
+        inner.root.join(path)
+    };
+    if path.parent() != Some(inner.root.as_path()) {
+        return Err(ApiError::invalid(
+            "Clipboard media must be directly inside the configured project root",
+        ));
+    }
+    let token = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| ApiError::invalid("Invalid clipboard media path"))?;
+    simple_name(token)?;
+    Ok(token.into())
+}
+fn clipboard_text(work: &ClipboardWork) -> Result<ClipboardPayload> {
+    if work.text.is_empty() {
+        return Err(ApiError::invalid(
+            "Clipboard contains no text; image paste is not supported",
+        ));
+    }
+    let parsed = match ClipboardPayload::from_text(&work.text) {
+        Some(result) => Some(result),
+        None if work.to_pool => {
+            return Ok(ClipboardPayload::new(
+                vv_core::clipboard::ClipboardOrigin {
+                    instance: 0,
+                    epoch: 0,
+                },
+                &vv_core::Project::default(),
+                &[],
+                &[],
+            ));
+        }
+        None => work
+            .fallback
+            .as_deref()
+            .and_then(ClipboardPayload::from_text),
+    };
+    parsed
+        .ok_or_else(|| {
+            ApiError::conflict(
+                "CLIPBOARD_EMPTY",
+                "Copy native clips before pasting ordinary text",
+            )
+        })?
+        .map_err(|_| ApiError::invalid("Unsupported or malformed native clipboard payload"))
+}
+fn run_clipboard(
+    inner: &Inner,
+    work: &Work,
+    source: &ClipboardWork,
+    budget: Duration,
+) -> Result<PreparedClipboard> {
+    let start = Instant::now();
+    clipboard_budget(start, budget, &work.cancel)?;
+    project_root(inner)?;
+    let mut payload = clipboard_text(source)?;
+    asset_payload::validate_clipboard(&payload)?;
+    let mut files: std::collections::BTreeMap<String, Vec<PathBuf>> =
+        std::collections::BTreeMap::new();
+    for item in payload.files() {
+        files
+            .entry(clipboard_token(inner, &item.path)?)
+            .or_default()
+            .push(item.path.clone());
+    }
+    if let Ok(mut jobs) = inner.jobs.lock()
+        && let Some(job) = jobs.iter_mut().find(|job| job.id == work.id)
+    {
+        job.otio_probe_total = Some(files.len());
+    }
+    let mut witnesses = Vec::new();
+    let mut warnings = Vec::new();
+    for (token, originals) in files {
+        let remaining = clipboard_budget(start, budget, &work.cancel)?;
+        project_root(inner)?;
+        let witness = otio_witness(inner, &token)?;
+        let probe = if let Some(file) = &witness.file {
+            probe_import_file(inner, &token, file, &work.cancel, remaining)
+        } else {
+            Err(ApiError::missing())
+        };
+        witness.validate(inner)?;
+        clipboard_budget(start, budget, &work.cancel)?;
+        let hash = match probe {
+            Ok(actual) => {
+                if payload
+                    .files()
+                    .filter(|item| originals.contains(&item.path))
+                    .any(|item| !same_meta(&item.meta, &actual.meta))
+                {
+                    return Err(source_changed());
+                }
+                actual.content_hash
+            }
+            Err(error)
+                if matches!(
+                    error.1,
+                    "SOURCE_CHANGED"
+                        | "ASSET_CANCELED"
+                        | "MEDIA_IMPORT_TIMEOUT"
+                        | "ASSET_PROBE_TIMEOUT"
+                ) || error.2
+                    == "Indirect playlists and network manifests cannot be imported as root media" =>
+            {
+                return Err(error);
+            }
+            Err(_) => {
+                warnings.push(format!("Media {token} was kept offline"));
+                0
+            }
+        };
+        // An external hash is never a reuse credential. The native engine may
+        // reuse only this independently fingerprinted file, or this offline path.
+        for item in payload
+            .files_mut()
+            .filter(|item| originals.contains(&item.path))
+        {
+            item.content_hash = hash;
+            item.path = inner.root.join(&token);
+        }
+        witnesses.push(witness);
+        if let Ok(mut jobs) = inner.jobs.lock()
+            && let Some(job) = jobs.iter_mut().find(|job| job.id == work.id)
+        {
+            job.import_completed = job.import_completed.saturating_add(1);
+        }
+    }
+    asset_payload::validate_clipboard(&payload)?;
+    let prepared = PreparedClipboard {
+        payload,
+        witnesses,
+        warnings,
+    };
+    prepared.validate(inner)?;
+    clipboard_budget(start, budget, &work.cancel)?;
+    Ok(prepared)
 }
 fn run_otio(inner: &Inner, work: &Work, token: &str, budget: Duration) -> Result<PreparedOtio> {
     let start = Instant::now();

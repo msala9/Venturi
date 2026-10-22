@@ -1,6 +1,482 @@
 use super::*;
 use vv_core::attributes::{Attribute, KeyframeMode};
 
+fn empty_timeline(session: &mut Session, name: &str, fps: core::Rational) -> TimelineId {
+    session.create_timeline(core::Timeline {
+        name: name.into(),
+        fps,
+        resolution: (640, 360),
+        tracks: vec![core::Track::new(core::TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    })
+}
+fn entity_snapshot(project: &core::Project) -> serde_json::Value {
+    // Native compound generations are monotonic cache identities, including Undo.
+    let media = project
+        .media_pool
+        .iter()
+        .map(|(id, item)| {
+            let mut item = item.clone();
+            if item.compound.is_some() {
+                item.content_hash = 0;
+            }
+            (id, item)
+        })
+        .collect::<Vec<_>>();
+    serde_json::json!({"timelines":project.timelines.iter().collect::<Vec<_>>(),"media":media,"folders":project.folders.iter().collect::<Vec<_>>()})
+}
+
+#[test]
+fn foreign_nested_clipboard_uses_native_reuse_remaps_u64_ids_and_one_complete_undo() {
+    let (mut source, child, _) = fixture();
+    for track in &mut source.project.timelines[child].tracks {
+        track.crossings.clear();
+        track.clips.truncate(1);
+    }
+    source.project.timelines[child].tracks[0].clips[0].id = core::ClipId(9_007_199_254_740_993);
+    let child_media = source
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(child))
+        .unwrap()
+        .0;
+    let source_file = source
+        .project
+        .media_pool
+        .values()
+        .find(|item| item.compound.is_none())
+        .unwrap()
+        .clone();
+    let root = empty_timeline(&mut source, "Root", core::Rational::new(24, 1));
+    let wrapper = core::Clip::from_source_range(
+        source.project.alloc_clip_id(),
+        core::ClipSource::Media(child_media),
+        0,
+        24,
+        0,
+        core::Rational::one(),
+    );
+    let wrapper_id = wrapper.id;
+    source.project.timelines[root].tracks[0].clips.push(wrapper);
+    source.project.sync_compound_meta(child_media);
+    let clipboard = copy_with_origin(
+        &source,
+        root,
+        &[wrapper_id.0.to_string()],
+        ClipboardOrigin {
+            instance: 7,
+            epoch: source.epoch(),
+        },
+    )
+    .unwrap();
+    let payload = ClipboardPayload::from_text(clipboard.text())
+        .unwrap()
+        .unwrap();
+    let unchanged = serde_json::to_value(&source.project).unwrap();
+    assert!(
+        prepare_paste(
+            &source,
+            payload.clone(),
+            Some(&clipboard),
+            Some(child),
+            100,
+            false
+        )
+        .is_err()
+    );
+    assert_eq!(serde_json::to_value(&source.project).unwrap(), unchanged);
+    let media_count = source.project.media_pool.len();
+    let timeline_count = source.project.timelines.len();
+    prepare_paste(
+        &source,
+        payload.clone(),
+        Some(&clipboard),
+        Some(root),
+        48,
+        false,
+    )
+    .unwrap()
+    .apply(&mut source);
+    assert_eq!(source.project.media_pool.len(), media_count);
+    assert_eq!(source.project.timelines.len(), timeline_count);
+    assert!(
+        matches!(source.project.timelines[root].tracks[0].clips[1].source,core::ClipSource::Media(id) if id==child_media)
+    );
+    let mut target = Session::default();
+    let reused = target.project.media_pool.insert(source_file);
+    let timeline = empty_timeline(&mut target, "Destination", core::Rational::new(30, 1));
+    let before = entity_snapshot(&target.project);
+    let steps = target.history.position();
+    let prepared = prepare_paste(&target, payload, None, Some(timeline), 30, false).unwrap();
+    assert_eq!(entity_snapshot(&target.project), before);
+    let report = prepared.apply(&mut target);
+    assert!(report.changed);
+    assert_eq!(report.clips.len(), 1);
+    assert!(report.media.is_empty());
+    assert_eq!(target.history.position(), steps + 1);
+    let pasted = &target.project.timelines[timeline].tracks[0].clips[0];
+    assert_eq!((pasted.timeline_start, pasted.timeline_len), (30, 30));
+    let core::ClipSource::Media(media) = pasted.source else {
+        panic!("Expected compound");
+    };
+    let nested = target.project.media_pool[media].compound.unwrap();
+    assert_ne!(nested, timeline);
+    let native_child = &target.project.timelines[nested];
+    assert_ne!(native_child.tracks[0].clips[0].id.0, 9_007_199_254_740_993);
+    assert!(
+        matches!(native_child.tracks[0].clips[0].source,core::ClipSource::Media(id) if id==reused)
+    );
+    assert_eq!(
+        native_child.tracks[0].clips[0]
+            .effects
+            .transform
+            .track(core::TransformParam::PositionX)
+            .keyframes()[0]
+            .1,
+        20.0
+    );
+    let after = entity_snapshot(&target.project);
+    commands::history(&mut target, &commands::Operation::Undo).unwrap();
+    assert_eq!(entity_snapshot(&target.project), before);
+    commands::history(&mut target, &commands::Operation::Redo).unwrap();
+    assert_eq!(entity_snapshot(&target.project), after);
+}
+
+#[test]
+fn native_pool_clipboard_selects_current_ids_and_foreign_reuse_is_a_true_noop() {
+    let (mut session, id, selected) = fixture();
+    let file = session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound.is_none())
+        .unwrap()
+        .0;
+    let clipboard = copy_media(
+        &session,
+        &[file.raw().to_string()],
+        ClipboardOrigin {
+            instance: 8,
+            epoch: session.epoch(),
+        },
+    )
+    .unwrap();
+    assert_eq!(clipboard.count(&session), 0);
+    assert_eq!(clipboard.media_count(), 1);
+    assert!(clipboard.revision(&session).is_some());
+    let payload = ClipboardPayload::from_text(clipboard.text())
+        .unwrap()
+        .unwrap();
+    assert!(clipboard.matches_payload(&session, &payload));
+    let before = serde_json::to_value(&session.project).unwrap();
+    let steps = session.history.position();
+    let report = prepare_paste(&session, payload.clone(), Some(&clipboard), None, 0, true)
+        .unwrap()
+        .apply(&mut session);
+    assert_eq!(report.media, vec![file]);
+    assert!(!report.changed);
+    let report = prepare_paste(&session, payload.clone(), None, None, 0, true)
+        .unwrap()
+        .apply(&mut session);
+    assert_eq!(report.media, vec![file]);
+    assert!(!report.changed);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(session.history.position(), steps);
+    let mut altered = payload;
+    altered.files_mut().next().unwrap().content_hash = 999;
+    assert!(!clipboard.matches_payload(&session, &altered));
+    let clips = copy(&session, id, &selected).unwrap();
+    let report = prepare_paste(
+        &session,
+        ClipboardPayload::from_text(clips.text()).unwrap().unwrap(),
+        None,
+        None,
+        0,
+        true,
+    )
+    .unwrap()
+    .apply(&mut session);
+    assert!(!report.changed);
+    assert!(report.media.is_empty());
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    let mut dangling = clips.entries[0].clone();
+    dangling.clip.source = core::ClipSource::Media(core::MediaId::from_raw(999));
+    let mixed = ClipboardPayload::new(
+        ClipboardOrigin {
+            instance: 123,
+            epoch: session.epoch(),
+        },
+        &session.project,
+        &[file],
+        &[dangling],
+    );
+    let report = prepare_paste(&session, mixed, None, None, 0, true)
+        .unwrap()
+        .apply(&mut session);
+    assert!(!report.changed);
+    assert_eq!(report.media, vec![file]);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    session.install_project(core::Project::default(), None);
+    assert!(!clipboard.is_current(&session));
+    assert!(clipboard.revision(&session).is_some());
+    assert!(!clipboard.matches_payload(&session, &altered));
+    assert!(clipboard.same_project_media_ids(&session).is_empty());
+    let report = prepare_paste(
+        &session,
+        ClipboardPayload::from_text(clipboard.text())
+            .unwrap()
+            .unwrap(),
+        Some(&clipboard),
+        None,
+        0,
+        true,
+    )
+    .unwrap()
+    .apply(&mut session);
+    assert!(report.changed);
+    assert_eq!(report.media.len(), 1);
+    assert_eq!(
+        session.project.media_pool[report.media[0]].path,
+        std::path::Path::new("clipboard.mp4")
+    );
+}
+
+#[test]
+fn cut_requires_exact_published_snapshot_and_unlocked_linked_selection() {
+    let (mut session, id, selected) = fixture();
+    let clipboard = copy(&session, id, &selected[..1]).unwrap();
+    let revision = clipboard.revision(&session).unwrap().to_owned();
+    let text = clipboard.text().to_owned();
+    let steps = session.history.position();
+    session.project.timelines[id].tracks[1].locked = true;
+    let before = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(
+        cut(&mut session, id, &selected[..1], &revision, &clipboard)
+            .unwrap_err()
+            .1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    assert_eq!(clipboard.text(), text);
+    session.project.timelines[id].tracks[1].locked = false;
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    assert_eq!(
+        cut(&mut session, id, &selected[1..], &revision, &clipboard)
+            .unwrap_err()
+            .1,
+        "CLIPBOARD_STALE"
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    cut(&mut session, id, &selected[..1], &revision, &clipboard).unwrap();
+    assert_eq!(session.history.position(), steps + 1);
+    for track in &session.project.timelines[id].tracks {
+        assert_eq!(track.clips.len(), 1);
+        assert_eq!(track.clips[0].timeline_start, 34);
+    }
+    assert_eq!(clipboard.count(&session), 2);
+    assert_eq!(clipboard.text(), text);
+    session.history.undo(&mut session.project);
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    session.project.timelines[id].tracks[0].clips[0].fade_in = 2;
+    let modified = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(
+        cut(&mut session, id, &selected[..1], &revision, &clipboard)
+            .unwrap_err()
+            .1,
+        "CLIPBOARD_STALE"
+    );
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), modified);
+}
+
+#[test]
+fn foreign_offline_clipboard_stays_offline_and_rejections_do_not_allocate() {
+    let (mut source, id, selected) = fixture();
+    for track in &mut source.project.timelines[id].tracks {
+        track.crossings.clear();
+        track.clips.truncate(1);
+    }
+    let media = source
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound.is_none())
+        .unwrap()
+        .0;
+    source.project.media_pool.remove(media);
+    let clipboard = copy(&source, id, &selected[..1]).unwrap();
+    let mut target = Session::default();
+    let timeline = empty_timeline(&mut target, "Offline", core::Rational::new(24, 1));
+    let steps = target.history.position();
+    target.project.timelines[timeline].tracks[0].locked = true;
+    let before = serde_json::to_value(&target.project).unwrap();
+    assert_eq!(
+        prepare_paste(
+            &target,
+            clipboard.payload.clone(),
+            None,
+            Some(timeline),
+            0,
+            false
+        )
+        .err()
+        .unwrap()
+        .1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(serde_json::to_value(&target.project).unwrap(), before);
+    assert_eq!(target.history.position(), steps);
+    target.project.timelines[timeline].tracks[0].locked = false;
+    let report = prepare_paste(
+        &target,
+        clipboard.payload.clone(),
+        None,
+        Some(timeline),
+        0,
+        false,
+    )
+    .unwrap()
+    .apply(&mut target);
+    assert_eq!(report.clips.len(), 2);
+    for track in &target.project.timelines[timeline].tracks {
+        assert!(
+            matches!(track.clips[0].source,core::ClipSource::Media(id) if !target.project.media_pool.contains_key(id))
+        );
+    }
+    let before = serde_json::to_value(&target.project).unwrap();
+    assert_eq!(
+        prepare_paste(
+            &target,
+            clipboard.payload.clone(),
+            None,
+            Some(timeline),
+            0,
+            false
+        )
+        .err()
+        .unwrap()
+        .1,
+        "OVERLAP"
+    );
+    assert_eq!(serde_json::to_value(&target.project).unwrap(), before);
+    assert_eq!(
+        paste(&mut source, id, &clipboard, 100).unwrap_err().1,
+        "INVALID_OPERATION"
+    );
+}
+
+#[test]
+fn property_paste_across_fps_and_project_uses_native_source_frames_without_id_collision_skip() {
+    for mode in [KeyframeMode::MaintainTiming, KeyframeMode::StretchToFit] {
+        for foreign in [false, true] {
+            let (mut session, source, selected) = fixture();
+            session.project.timelines[source].tracks[0].clips[0].fade_in = 3;
+            session.project.timelines[source].tracks[0].clips[0].fade_out = 7;
+            let clipboard = copy(&session, source, &selected[..1]).unwrap();
+            let source_clip = clipboard
+                .entries
+                .iter()
+                .find(|entry| entry.track_kind == core::TrackKind::Video)
+                .unwrap()
+                .clip
+                .clone();
+            let source_item = session
+                .project
+                .media_pool
+                .values()
+                .find(|item| item.compound.is_none())
+                .unwrap()
+                .clone();
+            if foreign {
+                session.install_project(core::Project::default(), None);
+            }
+            let target = empty_timeline(
+                &mut session,
+                "Different FPS",
+                core::Rational::new(30000, 1001),
+            );
+            let media = session.project.media_pool.insert(source_item);
+            let target_id = if foreign {
+                source_clip.id
+            } else {
+                session.project.alloc_clip_id()
+            };
+            let mut target_clip = core::Clip::from_source_range(
+                target_id,
+                core::ClipSource::Media(media),
+                20,
+                32,
+                100,
+                core::Rational::new(1250, 1001),
+            );
+            target_clip.freeze = Some(22);
+            session.project.timelines[target].tracks[0]
+                .clips
+                .push(target_clip.clone());
+            let attributes = [Attribute::Position, Attribute::Masks, Attribute::Fades];
+            let mut expected = target_clip.clone();
+            core::attributes::merge(
+                &source_clip,
+                &target_clip,
+                &attributes.into_iter().collect(),
+                &core::attributes::Conversion::paste(&source_clip, &target_clip, mode),
+            )
+            .apply_to(&mut expected);
+            let before = serde_json::to_value(&session.project.timelines[target]).unwrap();
+            let steps = session.history.position();
+            let revision = clipboard.revision(&session).unwrap().to_owned();
+            paste_attributes(
+                &mut session,
+                target,
+                &clipboard,
+                &revision,
+                &[target_id.0.to_string()],
+                &attributes,
+                mode,
+            )
+            .unwrap();
+            assert_eq!(session.history.position(), steps + 1);
+            let actual = &session.project.timelines[target].tracks[0].clips[0];
+            assert_eq!(
+                serde_json::to_value(actual).unwrap(),
+                serde_json::to_value(expected).unwrap()
+            );
+            assert_eq!(
+                (
+                    actual.timeline_start,
+                    actual.timeline_len,
+                    actual.source_offset,
+                    actual.freeze
+                ),
+                (
+                    target_clip.timeline_start,
+                    target_clip.timeline_len,
+                    target_clip.source_offset,
+                    target_clip.freeze
+                )
+            );
+            let after = serde_json::to_value(&session.project.timelines[target]).unwrap();
+            session.history.undo(&mut session.project);
+            assert_eq!(
+                serde_json::to_value(&session.project.timelines[target]).unwrap(),
+                before
+            );
+            session.history.redo(&mut session.project);
+            assert_eq!(
+                serde_json::to_value(&session.project.timelines[target]).unwrap(),
+                after
+            );
+        }
+    }
+}
+
 #[test]
 fn selected_properties_use_native_mapping_per_kind_and_one_complete_undo() {
     let (mut session, id, selected) = fixture();

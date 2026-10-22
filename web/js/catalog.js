@@ -29,7 +29,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   for (const [id, name] of [["all", "All types"], ["video", "Video"], ["audio", "Audio"], ["image", "Stills"], ["compound", "Timelines / compounds"], ["offline", "Offline"]]) kind.append(new Option(name, id));
   kind.value = state.kind || "all"; toolbar.append(filter, kind); root.append(toolbar);
   const count = document.createElement("p"); count.className = "muted"; count.setAttribute("aria-live", "polite"); root.append(count);
-  const list = document.createElement("div"); list.setAttribute("role", "group"); list.setAttribute("aria-label", "Project media"); root.append(list);
+  const list = document.createElement("div"); list.setAttribute("role", "group"); list.setAttribute("aria-label", "Project media"); list.tabIndex=0;list.dataset.clipboardOwner='pool';root.append(list);
   let visible = [];
   const button = (text, parent, action, disabled = !writable) => {
     const node = document.createElement("button"); node.type = "button"; node.textContent = text; node.disabled = disabled;

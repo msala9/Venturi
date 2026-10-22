@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use vv_core::{
     Clip, ClipSource, MediaId, Project, TimelineId,
     attributes::{Attribute, KeyframeAnchor},
-    clipboard::{ClipboardOrigin, ClipboardPayload},
+    clipboard::{ClipboardEntry, ClipboardOrigin, ClipboardPayload},
 };
 use vv_session::Session;
 
@@ -85,6 +85,91 @@ pub fn decode(asset: &AssetFile) -> Result<ClipboardPayload> {
     Ok(payload)
 }
 
+pub fn validate_clipboard(payload: &ClipboardPayload) -> Result<()> {
+    if payload.to_text().len() > MAX_ASSET_BYTES {
+        return Err(ApiError::invalid("Native clipboard text exceeds 4 MiB"));
+    }
+    let closure = clipboard_closure(
+        payload.fragment(),
+        payload.media_ids(),
+        payload.clip_entries(),
+    )?;
+    if closure.media.len() != payload.fragment().media_pool.len()
+        || closure.timelines.len() != payload.fragment().timelines.len()
+        || !payload.fragment().folders.is_empty()
+    {
+        return Err(ApiError::invalid(
+            "Clipboard contains entities outside its selected dependencies",
+        ));
+    }
+    Ok(())
+}
+// The native copier follows dependencies recursively. Bound the selected closure
+// before invoking it, rather than serializing an already-expanded large fragment.
+pub fn validate_clipboard_capture(
+    project: &Project,
+    media: &[MediaId],
+    entries: &[ClipboardEntry],
+) -> Result<()> {
+    clipboard_closure(project, media, entries).map(|_| ())
+}
+fn clipboard_closure(
+    project: &Project,
+    media: &[MediaId],
+    entries: &[ClipboardEntry],
+) -> Result<Closure> {
+    crate::files::validate_project(project)?;
+    if media.len() > 4096 || entries.len() > 4096 {
+        return Err(ApiError::invalid(
+            "Native clipboard selections are limited to 4096 items",
+        ));
+    }
+    let mut closure = Closure::default();
+    for &id in media {
+        if !project.media_pool.contains_key(id) {
+            return Err(ApiError::invalid(
+                "Copied pool item is missing from the native fragment",
+            ));
+        }
+        visit_impl(project, id, &mut closure, true)?;
+    }
+    for entry in entries {
+        validate_clip_format(&entry.clip, entry.timeline_fps, (1, 1))?;
+        if !(1..=128).contains(&entry.track_number)
+            || entry.relative_start < 0
+            || entry.relative_start > crate::commands::MAX_FRAME - entry.clip.timeline_len
+            || entry.timeline_fps.num <= 0
+            || entry.timeline_fps.den <= 0
+            || entry.timeline_fps.as_f64() > 240.0
+        {
+            return Err(ApiError::invalid(
+                "Copied clip track, frame or timeline format is invalid",
+            ));
+        }
+        native_values(entry)?;
+        budget(entry, &mut closure)?;
+        if let ClipSource::Media(id) = entry.clip.source {
+            visit_impl(project, id, &mut closure, true)?;
+        }
+    }
+    for &id in &closure.media {
+        native_values(&project.media_pool[id])?;
+    }
+    let files: HashSet<_> = closure
+        .media
+        .iter()
+        .filter_map(|&id| project.media_pool.get(id))
+        .filter(|item| item.compound.is_none())
+        .map(|item| &item.path)
+        .collect();
+    if files.len() > 64 {
+        return Err(ApiError::invalid(
+            "Native clipboard dependencies are limited to 64 unique files",
+        ));
+    }
+    Ok(closure)
+}
+
 pub fn capture(
     session: &Session,
     media_id: MediaId,
@@ -133,6 +218,17 @@ fn budget<T: Serialize>(value: &T, closure: &mut Closure) -> Result<()> {
 }
 
 fn visit(project: &Project, id: MediaId, closure: &mut Closure) -> Result<()> {
+    visit_impl(project, id, closure, false)
+}
+fn visit_impl(
+    project: &Project,
+    id: MediaId,
+    closure: &mut Closure,
+    allow_missing: bool,
+) -> Result<()> {
+    if !project.media_pool.contains_key(id) && allow_missing {
+        return Ok(());
+    }
     if !closure.media.insert(id) {
         return Ok(());
     }
@@ -181,7 +277,7 @@ fn visit(project: &Project, id: MediaId, closure: &mut Closure) -> Result<()> {
             for clip in &track.clips {
                 validate_clip(clip, timeline)?;
                 if let ClipSource::Media(media) = clip.source {
-                    visit(project, media, closure)?;
+                    visit_impl(project, media, closure, allow_missing)?;
                 }
             }
         }
@@ -190,6 +286,9 @@ fn visit(project: &Project, id: MediaId, closure: &mut Closure) -> Result<()> {
 }
 
 fn validate_clip(clip: &Clip, timeline: &vv_core::Timeline) -> Result<()> {
+    validate_clip_format(clip, timeline.fps, timeline.resolution)
+}
+fn validate_clip_format(clip: &Clip, fps: vv_core::Rational, resolution: (u32, u32)) -> Result<()> {
     Preset {
         version: 1,
         name: "Asset validation".into(),
@@ -197,8 +296,8 @@ fn validate_clip(clip: &Clip, timeline: &vv_core::Timeline) -> Result<()> {
         anchor: KeyframeAnchor::Start,
         append_filters: false,
         shortcut: None,
-        fps: timeline.fps,
-        resolution: timeline.resolution,
+        fps,
+        resolution,
         video: Some(Box::new(clip.clone())),
         audio: None,
     }

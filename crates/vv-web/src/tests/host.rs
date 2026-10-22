@@ -1,5 +1,306 @@
 use super::*;
 
+fn prepare_clipboard_fixture(editor: &mut Editor, text: Option<String>, to_pool: bool) -> Value {
+    let snapshot = editor.snapshot();
+    let job = editor
+        .handle(Action::PrepareClipboard(ClipboardRequest {
+            project_epoch: snapshot["project_epoch"].as_str().unwrap().into(),
+            if_generation: snapshot["generation"].as_str().unwrap().into(),
+            text,
+            to_pool,
+        }))
+        .unwrap();
+    native_wait(editor, &job)
+}
+
+#[test]
+fn native_clipboard_text_survives_project_change_and_prepared_paste_is_one_retry_safe_undo() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-clipboard-project-host-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Clipboard_source".into(),
+        },
+        "cb-source",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let old = editor.session.project.timelines.keys().next().unwrap();
+    let path = Some(vv_core::Id::raw(old).to_string());
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "cb-add",
+        Some(old),
+    );
+    editor.mutation(path.clone(), add).unwrap();
+    let clip = editor.session.project.timelines[old].tracks[0].clips[0]
+        .id
+        .0
+        .to_string();
+    let copy = request(
+        &editor,
+        Operation::CopyClips {
+            clip_ids: vec![clip],
+        },
+        "cb-copy",
+        Some(old),
+    );
+    let ack = editor.mutation(path, copy).unwrap();
+    let initial = editor.snapshot();
+    let revision = ack["clipboard_revision"].as_str().unwrap().to_owned();
+    let value = editor
+        .handle(Action::Clipboard(ClipboardQuery {
+            project_epoch: initial["project_epoch"].as_str().unwrap().into(),
+            if_generation: initial["generation"].as_str().unwrap().into(),
+            clipboard_revision: revision.clone(),
+        }))
+        .unwrap();
+    assert!(
+        value["text"]
+            .as_str()
+            .unwrap()
+            .starts_with("venturi-clipboard/1\n")
+    );
+    let save = request(&editor, Operation::Save, "cb-save", None);
+    editor.mutation(None, save).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Clipboard_target".into(),
+        },
+        "cb-target",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    assert_eq!(editor.snapshot()["clipboard_count"], 1);
+    assert_eq!(editor.snapshot()["clipboard_revision"], revision);
+    assert_eq!(editor.snapshot()["clipboard_current_project"], false);
+    let target = editor.session.project.timelines.keys().next().unwrap();
+    let before = serde_json::to_value(&editor.session.project.timelines[target]).unwrap();
+    let ready = prepare_clipboard_fixture(
+        &mut editor,
+        Some(value["text"].as_str().unwrap().into()),
+        false,
+    );
+    let paste = request(
+        &editor,
+        Operation::PastePreparedClipboard {
+            job_id: ready["id"].as_str().unwrap().into(),
+            to_pool: false,
+            timeline_id: Some(vv_core::Id::raw(target).to_string()),
+            timeline_revision: Some(editor.session.timeline_revision(target)),
+            frame: 12,
+        },
+        "cb-paste",
+        None,
+    );
+    let position = editor.session.history.position();
+    let ack = editor.mutation(None, paste.clone()).unwrap();
+    assert_eq!(ack["changed"], true);
+    assert_eq!(ack["clip_ids"].as_array().unwrap().len(), 1);
+    assert_eq!(editor.mutation(None, paste).unwrap(), ack);
+    assert_eq!(editor.session.history.position(), position + 1);
+    let after = serde_json::to_value(&editor.session.project.timelines[target]).unwrap();
+    assert_eq!(
+        editor.session.project.timelines[target].tracks[0].clips[0].timeline_start,
+        12
+    );
+    let undo = request(&editor, Operation::Undo, "cb-undo", None);
+    editor.mutation(None, undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&editor.session.project.timelines[target]).unwrap(),
+        before
+    );
+    let redo = request(&editor, Operation::Redo, "cb-redo", None);
+    editor.mutation(None, redo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&editor.session.project.timelines[target]).unwrap(),
+        after
+    );
+    let stale = editor
+        .handle(Action::Clipboard(ClipboardQuery {
+            project_epoch: editor.snapshot()["project_epoch"].as_str().unwrap().into(),
+            if_generation: editor.snapshot()["generation"].as_str().unwrap().into(),
+            clipboard_revision: "wrong-copy".into(),
+        }))
+        .unwrap_err();
+    assert_eq!(stale.1, "CLIPBOARD_STALE");
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn clipboard_pool_copy_noop_and_cut_refusals_preserve_native_data_and_canceled_jobs_never_apply() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-clipboard-cut-host-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let create = request(
+        &editor,
+        Operation::NewProject {
+            name: "Clipboard_cut".into(),
+        },
+        "cb-cut-project",
+        None,
+    );
+    editor.mutation(None, create).unwrap();
+    let id = editor.session.project.timelines.keys().next().unwrap();
+    let path = Some(vv_core::Id::raw(id).to_string());
+    let add = request(
+        &editor,
+        Operation::AddSolid {
+            track: "0".into(),
+            start_frame: 0,
+            length_frames: 24,
+        },
+        "cb-cut-add",
+        Some(id),
+    );
+    editor.mutation(path.clone(), add).unwrap();
+    let media = editor
+        .session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, m)| m.compound == Some(id))
+        .unwrap()
+        .0;
+    let copy = request(
+        &editor,
+        Operation::CopyMedia {
+            media_ids: vec![vv_core::Id::raw(media).to_string()],
+        },
+        "cb-pool-copy",
+        None,
+    );
+    let ack = editor.mutation(None, copy).unwrap();
+    assert!(ack["clipboard_revision"].is_string());
+    assert_eq!(editor.snapshot()["clipboard_media_count"], 1);
+    let job = prepare_clipboard_fixture(&mut editor, None, true);
+    let position = editor.session.history.position();
+    let paste = request(
+        &editor,
+        Operation::PastePreparedClipboard {
+            job_id: job["id"].as_str().unwrap().into(),
+            to_pool: true,
+            timeline_id: None,
+            timeline_revision: None,
+            frame: 0,
+        },
+        "cb-pool-paste",
+        None,
+    );
+    let ack = editor.mutation(None, paste).unwrap();
+    assert_eq!(ack["changed"], false);
+    assert_eq!(
+        ack["media_ids"],
+        json!([vv_core::Id::raw(media).to_string()])
+    );
+    assert_eq!(editor.session.history.position(), position);
+    let clip = editor.session.project.timelines[id].tracks[0].clips[0]
+        .id
+        .0
+        .to_string();
+    let copy = request(
+        &editor,
+        Operation::CopyClips {
+            clip_ids: vec![clip.clone()],
+        },
+        "cb-cut-copy",
+        Some(id),
+    );
+    let ack = editor.mutation(path.clone(), copy).unwrap();
+    let revision = ack["clipboard_revision"].as_str().unwrap().to_owned();
+    editor.session.project.timelines[id].tracks[0].locked = true;
+    let before = serde_json::to_value(&editor.session.project).unwrap();
+    let cut = request(
+        &editor,
+        Operation::CutClips {
+            clip_ids: vec![clip.clone()],
+            clipboard_revision: revision.clone(),
+        },
+        "cb-cut-locked",
+        Some(id),
+    );
+    assert_eq!(
+        editor.mutation(path.clone(), cut).unwrap_err().1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        before
+    );
+    editor.session.project.timelines[id].tracks[0].locked = false;
+    let cut = request(
+        &editor,
+        Operation::CutClips {
+            clip_ids: vec![clip],
+            clipboard_revision: revision,
+        },
+        "cb-cut-ok",
+        Some(id),
+    );
+    let ack = editor.mutation(path.clone(), cut.clone()).unwrap();
+    assert_eq!(editor.mutation(path, cut).unwrap(), ack);
+    assert_eq!(editor.session.history.position(), position + 1);
+    assert!(
+        editor.session.project.timelines[id].tracks[0]
+            .clips
+            .is_empty()
+    );
+    let job = prepare_clipboard_fixture(&mut editor, None, false);
+    let epoch = job["project_epoch"].as_str().unwrap().to_owned();
+    let wrong = editor
+        .handle(Action::OtioImportStatus(
+            job["id"].as_str().unwrap().into(),
+            SourceQuery {
+                project_epoch: epoch.clone(),
+            },
+            false,
+        ))
+        .unwrap_err();
+    assert_eq!(wrong.0, axum::http::StatusCode::NOT_FOUND);
+    editor
+        .handle(Action::ClipboardStatus(
+            job["id"].as_str().unwrap().into(),
+            SourceQuery {
+                project_epoch: epoch,
+            },
+            true,
+        ))
+        .unwrap();
+    let before = serde_json::to_value(&editor.session.project).unwrap();
+    let paste = request(
+        &editor,
+        Operation::PastePreparedClipboard {
+            job_id: job["id"].as_str().unwrap().into(),
+            to_pool: false,
+            timeline_id: Some(vv_core::Id::raw(id).to_string()),
+            timeline_revision: Some(editor.session.timeline_revision(id)),
+            frame: 48,
+        },
+        "cb-canceled-paste",
+        None,
+    );
+    assert!(editor.mutation(None, paste).is_err());
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        before
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn prepared_otio_fixture(editor: &mut Editor, root: &std::path::Path, token: &str) -> Value {
     let mut source = Session::default();
     let id = source.create_timeline(Timeline {

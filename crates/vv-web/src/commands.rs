@@ -60,7 +60,21 @@ pub enum Operation {
     CopyClips {
         clip_ids: Vec<String>,
     },
+    CopyMedia {
+        media_ids: Vec<String>,
+    },
+    CutClips {
+        clip_ids: Vec<String>,
+        clipboard_revision: String,
+    },
     PasteClips {
+        frame: FrameIdx,
+    },
+    PastePreparedClipboard {
+        job_id: String,
+        to_pool: bool,
+        timeline_id: Option<String>,
+        timeline_revision: Option<String>,
         frame: FrameIdx,
     },
     PasteAttributes {
@@ -486,7 +500,9 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 "Native asset imports require the project command endpoint",
             ));
         }
-        Operation::ImportPreparedMedia { .. } | Operation::ImportPreparedOtio { .. } => {
+        Operation::ImportPreparedMedia { .. }
+        | Operation::ImportPreparedOtio { .. }
+        | Operation::PastePreparedClipboard { .. } => {
             return Err(ApiError::invalid(
                 "Media imports require the project command endpoint",
             ));

@@ -12,6 +12,66 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Native text clipboard now passes evidence/m4-native-text-clipboard.json.
+The browser exchanges the original venturi-clipboard/1 text with Rust;
+selected clips, pool items and their native dependency fragment survive project
+changes. Pool focus routes Copy/Paste to its selected media, without stealing a
+stale timeline selection. Explicit system Copy/Paste, retained-copy Paste,
+Ctrl+C/V/X and permission-failure retry use one guarded controller. Text inputs,
+modal forms and media controls retain ordinary browser clipboard behavior.
+Cut submits native linked non-ripple delete only after confirmed system writing
+and unchanged context; denied or stale writes never remove clips.
+
+The existing single worker parses and validates bounded text outside the session
+actor. Authorized flat-root files remain in place; their native metadata/file
+fingerprints and missing/unreadable entry witnesses are independently checked.
+External claimed hashes cannot authorize native reuse. Original native path/
+content reuse, nested naming and dangling offline IDs follow ClipboardPayload.
+A full native trial precedes last source/cancel CAS and infallible application.
+Imported dependencies and inserted clips form one Undo; current captured pool
+reuse/no-op leaves history and allocators unchanged. Origin alone cannot select
+the trusted local fast path: exact captured text and current Session are required.
+Top-level crossing transitions remain in the trusted internal cache because the
+native v1 text format has no crossing list; nested crossings remain native.
+
+The web-only matching-FPS property-paste restriction is removed. Both native
+Conversion::paste keyframe modes retain source-frame timing without preset FPS/
+resolution conversion. Foreign copied ClipIds numerically equal to target IDs
+are no longer mistaken for source clips that should be skipped.
+
+Full cached halo2 validation passes 374 web Rust, 278 core, 730 JavaScript,
+10 proxy, three decoder, one cached-device and four targeted desktop tests,
+fmt, Clippy all-targets with warnings denied and native build. Finite API proof
+uses real MP4/WAV files for nested linked 24-to-25-fps cross-project paste,
+existing media reuse, source bounds, exact retries, one Undo/Redo, Cut, locked/
+canceled/changed/path/version refusals, property paste and Save/restart. A failed
+fixture restored modified bytes without original mtime and consequently changed
+the native cache fingerprint before an unrelated no-op test; restoring the test
+mtime fixes the independent test, without production changes.
+
+One existing Windows browser tab verifies native system text, cross-project
+paste, 25 timeline/24 source frames, nested naming, one Undo/Redo, Cut and pool
+reuse without duplication. It exposed a real missing native copy/cut event
+binding: Ctrl+C produced no actor copy, although Ctrl+A proved Ctrl delivery.
+Handling native ClipboardEvents alongside keydown fixes the path and suppresses
+double submission. Final fmt, 734 JavaScript tests and native build pass after
+verifying unchanged Rust source hashes against the full run. A second sequential
+tab on this final candidate confirms actual Ctrl+C on pool and timeline, Ctrl+V
+pool reuse, Ctrl+X with exactly one DeleteClips, and Undo restoring both clips.
+Its screenshot and authoritative snapshots are included; both tabs and all own
+temporary jobs/tunnels are closed. Saved source/target project and media bytes
+remain unchanged; the main editor retains all five unsaved MoveClips and Undo.
+No browser/environment installation, local build/render/test or hardware GPU
+work occurred. Metadata servers were capped at one CPU/512 MiB/no swap; recorded
+cgroup events show no OOM. The verified binary is staged without activation.
+
+The clip-paste row remains partial: explicit native overwrite acceptance still
+needs an intentional UI choice and complete linked/crossing/Undo qualification.
+The native planner is available; refusing occupied space is not a substitute
+for this original workflow. Native bitmap clipboard import is also open and is
+now recorded on the media-import row. Counts remain 38 done/52 partial and the
+uncertain overall engineering estimate is unchanged.
+
 Native current-project OTIO import now passes
 `evidence/m4-native-otio-merge.json` and its actual Windows screenshot. The
 Projects panel prepares a native import without changing the current project,
@@ -84,8 +144,8 @@ foreign-metadata regressions pass; a real finite title export/import passes and
 the Windows Projects download matches its native SHA. No GPU, font installation
 or external editor was used. Current-project merge and isolated preparation
 were subsequently completed by the increment above. Nested export remains
-unsupported by the original native exporter. OS text/cross-project clip
-clipboard and continuous audio/hardware qualification remain open.
+unsupported by the original native exporter. OS text/cross-project clip clipboard was subsequently completed by the
+increment above. Continuous audio/hardware qualification remains open.
 
 That earlier increment passed 346 web Rust, 277 core, 677 JavaScript, 10 proxy, 3 decoder,
 1 cached-device and four targeted desktop tests, fmt, Clippy and native build

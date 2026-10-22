@@ -35,6 +35,15 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/session", get(session))
         .route("/api/v1/projects/otio/prepare", post(prepare_otio))
+        .route("/api/v1/clipboard", get(clipboard_text))
+        .route(
+            "/api/v1/clipboard/prepare",
+            post(prepare_clipboard).layer(DefaultBodyLimit::max(8 * 1024 * 1024 + 4096)),
+        )
+        .route(
+            "/api/v1/clipboard/jobs/{job}",
+            get(clipboard_status).delete(cancel_clipboard),
+        )
         .route(
             "/api/v1/projects/otio/jobs/{job}",
             get(otio_import_status).delete(cancel_otio_import),
@@ -382,6 +391,74 @@ async fn prepare_media_import(
             payload
                 .map_err(|_| ApiError::invalid("Invalid media import preparation"))?
                 .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn clipboard_text(
+    State(state): State<AppState>,
+    query: std::result::Result<
+        Query<crate::host::ClipboardQuery>,
+        axum::extract::rejection::QueryRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::Clipboard(
+            query
+                .map_err(|_| ApiError::invalid("Invalid clipboard query"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn prepare_clipboard(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::host::ClipboardRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::PrepareClipboard(
+            payload
+                .map_err(|_| ApiError::invalid("Invalid clipboard preparation"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn clipboard_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::ClipboardStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid clipboard job query"))?
+                .0,
+            false,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn cancel_clipboard(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::ClipboardStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid clipboard cancellation query"))?
+                .0,
+            true,
         ))
         .await
         .map(native_asset_json)
@@ -1603,6 +1680,7 @@ async fn assets(request: Request) -> Response {
         }
         "/js/media-import.js" => asset!("/web/js/media-import.js", "text/javascript"),
         "/js/otio-import.js" => asset!("/web/js/otio-import.js", "text/javascript"),
+        "/js/clipboard.js" => asset!("/web/js/clipboard.js", "text/javascript"),
         "/js/mark-range.js" => asset!("/web/js/mark-range.js", "text/javascript"),
         "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
         "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),

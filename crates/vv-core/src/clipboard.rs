@@ -113,6 +113,10 @@ impl ClipboardPayload {
         &self.media
     }
 
+    pub fn clip_entries(&self) -> &[ClipboardEntry] {
+        &self.clips
+    }
+
     /// The pool items copied from the media pool, in copy order.
     pub fn media_items(&self) -> impl Iterator<Item = &MediaItem> {
         self.media

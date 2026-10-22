@@ -1,5 +1,237 @@
 use super::*;
 
+#[test]
+fn clipboard_worker_preserves_verified_native_payload_and_replaces_untrusted_reuse_hashes() {
+    let fixture = Fixture::new();
+    let text = fixture.asset.payload.clone();
+    let job = fixture
+        .jobs
+        .prepare_clipboard("epoch", "7", &text, None, false)
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["state"], "ready");
+    assert_eq!(ready["kind"], "clipboard_import");
+    assert_eq!(ready["result"]["media_count"], 1);
+    assert_eq!(ready["result"]["clip_count"], 0);
+    assert_eq!(ready["progress"], json!({"completed":1,"total":1}));
+    assert_eq!(
+        fixture
+            .jobs
+            .clipboard_payload(id, "epoch", "7")
+            .unwrap()
+            .to_text(),
+        text
+    );
+    assert!(fixture.jobs.clipboard_payload(id, "epoch", "8").is_err());
+    fixture
+        .jobs
+        .mark_clipboard_applied(id, "epoch", "7")
+        .unwrap();
+    assert_eq!(
+        fixture.jobs.status(id, "epoch", true).unwrap()["state"],
+        "applied"
+    );
+    assert!(
+        fixture
+            .jobs
+            .mark_clipboard_applied(id, "epoch", "7")
+            .is_err()
+    );
+    let mut forged = ClipboardPayload::from_text(&text).unwrap().unwrap();
+    forged.files_mut().next().unwrap().content_hash = 1;
+    let job = fixture
+        .jobs
+        .prepare_clipboard("epoch", "7", &forged.to_text(), None, false)
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    fixture.finish(id);
+    let prepared = fixture.jobs.clipboard_payload(id, "epoch", "7").unwrap();
+    assert_eq!(
+        prepared.files().next().unwrap().content_hash,
+        vv_media::content_fingerprint(&fixture.path).unwrap()
+    );
+    {
+        let jobs = fixture.jobs.0.jobs.lock().unwrap();
+        reserve_witnesses(&jobs, 255).unwrap();
+        assert_eq!(reserve_witnesses(&jobs, 256).unwrap_err().1, "ASSET_BUSY");
+    }
+    fixture.jobs.cancel_obsolete("next-epoch");
+    assert!(fixture.jobs.clipboard_payload(id, "epoch", "7").is_err());
+    assert_eq!(
+        std::fs::read_dir(&fixture.project).unwrap().count(),
+        1,
+        "Text clipboard references its files in place"
+    );
+    fixture.close();
+}
+
+#[test]
+fn clipboard_worker_keeps_offline_hashes_untrusted_and_refuses_changes_before_commit() {
+    for state in ["missing", "unreadable", "readable"] {
+        let fixture = Fixture::new();
+        let mut payload = ClipboardPayload::from_text(&fixture.asset.payload)
+            .unwrap()
+            .unwrap();
+        let path = if state == "readable" {
+            fixture.path.clone()
+        } else {
+            fixture.project.join("offline.png")
+        };
+        if state == "unreadable" {
+            std::fs::write(&path, b"not an image").unwrap();
+        }
+        for file in payload.files_mut() {
+            file.path = path.clone();
+            file.content_hash = 123;
+        }
+        let job = fixture
+            .jobs
+            .prepare_clipboard("epoch", "7", &payload.to_text(), None, false)
+            .unwrap();
+        let id = job["id"].as_str().unwrap();
+        let ready = fixture.finish(id);
+        assert_eq!(ready["state"], "ready", "{state}");
+        let prepared = fixture.jobs.clipboard_payload(id, "epoch", "7").unwrap();
+        if state != "readable" {
+            assert_eq!(prepared.files().next().unwrap().content_hash, 0);
+            assert_eq!(ready["result"]["warnings"].as_array().unwrap().len(), 1);
+        }
+        std::fs::write(&path, b"changed after preparation").unwrap();
+        assert_eq!(
+            fixture
+                .jobs
+                .mark_clipboard_applied(id, "epoch", "7")
+                .unwrap_err()
+                .1,
+            "SOURCE_CHANGED",
+            "{state}"
+        );
+        fixture.close();
+    }
+}
+
+#[test]
+fn clipboard_worker_refuses_forged_metadata_escapes_links_and_indirect_manifests() {
+    for case in ["metadata", "outside", "symlink", "manifest"] {
+        let fixture = Fixture::new();
+        let mut payload = ClipboardPayload::from_text(&fixture.asset.payload)
+            .unwrap()
+            .unwrap();
+        let item = payload.files_mut().next().unwrap();
+        match case {
+            "metadata" => item.meta.width += 1,
+            "outside" => item.path = fixture.root.join("outside.png"),
+            "symlink" => {
+                item.path = fixture.project.join("alias.png");
+                std::os::unix::fs::symlink(&fixture.path, &item.path).unwrap();
+            }
+            _ => {
+                item.path = fixture.project.join("manifest.mp4");
+                std::fs::write(&item.path, b"#EXTM3U\nhttps://example.invalid/live").unwrap();
+            }
+        }
+        let job = fixture
+            .jobs
+            .prepare_clipboard("epoch", "7", &payload.to_text(), None, false)
+            .unwrap();
+        let id = job["id"].as_str().unwrap();
+        assert_eq!(fixture.finish(id)["state"], "failed", "{case}");
+        assert!(fixture.jobs.clipboard_payload(id, "epoch", "7").is_err());
+        fixture.close();
+    }
+}
+
+#[test]
+fn clipboard_worker_resolves_ordinary_text_fallback_and_pool_noop_without_parsing_in_actor() {
+    let fixture = Fixture::new();
+    let fallback = &fixture.asset.payload;
+    let job = fixture
+        .jobs
+        .prepare_clipboard("epoch", "7", "ordinary OS text", Some(fallback), false)
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(id)["state"], "ready");
+    assert!(
+        fixture
+            .jobs
+            .clipboard_payload(id, "epoch", "7")
+            .unwrap()
+            .has_media()
+    );
+    fixture.jobs.status(id, "epoch", true).unwrap();
+    assert!(
+        fixture
+            .jobs
+            .mark_clipboard_applied(id, "epoch", "7")
+            .is_err()
+    );
+    let job = fixture
+        .jobs
+        .prepare_clipboard("epoch", "7", "ordinary OS text", Some(fallback), true)
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["result"]["clip_count"], 0);
+    assert_eq!(ready["result"]["media_count"], 0);
+    assert_eq!(ready["progress"], json!({"completed":0,"total":0}));
+    let jobs = fixture.jobs.0.jobs.lock().unwrap();
+    reserve_witnesses(&jobs, 256).unwrap();
+    drop(jobs);
+    for text in [
+        "ordinary text",
+        "venturi-clipboard/2\n()",
+        "venturi-clipboard/1\nmalformed",
+        "",
+    ] {
+        let job = fixture
+            .jobs
+            .prepare_clipboard("epoch", "7", text, None, false)
+            .unwrap();
+        let id = job["id"].as_str().unwrap();
+        assert_eq!(fixture.finish(id)["state"], "failed", "{text:?}");
+    }
+    let oversized = "x".repeat(asset_payload::MAX_ASSET_BYTES + 1);
+    assert!(
+        fixture
+            .jobs
+            .prepare_clipboard("epoch", "7", &oversized, None, false)
+            .is_err()
+    );
+    let source = ClipboardWork {
+        text: fixture.asset.payload.clone(),
+        fallback: None,
+        to_pool: false,
+    };
+    let work = Work {
+        id: "clipboard-budget".into(),
+        asset: None,
+        sources: vec![],
+        cancel: Arc::new(AtomicBool::new(false)),
+        import: None,
+        edit: None,
+        media_import: None,
+        otio: None,
+        clipboard: None,
+    };
+    assert_eq!(
+        run_clipboard(&fixture.jobs.0, &work, &source, Duration::ZERO)
+            .err()
+            .unwrap()
+            .1,
+        "CLIPBOARD_IMPORT_BUDGET"
+    );
+    work.cancel.store(true, Ordering::Release);
+    assert_eq!(
+        run_clipboard(&fixture.jobs.0, &work, &source, MEDIA_IMPORT_BUDGET)
+            .err()
+            .unwrap()
+            .1,
+        "ASSET_CANCELED"
+    );
+    fixture.close();
+}
+
 fn write_otio(fixture: &Fixture, token: &str, paths: &[PathBuf]) {
     let mut project = vv_core::Project::default();
     let timeline = project.timelines.insert(vv_core::Timeline {
@@ -197,6 +429,7 @@ fn otio_policy_errors_and_processing_budget_cannot_be_downgraded_to_offline_read
         edit: None,
         media_import: None,
         otio: Some("budget.otio".into()),
+        clipboard: None,
     };
     assert_eq!(
         run_otio(&fixture.jobs.0, &work, "budget.otio", Duration::ZERO)
@@ -432,6 +665,7 @@ fn media_import_budget_records_every_unprocessed_file_and_zero_success_cannot_co
         edit: None,
         media_import: Some(tokens.clone()),
         otio: None,
+        clipboard: None,
     };
     let result = run_media_import(&fixture.jobs.0, &work, &tokens, Duration::ZERO).unwrap();
     assert!(result.items.is_empty());

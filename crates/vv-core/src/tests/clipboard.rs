@@ -6,6 +6,27 @@ const ORIGIN: ClipboardOrigin = ClipboardOrigin {
     epoch: 1,
 };
 
+#[test]
+fn copied_entry_introspection_preserves_native_text_and_u64_ids() {
+    let project = Project::default();
+    let clip = Clip::from_source_range(
+        crate::ClipId(9_007_199_254_740_993),
+        ClipSource::SolidColor,
+        0,
+        10,
+        0,
+        Rational::one(),
+    );
+    let payload = ClipboardPayload::new(ORIGIN, &project, &[], &[entry(clip)]);
+    let text = payload.to_text();
+    let decoded = ClipboardPayload::from_text(&text).unwrap().unwrap();
+    assert_eq!(decoded.clip_entries().len(), 1);
+    assert_eq!(decoded.clip_entries()[0].clip.id.0, 9_007_199_254_740_993);
+    assert_eq!(decoded.clip_entries()[0].track_number, 1);
+    assert_eq!(decoded.to_text(), text);
+    assert!(text.starts_with("venturi-clipboard/1\n"));
+}
+
 fn meta() -> MediaMeta {
     MediaMeta {
         duration_frames: 100,

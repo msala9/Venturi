@@ -1365,11 +1365,55 @@ the reservation after completion, cancellation or error. Uncached exact
 frames return GPU_BUSY while preparation owns the GPU; cached output and
 metadata editing remain available. No foreign workload is stopped.
 
-- `copy_clips {clip_ids}` captures native ClipboardEntry values, whole linked
-  groups and internal crossing transitions in the session's bounded 4 MiB
-  clipboard. It is writer/epoch/generation/revision/idempotency guarded but
-  creates no undo step; copying locked tracks is allowed. Session snapshots
-  expose clipboard_count and a revision for property paste, not clip payloads.
+- Timeline `copy_clips {clip_ids}` and project `copy_media {media_ids}` capture
+  the original native `venturi-clipboard/1` text, including selected dependencies,
+  within 4 MiB/4096 selections/64 files/64 timelines. Copy is writer, epoch,
+  generation, revision and idempotency guarded but creates no Undo; locked clips
+  may be copied. The retained fragment survives project changes. Snapshot fields
+  `clipboard_count`, `clipboard_media_count`, `clipboard_revision` and
+  `clipboard_current_project` describe it. Copy ACKs include its revision.
+- GET `/clipboard?project_epoch=...&if_generation=...&clipboard_revision=...`
+  returns the exact captured text, revision, epoch, generation and selected clip/
+  media counts with no-store. Text is not included in durable command receipts.
+  The browser writes it from the Copy/Cut user gesture. Text inputs, modal forms
+  and media controls retain their normal clipboard handling; pool focus selects
+  pool copy/paste, preventing stale timeline selection from stealing Copy.
+- Timeline `cut_clips {clip_ids,clipboard_revision}` requires the exact current
+  captured selection and unlocked linked tracks. It uses the native non-ripple
+  delete in one Undo, preserving the copy. The browser submits Cut only after
+  confirmed system clipboard writing and an unchanged captured context. A denied
+  write keeps the native copy and exposes an explicit system-copy retry without
+  deleting clips. Unknown mutation outcomes retain the original command identity.
+- POST `/clipboard/prepare` accepts
+  `{project_epoch,if_generation,text:string|null,to_pool:boolean}`. Null uses the
+  retained native snapshot; opaque system text comes from a real paste event or
+  the explicit system Paste button. The latter captures context before async
+  permission/read and never silently falls back on denial. Rust resolves ordinary
+  nonpayload text to the retained clip copy outside the pool; in the pool it is
+  a no-op. Unsupported/malformed native versions are refused. Empty/image-only
+  clipboard import is not part of this native text path.
+- GET/DELETE `/clipboard/jobs/{job}?project_epoch=...` reads/cancels typed
+  `clipboard_import` preparation. Its native summary contains `clip_count`,
+  `media_count` (selected pool roots), `warnings`, and actual distinct-file
+  progress. The existing single worker, one queue slot, eight job records and
+  global 256-descriptor budget apply. Parsing/validation is outside the session
+  actor; flat-root source witnesses and isolated native media probes follow the
+  OTIO limits above. No files are copied or allowlists expanded. File hashes are
+  independently fingerprinted before native content reuse; missing/unreadable
+  entries retain offline metadata with hash zero. Changed critical metadata,
+  symlinks, root escapes, manifests and canceled/stale jobs cannot apply.
+- Project `paste_prepared_clipboard {job_id,to_pool,timeline_id,
+  timeline_revision,frame}` validates the entire native merge and clip plan on a
+  clone, then rechecks source/cancellation witnesses before infallible application.
+  Pool requests require null timeline/revision and frame zero; timeline requests
+  require the captured exact target revision. A native media-only payload goes
+  to the pool even with timeline focus. The ACK adds `media_ids` (selected pool
+  roots), `clip_ids` and `changed`. Native path/content reuse, nested naming,
+  fresh IDs and intentionally dangling offline references follow `merge_into`.
+  Pool reuse/no-op creates no Undo or allocator changes; a changed paste is one
+  complete Undo for both imported dependencies and inserted clips. Current
+  compound reuse requires the exact trusted captured text and current session;
+  a received origin identifier alone never authorizes the fast path.
 - `paste_clips {frame}` requires the same project epoch. Different timeline FPS
   use native `Clip::retime`: set the copied relative start, conform to the target
   timeline/media FPS, then add the destination playhead. Source-frame animation,
@@ -1379,6 +1423,12 @@ metadata editing remain available. No foreign workload is stopped.
   A native trial plans missing tracks, fresh clip/group IDs, effect/animation
   copies, internal crossings and cycle/depth checks. Any occupied/locked
   destination refuses the whole paste before real IDs/tracks/history change.
-  One composite undo removes all pasted clips and any new tracks. The actual
-  browser text clipboard and cross-project transfers are not
-  part of this first adapter. Copy again after opening another project.
+  One composite undo removes all pasted clips and any new tracks. Legacy direct
+  paste refuses a retained foreign epoch; the prepared path handles cross-project
+  transfers. Internal crossing transitions remain in the trusted local cache;
+  the original v1 text format has no top-level crossing list. Nested timeline
+  crossings retain their native representation.
+- `paste_attributes` keeps native `Conversion::paste` for both keyframe modes,
+  including different timeline FPS and retained foreign clips. It does not apply
+  preset FPS/resolution conversion. Original source IDs are excluded only in the
+  same project; numerically equal IDs from a foreign snapshot are valid targets.

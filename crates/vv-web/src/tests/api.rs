@@ -6,6 +6,148 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn clipboard_http_preparation_is_bounded_strict_read_only_and_typed() {
+    let root =
+        std::env::temp_dir().join(format!("vv-clipboard-http-{}", crate::asset_jobs::nonce()));
+    let host = Host::start(&root).unwrap();
+    let initial = host.call(Action::Session).await.unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let mut project = vv_core::Project::default();
+    let clip = vv_core::Clip::from_source_range(
+        project.alloc_clip_id(),
+        vv_core::ClipSource::SolidColor,
+        0,
+        12,
+        0,
+        vv_core::Rational::new(1, 1),
+    );
+    let payload = vv_core::clipboard::ClipboardPayload::new(
+        vv_core::clipboard::ClipboardOrigin {
+            instance: 7,
+            epoch: 1,
+        },
+        &project,
+        &[],
+        &[vv_core::clipboard::ClipboardEntry {
+            track_kind: vv_core::TrackKind::Video,
+            track_number: 1,
+            relative_start: 0,
+            clip,
+            timeline_fps: vv_core::Rational::new(24, 1),
+            link_tag: None,
+        }],
+    )
+    .to_text();
+    let make = |method: &str, path: &str, body: Value| {
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("content-type", "application/json")
+            .body(if body.is_null() {
+                Body::empty()
+            } else {
+                Body::from(body.to_string())
+            })
+            .unwrap()
+    };
+    let prepare = json!({"project_epoch":initial["project_epoch"],"if_generation":initial["generation"],"text":payload,"to_pool":false});
+    let mut invalid = prepare.clone();
+    invalid["path_token"] = json!("outside");
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", "/api/v1/clipboard/prepare", invalid))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    let mut large = prepare.clone();
+    large["text"] = json!("x".repeat(4 * 1024 * 1024 + 1));
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", "/api/v1/clipboard/prepare", large))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    let mut foreign = make("POST", "/api/v1/clipboard/prepare", prepare.clone());
+    foreign
+        .headers_mut()
+        .insert(header::ORIGIN, "https://evil.example".parse().unwrap());
+    assert_eq!(
+        app.clone().oneshot(foreign).await.unwrap().status(),
+        StatusCode::FORBIDDEN
+    );
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/clipboard/prepare", prepare))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let job: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    let path = format!(
+        "/api/v1/clipboard/jobs/{}?project_epoch={}",
+        job["id"].as_str().unwrap(),
+        initial["project_epoch"].as_str().unwrap()
+    );
+    let until = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        let response = app
+            .clone()
+            .oneshot(make("GET", &path, Value::Null))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+        if value["state"] == "ready" {
+            assert_eq!(value["result"]["clip_count"], 1);
+            break;
+        }
+        assert!(
+            matches!(value["state"].as_str(), Some("queued" | "running")),
+            "{value}"
+        );
+        assert!(std::time::Instant::now() < until);
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    assert_eq!(host.call(Action::Session).await.unwrap(), initial);
+    let wrong = path.replace("/clipboard/jobs/", "/projects/otio/jobs/");
+    assert_eq!(
+        app.clone()
+            .oneshot(make("DELETE", &wrong, Value::Null))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::NOT_FOUND
+    );
+    let response = app
+        .clone()
+        .oneshot(make("DELETE", &path, Value::Null))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(host.call(Action::Session).await.unwrap(), initial);
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn otio_prepare_http_is_strict_read_only_and_current_import_has_explicit_reuse() {
     let root = std::env::temp_dir().join(format!(
         "vv-otio-prepare-http-{}",

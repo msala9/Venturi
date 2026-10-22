@@ -4,6 +4,36 @@ use vv_core::{
 };
 
 #[test]
+fn native_asset_placement_metadata_describes_only_the_selected_root_without_native_format_changes()
+{
+    let (root, store, asset) = fixture();
+    store.create("placement", &asset).unwrap();
+    let encoded = store.export("placement").unwrap();
+    let row = store.item("placement", false).unwrap();
+    assert_eq!(row["placement"]["error"], Value::Null);
+    assert_eq!(row["placement"]["items"].as_array().unwrap().len(), 1);
+    assert_eq!(
+        row["placement"]["items"][0],
+        json!({"source_in":0,"source_out":24,"fps":{"num":24,"den":1},"has_video":true,"has_audio":false,"audio_streams":0,"is_image":false})
+    );
+    assert_eq!(store.export("placement").unwrap(), encoded);
+    store
+        .edit(
+            "archive-placement",
+            &Edit::Archive {
+                id: "placement".into(),
+                revision: row["revision"].as_str().unwrap().into(),
+            },
+        )
+        .unwrap();
+    let archived = store.item("placement", true).unwrap();
+    assert_eq!(archived["placement"]["items"], json!([]));
+    assert!(archived["placement"]["error"].is_string());
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn native_pending_marker_blocks_web_reads_and_writes_without_touching_foreign_recovery_data() {
     use std::os::unix::fs::symlink;
     let (root, store, asset) = fixture();

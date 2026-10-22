@@ -2081,6 +2081,9 @@ async fn assets(request: Request) -> Response {
         "/js/timeline/preset-drop.js" => {
             asset!("/web/js/timeline/preset-drop.js", "text/javascript")
         }
+        "/js/timeline/asset-drop.js" => {
+            asset!("/web/js/timeline/asset-drop.js", "text/javascript")
+        }
         "/js/timeline/draw.js" => asset!("/web/js/timeline/draw.js", "text/javascript"),
         _ => return ApiError::missing().into_response(),
     };

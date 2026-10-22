@@ -6,7 +6,7 @@ export function createTimeline(options) {
   const input = createInput({ ...options, invalidate: changed });
   return {
     ...draw,
-    invalidate(){input.checkPresetDrop();input.checkGapSelection();input.checkSelectionAnchor();changed();},
+    invalidate(){input.checkPresetDrop();input.checkAssetDrop();input.checkGapSelection();input.checkSelectionAnchor();changed();},
     cancel: input.cancel,
     closeGap:input.closeGap,
     rippleDelete:input.rippleDelete,
@@ -21,6 +21,7 @@ export function createTimeline(options) {
     handleSelectionKey:input.handleSelectionKey,
     transitionDnd: input.transitionDnd,
     presetDnd:{...input.presetDnd,start(item,current){options.onNavigationIntent?.();return input.presetDnd.start(item,current);}},
+    assetDnd:{...input.assetDnd,start(items,current,onDrop){options.onNavigationIntent?.();return input.assetDnd.start(items,current,onDrop);}},
     navigationIdle:input.navigationIdle,
     destroy() {
       input.destroy();

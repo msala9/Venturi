@@ -1,6 +1,262 @@
 use super::*;
 use serde_json::json;
 
+fn asset_drop_operation(target: AssetDropTarget, overwrite: bool) -> Operation {
+    Operation::PlaceNativeAssets {
+        job_id: "ready".into(),
+        assets: vec![crate::asset_store::ImportRef {
+            asset_id: "asset".into(),
+            revision: "revision".into(),
+        }],
+        start_frame: 96,
+        target,
+        overwrite,
+    }
+}
+#[test]
+fn native_asset_placement_matches_native_multistream_order_tracks_and_one_undo() {
+    let (mut session, id, _) = fixture();
+    let media = session.project.media_pool.insert(core::MediaItem {
+        path: "source.mp4".into(),
+        meta: core::MediaMeta {
+            duration_frames: 30,
+            fps: core::Rational::new(30, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: true,
+            sample_rate: 48000,
+            channels: 2,
+            audio_streams: 2,
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    });
+    let before = session.project.clone();
+    let mut still = session.project.media_pool[media].meta.clone();
+    still.has_audio = false;
+    still.audio_streams = 0;
+    still.duration_frames = core::IMAGE_DURATION_FRAMES;
+    assert_eq!(whole_media_out(&still).unwrap(), 150);
+    let operation = asset_drop_operation(AssetDropTarget::NewAudioTrack {}, false);
+    let plan =
+        prepare_native_asset_placement(&session.project, id, &[media, media], &operation).unwrap();
+    let mut oracle = Session::default();
+    oracle.project = before.clone();
+    let oracle_group = oracle.history.begin_group();
+    let extra = edit::add_track(
+        &mut oracle.project,
+        &mut oracle.history,
+        id,
+        TrackKind::Audio,
+    );
+    let insert = edit::MediaInsert {
+        media_id: media,
+        source_in: 0,
+        source_out: 30,
+        video: true,
+        audio: true,
+    };
+    for start in [96, 120] {
+        edit::insert_media(
+            &mut oracle.project,
+            &mut oracle.history,
+            id,
+            insert,
+            start,
+            edit::TargetTracks {
+                video: Some(0),
+                extra_audio: Some(extra),
+            },
+        )
+        .unwrap();
+    }
+    oracle
+        .history
+        .end_group_as(oracle_group, CommandLabel::InsertClips);
+    let position = session.history.position();
+    let clips = plan.apply(&mut session);
+    assert_eq!(clips.len(), 6);
+    assert_eq!(
+        ron::to_string(&session.project).unwrap(),
+        ron::to_string(&oracle.project).unwrap()
+    );
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(
+        session.project.timelines[id].tracks[extra].clips[0].audio_stream_index,
+        0
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[1].clips[0].audio_stream_index,
+        1
+    );
+    let after = ron::to_string(&session.project).unwrap();
+    let before_allocations = serde_json::to_value(&before).unwrap();
+    let after_allocations = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(
+        after_allocations["next_clip_id"].as_u64().unwrap(),
+        before_allocations["next_clip_id"].as_u64().unwrap() + 6
+    );
+    assert_eq!(
+        after_allocations["next_link_group_id"].as_u64().unwrap(),
+        before_allocations["next_link_group_id"].as_u64().unwrap() + 2
+    );
+    session.history.undo(&mut session.project);
+    oracle.history.undo(&mut oracle.project);
+    assert_eq!(
+        ron::to_string(&session.project).unwrap(),
+        ron::to_string(&oracle.project).unwrap()
+    );
+    assert_eq!(
+        ron::to_string(&session.project.timelines[id]).unwrap(),
+        ron::to_string(&before.timelines[id]).unwrap()
+    );
+    let undone_allocations = serde_json::to_value(&session.project).unwrap();
+    for field in [
+        "next_clip_id",
+        "next_link_group_id",
+        "next_compound_id",
+        "next_compound_generation",
+    ] {
+        assert_eq!(undone_allocations[field], after_allocations[field]);
+    }
+    for field in ["media_pool", "timelines", "folders"] {
+        assert_eq!(
+            undone_allocations[field]["next"],
+            after_allocations[field]["next"]
+        );
+    }
+    session.history.redo(&mut session.project);
+    assert_eq!(ron::to_string(&session.project).unwrap(), after);
+}
+#[test]
+fn native_asset_placement_keeps_audio_default_and_rejects_locked_overlap_and_cycles_atomically() {
+    let (mut session, id, _) = fixture();
+    let media = session.project.media_pool.insert(core::MediaItem {
+        path: "source.mp4".into(),
+        meta: core::MediaMeta {
+            duration_frames: 24,
+            fps: core::Rational::new(24, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: true,
+            sample_rate: 48000,
+            channels: 2,
+            audio_streams: 1,
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    });
+    let before = ron::to_string(&session.project).unwrap();
+    let position = session.history.position();
+    let mut overlap = asset_drop_operation(
+        AssetDropTarget::Track {
+            track_id: "0".into(),
+        },
+        false,
+    );
+    if let Operation::PlaceNativeAssets { start_frame, .. } = &mut overlap {
+        *start_frame = 0;
+    }
+    assert_eq!(
+        prepare_native_asset_placement(&session.project, id, &[media], &overlap)
+            .err()
+            .unwrap()
+            .1,
+        "OVERLAP"
+    );
+    session.project.timelines[id].tracks[1].locked = true;
+    let locked = asset_drop_operation(
+        AssetDropTarget::Track {
+            track_id: "1".into(),
+        },
+        false,
+    );
+    assert_eq!(
+        prepare_native_asset_placement(&session.project, id, &[media], &locked)
+            .err()
+            .unwrap()
+            .1,
+        "TRACK_LOCKED"
+    );
+    session.project.timelines[id].tracks[1].locked = false;
+    let own = session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(id))
+        .unwrap()
+        .0;
+    assert!(prepare_native_asset_placement(&session.project, id, &[own], &overlap).is_err());
+    assert_eq!(ron::to_string(&session.project).unwrap(), before);
+    assert_eq!(session.history.position(), position);
+    let explicit = asset_drop_operation(
+        AssetDropTarget::Track {
+            track_id: "1".into(),
+        },
+        false,
+    );
+    let plan = prepare_native_asset_placement(&session.project, id, &[media], &explicit).unwrap();
+    plan.apply(&mut session);
+    assert_eq!(
+        session.project.timelines[id].tracks[0]
+            .clips
+            .last()
+            .unwrap()
+            .timeline_start,
+        96
+    );
+    let (mut video_only, video_id, _) = fixture();
+    video_only.project.timelines[video_id]
+        .tracks
+        .retain(|track| track.kind == TrackKind::Video);
+    video_only.project.media_pool = session.project.media_pool.clone();
+    let plan = prepare_native_asset_placement(
+        &video_only.project,
+        video_id,
+        &[media],
+        &asset_drop_operation(AssetDropTarget::NewVideoTrack {}, false),
+    )
+    .unwrap();
+    plan.apply(&mut video_only);
+    assert!(
+        video_only.project.timelines[video_id]
+            .tracks
+            .iter()
+            .all(|track| track.kind == TrackKind::Video)
+    );
+    let mut overwrite = overlap;
+    if let Operation::PlaceNativeAssets { overwrite, .. } = &mut overwrite {
+        *overwrite = true;
+    }
+    let plan = prepare_native_asset_placement(&session.project, id, &[media], &overwrite).unwrap();
+    plan.apply(&mut session);
+    assert!(matches!(
+        session.project.timelines[id].tracks[0].clips[0].source,
+        core::ClipSource::Media(actual) if actual == media
+    ));
+}
+#[test]
+fn native_asset_drop_dto_is_strict_and_omitted_overwrite_keeps_legacy_serialization() {
+    let value = json!({"kind":"place_native_assets","job_id":"job","assets":[{"asset_id":"asset","revision":"revision"}],"start_frame":0,"target":{"kind":"new_video_track"}});
+    let operation: Operation = serde_json::from_value(value.clone()).unwrap();
+    assert_eq!(serde_json::to_value(operation).unwrap(), value);
+    for path in ["target", "reference"] {
+        let mut invalid = value.clone();
+        if path == "target" {
+            invalid["target"]["track_id"] = json!("0");
+        } else {
+            invalid["assets"][0]["forged"] = json!(true);
+        }
+        assert!(serde_json::from_value::<Operation>(invalid).is_err());
+    }
+}
+
 #[test]
 fn group_trim_uses_native_handle_clamp_and_follower_offsets_with_one_undo() {
     let (mut session, id, _) = close_gap_fixture(false);

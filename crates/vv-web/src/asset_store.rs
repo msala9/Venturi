@@ -52,6 +52,12 @@ pub struct AssetRef {
     pub id: String,
     pub revision: String,
 }
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ImportRef {
+    pub asset_id: String,
+    pub revision: String,
+}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Edit {
@@ -614,13 +620,27 @@ impl Store {
                 };
                 let effective = asset.folder.as_deref().filter(|id| tree.contains(id));
                 let mut value = json!({"id":id,"revision":raw.revision,"name":asset.name,"folder":asset.folder,"effective_folder":effective,"media_count":payload.media_items().count(),"file_count":payload.files().map(|m|&m.path).collect::<std::collections::HashSet<_>>().len(),"archived":archived,"can_restore_previous":previous});
+                let placement = payload.media_ids().iter().map(|id| {
+                    let meta = &payload.fragment().media_pool[*id].meta;
+                    let out = crate::commands::whole_media_out(meta)?;
+                    Ok(json!({"source_in":0,"source_out":out,"fps":meta.fps,"has_video":meta.has_video,"has_audio":meta.has_audio,"audio_streams":meta.audio_stream_count(),"is_image":meta.is_image()}))
+                }).collect::<Result<Vec<_>>>();
+                value["placement"] = match placement {
+                    Ok(items) if !archived => json!({"items":items,"error":null}),
+                    Ok(_) => json!({"items":[],"error":"Restore this asset before placing it"}),
+                    Err(error) => json!({"items":[],"error":error.2}),
+                };
                 match files {
                     Ok(files) => {
+                        if files.iter().any(|(_, missing)| *missing) {
+                            value["placement"] = json!({"items":[],"error":"Relink missing asset files before placing it"});
+                        }
                         value["missing_count"] =
                             json!(files.iter().filter(|(_, missing)| *missing).count());
                         value["offline_files"]=json!(files.iter().map(|(path,missing)|json!({"name":path.file_name().and_then(|n|n.to_str()).unwrap_or_default(),"missing":missing})).collect::<Vec<_>>());
                     }
                     Err(error) => {
+                        value["placement"] = json!({"items":[],"error":error.2});
                         value["missing_count"] = Value::Null;
                         value["offline_files"] = json!([]);
                         value["relink_error"] = json!(error.2);

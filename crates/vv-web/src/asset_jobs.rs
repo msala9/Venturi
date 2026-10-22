@@ -177,6 +177,7 @@ impl Witness {
 struct Prepared {
     asset: AssetFile,
     files: Vec<Witness>,
+    import_set: Vec<(asset_store::ImportRef, AssetFile)>,
 }
 struct PreparedLibraryEdit {
     edit: crate::asset_journal::PreparedEdit,
@@ -224,6 +225,11 @@ impl Job {
             json!({"asset_id":self.asset_id,"revision":self.revision,"name":prepared.asset.name,"media_count":payload.as_ref().map_or(0,|p| p.media_items().count()),"file_count":prepared.files.len(),"bytes":self.bytes})
         }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary())).or_else(||self.media_import.as_ref().map(PreparedImport::value)).or_else(||self.otio.as_ref().map(PreparedOtio::value)).or_else(||self.clipboard.as_ref().map(PreparedClipboard::value)).or_else(||self.clipboard_image.as_ref().map(|prepared|prepared.summary.clone()));
         let mut value = json!({"id":self.id,"kind":self.kind,"project_epoch":self.epoch,"generation":self.generation,"state":self.state,"bytes":self.bytes,"total_bytes":self.total,"error":self.error,"result":result});
+        if self.kind == "import_set"
+            && let Some(prepared) = &self.result
+        {
+            value["result"] = json!({"assets":prepared.import_set.iter().map(|(reference,asset)|json!({"asset_id":reference.asset_id,"revision":reference.revision,"name":asset.name})).collect::<Vec<_>>(),"file_count":prepared.files.len(),"bytes":self.bytes});
+        }
         if self.kind == "media_import" {
             value["progress"] =
                 json!({"completed":self.import_completed,"total":self.import_total});
@@ -239,6 +245,7 @@ struct Work {
     sources: Vec<PinnedSource>,
     cancel: Arc<AtomicBool>,
     import: Option<(String, String)>,
+    import_set: Vec<(asset_store::ImportRef, AssetFile)>,
     edit: Option<(asset_store::Edit, crate::asset_journal::Completion)>,
     media_import: Option<Vec<String>>,
     otio: Option<String>,
@@ -427,7 +434,7 @@ impl Jobs {
         for source in &sources {
             crate::files::root_media_token(&self.0.root, &source.path)?;
         }
-        self.enqueue(epoch, generation, asset, sources, None)
+        self.enqueue(epoch, generation, asset, sources, None, Vec::new())
     }
     pub fn prepare_edit(
         &self,
@@ -514,6 +521,7 @@ impl Jobs {
             sources: vec![],
             cancel: cancel.clone(),
             import: None,
+            import_set: Vec::new(),
             edit: Some((edit.clone(), completion)),
             media_import: None,
             otio: None,
@@ -655,6 +663,77 @@ impl Jobs {
             asset,
             sources,
             Some((id.into(), revision.into())),
+            Vec::new(),
+        )
+    }
+    pub fn prepare_import_set(
+        &self,
+        epoch: &str,
+        generation: &str,
+        references: &[asset_store::ImportRef],
+    ) -> Result<Value> {
+        if references.is_empty()
+            || references.len() > 32
+            || references
+                .iter()
+                .map(|r| &r.asset_id)
+                .collect::<HashSet<_>>()
+                .len()
+                != references.len()
+        {
+            return Err(ApiError::invalid(
+                "Choose 1 to 32 unique native assets in panel order",
+            ));
+        }
+        let mut assets = Vec::new();
+        let mut paths = HashSet::new();
+        let mut sources = Vec::new();
+        let mut metadata_bytes = 0usize;
+        for reference in references {
+            let asset = self
+                .0
+                .store
+                .load(&reference.asset_id, &reference.revision)?;
+            metadata_bytes = metadata_bytes.saturating_add(
+                serde_json::to_vec(&asset)
+                    .map_err(|_| ApiError::io())?
+                    .len(),
+            );
+            if metadata_bytes > crate::asset_journal::MAX_METADATA as usize {
+                return Err(ApiError::invalid(
+                    "Selected native asset metadata exceeds 16 MiB",
+                ));
+            }
+            let payload = asset_payload::decode(&asset)?;
+            for item in payload.files() {
+                let (directory, name, hash) = store_location(&self.0.store, &item.path)?;
+                if legacy_hash(&hash).is_some_and(|hash| hash != item.content_hash) {
+                    return Err(source_changed());
+                }
+                if paths.insert(item.path.clone()) {
+                    if sources.len() >= MAX_FILES {
+                        return Err(ApiError::invalid(
+                            "Selected native assets exceed 64 unique files",
+                        ));
+                    }
+                    let file = asset_store::regular(&directory, &name)?;
+                    sources.push(PinnedSource {
+                        path: item.path.clone(),
+                        identity: crate::source::file_identity(&file)?,
+                        file,
+                    });
+                }
+            }
+            assets.push((reference.clone(), asset));
+        }
+        let first = &references[0];
+        self.enqueue(
+            epoch,
+            generation,
+            assets[0].1.clone(),
+            sources,
+            Some((first.asset_id.clone(), first.revision.clone())),
+            assets,
         )
     }
     fn enqueue(
@@ -664,6 +743,7 @@ impl Jobs {
         asset: AssetFile,
         sources: Vec<PinnedSource>,
         import: Option<(String, String)>,
+        import_set: Vec<(asset_store::ImportRef, AssetFile)>,
     ) -> Result<Value> {
         binding(epoch, generation)?;
         if sources.len() > MAX_FILES {
@@ -695,12 +775,14 @@ impl Jobs {
         reserve(&mut jobs)?;
         let id = format!("asset-{}", nonce());
         let cancel = Arc::new(AtomicBool::new(false));
+        let is_set = !import_set.is_empty();
         let work = Work {
             id: id.clone(),
             asset: Some(asset),
             sources,
             cancel: cancel.clone(),
             import: import.clone(),
+            import_set,
             edit: None,
             media_import: None,
             otio: None,
@@ -709,7 +791,9 @@ impl Jobs {
         };
         let job = Job {
             id,
-            kind: if import.is_some() {
+            kind: if is_set {
+                "import_set"
+            } else if import.is_some() {
                 "import"
             } else {
                 "capture"
@@ -767,6 +851,7 @@ impl Jobs {
             sources: vec![],
             cancel: cancel.clone(),
             import: None,
+            import_set: Vec::new(),
             edit: None,
             media_import: Some(tokens),
             otio: None,
@@ -830,6 +915,7 @@ impl Jobs {
             sources: vec![],
             cancel: cancel.clone(),
             import: None,
+            import_set: Vec::new(),
             edit: None,
             media_import: None,
             otio: None,
@@ -954,6 +1040,7 @@ impl Jobs {
             sources: vec![],
             cancel: cancel.clone(),
             import: None,
+            import_set: Vec::new(),
             edit: None,
             media_import: None,
             otio: None,
@@ -1048,6 +1135,7 @@ impl Jobs {
             sources: vec![],
             cancel: cancel.clone(),
             import: None,
+            import_set: Vec::new(),
             edit: None,
             media_import: None,
             otio: Some(path_token.into()),
@@ -1291,6 +1379,58 @@ impl Jobs {
             file.validate()?;
         }
         asset_payload::decode(&prepared.asset)
+    }
+    pub fn import_set_payloads(
+        &self,
+        id: &str,
+        references: &[asset_store::ImportRef],
+        epoch: &str,
+        generation: &str,
+    ) -> Result<Vec<ClipboardPayload>> {
+        roots(&self.0)?;
+        let jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, "import_set")?;
+        let prepared = job.result.as_ref().ok_or_else(ApiError::missing)?;
+        let metadata_bytes =
+            prepared
+                .import_set
+                .iter()
+                .try_fold(0usize, |total, (_, asset)| {
+                    Ok::<_, ApiError>(total.saturating_add(
+                        serde_json::to_vec(asset).map_err(|_| ApiError::io())?.len(),
+                    ))
+                })?;
+        if metadata_bytes > crate::asset_journal::MAX_METADATA as usize {
+            return Err(ApiError::invalid(
+                "Selected native asset metadata exceeds 16 MiB",
+            ));
+        }
+        if prepared.import_set.len() != references.len()
+            || prepared
+                .import_set
+                .iter()
+                .zip(references)
+                .any(|((actual, _), wanted)| actual != wanted)
+        {
+            return Err(asset_store::changed());
+        }
+        for reference in references {
+            self.0
+                .store
+                .load(&reference.asset_id, &reference.revision)?;
+        }
+        for file in &prepared.files {
+            file.validate()?;
+        }
+        prepared
+            .import_set
+            .iter()
+            .map(|(_, asset)| asset_payload::decode(asset))
+            .collect()
     }
 }
 fn applied_image(
@@ -1847,8 +1987,18 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
     if let Some((id, revision)) = &work.import {
         inner.store.load(id, revision)?;
     }
-    let source_asset = work.asset.as_ref().ok_or_else(ApiError::missing)?;
-    let mut payload = asset_payload::decode(source_asset)?;
+    for (reference, _) in &work.import_set {
+        inner.store.load(&reference.asset_id, &reference.revision)?;
+    }
+    let source_assets = if work.import_set.is_empty() {
+        vec![work.asset.as_ref().ok_or_else(ApiError::missing)?]
+    } else {
+        work.import_set.iter().map(|(_, asset)| asset).collect()
+    };
+    let mut payloads = source_assets
+        .iter()
+        .map(|asset| asset_payload::decode(asset))
+        .collect::<Result<Vec<_>>>()?;
     let mut remap = HashMap::new();
     let mut files = Vec::new();
     let mut bytes = 0_u64;
@@ -1866,7 +2016,11 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
         } else {
             None
         };
-        for item in payload.files().filter(|item| item.path == source.path) {
+        for item in payloads
+            .iter()
+            .flat_map(|payload| payload.files())
+            .filter(|item| item.path == source.path)
+        {
             // SHA-directory imports already authenticate bytes; native fingerprints include path/mtime.
             let hash_matches = legacy.map_or(
                 work.import.is_some()
@@ -1881,22 +2035,52 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
         remap.insert(source.path.clone(), (copied.path, copied.hash));
         files.push(copied.witness);
     }
-    for item in payload.files_mut() {
+    for item in payloads.iter_mut().flat_map(|payload| payload.files_mut()) {
         let (path, hash) = remap
             .get(&item.path)
             .ok_or_else(|| ApiError::invalid("Asset dependency was not prepared"))?;
         item.path = path.clone();
         item.content_hash = *hash;
     }
-    let asset = AssetFile {
-        version: source_asset.version,
-        name: source_asset.name.clone(),
-        folder: source_asset.folder.clone(),
-        payload: payload.to_text(),
+    let mut assets = source_assets
+        .iter()
+        .zip(payloads)
+        .map(|(source_asset, payload)| {
+            let asset = AssetFile {
+                version: source_asset.version,
+                name: source_asset.name.clone(),
+                folder: source_asset.folder.clone(),
+                payload: payload.to_text(),
+            };
+            asset_payload::decode(&asset)?;
+            Ok(asset)
+        })
+        .collect::<Result<Vec<_>>>()?;
+    let metadata_bytes = assets.iter().try_fold(0usize, |total, asset| {
+        Ok::<_, ApiError>(
+            total.saturating_add(serde_json::to_vec(asset).map_err(|_| ApiError::io())?.len()),
+        )
+    })?;
+    if metadata_bytes > crate::asset_journal::MAX_METADATA as usize {
+        return Err(ApiError::invalid(
+            "Selected native asset metadata exceeds 16 MiB",
+        ));
+    }
+    let asset = assets[0].clone();
+    let import_set = if work.import_set.is_empty() {
+        Vec::new()
+    } else {
+        work.import_set
+            .iter()
+            .zip(assets.drain(..))
+            .map(|((reference, _), asset)| (reference.clone(), asset))
+            .collect()
     };
-    asset_payload::decode(&asset)?;
     if let Some((id, revision)) = &work.import {
         inner.store.load(id, revision)?;
+    }
+    for (reference, _) in &work.import_set {
+        inner.store.load(&reference.asset_id, &reference.revision)?;
     }
     for source in &work.sources {
         live_source(inner, source, work.import.is_some())?;
@@ -1909,7 +2093,11 @@ fn run(inner: &Inner, work: &Work) -> Result<Prepared> {
     } else {
         inner.store.media()
     })?;
-    Ok(Prepared { asset, files })
+    Ok(Prepared {
+        asset,
+        files,
+        import_set,
+    })
 }
 fn run_relink(
     inner: &Inner,

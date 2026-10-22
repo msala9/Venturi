@@ -16,7 +16,7 @@ export function checkedNativeTreeReport(value,ready=false){
   return value;
 }
 
-export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,makeLibraryMutation,api=apiRequest,pause=delay,onStatus=()=>{},onApplied=()=>{}}){
+export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,timelineCommit,makeLibraryMutation,api=apiRequest,pause=delay,onStatus=()=>{},onApplied=()=>{}}){
   let owner=null;
   const report=text=>onStatus(text);
   const checkedLibraryReceipt=(receipt,ticket,tree)=>{if(receipt?.command_id!==ticket.mutation.command_id || receipt.project_epoch!==ticket.epoch)throw Error('The recovered native library receipt does not match this command');if(tree)checkedNativeTreeReport(receipt);else if(![receipt.missing_count,receipt.relinked_files].every(value=>Number.isSafeInteger(value) && value>=0 && value<=64))throw Error('The recovered native relink receipt does not match this command');};
@@ -25,7 +25,10 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
   async function cancelJob(ticket){if(!ticket.job || ticket.cancelSent)return;ticket.cancelSent=true;try{await api(jobPath(ticket),undefined,{method:'DELETE',signal:AbortSignal.timeout(5000)});}catch{report('Cancellation requested; refresh the library before starting another preparation');}}
   function cancel(){if(!owner || owner.canceled || owner.phase==='committing')return false;owner.canceled=true;if(owner.job){owner.controller.abort();void cancelJob(owner);}report('Canceling native asset preparation…');return true;}
   const current=ticket=>owner===ticket && !ticket.canceled && nativeAssetIdentity(getContext())===ticket.identity && (!ticket.mutation || getContext()?.command_epoch===ticket.mutation.command_epoch) && canCommit() && ticket.sourceCurrent();
-  async function run(action,sourceCurrent=()=>true){
+  async function run(action,sourceCurrent=()=>true,placement=null){
+    action=structuredClone(action);placement=placement?structuredClone(placement):null;
+    const placing=action.kind==='import_set';
+    if(placing && (!placement || typeof timelineCommit!=='function' || !Array.isArray(action.assets) || !action.assets.length || action.assets.length>32 || new Set(action.assets.map(item=>item.asset_id)).size!==action.assets.length || action.assets.some(item=>!token(item.asset_id) || typeof item.revision!=='string' || !item.revision) || !Number.isSafeInteger(placement.start_frame) || placement.start_frame<0 || placement.start_frame>1_000_000_000 || !['track','new_video_track','new_audio_track'].includes(placement.target?.kind) || placement.target.kind==='track' && typeof placement.target.track_id!=='string'))return null;
     const tree=action.kind==='import_tree',relinking=['relink','relink_folder'].includes(action.kind),prepared=tree || relinking;
     if(owner || prepared && typeof makeLibraryMutation!=='function' || !canCommit() || !nativeAssetIdentity(getContext()) || !sourceCurrent())return null;
     const context=getContext(),ticket={identity:nativeAssetIdentity(context),epoch:context.project_epoch,generation:context.generation,controller:new AbortController(),phase:'preparing',sourceCurrent,canceled:false,job:null,cancelSent:false};owner=ticket;
@@ -49,13 +52,14 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
       }
       if(job.state!=='ready')throw Error(job.error || `Native asset preparation ${job.state}`);
       if(action.kind==='import' && (job.result?.asset_id!==action.asset_id || job.result.revision!==action.revision))throw Error('The prepared asset revision changed');
+      if(placing && (!Array.isArray(job.result?.assets) || job.result.assets.length!==action.assets.length || job.result.assets.some((item,index)=>item.asset_id!==action.assets[index].asset_id || item.revision!==action.assets[index].revision)))throw Error('The prepared asset set or order changed');
       if(relinking && (job.result?.asset_id!==action.asset_id || job.result.revision!==action.revision || ![job.result.missing_count,job.result.relinked_files].every(value=>Number.isSafeInteger(value) && value>=0 && value<=64)))throw Error('The prepared native relink revision or report changed');
       if(tree)checkedNativeTreeReport(job.result,true);
       if(!current(ticket))throw new DOMException('Project or selection changed before applying the asset','AbortError');
       ticket.phase='committing';report(tree?'Importing native source folder…':relinking?'Applying native asset relink…':action.kind==='capture'?'Publishing native asset…':'Importing native asset with one Undo…');
-      receipt=await (prepared?libraryCommit(ticket.mutation.operation,ticket.mutation):action.kind==='capture'?libraryCommit({kind:'publish_native_asset',job_id:ticket.job}):projectCommit({kind:'import_native_asset',job_id:ticket.job,asset_id:action.asset_id,revision:action.revision}));
+      receipt=await (placing?timelineCommit({kind:'place_native_assets',job_id:ticket.job,assets:action.assets,start_frame:placement.start_frame,target:placement.target,overwrite:Boolean(placement.overwrite)}):prepared?libraryCommit(ticket.mutation.operation,ticket.mutation):action.kind==='capture'?libraryCommit({kind:'publish_native_asset',job_id:ticket.job}):projectCommit({kind:'import_native_asset',job_id:ticket.job,asset_id:action.asset_id,revision:action.revision}));
       if(prepared)checkedLibraryReceipt(receipt,ticket,tree);
-      try{await onApplied(receipt,action,tree?structuredClone(job.result):undefined);report(prepared?appliedMessage(receipt,tree):action.kind==='capture'?'Native asset saved · timeline unchanged':'Native asset imported · project copy · Undo available');}
+      try{await onApplied(receipt,action,tree?structuredClone(job.result):undefined);report(placing?'Native assets placed on timeline · one Undo available':prepared?appliedMessage(receipt,tree):action.kind==='capture'?'Native asset saved · timeline unchanged':'Native asset imported · project copy · Undo available');}
       catch(error){report(`Command applied · refresh failed: ${error.message}. Refresh the library; do not repeat the command.`);}
       return receipt;
     }catch(error){
@@ -67,15 +71,54 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
   return {run,cancel,busy:()=>Boolean(owner),phase:()=>owner?.phase || 'idle',invalidate(){if(owner && owner.phase!=='committing' && !current(owner))cancel();}};
 }
 
-export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,projectCommit,makeLibraryMutation,onImported=()=>{},notice=()=>{},api=apiRequest,pause=delay}){
+export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,projectCommit,timelineCommit,assetDnd,makeLibraryMutation,onImported=()=>{},onPlaced=()=>{},notice=()=>{},api=apiRequest,pause=delay}){
   root.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});
   let active=false,sequence=0,panelSession=0,transferSession=0,readController=null,pendingReload=false,transferRefreshFailed=false,page=0,pages=1,search='',archived=false,selected=null,busy=false,batch=false,stopped=false,reading=false,readEpoch=null,rows=[],chosen=[],catalog=null,folder=null,folderLabels=new Map(),controls=[],folderControls=[],list,status,caption,name,capture,stop,importButton,rename,archive,previous,next,restore,download,folderFilter,folderName,folderCreateParent,folderParent,assetDestination,createFolder,renameFolder,moveFolder,removeFolder,moveAssets,relinkMenu,relinkButton,relinkArea,relinkDraft=null,relinkReader=null,relinkReading=false,relinkFiles,relinkApply,relinkCancel;
   let sourcePicker=null,sourceDraft=null,sourceArea,sourceReport,sourceDestination,importTree,relinkFolder;
+  let dragRows=null,dragButtons=[],rowAnchor=null,readGeneration=null,placementAttempt=null;
   const button=(text,action)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',action);return node;};
   const compact=(node,text)=>{node.setAttribute('aria-label',node.textContent);node.title=node.textContent;node.setAttribute('data-compact-label',text);return node;};
   const message=text=>{if(active && status?.isConnected)status.textContent=text;};
   const selection=()=>{const context=getContext();return (context?.media || []).filter(item=>(context.selected_ids || []).includes(item.id));};
   const transferring=()=>busy || batch || transfer.busy();
+  const dragSelection=()=>rows.filter(item=>chosen.some(chosen=>chosen.id===item.id));
+  const dragIdentity=()=>JSON.stringify([panelSession,nativeAssetIdentity(getContext()),getContext()?.command_epoch,folder,search,archived,dragSelection()]);
+  const draggable=items=>Boolean(assetDnd && typeof timelineCommit==='function' && items.length && items.length<=32 && items.every(item=>!item.archived && !item.error && item.placement?.error==null && item.placement?.project_epoch===getContext()?.project_epoch && item.placement?.generation===getContext()?.generation && item.placement?.items?.length===1));
+  function chooseRow(item,event={}){
+    if(!active || root.isConnected===false || !rows.includes(item) || transferring() || reading)return;
+    assetDnd?.end();
+    if(event.shiftKey){const from=rows.findIndex(row=>row.id===rowAnchor),to=rows.indexOf(item);chosen=from<0?[item]:rows.slice(Math.min(from,to),Math.max(from,to)+1);rowAnchor??=item.id;}
+    else{if(event.ctrlKey || event.metaKey)chosen=rows.filter(row=>row.id===item.id?!chosen.some(value=>value.id===row.id):chosen.some(value=>value.id===row.id));else chosen=[item];rowAnchor=item.id;}
+    selected=chosen.length===1?chosen[0]:null;
+    for(const option of list.children)option.selected=chosen.some(row=>row.id===rows[Number(option.value)]?.id);
+    name.value=selected?.name || '';update();
+  }
+  function renderDragRows(){
+    if(!dragRows)return;dragRows.replaceChildren();dragButtons=[];
+    for(const item of rows){
+      const row=button(item.name,event=>chooseRow(item,event));row.className='native-asset-drag-row';row.title=`${item.name} · Drag to the timeline. Selected rows drag together in library order.`;row.draggable=true;row.setAttribute('aria-label',`Native asset ${item.name}`);row.setAttribute('aria-pressed',String(chosen.some(value=>value.id===item.id)));
+      row.addEventListener('dragstart',event=>{
+        if(!active || row.isConnected===false || !rows.includes(item) || transferring() || reading || !canCommit() || readEpoch!==getContext()?.project_epoch){event.preventDefault();return;}
+        if(!chosen.some(value=>value.id===item.id))chooseRow(item);
+        const items=dragSelection(),identity=dragIdentity(),session=panelSession;
+        const sourceCurrent=snapshot=>active && root.isConnected!==false && session===panelSession && readEpoch===getContext()?.project_epoch && dragIdentity()===identity && JSON.stringify(snapshot)===JSON.stringify(items.map(value=>({id:value.id,revision:value.revision,name:value.name,placement:value.placement})));
+        const payload=draggable(items)?assetDnd.start(items,sourceCurrent,async(draft,targetCurrent,signal)=>{
+          if(!sourceCurrent(items.map(value=>({id:value.id,revision:value.revision,name:value.name,placement:value.placement}))) || !targetCurrent() || signal.aborted || transfer.busy())return null;
+          transferSession=session;transferRefreshFailed=false;const cancel=()=>transfer.cancel();signal.addEventListener('abort',cancel,{once:true});
+          try{return await transfer.run({kind:'import_set',assets:draft.assets},()=>!signal.aborted && targetCurrent() && sourceCurrent(items.map(value=>({id:value.id,revision:value.revision,name:value.name,placement:value.placement}))),{start_frame:draft.start_frame,target:draft.target,overwrite:draft.overwrite});}
+          finally{signal.removeEventListener('abort',cancel);settled();}
+        }):null;
+        if(!payload || !event.dataTransfer){event.preventDefault();assetDnd?.end();return;}
+        try{event.dataTransfer.setData(assetDnd.type,payload);event.dataTransfer.effectAllowed='copy';}
+        catch(error){event.preventDefault();assetDnd.end();notice(error.message);}
+      });
+      row.addEventListener('dragend',()=>assetDnd?.end());dragButtons.push({row,item});dragRows.append(row);
+    }
+  }
+  root.addEventListener('keydown',event=>{
+    if(!active || root.isConnected===false || !dragButtons.some(({row})=>event.target===row) || event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229 || event.getModifierState?.('AltGraph') || event.altKey || event.shiftKey || Boolean(event.ctrlKey)===Boolean(event.metaKey) || event.key?.toLowerCase()!=='a')return;
+    event.preventDefault();event.stopPropagation();if(transferring() || reading)return;assetDnd?.end();chosen=[...rows];rowAnchor=rows[0]?.id??null;selected=chosen.length===1?chosen[0]:null;for(const option of list.children)option.selected=true;name.value=selected?.name || '';update();
+  });
   const currentCatalog=()=>Boolean(catalog && catalog.project_epoch===getContext()?.project_epoch);
   const relinkIdentity=()=>JSON.stringify([panelSession,nativeAssetIdentity(getContext()),getContext()?.command_epoch,selected?.id,selected?.revision]);
   const relinkCurrent=draft=>active && Boolean(draft) && relinkDraft===draft && draft.identity===relinkIdentity() && !selected?.archived && !selected?.error;
@@ -91,10 +134,11 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     options(folderCreateParent,choices,current?.id || '');options(folderParent,current?nativeFolderChoices(catalog,current.id):choices,current?.parent || '');options(assetDestination,choices,assetDestination.value);
     folderName.value=current?.name || '';
   }
-  function clearSelection(){clearRelink();clearSourceChoice();selected=null;chosen=[];rows=[];list.replaceChildren();name.value='';}
-  function settled(){update();if(active && pendingReload && !transferring()){pendingReload=false;void reload(page);}}
+  function clearSelection(){assetDnd?.end();clearRelink();clearSourceChoice();selected=null;chosen=[];rows=[];rowAnchor=null;list.replaceChildren();dragRows?.replaceChildren();dragButtons=[];name.value='';}
+  function settled(){update();if(active && pendingReload && !transferring() && !reading){pendingReload=false;void reload(page);}}
   function update(){
     if(!active)return;if(relinkDraft && !relinkCurrent(relinkDraft))clearRelink();if(sourceDraft && !sourceCurrent(sourceDraft))clearSourceChoice();transfer.invalidate();const working=transferring() || reading || relinkReading,writable=canCommit() && !working,fresh=readEpoch===getContext()?.project_epoch,valid=fresh && selected && !selected.error && !selected.archived;
+    for(const {row,item} of dragButtons){row.disabled=working;row.draggable=Boolean(writable && fresh && draggable([item]));row.setAttribute('aria-pressed',String(chosen.some(value=>value.id===item.id)));}
     for(const control of controls)control.disabled=working;list.disabled=working;previous.disabled=working || page===0;next.disabled=working || page+1>=pages;
     stop.disabled=!transfer.busy() || transfer.phase()==='committing';stop.hidden=!transfer.busy();
     capture.disabled=!writable || !nativeAssetIdentity(getContext()) || !selection().length || selection().length>64;capture.textContent=`Save ${selection().length || ''} selected media as native assets`.replace('  ',' ');
@@ -113,31 +157,37 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     if(relinkFiles){relinkFiles.disabled=!writable;const count=relinkFiles.selectedOptions.length;relinkApply.disabled=!writable || !relinkCurrent(relinkDraft) || count<1 || count>64;}
     if(relinkCancel)relinkCancel.disabled=transfer.phase()==='committing';
     if(sourceDestination)sourceDestination.disabled=!writable;sourcePicker?.refresh();
+    const context=getContext(),attempt=JSON.stringify([context?.project_epoch,context?.generation]);
+    if(assetDnd && readEpoch===context?.project_epoch && readGeneration!==null && readGeneration!==context?.generation && placementAttempt!==attempt && !working){placementAttempt=attempt;pendingReload=false;void reload(page,selected?.id,false,1,true);}
   }
-  async function reload(wanted=page,preferred=selected?.id,afterWrite=false,direction=1){
-    if(!active)return false;if(transferring() && !afterWrite){pendingReload=true;return false;}const context=getContext();if(!nativeAssetIdentity(context)){message('Create or open a project to use native assets');return false;}
-    clearRelink();clearSourceChoice();readController?.abort();readController=new AbortController();const id=++sequence;reading=true;update();message('Reading native assets…');
+  async function reload(wanted=page,preferred=selected?.id,afterWrite=false,direction=1,keepSelection=false){
+    if(!active)return false;if(transferring() && !afterWrite){pendingReload=true;return false;}const context={...getContext()};if(!nativeAssetIdentity(context)){message('Create or open a project to use native assets');return false;}
+    const selectionIds=keepSelection?chosen.map(item=>item.id):null,oldAnchor=rowAnchor,nameDraft=keepSelection?{id:selected?.id,revision:selected?.revision,value:name.value}:null;
+    assetDnd?.end();clearRelink();clearSourceChoice();readController?.abort();readController=new AbortController();const id=++sequence;reading=true;update();message('Reading native assets…');
     try{
       const folders=await api(`/native-assets/folders?${new URLSearchParams({project_epoch:context.project_epoch})}`,undefined,{signal:readController.signal});
-      if(!active || id!==sequence || context.project_epoch!==getContext()?.project_epoch)return false;
+      if(!active || id!==sequence || context.project_epoch!==getContext()?.project_epoch || assetDnd && context.generation!==getContext()?.generation)return false;
       catalog=nativeFolderCatalog(folders,context.project_epoch);if(folder!==null && folder!=='' && !catalog.folders.some(item=>item.id===folder))folder='';folderFields();
       let result,scan=wanted;
       while(true){
         result=await api(`/native-assets/pages/${scan}?${new URLSearchParams({project_epoch:context.project_epoch,search,archived:String(archived),...nativeFolderFilter(catalog,folder)})}`,undefined,{signal:readController.signal});
-        if(!active || id!==sequence || context.project_epoch!==getContext()?.project_epoch)return false;
+        if(!active || id!==sequence || context.project_epoch!==getContext()?.project_epoch || assetDnd && context.generation!==getContext()?.generation)return false;
         const following=scan+direction;if(!search && folder===null || result.items.length || following<0 || following>=result.pages)break;
         message(`Searching native asset page ${scan+1} of ${result.pages}…`);scan=following;
       }
       page=result.page;pages=result.pages;list.replaceChildren(...result.items.map((item,index)=>new Option(`${item.name}${item.error?' · invalid':''}`,String(index))));
       const found=result.items.findIndex(item=>item.id===preferred),keepOutside=selected?.id===preferred && selected?.archived===archived && found<0 && folder===null,index=keepOutside?-1:Math.max(0,found);if(!keepOutside)selected=result.items[index] || null;rows=result.items;chosen=selected?[selected]:[];readEpoch=context.project_epoch;list.value=String(index);name.value=selected?.name || '';
-      list.onchange=()=>{const indexes=list.selectedOptions?Array.from(list.selectedOptions,item=>Number(item.value)):[Number(list.value)];chosen=indexes.map(index=>rows[index]).filter(Boolean);selected=chosen.length===1?chosen[0]:null;name.value=selected?.name || '';update();};message(`Page ${page+1} of ${pages} · ${result.total} ${archived?'archived':'native'} assets in library`);return true;
+      readGeneration=context.generation;
+      if(selectionIds){chosen=rows.filter(item=>selectionIds.includes(item.id));selected=chosen.length===1?chosen[0]:null;for(const option of list.children)option.selected=chosen.some(item=>item.id===rows[Number(option.value)]?.id);name.value=selected?.id===nameDraft.id && selected?.revision===nameDraft.revision?nameDraft.value:selected?.name || '';}
+      rowAnchor=keepSelection && rows.some(item=>item.id===oldAnchor)?oldAnchor:selected?.id??null;renderDragRows();list.onchange=()=>{assetDnd?.end();const indexes=list.selectedOptions?Array.from(list.selectedOptions,item=>Number(item.value)):[Number(list.value)];chosen=indexes.map(index=>rows[index]).filter(Boolean);rowAnchor=chosen[0]?.id??null;selected=chosen.length===1?chosen[0]:null;name.value=selected?.name || '';update();};message(`Page ${page+1} of ${pages} · ${result.total} ${archived?'archived':'native'} assets in library`);return true;
     }catch(error){if(active && id===sequence && error.name!=='AbortError'){if(wanted>0 && /last page|out of range/i.test(error.message))return reload(0,preferred,afterWrite,direction);clearSelection();readEpoch=null;catalog=null;message(error.message);}return false;}
     finally{if(id===sequence){reading=false;update();}}
   }
-  const transfer=createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,makeLibraryMutation,api,pause,onStatus:text=>{if(transferSession===panelSession)message(text);update();},onApplied:async(receipt,action,report)=>{
+  const transfer=createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,timelineCommit,makeLibraryMutation,api,pause,onStatus:text=>{if(transferSession===panelSession)message(text);update();},onApplied:async(receipt,action,report)=>{
     if(!active || transferSession!==panelSession)return;
     if(['relink','relink_folder','import_tree'].includes(action.kind) && receipt.project_epoch!==getContext()?.project_epoch)return;
     if(action.kind==='import' && receipt.project_epoch===getContext()?.project_epoch)onImported(receipt.media_ids || []);
+    if(action.kind==='import_set'){onPlaced(receipt);return;}
     try{
       if(action.kind==='capture'){
         const session=panelSession,epoch=getContext()?.project_epoch;
@@ -219,7 +269,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
       const help=document.createElement('details'),helpHeading=document.createElement('summary');helpHeading.textContent='About native assets';help.append(helpHeading,note);
       const form=document.createElement('form'),query=document.createElement('input');form.className='native-asset-search';query.type='search';query.value=search;query.setAttribute('aria-label','Search native assets');const submit=document.createElement('button');submit.textContent='Search native assets';compact(submit,'Search');form.append(query,submit);form.addEventListener('submit',event=>{event.preventDefault();if(transferring())return;search=query.value;reload(0);});
       const archivedLabel=document.createElement('label'),toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=archived;toggle.setAttribute('aria-label','Show archived native assets');archivedLabel.append(toggle,' Show archived native assets');toggle.addEventListener('change',()=>{if(transferring())return;archived=toggle.checked;reload(0);});
-      list=document.createElement('select');list.className='native-asset-list';list.size=7;list.multiple=true;list.setAttribute('aria-label','Native assets');status=document.createElement('p');status.className='native-asset-status';status.setAttribute('role','status');caption=document.createElement('p');caption.className='native-asset-caption';capture=button('Save selected media as native assets',captureSelection);stop=compact(button('Cancel native asset preparation',()=>{stopped=true;transfer.cancel();update();}),'Cancel');
+      list=document.createElement('select');list.className='native-asset-list';list.size=7;list.multiple=true;list.setAttribute('aria-label','Native assets');dragRows=document.createElement('div');dragRows.className='native-asset-drag-list';dragRows.setAttribute('aria-label','Draggable native assets');status=document.createElement('p');status.className='native-asset-status';status.setAttribute('role','status');caption=document.createElement('p');caption.className='native-asset-caption';capture=button('Save selected media as native assets',captureSelection);stop=compact(button('Cancel native asset preparation',()=>{stopped=true;transfer.cancel();update();}),'Cancel');
       previous=compact(button('Previous native assets',()=>reload(page-1,selected?.id,false,-1)),'‹');next=compact(button('Next native assets',()=>reload(page+1)),'›');const refresh=compact(button('Refresh native assets',()=>reload()),'Refresh');
       importButton=button('Import native asset into project',async()=>{if(!selected || transferring())return;const item={...selected},session=panelSession;transferSession=session;transferRefreshFailed=false;try{await transfer.run({kind:'import',asset_id:item.id,revision:item.revision},()=>active && session===panelSession && selected?.id===item.id && selected?.revision===item.revision && !selected.archived && !selected.error);}catch(error){notice(error.message);}finally{settled();}});
       compact(importButton,'Add to project');
@@ -235,9 +285,11 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
       libraryActions.append(capture,folders,archivedLabel,help);
       const assetActions=document.createElement('details'),assetSummary=document.createElement('summary');assetActions.className='native-asset-actions';assetSummary.textContent='Asset actions';assetActions.append(assetSummary,nameLabel,rename,archive,restore,download,relinkMenu);
       const paging=document.createElement('div'),primary=document.createElement('div');paging.className='native-asset-paging';paging.append(previous,next,refresh);primary.className='native-asset-primary';primary.append(importButton,stop);
-      controls=[query,submit,toggle,refresh];folderControls=[folderName,folderCreateParent,folderParent,assetDestination];root.append(heading,field('Native asset folder',folderFilter),form,list,paging,caption,primary,libraryActions,assetActions,sourceArea,sourceReport,status);folderFields();update();await reload(page);
+      let assetList=list;
+      if(assetDnd){const selectionMenu=document.createElement('details'),selectionSummary=document.createElement('summary'),listGroup=document.createElement('div');selectionSummary.textContent='Multiple selection';selectionMenu.append(selectionSummary,list);listGroup.append(dragRows,selectionMenu);assetList=listGroup;}
+      controls=[query,submit,toggle,refresh];folderControls=[folderName,folderCreateParent,folderParent,assetDestination];root.append(heading,field('Native asset folder',folderFilter),form,assetList,paging,caption,primary,libraryActions,assetActions,sourceArea,sourceReport,status);folderFields();update();await reload(page);
     },
     invalidate(){update();},
-    hide(){active=false;stopped=true;pendingReload=false;sequence++;panelSession++;readController?.abort();readController=null;reading=false;clearRelink();clearSourceChoice();transfer.cancel();},
+    hide(){assetDnd?.end();active=false;stopped=true;pendingReload=false;sequence++;panelSession++;readController?.abort();readController=null;reading=false;clearRelink();clearSourceChoice();transfer.cancel();},
   };
 }

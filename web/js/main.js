@@ -56,6 +56,7 @@ let catalog = null;
 let silencePanel = null;
 let sharedLibrary = null;
 let nativeAssets=null,mediaImport=null,otioImport=null,libraryMode='shared';
+let nativePlacementIntent=0,nativePlacementCompletion=null;
 let clipboard=null,clipboardImages=null,clipboardFocus='timeline',clipboardFocusSequence=0;
 const clipboardButtons=[];
 let clipboardStatus=null,clipboardRetry=null,clipboardCancel=null,clipboardOverwrite=null;
@@ -411,6 +412,7 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  if(mode!==viewerMode)nativePlacementIntent++;
   maskSelectionSequence++;
   transformOverlay?.cancel();
   maskOverlay?.cancel();
@@ -802,10 +804,11 @@ const canvasTimeline = createTimeline({
   canvas: $("timeline"),
   getTimeline: () => timeline,
   getPresetContext:presetContext,
+  getAssetContext:presetContext,
   getGapContext:()=>documentState?{project_epoch:documentState.project_epoch,generation:documentState.generation}:null,
   canNavigate:()=>!busy && !unresolved,
   onOpenCompound:ids=>compoundNavigation?.enter(ids),
-  onNavigationIntent:()=>compoundNavigation?.cancel(),
+  onNavigationIntent:()=>{nativePlacementIntent++;compoundNavigation?.cancel();},
   onNavigationStateChange:()=>{compoundNavigation?.invalidate();syncClipboardControls();syncSelectionActions();sourceAssets?.refresh();queueMicrotask(syncProgramMarks);},
   view,
   getAssets: () => mediaAssets,
@@ -937,7 +940,7 @@ $("retime-handles").addEventListener('click',()=>{
 });
 $("retime-handles").addEventListener('keydown',event=>{if(event.key===' ' || event.key==='Enter')event.stopPropagation();});
 $("retime-overwrite").addEventListener('change',()=>{
-  canvasTimeline.cancel();view.retimeOverwrite=$("retime-overwrite").checked;updateRetimeControls();notice(view.retimeOverwrite?'Timeline overwrite enabled · trim, Alt-duplicate and speed drags may replace overlapping clips; Undo restores them':'Timeline drags refuse overlaps');
+  canvasTimeline.cancel();view.retimeOverwrite=$("retime-overwrite").checked;updateRetimeControls();notice(view.retimeOverwrite?'Timeline overwrite enabled · trim, Alt-duplicate, speed and Library asset drags may replace overlapping clips; Undo restores them':'Timeline drags refuse overlaps');
 });
 document.addEventListener('keydown',event=>{if(isRetimeShortcut(event,{dialogOpen:Boolean(document.querySelector('dialog[open]'))})){event.preventDefault();event.stopPropagation();$("retime-handles").click();}});
 $("edit-tool").addEventListener("change",()=>{canvasTimeline.cancel();view.tool=$("edit-tool").value;slipView?.reset();notice(view.tool === "slip" ? "Slip tool · drag right to advance source; linked clips follow" : "Move / trim tool");});
@@ -1129,7 +1132,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
   catalog?.dispose();
-  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
   nativeAssets?.invalidate();
   mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
   if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
@@ -1812,7 +1815,25 @@ slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(o
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1),clip_id:clip};
 }});
 sharedLibrary=createLibraryPanel({root:sharedLibraryRoot,getState:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>mutate(operation,true),notice});
-nativeAssets=createNativeAssetPanel({root:nativeAssetsRoot,getContext:()=>documentState?{...documentState,selected_ids:[...mediaState.selected]}:null,canCommit:()=>writable && !busy && !unresolved,makeLibraryMutation:operation=>{if(!writable || busy || unresolved)throw new Error('Editing is read only or a command is pending');return nativeAssetMutation(documentState,clientId,operation,crypto.randomUUID());},libraryCommit:(operation,prepared)=>mutate(operation,true,'/native-assets/commands',prepared),projectCommit:operation=>mutate(operation,true),onImported:ids=>{mediaState.selected=ids.filter(id=>documentState.media.some(item=>item.id===id));selectedMedia=mediaState.selected.at(-1) || null;catalog?.search(mediaState.query || '');},notice});
+function nativeImportedMedia(ids){mediaState.selected=ids.filter(id=>documentState.media.some(item=>item.id===id));selectedMedia=mediaState.selected.at(-1) || null;catalog?.search(mediaState.query || '');}
+nativeAssets=createNativeAssetPanel({
+  root:nativeAssetsRoot,getContext:()=>documentState?{...documentState,selected_ids:[...mediaState.selected]}:null,
+  canCommit:()=>writable && !busy && !unresolved,
+  makeLibraryMutation:operation=>{if(!writable || busy || unresolved)throw new Error('Editing is read only or a command is pending');return nativeAssetMutation(documentState,clientId,operation,crypto.randomUUID());},
+  libraryCommit:(operation,prepared)=>mutate(operation,true,'/native-assets/commands',prepared),projectCommit:operation=>mutate(operation,true),
+  assetDnd:canvasTimeline.assetDnd,timelineCommit:operation=>{
+    nativePlacementCompletion=null;const pending=commit(operation),owner={intent:nativePlacementIntent,navigation:timelineOpenSequence,frame:view.playhead};
+    return pending.then(receipt=>{nativePlacementCompletion={owner,command:receipt.command_id};return receipt;});
+  },onImported:nativeImportedMedia,
+  onPlaced:receipt=>{
+    const completed=nativePlacementCompletion;nativePlacementCompletion=null;
+    if(!completed || completed.command!==receipt.command_id || completed.owner.intent!==nativePlacementIntent || completed.owner.navigation!==timelineOpenSequence || completed.owner.frame!==view.playhead || receipt.project_epoch!==documentState?.project_epoch || receipt.generation!==documentState?.generation || receipt.timeline_id!==timeline?.id || !Array.isArray(receipt.media_ids) || !Array.isArray(receipt.clip_ids))return;
+    nativeImportedMedia(receipt.media_ids);
+    const ids=new Set(receipt.clip_ids);view.selection=timeline.tracks.flatMap(track=>track.clips).filter(clip=>ids.has(clip.id)).map(clip=>clip.id);
+    view.selectionAnchor=firstSelectionAnchor(timeline,view.selection,documentState.project_epoch);view.transitionSelection=null;view.selectedGap=null;
+    selected();canvasTimeline.invalidate();void projectView?.update();
+  },notice,
+});
 const reviewContext=()=>{
   if(!documentState?.project_name || !timeline || timeline.id==="fixture")return null;
   const clips=timeline.tracks.flatMap(track=>track.clips).filter(clip=>view.selection.includes(clip.id)),oneGroup=clips[0]?.linked_group && clips.every(clip=>clip.linked_group===clips[0].linked_group),clip=(clips.length===1 || oneGroup)?clips.find(clip=>clip.kind==="media"):null;

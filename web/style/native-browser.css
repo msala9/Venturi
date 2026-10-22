@@ -53,6 +53,10 @@
 .native-asset-panel .field input, .native-asset-panel .field select,
 .native-asset-panel .native-asset-list { width: 100%; min-width: 0; max-width: 100%; }
 .native-asset-panel .native-asset-list { margin: 0; padding: 2px; font-size: 11px; }
+.native-asset-drag-list { display: flex; flex-direction: column; gap: 2px; max-height: 18rem; overflow: auto; min-width: 0; }
+.native-asset-panel .native-asset-drag-row { display: block; width: 100%; min-width: 0; padding: 3px 5px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border: 1px solid transparent; background: transparent; }
+.native-asset-panel .native-asset-drag-row[aria-pressed="true"] { border-color: var(--primary); background: var(--raised); }
+.native-asset-panel .native-asset-drag-row[draggable="true"] { cursor: grab; }
 .native-asset-search, .native-asset-paging, .native-asset-primary,
 .native-source-crumbs, .native-source-paging, .native-source-actions {
   display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-width: 0;

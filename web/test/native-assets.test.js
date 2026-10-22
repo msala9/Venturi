@@ -6,14 +6,16 @@ function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{reso
 async function flush(){for(let index=0;index<12;index++)await Promise.resolve();}
 const capture={kind:'capture',media_id:'9007199254740993',name:'Nested shot'};
 const importing={kind:'import',asset_id:'asset-a',revision:'native-revision'};
+const placing={kind:'import_set',assets:[{asset_id:'asset-b',revision:'revision-b'},{asset_id:'asset-a',revision:'revision-a'}]};
+const placement={start_frame:72,target:{kind:'track',track_id:'9007199254740997'},overwrite:false};
 const relinking={kind:'relink',asset_id:'asset-a',revision:'native-revision',path_tokens:['Shot.mov']};
 const importTree={kind:'import_tree',directory_token:'Takes',parent:null,folders_revision:'absent'};
 const relinkFolder={kind:'relink_folder',asset_id:'asset-a',revision:'native-revision',directory_token:'Takes'};
 const treeSummary=()=>({imported_assets:1,skipped_files:2,error_count:1,created_folders:2,root_folder_id:'import-root',folders_revision:'f'.repeat(64)});
 const treeErrors=()=>[{path_token:'Takes/bad.mov',code:'INVALID_MEDIA',message:'The native engine could not read this media'}];
-function harness(action=capture,{onApplied,onStatus,libraryCommit,projectCommit,pauseGuard}={}){
+function harness(action=capture,{onApplied,onStatus,libraryCommit,projectCommit,timelineCommit,placement,pauseGuard}={}){
   let context={project_name:'saved.vvproj',project_epoch:'epoch',generation:'7',command_epoch:'commands'},writable=true,sourceValid=true;
-  const prepare=deferred(),calls=[],polls=[],pauses=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],statuses=[],applied=[];
+  const prepare=deferred(),calls=[],polls=[],pauses=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],statuses=[],applied=[];
   const prepared=['relink','relink_folder','import_tree'].includes(action.kind),relink=['relink','relink_folder'].includes(action.kind);
   const job=(state='ready',patch={})=>({id:'job-1',state,project_epoch:'epoch',generation:'7',kind:prepared?'library_edit':action.kind,bytes:0,total_bytes:64,result:action.kind==='import_tree'?{...treeSummary(),errors:treeErrors()}:relink?{asset_id:action.asset_id,revision:action.revision,missing_count:1,relinked_files:2}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch});
   const receipt={command_id:'command-once',project_epoch:'epoch',...(action.kind==='import_tree'?treeSummary():{media_ids:['9007199254740995']}),...(relink?{missing_count:1,relinked_files:2}:{})};
@@ -34,10 +36,11 @@ function harness(action=capture,{onApplied,onStatus,libraryCommit,projectCommit,
     makeLibraryMutation:operation=>nativeAssetMutation(context,'client',operation,'command-once'),
     libraryCommit(operation,mutation){libraryWrites.push(operation);if(mutation)preparedWrites.push(mutation);return libraryCommit?libraryCommit(operation,mutation):Promise.resolve(receipt);},
     projectCommit(operation){projectWrites.push(operation);return projectCommit?projectCommit(operation):Promise.resolve(receipt);},
+    timelineCommit(operation){timelineWrites.push(operation);return timelineCommit?timelineCommit(operation):Promise.resolve(receipt);},
     async onApplied(value,operation,report){applied.push({receipt:value,action:operation,...(report===undefined?{}:{report})});await onApplied?.(value,operation,report);},
   });
-  return {transfer,prepare,calls,polls,pauses,deletes,libraryWrites,preparedWrites,projectWrites,statuses,applied,job,receipt,
-    run:()=>transfer.run(action,()=>sourceValid),context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setSourceValid:value=>{sourceValid=value;}};
+  return {transfer,prepare,calls,polls,pauses,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,statuses,applied,job,receipt,
+    run:()=>transfer.run(action,()=>sourceValid,placement),context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setSourceValid:value=>{sourceValid=value;}};
 }
 
 test('native asset transfer requires an opened project and an available writer before preparing',async()=>{
@@ -48,6 +51,31 @@ test('native asset transfer requires an opened project and an available writer b
     const h=harness();if(unavailable==='project')h.setContext(null);if(unavailable==='writer')h.setWritable(false);if(unavailable==='selection')h.setSourceValid(false);
     assert.equal(await h.run(),null);assert.equal(h.calls.length,0);assert.equal(h.transfer.busy(),false);
   }
+});
+
+test('ordered native assets use one strict import-set prepare and one atomic timeline command',async()=>{
+  const h=harness(placing,{placement}),pending=h.run();
+  assert.deepEqual(h.calls[0].body,{project_epoch:'epoch',if_generation:'7',action:placing});assert.equal(h.calls[0].body.action.target,undefined);
+  h.prepare.resolve(h.job('ready',{result:{assets:placing.assets.map(item=>({...item,name:'Native asset'}))}}));assert.equal(await pending,h.receipt);
+  assert.deepEqual(h.timelineWrites,[{kind:'place_native_assets',job_id:'job-1',assets:placing.assets,start_frame:72,target:placement.target,overwrite:false}]);assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.libraryWrites,[]);assert.deepEqual(h.deletes,[]);
+});
+
+test('reordered, stale or incomplete ready asset sets refuse the whole placement',async()=>{
+  for(const assets of [[...placing.assets].reverse(),placing.assets.slice(0,1),[{...placing.assets[0],revision:'stale'},placing.assets[1]]]){
+    const h=harness(placing,{placement}),pending=h.run();h.prepare.resolve(h.job('ready',{result:{assets}}));await assert.rejects(pending,/asset set or order changed/);assert.deepEqual(h.timelineWrites,[]);assert.equal(h.deletes.length,1);
+  }
+});
+
+test('stale target cancels an import set after its late ready acknowledgment with no project mutation',async()=>{
+  const h=harness(placing,{placement}),pending=h.run();h.setSourceValid(false);h.transfer.invalidate();
+  h.prepare.resolve(h.job('ready',{result:{assets:placing.assets}}));assert.equal(await pending,null);assert.equal(h.deletes.length,1);assert.deepEqual(h.timelineWrites,[]);assert.deepEqual(h.projectWrites,[]);
+});
+
+test('placement keeps captured overwrite and never cancels or replays an uncertain final command',async()=>{
+  const gate=deferred(),intent={...placement,overwrite:true},h=harness(placing,{placement:intent,timelineCommit:()=>gate.promise}),pending=h.run();
+  intent.start_frame=400;intent.overwrite=false;h.prepare.resolve(h.job('ready',{result:{assets:placing.assets}}));await flush();assert.equal(h.timelineWrites[0].start_frame,72);assert.equal(h.timelineWrites[0].overwrite,true);assert.equal(h.transfer.phase(),'committing');
+  h.setSourceValid(false);h.transfer.invalidate();assert.equal(h.transfer.cancel(),false);assert.equal(await h.run(),null);
+  const error=Object.assign(Error('Command outcome unknown'),{code:'OUTCOME_UNKNOWN'});gate.reject(error);await assert.rejects(pending,/outcome unknown/);assert.equal(h.timelineWrites.length,1);assert.equal(h.deletes.length,0);assert.match(h.statuses.at(-1),/Check command status/);
 });
 
 test('capture prepares and polls one foreground job before a single library publication',async()=>{

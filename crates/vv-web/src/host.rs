@@ -134,8 +134,17 @@ pub struct ClipboardRequest {
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum NativeAssetAction {
-    Capture { media_id: String, name: String },
-    Import { asset_id: String, revision: String },
+    Capture {
+        media_id: String,
+        name: String,
+    },
+    Import {
+        asset_id: String,
+        revision: String,
+    },
+    ImportSet {
+        assets: Vec<crate::asset_store::ImportRef>,
+    },
 }
 #[derive(Clone, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -512,6 +521,7 @@ impl Editor {
             if let Some(report)=media_import_receipt {
                 value["media_ids"]=report["media_ids"].clone();
                 value["errors"]=report["errors"].clone();
+                if matches!(&request.operation,Operation::PlaceNativeAssets{..}) { value["timeline_id"]=report["timeline_id"].clone(); }
             }
             if let Some(report)=otio_import_receipt {
                 for field in ["timeline_ids","media_ids","folder_id","warnings"] {
@@ -723,6 +733,7 @@ impl Editor {
                     self.timeline_edit_selection = Some(ids);
                     Ok(())
                 }
+                Operation::PlaceNativeAssets { .. } => self.place_native_assets(id, request),
                 _ => commands::apply(&mut self.session, id, &request.operation),
             };
         }
@@ -1721,6 +1732,11 @@ impl Editor {
                 &asset_id,
                 &revision,
             ),
+            NativeAssetAction::ImportSet { assets } => self.asset_jobs.prepare_import_set(
+                &request.project_epoch,
+                &request.if_generation,
+                &assets,
+            ),
             NativeAssetAction::Capture { media_id, name } => {
                 use vv_core::Id;
                 let media_id = vv_core::MediaId::from_raw(
@@ -1779,6 +1795,142 @@ impl Editor {
             }
         }
     }
+    fn annotate_native_asset_placement(&self, value: &mut Value) {
+        let cached = value["id"]
+            .as_str()
+            .zip(value["revision"].as_str())
+            .and_then(|(id, revision)| {
+                self.asset_imports
+                    .get(&(self.session.epoch(), id.into(), revision.into()))
+            })
+            .filter(|cached| {
+                cached
+                    .media
+                    .iter()
+                    .all(|id| self.session.project.media_pool.contains_key(*id))
+                    && cached
+                        .timelines
+                        .iter()
+                        .all(|id| self.session.project.timelines.contains_key(*id))
+            });
+        if value["archived"] != true
+            && value["missing_count"].as_u64() == Some(0)
+            && let Some(cached) = cached
+        {
+            let items = cached.selected.iter().map(|id| {
+                let meta = &self.session.project.media_pool[*id].meta;
+                let out = commands::whole_media_out(meta)?;
+                Ok(json!({"source_in":0,"source_out":out,"fps":meta.fps,"has_video":meta.has_video,"has_audio":meta.has_audio,"audio_streams":meta.audio_stream_count(),"is_image":meta.is_image()}))
+            }).collect::<Result<Vec<_>>>();
+            value["placement"] = match items {
+                Ok(items) => json!({"items":items,"error":null}),
+                Err(error) => json!({"items":[],"error":error.2}),
+            };
+        }
+        if value.get("placement").is_some() {
+            value["placement"]["project_epoch"] =
+                json!(format!("{}:{}", self.epoch, self.session.epoch()));
+            value["placement"]["generation"] = json!(self.session.history.generation().to_string());
+        }
+    }
+    fn place_native_assets(
+        &mut self,
+        timeline: vv_core::TimelineId,
+        request: &Mutation,
+    ) -> Result<()> {
+        use vv_core::{Command, CommandLabel, Id, pool::AddEntities};
+        let Operation::PlaceNativeAssets { job_id, assets, .. } = &request.operation else {
+            return Err(ApiError::invalid("Choose a native asset placement"));
+        };
+        if self.session.path().is_none() {
+            return Err(ApiError::invalid(
+                "Create or open a project before placing native assets",
+            ));
+        }
+        let payloads = self.asset_jobs.import_set_payloads(
+            job_id,
+            assets,
+            &request.project_epoch,
+            &request.if_generation,
+        )?;
+        let epoch = self.session.epoch();
+        let mut trial = self.session.project.clone();
+        let mut roots = Vec::new();
+        let mut reuse = Vec::new();
+        for (reference, payload) in assets.iter().zip(&payloads) {
+            let cached = self
+                .asset_imports
+                .get(&(
+                    epoch,
+                    reference.asset_id.clone(),
+                    reference.revision.clone(),
+                ))
+                .filter(|cached| {
+                    cached
+                        .media
+                        .iter()
+                        .all(|id| trial.media_pool.contains_key(*id))
+                        && cached
+                            .timelines
+                            .iter()
+                            .all(|id| trial.timelines.contains_key(*id))
+                })
+                .map(|cached| cached.selected.clone());
+            let selected = if let Some(selected) = &cached {
+                selected.clone()
+            } else {
+                let mut add = AddEntities::new(CommandLabel::ImportMedia);
+                let selected = payload.clone().merge_into(&mut trial, &mut add).media;
+                add.apply(&mut trial);
+                selected
+            };
+            roots.extend(selected);
+            reuse.push(cached);
+        }
+        crate::files::validate_project(&trial)?;
+        let placement =
+            commands::prepare_native_asset_placement(&trial, timeline, &roots, &request.operation)?;
+        // Recheck cancellation, every named revision and every copied-file witness before allocation.
+        self.asset_jobs.import_set_payloads(
+            job_id,
+            assets,
+            &request.project_epoch,
+            &request.if_generation,
+        )?;
+        let mark = self.session.history.begin_group();
+        let mut actual_roots = Vec::new();
+        let mut imported = Vec::new();
+        for ((reference, payload), cached) in assets.iter().zip(payloads).zip(reuse) {
+            let selected = if let Some(selected) = cached {
+                selected
+            } else {
+                let mut add = AddEntities::new(CommandLabel::ImportMedia);
+                let selected = payload
+                    .merge_into(&mut self.session.project, &mut add)
+                    .media;
+                if !add.is_empty() {
+                    self.session.apply(Box::new(add));
+                }
+                selected
+            };
+            actual_roots.extend(selected.iter().copied());
+            imported.push((reference, selected));
+        }
+        debug_assert_eq!(actual_roots, roots);
+        let clips = placement.apply(&mut self.session);
+        self.session
+            .history
+            .end_group_as(mark, CommandLabel::InsertClips);
+        self.session.sync_timeline_media(timeline);
+        for (reference, selected) in imported {
+            self.remember_native_asset(&reference.asset_id, &reference.revision, selected);
+        }
+        self.timeline_edit_selection = Some(clips.iter().map(|id| id.0.to_string()).collect());
+        self.media_import_receipt = Some(
+            json!({"timeline_id":timeline.raw().to_string(),"media_ids":actual_roots.iter().map(|id|id.raw().to_string()).collect::<Vec<_>>(),"errors":[]}),
+        );
+        Ok(())
+    }
     fn import_native_asset(
         &mut self,
         job: &str,
@@ -1824,6 +1976,11 @@ impl Editor {
         if !additions.is_empty() {
             self.session.apply(Box::new(additions));
         }
+        self.remember_native_asset(id, revision, selected);
+        Ok(())
+    }
+    fn remember_native_asset(&mut self, id: &str, revision: &str, selected: Vec<vv_core::MediaId>) {
+        let key = (self.session.epoch(), id.to_owned(), revision.to_owned());
         let mut media = HashSet::new();
         let mut timelines = HashSet::new();
         let mut remaining = selected.clone();
@@ -1862,7 +2019,6 @@ impl Editor {
                 timelines,
             },
         );
-        Ok(())
     }
     fn prepare_take_mutation(
         &mut self,
@@ -2312,11 +2468,21 @@ impl Editor {
             }
             Action::NativeAssetList(page, query) => {
                 self.validate_asset_epoch(&query.project_epoch, None)?;
-                self.assets.list(page, &query)
+                let mut value = self.assets.list(page, &query)?;
+                if let Some(items) = value["items"].as_array_mut() {
+                    for item in items {
+                        self.annotate_native_asset_placement(item);
+                    }
+                }
+                value["placement_generation"] =
+                    json!(self.session.history.generation().to_string());
+                Ok(value)
             }
             Action::NativeAssetItem(id, query) => {
                 self.validate_asset_epoch(&query.project_epoch, None)?;
-                self.assets.item(&id, query.archived)
+                let mut value = self.assets.item(&id, query.archived)?;
+                self.annotate_native_asset_placement(&mut value);
+                Ok(value)
             }
             Action::NativeAssetStatus(job, query, cancel) => {
                 if !cancel {

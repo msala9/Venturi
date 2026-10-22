@@ -1,6 +1,149 @@
 use super::*;
 
 #[test]
+fn native_asset_import_set_shares_file_work_and_binds_order_revisions_cancel_and_budget() {
+    let fixture = Fixture::new();
+    let captured = fixture.capture();
+    fixture
+        .jobs
+        .publish("first", captured["id"].as_str().unwrap(), "epoch", "7")
+        .unwrap();
+    let first = fixture.store.item("first", false).unwrap();
+    let asset = fixture
+        .store
+        .load("first", first["revision"].as_str().unwrap())
+        .unwrap();
+    fixture.store.create("second", &asset).unwrap();
+    let second = fixture.store.item("second", false).unwrap();
+    let refs = vec![
+        asset_store::ImportRef {
+            asset_id: "second".into(),
+            revision: second["revision"].as_str().unwrap().into(),
+        },
+        asset_store::ImportRef {
+            asset_id: "first".into(),
+            revision: first["revision"].as_str().unwrap().into(),
+        },
+    ];
+    let queued = fixture
+        .jobs
+        .prepare_import_set("epoch", "7", &refs)
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["kind"], "import_set");
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert_eq!(ready["result"]["file_count"], 1);
+    assert_eq!(ready["result"]["assets"][0]["asset_id"], "second");
+    let payloads = fixture
+        .jobs
+        .import_set_payloads(id, &refs, "epoch", "7")
+        .unwrap();
+    assert_eq!(payloads.len(), 2);
+    assert_eq!(
+        payloads[0].files().next().unwrap().path,
+        payloads[1].files().next().unwrap().path
+    );
+    assert_eq!(
+        fixture
+            .jobs
+            .0
+            .jobs
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|job| job.id == id)
+            .unwrap()
+            .result
+            .as_ref()
+            .unwrap()
+            .files
+            .len(),
+        1
+    );
+    let mut wrong = refs.clone();
+    wrong.reverse();
+    assert!(
+        fixture
+            .jobs
+            .import_set_payloads(id, &wrong, "epoch", "7")
+            .is_err()
+    );
+    assert!(
+        fixture
+            .jobs
+            .import_set_payloads(id, &refs, "epoch", "8")
+            .is_err()
+    );
+    fixture.jobs.status(id, "epoch", true).unwrap();
+    assert!(
+        fixture
+            .jobs
+            .import_set_payloads(id, &refs, "epoch", "7")
+            .is_err()
+    );
+    assert!(
+        fixture
+            .jobs
+            .prepare_import_set("epoch", "7", &vec![refs[0].clone(); 33])
+            .is_err()
+    );
+    assert!(
+        fixture
+            .jobs
+            .prepare_import_set("epoch", "7", &[refs[0].clone(), refs[0].clone()])
+            .is_err()
+    );
+    let queued = fixture
+        .jobs
+        .prepare_import_set("epoch", "7", &refs)
+        .unwrap();
+    let ready = fixture.finish(queued["id"].as_str().unwrap());
+    assert_eq!(ready["state"], "ready");
+    fixture
+        .store
+        .edit(
+            "rename",
+            &asset_store::Edit::Update {
+                id: "first".into(),
+                revision: refs[1].revision.clone(),
+                name: "Changed".into(),
+            },
+        )
+        .unwrap();
+    assert!(
+        fixture
+            .jobs
+            .import_set_payloads(queued["id"].as_str().unwrap(), &refs, "epoch", "7")
+            .is_err()
+    );
+    let mut padded = asset;
+    padded
+        .payload
+        .push_str(&" ".repeat(7 * 512 * 1024 - padded.payload.len()));
+    let mut oversized = Vec::new();
+    for index in 0..5 {
+        let id = format!("metadata-{index}");
+        fixture.store.create(&id, &padded).unwrap();
+        oversized.push(asset_store::ImportRef {
+            asset_id: id.clone(),
+            revision: fixture.store.item(&id, false).unwrap()["revision"]
+                .as_str()
+                .unwrap()
+                .into(),
+        });
+    }
+    let records = fixture.jobs.0.jobs.lock().unwrap().len();
+    assert!(
+        fixture
+            .jobs
+            .prepare_import_set("epoch", "7", &oversized)
+            .is_err()
+    );
+    assert_eq!(fixture.jobs.0.jobs.lock().unwrap().len(), records);
+}
+
+#[test]
 fn asset_copy_closes_writer_before_pinning_readonly_stage_and_refuses_replacement() {
     let root = std::env::temp_dir().join(format!(
         "venturi-stage-reopen-{}-{}",
@@ -1342,6 +1485,7 @@ fn clipboard_worker_resolves_ordinary_text_fallback_and_pool_noop_without_parsin
         sources: vec![],
         cancel: Arc::new(AtomicBool::new(false)),
         import: None,
+        import_set: Vec::new(),
         edit: None,
         media_import: None,
         otio: None,
@@ -1560,6 +1704,7 @@ fn otio_policy_errors_and_processing_budget_cannot_be_downgraded_to_offline_read
         sources: vec![],
         cancel: Arc::new(AtomicBool::new(false)),
         import: None,
+        import_set: Vec::new(),
         edit: None,
         media_import: None,
         otio: Some("budget.otio".into()),
@@ -1797,6 +1942,7 @@ fn media_import_budget_records_every_unprocessed_file_and_zero_success_cannot_co
         sources: vec![],
         cancel: Arc::new(AtomicBool::new(false)),
         import: None,
+        import_set: Vec::new(),
         edit: None,
         media_import: Some(tokens.clone()),
         otio: None,

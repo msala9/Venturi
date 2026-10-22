@@ -89,12 +89,12 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   const rename = button("Rename current folder", operations, () => { if (form.reportValidity()) run({kind: "rename_folder", folder: filter.value, name: name.value}); });
   const moveFolder = button("Move current folder", operations, () => run({kind: "move_folder", folder: filter.value, parent: destination.value || null}));
   const deleteFolder = button("Remove folder, keep contents", operations, () => run({kind: "delete_folder", folder: filter.value}));
-  function update() {
+  function update(userIntent = false) {
     list.querySelectorAll(".media-item").forEach((card) => { const selected = state.selected.includes(card.dataset.mediaId); card.classList.toggle("selected", selected); card.setAttribute("aria-pressed", selected); });
     count.textContent = `${visible.length} shown · ${state.selected.length} selected`;
     move.disabled = remove.disabled = relink.disabled = !writable || !state.selected.length;
     rename.disabled = moveFolder.disabled = deleteFolder.disabled = !writable || ["", "*"].includes(filter.value);
-    onSelection(state.selected.at(-1) || null, [...state.selected]);
+    onSelection(state.selected.at(-1) || null, [...state.selected], {userIntent});
   }
   function render() {
     observer?.disconnect();intersecting.clear();onDemand([]);
@@ -106,7 +106,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
       thumbnailSlot.className="catalog-thumbnail";thumbnailSlot.setAttribute("aria-hidden","true");thumbnailSlot.textContent=info.glyph;
       copy.className="catalog-copy";filename.className="catalog-filename";filename.textContent=item.name;metadata.className="catalog-metadata";metadata.textContent=info.metadata;copy.append(filename,metadata);
       duration.className="catalog-duration";duration.textContent=info.duration;card.title=`${item.name} · ${info.metadata} · ${info.duration}`;card.append(thumbnailSlot,copy,duration);
-      card.addEventListener("click", (event) => { const selection = mediaSelection(visible, state.selected, state.anchor, item.id, {toggle: event.ctrlKey || event.metaKey, extend: event.shiftKey}); Object.assign(state, selection); update(); });
+      card.addEventListener("click", (event) => { const selection = mediaSelection(visible, state.selected, state.anchor, item.id, {toggle: event.ctrlKey || event.metaKey, extend: event.shiftKey}); Object.assign(state, selection); update(true); });
       card.addEventListener("dblclick", () => onOpen(item.id));
       const thumbnail=mediaThumbnail(assets,item.id);if(thumbnail?.thumbnailURL){const image = document.createElement("img"); image.alt = ""; image.src = thumbnail.thumbnailURL;thumbnailSlot.replaceChildren(image);}
       list.append(card);
@@ -115,13 +115,13 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     update();
   }
   list.addEventListener("keydown", (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") { event.preventDefault(); event.stopPropagation(); state.selected = visible.map((m) => m.id); update(); return; }
+    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") { event.preventDefault(); event.stopPropagation(); state.selected = visible.map((m) => m.id); update(true); return; }
     if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
     event.preventDefault(); event.stopPropagation();
     const index = visible.findIndex((m) => m.id === event.target.dataset.mediaId), next = event.key === "Home" ? 0 : event.key === "End" ? visible.length - 1 : Math.max(0, Math.min(visible.length - 1, index + (event.key === "ArrowDown" ? 1 : -1)));
     if (!visible[next]) return;
     if (!event.ctrlKey && !event.metaKey) Object.assign(state, mediaSelection(visible, state.selected, state.anchor, visible[next].id, {extend: event.shiftKey}));
-    list.querySelectorAll(".media-item")[next]?.focus(); update();
+    list.querySelectorAll(".media-item")[next]?.focus(); update(true);
   });
   filter.addEventListener("change", render); kind.addEventListener("change", render); render();
   return {search(query) {if(disposed)return;state.query = query; render();},dispose(){disposed=true;observer?.disconnect();intersecting.clear();onDemand([]);}};

@@ -1,5 +1,258 @@
 use super::*;
 
+#[test]
+fn native_asset_set_placement_imports_once_with_one_undo_and_reuses_edited_compounds() {
+    use vv_core::{Clip, ClipSource, Id};
+    let (root, mut source, media) = native_asset_fixture("drop-set");
+    let child = source.session.create_timeline(Timeline {
+        name: "Audio child".into(),
+        fps: Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![Track::new(TrackKind::Audio)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let clip = source.session.project.alloc_clip_id();
+    source.session.project.timelines[child].tracks[0].insert_sorted(Clip::from_source_range(
+        clip,
+        ClipSource::Media(media),
+        0,
+        2,
+        0,
+        Rational::one(),
+    ));
+    source.session.sync_timeline_media(child);
+    let compound = source
+        .session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(child))
+        .unwrap()
+        .0;
+    let compound_revision = native_publish(&mut source, compound, "drop-compound");
+    let audio_revision = native_publish(&mut source, media, "drop-audio");
+    let references = vec![
+        crate::asset_store::ImportRef {
+            asset_id: "drop-compound".into(),
+            revision: compound_revision,
+        },
+        crate::asset_store::ImportRef {
+            asset_id: "drop-audio".into(),
+            revision: audio_revision,
+        },
+    ];
+    let target = root.join("destination");
+    let mut editor =
+        Editor::with_libraries(&target, &target.join(".presets"), &root.join(".assets")).unwrap();
+    let command = request(
+        &editor,
+        Operation::NewProject {
+            name: "destination".into(),
+        },
+        "drop-project",
+        None,
+    );
+    editor.mutation(None, command).unwrap();
+    let timeline = editor.session.project.timelines.keys().next().unwrap();
+    let job = native_prepare(
+        &mut editor,
+        NativeAssetAction::ImportSet {
+            assets: references.clone(),
+        },
+    );
+    let ready = native_wait(&mut editor, &job);
+    assert_eq!(ready["result"]["file_count"], 1);
+    let operation = Operation::PlaceNativeAssets {
+        job_id: job["id"].as_str().unwrap().into(),
+        assets: references.clone(),
+        start_frame: 10,
+        target: commands::AssetDropTarget::NewAudioTrack {},
+        overwrite: false,
+    };
+    let before = editor.session.project.clone();
+    let position = editor.session.history.position();
+    let mut locked = request(&editor, operation.clone(), "drop-locked", Some(timeline));
+    if let Operation::PlaceNativeAssets { target, .. } = &mut locked.operation {
+        *target = commands::AssetDropTarget::Track {
+            track_id: "0".into(),
+        };
+    }
+    editor.session.project.timelines[timeline].tracks[0].locked = true;
+    let locked_project = ron::to_string(&editor.session.project).unwrap();
+    locked.if_revision = Some(editor.session.timeline_revision(timeline));
+    assert_eq!(
+        editor
+            .mutation(Some(timeline.raw().to_string()), locked)
+            .unwrap_err()
+            .1,
+        "TRACK_LOCKED"
+    );
+    assert_eq!(
+        ron::to_string(&editor.session.project).unwrap(),
+        locked_project
+    );
+    assert_eq!(editor.session.history.position(), position);
+    assert!(editor.asset_imports.is_empty());
+    editor.session.project.timelines[timeline].tracks[0].locked = false;
+    let command = request(&editor, operation, "drop-first", Some(timeline));
+    let ack = editor
+        .mutation(Some(timeline.raw().to_string()), command.clone())
+        .unwrap();
+    assert_eq!(ack["timeline_id"], timeline.raw().to_string());
+    assert_eq!(ack["media_ids"].as_array().unwrap().len(), 2);
+    assert_eq!(ack["clip_ids"].as_array().unwrap().len(), 2);
+    assert_eq!(editor.session.history.position(), position + 1);
+    let after = editor.session.project.clone();
+    assert_eq!(
+        editor
+            .mutation(Some(timeline.raw().to_string()), command)
+            .unwrap(),
+        ack
+    );
+    assert_eq!(editor.session.history.position(), position + 1);
+    editor.session.history.undo(&mut editor.session.project);
+    // Native command Undo leaves the separately synchronized target cache at its post-edit value.
+    let mut expected = before.clone();
+    for (media_id, item) in expected.media_pool.iter_mut() {
+        if item.compound == Some(timeline) {
+            item.content_hash = after.media_pool[media_id].content_hash;
+            item.meta = after.media_pool[media_id].meta.clone();
+        }
+    }
+    let before_allocations = serde_json::to_value(&before).unwrap();
+    let after_allocations = serde_json::to_value(&after).unwrap();
+    let mut expected = serde_json::to_value(&expected).unwrap();
+    // Native import/drop reserves IDs and compound generations permanently, including across Undo.
+    for (field, additional) in [("media_pool", 2), ("timelines", 1), ("folders", 0)] {
+        assert_eq!(
+            after_allocations[field]["next"].as_u64().unwrap(),
+            before_allocations[field]["next"].as_u64().unwrap() + additional
+        );
+        expected[field]["next"] = after_allocations[field]["next"].clone();
+    }
+    for (field, additional) in [
+        ("next_clip_id", 3),
+        ("next_link_group_id", 0),
+        ("next_compound_id", 0),
+        ("next_compound_generation", 2),
+    ] {
+        assert_eq!(
+            after_allocations[field].as_u64().unwrap(),
+            before_allocations[field].as_u64().unwrap() + additional
+        );
+        expected[field] = after_allocations[field].clone();
+    }
+    assert_eq!(
+        serde_json::to_value(&editor.session.project).unwrap(),
+        expected
+    );
+    editor.session.history.redo(&mut editor.session.project);
+    assert_eq!(
+        ron::to_string(&editor.session.project).unwrap(),
+        ron::to_string(&after).unwrap()
+    );
+    let imported =
+        vv_core::MediaId::from_raw(ack["media_ids"][0].as_str().unwrap().parse().unwrap());
+    editor.session.apply(Box::new(vv_core::RenameTimeline::new(
+        imported,
+        "Edited child".into(),
+    )));
+    let imported_child = editor.session.project.media_pool[imported]
+        .compound
+        .unwrap();
+    let video = vv_core::edit::add_track(
+        &mut editor.session.project,
+        &mut editor.session.history,
+        imported_child,
+        TrackKind::Video,
+    );
+    vv_core::edit::insert_generator(
+        &mut editor.session.project,
+        &mut editor.session.history,
+        imported_child,
+        vv_core::edit::Generator::SolidColor,
+        video,
+        0,
+        Some(48),
+    );
+    editor.session.sync_timeline_media(imported_child);
+    let generation = editor.session.history.generation();
+    let epoch = format!("{}:{}", editor.epoch, editor.session.epoch());
+    let effective = editor
+        .handle(Action::NativeAssetItem(
+            "drop-compound".into(),
+            NativeAssetItemQuery {
+                project_epoch: epoch.clone(),
+                archived: false,
+            },
+        ))
+        .unwrap();
+    assert_eq!(effective["placement"]["items"][0]["source_out"], 48);
+    assert_eq!(effective["placement"]["items"][0]["has_video"], true);
+    assert_eq!(effective["placement"]["items"][0]["has_audio"], true);
+    assert_eq!(effective["placement"]["generation"], generation.to_string());
+    assert_eq!(effective["placement"]["project_epoch"], epoch);
+    let page = editor
+        .handle(Action::NativeAssetList(
+            0,
+            crate::asset_store::Query {
+                project_epoch: epoch,
+                ..Default::default()
+            },
+        ))
+        .unwrap();
+    assert_eq!(page["placement_generation"], generation.to_string());
+    assert_eq!(
+        page["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|item| item["id"] == "drop-compound")
+            .unwrap()["placement"],
+        effective["placement"]
+    );
+    assert_eq!(editor.session.history.generation(), generation);
+    assert_eq!(
+        editor.assets.item("drop-compound", false).unwrap()["placement"]["items"][0]["has_video"],
+        false
+    );
+    let count = editor.session.project.timelines.len();
+    let job = native_prepare(
+        &mut editor,
+        NativeAssetAction::ImportSet {
+            assets: references.clone(),
+        },
+    );
+    native_wait(&mut editor, &job);
+    let operation = Operation::PlaceNativeAssets {
+        job_id: job["id"].as_str().unwrap().into(),
+        assets: references,
+        start_frame: 100,
+        target: commands::AssetDropTarget::Track {
+            track_id: "1".into(),
+        },
+        overwrite: false,
+    };
+    let command = request(&editor, operation, "drop-reuse", Some(timeline));
+    let reused = editor
+        .mutation(Some(timeline.raw().to_string()), command)
+        .unwrap();
+    assert_eq!(reused["media_ids"], ack["media_ids"]);
+    assert_eq!(editor.session.project.timelines.len(), count);
+    assert_eq!(reused["clip_ids"].as_array().unwrap().len(), 3);
+    assert_eq!(
+        editor.session.project.timelines[editor.session.project.media_pool[imported]
+            .compound
+            .unwrap()]
+        .name,
+        "Edited child"
+    );
+    drop(editor);
+    drop(source);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn take_editor() -> (
     std::path::PathBuf,
     Editor,

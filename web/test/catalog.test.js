@@ -53,18 +53,21 @@ test("compact rows retain pool keyboard focus, Source opening, catalog actions a
   let observer;
   class Observer {constructor(callback){this.callback=callback;this.observed=[];this.disconnections=0;observer=this;}observe(row){this.observed.push(row);}disconnect(){this.disconnections++;}}
   try{
-    const root=new Element("div"),calls=[],opened=[],demand=[],state={selected:[],folder:"*",open:false};
+    const root=new Element("div"),calls=[],opened=[],demand=[],selectionEvents=[],state={selected:[],folder:"*",open:false};
     const media=[{id:"9007199254740993",name:"<safe> first.mp4",has_video:true,duration_frames:48,fps:{num:24,den:1}},{id:"2",name:"Second.wav",has_audio:true,duration_frames:48000,fps:{num:48000,den:1}}];
-    const catalog=renderCatalog(root,{media,folders:[]},state,{writable:true,assets:new Map([["thumb",{mediaId:media[0].id,thumbnail:{},thumbnailURL:"blob:owned"}]]),commit:async operation=>calls.push(operation),getFiles:async()=>[],onSelection(){},onOpen:id=>opened.push(id),notice:assert.fail,onDemand:items=>demand.push(items),intersectionObserver:Observer});
+    const catalog=renderCatalog(root,{media,folders:[]},state,{writable:true,assets:new Map([["thumb",{mediaId:media[0].id,thumbnail:{},thumbnailURL:"blob:owned"}]]),commit:async operation=>calls.push(operation),getFiles:async()=>[],onSelection:(id,ids,intent)=>selectionEvents.push({id,ids,...intent}),onOpen:id=>opened.push(id),notice:assert.fail,onDemand:items=>demand.push(items),intersectionObserver:Observer});
     const rows=root.querySelectorAll(".media-item"),list=root.querySelectorAll(".catalog-rows")[0];
     assert.equal(rows.length,2);assert.equal(rows[0].children[0].children[0].src,"blob:owned");assert.equal(rows[0].children[1].children[0].textContent,media[0].name);assert.equal(rows[0].children[2].textContent,"0:02");
     assert.equal(root.querySelectorAll(".catalog-operations")[0].open,false);
-    rows[0].fire("click");assert.deepEqual(state.selected,[media[0].id]);assert.equal(rows[0].attrs["aria-pressed"],"true");
-    list.fire("keydown",{target:rows[0],key:"ArrowDown",shiftKey:true});assert.deepEqual(state.selected,media.map(item=>item.id));assert.equal(focused,rows[1]);
+    assert.deepEqual(selectionEvents,[{id:null,ids:[],userIntent:false}]);
+    rows[0].fire("click");assert.deepEqual(state.selected,[media[0].id]);assert.equal(rows[0].attrs["aria-pressed"],"true");assert.equal(selectionEvents.at(-1).userIntent,true);
+    list.fire("keydown",{target:rows[0],key:"ArrowDown",shiftKey:true});assert.deepEqual(state.selected,media.map(item=>item.id));assert.equal(focused,rows[1]);assert.equal(selectionEvents.at(-1).userIntent,true);
     rows[0].fire("dblclick");assert.deepEqual(opened,[media[0].id]);assert.equal(calls.length,0);
     const actions=root.querySelectorAll("button");for(const label of ["Move selected media","Remove selected from project","Relink selected media","Create media folder","Rename current folder","Move current folder","Remove folder, keep contents"])assert.ok(actions.some(button=>button.textContent===label),label);
     actions.find(button=>button.textContent==="Move selected media").fire("click");assert.deepEqual(calls,[{kind:"edit_catalog",edit:{kind:"move_media",media_ids:media.map(item=>item.id),folder:null}}]);
     observer.callback([{target:rows[0],isIntersecting:true}]);assert.deepEqual(demand.at(-1),[{media_id:media[0].id,audio_stream_index:0,include_waveform:false}]);
+    catalog.search('');assert.deepEqual(selectionEvents.at(-1),{id:media[1].id,ids:media.map(item=>item.id),userIntent:false});
+    list.fire('keydown',{target:root.querySelectorAll('.media-item')[0],key:'a',ctrlKey:true});assert.equal(selectionEvents.at(-1).userIntent,true);
     catalog.dispose();assert.deepEqual(demand.at(-1),[]);const count=demand.length;observer.callback([{target:rows[0],isIntersecting:true}]);assert.equal(demand.length,count);
   }finally{globalThis.document=previous.document;globalThis.Option=previous.Option;}
 });

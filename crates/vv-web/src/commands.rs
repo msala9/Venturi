@@ -22,6 +22,13 @@ pub struct Mutation {
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
+pub enum AssetDropTarget {
+    Track { track_id: String },
+    NewVideoTrack {},
+    NewAudioTrack {},
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
     NewProject {
         name: String,
@@ -106,6 +113,14 @@ pub enum Operation {
         job_id: String,
         asset_id: String,
         revision: String,
+    },
+    PlaceNativeAssets {
+        job_id: String,
+        assets: Vec<crate::asset_store::ImportRef>,
+        start_frame: FrameIdx,
+        target: AssetDropTarget,
+        #[serde(default, skip_serializing_if = "is_false")]
+        overwrite: bool,
     },
     EditNativeAssetLibrary {
         edit: crate::asset_store::Edit,
@@ -564,7 +579,7 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 "Native asset library writes require the native asset command endpoint",
             ));
         }
-        Operation::ImportNativeAsset { .. } => {
+        Operation::ImportNativeAsset { .. } | Operation::PlaceNativeAssets { .. } => {
             return Err(ApiError::invalid(
                 "Native asset imports require the project command endpoint",
             ));
@@ -1681,6 +1696,171 @@ fn movement_command(
         )),
         copied_ids,
     )
+}
+pub(crate) fn whole_media_out(meta: &core::MediaMeta) -> Result<FrameIdx> {
+    let out = if meta.is_image() {
+        (meta.fps.as_f64() * 5.0).round() as FrameIdx
+    } else {
+        meta.duration_frames
+    };
+    if meta.fps.num <= 0
+        || meta.fps.den <= 0
+        || !(1..=MAX_FRAME).contains(&out)
+        || !meta.has_video && !meta.has_audio
+        || meta.audio_stream_count() > 128
+    {
+        return Err(ApiError::invalid(
+            "Asset media cannot be placed within native timeline bounds",
+        ));
+    }
+    Ok(out)
+}
+pub(crate) struct NativeAssetPlacement {
+    timeline: TimelineId,
+    inserts: Vec<edit::MediaInsert>,
+    target: AssetDropTarget,
+    start: FrameIdx,
+}
+impl NativeAssetPlacement {
+    fn insert(&self, project: &mut core::Project, history: &mut core::History) -> Vec<ClipId> {
+        let id = self.timeline;
+        let any_video = self.inserts.iter().any(|insert| insert.video);
+        let any_audio = self.inserts.iter().any(|insert| insert.audio);
+        let video = if !any_video {
+            None
+        } else if matches!(self.target, AssetDropTarget::NewVideoTrack {}) {
+            Some(edit::add_track(project, history, id, TrackKind::Video))
+        } else {
+            let hovered = match &self.target {
+                AssetDropTarget::Track { track_id } => Some(
+                    track_id
+                        .parse::<usize>()
+                        .expect("Validated native drop track"),
+                ),
+                _ => None,
+            };
+            hovered
+                .filter(|index| project.timelines[id].tracks[*index].kind == TrackKind::Video)
+                .or_else(|| project.timelines[id].first_unlocked_track_index(TrackKind::Video))
+                .or_else(|| Some(edit::add_track(project, history, id, TrackKind::Video)))
+        };
+        let extra_audio = (any_audio && matches!(self.target, AssetDropTarget::NewAudioTrack {}))
+            .then(|| edit::add_track(project, history, id, TrackKind::Audio));
+        let tracks = edit::TargetTracks { video, extra_audio };
+        let mut cursor = self.start;
+        let mut clips = Vec::new();
+        for insert in &self.inserts {
+            let meta = &project.media_pool[insert.media_id].meta;
+            let rate = core::Rational::conform_rate(project.timelines[id].fps, meta.fps);
+            let len = rate.scale_round(insert.source_out) - rate.scale_round(insert.source_in);
+            clips.extend(
+                edit::insert_media(project, history, id, *insert, cursor, tracks)
+                    .expect("Validated native asset media")
+                    .into_iter()
+                    .map(|(_, clip)| clip),
+            );
+            cursor += len;
+        }
+        clips
+    }
+    pub(crate) fn apply(&self, session: &mut Session) -> Vec<ClipId> {
+        let mark = session.history.begin_group();
+        let clips = self.insert(&mut session.project, &mut session.history);
+        session
+            .history
+            .end_group_as(mark, CommandLabel::InsertClips);
+        clips
+    }
+}
+pub(crate) fn prepare_native_asset_placement(
+    project: &core::Project,
+    id: TimelineId,
+    selected: &[core::MediaId],
+    operation: &Operation,
+) -> Result<NativeAssetPlacement> {
+    let Operation::PlaceNativeAssets {
+        start_frame,
+        target,
+        overwrite,
+        ..
+    } = operation
+    else {
+        return Err(ApiError::invalid("Choose a native asset placement"));
+    };
+    let timeline = project.timelines.get(id).ok_or_else(ApiError::missing)?;
+    if selected.is_empty() || selected.len() > 32 {
+        return Err(ApiError::invalid("Place 1 to 32 native asset roots"));
+    }
+    if let AssetDropTarget::Track { track_id } = target {
+        track_index(timeline, track_id)?;
+    }
+    let mut cursor = *start_frame;
+    let mut inserts = Vec::new();
+    for media in selected {
+        let meta = &project
+            .media_pool
+            .get(*media)
+            .ok_or_else(ApiError::missing)?
+            .meta;
+        let out = whole_media_out(meta)?;
+        if project.would_create_a_cycle(*media, id) {
+            return Err(ApiError::invalid(
+                "Asset placement would create a compound cycle",
+            ));
+        }
+        let rate = core::Rational::conform_rate(timeline.fps, meta.fps);
+        let len = rate.scale_round(out);
+        range(cursor, len)?;
+        cursor += len;
+        inserts.push(edit::MediaInsert {
+            media_id: *media,
+            source_in: 0,
+            source_out: out,
+            video: meta.has_video,
+            audio: meta.has_audio,
+        });
+    }
+    let plan = NativeAssetPlacement {
+        timeline: id,
+        inserts,
+        target: target.clone(),
+        start: *start_frame,
+    };
+    let mut trial = project.clone();
+    let fresh = plan.insert(&mut trial, &mut core::History::default());
+    let ranges = trial.timelines[id]
+        .tracks
+        .iter()
+        .enumerate()
+        .flat_map(|(index, track)| {
+            track
+                .clips
+                .iter()
+                .filter(|clip| fresh.contains(&clip.id))
+                .map(move |clip| (index, clip.timeline_start, clip.timeline_end()))
+        })
+        .collect::<Vec<_>>();
+    if *overwrite {
+        overwrite_targets(timeline, &ranges, &HashSet::new())?;
+    } else {
+        for (index, lane) in timeline.tracks.iter().enumerate() {
+            for clip in &lane.clips {
+                if trial.timelines[id]
+                    .clip(index, clip.id)
+                    .is_none_or(|after| {
+                        serde_json::to_value(after).ok() != serde_json::to_value(clip).ok()
+                    })
+                {
+                    return Err(ApiError::conflict(
+                        "OVERLAP",
+                        "Asset placement would overwrite existing material",
+                    ));
+                }
+            }
+        }
+    }
+    validate_edge_trial(project, &trial, id, &HashSet::new())?;
+    Ok(plan)
 }
 fn overwrite_targets(
     timeline: &Timeline,

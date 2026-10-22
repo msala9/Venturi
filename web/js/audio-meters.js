@@ -136,11 +136,36 @@ export function createPlaybackMeterReader({getTarget,onRead,onStatus,onClear=()=
   return {refresh,invalidate,finishPlayback,active:()=>binding!==null};
 }
 
-export function createAudioMeters({root,getTarget,isPlaying,onTransport,getPlayback,fetcher}) {
+export function createMeterSubscriptions({getTarget,onWake=()=>{}}){
+  const consumers=new Set(),keys=['project_epoch','if_generation','timeline_id','revision'];
+  function active(){
+    const target=getTarget();let count=0;
+    for(const consumer of consumers){
+      if(!consumer.isCurrent() || target && keys.some(key=>target.query[key]!==consumer.query[key])){consumer.onClear();consumers.delete(consumer);continue;}
+      if(!target){if(consumer.shown)consumer.onClear();consumer.shown=false;continue;}
+      const visible=Boolean(consumer.visible());if(consumer.shown && !visible)consumer.onClear();consumer.shown=visible;if(visible)count++;
+    }
+    return count>0;
+  }
+  return {
+    active,
+    subscribe({query,visible,isCurrent=()=>true,onRead,onClear,onStatus=()=>{}}){
+      if(!query || keys.some(key=>typeof query[key]!=='string'))throw Error('Bind mixer meters to the native project and timeline revision');
+      const consumer={query:{...query},visible,isCurrent,onRead,onClear,onStatus,shown:false};consumers.add(consumer);onClear();onWake();
+      return ()=>{if(consumers.delete(consumer)){onClear();onWake();}};
+    },
+    publish(result,target){if(!result.telemetry || !active())return;for(const consumer of consumers)if(consumer.shown && keys.every(key=>target.query[key]===consumer.query[key]))consumer.onRead(result);},
+    clear(){for(const consumer of consumers)consumer.onClear();},
+    status(message){if(active())for(const consumer of consumers)if(consumer.shown)consumer.onStatus(message);},
+  };
+}
+
+export function createAudioMeters({root,getTarget,isPlaying,onTransport,getPlayback,fetcher,timers=globalThis}) {
   const select=root.querySelector("select"),status=root.querySelector("[data-meter-status]"),rows=root.querySelector("[data-meter-rows]"),svg=root.querySelector("svg"),context=root.querySelector("[data-meter-context]");
   const live=root.querySelector("input[type=checkbox]");
   const ns="http://www.w3.org/2000/svg";
-  let optionsKey=null,timer=null,channelKey=null,channelViews=[];
+  let optionsKey=null,timer=null,channelKey=null,channelViews=[],following=false,finishing=null;
+  const subscribers=createMeterSubscriptions({getTarget,onWake:()=>sync()});
   function element(tag,attrs,text) { const node=document.createElementNS(ns,tag);for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);if(text)node.textContent=text;svg.append(node);return node; }
   for(const db of [0,-24,-48,-72,-96]) {const y=12-db/96*140;element("line",{x1:38,x2:595,y1:y,y2:y,stroke:"var(--border)"});element("text",{x:1,y:y+4,fill:"var(--muted)","font-size":10},`${db}`);}
   for(const hz of [20,100,1000,10000,20000])element("text",{x:38+Math.log10(hz/20)/3*550,y:176,fill:"var(--muted)","font-size":10},hz>=1000?`${hz/1000}k`:`${hz}`);
@@ -156,7 +181,7 @@ export function createAudioMeters({root,getTarget,isPlaying,onTransport,getPlayb
       }
       if([...select.options].some(option=>option.value===previous))select.value=previous;
     }
-    return {...current,insert:select.value?JSON.parse(select.value):null};
+    return {...current,insert:root.open && select.value?JSON.parse(select.value):null};
   }
   function draw(result,current) {
     root.dataset.stale="false";
@@ -182,23 +207,38 @@ export function createAudioMeters({root,getTarget,isPlaying,onTransport,getPlayb
   }
   function clearDisplay(){root.dataset.stale='true';for(const row of channelViews){for(const meter of row.meters)meter.value=-60;row.readout.textContent='';}before.setAttribute('points','');after.setAttribute('points','');}
   const reader=createMeterReader({getTarget:target,onRead:draw,onStatus:message=>{if(message!=="Reading native audio…" || !status.textContent.startsWith("Native"))status.textContent=message;if(!message.startsWith("Native") && message!=="Reading native audio…")root.dataset.stale="true";},fetcher});
-  const playbackReader=createPlaybackMeterReader({getTarget:target,onRead:draw,onClear:clearDisplay,onStatus:message=>{status.textContent=message;if(!message.startsWith('Native prepared playback'))root.dataset.stale='true';},fetcher});
-  function invalidate(){reader.invalidate();playbackReader.invalidate();clearDisplay();}
-  function readCurrent(){reader.invalidate();playbackReader.invalidate();reader.refresh();}
+  const playbackReader=createPlaybackMeterReader({getTarget:target,onRead:(value,current)=>{subscribers.publish(value,current);if(root.open && live.checked)draw(value,current);},onClear:()=>{clearDisplay();subscribers.clear();},onStatus:message=>{subscribers.status(message);if(root.open && live.checked){status.textContent=message;if(!message.startsWith('Native prepared playback'))root.dataset.stale='true';}},fetcher});
+  function invalidate(){finishing=null;reader.invalidate();playbackReader.invalidate();clearDisplay();following=false;}
+  function readCurrent(){reader.invalidate();if(!subscribers.active())playbackReader.invalidate();reader.refresh();}
   function followPlayback(){if(!playbackReader.active())reader.invalidate();playbackReader.refresh();}
   const play=root.querySelector("[data-meter-play]"),playback=root.querySelector("[data-meter-playback]");
   function syncTransport(){const state=getPlayback();play.textContent=state.label;playback.textContent=state.status;}
+  function tick(){
+    if(finishing)return;
+    const inline=subscribers.active();
+    if(document.hidden || !root.open && (!inline || !isPlaying())){if(timer!==null)timers.clearInterval(timer);timer=null;if(following || playbackReader.active())playbackReader.invalidate();following=false;return;}
+    if(root.open)syncTransport();
+    if(!document.hidden && isPlaying() && (inline || root.open && live.checked)){following=true;followPlayback();}
+    else if(following){following=false;playbackReader.invalidate();}
+  }
+  function sync(){
+    const wanted=!document.hidden && (root.open || subscribers.active() && isPlaying());
+    if(wanted && timer===null)timer=timers.setInterval(tick,250);
+    tick();
+  }
   select.addEventListener("change",()=>{invalidate();if(live.checked && isPlaying())followPlayback();else reader.refresh();});
   root.querySelector("[data-meter-refresh]").addEventListener("click",()=>{live.checked=false;readCurrent();});
   play.addEventListener("click",()=>{onTransport();syncTransport();});
   root.querySelector("[data-meter-close]").addEventListener("click",()=>root.close());
-  root.addEventListener("close",()=>{clearInterval(timer);invalidate();});
+  root.addEventListener("close",()=>{reader.invalidate();sync();});
   root.addEventListener("keydown",event=>{if(event.key==="Escape"){event.preventDefault();root.close();}});
-  live.addEventListener("change",()=>{invalidate();if(live.checked)followPlayback();});
+  live.addEventListener("change",()=>{invalidate();sync();});
   return {
-    open(){if(!root.open)root.show();syncTransport();if(live.checked && isPlaying())followPlayback();else readCurrent();clearInterval(timer);timer=setInterval(()=>{if(!root.open)return;syncTransport();if(live.checked && !document.hidden && (isPlaying() || playbackReader.active()))followPlayback();},250);},
+    open(){if(!root.open)root.show();syncTransport();if(live.checked && isPlaying())followPlayback();else readCurrent();sync();},
+    subscribe:options=>subscribers.subscribe(options),
+    sync,
     invalidate,
-    finishPlayback(playback,isCurrent=()=>true){if(!root.open || !live.checked)return Promise.resolve(false);reader.invalidate();return playbackReader.finishPlayback(playback,()=>root.open && live.checked && isCurrent());},
+    finishPlayback(playback,isCurrent=()=>true){const wanted=()=>root.open && live.checked || subscribers.active();if(finishing || !wanted())return Promise.resolve(false);const owner={};finishing=owner;reader.invalidate();return playbackReader.finishPlayback(playback,()=>wanted() && isCurrent()).finally(()=>{if(finishing===owner)finishing=null;});},
     refresh(){if(root.open){if(live.checked && isPlaying())followPlayback();else readCurrent();}},
   };
 }

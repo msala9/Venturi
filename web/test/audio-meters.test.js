@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {createMeterReader,createPlaybackMeterReader,createPeakEnvelope} from "../js/audio-meters.js";
+import {createMeterReader,createPlaybackMeterReader,createPeakEnvelope,createMeterSubscriptions,createAudioMeters} from "../js/audio-meters.js";
 
 const query={project_epoch:"p:1",if_generation:"0",timeline_id:"1",revision:"r",frame:0,width:960};
 const reading={frame:0,samples:4096,sample_rate:48000,channels:[]};
@@ -86,6 +86,52 @@ test('a short terminal Program publishes its completed native tail once even whe
   h.state.playback.sample=1000;h.state.playback.playing=false;await h.reader.refresh();assert.equal(h.calls.length,0);
   assert.equal(await h.reader.finishPlayback({...h.state.playback}),true);assert.equal(h.calls.length,1);assert.equal(h.values.at(-1).end_sample,1000);assert.equal(h.values.at(-1).channels[0].clipped[0],true);assert.ok(h.calls[0].url.includes('/program/job-1/meters'));
   const calls=h.calls.length;await h.reader.refresh();assert.equal(h.calls.length,calls);h.reader.invalidate();
+});
+
+test('shared meter subscriptions retain source-mode bindings, clear hidden strips and reject stale native revisions',()=>{
+  let current={query},visible=true,wakes=0;const first=[],second=[],clears=[];
+  const bus=createMeterSubscriptions({getTarget:()=>current,onWake:()=>wakes++});
+  const a=bus.subscribe({query,visible:()=>visible,onRead:value=>first.push(value),onClear:()=>clears.push('a')}),b=bus.subscribe({query,visible:()=>true,onRead:value=>second.push(value),onClear:()=>clears.push('b')});
+  bus.publish({telemetry:false},current);assert.equal(first.length,0);
+  bus.publish({telemetry:true,end_sample:4096},current);assert.equal(first.length,1);assert.equal(second.length,1);
+  visible=false;bus.publish({telemetry:true,end_sample:8192},current);assert.equal(first.length,1);assert.equal(second.length,2);
+  current=null;assert.equal(bus.active(),false);current={query:{...query,frame:24}};visible=true;
+  bus.publish({telemetry:true,end_sample:12288},current);assert.equal(first.length,2);assert.equal(second.length,3);
+  current={query:{...query,revision:'other'}};assert.equal(bus.active(),false);current={query};assert.equal(bus.active(),false);
+  a();b();assert.equal(wakes,2);assert.ok(clears.length>=4);
+});
+
+test('inline strips and the dialog share one native reader and timer without canceling its final EOF page',{timeout:2000},async()=>{
+  class Node extends EventTarget{
+    constructor(){super();this.children=[];this.dataset={};this.value='';this.open=false;}
+    append(...nodes){this.children.push(...nodes);}replaceChildren(...nodes){this.children=[...nodes];}setAttribute(){}
+    get options(){return this.children;}show(){this.open=true;}close(){this.open=false;this.dispatchEvent(new Event('close'));}
+  }
+  const previous={document:globalThis.document,Option:globalThis.Option};
+  globalThis.document={hidden:false,createElement:()=>new Node(),createElementNS:()=>new Node()};globalThis.Option=class extends Node{constructor(label,value){super();this.textContent=label;this.value=value;}};
+  const root=new Node(),select=new Node(),live=new Node(),status=new Node(),rows=new Node(),svg=new Node(),context=new Node(),play=new Node(),playback=new Node(),refresh=new Node(),close=new Node();live.checked=true;
+  root.querySelector=selector=>({'select':select,'input[type=checkbox]':live,'[data-meter-status]':status,'[data-meter-rows]':rows,'svg':svg,'[data-meter-context]':context,'[data-meter-play]':play,'[data-meter-playback]':playback,'[data-meter-refresh]':refresh,'[data-meter-close]':close})[selector];
+  const native=playbackHarness(),calls=[],intervals=new Map();let serial=0,playing=true,aVisible=true,aCount=0,bCount=0,nextRead,deferFinal=false,releaseFinal,finalStarted;
+  const timer={setInterval:(fn,delay)=>{assert.equal(delay,250);intervals.set(++serial,fn);return serial;},clearInterval:id=>intervals.delete(id)};
+  const values=()=>{nextRead?.();};let a,b;
+  try{
+    const producer=createAudioMeters({root,getTarget:()=>native.state,isPlaying:()=>playing,onTransport(){},getPlayback:()=>({label:'Play Program',status:'Program'}),timers:timer,fetcher:(url,options)=>{calls.push({url,options});if(deferFinal)return new Promise(resolve=>{releaseFinal=()=>resolve(Response.json(native.page(url)));finalStarted?.();});return Promise.resolve(Response.json(native.page(url)));}});
+    const first=new Promise(resolve=>nextRead=()=>{if(aCount && bCount)resolve();});
+    a=producer.subscribe({query,visible:()=>aVisible,onRead:()=>{aCount++;values();},onClear(){}});
+    b=producer.subscribe({query,visible:()=>true,onRead:()=>{bCount++;values();},onClear(){}});await first;
+    assert.equal(calls.length,1);assert.equal(intervals.size,1);assert.match(calls[0].url,/\/preview\/program\/job-1\/meters\?/);assert.equal(calls[0].options.method,undefined);
+    producer.open();root.close();assert.equal(intervals.size,1);assert.equal(calls.length,1);
+    aVisible=false;producer.sync();const count=aCount;native.state.playback.sample=8192;
+    const next=new Promise(resolve=>nextRead=resolve);for(const tick of intervals.values())tick();await next;assert.equal(aCount,count);assert.ok(bCount>1);assert.equal(calls.length,1);
+    playing=false;native.state.playback.playing=false;native.state.playback.sample=20*4096;deferFinal=true;
+    const requested=new Promise(resolve=>finalStarted=resolve),drain=producer.finishPlayback({...native.state.playback},()=>true);await requested;
+    const finalSignal=calls.at(-1).options.signal;assert.equal(root.open,false);assert.equal(finalSignal.aborted,false);
+    for(const tick of intervals.values())tick();assert.equal(finalSignal.aborted,false);assert.equal(intervals.size,1);
+    releaseFinal();assert.equal(await drain,true);deferFinal=false;
+    playing=false;native.state.playback.playing=false;producer.sync();assert.equal(intervals.size,0);
+    playing=true;native.state.playback.playing=true;producer.sync();assert.equal(intervals.size,1);
+    a();b();a=b=null;assert.equal(intervals.size,0);assert.equal(calls.some(call=>call.url==='/api/v1/preview/audio/meters'),false);producer.invalidate();
+  }finally{a?.();b?.();globalThis.document=previous.document;globalThis.Option=previous.Option;}
 });
 
 test('terminal reads suppress late owners and long backlogs read only a bounded final tail',async()=>{

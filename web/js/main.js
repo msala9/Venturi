@@ -16,7 +16,7 @@ import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail
 import { inspectorGroup,editingShortcutAllowed,selectionInspectorRows,renderInspectorSelection, detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,retimePropertySelection,compoundSelectionOperation,renderRetime,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
 import {createZoomLink} from './curves.js';
 import {maskFocusAfterEdit} from './masks.js';
-import { renderMixer } from "./mixer.js";
+import { renderMixer, mixerDraftContext } from "./mixer.js";
 import {canRetainAudioPresetDraft} from './audio-presets.js';
 import { createExportPanel } from "./export.js";
 import { createScopes, scopeTarget } from "./scopes.js";
@@ -86,7 +86,7 @@ let timelineOpenSequence=0;
 let exportPanel=null;
 let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
-function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));}
+function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));audioMeters?.sync();}
 function updateBrowserToggle(){for(const button of document.querySelectorAll('#workspaces [data-panel]'))button.setAttribute('aria-expanded',String(innerWidth<=760?editor.classList.contains('browser-drawer-open'):!editor.classList.contains('browser-collapsed')));}
 let inspectorSelectionRead=null;
 function setInspectorTab(tab){
@@ -95,6 +95,7 @@ function setInspectorTab(tab){
   $('inspector').dataset.inspectorTab=tab;
   for(const button of document.querySelectorAll('button[data-inspector-tab]'))button.setAttribute('aria-selected',String(button.dataset.inspectorTab===tab));
   if(tab==='selection')inspectorSelectionRead?.read();else inspectorSelectionRead?.cancel();
+  audioMeters?.sync();
 }
 function globalEditingShortcut(event,{allowRepeat=false}={}){return editingShortcutAllowed(event,{dialogOpen:Boolean(document.querySelector('dialog[open]')),allowRepeat}) && !isTextTarget(event.target);}
 function revealBrowser(name){
@@ -213,6 +214,7 @@ function showWorkspace(name) {
     tools.append(button);
   }
   area.append(tools);
+  audioMeters?.sync();
   try {
     localStorage.setItem("workspace", name);
   } catch {}
@@ -421,6 +423,7 @@ function viewerModeSet(mode) {
   scopes?.refresh();
   if (mode === "source") programPlayer?.stop();
   $("screen").dataset.viewerMode = mode;
+  audioMeters?.sync();
   $("program-position").hidden=mode!=='program';$("source-seek-control").hidden=mode!=='source';
   $("source-view").hidden = mode !== "source";
   $("program-mode").setAttribute("aria-pressed", mode === "program");
@@ -513,6 +516,7 @@ function togglePlayback() {
 $("play").addEventListener("click", togglePlayback);
 let inspectorSequence = 0;
 let mixerDetail = null;
+let mixerMixDrafts = null;
 const mixerPaths = new Set();
 const visualState = new Map();
 let visualControls=[];
@@ -553,10 +557,13 @@ function selected() {
   for(const node of document.querySelectorAll("#inspector-content details[data-visual-path]"))visualState.set(node.dataset.visualPath,node.open);
   for(const control of visualControls)control.cancel();visualControls=[];
   const mixerOpen = mixerDetail?.open || false;
+  mixerMixDrafts=mixerDetail?.captureMixDrafts?.() ?? mixerMixDrafts;
+  const mixContext=documentState && timeline?mixerDraftContext({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision}):null;
+  if(!mixContext || mixerMixDrafts?.context!==mixContext)mixerMixDrafts=null;
   for (const node of mixerDetail?.querySelectorAll("details[data-mixer-path]") || []) {
     if (node.open) mixerPaths.add(node.dataset.mixerPath); else mixerPaths.delete(node.dataset.mixerPath);
   }
-  mixerDetail=null;
+  mixerDetail?.disposeMeters?.();mixerDetail=null;
   const getVideoSelection=()=>videoPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
   const getAudioSelection=()=>audioPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
   const getRetimeSelection=()=>retimePropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
@@ -776,7 +783,7 @@ function selected() {
     const markerTarget=`${documentState.project_epoch}:${timeline.id}`;
     renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,selectedId:view.markerTarget===markerTarget?view.markerId:null,onSelect:id=>{view.markerTarget=markerTarget;view.markerId=id;},openState:visualState,seek:(frame)=>{view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();void projectView?.update();}});
     const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
-    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open(),audioPresets:{getContext:()=>({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline_id:timeline?.id,timeline_revision:timeline?.revision}),canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),libraryCommit:operation=>mutate(operation,true,'/audio/presets/commands')}});
+    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,mixDrafts:mixerMixDrafts,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open(),meters:{subscribe:options=>audioMeters?.subscribe(options),sync:()=>audioMeters?.sync(),visible:()=>!document.hidden && editor.dataset.workspace==='Audio' && $('inspector').dataset.inspectorTab==='audio' && viewerMode==='program'},audioPresets:{getContext:()=>({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline_id:timeline?.id,timeline_revision:timeline?.revision}),canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),libraryCommit:operation=>mutate(operation,true,'/audio/presets/commands')}});
     inspectorGroup(mixerDetail,'audio');
   }
   for(const child of $('inspector-content').children)if(!child.dataset.inspectorGroup && !child.dataset.inspectorCommon)inspectorGroup(child,'selection');
@@ -1635,7 +1642,7 @@ audioScrub=createAudioScrub({enabled:$("audio-scrub"),status:$("audio-scrub-stat
   return timeline ? {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:view.playhead,width:960} : null;
 },getURL:query=>query.media_id ? `/api/v1/media/${encodeURIComponent(query.media_id)}/audio.wav?${new URLSearchParams({project_epoch:query.project_epoch,frame:query.frame,audio_mode:query.audio_mode,audio_stream_index:query.audio_stream_index})}` : `/api/v1/preview/audio.wav?${new URLSearchParams(query)}`});
 $("play").addEventListener("click",()=>audioScrub?.stop());
-$("program-video").addEventListener("play",()=>audioScrub?.stop());
+$("program-video").addEventListener("play",()=>{audioScrub?.stop();audioMeters?.sync();});
 $("source-video").addEventListener("play",()=>audioScrub?.stop());
 function refreshStoppedProgramInspector(){
   if(viewerMode!=='program' || programPlayer?.state()!=='stopped')return;
@@ -1656,7 +1663,7 @@ programPlayer = createProgramPlayer({
   isInternalSeek: () => Boolean(fastTransport?.correcting($("program-video"))),
   isInternalPause: event => Boolean(fastTransport?.pausing($("program-video"),event)),
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); scopes?.onPlaybackFrame(); } },
-  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; scopesSuspended=["preparing","failed"].includes(state); $("workspace-tools").hidden=viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.invalidate(state==='preparing'?"PREPARING PROGRAM":undefined); scopes?.setVisible(scopesWanted && !scopesSuspended && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden,{defer:state==='ready'}); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; sourceAssets?.refresh();viewerZoom?.refresh();voiceover?.syncPlayback(); },
+  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; scopesSuspended=["preparing","failed"].includes(state); $("workspace-tools").hidden=viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.invalidate(state==='preparing'?"PREPARING PROGRAM":undefined); scopes?.setVisible(scopesWanted && !scopesSuspended && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden,{defer:state==='ready'}); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; sourceAssets?.refresh();viewerZoom?.refresh();voiceover?.syncPlayback();audioMeters?.sync(); },
   onUserPause:({frame,query,reason,isCurrent,playback})=>{
     const current=()=>isCurrent() && viewerMode==='program' && programPlayer?.state()==='ready' && programPlayer.range()===query && $('program-video').paused && documentState?.project_epoch===query.project_epoch && documentState?.generation===query.if_generation && timeline?.id===query.timeline_id && timeline?.revision===query.revision;
     if(!Number.isSafeInteger(frame) || frame<query.start_frame || frame>=query.end_frame || !current())return;
@@ -1748,7 +1755,7 @@ sourceAssets=createSourceAssetQueue({loader:createSourceAssets({getState:()=>doc
   isIdle:()=>Boolean(documentState && !document.hidden && !busy && !unresolved && !derivativesTransportPending && !document.querySelector('dialog[open]') && canvasTimeline.navigationIdle() && programPlayer?.state()!=='preparing' && !sourcePlayer?.preparing() && $('source-video').paused && $('program-video').paused && $('export-preview-video').paused && !fastTransport?.active()),
   hasAsset:entry=>{const asset=mediaAssets.get(sourceAssetKey(entry.item.id,entry.audioStreamIndex)),thumbnail=mediaThumbnail(mediaAssets,entry.item.id);return Boolean((!entry.item.has_video || thumbnail?.contentHash===entry.item.content_hash && (!entry.sourceVersion || thumbnail.sourceVersion===entry.sourceVersion)) && (!entry.item.has_audio || !entry.includeWaveform || asset?.contentHash===entry.item.content_hash && asset.waveform && (!entry.sourceVersion || asset.sourceVersion===entry.sourceVersion)));}});
 for(const event of ['play','pause','ended'])$('export-preview-video').addEventListener(event,()=>sourceAssets.refresh());
-document.addEventListener('visibilitychange',()=>{sourceAssets.refresh();if(document.hidden){audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>sourceAssets.refresh(),true);
+document.addEventListener('visibilitychange',()=>{sourceAssets.refresh();audioMeters?.sync();if(document.hidden){audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>sourceAssets.refresh(),true);
 window.addEventListener('pagehide',()=>{fastTransport?.stop();programPlayer?.pauseLocal();void projectView?.flush({persist:true});});
 $("source-assets-refresh").addEventListener("click",()=>{
   const position=sourcePosition(),item=documentState?.media.find(media=>media.id===sourceOpenId);

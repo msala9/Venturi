@@ -1,27 +1,59 @@
 import { request } from "./api.js";
 import {renderAudioPresets} from './audio-presets.js';
 
-export function renderMixer(root, timeline, { writable, commit, notice, open = false, catalog, openPaths = new Set(), query, onMeters, audioPresets }) {
+export function mixerDraftContext(query) {
+  const params=new URLSearchParams(query),keys=['project_epoch','if_generation','timeline_id','revision'];
+  return keys.every(key=>params.get(key))?JSON.stringify(keys.map(key=>params.get(key))):null;
+}
+export function renderMixer(root, timeline, { writable, commit, notice, open = false, catalog, openPaths = new Set(), query, onMeters, audioPresets, meters, mixDrafts }) {
   const customPresets=audioPresets?{...audioPresets,expectedContext:{...audioPresets.getContext()}}:null;
   const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Audio mixer";section.open=open;section.append(summary);
-  const tracks=timeline.tracks.filter((track)=>track.kind === "audio").map((track)=>({channel:track.id,label:track.label || track.id,locked:track.locked,...track.mix}));
+  const tracks=timeline.tracks.filter((track)=>track.kind === "audio").map((track)=>({channel:track.id,label:track.label || track.id,locked:track.locked,solo:track.solo,muted:track.muted,...track.mix}));
   tracks.push({channel:"master",label:"Master",locked:false,...timeline.master});
+  const meterViews=[],mixInputs=[],context=mixerDraftContext(query);
+  const restored=context && mixDrafts?.context===context?mixDrafts.channels:[];
+  let disposed=false;
   for(const track of tracks) {
-    const form=document.createElement("form"),heading=document.createElement("strong");heading.textContent=track.label;form.append(heading);
+    const form=document.createElement("form"),heading=document.createElement("strong");form.className='mixer-strip';heading.textContent=track.label;form.append(heading);
+    if(track.channel!=='master'){
+      const flags=document.createElement('div');flags.className='mixer-strip-flags';
+      for(const [field,label] of [['solo','Solo'],['muted','Mute']]){
+        const button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute('aria-label',`${track.label} ${label}`);button.setAttribute('aria-pressed',String(Boolean(track[field])));button.disabled=!writable || track.locked;
+        button.addEventListener('click',async()=>{if(button.disabled || section.isConnected===false)return;button.disabled=true;try{await commit({kind:'set_track',track:track.channel,[field]:!track[field]});}catch(error){notice(error.message);}finally{button.disabled=!writable || track.locked;}});flags.append(button);
+      }
+      form.append(flags);
+    }
+    const peak=document.createElement('div'),readout=document.createElement('output');peak.className='mixer-strip-peaks';
+    const bars=['L','R'].map(side=>{const bar=document.createElement('meter');bar.min=-60;bar.max=6;bar.low=-18;bar.high=0;bar.optimum=-12;bar.value=-60;bar.setAttribute('aria-label',`${track.label} ${side} dBFS`);peak.append(bar);return bar;});
+    readout.textContent='—';peak.append(readout);form.append(peak);meterViews.push({id:track.channel,bars,readout});
     const inputs={};
     for(const [key,label,min,max] of [["gain_db","Gain dB",-100,30],["pan","Balance L/R",-1,1]]) {
       const row=document.createElement("label");row.className="field";row.textContent=`${track.label} ${label}`;
-      const input=document.createElement("input");input.type="number";input.step="any";input.min=min;input.max=max;input.value=track[key];input.disabled=!writable || track.locked;input.required=true;inputs[key]=input;
+      const input=document.createElement("input");input.type="number";input.step="any";input.min=min;input.max=max;input.value=restored?.find(row=>row.channel===track.channel)?.[key] ?? track[key];input.disabled=!writable || track.locked;input.required=true;inputs[key]=input;
       row.append(input);form.append(row);
     }
     const button=document.createElement("button");button.textContent=`Apply ${track.label} mix`;button.disabled=!writable || track.locked;form.append(button);
-    form.addEventListener("submit",(event)=>{event.preventDefault();if(form.reportValidity())commit({kind:"set_mixer",channel:track.channel,gain_db:Number(inputs.gain_db.value),pan:Number(inputs.pan.value)}).catch((error)=>notice(error.message));});
+    let waiting=false;
+    form.addEventListener("submit",async(event)=>{event.preventDefault();if(disposed || waiting || button.disabled || !writable || track.locked || section.isConnected===false || !form.reportValidity())return;waiting=true;button.disabled=true;try{await commit({kind:"set_mixer",channel:track.channel,gain_db:Number(inputs.gain_db.value),pan:Number(inputs.pan.value)});}catch(error){notice(error.message);}finally{waiting=false;button.disabled=!writable || track.locked;}});
+    mixInputs.push({channel:track.channel,inputs});
     section.append(form);
     if(catalog) renderEffects(section,track,catalog,!writable || track.locked,commit,notice,openPaths,timeline.id,query,customPresets);
   }
   if(onMeters){const meters=document.createElement("button");meters.textContent="Open native meters / spectrum";meters.addEventListener("click",onMeters);section.append(meters);}
   const note=document.createElement("p");note.className="muted";note.textContent="Native timeline mix. Source playback uses the original source audio.";section.append(note);
-  root.append(section);return section;
+  const meterStatus=document.createElement('p');meterStatus.className='muted mixer-meter-status';meterStatus.textContent='No current prepared audio';section.append(meterStatus);
+  root.append(section);
+  const visible=()=>section.open && section.isConnected!==false && (section.getClientRects?.().length ?? 1)>0 && meters.visible();
+  const clear=()=>{for(const row of meterViews){for(const bar of row.bars)bar.value=-60;row.readout.textContent='—';}meterStatus.textContent='No current prepared audio';};
+  const unsubscribe=meters?.subscribe({query:Object.fromEntries(new URLSearchParams(query)),visible,isCurrent:()=>section.isConnected!==false,onClear:clear,onStatus:message=>{if(!message.startsWith('Native prepared playback'))meterStatus.textContent=message;},onRead:result=>{
+    if(!visible())return;
+    for(const row of meterViews){const channel=result.channels.find(channel=>channel.channel===row.id);if(!channel)continue;channel.db.forEach((db,index)=>row.bars[index].value=db===null?-60:db);const db=value=>value===null?'−∞':value.toFixed(1);row.readout.textContent=`${db(channel.db[0])} / ${db(channel.db[1])} dBFS${channel.clipped.some(Boolean)?' · CLIP':''}`;}
+    meterStatus.textContent=`LIVE · native prepared audio · sample ${result.end_sample}`;
+  }});
+  const syncMeters=()=>meters?.sync();section.addEventListener('toggle',syncMeters);
+  section.captureMixDrafts=()=>context?{context,channels:mixInputs.map(({channel,inputs})=>({channel,gain_db:String(inputs.gain_db.value),pan:String(inputs.pan.value)}))}:null;
+  section.disposeMeters=()=>{disposed=true;unsubscribe?.();section.removeEventListener('toggle',syncMeters);};
+  return section;
 }
 export function effectName(effect) {return typeof effect.kind === "string" ? effect.kind : Object.keys(effect.kind)[0];}
 export function chainOperation(channel,effects) {return {kind:"set_audio_effects",channel,effects};}

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { scopeTarget, scopeURL, matchesScope, createScopes } from "../js/scopes.js";
+import { scopeTarget, scopeURL, matchesScope, createScopes, scopeGraticule } from "../js/scopes.js";
 import { createViewer } from "../js/viewer.js";
 
 test("scopes isolate the native first selected video target and retain integer frame identity", () => {
@@ -31,15 +31,19 @@ test('native scope primary ordering uses lane then start then full native ClipId
   assert.notEqual(scopeTarget({...document,media:[{id:'50',content_hash:'changed'}]},timeline,['9007199254740993'],12).source_version,first.source_version);
 });
 
-function scopeHarness(t,{playing=true,decode=async()=>{}}={}){
+function scopeHarness(t,{playing=true,decode=async()=>{},guides=false}={}){
   const listeners=()=>{const handlers=new Map();return {addEventListener:(name,fn)=>handlers.set(name,fn),removeEventListener:(name,fn)=>{if(handlers.get(name)===fn)handlers.delete(name);},emit:name=>handlers.get(name)?.()};};
   const image={hidden:true,src:'',decode,classList:{add(){},remove(){}}},status={textContent:''},empty={hidden:false},context={textContent:''},button=listeners(),selects=[{value:'Waveform',...listeners()},{value:'Parade',...listeners()}];
-  const panel={hidden:false,querySelector:selector=>({'img':image,'output':status,'p':empty,'[data-scope-context]':context,'button':button})[selector],querySelectorAll:()=>selects};
+  const guideCalls=[],guide=guides?{hidden:true,getContext:()=>new Proxy({}, {get:(target,key)=>target[key] ?? ((...args)=>guideCalls.push([key,...args]))})}:null;
+  image.naturalWidth=1024;image.naturalHeight=256;image.getBoundingClientRect=()=>({width:800,height:180});
+  let scopeWidth=800,resize;const stage=guides?{dataset:{},getBoundingClientRect:()=>stage.dataset.scopeSlots==='1'?{width:Math.min(scopeWidth,360),height:Math.min(scopeWidth,360)/2}:{width:scopeWidth,height:180}}:null;
+  for(const select of selects)select.parentElement={hidden:false};
+  const panel={hidden:false,clientWidth:scopeWidth,ownerDocument:guides?{defaultView:{devicePixelRatio:1,getComputedStyle:()=>({paddingLeft:'0',paddingRight:'0'}),ResizeObserver:class{constructor(fn){resize=fn;}observe(){}disconnect(){}}}}:null,querySelector:selector=>({'img':image,'output':status,'p':empty,'[data-scope-context]':context,'button':button,'[data-scope-guides]':guide,'.scope-stage':stage})[selector],querySelectorAll:()=>selects};
   let clock=0,current={project_epoch:'p:1',if_generation:'0',timeline_id:'1',revision:'r',frame:0,width:960,clip:'3',selection_key:'["3"]',source_version:'source:1'},timerId=0;
   const requests=[],timers=new Map();t.mock.method(globalThis,'fetch',(url,options)=>new Promise(resolve=>requests.push({url,options,resolve})));
   const scopes=createScopes({panel,getTarget:()=>current,isPlaying:()=>playing,now:()=>clock,timers:{setTimeout:(fn,delay)=>{const id=++timerId;timers.set(id,{fn,at:clock+delay});return id;},clearTimeout:id=>timers.delete(id)}});
   const advance=ms=>{clock+=ms;const pending=[];for(const [id,timer] of [...timers])if(timer.at<=clock){timers.delete(id);pending.push(timer.fn());}return Promise.all(pending);};
-  return {scopes,panel,image,status,context,button,selects,requests,timers,advance,current:()=>current,setTarget:value=>current=value,setFrame:frame=>current={...current,frame},setPlaying:value=>playing=value};
+  return {scopes,panel,image,status,context,button,selects,requests,timers,guide,guideCalls,stage,resize:()=>resize?.(),setWidth:value=>{scopeWidth=value;panel.clientWidth=value;},advance,current:()=>current,setTarget:value=>current=value,setFrame:frame=>current={...current,frame},setPlaying:value=>playing=value};
 }
 const png=()=>new Response(new Blob(['native PNG'],{type:'image/png'}));
 
@@ -111,4 +115,45 @@ test("an obsolete scope response cannot become current after selection changes",
   pending[1](new Response(new Blob(["new"],{type:"image/png"})));await second;
   const url=image.src;pending[0](new Response(new Blob(["old"],{type:"image/png"})));await first;
   assert.equal(image.src,url);assert.equal(status.textContent,"CURRENT");viewer.destroy();
+});
+
+test('native scope guides retain percentage scales, parade divisions and histogram quarters without measuring pixels',()=>{
+  const rect={x:10,y:20,width:512,height:256},wave=scopeGraticule('Waveform',rect),parade=scopeGraticule('Parade',rect),histogram=scopeGraticule('Histogram',rect);
+  assert.deepEqual(wave.labels.map(label=>label.text),['0','25','50','75','100']);assert.deepEqual(wave.lines.map(line=>line.y1),[276,212,148,84,20]);
+  assert.equal(parade.lines.length,7);assert.equal(parade.lines[5].x1,10+512/3);assert.equal(parade.lines[6].x1,10+1024/3);
+  assert.deepEqual(histogram.lines.map(line=>line.x1),[138,266,394]);assert.equal(histogram.labels.length,0);
+  assert.deepEqual(scopeGraticule('Unknown',rect),{lines:[],labels:[],circles:[],targets:[]});
+});
+
+test('native vectorscope guides use the square Cb/Cr extent, skin line and all six 75 percent targets',()=>{
+  const guide=scopeGraticule('Vectorscope',{x:0,y:0,width:512,height:256});
+  assert.deepEqual(guide.circles,[{x:256,y:128,radius:128}]);assert.equal(guide.lines.length,3);assert.equal(guide.targets.length,6);
+  assert.deepEqual(guide.labels.map(label=>label.text),['R','Mg','B','Cy','G','Yl']);
+  assert.ok(Math.abs(guide.targets[0].y-32)<.0001);assert.ok(Math.abs(guide.targets[2].x-352)<.0001);
+  assert.ok(guide.lines[2].x2<256 && guide.lines[2].y2<128);assert.ok(Math.abs(Math.atan2(128-guide.lines[2].y2,guide.lines[2].x2-256)*180/Math.PI-123)<1e-10);
+  for(const [first,second] of [[0,3],[1,4],[2,5]]){assert.ok(Math.abs(guide.targets[first].x+guide.targets[second].x-512)<.0001);assert.ok(Math.abs(guide.targets[first].y+guide.targets[second].y-256)<.0001);}
+});
+
+test('actual scope overlay follows only the verified native PNG and its contained two-slot image geometry',async t=>{
+  const h=scopeHarness(t,{playing:false,guides:true});
+  try{
+    const pending=h.scopes.refresh();assert.equal(h.guide.hidden,true);h.requests[0].resolve(png());await pending;
+    assert.equal(h.requests.length,1);assert.equal(h.guide.hidden,false);assert.equal(h.guide.width,800);assert.equal(h.guide.height,180);
+    assert.deepEqual(h.guideCalls.filter(call=>call[0]==='rect').map(call=>call.slice(1)),[[40,0,360,180],[400,0,360,180]]);
+    assert.ok(h.guideCalls.some(call=>call[0]==='moveTo' && call[1]===520));assert.ok(h.guideCalls.some(call=>call[0]==='moveTo' && call[1]===640));
+    assert.equal(h.guideCalls.some(call=>call[0]==='getImageData'),false);
+    h.scopes.invalidate();assert.equal(h.guide.hidden,true);assert.equal(h.image.hidden,false);
+  }finally{h.scopes.destroy();}
+});
+
+test('narrow scopes crop the first native slot uniformly, retain the second preference and resize without another render',async t=>{
+  const h=scopeHarness(t,{playing:false,guides:true});
+  try{
+    h.setWidth(400);h.selects[1].value='Vectorscope';const pending=h.scopes.refresh();h.requests[0].resolve(png());await pending;
+    assert.equal(h.stage.dataset.scopeSlots,'1');assert.equal(h.selects[1].parentElement.hidden,true);assert.equal(h.selects[1].value,'Vectorscope');
+    assert.equal(h.guide.width,360);assert.equal(h.guide.height,180);assert.deepEqual(h.guideCalls.filter(call=>call[0]==='rect').map(call=>call.slice(1)),[[0,0,360,180]]);
+    h.guideCalls.length=0;h.setWidth(800);h.resize();
+    assert.equal(h.stage.dataset.scopeSlots,'2');assert.equal(h.selects[1].parentElement.hidden,false);assert.equal(h.selects[1].value,'Vectorscope');assert.equal(h.requests.length,1);
+    assert.equal(h.guideCalls.filter(call=>call[0]==='arc').length,1);assert.equal(h.guide.width,800);assert.equal(h.guide.height,180);
+  }finally{h.scopes.destroy();}
 });

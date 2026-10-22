@@ -278,8 +278,9 @@
             <label>Right scope <select><option>Parade</option><option>Waveform</option><option>Vectorscope</option><option>Histogram</option></select></label>
             <button type="button">Refresh scopes</button>
           </div>
-          <p>Select one video clip containing the playhead</p>
-          <img alt="Native isolated clip scopes, left and right" hidden>
+          <p>Select a video clip containing the playhead</p>
+          <div class="scope-stage"><img alt="Native isolated clip scopes, left and right" hidden><canvas data-scope-guides aria-hidden="true" hidden></canvas></div>
+          <small data-scope-layout hidden>Only the first scope is shown at this width.</small>
           <small data-scope-context></small>
           <output aria-live="polite">Select a video clip</output>
         </section>

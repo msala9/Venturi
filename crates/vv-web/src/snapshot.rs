@@ -21,6 +21,7 @@ pub fn timeline(session: &Session, id: TimelineId) -> Value {
       "transition_defaults":transition_defaults(tl.fps),
       "export_scales":crate::program::export_scales(tl.resolution),
       "master":tl.master,
+      "gaps":tl.tracks.iter().enumerate().flat_map(|(index,_)|vv_core::edit::timeline_gaps(tl,index).into_iter().map(move |(start,len)|json!({"track_id":index.to_string(),"start_frame":start,"length_frames":len}))).collect::<Vec<_>>(),
       "marker_colors":vv_core::ClipColor::ALL,
       "markers":tl.markers.iter().map(|m|{let (r,g,b)=m.color.rgb();json!({"id":m.id.0.to_string(),"start_frame":m.start,"duration_frames":m.duration,"note":m.note,"color":m.color,"rgb":[r,g,b]})}).collect::<Vec<_>>(),
       "tracks":tl.tracks.iter().enumerate().map(|(index,track)|json!({

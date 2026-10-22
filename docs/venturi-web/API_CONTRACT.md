@@ -1,5 +1,30 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+Timeline snapshots include native `gaps:[{track_id,start_frame,length_frames}]`
+for leading/internal empty intervals on unlocked lanes. Empty lanes and trailing
+space are omitted. The shared core helper sorts/scans each lane once; this
+metadata does not change the project, revision or history. The browser selects
+only these authoritative intervals, without requests during pointer movement.
+
+`close_gap {track,frame}` resolves the clicked interval again under the ordinary
+writer, epoch, generation, revision and command-ID guards. Occupied/trailing
+positions are invalid and locked target lanes return `TRACK_LOCKED`. The native
+`edit::ripple_delete_gap` applies global unlocked-track ripple, overlap repair
+and marker clamp/shift as one `RippleDelete` history step. The complete native
+trial must validate before mutation. `delete {clip_ids,ripple:true}` uses the
+same preflight, replacing its former blanket rejection of unrelated locks.
+Locked unselected material remains fixed. All original members of each linked
+group must undergo the same timing/trim transformation or all be removed;
+partial groups return `TRACK_LOCKED` or `LINKED_GROUP` atomically. A retained
+crossing that would lose its valid adjacency returns `CROSSING_CHANGED`.
+
+Canvas clicks and accessible gap buttons share local selection/highlight,
+Escape, stale-context and focus guards. Close selected gap, the command palette
+and native `IntlBackslash` dispatch through one ripple path; clip selection
+uses the existing native delete operation. After a successful current-context
+receipt, playhead reveal follows the native snapshot only when a clip lands at
+the closed interval's start. Original source bytes are never modified.
+
 `POST /api/v1/media/imports/prepare` accepts strict
 `{project_epoch,if_generation,path_tokens}` for 1–256 unique project-root files.
 First occurrence order is retained; up to 4096 raw selections may contain

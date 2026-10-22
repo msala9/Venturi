@@ -1,5 +1,5 @@
 use super::*;
-use crate::{InsertClip, MediaItem, MediaMeta, SetTrackFlag, Timeline, Track, TrackFlag};
+use crate::{Id, InsertClip, MediaItem, MediaMeta, SetTrackFlag, Timeline, Track, TrackFlag};
 
 fn project_with_tracks(kinds: &[TrackKind]) -> (Project, TimelineId) {
     let mut project = Project::default();
@@ -91,6 +91,85 @@ fn snapshot(project: &Project, timeline: TimelineId) -> Vec<Vec<(FrameIdx, Frame
     (0..project.timelines[timeline].tracks.len())
         .map(|t| spans(project, timeline, t))
         .collect()
+}
+
+#[test]
+fn timeline_gap_at_resolves_leading_internal_and_half_open_boundaries() {
+    let (mut project, timeline) = project_with_tracks(&[TrackKind::Video, TrackKind::Audio]);
+    let mut history = History::default();
+    put(&mut project, &mut history, timeline, 0, 10, 10);
+    put(&mut project, &mut history, timeline, 0, 30, 10);
+    put(&mut project, &mut history, timeline, 0, 40, 10);
+    let lane = &project.timelines[timeline];
+    let before = serde_json::to_value(lane).unwrap();
+    assert_eq!(timeline_gaps(lane, 0), vec![(0, 10), (20, 10)]);
+    for frame in [0, 1, 9] {
+        assert_eq!(timeline_gap_at(lane, 0, frame), Some((0, 10)));
+    }
+    for frame in [20, 21, 29] {
+        assert_eq!(timeline_gap_at(lane, 0, frame), Some((20, 10)));
+    }
+    for frame in [-1, 10, 19, 30, 39, 40, 49, 50, 100] {
+        assert_eq!(timeline_gap_at(lane, 0, frame), None, "frame {frame}");
+    }
+    assert_eq!(timeline_gap_at(lane, 1, 0), None);
+    assert_eq!(timeline_gap_at(lane, 2, 0), None);
+    assert!(timeline_gaps(lane, 1).is_empty());
+    assert!(timeline_gaps(lane, 2).is_empty());
+    assert_eq!(serde_json::to_value(lane).unwrap(), before);
+}
+
+#[test]
+fn timeline_gap_at_matches_native_disabled_crossing_and_unsorted_lane_geometry() {
+    let (mut project, timeline) = project_with_tracks(&[TrackKind::Video]);
+    let mut history = History::default();
+    let first = put(&mut project, &mut history, timeline, 0, 10, 10);
+    let second = put(&mut project, &mut history, timeline, 0, 20, 10);
+    let last = put(&mut project, &mut history, timeline, 0, 40, 10);
+    let lane = &mut project.timelines[timeline];
+    lane.tracks[0].clip_mut(first).unwrap().disabled = true;
+    lane.tracks[0].clip_mut(second).unwrap().freeze = Some(3);
+    lane.tracks[0].clip_mut(last).unwrap().source = ClipSource::Media(MediaId::from_raw(999));
+    lane.tracks[0].crossings.push(crate::CrossTransition {
+        left_clip: first,
+        right_clip: second,
+        transition: crate::Transition {
+            kind: crate::TransitionKind::CrossDissolve,
+            duration: 10,
+            direction: crate::PushDirection::Left,
+            ease: crate::Ease::InOut,
+            curve: 0.5,
+        },
+    });
+    lane.tracks[0].clips.reverse();
+    let before = serde_json::to_value(&*lane).unwrap();
+    assert_eq!(timeline_gaps(lane, 0), vec![(0, 10), (30, 10)]);
+    assert_eq!(timeline_gap_at(lane, 0, 9), Some((0, 10)));
+    for frame in [10, 19, 20, 29, 40, 49] {
+        assert_eq!(timeline_gap_at(lane, 0, frame), None);
+    }
+    assert_eq!(timeline_gap_at(lane, 0, 30), Some((30, 10)));
+    assert_eq!(timeline_gap_at(lane, 0, 39), Some((30, 10)));
+    assert_eq!(timeline_gap_at(lane, 0, 50), None);
+    assert_eq!(serde_json::to_value(&*lane).unwrap(), before);
+}
+
+#[test]
+fn timeline_gap_at_rejects_locked_lanes_without_using_mute_or_solo_as_occupancy() {
+    let (mut project, timeline) = project_with_tracks(&[TrackKind::Audio]);
+    let mut history = History::default();
+    put(&mut project, &mut history, timeline, 0, 12, 12);
+    let lane = &mut project.timelines[timeline];
+    lane.tracks[0].muted = true;
+    lane.tracks[0].solo = true;
+    assert_eq!(timeline_gaps(lane, 0), vec![(0, 12)]);
+    assert_eq!(timeline_gap_at(lane, 0, 0), Some((0, 12)));
+    assert_eq!(timeline_gap_at(lane, 0, 12), None);
+    lane.tracks[0].locked = true;
+    assert!(timeline_gaps(lane, 0).is_empty());
+    for frame in [0, 11, 12, 24] {
+        assert_eq!(timeline_gap_at(lane, 0, frame), None);
+    }
 }
 
 #[test]

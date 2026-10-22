@@ -1,4 +1,4 @@
-import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel } from "./geometry.js";
+import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, TRACK, frameToX, visibleRange,fadeHandles,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap } from "./geometry.js";
 export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
   const ctx = canvas.getContext("2d");
   let queued = false;
@@ -22,6 +22,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
     ctx.fillRect(0, 0, width, height);
     const timeline = getTimeline();
     if (!timeline) return;
+    const gap=selectedGap(timeline,view);
     const [first, last] = visibleRange(width, view, timeline.fps);
     ctx.font = '11px "Segoe UI", sans-serif';
     ctx.textBaseline = "middle";
@@ -38,6 +39,11 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       ctx.beginPath();
       ctx.rect(HEADER, top, width - HEADER, TRACK);
       ctx.clip();
+      if(gap?.track_id===track.id){
+        const left=frameToX(gap.start_frame,view,timeline.fps),right=frameToX(gap.start_frame+gap.length_frames,view,timeline.fps);
+        ctx.fillStyle=color('--raised');ctx.fillRect(left+1,top+7,Math.max(0,right-left-2),TRACK-14);
+        ctx.strokeStyle=color('--primary');ctx.lineWidth=2;ctx.strokeRect(left+1,top+7,Math.max(0,right-left-2),TRACK-14);ctx.lineWidth=1;
+      }
       const speedStrips=new Map(retimeStrips(track,view,timeline.fps,width).map(strip=>[strip.clip_id,strip])),speedIds=new Set(speedStrips.keys());
       for (const clip of track.clips) {
         if (

@@ -1,6 +1,6 @@
 import { isTextTarget, installSplitter } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
-import { linkedSelection, playheadSelection,selectedTransition } from "./timeline/geometry.js";
+import { linkedSelection, playheadSelection,selectedTransition,selectedGap,nativeGapAt } from "./timeline/geometry.js";
 import {isRetimeShortcut} from './timeline/input.js';
 import {createRetimeMenu} from './retime-menu.js';
 import {retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} from './retime-visibility.js';
@@ -317,6 +317,7 @@ const view = {
   retimeOverwrite: false,
   retimeVisible: new Set(),
   transitionSelection: null,
+  selectedGap:null,
   transitionReplace: false,
   draft: null,
 };
@@ -459,8 +460,13 @@ function syncSelectionActions(){
   const target=selectedTransition(timeline,view.transitionSelection),disabled=!writable || busy || Boolean(unresolved) || !timeline || timeline.id==='fixture';
   $("split").disabled=disabled || Boolean(target) || !view.selection.length;
   $("delete").disabled=disabled || (target?target.locked:!view.selection.length);
+  $("close-gap").disabled=disabled || !canvasTimeline.canCloseGap();
 }
 function selected() {
+  if(view.selection.length || view.transitionSelection)view.selectedGap=null;
+  canvasTimeline.checkGapSelection();
+  const activeGap=selectedGap(timeline,view);
+  for(const button of $("clip-list").querySelectorAll('button[data-gap-track]'))button.setAttribute('aria-pressed',String(Boolean(activeGap && activeGap.track_id===button.dataset.gapTrack && activeGap.start_frame===Number(button.dataset.gapStart) && activeGap.length_frames===Number(button.dataset.gapLength))));
   for (const button of $("clip-list").querySelectorAll("button[data-clip-id]"))
     button.setAttribute("aria-pressed", String(view.selection.includes(button.dataset.clipId)));
   slipView?.invalidate();
@@ -499,8 +505,10 @@ function selected() {
   }
   view.transitionSelection=null;
   const title = document.createElement("strong");
-  title.textContent = clip?.name || "No clip selected";
+  const gap=selectedGap(timeline,view),gapTrack=timeline?.tracks.find(track=>track.id===gap?.track_id);
+  title.textContent = gap?`${gapTrack.label || gapTrack.id} gap · ${gap.start_frame}–${gap.start_frame+gap.length_frames} frames`:clip?.name || "No clip selected";
   $("inspector-content").append(title);
+  if(gap){const description=document.createElement('p');description.textContent=`${gap.length_frames} empty frames selected. Close selected gap ripples all unlocked tracks and trims overlaps using native ripple delete. Undo restores the edit.`;$("inspector-content").append(description);}
   const origin=documentState?.media.find((item)=>item.id===clip?.media_id)?.shared_origin;
   if(origin){
     const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Shared asset provenance";section.append(summary);
@@ -646,10 +654,11 @@ const canvasTimeline = createTimeline({
   canvas: $("timeline"),
   getTimeline: () => timeline,
   getPresetContext:presetContext,
+  getGapContext:()=>documentState?{project_epoch:documentState.project_epoch,generation:documentState.generation}:null,
   canNavigate:()=>!busy && !unresolved,
   onOpenCompound:ids=>compoundNavigation?.enter(ids),
   onNavigationIntent:()=>compoundNavigation?.cancel(),
-  onNavigationStateChange:()=>{compoundNavigation?.invalidate();syncClipboardControls();queueMicrotask(syncProgramMarks);},
+  onNavigationStateChange:()=>{compoundNavigation?.invalidate();syncClipboardControls();syncSelectionActions();queueMicrotask(syncProgramMarks);},
   view,
   getAssets: () => mediaAssets,
   getCache: () => previewCache?.ranges(),
@@ -729,6 +738,7 @@ function installTimeline(next,{transitionSelection=null}={}) {
   selected();
   $("format").textContent = `${next.fps.num}/${next.fps.den} fps`;
   $("clip-list").replaceChildren();
+  const gapEpoch=documentState?.project_epoch,gapGeneration=documentState?.generation;
   for (const track of next.tracks)
     for (const clip of track.clips) {
       const button = document.createElement("button");
@@ -748,6 +758,12 @@ function installTimeline(next,{transitionSelection=null}={}) {
       });
       $("clip-list").append(button);
     }
+  for(const gap of next.gaps || []){
+    const track=next.tracks.find(item=>item.id===gap.track_id);if(!track || !nativeGapAt(next,gap.track_id,gap.start_frame))continue;
+    const button=document.createElement('button');button.type='button';button.textContent=`${track.label || track.id} gap · ${gap.start_frame}–${gap.start_frame+gap.length_frames} frames`;
+    button.dataset.gapTrack=gap.track_id;button.dataset.gapStart=gap.start_frame;button.dataset.gapLength=gap.length_frames;button.setAttribute('aria-pressed','false');
+    button.addEventListener('click',()=>{if(documentState?.project_epoch===gapEpoch && documentState?.generation===gapGeneration && timeline?.id===next.id && timeline?.revision===next.revision)canvasTimeline.selectGap(gap.track_id,gap.start_frame);});$("clip-list").append(button);
+  }
   updateTime();
 }
 $("demo-button").addEventListener("click", () => {
@@ -1082,12 +1098,13 @@ $("new-timeline").addEventListener("submit",async(event)=>{
   }catch(error){$("timeline-error").textContent=error.message;}
 });
 const ripple = document.createElement("button");
-ripple.textContent = "Ripple delete selected clips";
+ripple.textContent = "Ripple delete selected clips or gap";
 ripple.addEventListener("click", () => {
-  run({ kind: "delete", clip_ids: view.selection, ripple: true });
   $("palette").close();
+  void canvasTimeline.rippleDelete();
 });
 $("command-list").append(ripple);
+$("close-gap").addEventListener('click',()=>void canvasTimeline.closeGap());
 $("add-solid").addEventListener("click", () => {
   const track = timeline?.tracks.find((t) => t.kind === "video" && !t.locked);
   if (track)
@@ -1321,6 +1338,7 @@ setInterval(() => {
 }, 30_000);
 document.addEventListener("keydown", (event) => {
   if (event.defaultPrevented || isTextTarget(event.target)) return;
+  if(canvasTimeline.handleGapKey(event))return;
   const modifier = event.ctrlKey || event.metaKey;
   if (
     event.altKey &&

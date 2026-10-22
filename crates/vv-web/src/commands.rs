@@ -145,6 +145,10 @@ pub enum Operation {
         clip_ids: Vec<String>,
         ripple: bool,
     },
+    CloseGap {
+        track: String,
+        frame: FrameIdx,
+    },
     RemoveSilences {
         ranges: Vec<[i64; 2]>,
     },
@@ -1221,17 +1225,17 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         Operation::Delete { clip_ids, ripple } => {
             let refs = refs(tl, clip_ids)?;
             if *ripple {
-                if tl.tracks.iter().any(|t| t.locked) {
-                    return Err(ApiError::conflict(
-                        "TRACK_LOCKED",
-                        "Unlock all tracks before a global ripple delete",
-                    ));
-                }
+                let mut trial = Session::default();
+                trial.project = session.project.clone();
+                edit::ripple_delete_clips(&mut trial.project, &mut trial.history, id, &refs);
+                crate::files::validate_project(&trial.project)?;
+                validate_ripple(tl, &trial.project.timelines[id])?;
                 edit::ripple_delete_clips(&mut session.project, &mut session.history, id, &refs);
             } else {
                 edit::delete_clips(&mut session.project, &mut session.history, id, &refs);
             }
         }
+        Operation::CloseGap { track, frame } => close_gap(session, id, track, *frame)?,
         Operation::AddSolid {
             track,
             start_frame,
@@ -1331,6 +1335,100 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
         }
     }
     session.sync_timeline_media(id);
+    Ok(())
+}
+fn close_gap(session: &mut Session, id: TimelineId, track: &str, frame: FrameIdx) -> Result<()> {
+    let before = &session.project.timelines[id];
+    let index = track_index(before, track)?;
+    if before.tracks[index].locked {
+        return Err(ApiError::conflict(
+            "TRACK_LOCKED",
+            "The gap track is locked",
+        ));
+    }
+    let (start, len) = edit::timeline_gap_at(before, index, frame)
+        .ok_or_else(|| ApiError::invalid("Choose an empty leading or internal gap"))?;
+    range(start, len)?;
+    let mut trial = Session::default();
+    trial.project = session.project.clone();
+    edit::ripple_delete_gap(
+        &mut trial.project,
+        &mut trial.history,
+        id,
+        start,
+        start + len,
+    );
+    crate::files::validate_project(&trial.project)?;
+    validate_ripple(before, &trial.project.timelines[id])?;
+    edit::ripple_delete_gap(
+        &mut session.project,
+        &mut session.history,
+        id,
+        start,
+        start + len,
+    );
+    Ok(())
+}
+fn validate_ripple(before: &Timeline, after: &Timeline) -> Result<()> {
+    let mut groups = HashMap::new();
+    for (index, old_track) in before.tracks.iter().enumerate() {
+        let new_track = &after.tracks[index];
+        let old_clips: HashMap<_, _> = old_track.clips.iter().map(|clip| (clip.id, clip)).collect();
+        let new_clips: HashMap<_, _> = new_track.clips.iter().map(|clip| (clip.id, clip)).collect();
+        let new_crossings: HashSet<_> = new_track
+            .crossings
+            .iter()
+            .map(|crossing| (crossing.left_clip, crossing.right_clip))
+            .collect();
+        for old in &old_track.clips {
+            if let Some(group) = old.linked_group {
+                let change = new_clips.get(&old.id).map(|new| {
+                    (
+                        new.timeline_start - old.timeline_start,
+                        new.source_offset - old.source_offset,
+                        new.timeline_len - old.timeline_len,
+                    )
+                });
+                let entry = groups.entry(group).or_insert((change, false, false));
+                entry.1 |= entry.0 != change;
+                entry.2 |= old_track.locked;
+            }
+        }
+        for crossing in &old_track.crossings {
+            let valid_before = old_clips
+                .get(&crossing.left_clip)
+                .zip(old_clips.get(&crossing.right_clip))
+                .is_some_and(|(left, right)| {
+                    left.timeline_end() == right.timeline_start
+                        && !left.is_adjustment()
+                        && !right.is_adjustment()
+                });
+            if valid_before
+                && new_crossings.contains(&(crossing.left_clip, crossing.right_clip))
+                && !new_clips
+                    .get(&crossing.left_clip)
+                    .zip(new_clips.get(&crossing.right_clip))
+                    .is_some_and(|(left, right)| left.timeline_end() == right.timeline_start)
+            {
+                return Err(ApiError::conflict(
+                    "CROSSING_CHANGED",
+                    "Ripple delete would break a crossing transition",
+                ));
+            }
+        }
+    }
+    for (_, mismatch, locked) in groups.into_values() {
+        if mismatch {
+            return Err(ApiError::conflict(
+                if locked {
+                    "TRACK_LOCKED"
+                } else {
+                    "LINKED_GROUP"
+                },
+                "Ripple delete would modify only part of a linked group",
+            ));
+        }
+    }
     Ok(())
 }
 fn timeline_name(name: &str) -> Result<()> {

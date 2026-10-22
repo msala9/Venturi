@@ -7,8 +7,8 @@ use std::collections::{BTreeSet, HashMap};
 use crate::{
     AddTrack, Clip, ClipId, ClipSource, Command, CommandLabel, CompositeCommand, EffectStack,
     FrameIdx, History, Keyframed, LiftDelete, LinkClips, LinkGroupId, MediaId, MoveClips, Project,
-    Rational, Rgba, RippleDeleteGap, SlipClip, SplitClip, TimelineId, TitleParams, TrackKind,
-    TrimClip, TrimEdge,
+    Rational, Rgba, RippleDeleteGap, SlipClip, SplitClip, Timeline, TimelineId, TitleParams,
+    TrackKind, TrimClip, TrimEdge,
 };
 
 pub type ClipRef = (usize, ClipId);
@@ -238,6 +238,42 @@ pub fn ripple_delete_clips(
     cut_overlaps(project, history, timeline_id);
     history.end_group(mark);
     merged.first().map(|&(start, _)| start)
+}
+
+/// Leading and internal gaps of an unlocked lane, as `(start, len)`.
+pub fn timeline_gaps(timeline: &Timeline, track_index: usize) -> Vec<(FrameIdx, FrameIdx)> {
+    let Some(track) = timeline
+        .tracks
+        .get(track_index)
+        .filter(|track| !track.locked)
+    else {
+        return Vec::new();
+    };
+    let mut clips: Vec<&Clip> = track.clips.iter().collect();
+    clips.sort_by_key(|clip| clip.timeline_start);
+    let mut gaps = Vec::new();
+    let mut previous_end = 0;
+    for clip in clips {
+        if clip.timeline_start > previous_end {
+            gaps.push((previous_end, clip.timeline_start - previous_end));
+        }
+        previous_end = previous_end.max(clip.timeline_end());
+    }
+    gaps
+}
+
+/// The leading or internal gap at `frame` on an unlocked lane, as `(start, len)`.
+pub fn timeline_gap_at(
+    timeline: &Timeline,
+    track_index: usize,
+    frame: FrameIdx,
+) -> Option<(FrameIdx, FrameIdx)> {
+    if frame < 0 {
+        return None;
+    }
+    timeline_gaps(timeline, track_index)
+        .into_iter()
+        .find(|&(start, len)| start <= frame && frame < start + len)
 }
 
 /// Closes the empty interval `[start, end)` on every unlocked track.

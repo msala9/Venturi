@@ -1,5 +1,420 @@
 use super::*;
 
+fn close_gap_fixture(leading: bool) -> (Session, TimelineId, core::MediaId) {
+    let mut session = Session::default();
+    let id = session.create_timeline(Timeline {
+        name: "Native gap closure".into(),
+        fps: core::Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![
+            core::Track::new(TrackKind::Video),
+            core::Track::new(TrackKind::Audio),
+            core::Track::new(TrackKind::Video),
+        ],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let media = session.project.media_pool.insert(core::MediaItem {
+        path: "gap-source.mov".into(),
+        meta: core::MediaMeta {
+            duration_frames: 240,
+            fps: core::Rational::new(24, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: true,
+            sample_rate: 48_000,
+            channels: 2,
+            audio_streams: 2,
+            file: Default::default(),
+        },
+        content_hash: 0x1234,
+        compound: None,
+        folder: None,
+    });
+    let gap_start = if leading { 0 } else { 12 };
+    let gap_end = gap_start + 24;
+    for (track, start, len, linked) in [
+        (0, gap_end, 12, true),
+        (0, gap_end + 48, 12, false),
+        (1, gap_end + 8, 12, true),
+        (2, gap_end + 28, 8, false),
+    ] {
+        let mut clip = core::Clip::from_source_range(
+            session.project.alloc_clip_id(),
+            core::ClipSource::Media(media),
+            4,
+            4 + len,
+            start,
+            core::Rational::one(),
+        );
+        clip.fade_in = 2;
+        clip.fade_out = 3;
+        clip.audio_stream_index = 1;
+        clip.effects.gain_db.default = -3.0;
+        clip.display_color = Some(core::ClipColor::Orange);
+        clip.linked_group = linked.then_some(core::LinkGroupId(9));
+        session.project.timelines[id].tracks[track].insert_sorted(clip);
+    }
+    if !leading {
+        for (track, len) in [(0, 12), (1, 8)] {
+            let clip = core::Clip::from_source_range(
+                session.project.alloc_clip_id(),
+                core::ClipSource::Media(media),
+                2,
+                2 + len,
+                0,
+                core::Rational::one(),
+            );
+            session.project.timelines[id].tracks[track].insert_sorted(clip);
+        }
+    }
+    session.project.timelines[id].tracks[2].locked = true;
+    let positions = if leading {
+        vec![gap_start + 4, gap_end, gap_end + 20]
+    } else {
+        vec![6, gap_start + 4, gap_end, gap_end + 20]
+    };
+    session.project.timelines[id].markers = positions
+        .into_iter()
+        .enumerate()
+        .map(|(index, start)| core::Marker {
+            id: core::MarkerId(index as u64 + 1),
+            start,
+            duration: 5,
+            note: format!("Gap cue {index}"),
+            color: core::ClipColor::Orange,
+        })
+        .collect();
+    (session, id, media)
+}
+
+#[test]
+fn close_gap_leading_and_internal_use_native_ripple_markers_and_one_undo_redo() {
+    for leading in [true, false] {
+        let (mut session, id, media) = close_gap_fixture(leading);
+        let start = if leading { 0 } else { 12 };
+        let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+        let source = serde_json::to_value(&session.project.media_pool[media]).unwrap();
+        let mut expected = session.project.timelines[id].clone();
+        for track in &mut expected.tracks[..2] {
+            for clip in &mut track.clips {
+                if clip.timeline_start >= start {
+                    clip.timeline_start -= 24;
+                }
+            }
+        }
+        for marker in &mut expected.markers {
+            if marker.start >= start + 24 {
+                marker.start -= 24;
+            } else if marker.start >= start {
+                marker.start = start;
+            }
+        }
+        let expected = serde_json::to_value(expected).unwrap();
+        let position = session.history.position();
+        apply(
+            &mut session,
+            id,
+            &Operation::CloseGap {
+                track: "0".into(),
+                frame: start,
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            expected
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project.media_pool[media]).unwrap(),
+            source
+        );
+        assert_eq!(session.history.position(), position + 1);
+        assert_eq!(
+            session.history.labels().last(),
+            Some(CommandLabel::RippleDelete)
+        );
+        apply(&mut session, id, &Operation::Undo).unwrap();
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            before
+        );
+        assert_eq!(session.history.position(), position);
+        apply(&mut session, id, &Operation::Redo).unwrap();
+        assert_eq!(
+            serde_json::to_value(&session.project.timelines[id]).unwrap(),
+            expected
+        );
+        assert_eq!(
+            serde_json::to_value(&session.project.media_pool[media]).unwrap(),
+            source
+        );
+    }
+}
+
+#[test]
+fn close_gap_repairs_other_lane_overlap_and_preserves_crossing_using_the_native_ripple_plan() {
+    let (mut session, id, media) = close_gap_fixture(false);
+    session.project.timelines[id].tracks[1].clips[0].timeline_len = 24;
+    let left = core::Clip::from_source_range(
+        session.project.alloc_clip_id(),
+        core::ClipSource::Media(media),
+        4,
+        48,
+        0,
+        core::Rational::one(),
+    );
+    let right = core::Clip::from_source_range(
+        session.project.alloc_clip_id(),
+        core::ClipSource::Media(media),
+        60,
+        72,
+        44,
+        core::Rational::one(),
+    );
+    let crossing = core::CrossTransition {
+        left_clip: left.id,
+        right_clip: right.id,
+        transition: core::Transition {
+            kind: core::TransitionKind::CrossDissolve,
+            duration: 8,
+            direction: core::PushDirection::Left,
+            ease: core::Ease::InOut,
+            curve: 0.5,
+        },
+    };
+    let mut lane = core::Track::new(TrackKind::Video);
+    lane.clips = vec![left, right];
+    lane.crossings.push(crossing.clone());
+    session.project.timelines[id].tracks.push(lane);
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let mut native = session.project.clone();
+    let mut history = core::History::default();
+    edit::ripple_delete_gap(&mut native, &mut history, id, 12, 36);
+    let expected = serde_json::to_value(&native.timelines[id]).unwrap();
+    let position = session.history.position();
+    apply(
+        &mut session,
+        id,
+        &Operation::CloseGap {
+            track: "0".into(),
+            frame: 24,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        expected
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[1].clips[0].timeline_len,
+        20
+    );
+    let repaired = &session.project.timelines[id].tracks[3];
+    assert_eq!(
+        repaired.clips[0].timeline_end(),
+        repaired.clips[1].timeline_start
+    );
+    assert_eq!(
+        serde_json::to_value(&repaired.crossings[0]).unwrap(),
+        serde_json::to_value(crossing).unwrap()
+    );
+    assert_eq!(session.history.position(), position + 1);
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    apply(&mut session, id, &Operation::Redo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        expected
+    );
+}
+
+#[test]
+fn close_gap_rejects_occupied_trailing_invalid_or_locked_targets_without_mutation() {
+    let (mut session, id, _) = close_gap_fixture(false);
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    let generation = session.history.generation();
+    for (track, frame) in [
+        ("0", -1),
+        ("0", 0),
+        ("0", 11),
+        ("0", 36),
+        ("0", 47),
+        ("0", 96),
+        ("0", MAX_FRAME),
+        ("0", i64::MAX),
+        ("99", 24),
+        ("invalid", 24),
+        ("2", 24),
+    ] {
+        assert!(
+            apply(
+                &mut session,
+                id,
+                &Operation::CloseGap {
+                    track: track.into(),
+                    frame
+                }
+            )
+            .is_err()
+        );
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.history.generation(), generation);
+    }
+}
+
+#[test]
+fn close_gap_refuses_partial_linked_group_movement_on_locked_or_unlocked_peers() {
+    for locked in [false, true] {
+        let (mut session, id, _) = close_gap_fixture(false);
+        if locked {
+            session.project.timelines[id].tracks[1].locked = true;
+        } else {
+            let track = &mut session.project.timelines[id].tracks[1];
+            track.clips.retain(|clip| clip.linked_group.is_some());
+            track.clips[0].timeline_start = 0;
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let generation = session.history.generation();
+        let error = apply(
+            &mut session,
+            id,
+            &Operation::CloseGap {
+                track: "0".into(),
+                frame: 24,
+            },
+        )
+        .unwrap_err();
+        assert_eq!(
+            error.1,
+            if locked {
+                "TRACK_LOCKED"
+            } else {
+                "LINKED_GROUP"
+            }
+        );
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.history.generation(), generation);
+    }
+}
+
+#[test]
+fn ripple_delete_linked_clips_accepts_unrelated_locked_material_and_matches_native_undo_redo() {
+    let (mut session, id, media) = close_gap_fixture(false);
+    let selected = session.project.timelines[id].tracks[0]
+        .clips
+        .iter()
+        .find(|clip| clip.linked_group == Some(core::LinkGroupId(9)))
+        .unwrap()
+        .id;
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let source = serde_json::to_value(&session.project.media_pool[media]).unwrap();
+    let locked = serde_json::to_value(&session.project.timelines[id].tracks[2]).unwrap();
+    let mut native = session.project.clone();
+    let mut native_history = core::History::default();
+    assert_eq!(
+        edit::ripple_delete_clips(&mut native, &mut native_history, id, &[(0, selected)]),
+        Some(36)
+    );
+    let expected = serde_json::to_value(&native.timelines[id]).unwrap();
+    let position = session.history.position();
+    apply(
+        &mut session,
+        id,
+        &Operation::Delete {
+            clip_ids: vec![selected.0.to_string()],
+            ripple: true,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        expected
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id].tracks[2]).unwrap(),
+        locked
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.media_pool[media]).unwrap(),
+        source
+    );
+    assert!(
+        session.project.timelines[id].tracks[..2]
+            .iter()
+            .flat_map(|track| &track.clips)
+            .all(|clip| clip.linked_group != Some(core::LinkGroupId(9)))
+    );
+    assert_eq!(
+        session.project.timelines[id].tracks[0].clips[1].timeline_start,
+        64
+    );
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(
+        session.history.labels().last(),
+        Some(CommandLabel::RippleDelete)
+    );
+    apply(&mut session, id, &Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    assert_eq!(session.history.position(), position);
+    apply(&mut session, id, &Operation::Redo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        expected
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.media_pool[media]).unwrap(),
+        source
+    );
+}
+
+#[test]
+fn ripple_delete_refuses_selected_locked_peers_and_remaining_linked_group_split_atomically() {
+    for selected_locked in [false, true] {
+        let (mut session, id, _) = close_gap_fixture(false);
+        let selected = session.project.timelines[id].tracks[0]
+            .clips
+            .iter()
+            .find(|clip| clip.linked_group == Some(core::LinkGroupId(9)))
+            .unwrap()
+            .id;
+        if selected_locked {
+            session.project.timelines[id].tracks[1].locked = true;
+        } else {
+            let timeline = &mut session.project.timelines[id];
+            timeline.tracks[0].clips.last_mut().unwrap().linked_group = Some(core::LinkGroupId(77));
+            timeline.tracks[2].clips[0].linked_group = Some(core::LinkGroupId(77));
+        }
+        let before = serde_json::to_value(&session.project).unwrap();
+        let position = session.history.position();
+        let generation = session.history.generation();
+        let error = apply(
+            &mut session,
+            id,
+            &Operation::Delete {
+                clip_ids: vec![selected.0.to_string()],
+                ripple: true,
+            },
+        )
+        .unwrap_err();
+        assert_eq!(error.1, "TRACK_LOCKED");
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.history.generation(), generation);
+    }
+}
+
 #[test]
 fn clipboard_overwrite_is_explicit_and_preserves_legacy_command_identity() {
     let legacy = serde_json::json!({"kind":"paste_prepared_clipboard","job_id":"clipboard-job","to_pool":false,"timeline_id":"1","timeline_revision":"revision","frame":12});

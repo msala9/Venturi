@@ -4,13 +4,43 @@
 
 ## Current completion assessment
 
-The ledger contains 90 in-scope capabilities: 39 done, 51 partial and none not
+The ledger contains 90 in-scope capabilities: 40 done, 50 partial and none not
 started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus
-43.3% of capability rows have full acceptance; this is not an estimate of
+44.4% of capability rows have full acceptance; this is not an estimate of
 implementation effort. Many partial rows already have native adapters and
 working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
+
+Native global ripple deletion now passes `evidence/m4-native-gap-ripple.json`
+and its existing-Windows-browser screenshot. The web exposes empty leading and
+internal gaps from a shared native core resolver, including accessible gap
+buttons and local Canvas selection/highlight. Close selected gap uses the
+original native ripple/overlap-repair/marker commands as one Undo step. Clip
+ripple deletion now preserves unrelated locked material instead of rejecting
+every locked lane. Native preflight refuses invalid results, partial linked
+groups and newly broken crossings before changing the real session.
+
+The palette and native IntlBackslash action share clip/gap routing, with
+text/modal/IME/repeat/gesture/context guards. Successful current-context edits
+reveal the playhead only when the new native snapshot has a clip at the closed
+gap's start. Twenty-six new deterministic interaction regressions cover these
+states. Actual Windows checks verify local selection, Escape, the CloseGap
+button, Ctrl+K/Commands palette for both gaps and linked clips, native playhead
+landing, Undo/Redo, marker positions and an unchanged locked lane. The existing
+browser input bridge cannot emit IntlBackslash; physical emission remains
+unqualified, is recorded explicitly, and was not replaced with synthetic events
+or another browser installation.
+
+Final halo2 validation passes 291 core, 429 web Rust, four focused native PCM
+and 826 JavaScript tests, targeted multimedia/five desktop checks, fmt, Clippy
+with warnings denied and native build. Finite API checks pass exact frames and
+stable IDs, one Undo/Redo/retry, stale/invalid/locked refusal, selected linked
+clip deletion with unrelated locks and save/restart. The 192044-byte WAV remains
+unchanged. Temporary tabs, backend and tunnel are closed, and the original five
+unsaved main-editor edits remain intact. No local build, browser installation,
+render, export or hardware GPU qualification was used. The ripple-delete
+editing row is accepted; broader physical shortcut qualification stays open.
 
 Linear multibus compounds now pass `evidence/m4-linear-audio-compounds.json`
 and its existing-Windows-browser screenshot. The opt-in native plan preserves
@@ -44,7 +74,7 @@ retry, atomic nonlinear refusal, source preservation and save/restart with a
 tabs, backend and tunnel are closed; the original five unsaved edits remain
 intact. No browser installation, local build, GPU rendering or export was used.
 General processed-bus/compositing and hardware acceptance remain open, so the
-compound rows stay partial and the ledger remains 39 done and 51 partial.
+compound rows stay partial.
 
 Long-source Slip edges now pass `evidence/m4-slip-source-windows.json` and its
 Windows screenshot. The dual viewer uses one shared or two sequential bounded
@@ -74,8 +104,7 @@ Undo/Redo. Saved source/project bytes and the main editor's five unsaved edits
 remain intact. Temporary tabs, services and tunnels are closed. No local build,
 browser installation or hardware GPU work occurred. Continuous edge preview
 after a pointer leaves downloaded windows, physical Canvas/DPI and broader
-playback qualification remain open; the Slip row stays partial and ledger
-counts remain 39 done and 51 partial.
+playback qualification remain open; the Slip row stays partial.
 
 Custom EQ/compressor parameter presets now pass
 `evidence/m5-custom-audio-presets.json`. Cards provide named Save, explicit

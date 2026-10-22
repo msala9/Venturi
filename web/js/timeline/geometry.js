@@ -4,6 +4,17 @@ export const HEADER = 150,
   MARKER_BOTTOM = 42,
   TRACK = 62,
   MAX_FRAME = 1_000_000_000;
+export function nativeGapAt(timeline,trackId,frame){
+  const track=timeline?.tracks.find(item=>item.id===trackId);
+  if(!track || track.locked || !Number.isSafeInteger(frame) || frame<0 || frame>MAX_FRAME || !Array.isArray(timeline.gaps))return null;
+  return timeline.gaps.find(gap=>gap?.track_id===trackId && Number.isSafeInteger(gap.start_frame) && gap.start_frame>=0 && Number.isSafeInteger(gap.length_frames) && gap.length_frames>0 && gap.start_frame+gap.length_frames<=MAX_FRAME && gap.start_frame<=frame && frame<gap.start_frame+gap.length_frames) || null;
+}
+export function selectedGap(timeline,view){
+  const selection=view.selectedGap;
+  if(!selection || view.selection.length || view.transitionSelection || timeline?.id!==selection.timeline_id || timeline.revision!==selection.revision)return null;
+  const gap=nativeGapAt(timeline,selection.track_id,selection.frame);
+  return gap && gap.start_frame===selection.start_frame && gap.length_frames===selection.length_frames?selection:null;
+}
 export function playheadSelection(timeline, frame) {
   if(!timeline)return [];
   const video=[...timeline.tracks].reverse().filter(track=>track.kind==="video" && !track.muted);

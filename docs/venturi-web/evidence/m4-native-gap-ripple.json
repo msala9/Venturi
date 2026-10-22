@@ -1,0 +1,1728 @@
+{
+  "status": "passed",
+  "date": "2026-10-22",
+  "scope": "Native global ripple deletion of selected clips and empty leading/internal gaps through API and existing Windows controls/palette",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792646066.6044908,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "e055af226439312caac88cc7563c1671a90dd80da85c92cae7a78750bbc41174",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-core/src/edit.rs": "fd654a4b324e42f17a92f46fdb218d01cd1ac4dbede2402df11661e3c099130a",
+      "crates/vv-core/src/tests/edit.rs": "9fa1c6fb6cab4e9c0ba5d009b7bb43fb9893d00fd493b7f59e3f7210d40395bc",
+      "crates/vv-web/src/commands.rs": "b24420df58cd64a9fb8236116213235f486a06db18bcdd4e26e26af09a63dbfa",
+      "crates/vv-web/src/snapshot.rs": "79c4befabe1e40dab10829edfe475ebd38ccf35699cf9dc6624665d71a6d84ae",
+      "crates/vv-web/src/tests/commands.rs": "4d4244aff7436dacbb64d18b9af0e86e9a193e2eb8cbb9d1fca80028d1b91fc9",
+      "crates/vv-web/src/tests/snapshot.rs": "940c9eab59885b3ba7c2ec28df9f5823e95c5e6a5ef8b951aa22eee89fe17e0d",
+      "web/index.html": "16132bf02b53db93d85f947139a266510a6974dfe2fd6f9359e59d60eda2b537",
+      "web/js/main.js": "a8ffe1ac277acddce8ff211ef158cec6da1494b99bcfc05ec1bcde4330b258f1",
+      "web/js/timeline/draw.js": "00df004bedcb37e684f5b747ef64d82bee6a4daedc385b51277ed98ba56b997a",
+      "web/js/timeline/geometry.js": "2df6231794a0794228bdfbf50f3361fbb2cdda36a1185f03e2b6fe9a2225afb9",
+      "web/js/timeline/index.js": "cf94d80d25f9fd8cf9c23a96099a5c0684cea1e9bfe19deaf8932784d8c19816",
+      "web/js/timeline/input.js": "e9280a46f9218394b42649bf4cd5ee0adc94ecb2551be6220712d0261a5a8116",
+      "web/test/timeline-gap.test.js": "a3fcdc8bdbd4f80c2e46576dbb7fff4b0e96db3b86146d7b9ecf84834035f25d"
+    }
+  },
+  "validation": {
+    "core": 291,
+    "native_pcm": 4,
+    "web_rust": 429,
+    "javascript": 826,
+    "raw_results": [
+      "291 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s",
+      "0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "4 passed; 0 failed; 0 ignored; 0 measured; 100 filtered out; finished in 0.07s",
+      "10 passed; 0 failed; 0 ignored; 0 measured; 118 filtered out; finished in 0.50s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 125 filtered out; finished in 0.16s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 125 filtered out; finished in 0.27s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 127 filtered out; finished in 0.00s",
+      "429 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.94s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 546 filtered out; finished in 0.00s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 548 filtered out; finished in 0.00s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 548 filtered out; finished in 0.00s"
+    ],
+    "fmt": true,
+    "clippy_all_targets_deny_warnings": true,
+    "native_build": true
+  },
+  "api": {
+    "root": "/home/marco/VenturiWeb-close-gap-20261022-1",
+    "project": "Close_Gap_API_check.vvproj",
+    "project_sha256": "116ab2a3e0bcabcc0adc97115cb35445872e251e0277c9ebfe3765a98a350563",
+    "windows_baseline": {
+      "project": "Close_Gap_Windows_check.vvproj",
+      "sha256": "f072b2884e6bc481710999bd41b1ef357d2845ace4f87b815188ee8cf74a0c26"
+    },
+    "original_files": {
+      "gap-audio.wav": "ede1f6dd33abfce7bb3a45ba79b0ab5f8baae692709dd32214a41da9af55ab13"
+    },
+    "binary_sha256": "e055af226439312caac88cc7563c1671a90dd80da85c92cae7a78750bbc41174",
+    "timeline_id": "2",
+    "before": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "gaps": [
+        {
+          "length_frames": 10,
+          "start_frame": 10,
+          "track_id": "0"
+        },
+        {
+          "length_frames": 22,
+          "start_frame": 0,
+          "track_id": "1"
+        }
+      ],
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "cue-5",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 5
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "1",
+          "note": "cue-15",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 15
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "2",
+          "note": "cue-25",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 25
+        }
+      ],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Native gap closure",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": "0",
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 20,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 7,
+              "linked_group": "0",
+              "media_id": "3",
+              "name": "gap-audio.wav",
+              "retime": {
+                "max_length": 700,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 7,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                18
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 8,
+              "speed_percent": 100.0,
+              "start_frame": 22,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "solid_color",
+              "length_frames": 4,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 4,
+              "speed_percent": 100.0,
+              "start_frame": 33,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "2",
+          "kind": "video",
+          "label": "V2",
+          "locked": true,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "after": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "gaps": [
+        {
+          "length_frames": 12,
+          "start_frame": 0,
+          "track_id": "1"
+        }
+      ],
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "cue-5",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 5
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "1",
+          "note": "cue-15",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 10
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "2",
+          "note": "cue-25",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 15
+        }
+      ],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Native gap closure",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": "0",
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 10,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 7,
+              "linked_group": "0",
+              "media_id": "3",
+              "name": "gap-audio.wav",
+              "retime": {
+                "max_length": 700,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 7,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                18
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 8,
+              "speed_percent": 100.0,
+              "start_frame": 12,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "solid_color",
+              "length_frames": 4,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 4,
+              "speed_percent": 100.0,
+              "start_frame": 33,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "2",
+          "kind": "video",
+          "label": "V2",
+          "locked": true,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "deleted": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "gaps": [],
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "cue-5",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 5
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "1",
+          "note": "cue-15",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 15
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "2",
+          "note": "cue-25",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 20
+        }
+      ],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Native gap closure",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "solid_color",
+              "length_frames": 4,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 4,
+              "speed_percent": 100.0,
+              "start_frame": 33,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "2",
+          "kind": "video",
+          "label": "V2",
+          "locked": true,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "checks": {
+      "native_gap_metadata": true,
+      "global_unlocked_ripple": true,
+      "linked_av_offset_preserved": true,
+      "locked_unlinked_material_unchanged": true,
+      "marker_clamp_and_shift": true,
+      "one_undo_redo_retry": true,
+      "selected_linked_clip_ripple_undo_redo_retry": true,
+      "selected_clip_ripple_with_unrelated_locked_track": true,
+      "stale_cas_atomic": true,
+      "invalid_and_occupied_atomic": true,
+      "linked_locked_atomic": true
+    },
+    "save_restart_exact": true,
+    "hardware_gpu_used": false,
+    "no_render_or_exports": true,
+    "source_bytes_preserved": true,
+    "limits": {
+      "cpu": 1,
+      "memory_mib": 512,
+      "swap": 0,
+      "oom_score_adjust": 1000,
+      "runtime_max_seconds": 120
+    },
+    "status": "passed",
+    "own_test_units_stopped": true,
+    "port8811_closed": true,
+    "primary_editor_preserved": true,
+    "checkpoint": "/home/marco/.cache/venturi-close-gap-check/acceptance.json",
+    "phase": "verified"
+  },
+  "windows": {
+    "project": "Close_Gap_Windows_check.vvproj",
+    "checks": {
+      "native_gap_selected_locally": true,
+      "escape_cancels_gap": true,
+      "close_button_removes_requested_gap": true,
+      "native_playhead_landing": true,
+      "undo_restores_gap": true,
+      "redo_restores_closed_gap": true,
+      "ctrl_k_opens_palette": true,
+      "palette_gap_uses_same_action": true,
+      "selected_linked_video_audio_visible": true,
+      "clip_ripple_keeps_locked_lane": true,
+      "clip_undo_restores_audio": true,
+      "commands_button_uses_same_palette_action": true,
+      "final_markers_visible": true
+    },
+    "history": {
+      "baseline": {
+        "labels": [],
+        "position": 0
+      },
+      "closed": {
+        "labels": [
+          "RippleDelete"
+        ],
+        "position": 1
+      },
+      "undo": {
+        "labels": [
+          "RippleDelete"
+        ],
+        "position": 0
+      },
+      "redo": {
+        "labels": [
+          "RippleDelete"
+        ],
+        "position": 1
+      },
+      "palette_gap": {
+        "labels": [
+          "RippleDelete"
+        ],
+        "position": 1
+      },
+      "clips": {
+        "labels": [
+          "RippleDelete",
+          "RippleDelete"
+        ],
+        "position": 2
+      },
+      "clips_undo": {
+        "labels": [
+          "RippleDelete",
+          "RippleDelete"
+        ],
+        "position": 1
+      },
+      "palette": {
+        "labels": [
+          "RippleDelete",
+          "RippleDelete"
+        ],
+        "position": 2
+      },
+      "palette_undo": {
+        "labels": [
+          "RippleDelete",
+          "RippleDelete"
+        ],
+        "position": 1
+      }
+    },
+    "before": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "gaps": [
+        {
+          "length_frames": 10,
+          "start_frame": 10,
+          "track_id": "0"
+        },
+        {
+          "length_frames": 22,
+          "start_frame": 0,
+          "track_id": "1"
+        }
+      ],
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "cue-5",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 5
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "1",
+          "note": "cue-15",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 15
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "2",
+          "note": "cue-25",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 25
+        }
+      ],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Native gap closure",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": "0",
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 20,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 7,
+              "linked_group": "0",
+              "media_id": "3",
+              "name": "gap-audio.wav",
+              "retime": {
+                "max_length": 700,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 7,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                18
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 8,
+              "speed_percent": 100.0,
+              "start_frame": 22,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "solid_color",
+              "length_frames": 4,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 4,
+              "speed_percent": 100.0,
+              "start_frame": 33,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "2",
+          "kind": "video",
+          "label": "V2",
+          "locked": true,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "after": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "gaps": [
+        {
+          "length_frames": 12,
+          "start_frame": 0,
+          "track_id": "1"
+        }
+      ],
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "cue-5",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 5
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "1",
+          "note": "cue-15",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 10
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "2",
+          "note": "cue-25",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 15
+        }
+      ],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Native gap closure",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            },
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "1",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": "0",
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 10,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "2",
+              "kind": "media",
+              "length_frames": 7,
+              "linked_group": "0",
+              "media_id": "3",
+              "name": "gap-audio.wav",
+              "retime": {
+                "max_length": 700,
+                "min_length": 1,
+                "pitch_correction": true,
+                "source_span": 7,
+                "speed_percent": 100.0
+              },
+              "slip_range": [
+                0,
+                18
+              ],
+              "source_in_frames": 0,
+              "source_out_frames": 8,
+              "speed_percent": 100.0,
+              "start_frame": 12,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "solid_color",
+              "length_frames": 4,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 4,
+              "speed_percent": 100.0,
+              "start_frame": 33,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "2",
+          "kind": "video",
+          "label": "V2",
+          "locked": true,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "clip_delete_after_gap": {
+      "api_version": 1,
+      "export_scales": [
+        {
+          "height": 360,
+          "percent": 100,
+          "width": 640
+        },
+        {
+          "height": 270,
+          "percent": 75,
+          "width": 480
+        },
+        {
+          "height": 180,
+          "percent": 50,
+          "width": 320
+        },
+        {
+          "height": 90,
+          "percent": 25,
+          "width": 160
+        }
+      ],
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "gaps": [],
+      "id": "2",
+      "marker_colors": [
+        "Red",
+        "Orange",
+        "Yellow",
+        "Green",
+        "Cyan",
+        "Blue",
+        "Indigo",
+        "Purple",
+        "Magenta",
+        "Rose",
+        "Slate",
+        "Gray"
+      ],
+      "markers": [
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "0",
+          "note": "cue-5",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 5
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "1",
+          "note": "cue-15",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 10
+        },
+        {
+          "color": "Orange",
+          "duration_frames": 0,
+          "id": "2",
+          "note": "cue-25",
+          "rgb": [
+            218,
+            136,
+            68
+          ],
+          "start_frame": 10
+        }
+      ],
+      "master": {
+        "effects": [],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "name": "Native gap closure",
+      "resolution": {
+        "height": 360,
+        "width": 640
+      },
+      "timeline_id": "2",
+      "tracks": [
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "0",
+              "kind": "solid_color",
+              "length_frames": 10,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 10,
+              "speed_percent": 100.0,
+              "start_frame": 0,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "0",
+          "kind": "video",
+          "label": "V1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [],
+          "crossings": [],
+          "id": "1",
+          "kind": "audio",
+          "label": "A1",
+          "locked": false,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        },
+        {
+          "armed": false,
+          "clips": [
+            {
+              "disabled": false,
+              "display_color": null,
+              "display_rgb": null,
+              "fade_in": 0,
+              "fade_out": 0,
+              "freeze_source_frame": null,
+              "id": "3",
+              "kind": "solid_color",
+              "length_frames": 4,
+              "linked_group": null,
+              "media_id": null,
+              "name": "Solid color",
+              "retime": null,
+              "slip_range": null,
+              "source_in_frames": 0,
+              "source_out_frames": 4,
+              "speed_percent": 100.0,
+              "start_frame": 33,
+              "transition_in": null,
+              "transition_out": null
+            }
+          ],
+          "crossings": [],
+          "id": "2",
+          "kind": "video",
+          "label": "V2",
+          "locked": true,
+          "mix": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "muted": false,
+          "solo": false
+        }
+      ],
+      "transition_defaults": [
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "InOut",
+          "kind": "Push"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 11,
+          "ease": "None",
+          "kind": "CrossDissolve"
+        },
+        {
+          "curve": 0.5,
+          "direction": "Right",
+          "duration": 4,
+          "ease": "None",
+          "kind": "SmoothCut"
+        }
+      ]
+    },
+    "screenshot": "m4-native-gap-ripple.jpg",
+    "existing_windows_browser": true,
+    "console_errors": [],
+    "temporary_tab_closed": true,
+    "physical_intlbackslash_emitted": false,
+    "limitations": [
+      "The existing Windows browser input bridge cannot emit IntlBackslash. Its exact code/modifier/text/IME/repeat behavior is covered by deterministic tests; physical emission was not qualified."
+    ]
+  },
+  "cleanup": {
+    "own_backend_stopped": true,
+    "remote_port8811_closed": true,
+    "main_five_unsaved_edits_preserved": true
+  },
+  "limits": {
+    "local_builds": false,
+    "browser_installed": false,
+    "hardware_gpu_used": false,
+    "build_cpu": 1,
+    "build_memory_gib": 4,
+    "finite_api_memory_mib": 512,
+    "swap": 0,
+    "oom_score_adjust": 1000
+  },
+  "boundaries": [
+    "Ripple operates on unlocked tracks as in the native GUI",
+    "Partial linked-group transformations and newly invalid crossings are refused atomically",
+    "IntlBackslash exact input guards are covered by deterministic tests; the existing Windows browser bridge cannot emit that physical key",
+    "No rendered or hardware acceptance is claimed by these editing checks"
+  ]
+}

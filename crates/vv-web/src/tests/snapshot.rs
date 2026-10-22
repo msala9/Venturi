@@ -1,6 +1,49 @@
 use super::*;
 
 #[test]
+fn native_timeline_gaps_include_leading_and_internal_ranges_only_on_unlocked_lanes() {
+    let mut editor = Session::default();
+    let id = editor.create_timeline(vv_core::Timeline {
+        name: "Native gap metadata".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: (0..4)
+            .map(|_| vv_core::Track::new(vv_core::TrackKind::Video))
+            .collect(),
+        markers: vec![],
+        master: Default::default(),
+    });
+    for (track, start, length) in [(0, 12, 6), (0, 30, 6), (1, 0, 6), (1, 18, 6), (3, 24, 6)] {
+        let clip = vv_core::Clip::from_source_range(
+            editor.project.alloc_clip_id(),
+            vv_core::ClipSource::SolidColor,
+            0,
+            length,
+            start,
+            vv_core::Rational::one(),
+        );
+        editor.project.timelines[id].tracks[track].insert_sorted(clip);
+    }
+    editor.project.timelines[id].tracks[3].locked = true;
+    let before = serde_json::to_value(&editor.project).unwrap();
+    let generation = editor.history.generation();
+    let position = editor.history.position();
+    let revision = editor.timeline_revision(id);
+    assert_eq!(
+        timeline(&editor, id)["gaps"],
+        json!([
+            {"track_id":"0","start_frame":0,"length_frames":12},
+            {"track_id":"0","start_frame":18,"length_frames":12},
+            {"track_id":"1","start_frame":6,"length_frames":12},
+        ])
+    );
+    assert_eq!(serde_json::to_value(&editor.project).unwrap(), before);
+    assert_eq!(editor.history.generation(), generation);
+    assert_eq!(editor.history.position(), position);
+    assert_eq!(editor.timeline_revision(id), revision);
+}
+
+#[test]
 fn timeline_export_scales_are_native_dimensions_without_a_preview_width_cap_or_project_mutation() {
     let mut session = Session::default();
     let id = session.create_timeline(vv_core::Timeline {

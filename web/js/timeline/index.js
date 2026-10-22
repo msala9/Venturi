@@ -6,8 +6,14 @@ export function createTimeline(options) {
   const input = createInput({ ...options, invalidate: changed });
   return {
     ...draw,
-    invalidate(){input.checkPresetDrop();changed();},
+    invalidate(){input.checkPresetDrop();input.checkGapSelection();changed();},
     cancel: input.cancel,
+    closeGap:input.closeGap,
+    rippleDelete:input.rippleDelete,
+    selectGap:input.selectGap,
+    canCloseGap:input.canCloseGap,
+    handleGapKey:input.handleGapKey,
+    checkGapSelection:input.checkGapSelection,
     transitionDnd: input.transitionDnd,
     presetDnd:{...input.presetDnd,start(item,current){options.onNavigationIntent?.();return input.presetDnd.start(item,current);}},
     navigationIdle:input.navigationIdle,

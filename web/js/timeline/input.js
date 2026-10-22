@@ -14,6 +14,8 @@ import {
   transitionPlacement,
   selectedTransition,
   frameToX,
+  nativeGapAt,
+  selectedGap,
 } from "./geometry.js";
 import {isTextTarget} from '../ui.js';
 import {createPresetDrop} from './preset-drop.js';
@@ -22,11 +24,15 @@ export function isRetimeShortcut(event,{dialogOpen=false}={}){
   return !dialogOpen && !event.defaultPrevented && !event.repeat && !event.isComposing && !event.altKey && !event.shiftKey && Boolean(event.ctrlKey)!==Boolean(event.metaKey) && event.key?.toLowerCase()==='r' && !isTextTarget(event.target);
 }
 export const TRANSITION_DRAG_TYPE='application/x-venturi-transition';
+export function isCloseGapShortcut(event,{dialogOpen=false}={}){
+  return event.code==='IntlBackslash' && !event.defaultPrevented && !event.repeat && !event.isComposing && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.getModifierState?.('AltGraph') && !dialogOpen && !isTextTarget(event.target);
+}
 
 export function createInput({
   canvas,
   getTimeline,
   getPresetContext = () => null,
+  getGapContext = () => null,
   view,
   invalidate,
   onSelect,
@@ -56,6 +62,11 @@ export function createInput({
     return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,view.tool,view.snap,view.retimeOverwrite,[...(view.retimeVisible || [])].sort(),Boolean(view.transitionReplace),view.transitionSelection,view.playhead,[...view.selection].sort(),rect.left,rect.top,rect.width,rect.height]);
   };
   const modal=()=>Boolean(canvas.ownerDocument?.querySelector?.('dialog[open]'));
+  const gapContext=timeline=>JSON.stringify([timeline?.id,timeline?.revision,getGapContext()]);
+  const checkGapSelection=()=>{
+    if(view.selectedGap && (!selectedGap(getTimeline(),view) || view.selectedGap.context!==gapContext(getTimeline())))view.selectedGap=null;
+    return selectedGap(getTimeline(),view);
+  };
   const transitionCurrent=g=>{const timeline=getTimeline();return timeline===g.timeline && !timeline.tracks[g.track]?.locked && transitionContext(timeline)===g.context && !modal() && canEdit();};
   const placementContextCurrent=g=>getTimeline()===g.timeline && transitionContext(getTimeline())===g.context && !modal();
   const placementCurrent=g=>placementContextCurrent(g) && canEdit();
@@ -64,7 +75,7 @@ export function createInput({
     return JSON.stringify([source.transition,source.locked,source.clip?.start_frame,source.clip?.length_frames,source.left?.start_frame,source.left?.length_frames,source.right?.start_frame,source.right?.length_frames]);
   };
   const sourceCurrent=g=>!g.source || sourceIdentity(getTimeline(),g.source)===g.sourceIdentity;
-  const selectTransition=selection=>{view.selection=[];view.transitionSelection=structuredClone(selection);onTransitionSelect(view.transitionSelection);invalidate();};
+  const selectTransition=selection=>{view.selectedGap=null;view.selection=[];view.transitionSelection=structuredClone(selection);onTransitionSelect(view.transitionSelection);invalidate();};
   const selectionIntent=()=>JSON.stringify([view.selection,view.transitionSelection]);
   const cancel = () => {
     const slipping = gesture?.kind === "slip";
@@ -74,10 +85,64 @@ export function createInput({
     presetDrop?.dnd.end();
     view.draft = null;
     view.lasso = null;
+    if(view.selectedGap){view.selectedGap=null;onSelect();}
     if(slipping)onSlip({phase:"cancel"});
     if(pointerId!==undefined && canvas.hasPointerCapture(pointerId))canvas.releasePointerCapture(pointerId);
     invalidate();
   };
+  const rippleOwner=()=>({epoch:getGapContext()?.project_epoch,timelineId:getTimeline()?.id,playhead:view.playhead,selection:[...view.selection]});
+  function followRipple(position,owner,receipt,removed=[]){
+    const after=getTimeline(),clips=after?.tracks.flatMap(track=>track.clips) || [],present=new Set(clips.map(clip=>clip.id));
+    if(typeof owner.epoch!=='string' || getGapContext()?.project_epoch!==owner.epoch || after?.id!==owner.timelineId || view.playhead!==owner.playhead || view.transitionSelection || JSON.stringify(view.selection)!==JSON.stringify(owner.selection.filter(id=>present.has(id))) || removed.some(id=>present.has(id)) || (receipt?.project_epoch!=null && receipt.project_epoch!==owner.epoch) || (receipt?.generation!=null && receipt.generation!==getGapContext()?.generation) || !clips.some(clip=>clip.start_frame===position))return;
+    view.selectedGap=null;view.playhead=position;
+    const width=canvas.getBoundingClientRect().width,x=frameToX(view.playhead,view,after.fps);
+    if(Number.isFinite(width) && width>HEADER && (x<HEADER || x>width-8))view.origin=Math.max(0,view.playhead-(width-HEADER)*after.fps.num/(2*view.scale*after.fps.den));
+    onSeek(true);
+  }
+  async function closeGap(){
+    const gap=checkGapSelection();
+    if(!gap || waiting || gesture || transitionDrag || presetDrop?.active() || modal() || !canEdit())return false;
+    const operation={kind:'close_gap',track:gap.track_id,frame:gap.frame};
+    const owner=rippleOwner();
+    onNavigationIntent();
+    if(checkGapSelection()!==gap || modal() || !canEdit())return false;
+    waiting=true;invalidate();
+    try{
+      const receipt=await onCommand(operation);followRipple(gap.start_frame,owner,receipt);
+      return true;
+    }catch(error){onNotice(error.message);return false;}
+    finally{waiting=false;view.selectedGap=null;onSelect();invalidate();}
+  }
+  async function rippleDelete(){
+    if(checkGapSelection())return closeGap();
+    if(waiting || gesture || transitionDrag || presetDrop?.active() || modal() || !canEdit() || view.transitionSelection)return false;
+    const timeline=getTimeline(),ids=[...view.selection];
+    if(!timeline || !ids.length || ids.length>4096 || new Set(ids).size!==ids.length || ids.some(id=>!timeline.tracks.some(track=>track.clips.some(clip=>clip.id===id))))return false;
+    const affected=linkedSelection(timeline,ids);
+    if(timeline.tracks.some(track=>track.locked && track.clips.some(clip=>affected.includes(clip.id)))){onNotice('Unlock the selected clips and their linked tracks before ripple delete');return false;}
+    const context=gapContext(timeline),intent=selectionIntent(),owner=rippleOwner(),starts=timeline.tracks.flatMap(track=>track.clips.filter(clip=>affected.includes(clip.id)).map(clip=>clip.start_frame));
+    onNavigationIntent();
+    if(getTimeline()!==timeline || gapContext(timeline)!==context || selectionIntent()!==intent || modal() || !canEdit())return false;
+    waiting=true;invalidate();
+    try{const receipt=await onCommand({kind:'delete',clip_ids:ids,ripple:true});followRipple(Math.min(...starts),owner,receipt,affected);return true;}catch(error){onNotice(error.message);return false;}
+    finally{waiting=false;if(getTimeline()?.id===owner.timelineId && getGapContext()?.project_epoch===owner.epoch && selectionIntent()===intent)view.selection=[];view.selectedGap=null;onSelect();invalidate();}
+  }
+  const canCloseGap=()=>Boolean(checkGapSelection() && !waiting && !gesture && !transitionDrag && !presetDrop?.active() && !modal() && canEdit());
+  function selectGap(trackId,frame){
+    if(waiting || gesture || transitionDrag || presetDrop?.active() || modal() || !canNavigate())return false;
+    const timeline=getTimeline(),gap=nativeGapAt(timeline,trackId,frame);if(!gap)return false;
+    const context=gapContext(timeline);
+    onNavigationIntent();
+    if(getTimeline()!==timeline || gapContext(timeline)!==context || modal() || !canNavigate())return false;
+    view.selection=[];view.transitionSelection=null;view.selectedGap={...gap,frame,timeline_id:timeline.id,revision:timeline.revision,context};onSelect();invalidate();return true;
+  }
+  function handleGapKey(event){
+    if(event.key==='Escape' && view.selectedGap && !event.defaultPrevented && !event.isComposing && !isTextTarget(event.target) && !modal()){
+      event.preventDefault?.();event.stopPropagation?.();onNavigationIntent();cancel();return true;
+    }
+    if(!isCloseGapShortcut(event,{dialogOpen:modal()}) || (!checkGapSelection() && !view.selection.length))return false;
+    event.preventDefault?.();event.stopPropagation?.();void rippleDelete();return true;
+  }
   const placementAt=(g,x,y)=>transitionPlacement(g.timeline,view,[x,y],g.transition ?? g.catalogKind,{replace:Boolean(view.transitionReplace),source:g.source || null});
   async function applyPlacement(draft){
     if(!draft || draft.noop)return;
@@ -91,6 +156,7 @@ export function createInput({
     }catch(error){onNotice(error.message);}finally{waiting=false;}
   }
   function beginClipGesture(hit,event,x,y,timeline){
+    view.selectedGap=null;
     view.transitionSelection=null;
     if(event.ctrlKey && view.selection.includes(hit.clip.id)){
       const group=linkedSelection(timeline,[hit.clip.id]);view.selection=view.selection.filter(id=>!group.includes(id));onSelect();invalidate();return false;
@@ -123,6 +189,7 @@ export function createInput({
     canvas.focus();
     const [x, y] = point(event);
     const hit = hitTest(x, y, timeline, view,canvas.getBoundingClientRect().width);
+    if(view.selectedGap && hit.kind!=='blank' && event.button===0 && !event.altKey){view.selectedGap=null;onSelect();}
     if (event.button === 0 && hit.kind === "marker") {
       gesture = {kind:"marker",marker:hit.marker,mode:hit.edge || (event.altKey && !hit.marker.duration_frames ? "extend" : "move"),frame:xToFrame(x,view,timeline.fps),x,y,moved:false,editable:canEdit()};
     } else if(event.button===0 && hit.kind==='transition'){
@@ -150,10 +217,12 @@ export function createInput({
       view.playhead = xToFrame(x, view, timeline.fps);
       onSeek(false);
     } else if (hit.kind === "blank") {
+      view.selectedGap=null;
       view.transitionSelection=null;
       if (!event.ctrlKey) view.selection = [];
-      gesture = { kind: "lasso", x, y };
       onSelect();
+      const frame=xToFrame(x,view,timeline.fps),gap=nativeGapAt(timeline,timeline.tracks[hit.track]?.id,frame);
+      gesture = { kind: "lasso", x, y, timeline,context:transitionContext(timeline),gapContext:gapContext(timeline),pointerId:event.pointerId,moved:false,gap:gap?{...gap,frame}:null };
     } else return;
     event.preventDefault();
     canvas.setPointerCapture(event.pointerId);
@@ -172,6 +241,11 @@ export function createInput({
     const timeline = getTimeline(),
       [x, y] = point(event),
       g = gesture;
+    if(g.kind==='lasso'){
+      if(event.pointerId!==g.pointerId)return;
+      if(timeline!==g.timeline || transitionContext(timeline)!==g.context || gapContext(timeline)!==g.gapContext || modal()){cancel();return;}
+      if(Math.hypot(x-g.x,y-g.y)>=4)g.moved=true;
+    }
     if(g.kind==='retime_menu' || g.kind==='retime_close'){
       if(event.pointerId!==g.pointerId)return;
       if(!transitionCurrent(g) || (!allowRelease && event.buttons!==undefined && !(event.buttons&1))){cancel();return;}
@@ -299,6 +373,18 @@ export function createInput({
     if (!gesture) return;
     const g = gesture,
       timeline = getTimeline();
+    if(g.kind==='lasso'){
+      if(event.pointerId!==g.pointerId || event.button!==0)return;
+      if(timeline!==g.timeline || transitionContext(timeline)!==g.context || gapContext(timeline)!==g.gapContext || modal()){cancel();return;}
+      const [x,y]=point(event);g.moved ||= Math.hypot(x-g.x,y-g.y)>=4;
+      if(!g.moved && g.gap){
+        const native=nativeGapAt(timeline,g.gap.track_id,g.gap.frame);
+        const selection=native && native.start_frame===g.gap.start_frame && native.length_frames===g.gap.length_frames?{...g.gap,timeline_id:timeline.id,revision:timeline.revision,context:g.gapContext}:null;
+        gesture=null;view.lasso=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+        view.selection=[];view.selectedGap=selection;onSelect();invalidate();return;
+      }
+      if(!g.moved)view.lasso=null;
+    }
     if(g.kind==='retime_menu' || g.kind==='retime_close'){
       if(event.pointerId!==g.pointerId || event.button!==0)return;
       if(!transitionCurrent(g)){cancel();onNotice('Speed menu cancelled because the editing session or viewport changed');return;}
@@ -429,13 +515,14 @@ export function createInput({
   };
   const key = (event) => {
     if(presetDrop?.active()){if(event.key==='Escape'){event.preventDefault?.();event.stopPropagation?.();cancel();}return;}
+    if(handleGapKey(event))return;
     if(!event.defaultPrevented && !event.repeat && !event.isComposing && !gesture && !transitionDrag && !waiting && view.retimeVisible?.size && view.tool!=='slip' && canEdit() && !isTextTarget(event.target) && !documentRef?.querySelector?.('dialog[open]') && !event.ctrlKey && !event.metaKey && !event.altKey && ((event.key==='F10' && event.shiftKey) || (event.key==='ContextMenu' && !event.shiftKey))){
       const timeline=getTimeline(),target=timeline?.tracks.flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id) && clip.retime && !track.locked && view.retimeVisible.has(clip.id)).map(clip=>({clip,track})))[0];
       if(target){event.preventDefault?.();event.stopPropagation?.();onRetimeMenu({clip_id:target.clip.id,track_id:target.track.id,returnFocus:canvas});return;}
     }
     if(event.key!=='Escape' || isTextTarget(event.target) || documentRef?.querySelector?.('dialog[open]'))return;
     const active=Boolean(gesture || transitionDrag);
-    if(transitionDrag || gesture?.fromTransitionBody || ['transition','retime','retime_menu','retime_close','transition_body','transition_copy'].includes(gesture?.kind) || (!active && view.transitionSelection)){event.preventDefault?.();event.stopPropagation?.();}
+    if(transitionDrag || gesture?.fromTransitionBody || ['transition','retime','retime_menu','retime_close','transition_body','transition_copy'].includes(gesture?.kind) || (!active && (view.transitionSelection || view.selectedGap))){event.preventDefault?.();event.stopPropagation?.();}
     onNavigationIntent();
     cancel();
     if(!active && view.transitionSelection){view.transitionSelection=null;onTransitionSelect(null);invalidate();}
@@ -499,6 +586,12 @@ export function createInput({
   documentRef?.addEventListener('visibilitychange',visibilityChanged);
   return {
     cancel,
+    closeGap,
+    rippleDelete,
+    selectGap,
+    canCloseGap,
+    handleGapKey,
+    checkGapSelection,
     transitionDnd:{type:TRANSITION_DRAG_TYPE,start:startTransitionDrag,end:endTransitionDrag},
     presetDnd:presetDrop.dnd,
     navigationIdle:()=>!gesture && !waiting && !transitionDrag && !presetDrop.active() && !view.draft && !view.lasso,

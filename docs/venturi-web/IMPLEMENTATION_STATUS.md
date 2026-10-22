@@ -61,6 +61,36 @@ catalog coordination and missing-file relinking. Native cached manifests and
 uncoordinated writes are a real shared-library gap; HTTP access to the ds4 media
 archive alone does not establish shared native assets/presets acceptance.
 
+## Shared native library coordination and relink implementation
+
+Source `2cc447d` adds cooperative native/web catalog locks, stale cached-record
+checks, bounded native transaction recovery, coordinated media publication and
+retention of media referenced by archived/previous assets. The desktop Library
+panel exposes Refresh/errors and accepts an absolute `VENTURI_LIBRARY_ROOT`.
+Web preset reads hold a shared catalog lock, and both web catalogs refuse
+pending native transactions without removing their recovery markers.
+
+Native assets now expose contextual missing-file recovery from approved project
+files. Preparation has an explicit cancelable job; final application reuses its
+exact guarded Mutation and persists restored/still-missing counts in the command
+and recovery receipt. Repairs preserve native IDs, metadata and fingerprints,
+restore managed paths and retain SHA64 content authentication. Recursive folder
+search and metadata-incompatible replacements remain open.
+
+`evidence/f5-shared-native-library-gate.json` records 85 passing focused
+JavaScript cases, 135 unique web Rust cases, 24 native desktop library cases,
+affected web/native all-target Clippy and the embedded build on bounded halo2.
+The initial failures exposed legacy read compatibility, path-derived fingerprint
+assumptions and backup journal validation; their corrected affected rerun passed.
+An explicit-prepare HTTP fixture was corrected to wait for ready before commit.
+
+This is a source implementation gate. Actual browser relink, shared filesystem
+qualification and compatible deployment remain pending. A fresh read of halo2
+mountinfo found no CIFS/NFS mounts; the halo1 NAS evidence is not a halo2 mount.
+No mount/archive was changed. Protected 8790/8811 edits and the port8812 service
+remain unchanged; neither shared capability is newly accepted. Ledger46done/
+44partial and full F1-F7 scope remain active.
+
 ## Native timeline and Inspector gesture qualification
 
 Source `9f7dcc4` adds native selected-group trim and adjacent Roll, explicit safe

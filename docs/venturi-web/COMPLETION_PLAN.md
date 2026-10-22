@@ -170,6 +170,17 @@ the authoritative 14 TB library arrangement. Confirm the applicable service or
 mount on each host; never assume a halo1 mount exists on halo2. Use explicit small
 assets and indexed API access, not archive scans or unsolicited mount changes.
 
+Source `2cc447d` completes the connected catalog coordination/relink increment:
+compatible native desktop/web locks, stale-record checks, native recovery,
+media reference retention, desktop Refresh/root configuration, and cancellable
+contextual relink with durable result counts. The focused implementation gate
+passes 85 JavaScript, 135 unique web Rust and 24 native library cases, affected
+Clippy and build; see `evidence/f5-shared-native-library-gate.json`.
+Actual Windows relink, the canonical NAS root, compatible deployment and the
+real shared filesystem transaction workflow remain open. Halo2 currently has
+no CIFS/NFS mount. Keep `shared_library`/`shared_presets` partial; do not infer
+NAS qualification from isolated filesystem tests or the ds4 HTTP archive.
+
 ### F6 — AI Review
 
 Capabilities: `compare_take_AB`, `replace_take_atomic`.

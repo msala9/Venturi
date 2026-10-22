@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-22",
+  "status": "implementation_passed_workflow_pending",
+  "source_commit": "2cc447dbee9b3a73a4f750f198e11ab66f903b95",
+  "unstripped_binary_sha256": "8eff65429830ae89dd08a3459b16b72d006c745edc20f194a3d3a93f039e90b4",
+  "source_manifest_sha256": "7841292b1156d3e03d16451a1822567bd62ed785e7d96d1ecdae1582598789ee",
+  "source_files_checked": 93,
+  "javascript": {
+    "unique_focused_cases": 85,
+    "passed": 85,
+    "method": "Initial focused native asset/preset/API suite passed. JavaScript source hashes checked unchanged before the corrected backend run; result reused."
+  },
+  "rust": {
+    "web_unique": 135,
+    "desktop_unique": 24,
+    "web_assets": 99,
+    "web_presets": 36,
+    "desktop_library": 24,
+    "web_overlap": [],
+    "method": "Affected asset and preset filters plus native desktop library filter. Counts reflect executed cases, not all compiled tests."
+  },
+  "checks": [
+    "cargo fmt --all",
+    "JavaScript syntax for main.js and native-assets.js",
+    "cargo test --locked --offline -p vv-web asset -- --test-threads=1",
+    "cargo test --locked --offline -p vv-web preset -- --test-threads=1",
+    "cargo clippy --locked --offline -p vv-web --all-targets -- -D warnings",
+    "cargo build --locked --offline -p vv-web --bin vv-web",
+    "cargo test --locked --offline -p vv-app library -- --test-threads=1",
+    "cargo clippy --locked --offline -p vv-app --all-targets -- -D warnings"
+  ],
+  "limits": {
+    "host": "halo2",
+    "cpu_cores": 1,
+    "memory_gib": 4,
+    "swap_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "tasks_max": 128,
+    "runtime_max_seconds": 1800,
+    "offline_cached_toolchain": true,
+    "gpu_work": false
+  },
+  "final_invocation_id": "c3fe951bf69f4807ae6376452e99efa4",
+  "final_gate_log_sha256": "7a4ae304cafcb90c7ad66b2bc90aef9f66609d740b2857db7080f05622ce0962",
+  "initial_corrections": [
+    "Initial asset filter:93 passed,5 failed. Retained failed raw log; final affected backend rerun passed.",
+    "Unsafe legacy media paths keep their listed metadata/revision and export, with explicit unavailable relink diagnostics.",
+    "Native path/size/mtime fingerprints are not byte checksums. SHA64-managed repairs authenticate full bytes; legacy16 repairs retain native folder/hash and compatible metadata rules.",
+    "Journal targets now admit only exact safe native .json.bak records in addition to active JSON; active read guards and roster validation remain unchanged.",
+    "New explicit-prepare HTTP fixture now polls its job to ready before commit, matching the actual browser protocol."
+  ],
+  "protected_sessions": {
+    "8790": {
+      "project_name": "CPU_shared_library_UI_check.vvproj",
+      "generation": "5",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips",
+          "MoveClips"
+        ],
+        "position": 5
+      }
+    },
+    "8811": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "generation": "1",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "InsertClips"
+        ],
+        "position": 1
+      }
+    },
+    "8812": {
+      "project_name": "Venturi_Native_UI.vvproj",
+      "generation": "0",
+      "unsaved": false,
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    }
+  },
+  "halo2_mount_state": {
+    "host": "halo2",
+    "matching_mounts": [],
+    "network_mounts": [],
+    "configured_mount_verified": false
+  },
+  "delivery": {
+    "url": "http://127.0.0.1:8812/",
+    "source_commit": "f3dcf1c8b6fed838c7e48497922f127b96f9c35b",
+    "new_binary_deployed": false
+  },
+  "remaining": [
+    "Actual Windows contextual relink preparation/cancel/commit/reopen workflow",
+    "Canonical shared NAS root and compatible native/web deployment",
+    "Actual shared filesystem locking/hardlink/rename/fsync and coordinated multi-process workflow",
+    "Recursive folder relink search and metadata-incompatible substitution semantics",
+    "Native/web audio preset settings synchronization"
+  ],
+  "acceptance": "Implementation gate only. shared_library/shared_presets remain partial; accepted ledger stays46done/44partial and full F1-F7 goal stays active."
+}

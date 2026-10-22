@@ -1,5 +1,286 @@
 use super::*;
 
+fn write_otio(fixture: &Fixture, token: &str, paths: &[PathBuf]) {
+    let mut project = vv_core::Project::default();
+    let timeline = project.timelines.insert(vv_core::Timeline {
+        name: "Worker OTIO".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let meta = vv_media::probe_image(&fixture.path).unwrap();
+    for (index, path) in paths.iter().enumerate() {
+        let media = project.media_pool.insert(vv_core::MediaItem {
+            path: path.clone(),
+            meta: meta.clone(),
+            content_hash: 0,
+            compound: None,
+            folder: None,
+        });
+        let clip = vv_core::Clip::from_source_range(
+            project.alloc_clip_id(),
+            vv_core::ClipSource::Media(media),
+            0,
+            24,
+            index as i64 * 24,
+            vv_core::Rational::one(),
+        );
+        project.timelines[timeline].tracks[0].insert_sorted(clip);
+    }
+    let value = vv_core::otio::timeline_to_otio(&project, timeline, None);
+    std::fs::write(
+        fixture.project.join(token),
+        serde_json::to_vec(&value).unwrap(),
+    )
+    .unwrap();
+}
+
+#[test]
+fn otio_worker_keeps_native_offline_warnings_fingerprints_and_last_cas_acceptance() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.project.join("bad.wav"), b"unreadable media").unwrap();
+    write_otio(
+        &fixture,
+        "batch.otio",
+        &[
+            fixture.path.clone(),
+            fixture.project.join("bad.wav"),
+            fixture.project.join("missing.mp4"),
+        ],
+    );
+    let queued = fixture
+        .jobs
+        .prepare_otio("epoch", "7", "batch.otio")
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["kind"], "otio_import");
+    assert_eq!(ready["state"], "ready");
+    assert_eq!(
+        ready["progress"],
+        json!({"completed":3,"total":3}),
+        "Native callbacks include readable, unreadable and missing sources; FDreservation65 is not media progress"
+    );
+    assert_eq!(ready["result"]["path_token"], "batch.otio");
+    let payload = fixture.jobs.otio_payload(id, "epoch", "7").unwrap();
+    assert_eq!(payload.project.timelines.len(), 1);
+    assert_eq!(payload.warnings.len(), 2);
+    assert!(
+        payload
+            .warnings
+            .iter()
+            .all(|warning| warning.contains("imported offline"))
+    );
+    let readable = payload
+        .project
+        .media_pool
+        .values()
+        .find(|media| media.path == fixture.path)
+        .unwrap();
+    assert_eq!(
+        readable.content_hash,
+        vv_media::content_fingerprint(&fixture.path).unwrap()
+    );
+    assert!(fixture.jobs.otio_payload(id, "wrong", "7").is_err());
+    assert!(fixture.jobs.otio_payload(id, "epoch", "8").is_err());
+    assert_eq!(
+        std::fs::read_dir(&fixture.project).unwrap().count(),
+        3,
+        "Preparation does not copy sources or write a project"
+    );
+    fixture.jobs.mark_otio_applied(id, "epoch", "7").unwrap();
+    assert!(fixture.jobs.otio_payload(id, "epoch", "7").is_err());
+    assert!(fixture.jobs.mark_otio_applied(id, "epoch", "7").is_err());
+    assert_eq!(
+        fixture.jobs.status(id, "epoch", true).unwrap()["state"],
+        "applied"
+    );
+    fixture.jobs.cancel_obsolete("new-project");
+    assert_eq!(
+        fixture.jobs.status(id, "epoch", false).unwrap()["state"],
+        "applied"
+    );
+    fixture.close();
+}
+
+#[test]
+fn otio_worker_rejects_changed_descriptor_readable_unreadable_and_newly_created_missing_files() {
+    for changed in ["descriptor", "readable", "unreadable", "missing"] {
+        let fixture = Fixture::new();
+        let bad = fixture.project.join("bad.wav");
+        let missing = fixture.project.join("missing.mp4");
+        std::fs::write(&bad, b"offline").unwrap();
+        write_otio(
+            &fixture,
+            "batch.otio",
+            &[fixture.path.clone(), bad.clone(), missing.clone()],
+        );
+        let job = fixture
+            .jobs
+            .prepare_otio("epoch", "7", "batch.otio")
+            .unwrap();
+        let id = job["id"].as_str().unwrap();
+        assert_eq!(fixture.finish(id)["state"], "ready");
+        fixture.jobs.otio_payload(id, "epoch", "7").unwrap();
+        match changed {
+            "descriptor" => std::fs::write(fixture.project.join("batch.otio"), b"{}").unwrap(),
+            "readable" => std::fs::write(&fixture.path, b"changed PNG").unwrap(),
+            "unreadable" => std::fs::write(&bad, b"different offline media").unwrap(),
+            _ => std::fs::write(&missing, b"created later").unwrap(),
+        }
+        assert_eq!(
+            fixture
+                .jobs
+                .mark_otio_applied(id, "epoch", "7")
+                .unwrap_err()
+                .1,
+            "SOURCE_CHANGED",
+            "{changed}"
+        );
+        assert!(fixture.jobs.otio_payload(id, "epoch", "7").is_err());
+        fixture.close();
+    }
+}
+
+#[test]
+fn otio_policy_errors_and_processing_budget_cannot_be_downgraded_to_offline_ready() {
+    for source in ["outside", "symlink", "directory", "playlist"] {
+        let fixture = Fixture::new();
+        let path = match source {
+            "outside" => fixture.root.join("outside.png"),
+            "symlink" => {
+                let path = fixture.project.join("alias.png");
+                std::os::unix::fs::symlink(&fixture.path, &path).unwrap();
+                path
+            }
+            "directory" => {
+                let path = fixture.project.join("directory.mp4");
+                std::fs::create_dir(&path).unwrap();
+                path
+            }
+            _ => {
+                let path = fixture.project.join("playlist.mp4");
+                std::fs::write(&path, b"#EXTM3U\nhttps://example.invalid/live").unwrap();
+                path
+            }
+        };
+        write_otio(&fixture, "policy.otio", &[path]);
+        let job = fixture
+            .jobs
+            .prepare_otio("epoch", "7", "policy.otio")
+            .unwrap();
+        let id = job["id"].as_str().unwrap();
+        assert_eq!(fixture.finish(id)["state"], "failed", "{source}");
+        assert_eq!(
+            fixture
+                .jobs
+                .read_failure(id, "epoch")
+                .unwrap()
+                .unwrap()
+                .0
+                .as_u16(),
+            422
+        );
+        assert!(fixture.jobs.otio_payload(id, "epoch", "7").is_err());
+        fixture.close();
+    }
+    let fixture = Fixture::new();
+    write_otio(&fixture, "budget.otio", &[]);
+    let work = Work {
+        id: "otio-budget".into(),
+        asset: None,
+        sources: vec![],
+        cancel: Arc::new(AtomicBool::new(false)),
+        import: None,
+        edit: None,
+        media_import: None,
+        otio: Some("budget.otio".into()),
+    };
+    assert_eq!(
+        run_otio(&fixture.jobs.0, &work, "budget.otio", Duration::ZERO)
+            .err()
+            .unwrap()
+            .1,
+        "OTIO_IMPORT_BUDGET"
+    );
+    work.cancel.store(true, Ordering::Release);
+    assert_eq!(
+        run_otio(&fixture.jobs.0, &work, "budget.otio", MEDIA_IMPORT_BUDGET)
+            .err()
+            .unwrap()
+            .1,
+        "ASSET_CANCELED"
+    );
+    fixture.close();
+}
+
+#[test]
+fn otio_cancel_and_legacy_save_failure_release_payload_without_false_applied_status() {
+    let fixture = Fixture::new();
+    write_otio(&fixture, "batch.otio", std::slice::from_ref(&fixture.path));
+    let job = fixture
+        .jobs
+        .prepare_otio("epoch", "7", "batch.otio")
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    fixture.finish(id);
+    fixture.jobs.status(id, "epoch", true).unwrap();
+    assert!(fixture.jobs.otio_payload(id, "epoch", "7").is_err());
+    assert!(fixture.jobs.mark_otio_applied(id, "epoch", "7").is_err());
+    let next = fixture
+        .jobs
+        .prepare_otio("epoch", "7", "batch.otio")
+        .unwrap();
+    let id = next["id"].as_str().unwrap();
+    fixture.finish(id);
+    fixture.jobs.mark_otio_applied(id, "epoch", "7").unwrap();
+    let error = ApiError::conflict("FILE_EXISTS", "A project with that name already exists");
+    fixture
+        .jobs
+        .mark_otio_failed(id, "epoch", error.clone())
+        .unwrap();
+    assert_eq!(
+        fixture.jobs.status(id, "epoch", false).unwrap()["state"],
+        "failed"
+    );
+    assert_eq!(
+        fixture.jobs.read_failure(id, "epoch").unwrap().unwrap().1,
+        error.1
+    );
+    assert!(fixture.jobs.otio_payload(id, "epoch", "7").is_err());
+    fixture.close();
+}
+
+#[test]
+fn otio_descriptor_and_asset_copy_witnesses_share_the_root_import_descriptor_budget() {
+    let fixture = Fixture::new();
+    let capture = fixture.capture();
+    assert_eq!(capture["state"], "ready");
+    write_otio(&fixture, "batch.otio", std::slice::from_ref(&fixture.path));
+    let job = fixture
+        .jobs
+        .prepare_otio("epoch", "7", "batch.otio")
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(id)["state"], "ready");
+    {
+        let jobs = fixture.jobs.0.jobs.lock().unwrap();
+        // A captured file keeps its file/base/directory; OTIO keeps its descriptor
+        // and this regular source. All five belong to the same admission budget.
+        reserve_witnesses(&jobs, 251).unwrap();
+        assert_eq!(reserve_witnesses(&jobs, 252).unwrap_err().1, "ASSET_BUSY");
+    }
+    fixture.jobs.status(id, "epoch", true).unwrap();
+    {
+        let jobs = fixture.jobs.0.jobs.lock().unwrap();
+        reserve_witnesses(&jobs, 253).unwrap();
+        assert_eq!(reserve_witnesses(&jobs, 254).unwrap_err().1, "ASSET_BUSY");
+    }
+    fixture.close();
+}
+
 #[test]
 fn media_import_preserves_order_native_fingerprints_and_original_per_file_failures() {
     let fixture = Fixture::new();
@@ -150,6 +431,7 @@ fn media_import_budget_records_every_unprocessed_file_and_zero_success_cannot_co
         import: None,
         edit: None,
         media_import: Some(tokens.clone()),
+        otio: None,
     };
     let result = run_media_import(&fixture.jobs.0, &work, &tokens, Duration::ZERO).unwrap();
     assert!(result.items.is_empty());

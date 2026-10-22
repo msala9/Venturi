@@ -98,6 +98,11 @@ pub enum Operation {
         path_token: String,
         name: String,
     },
+    ImportPreparedOtio {
+        job_id: String,
+        name: String,
+        reuse_existing: bool,
+    },
     InsertMedia {
         media_id: String,
         start_frame: FrameIdx,
@@ -481,7 +486,7 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 "Native asset imports require the project command endpoint",
             ));
         }
-        Operation::ImportPreparedMedia { .. } => {
+        Operation::ImportPreparedMedia { .. } | Operation::ImportPreparedOtio { .. } => {
             return Err(ApiError::invalid(
                 "Media imports require the project command endpoint",
             ));

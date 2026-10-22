@@ -6,6 +6,157 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn otio_prepare_http_is_strict_read_only_and_current_import_has_explicit_reuse() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-otio-prepare-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let host = Host::start(&root).unwrap();
+    let initial = host.call(Action::Session).await.unwrap();
+    let mut source = vv_session::Session::default();
+    let id = source.create_timeline(vv_core::Timeline {
+        name: "Source".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    std::fs::write(
+        root.join("source.otio"),
+        serde_json::to_vec(&vv_core::otio::timeline_to_otio(&source.project, id, None)).unwrap(),
+    )
+    .unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let make = |method: &str, path: &str, body: Value| {
+        Request::builder()
+            .method(method)
+            .uri(path)
+            .header("host", "127.0.0.1:8787")
+            .header("content-type", "application/json")
+            .body(if body.is_null() {
+                Body::empty()
+            } else {
+                Body::from(body.to_string())
+            })
+            .unwrap()
+    };
+    let prepare = json!({"project_epoch":initial["project_epoch"],"if_generation":initial["generation"],"path_token":"source.otio"});
+    let mut invalid = prepare.clone();
+    invalid["reuse_existing"] = json!(true);
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", "/api/v1/projects/otio/prepare", invalid))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    let mut foreign = make("POST", "/api/v1/projects/otio/prepare", prepare.clone());
+    foreign
+        .headers_mut()
+        .insert(header::ORIGIN, "https://evil.example".parse().unwrap());
+    assert_eq!(
+        app.clone().oneshot(foreign).await.unwrap().status(),
+        StatusCode::FORBIDDEN
+    );
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/projects/otio/prepare", prepare))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+    let job: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    let path = format!(
+        "/api/v1/projects/otio/jobs/{}?project_epoch={}",
+        job["id"].as_str().unwrap(),
+        initial["project_epoch"].as_str().unwrap()
+    );
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
+    loop {
+        let response = app
+            .clone()
+            .oneshot(make("GET", &path, Value::Null))
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let status: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+        if status["state"] == "ready" {
+            assert_eq!(status["result"]["timeline_count"], 1);
+            break;
+        }
+        assert!(
+            matches!(status["state"].as_str(), Some("queued" | "running")),
+            "{status}"
+        );
+        assert!(std::time::Instant::now() < deadline);
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    assert_eq!(host.call(Action::Session).await.unwrap(), initial);
+    let mutation = json!({"command_id":"otio-current-http","client_id":"otio-browser","command_epoch":initial["command_epoch"],"project_epoch":initial["project_epoch"],"if_generation":initial["generation"],"if_revision":null,"operation":{"kind":"import_prepared_otio","job_id":job["id"],"name":"Imported","reuse_existing":false}});
+    let mut missing = mutation.clone();
+    missing["operation"]
+        .as_object_mut()
+        .unwrap()
+        .remove("reuse_existing");
+    assert_eq!(
+        app.clone()
+            .oneshot(make("POST", "/api/v1/projects/commands", missing))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::UNPROCESSABLE_ENTITY
+    );
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/projects/commands", mutation.clone()))
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let receipt: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    assert_eq!(receipt["timeline_ids"].as_array().unwrap().len(), 1);
+    let response = app
+        .clone()
+        .oneshot(make("POST", "/api/v1/projects/commands", mutation))
+        .await
+        .unwrap();
+    let replay: Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+    assert_eq!(receipt, replay);
+    assert_eq!(
+        app.clone()
+            .oneshot(make("DELETE", &path, Value::Null))
+            .await
+            .unwrap()
+            .status(),
+        StatusCode::OK
+    );
+    assert_eq!(
+        host.call(Action::Session).await.unwrap()["timelines"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn otio_http_export_matches_native_cpu_measured_title_background() {
     let root = std::env::temp_dir().join(format!(
         "vv-otio-text-http-{}-{}",

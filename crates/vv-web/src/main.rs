@@ -23,6 +23,7 @@ mod inspector;
 mod keyselection;
 mod library;
 mod masks;
+mod otio;
 mod preset_store;
 mod presets;
 mod preview;

@@ -23,6 +23,7 @@ import { createSilencePanel } from "./silence.js";
 import { createLibraryPanel } from "./library.js";
 import {createNativeAssetPanel} from './native-assets.js';
 import {createMediaImportPanel} from './media-import.js';
+import {createOtioImportPanel} from './otio-import.js';
 import { createVoiceover } from "./voiceover.js";
 import { createReview } from "./review.js";
 import { createReviewMetadata } from "./reviewmeta.js";
@@ -46,7 +47,7 @@ let slipScopesState = null;
 let catalog = null;
 let silencePanel = null;
 let sharedLibrary = null;
-let nativeAssets=null,mediaImport=null,libraryMode='shared';
+let nativeAssets=null,mediaImport=null,otioImport=null,libraryMode='shared';
 const sharedLibraryRoot=document.createElement('div'),nativeAssetsRoot=document.createElement('div');
 function openLibraryPanel(mode=libraryMode){
   libraryMode=mode;void sharedLibrary?.cancel();nativeAssets?.hide();
@@ -917,7 +918,7 @@ async function refresh() {
   $("media-note").textContent = "Project media · authoritative Rust session";
   catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id)=>{selectedMedia=id;nativeAssets?.invalidate();},onOpen:(id)=>{selectedMedia=id;openSource();},notice});
   nativeAssets?.invalidate();
-  mediaImport?.invalidate();
+  mediaImport?.invalidate();otioImport?.invalidate();
   if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
   $("viewer-message").textContent = next.capabilities.preview
     ? "Seek a timeline frame"
@@ -956,7 +957,7 @@ async function mutate(operation, project = false,route=null) {
   busy = true;
   compoundNavigation?.invalidate();
   nativeAssets?.invalidate();
-  mediaImport?.invalidate();
+  mediaImport?.invalidate();otioImport?.invalidate();
   notice("Applying command…");
   try {
     const receipt = await sendMutation(
@@ -1095,6 +1096,16 @@ mediaImport=createMediaImportPanel({dialog:$("imports"),root:$("import-list"),st
   mediaState.selected=[...ids];selectedMedia=ids.at(-1) || null;catalog?.search(mediaState.query || '');if(selectedMedia)openSource();
 }});
 $("import-button").addEventListener("click",()=>void mediaImport.open());
+otioImport=createOtioImportPanel({root:$("otio-current-import"),isVisible:()=>$("projects").open,getContext:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),notice,onImported:receipt=>{
+  const next=documentState?.timelines.find(item=>item.id===receipt.timeline_ids[0]);
+  if(!next)throw Error('The imported timeline is not yet visible in the refreshed project');
+  mediaState.selected=receipt.media_ids.filter(id=>documentState.media.some(item=>item.id===id));mediaState.anchor=mediaState.selected[0] || null;selectedMedia=mediaState.selected.at(-1) || null;
+  const folder=$("media-list").querySelector('[aria-label="Media folder"]'),kind=$("media-list").querySelector('[aria-label="Media type"]');
+  if(folder)folder.value=receipt.folder_id || '*';if(kind)kind.value='all';$("search").value='';catalog?.search('');
+  openTimelineRoot(next);$("projects").close();
+}});
+$("projects").addEventListener('close',()=>otioImport.hide());
+$("projects").addEventListener('cancel',()=>otioImport.hide());
 $("delete").addEventListener("click", () => {
   const target=selectedTransition(timeline,view.transitionSelection);
   if(target){if(!target.locked)run({kind:'set_transition',clip_id:target.clip_id,slot:target.slot,transition:null});return;}
@@ -1125,6 +1136,7 @@ async function projects() {
   recoveryPanel?.refresh();
   try {
     const data = await request("/projects");
+    otioImport?.setFiles(data.importable_otio || []);
     $("project-list").replaceChildren();
     const backups=$("recover-project").elements.path_token,previousBackup=backups.value;backups.replaceChildren();
     for(const item of data.backups || [])backups.append(new Option(item.name,item.path_token));
@@ -1226,7 +1238,7 @@ setInterval(() => {
     request("/lease", { client_id: clientId }).catch(() => {
       writable = false;
       nativeAssets?.invalidate();
-      mediaImport?.invalidate();
+      mediaImport?.invalidate();otioImport?.invalidate();
       $("connection").textContent = "Disconnected · read only";
     });
 }, 30_000);

@@ -4,15 +4,63 @@
 
 ## Current completion assessment
 
-The ledger contains 90 in-scope capabilities: 36 done, 54 partial and none not
+The ledger contains 90 in-scope capabilities: 38 done, 52 partial and none not
 started. Two additional rows are explicitly NOT-PLANNED and excluded. Thus
-40.0% of capability rows have full acceptance; this is not an estimate of
+42.2% of capability rows have full acceptance; this is not an estimate of
 implementation effort. Many partial rows already have native adapters and
 working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
-Native editing fidelity now passes `evidence/m4-native-edit-fidelity.json`.
+Native current-project OTIO import now passes
+`evidence/m4-native-otio-merge.json` and its actual Windows screenshot. The
+Projects panel prepares a native import without changing the current project,
+shows native media progress and offline warnings, and requires explicit Import
+all or Reuse by native file name. Native pool absorption adds top-level timelines
+and a media folder with one ImportOtio Undo, preserving nested names and existing
+dirty edits. Untitled projects are supported. The ACK opens the first imported
+top timeline and selects the added media/folder. The legacy separate new-project
+operation retains its request meaning, dirty guard and no-overwrite behavior.
+
+The existing single preparation worker parses OTIO and measures titles outside
+the session actor. Media probes run as bounded subprocesses (20 seconds,
+512 MiB address space, 10 CPU seconds); root/source identity, including missing
+and unreadable files, is checked again immediately before native application.
+Cancellation, stale generation, changed files, indirect manifests, symlinks and
+root escapes never partially merge. Input/output remain bounded to 8 MiB and
+64 distinct media URLs within the shared 256-descriptor budget. The whole
+600-second parser/title budget is cooperative, not a hard interrupt inside a
+blocked native call.
+
+Bounded halo2 validation passes 359 web Rust, 277 core, 698 JavaScript, 10 proxy,
+three decoder, one cached-device and four targeted desktop tests, fmt, Clippy
+all targets with warnings denied and native build. Three subagents reviewed
+native scope, backend and client integration without running workloads. The
+finite API proof covers real MP4/WAV nested import, both reuse policies, dirty
+project preservation, exact receipts, cancellation, changed/missing input,
+one Undo/Redo, Save/restart and the legacy no-overwrite path. Semantic checks
+exclude only compound content_hash cache generations, which native Undo/Redo
+and reload deliberately advance; source hashes and every clip/time field stay
+checked. Raw failed fixture attempts remain in the evidence.
+
+One temporary tab in the existing Windows browser verified prepare/cancel,
+offline warning, current-project import, first top timeline/folder selection and
+one Undo/Redo against authoritative API snapshots. No browser or environment
+was installed. The 512 MiB metadata server had preview/export disabled and its
+recorded cgroup events show no OOM. All own temporary processes, tab and tunnel
+are closed; the main editor still has its five unsaved MoveClips and Undo.
+The verified candidate is staged separately without activating it.
+
+The two OTIO ledger rows now meet the original Scenario H requirement of
+upstream semantics. Prior native title roundtrip and exact Windows download
+proof establish the export path. Native compound export remains explicitly
+unsupported; export child timelines directly. Installing another NLE or proving
+cross-machine font layout was not in the original acceptance requirement.
+This closes these two adapter rows, not the full offline/relink scenario or
+rendered/GPU/physical audio/release qualification. The overall 65–70% engineering
+estimate remains uncertain and unchanged.
+
+Earlier native editing fidelity passes `evidence/m4-native-edit-fidelity.json`.
 Clip paste between different timeline FPS uses the same native relative-start,
 `Clip::retime` and target-media conformance sequence as the desktop. Linked
 groups, internal crossing durations, source-frame animation, speed, freeze and
@@ -34,13 +82,12 @@ OTIO import/export now use the native CPU title measurement callback, including
 auto-sized backgrounds and foreign corner-radius conversion. HTTP/native and
 foreign-metadata regressions pass; a real finite title export/import passes and
 the Windows Projects download matches its native SHA. No GPU, font installation
-or external editor was used. Import into the existing project and isolated OTIO
-media preparation remain missing workflows; nested export is unsupported by the
-original native exporter. OS text/cross-project clip clipboard and continuous
-audio/hardware qualification remain open. These rows remain partial, so ledger
-counts and the engineering estimate above are unchanged.
+or external editor was used. Current-project merge and isolated preparation
+were subsequently completed by the increment above. Nested export remains
+unsupported by the original native exporter. OS text/cross-project clip
+clipboard and continuous audio/hardware qualification remain open.
 
-Validation passed 346 web Rust, 277 core, 677 JavaScript, 10 proxy, 3 decoder,
+That earlier increment passed 346 web Rust, 277 core, 677 JavaScript, 10 proxy, 3 decoder,
 1 cached-device and four targeted desktop tests, fmt, Clippy and native build
 in the cached halo2 environment: one CPU, 4 GiB build RAM, no swap and OOM score
 1000. The finite API/Windows metadata server used 512 MiB with preview/export

@@ -1300,13 +1300,37 @@ tests cover frozen/retimed clocks; the live generated-media fixture covers
 ordinary source time. Pen drawing, full path-key navigation, browser/DPI/rendered
 and hardware acceptance remain open.
 
-- Project `import_otio {path_token,name}` reads a flat-root .otio file up to
-  8 MiB/64 distinct media URLs through the native parser. Media probing and
-  fingerprinting use the root policy and NOFOLLOW file descriptors. The imported
-  project, mixer/marker ranges and compound cycles validate before a new
-  no-replace .vvproj is written and installed. Dirty projects are refused.
-  Native parser failure preserves the current session. Import warnings are
-  returned in the session snapshot (at most 65 bounded messages).
+- POST `/projects/otio/prepare` accepts
+  `{project_epoch,if_generation,path_token}` and prepares a root .otio file
+  without changing the current project, including untitled or dirty projects.
+  GET/DELETE `/projects/otio/jobs/{job}?project_epoch=...` reads/cancels that
+  preparation. Jobs use the existing single asset worker and one queued slot;
+  other job kinds are refused by these routes. Native URL callback counts appear
+  in `progress:{completed,total}`; offline media remain explicit warnings.
+- Project `import_prepared_otio {job_id,name,reuse_existing}` requires an
+  explicit boolean reuse policy and the prepared epoch/generation. It uses native
+  `pool::absorb` and one `AddEntities(ImportOtio)` Undo step. Reuse matches native
+  file labels for noncompound media. New media enter a named folder; top-level
+  timelines enter the root and receive the import name (or `name - original`
+  for multiple roots). Nested names remain intact. The ACK adds `timeline_ids`,
+  `media_ids`, `folder_id` and `warnings`. A validated trial precedes final
+  source/cancellation checks and native application; exact retries return the
+  original receipt. Late cancellation cannot undo an applied import.
+- Preparation accepts at most 8 MiB input/output and 64 distinct media URLs.
+  NOFOLLOW descriptors and missing/unreadable entry witnesses pin root identity
+  and source state until application. Changed sources, root escapes, symlinks,
+  special files, indirect manifests and cancellation fail preparation/application
+  atomically; they do not become ordinary offline warnings. Retained jobs share
+  the existing 256-descriptor admission budget. Each native media probe runs in
+  an isolated process with a hard 20-second timeout, 512 MiB address space and
+  10 CPU seconds. The whole 600-second preparation budget is cooperative between
+  parser callbacks; one blocked native parser/title call is not preemptible.
+- Legacy project `import_otio {path_token,name}` retains its separate new-project
+  meaning, dirty-project refusal and no-replace .vvproj write. It now uses the
+  same preparation worker outside the session actor. Project, mixer/marker,
+  transition and compound constraints validate before install. Parser or save
+  failure preserves the current session and the original cached error. Import
+  warnings also appear in session snapshots (at most 65 bounded messages).
 - GET `/timelines/{id}/timeline.otio` accepts the guarded exact-frame query and
   downloads a native OTIO JSON snapshot, up to 8 MiB, without requiring a GPU.
   Nonempty timelines are supported. Active compound references are refused:

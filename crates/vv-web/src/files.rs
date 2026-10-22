@@ -10,7 +10,7 @@ use std::{
 };
 use vv_core::Project;
 
-const MAX_PROJECT: u64 = 8 * 1024 * 1024;
+pub(crate) const MAX_PROJECT: u64 = 8 * 1024 * 1024;
 pub const MAX_MEDIA_IMPORTS: usize = 256;
 pub(crate) fn media_import_tokens(path_tokens: &[String]) -> Result<Vec<String>> {
     if path_tokens.is_empty() || path_tokens.len() > 4096 {
@@ -83,6 +83,7 @@ impl Files {
         }
         Ok(file)
     }
+    #[cfg(test)]
     pub fn probe(&self, name: &str) -> Result<(PathBuf, vv_core::MediaMeta)> {
         let (path, meta, _) = self.prepare_media(name)?;
         Ok((path, meta))
@@ -153,6 +154,7 @@ impl Files {
         }
         Ok(())
     }
+    #[cfg(test)]
     fn read(&self, name: &str) -> Result<Vec<u8>> {
         self.read_versioned(name).map(|(bytes, _)| bytes)
     }
@@ -222,69 +224,36 @@ impl Files {
             json!({"projects":projects,"backups":backups,"importable_media":media,"importable_otio":otio}),
         )
     }
+    #[cfg(test)]
     pub fn import_otio(&self, name: &str) -> Result<(Project, Vec<String>)> {
         if !name.ends_with(".otio") {
             return Err(ApiError::invalid("Choose a listed .otio file"));
         }
-        let value: Value = serde_json::from_slice(&self.read(name)?)
-            .map_err(|_| ApiError::invalid("The OTIO file is not valid JSON"))?;
-        if vv_core::otio::media_url_count(&value) > 64 {
-            return Err(ApiError::invalid(
-                "OTIO import currently supports at most 64 distinct media URLs",
-            ));
-        }
-        let mut imported = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            let measure = |title: &vv_core::TitleParams| vv_render::text::title_metrics(title);
-            vv_core::otio::project_from_otio(
-                &value,
-                &self.root,
-                &mut |path| {
-                    if path.parent().and_then(|p| p.canonicalize().ok()).as_ref()
-                        != Some(&self.root)
-                    {
-                        return Err(
-                            "Media must be directly inside the configured project root".into()
-                        );
-                    }
-                    let token = path
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .ok_or("Invalid media name")?;
-                    let (safe_path, meta) = self.probe(token).map_err(|_| {
-                        "Media is offline or refused by the configured root policy".to_string()
-                    })?;
-                    let file = self
-                        .media_file(&safe_path)
-                        .map_err(|_| "Media changed before native fingerprinting".to_string())?;
-                    let fd_path = PathBuf::from(format!(
-                        "/proc/self/fd/{}",
-                        std::os::fd::AsRawFd::as_raw_fd(&file)
-                    ));
-                    Ok((meta, vv_media::content_fingerprint(&fd_path).unwrap_or(0)))
-                },
-                Some(&measure),
-            )
-        }))
-        .map_err(|_| {
-            ApiError::invalid("Native OTIO parsing failed; the current project was preserved")
-        })?
-        .map_err(|_| ApiError::invalid("The native engine could not import this OTIO timeline"))?;
-        self.validate_media(&mut imported.project)?;
-        validate_project(&imported.project)?;
-        imported.project.refresh_clip_rates();
-        let mut warnings = imported
-            .warnings
-            .iter()
-            .take(64)
-            .map(|warning| otio_warning(warning).chars().take(512).collect::<String>())
-            .collect::<Vec<_>>();
-        if imported.warnings.len() > 64 {
-            warnings.push(format!(
-                "{} further native import warnings were omitted",
-                imported.warnings.len() - 64
-            ));
-        }
-        Ok((imported.project, warnings))
+        parse_otio(
+            &self.read(name)?,
+            &self.root,
+            &mut |path| {
+                if path.parent().and_then(|p| p.canonicalize().ok()).as_ref() != Some(&self.root) {
+                    return Err("Media must be directly inside the configured project root".into());
+                }
+                let token = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .ok_or("Invalid media name")?;
+                let (safe_path, meta) = self.probe(token).map_err(|_| {
+                    "Media is offline or refused by the configured root policy".to_string()
+                })?;
+                let file = self
+                    .media_file(&safe_path)
+                    .map_err(|_| "Media changed before native fingerprinting".to_string())?;
+                let fd_path = PathBuf::from(format!(
+                    "/proc/self/fd/{}",
+                    std::os::fd::AsRawFd::as_raw_fd(&file)
+                ));
+                Ok((meta, vv_media::content_fingerprint(&fd_path).unwrap_or(0)))
+            },
+            &mut |_| {},
+        )
     }
     pub fn load(&self, name: &str) -> Result<Project> {
         if !name.ends_with(".vvproj") {
@@ -353,34 +322,7 @@ impl Files {
         Ok(project)
     }
     fn validate_media(&self, project: &mut Project) -> Result<()> {
-        for item in project.media_pool.values_mut() {
-            if item.compound.is_some() {
-                continue;
-            }
-            let path = if item.path.is_absolute() {
-                item.path.clone()
-            } else {
-                self.root.join(&item.path)
-            };
-            let parent = path
-                .parent()
-                .and_then(|p| p.canonicalize().ok())
-                .ok_or_else(|| ApiError::invalid("Media must be in the configured root"))?;
-            if parent != self.root {
-                return Err(ApiError::invalid(
-                    "Media must be in the configured root; nested paths are not supported yet",
-                ));
-            }
-            if let Ok(meta) = std::fs::symlink_metadata(&path)
-                && (meta.file_type().is_symlink() || !meta.is_file())
-            {
-                return Err(ApiError::invalid(
-                    "Media links and special files are refused",
-                ));
-            }
-            item.path = path;
-        }
-        Ok(())
+        validate_root_media(project, &self.root)
     }
     pub fn path(&self, name: &str) -> Result<PathBuf> {
         Self::name(name)?;
@@ -506,6 +448,80 @@ impl Files {
     }
 }
 
+pub(crate) type OtioProbeResult = std::result::Result<(vv_core::MediaMeta, u64), String>;
+pub(crate) fn parse_otio(
+    bytes: &[u8],
+    root: &Path,
+    probe: &mut dyn FnMut(&Path) -> OtioProbeResult,
+    on_total: &mut dyn FnMut(usize),
+) -> Result<(Project, Vec<String>)> {
+    if bytes.len() as u64 > MAX_PROJECT {
+        return Err(ApiError::invalid("Project exceeds the 8 MiB file limit"));
+    }
+    let value: Value = serde_json::from_slice(bytes)
+        .map_err(|_| ApiError::invalid("The OTIO file is not valid JSON"))?;
+    let total = vv_core::otio::media_url_count(&value);
+    if total > 64 {
+        return Err(ApiError::invalid(
+            "OTIO import currently supports at most 64 distinct media URLs",
+        ));
+    }
+    on_total(total);
+    let mut imported = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        let measure = |title: &vv_core::TitleParams| vv_render::text::title_metrics(title);
+        vv_core::otio::project_from_otio(&value, root, probe, Some(&measure))
+    }))
+    .map_err(|_| {
+        ApiError::invalid("Native OTIO parsing failed; the current project was preserved")
+    })?
+    .map_err(|_| ApiError::invalid("The native engine could not import this OTIO timeline"))?;
+    validate_root_media(&mut imported.project, root)?;
+    validate_project(&imported.project)?;
+    imported.project.refresh_clip_rates();
+    let mut warnings: Vec<_> = imported
+        .warnings
+        .iter()
+        .take(64)
+        .map(|warning| otio_warning(warning).chars().take(512).collect::<String>())
+        .collect();
+    if imported.warnings.len() > 64 {
+        warnings.push(format!(
+            "{} further native import warnings were omitted",
+            imported.warnings.len() - 64
+        ));
+    }
+    Ok((imported.project, warnings))
+}
+fn validate_root_media(project: &mut Project, root: &Path) -> Result<()> {
+    for item in project.media_pool.values_mut() {
+        if item.compound.is_some() {
+            continue;
+        }
+        let path = if item.path.is_absolute() {
+            item.path.clone()
+        } else {
+            root.join(&item.path)
+        };
+        let parent = path
+            .parent()
+            .and_then(|parent| parent.canonicalize().ok())
+            .ok_or_else(|| ApiError::invalid("Media must be in the configured root"))?;
+        if parent != root {
+            return Err(ApiError::invalid(
+                "Media must be in the configured root; nested paths are not supported yet",
+            ));
+        }
+        if let Ok(meta) = std::fs::symlink_metadata(&path)
+            && (meta.file_type().is_symlink() || !meta.is_file())
+        {
+            return Err(ApiError::invalid(
+                "Media links and special files are refused",
+            ));
+        }
+        item.path = path;
+    }
+    Ok(())
+}
 fn otio_warning(warning: &vv_core::otio::OtioWarning) -> String {
     use vv_core::otio::OtioWarning::*;
     match warning {

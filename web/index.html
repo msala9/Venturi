@@ -393,13 +393,25 @@
       </details>
       <a id="download-otio" hidden download="timeline.otio">Export current timeline as OTIO</a>
       <p id="otio-availability" role="status"></p>
-      <p class="muted">OTIO retains Venturi clip effects, mixer settings and markers in native metadata. Text layout in other editors may differ. Export child timelines directly; compound contents are not exported. Place .otio files directly in the server project root to import into a new project.</p>
+      <p class="muted">OTIO retains Venturi clip effects, mixer settings and markers in native metadata. Text layout in other editors may differ. Export child timelines directly; compound contents are not exported. Place .otio files directly in the server project root to import.</p>
+      <section id="otio-current-import" aria-label="Import OTIO into current project">
+        <h3>Import OTIO into current project</h3>
+        <p class="muted">Adds timelines and media to this project with one Undo. Existing unsaved edits stay in the current project.</p>
+        <label class="field">OTIO file<select data-otio-file aria-label="OTIO file for current project"></select></label>
+        <label class="field">Imported timeline and media folder name<input data-otio-name aria-label="Imported timeline and media folder name" maxlength="128" required></label>
+        <label class="field">Media with an existing file name<select data-otio-reuse aria-label="OTIO existing media policy"><option value="import">Import all media into a new folder</option><option value="reuse">Reuse existing media by native file name</option></select></label>
+        <div class="tools"><button type="button" data-otio-prepare disabled>Prepare OTIO import</button><button type="button" data-otio-apply disabled>Import prepared timelines</button><button type="button" data-otio-cancel disabled>Cancel OTIO preparation</button></div>
+        <output data-otio-status role="status">Choose an OTIO file to prepare</output>
+        <ul data-otio-warnings aria-label="OTIO import warnings"></ul>
+      </section>
+      <details><summary>Import OTIO as a separate new project</summary>
       <form id="import-otio">
         <label class="field">OTIO file<select name="path_token" required aria-label="OTIO file"></select></label>
         <label class="field">Imported project name<input name="name" required maxlength="64" pattern="[A-Za-z0-9_-]+" placeholder="Imported_timeline"></label>
         <button>Import OTIO as new project</button>
       </form>
       <p id="otio-warnings" role="status"></p>
+      </details>
     </dialog>
     <dialog id="palette">
       <form method="dialog">

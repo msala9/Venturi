@@ -1,5 +1,246 @@
 use super::*;
 
+fn prepared_otio_fixture(editor: &mut Editor, root: &std::path::Path, token: &str) -> Value {
+    let mut source = Session::default();
+    let id = source.create_timeline(Timeline {
+        name: "Source".into(),
+        fps: Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![Track::new(TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    std::fs::write(
+        root.join(token),
+        serde_json::to_vec(&vv_core::otio::timeline_to_otio(&source.project, id, None)).unwrap(),
+    )
+    .unwrap();
+    let job = editor
+        .handle(Action::PrepareOtio(OtioImportRequest {
+            project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+            if_generation: editor.session.history.generation().to_string(),
+            path_token: token.into(),
+        }))
+        .unwrap();
+    native_wait(editor, &job)
+}
+
+#[test]
+fn prepared_otio_merge_accepts_untitled_dirty_session_and_is_single_undo_retry_safe() {
+    let root = std::env::temp_dir().join(format!("vv-otio-merge-{}", crate::asset_jobs::nonce()));
+    let mut editor = Editor::new(&root).unwrap();
+    let old = editor.session.create_timeline(Timeline {
+        name: "Unsaved existing".into(),
+        fps: Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![Track::new(TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let before = serde_json::to_value(&editor.session.project.timelines[old]).unwrap();
+    let old_position = editor.snapshot()["history"]["position"].as_u64().unwrap();
+    let ready = prepared_otio_fixture(&mut editor, &root, "merge.otio");
+    let command = request(
+        &editor,
+        Operation::ImportPreparedOtio {
+            job_id: ready["id"].as_str().unwrap().into(),
+            name: "Imported".into(),
+            reuse_existing: false,
+        },
+        "merge-current",
+        None,
+    );
+    let receipt = editor.mutation(None, command.clone()).unwrap();
+    assert_eq!(receipt["timeline_ids"].as_array().unwrap().len(), 1);
+    assert_eq!(editor.snapshot()["history"]["position"], old_position + 1);
+    assert!(editor.session.path().is_none());
+    assert_eq!(
+        serde_json::to_value(&editor.session.project.timelines[old]).unwrap(),
+        before
+    );
+    assert_eq!(editor.mutation(None, command.clone()).unwrap(), receipt);
+    let changed = Mutation {
+        operation: Operation::ImportPreparedOtio {
+            job_id: ready["id"].as_str().unwrap().into(),
+            name: "Other".into(),
+            reuse_existing: false,
+        },
+        ..command
+    };
+    assert_eq!(
+        editor.mutation(None, changed).unwrap_err().1,
+        "COMMAND_ID_REUSED"
+    );
+    let applied = serde_json::to_value(&editor.session.project.timelines).unwrap();
+    let undo = request(&editor, Operation::Undo, "merge-undo", None);
+    editor.mutation(None, undo).unwrap();
+    assert_eq!(editor.session.project.timelines.len(), 1);
+    assert_eq!(
+        serde_json::to_value(&editor.session.project.timelines[old]).unwrap(),
+        before
+    );
+    let redo = request(&editor, Operation::Redo, "merge-redo", None);
+    editor.mutation(None, redo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&editor.session.project.timelines).unwrap(),
+        applied
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn prepared_otio_changed_input_cancel_wrong_kind_and_generation_never_mutate_session() {
+    let root = std::env::temp_dir().join(format!("vv-otio-guards-{}", crate::asset_jobs::nonce()));
+    let mut editor = Editor::new(&root).unwrap();
+    let ready = prepared_otio_fixture(&mut editor, &root, "changed.otio");
+    let job = ready["id"].as_str().unwrap().to_owned();
+    let epoch = ready["project_epoch"].as_str().unwrap().to_owned();
+    assert_eq!(
+        editor
+            .handle(Action::MediaImportStatus(
+                job.clone(),
+                SourceQuery {
+                    project_epoch: epoch.clone()
+                },
+                true
+            ))
+            .unwrap_err()
+            .1,
+        "NOT_FOUND"
+    );
+    assert_eq!(
+        editor.asset_jobs.status(&job, &epoch, false).unwrap()["state"],
+        "ready"
+    );
+    let before = ron::to_string(&editor.session.project).unwrap();
+    let bytes = std::fs::read(root.join("changed.otio")).unwrap();
+    std::fs::write(root.join("changed.otio"), [bytes.as_slice(), b" "].concat()).unwrap();
+    let command = request(
+        &editor,
+        Operation::ImportPreparedOtio {
+            job_id: job,
+            name: "Changed".into(),
+            reuse_existing: true,
+        },
+        "changed-otio",
+        None,
+    );
+    assert_eq!(
+        editor.mutation(None, command).unwrap_err().1,
+        "SOURCE_CHANGED"
+    );
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), before);
+    let ready = prepared_otio_fixture(&mut editor, &root, "canceled.otio");
+    let job = ready["id"].as_str().unwrap().to_owned();
+    editor
+        .handle(Action::OtioImportStatus(
+            job.clone(),
+            SourceQuery {
+                project_epoch: epoch.clone(),
+            },
+            true,
+        ))
+        .unwrap();
+    let command = request(
+        &editor,
+        Operation::ImportPreparedOtio {
+            job_id: job,
+            name: "Canceled".into(),
+            reuse_existing: false,
+        },
+        "canceled-otio",
+        None,
+    );
+    assert!(editor.mutation(None, command).is_err());
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), before);
+    let ready = prepared_otio_fixture(&mut editor, &root, "stale.otio");
+    let command = request(
+        &editor,
+        Operation::ImportPreparedOtio {
+            job_id: ready["id"].as_str().unwrap().into(),
+            name: "Stale".into(),
+            reuse_existing: false,
+        },
+        "stale-otio",
+        None,
+    );
+    editor.session.create_timeline(Timeline {
+        name: "New edit".into(),
+        fps: Rational::new(24, 1),
+        resolution: (640, 360),
+        tracks: vec![],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let current = ron::to_string(&editor.session.project).unwrap();
+    assert_eq!(
+        editor.mutation(None, command).unwrap_err().1,
+        "REVISION_CONFLICT"
+    );
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), current);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
+async fn legacy_otio_save_failure_preserves_failed_job_and_cached_outcome() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-otio-save-failure-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let new = request(
+        &editor,
+        Operation::NewProject {
+            name: "existing".into(),
+        },
+        "otio-existing-new",
+        None,
+    );
+    editor.mutation(None, new).unwrap();
+    prepared_otio_fixture(&mut editor, &root, "legacy.otio");
+    let command = request(
+        &editor,
+        Operation::ImportOtio {
+            path_token: "legacy.otio".into(),
+            name: "existing".into(),
+        },
+        "otio-existing-save",
+        None,
+    );
+    let NativeEditPreparation::Pending(guard) =
+        editor.prepare_legacy_media_import(command.clone()).unwrap()
+    else {
+        panic!("Expected preparation");
+    };
+    let status = guard.jobs.status(&guard.job, &guard.epoch, false).unwrap();
+    native_wait(&mut editor, &status);
+    let jobs = guard.jobs.clone();
+    let job = guard.job.clone();
+    let epoch = guard.epoch.clone();
+    let before = editor.snapshot();
+    let host = Host::run(editor).unwrap();
+    assert_eq!(
+        host.finish_media_import(command.clone(), guard)
+            .await
+            .unwrap_err()
+            .1,
+        "FILE_EXISTS"
+    );
+    assert_eq!(jobs.status(&job, &epoch, false).unwrap()["state"], "failed");
+    assert_eq!(
+        host.project_mutation(command).await.unwrap_err().1,
+        "FILE_EXISTS"
+    );
+    let after = host.call(Action::Session).await.unwrap();
+    assert_eq!(after["history"], before["history"]);
+    assert_eq!(after["project_epoch"], before["project_epoch"]);
+    drop(host);
+    drop(jobs);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn large_import_receipts_retire_the_cache_by_bytes_before_new_preparation() {
     let (root, mut editor, _) = native_asset_fixture("receipt-byte-budget");
@@ -2155,7 +2396,15 @@ fn otio_import_is_a_new_no_replace_project_with_epoch_and_retry_guards() {
         "otio-import",
         None,
     );
+    let NativeEditPreparation::Pending(mut guard) =
+        editor.prepare_legacy_media_import(import.clone()).unwrap()
+    else {
+        panic!("Expected OTIO preparation");
+    };
+    let status = guard.jobs.status(&guard.job, &guard.epoch, false).unwrap();
+    native_wait(&mut editor, &status);
     editor.mutation(None, import.clone()).unwrap();
+    guard.armed = false;
     let epoch = editor.session.epoch();
     editor.mutation(None, import).unwrap();
     assert_eq!(editor.session.epoch(), epoch);
@@ -2170,9 +2419,35 @@ fn otio_import_is_a_new_no_replace_project_with_epoch_and_retry_guards() {
         "otio-existing",
         None,
     );
+    let NativeEditPreparation::Pending(duplicate_guard) = editor
+        .prepare_legacy_media_import(duplicate.clone())
+        .unwrap()
+    else {
+        panic!("Expected OTIO preparation");
+    };
+    let status = duplicate_guard
+        .jobs
+        .status(&duplicate_guard.job, &duplicate_guard.epoch, false)
+        .unwrap();
+    native_wait(&mut editor, &status);
     assert_eq!(
-        editor.mutation(None, duplicate).unwrap_err().1,
+        editor.mutation(None, duplicate.clone()).unwrap_err().1,
         "FILE_EXISTS"
+    );
+    assert_eq!(
+        editor
+            .prepare_legacy_media_import(duplicate)
+            .err()
+            .unwrap()
+            .1,
+        "FILE_EXISTS"
+    );
+    assert_eq!(
+        duplicate_guard
+            .jobs
+            .status(&duplicate_guard.job, &duplicate_guard.epoch, false)
+            .unwrap()["state"],
+        "failed"
     );
     assert_eq!(editor.session.epoch(), epoch);
     let id = editor.session.project.timelines.keys().next().unwrap();

@@ -9,8 +9,11 @@ use sha2::{Digest, Sha256};
 use std::{
     collections::{HashMap, HashSet, VecDeque},
     fs::File,
-    io::Write,
-    os::{fd::AsRawFd, unix::fs::FileExt},
+    io::{Read, Write},
+    os::{
+        fd::AsRawFd,
+        unix::fs::{FileExt, MetadataExt},
+    },
     path::{Component, Path, PathBuf},
     sync::{
         Arc, Mutex,
@@ -38,6 +41,49 @@ pub struct ImportPayload {
     pub items: Vec<PreparedMedia>,
     pub errors: Vec<Value>,
     pub first_error: Option<ApiError>,
+}
+pub struct OtioPayload {
+    pub project: vv_core::Project,
+    pub warnings: Vec<String>,
+}
+struct OtioWitness {
+    token: String,
+    entry: Option<String>,
+    file: Option<File>,
+    identity: Option<String>,
+}
+impl OtioWitness {
+    fn validate(&self, inner: &Inner) -> Result<()> {
+        if otio_entry(inner, &self.token)?.map(|meta| entry_identity(&meta)) != self.entry {
+            return Err(source_changed());
+        }
+        if let Some(file) = &self.file
+            && (Some(entry_identity(
+                &file.metadata().map_err(|_| source_changed())?,
+            )) != self.entry
+                || Some(asset_store::stable_identity(file)?) != self.identity)
+        {
+            return Err(source_changed());
+        }
+        Ok(())
+    }
+}
+struct PreparedOtio {
+    token: String,
+    payload: OtioPayload,
+    witnesses: Vec<OtioWitness>,
+}
+impl PreparedOtio {
+    fn validate(&self, inner: &Inner) -> Result<()> {
+        project_root(inner)?;
+        for witness in &self.witnesses {
+            witness.validate(inner)?;
+        }
+        Ok(())
+    }
+    fn value(&self) -> Value {
+        json!({"path_token":self.token,"timeline_count":self.payload.project.timelines.len(),"media_count":self.payload.project.media_pool.len(),"warnings":self.payload.warnings})
+    }
 }
 struct ImportFile {
     item: PreparedMedia,
@@ -124,17 +170,21 @@ struct Job {
     media_import: Option<PreparedImport>,
     import_completed: usize,
     import_total: usize,
+    otio_probe_total: Option<usize>,
+    otio: Option<PreparedOtio>,
 }
 impl Job {
     fn value(&self) -> Value {
         let result = self.result.as_ref().map(|prepared| {
             let payload = asset_payload::decode(&prepared.asset).ok();
             json!({"asset_id":self.asset_id,"revision":self.revision,"name":prepared.asset.name,"media_count":payload.as_ref().map_or(0,|p| p.media_items().count()),"file_count":prepared.files.len(),"bytes":self.bytes})
-        }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary())).or_else(||self.media_import.as_ref().map(PreparedImport::value));
+        }).or_else(||self.edit_result.as_ref().map(|prepared|prepared.summary())).or_else(||self.media_import.as_ref().map(PreparedImport::value)).or_else(||self.otio.as_ref().map(PreparedOtio::value));
         let mut value = json!({"id":self.id,"kind":self.kind,"project_epoch":self.epoch,"generation":self.generation,"state":self.state,"bytes":self.bytes,"total_bytes":self.total,"error":self.error,"result":result});
         if self.kind == "media_import" {
             value["progress"] =
                 json!({"completed":self.import_completed,"total":self.import_total});
+        } else if let Some(total) = self.otio_probe_total {
+            value["progress"] = json!({"completed":self.import_completed.min(total),"total":total});
         }
         value
     }
@@ -147,11 +197,13 @@ struct Work {
     import: Option<(String, String)>,
     edit: Option<(asset_store::Edit, crate::asset_journal::Completion)>,
     media_import: Option<Vec<String>>,
+    otio: Option<String>,
 }
 enum Finished {
     Media(Prepared),
     Edit(crate::asset_journal::PreparedEdit),
     Import(PreparedImport),
+    Otio(PreparedOtio),
 }
 struct Inner {
     store: Store,
@@ -232,7 +284,9 @@ impl Jobs {
                     {
                         job.state = "running";
                     }
-                    let result = if let Some(tokens) = &work.media_import {
+                    let result = if let Some(token) = &work.otio {
+                        run_otio(&inner, &work, token, MEDIA_IMPORT_BUDGET).map(Finished::Otio)
+                    } else if let Some(tokens) = &work.media_import {
                         run_media_import(&inner, &work, tokens, MEDIA_IMPORT_BUDGET)
                             .map(Finished::Import)
                     } else if let Some((edit, completion)) = &work.edit {
@@ -254,6 +308,7 @@ impl Jobs {
                                     Finished::Media(prepared) => job.result = Some(prepared),
                                     Finished::Edit(prepared) => job.edit_result = Some(prepared),
                                     Finished::Import(prepared) => job.media_import = Some(prepared),
+                                    Finished::Otio(prepared) => job.otio = Some(prepared),
                                 }
                             }
                             Ok(_) => {
@@ -353,6 +408,7 @@ impl Jobs {
             import: None,
             edit: Some((edit.clone(), completion)),
             media_import: None,
+            otio: None,
         };
         let job = Job {
             id,
@@ -375,6 +431,8 @@ impl Jobs {
             media_import: None,
             import_completed: 0,
             import_total: 0,
+            otio_probe_total: None,
+            otio: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -485,7 +543,9 @@ impl Jobs {
         if total > MAX_ASSET {
             return Err(ApiError::invalid("Native assets are limited to 2 GiB"));
         }
+        let sources_descriptor_reservation = sources.len().saturating_mul(4);
         let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        reserve_witnesses(&jobs, sources_descriptor_reservation)?;
         reserve(&mut jobs)?;
         let id = format!("asset-{}", nonce());
         let cancel = Arc::new(AtomicBool::new(false));
@@ -497,6 +557,7 @@ impl Jobs {
             import: import.clone(),
             edit: None,
             media_import: None,
+            otio: None,
         };
         let job = Job {
             id,
@@ -522,7 +583,9 @@ impl Jobs {
             fingerprint: None,
             media_import: None,
             import_completed: 0,
-            import_total: 0,
+            import_total: sources_descriptor_reservation,
+            otio_probe_total: None,
+            otio: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -542,23 +605,7 @@ impl Jobs {
         let tokens = crate::files::media_import_tokens(&path_tokens)?;
         project_root(&self.0)?;
         let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
-        // Ready records retain descriptors too. Reserve the complete running/queued
-        // batch up front so the eight-record ring cannot accumulate 2048 witnesses.
-        let retained: usize = jobs
-            .iter()
-            .map(|job| {
-                if matches!(job.state, "queued" | "running") {
-                    job.import_total
-                } else {
-                    job.media_import
-                        .as_ref()
-                        .map_or(0, |prepared| prepared.items.len())
-                }
-            })
-            .sum();
-        if retained.saturating_add(tokens.len()) > crate::files::MAX_MEDIA_IMPORTS {
-            return Err(busy());
-        }
+        reserve_witnesses(&jobs, tokens.len())?;
         reserve(&mut jobs)?;
         let id = format!("asset-{}", nonce());
         let cancel = Arc::new(AtomicBool::new(false));
@@ -571,6 +618,7 @@ impl Jobs {
             import: None,
             edit: None,
             media_import: Some(tokens),
+            otio: None,
         };
         let job = Job {
             id,
@@ -593,6 +641,8 @@ impl Jobs {
             media_import: None,
             import_completed: 0,
             import_total: total,
+            otio_probe_total: None,
+            otio: None,
         };
         let value = job.value();
         jobs.push_back(job);
@@ -601,6 +651,107 @@ impl Jobs {
             return Err(busy());
         }
         Ok(value)
+    }
+    pub fn prepare_otio(&self, epoch: &str, generation: &str, path_token: &str) -> Result<Value> {
+        binding(epoch, generation)?;
+        simple_name(path_token)?;
+        if !path_token.ends_with(".otio") {
+            return Err(ApiError::invalid("Choose a listed .otio file"));
+        }
+        project_root(&self.0)?;
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        reserve_witnesses(&jobs, 65)?;
+        reserve(&mut jobs)?;
+        let id = format!("asset-{}", nonce());
+        let cancel = Arc::new(AtomicBool::new(false));
+        let work = Work {
+            id: id.clone(),
+            asset: None,
+            sources: vec![],
+            cancel: cancel.clone(),
+            import: None,
+            edit: None,
+            media_import: None,
+            otio: Some(path_token.into()),
+        };
+        let job = Job {
+            id,
+            kind: "otio_import",
+            epoch: epoch.into(),
+            generation: generation.into(),
+            state: "queued",
+            bytes: 0,
+            total: 0,
+            error: None,
+            failure: None,
+            asset_id: None,
+            revision: None,
+            cancel,
+            result: None,
+            edit_result: None,
+            edit: None,
+            command_id: None,
+            fingerprint: None,
+            media_import: None,
+            import_completed: 0,
+            import_total: 65,
+            otio_probe_total: None,
+            otio: None,
+        };
+        let value = job.value();
+        jobs.push_back(job);
+        if self.0.sender.try_send(work).is_err() {
+            jobs.pop_back();
+            return Err(busy());
+        }
+        Ok(value)
+    }
+    pub fn otio_payload(&self, id: &str, epoch: &str, generation: &str) -> Result<OtioPayload> {
+        let jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, "otio_import")?;
+        let prepared = job.otio.as_ref().ok_or_else(ApiError::missing)?;
+        prepared.validate(&self.0)?;
+        Ok(OtioPayload {
+            project: prepared.payload.project.clone(),
+            warnings: prepared.payload.warnings.clone(),
+        })
+    }
+    pub fn mark_otio_applied(&self, id: &str, epoch: &str, generation: &str) -> Result<()> {
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter_mut()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, "otio_import")?;
+        job.otio
+            .as_ref()
+            .ok_or_else(ApiError::missing)?
+            .validate(&self.0)?;
+        job.state = "applied";
+        job.otio = None;
+        Ok(())
+    }
+    // Only the legacy save coordinator may report a failed save after consuming
+    // the preparation and before installing its new project.
+    pub fn mark_otio_failed(&self, id: &str, epoch: &str, error: ApiError) -> Result<()> {
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter_mut()
+            .find(|job| {
+                job.id == id
+                    && job.epoch == epoch
+                    && job.kind == "otio_import"
+                    && job.state == "applied"
+            })
+            .ok_or_else(ApiError::missing)?;
+        job.state = "failed";
+        job.error = Some(error.1);
+        job.failure = Some(error);
+        Ok(())
     }
     pub fn media_import_payload(
         &self,
@@ -663,6 +814,7 @@ impl Jobs {
                 job.result = None;
                 job.edit_result = None;
                 job.media_import = None;
+                job.otio = None;
                 job.error = Some("ASSET_CANCELED");
                 job.failure = Some(canceled());
             }
@@ -691,6 +843,7 @@ impl Jobs {
             job.result = None;
             job.edit_result = None;
             job.media_import = None;
+            job.otio = None;
             if !matches!(job.state, "running" | "queued") {
                 job.state = "canceled";
                 job.error = Some("ASSET_CANCELED");
@@ -752,6 +905,35 @@ impl Jobs {
         }
         asset_payload::decode(&prepared.asset)
     }
+}
+fn reserve_witnesses(jobs: &VecDeque<Job>, additional: usize) -> Result<()> {
+    let retained: usize = jobs
+        .iter()
+        .map(|job| {
+            if matches!(job.state, "queued" | "running") {
+                job.import_total
+            } else {
+                job.media_import
+                    .as_ref()
+                    .map_or(0, |prepared| prepared.items.len())
+                    + job
+                        .result
+                        .as_ref()
+                        .map_or(0, |prepared| prepared.files.len().saturating_mul(3))
+                    + job.otio.as_ref().map_or(0, |prepared| {
+                        prepared
+                            .witnesses
+                            .iter()
+                            .filter(|witness| witness.file.is_some())
+                            .count()
+                    })
+            }
+        })
+        .sum();
+    if retained.saturating_add(additional) > crate::files::MAX_MEDIA_IMPORTS {
+        return Err(busy());
+    }
+    Ok(())
 }
 fn reserve(jobs: &mut VecDeque<Job>) -> Result<()> {
     if jobs
@@ -1296,26 +1478,241 @@ fn prepare_import_file(
         return Err(ApiError::invalid("Media must be a regular file"));
     }
     let identity = asset_store::stable_identity(&file)?;
-    let meta = crate::asset_probe::probe_root_media(
-        &file,
-        vv_media::is_image_path(Path::new(token)),
-        cancel,
-        remaining,
-    )?;
-    let content_hash = fingerprint(&file)?;
+    let item = probe_import_file(inner, token, &file, cancel, remaining)?;
     let result = ImportFile {
-        item: PreparedMedia {
-            path_token: token.into(),
-            path: inner.root.join(token),
-            meta,
-            content_hash,
-        },
+        item,
         file,
         identity,
     };
     project_root(inner)?;
     validate_import_file(inner, &result)?;
     Ok(result)
+}
+fn probe_import_file(
+    inner: &Inner,
+    token: &str,
+    file: &File,
+    cancel: &AtomicBool,
+    remaining: Duration,
+) -> Result<PreparedMedia> {
+    let meta = crate::asset_probe::probe_root_media(
+        file,
+        vv_media::is_image_path(Path::new(token)),
+        cancel,
+        remaining,
+    )?;
+    let content_hash = fingerprint(file)?;
+    Ok(PreparedMedia {
+        path_token: token.into(),
+        path: inner.root.join(token),
+        meta,
+        content_hash,
+    })
+}
+fn entry_identity(meta: &std::fs::Metadata) -> String {
+    format!(
+        "{}:{}:{}:{}:{}:{}:{}:{}",
+        meta.dev(),
+        meta.ino(),
+        meta.len(),
+        meta.mtime(),
+        meta.mtime_nsec(),
+        meta.ctime(),
+        meta.ctime_nsec(),
+        meta.mode()
+    )
+}
+fn otio_entry(inner: &Inner, token: &str) -> Result<Option<std::fs::Metadata>> {
+    let path = PathBuf::from(format!("/proc/self/fd/{}", inner.directory.as_raw_fd())).join(token);
+    match std::fs::symlink_metadata(path) {
+        Ok(meta) => Ok(Some(meta)),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(_) => Err(ApiError::io()),
+    }
+}
+fn otio_witness(inner: &Inner, token: &str) -> Result<OtioWitness> {
+    let metadata = otio_entry(inner, token)?;
+    if metadata
+        .as_ref()
+        .is_some_and(|meta| !meta.is_file() || meta.file_type().is_symlink())
+    {
+        return Err(ApiError::invalid(
+            "Media links and special files are refused",
+        ));
+    }
+    let file = openat(
+        &inner.directory,
+        token,
+        OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+        Mode::empty(),
+    )
+    .ok()
+    .map(File::from);
+    let identity = file
+        .as_ref()
+        .map(asset_store::stable_identity)
+        .transpose()?;
+    let witness = OtioWitness {
+        token: token.into(),
+        entry: metadata.as_ref().map(entry_identity),
+        file,
+        identity,
+    };
+    witness.validate(inner)?;
+    if let Some(file) = &witness.file
+        && !file.metadata().map_err(|_| ApiError::io())?.is_file()
+    {
+        return Err(ApiError::invalid("Media must be a regular file"));
+    }
+    Ok(witness)
+}
+fn otio_budget(start: Instant, budget: Duration, cancel: &AtomicBool) -> Result<Duration> {
+    if cancel.load(Ordering::Acquire) {
+        return Err(canceled());
+    }
+    let remaining = budget.saturating_sub(start.elapsed());
+    if remaining.is_zero() {
+        return Err(ApiError::conflict(
+            "OTIO_IMPORT_BUDGET",
+            "OTIO import exceeded its processing budget",
+        ));
+    }
+    Ok(remaining)
+}
+fn run_otio(inner: &Inner, work: &Work, token: &str, budget: Duration) -> Result<PreparedOtio> {
+    let start = Instant::now();
+    otio_budget(start, budget, &work.cancel)?;
+    project_root(inner)?;
+    let descriptor = otio_witness(inner, token)?;
+    let file = descriptor.file.as_ref().ok_or_else(ApiError::missing)?;
+    if file.metadata().map_err(|_| ApiError::io())?.len() > crate::files::MAX_PROJECT {
+        return Err(ApiError::invalid("Project exceeds the 8 MiB file limit"));
+    }
+    let mut bytes = Vec::new();
+    file.take(crate::files::MAX_PROJECT + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| ApiError::io())?;
+    descriptor.validate(inner)?;
+    let mut witnesses = vec![descriptor];
+    let mut cached: HashMap<PathBuf, crate::files::OtioProbeResult> = HashMap::new();
+    let mut fatal: Option<ApiError> = None;
+    let result = crate::files::parse_otio(
+        &bytes,
+        &inner.root,
+        &mut |path| {
+            let mut offline = false;
+            let attempt = (|| -> Result<(vv_core::MediaMeta, u64)> {
+                if let Some(error) = &fatal {
+                    return Err(error.clone());
+                }
+                let remaining = otio_budget(start, budget, &work.cancel)?;
+                project_root(inner)?;
+                if path
+                    .parent()
+                    .and_then(|parent| parent.canonicalize().ok())
+                    .as_ref()
+                    != Some(&inner.root)
+                {
+                    return Err(ApiError::invalid(
+                        "Media must be directly inside the configured project root",
+                    ));
+                }
+                let token = path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .ok_or_else(|| ApiError::invalid("Invalid media name"))?;
+                simple_name(token)?;
+                if let Some(result) = cached.get(path) {
+                    offline = result.is_err();
+                    return result
+                        .clone()
+                        .map_err(|_| ApiError::invalid("Media is offline"));
+                }
+                if witnesses.len() > 64 {
+                    return Err(ApiError::invalid(
+                        "OTIO import currently supports at most 64 distinct media URLs",
+                    ));
+                }
+                let witness = otio_witness(inner, token)?;
+                let probe = if let Some(file) = &witness.file {
+                    probe_import_file(inner, token, file, &work.cancel, remaining)
+                        .map(|item| (item.meta, item.content_hash))
+                } else {
+                    Err(ApiError::missing())
+                };
+                witness.validate(inner)?;
+                witnesses.push(witness);
+                otio_budget(start, budget, &work.cancel)?;
+                match probe {
+                    Ok(value) => Ok(value),
+                    Err(error)
+                        if matches!(
+                            error.1,
+                            "SOURCE_CHANGED"
+                                | "ASSET_CANCELED"
+                                | "MEDIA_IMPORT_TIMEOUT"
+                                | "ASSET_PROBE_TIMEOUT"
+                        ) || error.2
+                            == "Indirect playlists and network manifests cannot be imported as root media" =>
+                    {
+                        Err(error)
+                    }
+                    Err(error) => {
+                        cached.insert(path.to_owned(), Err(error.2.to_owned()));
+                        offline = true;
+                        Err(error)
+                    }
+                }
+            })();
+            let callback_result = match attempt {
+                Ok(value) => {
+                    cached.insert(path.to_owned(), Ok(value.clone()));
+                    Ok(value)
+                }
+                Err(error) => {
+                    // Native callback failures become offline clips. Only unchanged
+                    // regular unreadable/missing sources may follow that path.
+                    if !offline && fatal.is_none() {
+                        fatal = Some(error.clone());
+                    }
+                    Err(error.2.to_owned())
+                }
+            };
+            if let Ok(mut jobs) = inner.jobs.lock()
+                && let Some(job) = jobs.iter_mut().find(|job| job.id == work.id)
+            {
+                job.import_completed = job.import_completed.saturating_add(1);
+            }
+            callback_result
+        },
+        &mut |total| {
+            if let Ok(mut jobs) = inner.jobs.lock()
+                && let Some(job) = jobs.iter_mut().find(|job| job.id == work.id)
+            {
+                job.otio_probe_total = Some(total);
+            }
+        },
+    );
+    if let Some(error) = fatal {
+        return Err(error);
+    }
+    otio_budget(start, budget, &work.cancel)?;
+    let (project, warnings) = result?;
+    if ron::ser::to_string(&project)
+        .map_err(|_| ApiError::io())?
+        .len() as u64
+        > crate::files::MAX_PROJECT
+    {
+        return Err(ApiError::invalid("Project exceeds the 8 MiB file limit"));
+    }
+    let prepared = PreparedOtio {
+        token: token.into(),
+        payload: OtioPayload { project, warnings },
+        witnesses,
+    };
+    prepared.validate(inner)?;
+    otio_budget(start, budget, &work.cancel)?;
+    Ok(prepared)
 }
 fn run_media_import(
     inner: &Inner,

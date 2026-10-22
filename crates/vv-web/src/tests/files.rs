@@ -1,6 +1,38 @@
 use super::*;
 
 #[test]
+fn reusable_otio_parser_rejects_input_and_url_limits_before_any_native_probe() {
+    let root = root();
+    std::fs::create_dir_all(&root).unwrap();
+    let mut probes = 0;
+    let mut probe = |_: &Path| {
+        probes += 1;
+        Err("Not expected".to_owned())
+    };
+    assert!(
+        parse_otio(
+            &vec![b' '; MAX_PROJECT as usize + 1],
+            &root,
+            &mut probe,
+            &mut |_| {}
+        )
+        .is_err()
+    );
+    let value = json!({"references":(0..65).map(|n|json!({"target_url":format!("clip-{n}.mp4")})).collect::<Vec<_>>()});
+    let error = parse_otio(
+        &serde_json::to_vec(&value).unwrap(),
+        &root,
+        &mut probe,
+        &mut |_| {},
+    )
+    .unwrap_err();
+    assert!(error.2.contains("64 distinct"));
+    assert!(parse_otio(b"not JSON", &root, &mut probe, &mut |_| {}).is_err());
+    assert_eq!(probes, 0);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn media_import_tokens_preserve_full_native_domain_order_and_explicit_batch_bounds() {
     let tokens: Vec<String> = [
         "clip.AVI",

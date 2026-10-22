@@ -42,6 +42,8 @@ pub enum Action {
     PresetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
     PrepareNativeAsset(NativeAssetRequest),
     PrepareMediaImport(MediaImportRequest),
+    PrepareOtio(OtioImportRequest),
+    OtioImportStatus(String, SourceQuery, bool),
     PrepareLegacyMediaImport(Mutation, oneshot::Sender<Result<NativeEditPreparation>>),
     MediaImportStatus(String, SourceQuery, bool),
     PrepareNativeAssetEdit(Mutation, oneshot::Sender<Result<NativeEditPreparation>>),
@@ -73,6 +75,13 @@ pub struct MediaImportRequest {
     pub project_epoch: String,
     pub if_generation: String,
     pub path_tokens: Vec<String>,
+}
+#[derive(Clone, Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct OtioImportRequest {
+    pub project_epoch: String,
+    pub if_generation: String,
+    pub path_token: String,
 }
 #[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
@@ -136,6 +145,7 @@ pub struct Editor {
     native_edits: HashMap<String, PendingNativeEdit>,
     legacy_media_imports: HashMap<String, PendingNativeEdit>,
     media_import_receipt: Option<Value>,
+    otio_import_receipt: Option<Value>,
 }
 impl Editor {
     pub fn new(root: &Path) -> std::io::Result<Self> {
@@ -199,6 +209,7 @@ impl Editor {
             native_edits: HashMap::new(),
             legacy_media_imports: HashMap::new(),
             media_import_receipt: None,
+            otio_import_receipt: None,
             session,
             files,
             epoch: std::time::SystemTime::now()
@@ -339,8 +350,10 @@ impl Editor {
         }
         let previous_epoch = self.session.epoch();
         self.media_import_receipt = None;
+        self.otio_import_receipt = None;
         let outcome = self.perform(timeline, &request);
         let media_import_receipt = self.media_import_receipt.take();
+        let otio_import_receipt = self.otio_import_receipt.take();
         if self.session.epoch() != previous_epoch {
             self.asset_jobs
                 .cancel_obsolete(&format!("{}:{}", self.epoch, self.session.epoch()));
@@ -361,7 +374,8 @@ impl Editor {
             };
         }
         if self.completed.len() >= MAX_RECEIPTS
-            || (media_import_receipt.is_some() && self.import_receipt_cache_full())
+            || ((media_import_receipt.is_some() || otio_import_receipt.is_some())
+                && self.import_receipt_cache_full())
         {
             self.completed.clear();
             self.command_epoch = self
@@ -380,6 +394,11 @@ impl Editor {
             if let Some(report)=media_import_receipt {
                 value["media_ids"]=report["media_ids"].clone();
                 value["errors"]=report["errors"].clone();
+            }
+            if let Some(report)=otio_import_receipt {
+                for field in ["timeline_ids","media_ids","folder_id","warnings"] {
+                    value[field]=report[field].clone();
+                }
             }
             if let Operation::ImportNativeAsset { asset_id,revision,.. }=&request.operation
                 && let Some(imported)=self.asset_imports.get(&(self.session.epoch(),asset_id.clone(),revision.clone())) {
@@ -597,7 +616,38 @@ impl Editor {
             Operation::ImportPreparedMedia { job_id } => {
                 self.import_prepared_media(job_id, &request.project_epoch, &request.if_generation)?;
             }
-            Operation::ImportOtio { path_token, name } => {
+            Operation::ImportPreparedOtio {
+                job_id,
+                name,
+                reuse_existing,
+            } => {
+                let payload = self.asset_jobs.otio_payload(
+                    job_id,
+                    &request.project_epoch,
+                    &request.if_generation,
+                )?;
+                let prepared = crate::otio::prepare(
+                    &self.session.project,
+                    payload.project,
+                    name,
+                    *reuse_existing,
+                )?;
+                self.asset_jobs.mark_otio_applied(
+                    job_id,
+                    &request.project_epoch,
+                    &request.if_generation,
+                )?;
+                let report = prepared.apply(&mut self.session);
+                use vv_core::Id;
+                self.otio_import_receipt = Some(json!({
+                    "timeline_ids":report.timelines.iter().map(|id|id.raw().to_string()).collect::<Vec<_>>(),
+                    "media_ids":report.media.iter().map(|id|id.raw().to_string()).collect::<Vec<_>>(),
+                    "folder_id":report.folder.map(|id|id.raw().to_string()),
+                    "warnings":payload.warnings,
+                }));
+                self.import_warnings = payload.warnings;
+            }
+            Operation::ImportOtio { name, .. } => {
                 if self.session.has_unsaved_changes() {
                     return Err(ApiError::conflict(
                         "UNSAVED_CHANGES",
@@ -614,14 +664,41 @@ impl Editor {
                         "Use letters, digits, underscores or hyphens for the new project name",
                     ));
                 }
-                let (project, warnings) = self.files.import_otio(path_token)?;
+                let job = self
+                    .legacy_media_imports
+                    .get(&request.command_id)
+                    .ok_or_else(|| {
+                        ApiError::conflict(
+                            "OTIO_PREPARATION_REQUIRED",
+                            "Prepare OTIO outside the session before importing",
+                        )
+                    })?
+                    .job
+                    .clone();
+                let payload = self.asset_jobs.otio_payload(
+                    &job,
+                    &request.project_epoch,
+                    &request.if_generation,
+                )?;
                 let token = format!("{name}.vvproj");
+                let path = self.files.path(&token)?;
                 let metadata = crate::reviewmeta::reserve_copy(&self.files, None, &token)?;
-                self.files.save(&project, &token, true)?;
+                self.asset_jobs.mark_otio_applied(
+                    &job,
+                    &request.project_epoch,
+                    &request.if_generation,
+                )?;
+                if let Err(error) = self.files.save(&payload.project, &token, true) {
+                    let _ = self.asset_jobs.mark_otio_failed(
+                        &job,
+                        &request.project_epoch,
+                        error.clone(),
+                    );
+                    return Err(error);
+                }
                 metadata.commit();
-                self.session
-                    .install_project(project, Some(self.files.path(&token)?));
-                self.import_warnings = warnings;
+                self.session.install_project(payload.project, Some(path));
+                self.import_warnings = payload.warnings;
             }
             Operation::NewTimeline {
                 name,
@@ -792,10 +869,15 @@ impl Editor {
             .prepare_media_import(&request.project_epoch, &request.if_generation, tokens)
     }
     fn prepare_legacy_media_import(&mut self, request: Mutation) -> Result<NativeEditPreparation> {
-        let Operation::ImportMedia { path_token } = &request.operation else {
-            return self
-                .mutation(None, request)
-                .map(NativeEditPreparation::Complete);
+        let path_token = match &request.operation {
+            Operation::ImportMedia { path_token } | Operation::ImportOtio { path_token, .. } => {
+                path_token
+            }
+            _ => {
+                return self
+                    .mutation(None, request)
+                    .map(NativeEditPreparation::Complete);
+            }
         };
         if !valid_key(&request.command_id) {
             return Err(ApiError::invalid("Invalid command ID"));
@@ -855,11 +937,36 @@ impl Editor {
         let id = if let Some(pending) = self.legacy_media_imports.get(&request.command_id) {
             pending.job.clone()
         } else {
-            let value = match self.prepare_media_import(MediaImportRequest {
-                project_epoch: request.project_epoch.clone(),
-                if_generation: request.if_generation.clone(),
-                path_tokens: vec![path_token.clone()],
-            }) {
+            let preparation = if let Operation::ImportOtio { name, .. } = &request.operation {
+                if self.session.has_unsaved_changes() {
+                    Err(ApiError::conflict(
+                        "UNSAVED_CHANGES",
+                        "Save the current project before importing an OTIO project",
+                    ))
+                } else if name.is_empty()
+                    || name.len() > 64
+                    || !name
+                        .bytes()
+                        .all(|b| b.is_ascii_alphanumeric() || b"_-".contains(&b))
+                {
+                    Err(ApiError::invalid(
+                        "Use letters, digits, underscores or hyphens for the new project name",
+                    ))
+                } else {
+                    self.asset_jobs.prepare_otio(
+                        &request.project_epoch,
+                        &request.if_generation,
+                        path_token,
+                    )
+                }
+            } else {
+                self.prepare_media_import(MediaImportRequest {
+                    project_epoch: request.project_epoch.clone(),
+                    if_generation: request.if_generation.clone(),
+                    path_tokens: vec![path_token.clone()],
+                })
+            };
+            let value = match preparation {
                 Ok(value) => value,
                 Err(error) => {
                     self.completed.insert(
@@ -1574,6 +1681,28 @@ impl Editor {
             }
             Action::PrepareNativeAsset(request) => self.prepare_native_asset(request),
             Action::PrepareMediaImport(request) => self.prepare_media_import(request),
+            Action::PrepareOtio(request) => {
+                self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
+                self.asset_jobs.prepare_otio(
+                    &request.project_epoch,
+                    &request.if_generation,
+                    &request.path_token,
+                )
+            }
+            Action::OtioImportStatus(job, query, cancel) => {
+                if !cancel {
+                    self.validate_asset_epoch(&query.project_epoch, None)?;
+                }
+                let value = self.asset_jobs.status(&job, &query.project_epoch, false)?;
+                if value["kind"] != "otio_import" {
+                    return Err(ApiError::missing());
+                }
+                if cancel {
+                    self.asset_jobs.status(&job, &query.project_epoch, true)
+                } else {
+                    Ok(value)
+                }
+            }
             Action::PrepareLegacyMediaImport(request, reply) => {
                 let _ = reply.send(self.prepare_legacy_media_import(request));
                 Ok(Value::Null)
@@ -1737,7 +1866,10 @@ fn valid_key(key: &str) -> bool {
 }
 impl Host {
     pub async fn project_mutation(&self, request: Mutation) -> Result<Value> {
-        if !matches!(request.operation, Operation::ImportMedia { .. }) {
+        if !matches!(
+            request.operation,
+            Operation::ImportMedia { .. } | Operation::ImportOtio { .. }
+        ) {
             return self.call(Action::Mutation(None, request)).await;
         }
         let (tx, rx) = oneshot::channel();
@@ -1798,9 +1930,16 @@ impl Host {
             }
             tokio::time::sleep(Duration::from_millis(25)).await;
         }
-        let value = self.call(Action::Mutation(None, request)).await?;
-        guard.armed = false;
-        Ok(value)
+        let result = self.call(Action::Mutation(None, request)).await;
+        if result.is_ok()
+            || guard
+                .jobs
+                .status(&guard.job, &guard.epoch, false)
+                .is_ok_and(|value| matches!(value["state"].as_str(), Some("applied" | "failed")))
+        {
+            guard.armed = false;
+        }
+        result
     }
     pub async fn native_asset_mutation(&self, request: Mutation) -> Result<Value> {
         let (tx, rx) = oneshot::channel();

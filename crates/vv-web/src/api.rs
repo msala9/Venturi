@@ -34,6 +34,11 @@ pub fn router(state: AppState) -> Router {
             get(|| async { Json(json!({"status":"ok","api_version":1})) }),
         )
         .route("/api/v1/session", get(session))
+        .route("/api/v1/projects/otio/prepare", post(prepare_otio))
+        .route(
+            "/api/v1/projects/otio/jobs/{job}",
+            get(otio_import_status).delete(cancel_otio_import),
+        )
         .route("/api/v1/review", get(review_metadata))
         .route("/api/v1/media/imports/prepare", post(prepare_media_import))
         .route(
@@ -377,6 +382,57 @@ async fn prepare_media_import(
             payload
                 .map_err(|_| ApiError::invalid("Invalid media import preparation"))?
                 .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn prepare_otio(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::host::OtioImportRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::PrepareOtio(
+            payload
+                .map_err(|_| ApiError::invalid("Invalid OTIO preparation"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn otio_import_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::OtioImportStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid OTIO job query"))?
+                .0,
+            false,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn cancel_otio_import(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::OtioImportStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid OTIO cancellation query"))?
+                .0,
+            true,
         ))
         .await
         .map(native_asset_json)
@@ -1546,6 +1602,7 @@ async fn assets(request: Request) -> Response {
             asset!("/web/js/native-asset-folders.js", "text/javascript")
         }
         "/js/media-import.js" => asset!("/web/js/media-import.js", "text/javascript"),
+        "/js/otio-import.js" => asset!("/web/js/otio-import.js", "text/javascript"),
         "/js/mark-range.js" => asset!("/web/js/mark-range.js", "text/javascript"),
         "/js/voiceover.js" => asset!("/web/js/voiceover.js", "text/javascript"),
         "/js/review.js" => asset!("/web/js/review.js", "text/javascript"),

@@ -15,6 +15,7 @@ import { createSourceSeek } from "./source-seek.js";
 import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "./source-assets.js";
 import { inspectorGroup,editingShortcutAllowed,selectionInspectorRows,renderInspectorSelection, detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,retimePropertySelection,compoundSelectionOperation,renderRetime,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
 import {createZoomLink} from './curves.js';
+import {createCurveWindow} from './curve-window.js';
 import {maskFocusAfterEdit} from './masks.js';
 import { renderMixer, mixerDraftContext } from "./mixer.js";
 import {canRetainAudioPresetDraft} from './audio-presets.js';
@@ -203,8 +204,7 @@ function showWorkspace(name) {
         }
         if (label === "Waveform / RGB parade / Vectorscope / Histogram") { scopesWanted=$("scopes").hidden;scopes?.setVisible(scopesWanted); return; }
         if (label === "Curves") {
-          const curves=document.querySelector('[data-visual-path="curves"]');if(!curves)return notice("Select a native clip first");
-          revealInspector();for(let node=curves;node;node=node.parentElement?.closest('details'))node.open=true;curves.scrollIntoView({block:"start"});return;
+          openCurveWindow();return;
         }
         revealNativeFilters();return;
       }
@@ -521,6 +521,11 @@ let mixerDetail = null;
 let mixerMixDrafts = null;
 const mixerPaths = new Set();
 const visualState = new Map();
+const curveWindow=createCurveWindow({notice,onChange:open=>{
+  for(const button of document.querySelectorAll('[data-ui="curves"]'))button.setAttribute('aria-pressed',String(open));
+  selected();
+}});
+function openCurveWindow(){curveWindow.open();}
 let visualControls=[];
 function inspectorState(clip) {
   return documentState && timeline && clip ? { project_epoch: documentState.project_epoch, generation: documentState.generation, timeline: timeline.id, revision: timeline.revision, clip, frame: view.playhead,key_page:visualState.get(`key-page:${documentState.project_epoch}:${timeline.id}:${clip}`) || 0 } : null;
@@ -556,8 +561,9 @@ function selected() {
   silencePanel?.invalidate();
   if(viewerMode==='program' && programPlayer?.state()==='ready')scopes?.onPlaybackFrame();else if(!scopesSuspended)scopes?.refresh();
   const inspectorSeq = ++inspectorSequence;
-  for(const node of document.querySelectorAll("#inspector-content details[data-visual-path]"))visualState.set(node.dataset.visualPath,node.open);
+  for(const node of document.querySelectorAll("#inspector-content details[data-visual-path],.curve-window-content details[data-visual-path]"))visualState.set(node.dataset.visualPath,node.open);
   for(const control of visualControls)control.cancel();visualControls=[];
+  curveWindow.content.replaceChildren();curveWindow.setTitle('Curves');curveWindow.setStatus('Select a native clip to edit its keyframes');
   const mixerOpen = mixerDetail?.open || false;
   mixerMixDrafts=mixerDetail?.captureMixDrafts?.() ?? mixerMixDrafts;
   const mixContext=documentState && timeline?mixerDraftContext({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision}):null;
@@ -574,6 +580,7 @@ function selected() {
   const clip = timeline?.tracks
     .flatMap((track) => track.clips)
     .find((item) => primaryId?item.id===primaryId:view.selection.includes(item.id));
+  if(clip){curveWindow.setTitle(`Curves · ${clip.name}`);curveWindow.setStatus('Reading native keyframes…');}
   $("inspector-content").replaceChildren();
   const transition=selectedTransition(timeline,view.transitionSelection);
   syncSelectionActions();
@@ -639,6 +646,7 @@ function selected() {
     const state = inspectorState(clip.id), identity = detailIdentity(state);
     const query = new URLSearchParams({ project_epoch: state.project_epoch, if_generation: state.generation, timeline_id: state.timeline, revision: state.revision, frame: inspectorFrame });
     function setKeyPage(page){
+      if(!curveWindow.isOpen() || inspectorSeq!==inspectorSequence || identity!==detailIdentity(inspectorState(clip.id)) || !target.isConnected || !canNavigateInspector())return;
       visualState.set(`key-page:${state.project_epoch}:${state.timeline}:${clip.id}`,page);
       visualState.set("key-page-focus",`${state.project_epoch}:${state.timeline}:${clip.id}`);
       const keys=[...visualState.keys()].filter(key=>key.startsWith("key-page:"));for(const key of keys.slice(0,Math.max(0,keys.length-32)))visualState.delete(key);
@@ -649,7 +657,8 @@ function selected() {
       target.replaceChildren();
       for(const entry of selectionTargets.filter(entry=>entry.id===clip.id))entry.render(detail);
       transformDetail={identity,detail};transformOverlay?.invalidate();syncViewerMasks();maskOverlay?.invalidate();
-      visualControls.push(...renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,transitionDefaults:timeline.transition_defaults,compositing:false,transformControls:false,gainControls:false,titleControls:false,colorControls:false,filterControls:false,retimeControls:false,zoomLink,
+      curveWindow.setStatus('');
+      visualControls.push(...renderProperties(target, detail, { writable: writable && !busy && !unresolved, getFrame: () => view.playhead, commit, reload: selected, notice, visualState, scope:`${state.project_epoch}:${state.timeline}:${clip.id}`,setKeyPage,keyEditorRoot:curveWindow.isOpen()?curveWindow.content:null,transitionDefaults:timeline.transition_defaults,compositing:false,transformControls:false,gainControls:false,titleControls:false,colorControls:false,filterControls:false,retimeControls:false,zoomLink,
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();void projectView?.update();},
         canNavigate:()=>identity===detailIdentity(inspectorState(clip.id)) && canNavigateInspector(),
         navigateSource:async(sourceFrame,{signal}={})=>{
@@ -670,7 +679,7 @@ function selected() {
         },
         canInteract:()=>identity===detailIdentity(inspectorState(clip.id)) && canEditInspector() }));
       for(const child of target.children)if(!child.dataset.inspectorGroup)inspectorGroup(child,detail.video?'video':'audio');
-    }).catch((error) => { if (inspectorSeq === inspectorSequence) {if(state.key_page && error.message.includes("beyond the last native key page"))setKeyPage(0);else{target.textContent = error.message;for(const entry of selectionTargets.filter(entry=>entry.id===clip.id))if(entry.current())entry.target.textContent=error.message;}} });
+    }).catch((error) => { if (inspectorSeq === inspectorSequence && identity===detailIdentity(inspectorState(clip.id))) {if(state.key_page && error.message.includes("beyond the last native key page")){visualState.set(`key-page:${state.project_epoch}:${state.timeline}:${clip.id}`,0);selected();}else{target.textContent = error.message;curveWindow.setStatus(error.message);for(const entry of selectionTargets.filter(entry=>entry.id===clip.id))if(entry.current())entry.target.textContent=error.message;}} });
   }
   if (clip)
     for (const [label, value] of [
@@ -1036,6 +1045,7 @@ compoundNavigation=createCompoundNavigation({
 $("open-compound").addEventListener('click',()=>compoundNavigation.enter());
 document.addEventListener('toggle',()=>compoundNavigation.invalidate(),true);
 document.addEventListener('keydown',event=>{
+  if(event.target.closest?.('[data-key-editor-window]'))return;
   const action=compoundNavigationAction(event,{dialogOpen:Boolean(document.querySelector('dialog[open]')),idle:!busy && !unresolved && canvasTimeline.navigationIdle(),hasAncestors:compoundNavigation.state().ancestors.length>0});
   if(!action)return;
   if(action==='enter' && $("open-compound").disabled)return;
@@ -1873,7 +1883,7 @@ for(const button of document.querySelectorAll('[data-ui]'))button.addEventListen
   switch(button.dataset.ui){
     case 'save-as':$('projects-button').click();$('save-as-project').elements.name.focus();break;
     case 'play':$('play').click();break;
-    case 'curves':{const curves=document.querySelector('[data-visual-path="curves"]');setInspectorTab(curves?.closest('[data-inspector-group]')?.dataset.inspectorGroup || 'video');workspaceTool('Color','Curves');break;}
+    case 'curves':if(curveWindow.isOpen())curveWindow.close();else openCurveWindow();break;
     case 'scopes':scopesWanted=!scopesWanted;showWorkspace('Color');scopes?.setVisible(scopesWanted && viewerMode==='program' && !scopesSuspended);break;
     case 'meters':workspaceTool('Audio','VU / spectrum');break;
     case 'voiceover':workspaceTool('Audio','Voiceover');break;

@@ -105,6 +105,18 @@ test('linked Zoom edit sends only changed axes, while native row diamond always 
   h.click('Toggle Zoom keyframes at playhead');await settle();assert.deepEqual(h.commands[1].edit,{action:'toggle_transform_keys',params:['ZoomX','ZoomY']});
 });
 
+test('dedicated key editor root owns the pager and closed windows suppress key UI without losing Inspector controls',t=>{
+  const h=harness(t),outlet=new h.Element('div');h.native.key_page={index:0,total_pages:3,page_size:16};
+  const options={writable:true,getFrame:()=>20,commit:async()=>{},reload(){},notice(){},visualState:new Map(),setKeyPage(){},transformControls:false,gainControls:false,compositing:false};
+  const inspector=new h.Element('div');renderProperties(inspector,h.native,{...options,keyEditorRoot:outlet});
+  assert.equal(h.all(outlet).filter(node=>node.dataset.visualPath==='key-page-controls').length,1);
+  assert.equal(h.all(inspector).some(node=>node.dataset.visualPath==='key-page-controls'),false);
+  assert.ok(h.all(inspector).some(node=>node.textContent==='Fade in frames'));
+  const closed=new h.Element('div');renderProperties(closed,h.native,{...options,keyEditorRoot:null});
+  assert.equal(h.all(closed).some(node=>node.dataset.visualPath==='key-page-controls'),false);
+  assert.ok(h.all(closed).some(node=>node.textContent==='Fade out frames'));
+});
+
 test('enabling Zoom link applies only the differing Y axis and persists the shared preference',async t=>{
   const h=harness(t,{editDetail:detail=>{detail.transform.find(parameter=>parameter.param==='ZoomY').value=2;}});
   const link=h.field('Link selected Zoom X/Y');link.checked=true;link.dispatchEvent(new Event('change'));await settle();

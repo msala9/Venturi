@@ -259,15 +259,24 @@ export function keyPageIndex(value,total) {
   if(!Number.isSafeInteger(page) || page<1 || page>total)throw Error(`Choose a key page from 1 to ${total}`);
   return page-1;
 }
-export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,readCurveViewport,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,retimeControls=true,zoomLink:sharedZoomLink,drawMaskPath,maskCommit }) {
+export function bindKeyEditorDelete(root,{selection,remove,canInteract,documentRef=globalThis.document}){
+  const keydown=event=>{
+    if(event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229 || event.ctrlKey || event.metaKey || event.altKey || event.getModifierState?.('AltGraph') || !['Delete','Backspace'].includes(event.key) || event.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])') || documentRef.querySelector?.('dialog[open]') || !selection.get().length)return;
+    event.preventDefault();event.stopPropagation();
+    if(canInteract())remove();
+  };
+  root.addEventListener('keydown',keydown);
+  return {cancel:()=>root.removeEventListener('keydown',keydown)};
+}
+export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,readCurveViewport,keyEditorRoot=root,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,retimeControls=true,zoomLink:sharedZoomLink,drawMaskPath,maskCommit }) {
   const disabled = !writable || detail.locked;
-  if(detail.key_page){
+  if(detail.key_page && keyEditorRoot && detail.key_page.total_pages>1){
     const page=detail.key_page,form=document.createElement("form"),label=document.createElement("label"),input=document.createElement("input"),previous=document.createElement("button"),next=document.createElement("button"),go=document.createElement("button"),note=document.createElement("p");
     label.className="field";label.textContent="Native key page";input.type="number";input.min=1;input.max=page.total_pages;input.step=1;input.required=true;input.value=page.index+1;label.append(input);
     previous.type=next.type="button";previous.textContent="Previous key page";next.textContent="Next key page";go.textContent="Read key page";previous.disabled=page.index===0;next.disabled=page.index+1>=page.total_pages;
     previous.addEventListener("click",()=>setKeyPage(page.index-1));next.addEventListener("click",()=>setKeyPage(page.index+1));form.addEventListener("submit",event=>{event.preventDefault();if(form.reportValidity()){try{setKeyPage(keyPageIndex(input.value,page.total_pages));}catch(error){notice(error.message);}}});
     const pager=document.createElement('details'),summary=document.createElement('summary');pager.dataset.visualPath='key-page-controls';pager.open=visualState?.get(pager.dataset.visualPath) ?? false;summary.textContent='Key pages';pager.append(summary,form);
-    note.className="muted";note.textContent=`Page ${page.index+1} of ${page.total_pages} · up to ${page.page_size} keys per parameter. Curve and value-key selections apply to this page; cross-parameter selection retains keys from other pages.`;form.append(label,previous,next,go,note);root.append(pager);
+    note.className="muted";note.textContent=`Page ${page.index+1} of ${page.total_pages} · up to ${page.page_size} keys per parameter. Curve and value-key selections apply to this page; cross-parameter selection retains keys from other pages.`;form.append(label,previous,next,go,note);keyEditorRoot.append(pager);
     if(scope && visualState?.get("key-page-focus")===scope){pager.open=true;visualState.delete("key-page-focus");queueMicrotask(()=>{if(input.isConnected)input.focus({preventScroll:true});});}
   }
   const zoomLink=sharedZoomLink || createZoomLink(visualState);
@@ -338,10 +347,13 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   root.append(section);
   renderRetime(root,detail,disabled,getFrame,report,visualState,canInteract,{speedControls:retimeControls,notice});
   const controls=detail.video && filterControls ? renderFilters(root,detail,{disabled,getFrame,commit:guardedCommit,notice,openState:visualState,canInteract}) : [];
-  const selectedKeys=createKeyPickSelection(visualState,scope ?? detail.clip_id);
-  const curves=renderCurves(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract,seek,canNavigate,navigateSource,readCurveViewport,keySelection:selectedKeys});if(curves)controls.push(curves);
-  const eventKeys=renderEventKeys(root,detail,{disabled,commit,notice,openState:visualState,scope,canInteract,seek,canNavigate,navigateSource,keySelection:selectedKeys});if(eventKeys)controls.push(eventKeys);
-  const keySelection=renderKeySelection(root,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload,canInteract,keySelection:selectedKeys});if(keySelection)controls.push(keySelection);
+  if(keyEditorRoot){
+    const selectedKeys=createKeyPickSelection(visualState,scope ?? detail.clip_id);
+    const curves=renderCurves(keyEditorRoot,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract,seek,canNavigate,navigateSource,readCurveViewport,keySelection:selectedKeys,presentation:keyEditorRoot===root?'inline':'window'});if(curves)controls.push(curves);
+    const eventKeys=renderEventKeys(keyEditorRoot,detail,{disabled,commit,notice,openState:visualState,scope,canInteract,seek,canNavigate,navigateSource,keySelection:selectedKeys});if(eventKeys)controls.push(eventKeys);
+    const keySelection=renderKeySelection(keyEditorRoot,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload,canInteract,keySelection:selectedKeys});if(keySelection)controls.push(keySelection);
+    if(keyEditorRoot!==root && keySelection)controls.push(bindKeyEditorDelete(keyEditorRoot.closest?.('[data-key-editor-window]') || keyEditorRoot,{selection:selectedKeys,remove:keySelection.removeSelected,canInteract:()=>!disabled && keyEditorRoot.isConnected!==false && canInteract()}));
+  }
   if(detail.video){const masks=renderMasks(root,detail,{disabled,getFrame,commit:maskCommit || commit,notice,openState:visualState,seek,canInteract,drawPath:drawMaskPath});if(masks)controls.push(masks);}
   if (titleControls && detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report,transitionDefaults,notice);

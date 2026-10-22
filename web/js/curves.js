@@ -167,7 +167,7 @@ export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = ()
   return {cancel};
 }
 
-export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id,zoomLink=createZoomLink(openState),canInteract,canNavigate=canInteract,navigateSource,readCurveViewport,seek,keySelection}) {
+export function renderCurves(root, detail, {disabled, commit, notice, openState, scope=detail.clip_id,zoomLink=createZoomLink(openState),canInteract,canNavigate=canInteract,navigateSource,readCurveViewport,seek,keySelection,presentation='inline'}) {
   const range = detail.curves;
   if (!range?.tracks.length) return null;
   const timeRange=keyframeTimeRange(detail,range);
@@ -180,17 +180,18 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   }
   const section = document.createElement("details"), summary = document.createElement("summary");
   section.className = "curve-editor";
-  section.dataset.visualPath = "curves"; section.open = openState?.get("curves") || false;
+  section.dataset.visualPath = "curves"; section.open = presentation==='window' || openState?.get("curves") || false;
   summary.textContent = "Curves and keyframe editor"; section.append(summary);
   const note = document.createElement("p"); note.className = "muted";
   note.textContent = `Source frames ${range.source_start}–${range.source_end}. Native sampled curves; interpolation belongs to the outgoing key. Shift/Ctrl-click or box-select keys, then drag or edit group deltas. Alt/middle-drag pans; wheel zooms time, Shift-wheel zooms values. Each edit is one Undo. Escape cancels a draft.`;
   section.append(note);
-  const tracks = document.createElement("select"); tracks.setAttribute("aria-label", "Curve parameter");
+  const tracks = document.createElement("select"); tracks.className='curve-parameter';tracks.setAttribute("aria-label", "Curve parameter");
   range.tracks.forEach((curve, index) => tracks.append(new Option(`${curve.name} (${curve.key_count} keys)`, String(index))));
-  tracks.value = String(Math.max(0, range.tracks.findIndex((c) => JSON.stringify(c.target) === openState?.get("curves-target"))));
+  const storedTarget=range.tracks.findIndex(c=>JSON.stringify(c.target)===openState?.get('curves-target'));
+  tracks.value=String(storedTarget>=0?storedTarget:Math.max(0,range.tracks.findIndex(c=>c.key_count>0)));
   section.append(tracks);
-  if(detail.video){const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.disabled=disabled;zoomLink.register(input);label.append(input," Link Zoom X/Y values and key times");section.append(label);}
-  const viewportTools=document.createElement("div");viewportTools.className="tools";
+  if(detail.video){const label=document.createElement("label"),input=document.createElement("input");input.type="checkbox";input.disabled=disabled;zoomLink.register(input);label.title='Link Zoom X/Y values and key times';label.append(input,presentation==='window'?' Link Zoom X/Y':" Link Zoom X/Y values and key times");section.append(label);}
+  const viewportTools=document.createElement("div");viewportTools.className="tools curve-viewport-tools";
   for(const [label,change] of [["Zoom curve time in",{zoomX:2}],["Zoom curve time out",{zoomX:0.5}],["Zoom curve values in",{zoomY:2}],["Zoom curve values out",{zoomY:0.5}],["Pan curve left",{direction:-1}],["Pan curve right",{direction:1}],["Pan curve values up",{valueDirection:1}],["Pan curve values down",{valueDirection:-1}],["Fit curve",null]]){
     const button=document.createElement("button");button.type="button";button.textContent=({'Zoom curve time in':'Time +','Zoom curve time out':'Time −','Zoom curve values in':'Value +','Zoom curve values out':'Value −','Pan curve left':'←','Pan curve right':'→','Pan curve values up':'↑','Pan curve values down':'↓','Fit curve':'Fit'})[label];button.setAttribute('aria-label',label);button.title=label;button.addEventListener("click",()=>{if(waiting || !geometry || !canRead())return;drag.cancel();navigation?.cancel();reader?.cancel();if(!change)viewRange=fullViewport();else if(change.zoomX || change.direction)viewRange=nativeCurveTimeViewport(viewRange,timeRange,geometry,{zoom:change.zoomX || 1,pan:-(change.direction || 0)*geometry.plotWidth/4});else if(!noScalar)viewRange=curveViewport(viewRange,timeRange,current(),geometry,{...change,panY:(change.valueDirection || 0)*(geometry.max-geometry.min)/4});rememberViewport();draw();});viewportTools.append(button);
   }
@@ -228,7 +229,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   }
   const groupApply=document.createElement("button");groupApply.textContent="Move selected keys";groupForm.append(groupApply);
   const groupRemove=document.createElement("button");groupRemove.type="button";groupRemove.textContent="Delete selected keys";groupForm.append(groupRemove);section.append(groupForm);
-  let drafting = false, handleDraft = null, geometry = null, waiting = false, disposed = false,navigation=null,lanes=null,noScalar=null;
+  let drafting = false, handleDraft = null, geometry = null, waiting = false, disposed = false,navigation=null,lanes=null,noScalar=null,keyValues=null;
   const owner=createKeyEditorGuard({root,section,disabled,canInteract,commit});
   let selectedFrames=new Set(),groupDraft=null,boxDraft=null,viewRange=fullViewport(),panOrigin=null;
   const events = new AbortController();
@@ -256,7 +257,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
     const sampleQuery={target:current().target,source_start:viewRange.source_start,source_end:viewRange.source_end,points:Math.max(2,Math.min(2048,Math.ceil(plotWidth)+1))},sampleIdentity=[detail.project_epoch,detail.generation,detail.timeline_id,detail.revision,detail.clip_id];
     const native=reader && !noScalar && canRead()?panOrigin || handleDraft || drafting || boxDraft?reader.peek(sampleQuery,sampleIdentity):reader.request(sampleQuery,sampleIdentity):null;
     const visibleCurve={...current(),keys:noScalar?[]:current().keys,samples:noScalar?[]:reader?native?.samples || []:current().samples};
-    form.hidden=groupForm.hidden=select.hidden=Boolean(noScalar);
+    form.hidden=groupForm.hidden=select.hidden=Boolean(noScalar);if(keyValues)keyValues.hidden=Boolean(noScalar);
     geometry = (handleDraft || drafting || boxDraft) && geometry ? geometry : curveGeometry(visibleCurve, viewRange, Math.min(box.width,lanes?.width() || box.width), box.height, selectedFrames,keySelection && animatedKeyRows(detail).length?KEYFRAME_LABEL_WIDTH:42);
     const g = geometry; ctx.font = "10px sans-serif";
     viewportStatus.textContent=noScalar?`No scalar curve for ${noScalar.kind} · use its event key editor`:`View source ${viewRange.source_start}–${viewRange.source_end} · values ${g.min.toPrecision(4)}–${g.max.toPrecision(4)} · ${selectedFrames.size} selected keys${reader && !native?reader.pending()?' · reading native viewport':' · native viewport unavailable':''}`;
@@ -413,6 +414,13 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   });
   lanes=renderKeyframeLanes(section,detail,{keySelection,getGeometry:()=>geometry,getRange:()=>viewRange,canNavigate:()=>!waiting && !drafting && !handleDraft && !boxDraft && (canNavigate?.() ?? true),canEdit:()=>owner.current(),commit:operation=>owner.commit(operation),operation:(picks,delta,linked)=>pointerKeyOperation(detail.clip_id,picks,delta,null,linked),notice,activate:target=>keySelection.activate(target),linkZoom:()=>zoomLink.get(),seek,onViewportWheel:event=>wheelViewport(event,true)});
   if(lanes)section.append(form,groupForm);
+  if(presentation==='window'){
+    keyValues=document.createElement('details');keyValues.dataset.visualPath='curve-key-values';keyValues.open=Boolean(openState?.get('curve-key-values'));
+    const title=document.createElement('summary');title.textContent='Key values';keyValues.append(title,status,select,form,groupForm);
+    if(navigation)keyValues.append(navigation.jump,navigation.status);
+    const viewControls=document.createElement('details'),viewHeading=document.createElement('summary');viewControls.dataset.visualPath='curve-view-controls';viewControls.open=Boolean(openState?.get('curve-view-controls'));viewHeading.textContent='View controls';viewControls.append(viewHeading,viewportTools);
+    const help=document.createElement('details'),heading=document.createElement('summary');heading.textContent='Curve controls';help.append(heading,note);section.append(keyValues,viewControls,help);
+  }
   const observer = new ResizeObserver(()=>{drag.cancel();draw();}); observer.observe(canvas); chooseCurve();
   return {cancel() {if(document.activeElement===canvas){const state=openState?.get(selectionKey());remember(selectionKey(),Array.isArray(state)?{before:state,after:state,focus:true}:{...state,focus:true});}reader?.dispose();lanes?.dispose();unsubscribe?.();stopNavigation?.();stopTarget?.();navigation?.dispose();owner.dispose();drag.cancel(); disposed = true; events.abort(); observer.disconnect(); }};
 }

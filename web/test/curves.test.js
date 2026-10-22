@@ -163,7 +163,7 @@ test('incoming tangent releases preserve segment identity and current mixed sele
   events.pointerdown(point(16,16));events.pointermove(point(18,20));events.keydown({key:'Escape',preventDefault(){},stopPropagation(){}});events.pointerup(point(19,24));assert.equal(commands.length,1);
 });
 
-function renderedCurveHarness(t,{disabled=false,readCurveViewport}={}){
+function renderedCurveHarness(t,{disabled=false,readCurveViewport,presentation='inline'}={}){
   const prior={document:globalThis.document,window:globalThis.window,Option:globalThis.Option,ResizeObserver:globalThis.ResizeObserver,getComputedStyle:globalThis.getComputedStyle};
   class Node{
     constructor(tag){this.tagName=tag;this.children=[];this.dataset={};this.style={};this.events=new Map();this.attributes={};this.isConnected=true;this.value='';this.open=false;this.rect={left:0,top:0,width:400,height:190};this.classList={contains:name=>(this.className || '').split(' ').includes(name)};}
@@ -185,7 +185,7 @@ function renderedCurveHarness(t,{disabled=false,readCurveViewport}={}){
   const document=new Node('document'),window=new Node('window');document.createElement=tag=>new Node(tag);document.querySelector=()=>null;document.defaultView=window;document.body=new Node('body');document.activeElement=document.body;window.devicePixelRatio=1;window.ResizeObserver=class{observe(){}disconnect(){}};window.getComputedStyle=()=>({getPropertyValue:()=>''});
   Object.assign(globalThis,{document,window,ResizeObserver:window.ResizeObserver,getComputedStyle:window.getComputedStyle,Option:class extends Node{constructor(label,value){super('option');this.textContent=label;this.value=value;}}});
   const root=new Node('root'),selection=createKeyPickSelection(),commands=[],notices=[],state=new Map([['curves',true]]),target={kind:'transform',param:'PositionX'},detail={project_epoch:'epoch',generation:'7',timeline_id:'tl',revision:'rev',clip_id:'clip',source_frame:10,timeline_frame:10,video:false,curves:{source_start:0,source_end:20,tracks:[{name:'Position X',target,key_count:2,min:-100,max:100,default:0,samples:[[0,0],[20,20]],keys:[{source_frame:0,timeline_frame:0,value:0,controls:[[.2,.2],[.8,.8]]},{source_frame:20,timeline_frame:20,value:20}]}]},event_keys:[{name:'Text',target:{kind:'text'},key_count:1,keys:[{source_frame:10,timeline_frame:10}]}]};
-  let available=true;const control=renderCurves(root,detail,{disabled,commit:operation=>commands.push(operation),notice:message=>notices.push(message),openState:state,keySelection:selection,canInteract:()=>available,canNavigate:()=>available,readCurveViewport});
+  let available=true;const control=renderCurves(root,detail,{disabled,commit:operation=>commands.push(operation),notice:message=>notices.push(message),openState:state,keySelection:selection,canInteract:()=>available,canNavigate:()=>available,readCurveViewport,presentation});
   t.after(()=>{control.cancel();Object.assign(globalThis,prior);});
   const all=node=>[node,...node.children.flatMap(all)],find=label=>all(root).find(node=>node.attributes['aria-label']===label),graph=find('Native keyframe curve. Select keys below for keyboard editing.');
   return {root,selection,commands,notices,state,control,target,detail,graph,all:()=>all(root),find,setAvailable:value=>available=value};
@@ -197,6 +197,15 @@ test('typed row activation blanks only scalar controls, keeps mixed deletion and
   const before=h.selection.get();h.graph.emit('keydown',{key:'a',ctrlKey:true});assert.deepEqual(h.selection.get(),before);h.graph.emit('pointerdown');h.graph.emit('pointerup',{clientX:240});assert.deepEqual(h.commands,[]);
   h.graph.emit('keydown',{key:'Delete'});for(let i=0;i<8;i++)await Promise.resolve();assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0].edit.picks,before);assert.deepEqual(h.commands[0].edit.action,{kind:'delete'});
   h.find('Curve parameter').value='0';h.find('Curve parameter').emit('change');assert.equal(key.hidden,false);assert.ok(!h.all().some(node=>node.textContent?.startsWith('No scalar curve for text')));
+});
+
+test('floating presentation leaves graph and animated lanes primary while preserving collapsed numeric and view controls',t=>{
+  const h=renderedCurveHarness(t,{presentation:'window'}),section=h.all().find(node=>node.dataset.visualPath==='curves'),values=h.all().find(node=>node.dataset.visualPath==='curve-key-values'),viewport=h.all().find(node=>node.dataset.visualPath==='curve-view-controls');
+  assert.equal(section.open,true);assert.equal(values.open,false);assert.equal(viewport.open,false);
+  assert.ok(values.children.includes(h.find('Curve keyframe')));assert.ok(values.children.some(node=>node.tagName==='form'));
+  assert.ok(viewport.children.some(node=>node.className==='tools curve-viewport-tools'));
+  assert.ok(section.children.includes(h.graph));assert.ok(section.children.some(node=>node.className==='keyframe-lanes'));
+  h.selection.activate({kind:'text'});assert.equal(values.hidden,true);h.selection.activate(h.target);assert.equal(values.hidden,false);
 });
 
 test('curve and lane wheel share one time viewport, keep readonly navigation and never send edit commands',t=>{

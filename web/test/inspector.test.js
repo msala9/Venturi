@@ -1,6 +1,17 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { detailIdentity, propertyOperation, keyframeOperation,transformPatch,keyPageIndex,transitionSelectionOperation,editingShortcutAllowed,selectionInspectorRows,bindInspectorNumber } from "../js/inspector.js";
+import { detailIdentity, propertyOperation, keyframeOperation,transformPatch,keyPageIndex,transitionSelectionOperation,editingShortcutAllowed,selectionInspectorRows,bindInspectorNumber,bindKeyEditorDelete } from "../js/inspector.js";
+
+test('nonmodal key editor owns one mixed-key Delete without deleting timeline clips or consuming text edits',()=>{
+  const events=new Map(),root={addEventListener:(key,fn)=>events.set(key,fn),removeEventListener:(key,fn)=>{if(events.get(key)===fn)events.delete(key);}};
+  let selected=[{target:{kind:'gain'},source_frame:3},{target:{kind:'text'},source_frame:9}],allowed=true,modal=false,removed=0;
+  const owner=bindKeyEditorDelete(root,{selection:{get:()=>selected},remove:()=>removed++,canInteract:()=>allowed,documentRef:{querySelector:()=>modal?{}:null}});
+  const press=(patch={})=>{const event={key:'Delete',target:{closest:()=>null},preventDefault(){this.defaultPrevented=true;},stopPropagation(){this.stopped=true;},...patch};events.get('keydown')?.(event);return event;};
+  const event=press();assert.equal(event.defaultPrevented,true);assert.equal(event.stopped,true);assert.equal(removed,1);
+  for(const patch of [{defaultPrevented:true},{repeat:true},{isComposing:true},{ctrlKey:true},{altKey:true},{target:{closest:()=>({})}},{key:'s',ctrlKey:true}]){press(patch);assert.equal(removed,1);}
+  modal=true;assert.equal(press().defaultPrevented,undefined);modal=false;allowed=false;assert.equal(press().defaultPrevented,true);assert.equal(removed,1);
+  allowed=true;selected=[];assert.equal(press().defaultPrevented,undefined);owner.cancel();press();assert.equal(removed,1);assert.equal(events.size,0);
+});
 
 test('global editing shortcuts leave modal, text, media, composing and repeated keys to their current owner',()=>{
   const event={key:'Delete',target:{closest:()=>null},getModifierState:()=>false};assert.equal(editingShortcutAllowed(event),true);

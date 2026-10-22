@@ -111,5 +111,5 @@ export function createKeyframeNavigation({root,scopeRoot=root,detail,getKey,getR
   listen(documentRef,'toggle',refresh,true);listen(documentRef,'visibilitychange',cancel);
   const resize=new windowRef.ResizeObserver(()=>{cancel();draw();});resize.observe(ruler);
   draw();
-  return {refresh,cancel,sourceFrame:()=>draft,dispose(){if(disposed)return;cancel();disposed=true;resize.disconnect();for(const remove of listeners)remove();ruler.remove();jump.remove();status.remove();}};
+  return {refresh,cancel,ruler,jump,status,sourceFrame:()=>draft,dispose(){if(disposed)return;cancel();disposed=true;resize.disconnect();for(const remove of listeners)remove();ruler.remove();jump.remove();status.remove();}};
 }

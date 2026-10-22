@@ -1777,6 +1777,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/timeline/preset-drop.js", 200),
         ("/js/timeline/asset-drop.js", 200),
         ("/js/curve-viewport.js", 200),
+        ("/js/curve-window.js", 200),
         ("/js/compound-navigation.js", 200),
         ("/js/export.js", 200),
         ("/js/scopes.js", 200),

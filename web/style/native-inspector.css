@@ -88,3 +88,32 @@
 #inspector .inspector-mask-parameter .inspector-key-controls > button { width: 18px; min-width: 18px; min-height: 22px; }
 #inspector .inspector-mask-parameter > .inspector-reset { width: 18px; min-width: 18px; min-height: 22px; }
 #inspector .inspector-mask-path-keys { font-size: 11px; }
+
+.curve-window { z-index: 35; display: flex; flex-direction: column; min-width: 0; min-height: 0; box-sizing: border-box; background: #202020; border: 1px solid #555; border-radius: 3px; box-shadow: 0 8px 30px #0009; color: var(--text); }
+.curve-window[hidden] { display: none; }
+.curve-window-header { display: flex; align-items: center; gap: 8px; flex: 0 0 28px; padding: 0 5px 0 9px; background: #303030; border-bottom: 1px solid var(--border); cursor: move; user-select: none; }
+.curve-window-title { flex: 1; min-width: 0; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 500; }
+.curve-window-close { flex: 0 0 auto; cursor: default; font-size: 10px; }
+.curve-window-status { margin: 0; padding: 8px; font-size: 11px; }
+.curve-window-status:empty { display: none; }
+.curve-window-content { flex: 1; min-height: 0; min-width: 0; overflow: auto; overscroll-behavior: contain; padding: 6px 9px 15px; }
+.curve-window-resize { position: absolute; right: 0; bottom: 0; min-width: 18px; min-height: 16px; padding: 0; border: 0; background: #303030; cursor: nwse-resize; line-height: 16px; }
+.curve-window-header:focus-visible,.curve-window-resize:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.curve-window-content > .curve-editor { margin: 0; }
+.curve-window-content > [data-visual-path="curves"] > summary { display: none; }
+.curve-window-content .curve-parameter { width: min(100%,330px); margin: 0 8px 4px 0; }
+.curve-window-content .curve-parameter + label { display: inline-flex; align-items: center; gap: 3px; font-size: 10px; }
+.curve-window-content .curve-viewport-tools { display: flex; flex-wrap: wrap; gap: 3px; margin: 0 0 3px; }
+.curve-window-content .curve-viewport-tools button { padding: 1px 5px; min-height: 20px; }
+.curve-window-content [data-curve-viewport] { margin: 3px 0; font-size: 10px; }
+.curve-window-content .curve-graph:not(.keyframe-ruler) { height: 170px; box-sizing: border-box; border-radius: 0; }
+.curve-window-content .keyframe-ruler { margin-top: 3px; border-radius: 0; box-sizing: border-box; }
+.curve-window-content .keyframe-lanes { clear: both; margin: 4px 0; }
+.curve-window-content .keyframe-lanes-heading,.curve-window-content .keyframe-lanes > .muted { display: none; }
+.curve-window-content .keyframe-lanes-viewport { max-height: 130px; }
+.curve-window-content summary { cursor: pointer; font-size: 11px; margin: 5px 0; }
+.curve-window-content form { margin: 5px 0; }
+.curve-window-content .field { display: inline-grid; grid-template-columns: auto minmax(50px,90px); align-items: center; gap: 5px; margin: 3px 8px 3px 0; font-size: 11px; }
+.curve-window-content .field input { min-width: 0; width: 100%; }
+.curve-window-content .curve-editor form > select { width: min(100%,220px); }
+.curve-window-content p { font-size: 11px; }

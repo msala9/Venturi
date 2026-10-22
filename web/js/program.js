@@ -21,10 +21,11 @@ async function seekMedia(video, seconds, signal, beforeSeek = () => {}) {
   signal.throwIfAborted();beforeSeek(seconds);video.currentTime=seconds;
   await wait("seeked",()=>!video.seeking);
 }
-export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onUserPause, onCache, beforeWindowChange = () => {}, isInternalSeek = () => false, isInternalPause = () => false, api = request, fetcher = fetch, timers = globalThis }) {
+export function createProgramPlayer({ video, status, cancel, getState, onFrame, onState, onError, onStop, onUserPause, onCache, canPrefetch=()=>false, onPrefetch=()=>{}, beforeWindowChange = () => {}, isInternalSeek = () => false, isInternalPause = () => false, api = request, fetcher = fetch, timers = globalThis }) {
   let sequence = 0, controller = null, query = null, jobURL = null, state = "stopped", monitor = null, frameCallback = null, suspended = true, presented = 0, cached = null;
   let playbackIntent = false, attached = null, startingPlayback = false, seekingTarget = null, ignoredPauses=0, handoffPause=false;
   let recordingHold=null,recordingStopped=null;
+  let future=null;
   const currentState=expected=>getState(undefined,expected?.audio_origin_frame);
   const originMatches=(job,expected)=>expected.audio_origin_frame===undefined || job.program?.audio_origin_frame===expected.audio_origin_frame;
   const setState = (next) => { if(next!=="ready")stopMonitor(); state = next; cancel.disabled = next === "stopped"; cancel.textContent = next === "preparing" ? "Cancel preparation" : "Stop playback"; onState(next); };
@@ -33,6 +34,61 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     if(previous){timers.clearTimeout(previous.timer);previous.controller.abort();}
   }
   const ownsAttachment=()=>state==='ready' && attached?.seq===sequence && attached.src===video.src && sameComposition(query,currentState(query));
+  const prefetchState=()=>future?{state:future.state,range:structuredClone(future.record?.range ?? future.request),jobId:future.jobId,error:future.error}:{state:'idle',range:null,jobId:null,error:null};
+  const announcePrefetch=()=>onPrefetch(prefetchState());
+  function clearFuture(){const old=future;future=null;if(!old)return;old.controller.abort();if(old.timer!==null)timers.clearTimeout(old.timer);old.timer=null;announcePrefetch();}
+  function futureCurrent(ticket){
+    if(future!==ticket || ticket.controller.signal.aborted || !playbackIntent || !sameComposition(ticket.request,currentState(ticket.request)))return false;
+    if(ticket.promoted)return ticket.owner?.seq===sequence && !ticket.owner.signal.aborted;
+    return canPrefetch() && ownsAttachment() && !suspended && attached===ticket.attachment && query===ticket.from && sequence===ticket.seq;
+  }
+  function futureJob(ticket,job){
+    const data=job?.program;
+    if(typeof job?.id!=='string' || !job.id || ticket.jobId && job.id!==ticket.jobId || !originMatches(job,ticket.request) || !validRange({...ticket.request,start_frame:data?.start_frame,end_frame:data?.end_frame}) || data.start_frame>ticket.request.start_frame || data.end_frame<ticket.request.end_frame || data.fps?.num!==ticket.fps.num || data.fps?.den!==ticket.fps.den)throw Error('The next Program window identity, range or native FPS changed');
+    const prepared={...ticket.request,start_frame:data.start_frame,end_frame:data.end_frame};
+    if(ticket.prepared && JSON.stringify(prepared)!==JSON.stringify(ticket.prepared))throw Error('The next Program window range changed');
+    ticket.prepared=prepared;ticket.jobId=job.id;ticket.url=`/api/v1/preview/program/${encodeURIComponent(job.id)}?${new URLSearchParams(prepared)}`;
+    return {range:{...prepared,fps:data.fps},url:ticket.url,src:`/api/v1/preview/program/${encodeURIComponent(job.id)}/program.mp4?${new URLSearchParams(prepared)}`,jobId:job.id,message:`COMPOSED PREVIEW · ${data.width}×${data.height} · revision ${ticket.request.revision.slice(0,8)}`};
+  }
+  function futureDelay(ticket,ms){
+    return new Promise((resolve,reject)=>{const signal=ticket.controller.signal,abort=()=>{if(ticket.timer!==null)timers.clearTimeout(ticket.timer);ticket.timer=null;reject(new DOMException('Next Program window canceled','AbortError'));};ticket.timer=timers.setTimeout(()=>{ticket.timer=null;signal.removeEventListener('abort',abort);resolve();},ms);signal.addEventListener('abort',abort,{once:true});if(signal.aborted)abort();});
+  }
+  async function readFuture(ticket,signal=ticket.controller.signal){
+    const response=await fetcher(ticket.url,{signal:AbortSignal.any([signal,AbortSignal.timeout(5_000)]),cache:'no-store'});
+    if(!response.ok)throw Error('The next Program window changed or became unavailable');
+    return response.json();
+  }
+  function heartbeatFuture(ticket){
+    if(!futureCurrent(ticket) || ticket.promoted || ticket.state!=='ready')return;
+    ticket.timer=timers.setTimeout(async()=>{
+      ticket.timer=null;if(!futureCurrent(ticket)){if(future===ticket)clearFuture();return;}
+      try{const job=await readFuture(ticket);if(!futureCurrent(ticket) || ticket.promoted)return;if(job.state!=='ready')throw Error(job.error || 'The next Program window is no longer ready');ticket.record=futureJob(ticket,job);heartbeatFuture(ticket);}
+      catch(error){if(futureCurrent(ticket) && !ticket.promoted){ticket.state='failed';ticket.error=error.message.slice(0,1024);ticket.record=null;announcePrefetch();}}
+    },10_000);
+  }
+  async function prepareFuture(ticket){
+    try{
+      let job=await api('/preview/program/prepare',ticket.request,(url,init)=>fetcher(url,{...init,signal:AbortSignal.any([init.signal,ticket.controller.signal].filter(Boolean))}));
+      if(!futureCurrent(ticket))return null;
+      futureJob(ticket,job);
+      while(['queued','running'].includes(job.state)){
+        ticket.state=job.state;announcePrefetch();await futureDelay(ticket,1_000);if(!futureCurrent(ticket))return null;
+        job=await readFuture(ticket);if(!futureCurrent(ticket))return null;futureJob(ticket,job);
+      }
+      if(job.state!=='ready')throw Error(job.error || `Next Program window ${job.state}`);
+      ticket.record=futureJob(ticket,job);ticket.state='ready';announcePrefetch();heartbeatFuture(ticket);return ticket.record;
+    }catch(error){if(futureCurrent(ticket)){ticket.state='failed';ticket.error=error.message.slice(0,1024);announcePrefetch();}return null;}
+  }
+  function invalidatePrefetch(){
+    if(future && !futureCurrent(future))clearFuture();
+  }
+  function startPrefetch(){
+    invalidatePrefetch();if(future || !canPrefetch() || !ownsAttachment() || suspended || !playbackIntent)return;
+    const next=getState(query.end_frame,query.audio_origin_frame);
+    if(!next || !validRange(next) || !sameComposition(query,next) || next.start_frame!==query.end_frame)return;
+    const ticket={request:{...next},fps:{...query.fps},from:query,attachment:attached,seq:sequence,controller:new AbortController(),timer:null,state:'preparing',jobId:null,error:null,record:null,prepared:null,promoted:false,owner:null};
+    future=ticket;announcePrefetch();if(futureCurrent(ticket))ticket.promise=prepareFuture(ticket);
+  }
   function clockFrame(seconds=video.currentTime){
     if(!query || !Number.isFinite(seconds) || seconds<0)return null;
     return Math.max(query.start_frame,Math.min(query.end_frame-1,query.start_frame+Math.floor((seconds+1e-6)*query.fps.num/query.fps.den)));
@@ -67,6 +123,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     const owner=attached,pausedQuery=query,seq=sequence;
     const preparing=state==='preparing';
     playbackIntent = false;
+    clearFuture();
     suspended = true;
     controller?.abort();
     if(preparing){
@@ -83,7 +140,6 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
   }
   function pauseMedia(){if(video.paused)return;ignoredPauses++;video.pause();}
   function stop() {
-    const path = state === "preparing" ? jobURL : null;
     sequence++;
     stopMonitor();
     pauseLocal();
@@ -93,11 +149,13 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     jobURL = null;
     video.removeAttribute("src"); video.load();
     setState("stopped");
-    if (path) fetcher(path, { method: "DELETE", signal: AbortSignal.timeout(5_000) }).catch(() => {});
+    // Native preparation can deduplicate any ACK with another player. Stop
+    // detaches this player; an ACK does not grant exclusive cancellation rights.
   }
   function present(seconds = video.currentTime) {
     if (suspended || !query || !sameComposition(query, currentState(query))) return;
     const frame=clockFrame(seconds);if(frame!==null)onFrame(frame);
+    startPrefetch();
   }
   function scheduleFrame() {
     if (suspended || state!=="ready" || !attached || !video.requestVideoFrameCallback || video.paused || frameCallback !== null) return;
@@ -122,6 +180,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     const check=async()=>{
       owner.timer=null;
       if(!active()){if(monitor===owner)stopMonitor();return;}
+      invalidatePrefetch();
       if(!sameComposition(owner.query,currentState(owner.query))){fail("STALE_REVISION · reconnect before playback");return;}
       try {
         const response=await fetcher(owner.url,{signal:AbortSignal.any([owner.controller.signal,AbortSignal.timeout(5_000)]),cache:"no-store"});
@@ -173,7 +232,8 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       fail("Program window changed · prepare again");return;
     }
     // Preparing synchronously detaches the ended owner, including duplicate events.
-    void prepare(next,true);
+    const candidate=future && future.from===query && sameComposition(future.request,next) && future.request.start_frame===next.start_frame && future.request.end_frame===next.end_frame?future:null;
+    void prepare(next,true,candidate);
   });
   video.addEventListener("error", () => {
     if (video.error!==null && video.getAttribute("src")) { cached=null;pauseLocal();status.textContent = "Program media unavailable or changed · prepare again"; setState("failed"); }
@@ -217,6 +277,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     try { await video.play(); }
     catch(error) { if(live(owner) && error.name!=="AbortError"){playbackIntent=false;suspended=true;status.textContent+=" · press Play";onState(state);} }
     finally { if(owner.seq===sequence)startingPlayback=false; }
+    if(live(owner))startPrefetch();
   }
   async function toggle() {
     if (state === "preparing") { stop(); return; }
@@ -227,7 +288,7 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     playbackIntent=true;
     await prepare(current,false);
   }
-  async function prepare(current,rollover) {
+  async function prepare(current,rollover,candidate=null) {
     const recording=rollover?recordingClock():null;
     const seq = ++sequence;
     recordingHold=recording?.state==='holding'?{...recording,sequence:seq}:null;recordingStopped=null;
@@ -235,9 +296,20 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
     controller = new AbortController();
     const signal = controller.signal;
     const owner={seq,signal,current};
+    if(candidate){candidate.promoted=true;candidate.owner=owner;if(candidate.timer!==null && candidate.state==='ready'){timers.clearTimeout(candidate.timer);candidate.timer=null;}signal.addEventListener('abort',()=>candidate.controller.abort(),{once:true});}
     setState("preparing");pauseMedia();status.textContent = rollover ? "Paused · preparing next composition window…" : "Preparing native composition and audio…";
     try {
       if(!validRange(current))throw new Error("Invalid composed preview range");
+      if(candidate){
+        const record=await candidate.promise;if(!live(owner))return;
+        if(!record || candidate.state==='failed')throw Error(candidate.error || 'The next Program window preparation was canceled');
+        jobURL=record.url;
+        const checked=await readFuture(candidate,signal);if(!live(owner))return;
+        if(checked.state!=='ready')throw Error(checked.error || 'The next Program window is no longer ready');
+        const verified=futureJob(candidate,checked);if(!live(owner))return;
+        if(future===candidate){future=null;candidate.controller.abort();announcePrefetch();}
+        await attach(owner,verified.range,verified.url,verified.src,`PREFETCHED ${verified.message}`,rollover,verified.jobId);if(live(owner))onCache?.();return;
+      }
       if (cached && containsProgramRange(cached.query, current)) {
         const response = await fetcher(cached.url, { signal: AbortSignal.any([signal, AbortSignal.timeout(5_000)]), cache: "no-store" });
         if (!live(owner)) return;
@@ -279,5 +351,5 @@ export function createProgramPlayer({ video, status, cancel, getState, onFrame, 
       if (seq === sequence && !signal.aborted && error.name !== "AbortError") fail(error.message);
     }
   }
-  return { toggle, stop, pauseLocal, telemetryTarget, recordingClock, state: () => state, range: () => query };
+  return { toggle, stop, pauseLocal, telemetryTarget, recordingClock, prefetchState, invalidatePrefetch, state: () => state, range: () => query };
 }

@@ -1671,6 +1671,11 @@ function refreshStoppedProgramInspector(){
 }
 programPlayer = createProgramPlayer({
   video: $("program-video"), status: $("program-status"), cancel: $("program-cancel"),
+  canPrefetch:()=>writable && !busy && !unresolved && !document.hidden && viewerMode==='program' && !document.querySelector('dialog[open]'),
+  onPrefetch:value=>{
+    $("program-status").dataset.programNextWindow=JSON.stringify(value);
+    $("program-status").title=value.state==='ready'?'Next section ready':['preparing','queued','running'].includes(value.state)?'Preparing next section':value.state==='failed'?'Next section unavailable; current playback continues':'';
+  },
   getState: (startFrame,audioOrigin) => {
     if (!documentState?.capabilities.playback || !timeline || viewerMode !== "program") return null;
     return buildProgramWindow(documentState,timeline,view.playhead,startFrame,audioOrigin);
@@ -1773,7 +1778,7 @@ sourceAssets=createSourceAssetQueue({loader:createSourceAssets({getState:()=>doc
   isIdle:()=>Boolean(documentState && !document.hidden && !busy && !unresolved && !derivativesTransportPending && !document.querySelector('dialog[open]') && canvasTimeline.navigationIdle() && programPlayer?.state()!=='preparing' && !sourcePlayer?.preparing() && $('source-video').paused && $('program-video').paused && $('export-preview-video').paused && !fastTransport?.active()),
   hasAsset:entry=>{const asset=mediaAssets.get(sourceAssetKey(entry.item.id,entry.audioStreamIndex)),thumbnail=mediaThumbnail(mediaAssets,entry.item.id);return Boolean((!entry.item.has_video || thumbnail?.contentHash===entry.item.content_hash && (!entry.sourceVersion || thumbnail.sourceVersion===entry.sourceVersion)) && (!entry.item.has_audio || !entry.includeWaveform || asset?.contentHash===entry.item.content_hash && asset.waveform && (!entry.sourceVersion || asset.sourceVersion===entry.sourceVersion)));}});
 for(const event of ['play','pause','ended'])$('export-preview-video').addEventListener(event,()=>sourceAssets.refresh());
-document.addEventListener('visibilitychange',()=>{sourceAssets.refresh();audioMeters?.sync();if(document.hidden){audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>sourceAssets.refresh(),true);
+document.addEventListener('visibilitychange',()=>{sourceAssets.refresh();audioMeters?.sync();if(document.hidden){programPlayer?.invalidatePrefetch();audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>sourceAssets.refresh(),true);
 window.addEventListener('pagehide',()=>{fastTransport?.stop();programPlayer?.pauseLocal();void projectView?.flush({persist:true});});
 $("source-assets-refresh").addEventListener("click",()=>{
   const position=sourcePosition(),item=documentState?.media.find(media=>media.id===sourceOpenId);

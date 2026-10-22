@@ -5,7 +5,7 @@ import {createFastTransport} from '../js/fast-transport.js';
 
 function fakeTimers(){
   let next=0;const jobs=new Map();
-  return {jobs,setTimeout(callback,delay){const id=++next;jobs.set(id,{callback,delay});return id;},clearTimeout(id){jobs.delete(id);},fire(){const entry=jobs.entries().next().value;if(!entry)return;const [id,job]=entry;jobs.delete(id);assert.equal(job.delay,2_000);return job.callback();}};
+  return {jobs,setTimeout(callback,delay){const id=++next;jobs.set(id,{callback,delay});return id;},clearTimeout(id){jobs.delete(id);},fire(){const entry=jobs.entries().next().value;if(!entry)return;const [id,job]=entry;jobs.delete(id);assert.equal(job.delay,2_000);return job.callback();},fireDelay(delay){const entry=[...jobs].find(([,job])=>job.delay===delay);assert.ok(entry,`Expected a ${delay} ms timer`);jobs.delete(entry[0]);return entry[1].callback();}};
 }
 
 test("composed playback identity follows the document and ignores its advancing clock", () => {
@@ -161,7 +161,7 @@ test("status failure, nonready result and media error release all ready-cache mo
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function settle(){for(let i=0;i<40;i++)await Promise.resolve();}
-function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState=()=>{},lineage=false}={}){
+function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState=()=>{},lineage=false,canPrefetch,onPrefetch}={}){
   class Video extends EventTarget {
     movie="";position=0;readyState=1;seeking=false;paused=true;ended=false;duration=0;plays=0;waitMetadata=false;waitSeek=false;fastPause=false;
     callbacks=new Map();canceled=[];nextCallback=0;
@@ -186,7 +186,7 @@ function windowFixture({origin=0,total=18_010,fps={num:30,den:1},api,fetcher,bef
     return Number.isSafeInteger(frame) && frame>=0 && frame<total ? {...document,start_frame:frame,end_frame:Math.min(total,frame+Math.floor(300*fps.num/fps.den)),...(lineage?{audio_origin_frame:audioOrigin===undefined?frame:audioOrigin}:{})} : null;
   };
   const ready=(range,id=`window${requests.length}`)=>({id,state:"ready",program:{start_frame:range.start_frame,end_frame:range.end_frame,fps,width:960,height:540,...(lineage?{audio_origin_frame:range.audio_origin_frame}:{})}});
-  const player=createProgramPlayer({video,status,timers,cancel,getState,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState,onFrame:frame=>{frames.push(frame);playhead=frame;},api:async(path,range)=>{requests.push({...range});return api?api(range,ready):ready(range);},fetcher:async(url,options)=>{fetches.push({url,...options});return fetcher?fetcher(url,options):Response.json({state:"ready",...(lineage?{program:{audio_origin_frame:Number(new URL(url,'http://host').searchParams.get('audio_origin_frame'))}}:{})});}});
+  const player=createProgramPlayer({video,status,timers,cancel,getState,beforeWindowChange,isInternalSeek,isInternalPause,onUserPause,onState,canPrefetch,onPrefetch,onFrame:frame=>{frames.push(frame);playhead=frame;},api:async(path,range)=>{requests.push({...range});return api?api(range,ready):ready(range);},fetcher:async(url,options)=>{fetches.push({url,...options});if(fetcher)return fetcher(url,options);const parsed=new URL(url,'http://host'),params=parsed.searchParams,range={start_frame:Number(params.get('start_frame')),end_frame:Number(params.get('end_frame')),...(lineage?{audio_origin_frame:Number(params.get('audio_origin_frame'))}:{})};return Response.json(ready(range,decodeURIComponent(parsed.pathname.split('/').at(-1))));}});
   return {video,status,timers,cancel,requests,frames,fetches,player,ready,getState,setDocument:value=>{document=value;},setPlayhead:value=>{playhead=value;}};
 }
 
@@ -320,6 +320,84 @@ test('a pending Program preparation and stale composition never expose live tele
   try{
     const pending=f.player.toggle();assert.equal(f.player.telemetryTarget(),null);ack.resolve(f.ready(f.requests[0]));await pending;assert.ok(f.player.telemetryTarget());
     f.setDocument({...f.getState(),revision:'changed'});assert.equal(f.player.telemetryTarget(),null);
+  }finally{f.player.stop();}
+});
+
+test('opt-in Program lookahead prepares one next range without changing current playback, telemetry or recording clocks',async()=>{
+  const states=[],prefetch=[],f=windowFixture({total:9010,lineage:true,canPrefetch:()=>true,onState:state=>states.push(state),onPrefetch:value=>prefetch.push(value)});
+  try{
+    await f.player.toggle();await settle();const current=f.player.range(),src=f.video.src,clock=f.player.recordingClock(),telemetry=f.player.telemetryTarget();
+    assert.equal(f.requests.length,2);assert.equal(f.player.prefetchState().state,'ready');assert.equal(f.player.prefetchState().range.start_frame,9000);assert.equal(f.video.plays,1);assert.equal(f.video.paused,false);assert.equal(f.player.range(),current);assert.equal(f.video.src,src);assert.deepEqual(f.player.recordingClock(),clock);assert.equal(f.player.telemetryTarget().job_id,telemetry.job_id);assert.deepEqual(states,['stopped','preparing','ready']);
+    const copy=f.player.prefetchState();copy.range.revision='forged';assert.equal(f.player.prefetchState().range.revision,'revision');
+    f.video.finish(current);await settle();assert.equal(f.requests.length,2);assert.equal(f.video.plays,2);assert.equal(f.player.range().start_frame,9000);assert.match(f.status.textContent,/PREFETCHED/);assert.equal(f.player.telemetryTarget().job_id,'window2');assert.equal(f.player.prefetchState().state,'idle');assert.ok(prefetch.some(value=>value.state==='ready'));assert.ok(f.fetches.some(value=>value.url.includes('/window2?')));assert.equal(f.fetches.some(value=>value.method==='DELETE'),false);
+  }finally{f.player.stop();}
+});
+
+test('queued next-window preparation is adopted at EOF without a duplicate POST and preserves native recording hold',async()=>{
+  const ack=deferred();let count=0;const f=windowFixture({total:9010,lineage:true,canPrefetch:()=>true,api:(range,ready)=>++count===1?ready(range):ack.promise});
+  try{
+    await f.player.toggle();await settle();assert.equal(f.requests.length,2);const current=f.player.range(),oldClock=f.player.recordingClock();f.video.finish(current);await settle();assert.equal(f.player.state(),'preparing');assert.equal(f.requests.length,2);assert.equal(f.player.recordingClock().state,'holding');assert.equal(f.player.recordingClock().sample,Math.round(current.end_frame*48000/30));
+    ack.resolve(f.ready(f.requests[1]));await settle();assert.equal(f.player.state(),'ready');assert.equal(f.video.plays,2);assert.equal(f.player.recordingClock().state,'playing');assert.equal(f.player.recordingClock().audio_origin_frame,oldClock.audio_origin_frame);assert.equal(f.player.recordingClock().sample,Math.round(current.end_frame*48000/30));
+  }finally{f.player.stop();}
+});
+
+test('future polling and ready heartbeats use one bounded timer each and keep native ready TTL alive',async()=>{
+  let count=0;const f=windowFixture({total:9010,lineage:true,canPrefetch:()=>true,api:(range,ready)=>++count===1?ready(range):{...ready(range),state:'queued'}});
+  try{
+    await f.player.toggle();await settle();assert.equal(f.player.prefetchState().state,'queued');assert.equal([...f.timers.jobs.values()].filter(value=>value.delay===1000).length,1);assert.equal(f.video.paused,false);
+    await f.timers.fireDelay(1000);await settle();assert.equal(f.player.prefetchState().state,'ready');assert.equal([...f.timers.jobs.values()].filter(value=>value.delay===10_000).length,1);
+    for(let index=0;index<5;index++){await f.timers.fireDelay(10_000);await settle();assert.equal(f.player.prefetchState().state,'ready');assert.equal([...f.timers.jobs.values()].filter(value=>value.delay===10_000).length,1);}
+    assert.equal(f.requests.length,2);assert.equal(f.fetches.filter(value=>value.url.includes('/window2?')).length,6);assert.equal(f.video.plays,1);assert.equal(f.player.telemetryTarget().job_id,'window1');
+  }finally{f.player.stop();}assert.equal(f.timers.jobs.size,0);
+});
+
+test('pause, stop, source policy, context changes and late speculative ACKs never autoplay or DELETE shared jobs',async()=>{
+  for(const action of ['pause','stop','policy','stale']){
+    const ack=deferred();let count=0,policy=true;const f=windowFixture({total:9010,lineage:true,canPrefetch:()=>policy,api:(range,ready)=>++count===1?ready(range):ack.promise});
+    try{
+      await f.player.toggle();await settle();const src=f.video.src;
+      if(action==='pause')f.player.pauseLocal();else if(action==='stop')f.player.stop();else if(action==='policy'){policy=false;f.player.invalidatePrefetch();}else{f.setDocument({...f.getState(),revision:'changed'});f.player.invalidatePrefetch();}
+      assert.equal(f.player.prefetchState().state,'idle');ack.resolve(f.ready(f.requests[1]));await settle();assert.equal(f.video.plays,1);assert.equal(f.video.src,action==='stop'?'':src);assert.equal(f.fetches.some(value=>value.method==='DELETE'),false);assert.equal(f.requests.length,2);
+    }finally{f.player.stop();}
+  }
+});
+
+test('a promoted shared future is never deleted by Stop while its ready acknowledgment or handoff is pending',async()=>{
+  for(const phase of ['ack','handoff']){
+    const ack=deferred(),tail=deferred();let count=0;const f=windowFixture({total:9010,lineage:true,canPrefetch:()=>true,beforeWindowChange:()=>tail.promise,api:(range,ready)=>++count===1?ready(range):phase==='ack'?ack.promise:ready(range)});
+    try{
+      await f.player.toggle();await settle();f.video.finish(f.player.range());await settle();assert.equal(f.player.state(),'preparing');f.player.stop();ack.resolve(f.ready(f.requests[1]));tail.resolve();await settle();assert.equal(f.video.plays,1);assert.equal(f.player.state(),'stopped');assert.equal(f.fetches.some(value=>value.method==='DELETE'),false);assert.equal(f.timers.jobs.size,0);
+    }finally{f.player.stop();}
+  }
+});
+
+test('a discarded speculative job deduplicated by foreground preparation is still not owned for cancellation',async()=>{
+  let count=0,policy=true;const f=windowFixture({total:9010,lineage:true,canPrefetch:()=>policy,api:(range,ready)=>ready(range,++count===1?'current':'shared-next')});
+  try{
+    await f.player.toggle();await settle();assert.equal(f.player.prefetchState().jobId,'shared-next');
+    policy=false;f.player.invalidatePrefetch();assert.equal(f.player.prefetchState().state,'idle');
+    f.video.waitMetadata=true;f.video.finish(f.player.range());await settle();
+    assert.equal(f.requests.length,3);assert.equal(f.player.state(),'preparing');assert.match(f.video.src,/shared-next\/program.mp4/);
+    f.player.stop();await settle();assert.equal(f.player.state(),'stopped');assert.equal(f.video.src,'');assert.equal(f.video.plays,1);assert.equal(f.fetches.some(value=>value.method==='DELETE'),false);assert.equal(f.timers.jobs.size,0);
+  }finally{f.player.stop();}
+});
+
+test('resource failures or changed native FPS/audio origin fail only the future until EOF, without automatic retry',async()=>{
+  for(const failure of ['resource','fps','origin']){
+    let count=0;const f=windowFixture({total:9010,lineage:true,canPrefetch:()=>true,api:(range,ready)=>{if(++count===1)return ready(range);if(failure==='resource')throw Error('PROGRAM_MEMORY_PRESSURE');const value=ready(range);if(failure==='fps')value.program.fps={num:24,den:1};else value.program.audio_origin_frame=1;return value;}});
+    try{
+      await f.player.toggle();await settle();assert.equal(f.player.prefetchState().state,'failed');assert.equal(f.player.state(),'ready');assert.equal(f.video.paused,false);assert.equal(f.video.plays,1);
+      for(let index=0;index<4;index++){f.video.dispatchEvent(new Event('timeupdate'));f.player.invalidatePrefetch();}await settle();assert.equal(f.requests.length,2);
+      f.video.finish(f.player.range());await settle();assert.equal(f.player.state(),'failed');assert.equal(f.requests.length,2);assert.equal(f.video.plays,1);assert.match(f.status.textContent,failure==='resource'?/PROGRAM_MEMORY_PRESSURE/:/identity|FPS/);
+    }finally{f.player.stop();}
+  }
+});
+
+test('prefetched readiness still waits for the owned fast-audio tail before replacing the sole video attachment',async()=>{
+  const tail=deferred();let hooks=0;const f=windowFixture({total:9010,lineage:true,canPrefetch:()=>true,beforeWindowChange:()=>{hooks++;return tail.promise;}});
+  try{
+    await f.player.toggle();await settle();assert.equal(hooks,0);const src=f.video.src,old=f.player.range();f.video.finish(old);await settle();assert.equal(hooks,1);assert.equal(f.video.src,src);assert.equal(f.video.plays,1);assert.equal(f.player.recordingClock().state,'holding');
+    tail.resolve();await settle();assert.notEqual(f.video.src,src);assert.equal(f.video.plays,2);assert.equal(f.player.range().start_frame,old.end_frame);assert.equal(f.player.recordingClock().state,'playing');assert.equal(f.requests.length,2);
   }finally{f.player.stop();}
 });
 

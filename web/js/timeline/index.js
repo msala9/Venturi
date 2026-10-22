@@ -6,7 +6,7 @@ export function createTimeline(options) {
   const input = createInput({ ...options, invalidate: changed });
   return {
     ...draw,
-    invalidate(){input.checkPresetDrop();input.checkGapSelection();changed();},
+    invalidate(){input.checkPresetDrop();input.checkGapSelection();input.checkSelectionAnchor();changed();},
     cancel: input.cancel,
     closeGap:input.closeGap,
     rippleDelete:input.rippleDelete,
@@ -15,6 +15,8 @@ export function createTimeline(options) {
     handleGapKey:input.handleGapKey,
     checkGapSelection:input.checkGapSelection,
     selectTimelineClips:input.selectTimelineClips,
+    selectClip:input.selectClip,
+    checkSelectionAnchor:input.checkSelectionAnchor,
     canSelectTimeline:input.canSelectTimeline,
     handleSelectionKey:input.handleSelectionKey,
     transitionDnd: input.transitionDnd,

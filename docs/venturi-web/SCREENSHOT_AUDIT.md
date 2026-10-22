@@ -72,3 +72,12 @@ saved-project persistence have native/API/browser evidence in
 rendering. The first finite UI service expired at its safety limit; a second
 finite run completed the last batch save/reopen, with both provenance records
 retained. Full-resolution throughput, DPI and release soak remain separate.
+
+`evidence/m4-shift-selection-windows.jpg` shows the existing Windows browser
+after repeated Shift clicks with both video clips and their unlocked audio peer
+selected; the locked clip stays excluded and Undo/Redo remain empty. Fifteen
+actual modifier/reconnect/gap/bulk checks retain the native saved model and
+epochs. `m4-shift-selection.json` records 877 JavaScript tests and nine native
+selection oracles. This metadata-only proof disables preview/export; the web's
+current row order, native separate-pane layout, physical Canvas pointer/DPI and
+500-clip performance remain distinct acceptance work.

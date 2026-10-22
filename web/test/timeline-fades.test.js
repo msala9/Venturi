@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {fadeHandles,fadeDraft,frameToX,hitTest,RULER} from '../js/timeline/geometry.js';
+import {fadeHandles,fadeDraft,frameToX,hitTest,RULER,clipSelectionAnchor} from '../js/timeline/geometry.js';
 import {createInput} from '../js/timeline/input.js';
 
 function fixture(){
@@ -41,9 +41,10 @@ test('fade drafts retain string IDs, integer frames and independent full-length 
 test('video and audio fade drags commit one local native property edit only at release',async()=>{
   const s=inputFixture();
   try{
+    s.view.selection=['9007199254740995'];s.view.selectionAnchor=clipSelectionAnchor(s.timeline,'9007199254740995');const anchor=structuredClone(s.view.selectionAnchor);
     s.handlers.get('pointerdown')(s.event(30));assert.equal(s.captured(),true);
     s.handlers.get('pointermove')(s.event(37));assert.equal(s.commands.length,0);assert.equal(s.view.draft.frames,17);assert.equal(s.clip.fade_in,10);
-    assert.deepEqual(s.view.selection,['9007199254740993','9007199254740995']);
+    assert.deepEqual(s.view.selection,['9007199254740995']);assert.deepEqual(s.view.selectionAnchor,anchor);
     await s.handlers.get('pointerup')(s.event(37));
     assert.deepEqual(s.commands,[{kind:'set_properties',clip_id:s.clip.id,patch:{fade_in:17}}]);assert.equal(s.view.draft,null);
     s.handlers.get('pointerdown')(s.event(100,RULER+62+14));s.handlers.get('pointermove')(s.event(105,RULER+62+14));await s.handlers.get('pointerup')(s.event(105,RULER+62+14));

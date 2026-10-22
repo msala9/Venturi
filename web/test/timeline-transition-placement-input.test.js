@@ -53,9 +53,9 @@ test('Alt body copy preserves the complete native payload with one owner-release
 test('unmodified transition-body drag uses the existing safe clip move and native edge trim instead of a copy',async()=>{
   const h=harness();
   try{
-    h.send('pointerdown',22);h.send('pointermove',12);assert.deepEqual(h.commands,[]);assert.equal(h.view.draft.kind,'move');assert.equal(h.selections(),1);
+    h.send('pointerdown',22);h.send('pointermove',12);assert.deepEqual(h.commands,[]);assert.equal(h.view.draft.kind,'move');assert.equal(h.selections(),0,'Pointer drafts do not trigger native inspector reads');
     await h.send('pointerup',5,{pointerId:2,buttons:0});assert.equal(h.captured(1),true);await h.send('pointerup',11,{buttons:0});
-    assert.deepEqual(h.commands,[{kind:'safe_move',moves:[{clip_id:h.source.id,to_track:'v1',to_start_frame:9}]}]);assert.equal(h.view.transitionSelection,null);assert.equal(h.captured(1),false);
+    assert.deepEqual(h.commands,[{kind:'safe_move',moves:[{clip_id:h.source.id,to_track:'v1',to_start_frame:9}]}]);assert.equal(h.view.transitionSelection,null);assert.equal(h.captured(1),false);assert.equal(h.selections(),1);
     h.send('pointerdown',20.2);await h.send('pointerup',21.2,{buttons:0});assert.deepEqual(h.commands[1],{kind:'trim',clip_id:h.source.id,edge:'start',frame:21});
   }finally{h.destroy();}
 });

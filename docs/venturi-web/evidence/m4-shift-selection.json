@@ -1,0 +1,228 @@
+{
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792653665.424519,
+    "validation": "shift-selection-frontend",
+    "native_validation_base_commit": "2e9a0946ddb45023bf66bd8c7ea6fe79e8fe4fb1",
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "2977cdb4fb520b20e5a7a888645a7c7e0602aa66945e5b2afb82c9ee683a956a",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "native_source_hashes_unchanged": true,
+  "status": "passed",
+  "acceptance": {
+    "code_hashes": {
+      "web/js/main.js": "1f603b8f886654d51e8309ce216676b02d06a1138cb3bacd21df0e391f66ad7f",
+      "web/js/timeline/geometry.js": "234fe8fb04a8ad7a2fc7704541583069397d9d3817f8eda9b1f8ea2156ae1e76",
+      "web/js/timeline/index.js": "7ef11fc0186208be4ea540beff9c6e77ba55e6347c32ad5b49d1f4eb2ed50b7a",
+      "web/js/timeline/input.js": "8a7962596285def5ac23d6e143ad4d45299746e4905588729b560e1f2ea78977",
+      "web/test/timeline-fades.test.js": "a2acb2490ef9bb3e78557ce91c0e91d847f6e6721cc20ed4fa03ff2470755e6e",
+      "web/test/timeline-selection-anchor.test.js": "84357742ff9aaa5b3c53f103c03c339017cd247cf84af021bd5670201cb7dab7",
+      "web/test/timeline-transition-placement-input.test.js": "9e65555ab3d02dfcdbe0a6e993215b007b9412f0cd93c661a0d4549d4c368c85"
+    }
+  },
+  "validation": {
+    "javascript_syntax_checks": true,
+    "native_click_selection_tests": 5,
+    "native_drag_group_tests": 3,
+    "native_rectangle_tests": 1,
+    "javascript": 877,
+    "native_embedded_build": true,
+    "native_source_hashes_unchanged": true,
+    "native_validation_base_commit": "2e9a0946ddb45023bf66bd8c7ea6fe79e8fe4fb1",
+    "native_validation_evidence": "m4-batch-compositing.json"
+  },
+  "date": "2026-10-22",
+  "scope": "Persistent timeline Shift-click anchor and shared Canvas/accessibility selection policy in the current web row layout",
+  "native_oracles": {
+    "source": "vv-app/src/timeline_ui.rs: apply_click_selection, drag_group_for and clips_intersecting_rect",
+    "tests": {
+      "click_selection": 5,
+      "drag_group": 3,
+      "rectangle": 1
+    },
+    "geometry": "Whole-clip bounds, two CSS-pixel minimum and inclusive rectangle intersections"
+  },
+  "web_entrypoint": {
+    "geometry": "web/js/timeline/geometry.js: clickTimelineSelection and anchor helpers",
+    "input": "web/js/timeline/input.js: selectClip and captured pointer selection",
+    "integration": "web/js/main.js: clip-list, refresh, playhead and compound viewport",
+    "api": "View-only selection; no mutation operation"
+  },
+  "test_ids": [
+    "TS-006",
+    "TS-014",
+    "TS-015",
+    "TS-028"
+  ],
+  "new_javascript_regressions": 23,
+  "windows": {
+    "plain0": {
+      "selected": [
+        "0"
+      ],
+      "time": "00:00:00:00"
+    },
+    "shift1": {
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "time": "00:00:00:00"
+    },
+    "shift0": {
+      "selected": [
+        "0"
+      ],
+      "time": "00:00:00:00"
+    },
+    "shift1_again": {
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "time": "00:00:00:00"
+    },
+    "ctrl_shift0": {
+      "selected": [
+        "0"
+      ],
+      "time": "00:00:00:00"
+    },
+    "ctrl1": {
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "time": "00:00:00:00"
+    },
+    "ctrl1_linked_native": {
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "time": "00:00:00:00"
+    },
+    "plain1": {
+      "selected": [
+        "1",
+        "2"
+      ],
+      "time": "00:00:00:00"
+    },
+    "shift0_from1": {
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "time": "00:00:00:00"
+    },
+    "refresh_shift0": {
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "time": "00:00:00:00"
+    },
+    "refresh_shift1": {
+      "selected": [
+        "1",
+        "2"
+      ],
+      "time": "00:00:00:00"
+    },
+    "bulk_anchor": {
+      "selected": [
+        "0"
+      ],
+      "time": "00:00:00:00"
+    },
+    "gap": {
+      "selected": [],
+      "selectedGaps": 1
+    },
+    "gap_to_shift": {
+      "selected": [
+        "1",
+        "2"
+      ],
+      "selectedGaps": 0,
+      "time": "00:00:00:00"
+    },
+    "locked_refusal": {
+      "selected": [
+        "1",
+        "2"
+      ],
+      "lockedDisabled": true
+    },
+    "final": {
+      "redoDisabled": true,
+      "saved": "Saved",
+      "selected": [
+        "0",
+        "1",
+        "2"
+      ],
+      "time": "00:00:00:00",
+      "undoDisabled": true
+    },
+    "console_errors": []
+  },
+  "native_session_unchanged": {
+    "generation": "0",
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "unsaved": false,
+    "project_and_command_epochs_unchanged": true,
+    "stable_project_media_and_timeline": true
+  },
+  "fixture": {
+    "root": "/home/marco/VenturiWeb-selection-20261022-2",
+    "project": {
+      "project": "Close_Gap_Windows_check.vvproj",
+      "sha256": "59efb575d664cefa028e5bdbc2f5e04c1667aab0144abfe8e65a32aae01675db"
+    },
+    "source_hashes": {
+      "gap-audio.wav": "ede1f6dd33abfce7bb3a45ba79b0ab5f8baae692709dd32214a41da9af55ab13"
+    }
+  },
+  "cleanup": {
+    "own_jobs_stopped": true,
+    "remote_8811_closed": true,
+    "original_and_isolated_files_preserved": true,
+    "main_editor_five_unsaved_moves_preserved": true,
+    "main_binary_unchanged": true
+  },
+  "screenshot": {
+    "path": "m4-shift-selection-windows.jpg",
+    "bytes": 87707,
+    "sha256": "0e8dce3e4942fc0def5f1aaf245e54e5c8c280fc21d4bdce5d309b4f898d59bd"
+  },
+  "limits": {
+    "build_cpu": 1,
+    "build_memory_gib": 4,
+    "build_runtime_seconds": 180,
+    "ui_cpu": 1,
+    "ui_memory_mib": 512,
+    "ui_runtime_seconds": 300,
+    "swap": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10
+  },
+  "limitations": [
+    "Rectangle selection uses current displayed web row coordinates. Native video reverse order and separate video/audio panes are not reproduced by this change.",
+    "Native stale-anchor retention and desktop timeline-navigation reset are not claimed: the web drops missing/moved anchors and retains valid anchors with its existing compound viewport restoration.",
+    "Actual existing-Windows-browser proof uses accessible clip buttons and keyboard modifiers; physical Canvas pointer/DPI and 500-clip performance remain open.",
+    "Preview/export were disabled for this metadata-only qualification; no rendered playback or hardware acceptance is claimed."
+  ]
+}

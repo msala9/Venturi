@@ -1,6 +1,6 @@
 import { isTextTarget, installSplitter } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
-import { linkedSelection, playheadSelection,selectedTransition,selectedGap,nativeGapAt } from "./timeline/geometry.js";
+import { linkedSelection, playheadSelection,selectedTransition,selectedGap,nativeGapAt,clipSelectionAnchor,reconcileSelectionAnchor,firstSelectionAnchor,playheadSelectionAnchor } from "./timeline/geometry.js";
 import {isRetimeShortcut,timelineSelectionFocus} from './timeline/input.js';
 import {createRetimeMenu} from './retime-menu.js';
 import {retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} from './retime-visibility.js';
@@ -312,6 +312,7 @@ const view = {
   scrollY: 0,
   playhead: 0,
   selection: [],
+  selectionAnchor:null,
   snap: true,
   retime: false,
   retimeOverwrite: false,
@@ -465,6 +466,7 @@ function syncSelectionActions(){
 function selected() {
   if(view.selection.length || view.transitionSelection)view.selectedGap=null;
   canvasTimeline.checkGapSelection();
+  view.selectionAnchor=view.transitionSelection || view.selectedGap?null:reconcileSelectionAnchor(timeline,view.selectionAnchor,documentState?.project_epoch ?? null);
   const activeGap=selectedGap(timeline,view);
   for(const button of $("clip-list").querySelectorAll('button[data-gap-track]'))button.setAttribute('aria-pressed',String(Boolean(activeGap && activeGap.track_id===button.dataset.gapTrack && activeGap.start_frame===Number(button.dataset.gapStart) && activeGap.length_frames===Number(button.dataset.gapLength))));
   for (const button of $("clip-list").querySelectorAll("button[data-clip-id]"))
@@ -499,7 +501,7 @@ function selected() {
   const transition=selectedTransition(timeline,view.transitionSelection);
   syncSelectionActions();
   if(transition){
-    view.selection=[];
+    view.selection=[];view.selectionAnchor=null;
     const identity=JSON.stringify([documentState?.project_epoch,timeline.id]);
     renderTransitionSelection($("inspector-content"),transition,{disabled:!writable || busy || Boolean(unresolved) || transition.locked,getTarget:()=>selectedTransition(timeline,view.transitionSelection),canInteract:()=>identity===JSON.stringify([documentState?.project_epoch,timeline?.id]) && writable && !busy && !unresolved && !selectedTransition(timeline,view.transitionSelection)?.locked && !document.querySelector('dialog[open]'),commit,notice});return;
   }
@@ -650,7 +652,7 @@ function selected() {
     const compound=document.createElement("form"),compoundLabel=document.createElement("label");compoundLabel.className="field";compoundLabel.textContent="Compound name";
     const name=document.createElement("input");name.value="Compound";name.required=true;name.maxLength=128;compoundLabel.append(name);
     const make=document.createElement("button");make.textContent="Make compound from selection";make.disabled=!view.selection.length;compound.append(compoundLabel,make);
-    compound.addEventListener("submit",async(event)=>{event.preventDefault();try{await commit({kind:"make_compound",clip_ids:view.selection,name:name.value});view.selection=[];selected();canvasTimeline.invalidate();}catch(error){notice(error.message);}});fieldset.append(compound);
+    compound.addEventListener("submit",async(event)=>{event.preventDefault();try{await commit({kind:"make_compound",clip_ids:view.selection,name:name.value});view.selection=[];view.selectionAnchor=null;selected();canvasTimeline.invalidate();}catch(error){notice(error.message);}});fieldset.append(compound);
     const clipboardNote=document.createElement("p");clipboardNote.className="muted";clipboardNote.textContent=`Native clipboard: ${documentState.clipboard_count || 0} clips · ${documentState.clipboard_media_count || 0} media · native FPS conversion`;fieldset.append(clipboardNote);
     for(const [label,action,disabled] of [["Copy clips",'copy',!view.selection.length],["Cut clips",'cut',!view.selection.length],["Paste retained clips",'paste',false]]) {
       const button=document.createElement("button");button.type='button';button.dataset.clipboardOwner='timeline';button.textContent=label;if(action==='paste')button.title='Paste the retained Venturi copy; Ctrl+V uses the system clipboard';button.disabled=disabled || !writable || busy || !!unresolved;button.addEventListener("click",()=>clipboardCommand('timeline',action));fieldset.append(button);
@@ -665,6 +667,7 @@ function selected() {
 function syncPlayheadSelection(render) {
   if(!selectionFollowsPlayhead || viewerMode!=="program" || !timeline || view.draft || view.lasso || view.transitionSelection)return;
   const next=playheadSelection(timeline,view.playhead);
+  view.selectionAnchor=playheadSelectionAnchor(timeline,view.playhead,documentState?.project_epoch ?? null);
   if(next.length===view.selection.length && next.every(id=>view.selection.includes(id)))return;
   view.selection=next;
   updateRetimeControls();
@@ -683,7 +686,7 @@ const canvasTimeline = createTimeline({
   getAssets: () => mediaAssets,
   getCache: () => previewCache?.ranges(),
   onSelect: ()=>{view.transitionSelection=null;selected();},
-  onTransitionSelect:selection=>{view.transitionSelection=selection;view.selection=[];view.markerId=null;revealInspector();selected();},
+  onTransitionSelect:selection=>{view.transitionSelection=selection;view.selection=[];view.selectionAnchor=null;view.markerId=null;revealInspector();selected();},
   onRetimeMenu:target=>retimeMenu?.open(target),
   onRetimeVisibilityChange:updateRetimeControls,
   onSeek: (final) => {
@@ -712,7 +715,7 @@ function retimeContext(target){
 }
 retimeMenu=createRetimeMenu({getContext:retimeContext,commit:operation=>commit(operation),notice,
   onHide:target=>{view.retimeVisible.delete(target.clip_id);updateRetimeControls();notice('Speed strip hidden for this clip');},
-  onAdvanced:target=>{programPlayer?.stop();fastTransport?.stop();audioScrub?.stop();if(viewerMode!=='program')viewerModeSet('program');view.transitionSelection=null;view.selection=[target.clip_id];visualState.set('retime',true);visualState.set('retime-focus',target.clip_id);revealInspector();selected();canvasTimeline.invalidate();notice('Change clip speed · native Ripple is the initial duration policy; linked clips follow');},
+  onAdvanced:target=>{programPlayer?.stop();fastTransport?.stop();audioScrub?.stop();if(viewerMode!=='program')viewerModeSet('program');view.transitionSelection=null;view.selection=[target.clip_id];view.selectionAnchor=clipSelectionAnchor(timeline,target.clip_id,documentState?.project_epoch ?? null);visualState.set('retime',true);visualState.set('retime-focus',target.clip_id);revealInspector();selected();canvasTimeline.invalidate();notice('Change clip speed · native Ripple is the initial duration policy; linked clips follow');},
 });
 function renderTransitionPresets(){
   const root=$("transition-presets");if(!root)return;root.replaceChildren();
@@ -755,6 +758,7 @@ function installTimeline(next,{transitionSelection=null}={}) {
   view.transitionSelection=selectedTransition(next,transitionSelection)?transitionSelection:null;
   updatePlayAvailability();
   view.selection = [];
+  view.selectionAnchor=null;
   selected();
   $("format").textContent = `${next.fps.num}/${next.fps.den} fps`;
   $("clip-list").replaceChildren();
@@ -765,16 +769,9 @@ function installTimeline(next,{transitionSelection=null}={}) {
       button.textContent = `${track.label || track.id} · ${clip.name || clip.id}`;
       button.dataset.clipId = clip.id;
       button.setAttribute("aria-pressed", "false");
+      button.disabled=track.locked;
       button.addEventListener("click", (event) => {
-        view.transitionSelection=null;
-        const group = linkedSelection(next, [clip.id]);
-        view.selection = event.ctrlKey || event.metaKey || event.shiftKey
-          ? view.selection.includes(clip.id)
-            ? view.selection.filter(id => !group.includes(id))
-            : linkedSelection(next, [...view.selection, clip.id])
-          : group;
-        selected();
-        canvasTimeline.invalidate();
+        if(documentState?.project_epoch===gapEpoch && documentState?.generation===gapGeneration && timeline===next)canvasTimeline.selectClip(clip.id,event);
       });
       $("clip-list").append(button);
     }
@@ -874,13 +871,13 @@ let documentState = null,
 const clientId = persistentClientId();
 compoundNavigation=createCompoundNavigation({
   root:$("compound-breadcrumb"),openButton:$("open-compound"),notice,
-  getState:()=>({document:documentState,timeline,frame:view.playhead,selection:[...view.selection],viewport:{scale:view.scale,origin:view.origin,scrollY:view.scrollY,selection:[...view.selection]}}),
+  getState:()=>({document:documentState,timeline,frame:view.playhead,selection:[...view.selection],viewport:{scale:view.scale,origin:view.origin,scrollY:view.scrollY,selection:[...view.selection],selectionAnchor:view.selectionAnchor}}),
   canNavigate:()=>!busy && !unresolved && canvasTimeline.navigationIdle() && !document.querySelector('dialog[open]'),
   stop:()=>{fastTransport?.stop();audioScrub?.stop();programPlayer?.stop();sourcePlayer?.pause();sourceAssets?.cancel();slipView?.reset();viewer?.invalidate();},
   install:(next,frame,viewport)=>{
     view.playhead=frame;view.origin=Number.isFinite(viewport?.origin) && viewport.origin>=0?viewport.origin:0;view.scrollY=Number.isFinite(viewport?.scrollY) && viewport.scrollY>=0?viewport.scrollY:0;
     if(Number.isFinite(viewport?.scale) && viewport.scale>0)view.scale=viewport.scale;
-    installTimeline(next);view.selection=(viewport?.selection || []).filter(id=>next.tracks.some(track=>track.clips.some(clip=>clip.id===id)));
+    installTimeline(next);view.selection=(viewport?.selection || []).filter(id=>next.tracks.some(track=>!track.locked && track.clips.some(clip=>clip.id===id)));view.selectionAnchor=reconcileSelectionAnchor(next,viewport?.selectionAnchor,documentState?.project_epoch ?? null);
     $("timeline-select").value=next.id;$("revision").textContent=`Revision ${next.revision.slice(0,8)}`;viewerModeSet('program');selected();canvasTimeline.invalidate();
   },
 });
@@ -921,7 +918,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
     sourcePlayer?.reset();
     sourceAssets?.cancel();
     sourceOpenId = null; sourceRanges.clear();
-    view.playhead=0;view.origin=0;view.scrollY=0;view.selection=[];
+    view.playhead=0;view.origin=0;view.scrollY=0;view.selection=[];view.selectionAnchor=null;
     selectedMedia = null;
     mediaState.selected=[];mediaState.anchor=null;mediaState.folder="*";
     for (const asset of mediaAssets.values()) releaseMediaAsset(asset);
@@ -929,7 +926,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
     viewerModeSet("program");
   }
   const previousId = timeline?.id,
-    selection = view.selection,transitionSelection=view.transitionSelection;
+    selection = view.selection,selectionAnchor=view.selectionAnchor,transitionSelection=view.transitionSelection;
   documentState = next;
   compoundNavigation?.invalidate();
   $("play").disabled = viewerMode === "program" && !next.capabilities.playback;
@@ -942,12 +939,13 @@ async function refresh({preserveAudioDrafts=false}={}) {
     $("timeline-select").value = active.id;
     installTimeline(active,{transitionSelection:previousId===active.id?transitionSelection:null});
     view.selection = selection.filter((id) =>
-      active.tracks.some((t) => t.clips.some((c) => c.id === id)),
+      active.tracks.some((t) => !t.locked && t.clips.some((c) => c.id === id)),
     );
+    view.selectionAnchor=reconcileSelectionAnchor(active,selectionAnchor,next.project_epoch);
     selected();
     canvasTimeline.invalidate();
   } else {
-    timeline = null;
+    timeline = null;view.selectionAnchor=null;
     syncProgramMarks();exportPanel?.invalidate?.();
     selected();
     canvasTimeline.invalidate();
@@ -1191,7 +1189,7 @@ clipboard=createClipboard({getContext:clipboardContext,canCommit:clipboardWritab
     mediaState.selected=receipt.media_ids.filter(id=>documentState.media.some(item=>item.id===id));mediaState.anchor=mediaState.selected[0] || null;selectedMedia=mediaState.selected.at(-1) || null;
     const folder=$("media-list").querySelector('[aria-label="Media folder"]'),kind=$("media-list").querySelector('[aria-label="Media type"]');if(folder)folder.value='*';if(kind)kind.value='all';$("search").value='';catalog?.search('');
   }else if(!target.to_pool && receipt.clip_ids.length){
-    const clips=timeline.tracks.flatMap(track=>track.clips).filter(clip=>receipt.clip_ids.includes(clip.id));view.selection=clips.map(clip=>clip.id);view.transitionSelection=null;
+    const clips=timeline.tracks.flatMap(track=>track.clips).filter(clip=>receipt.clip_ids.includes(clip.id));view.selection=clips.map(clip=>clip.id);view.selectionAnchor=firstSelectionAnchor(timeline,view.selection,documentState.project_epoch);view.transitionSelection=null;
     if(clips.length)view.playhead=Math.max(...clips.map(clip=>clip.start_frame+clip.length_frames));selected();updateTime();seek();
   }
 }});

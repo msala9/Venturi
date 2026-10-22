@@ -25,10 +25,48 @@ export function timelineClipSelection(timeline,fromFrame=null){
     return clips.map(clip=>clip.id);
   });
 }
+export function clipSelectionAnchor(timeline,clipId,projectEpoch=null){
+  const track=timeline?.tracks.find(track=>!track.locked && track.clips.some(clip=>clip.id===clipId));
+  return track?{project_epoch:projectEpoch,timeline_id:timeline.id,track_id:track.id,clip_id:clipId}:null;
+}
+export function reconcileSelectionAnchor(timeline,anchor,projectEpoch=null){
+  if(!anchor || anchor.project_epoch!==projectEpoch || anchor.timeline_id!==timeline?.id)return null;
+  const current=clipSelectionAnchor(timeline,anchor.clip_id,projectEpoch);
+  return current?.track_id===anchor.track_id?current:null;
+}
+export function firstSelectionAnchor(timeline,ids,projectEpoch=null){
+  const selected=new Set(ids);
+  return clipSelectionAnchor(timeline,timelineClipSelection(timeline).find(id=>selected.has(id)),projectEpoch);
+}
+export function unlockedLinkedSelection(timeline,ids){
+  const unlocked=timeline.tracks.filter(track=>!track.locked).flatMap(track=>track.clips),byId=new Map(unlocked.map(clip=>[clip.id,clip])),chosen=new Set(ids),groups=new Set(unlocked.filter(clip=>chosen.has(clip.id) && clip.linked_group!=null).map(clip=>clip.linked_group));
+  return timelineClipSelection(timeline).filter(id=>{const clip=byId.get(id);return chosen.has(id) || (clip.linked_group!=null && groups.has(clip.linked_group));});
+}
+export function clickTimelineSelection(timeline,{ids,anchor},clickedId,{shift=false,toggle=false,projectEpoch=null}={},view){
+  const clicked=clipSelectionAnchor(timeline,clickedId,projectEpoch);
+  if(!clicked)return null;
+  let next=new Set(ids),nextAnchor=clicked;
+  if(shift){
+    nextAnchor=reconcileSelectionAnchor(timeline,anchor,projectEpoch) || clicked;
+    const scale=pixelsPerFrame(view,timeline.fps),rect=(index,clip)=>({id:clip.id,left:clip.start_frame*scale,right:clip.start_frame*scale+Math.max(2,clip.length_frames*scale),top:index*TRACK+2,bottom:(index+1)*TRACK-2});
+    // Range selection follows the displayed rows, without reordering the renderer.
+    const rectangles=timeline.tracks.flatMap((track,index)=>track.clips.map(clip=>({...rect(index,clip),locked:track.locked})));
+    const a=rectangles.find(item=>item.id===nextAnchor.clip_id),b=rectangles.find(item=>item.id===clickedId);
+    const union={left:Math.min(a.left,b.left),right:Math.max(a.right,b.right),top:Math.min(a.top,b.top),bottom:Math.max(a.bottom,b.bottom)};
+    next=new Set(rectangles.filter(item=>!item.locked && item.left<=union.right && item.right>=union.left && item.top<=union.bottom && item.bottom>=union.top).map(item=>item.id));
+  }else if(toggle){if(!next.delete(clickedId))next.add(clickedId);}
+  else next=new Set([clickedId]);
+  return {ids:unlockedLinkedSelection(timeline,[...next]),anchor:nextAnchor};
+}
+export function playheadSelectionAnchor(timeline,frame,projectEpoch=null){
+  return clipSelectionAnchor(timeline,activePlayheadClip(timeline,frame)?.id,projectEpoch);
+}
+function activePlayheadClip(timeline,frame){
+  return [...(timeline?.tracks || [])].reverse().filter(track=>track.kind==='video' && !track.muted).map(track=>track.clips.find(clip=>!clip.disabled && clip.start_frame<=frame && frame<clip.start_frame+clip.length_frames)).find(Boolean);
+}
 export function playheadSelection(timeline, frame) {
   if(!timeline)return [];
-  const video=[...timeline.tracks].reverse().filter(track=>track.kind==="video" && !track.muted);
-  const active=video.map(track=>track.clips.find(clip=>!clip.disabled && clip.start_frame<=frame && frame<clip.start_frame+clip.length_frames)).find(Boolean);
+  const active=activePlayheadClip(timeline,frame);
   if(!active)return [];
   return timeline.tracks.filter(track=>!track.locked).flatMap(track=>track.clips.filter(clip=>clip.id===active.id || (active.linked_group!=null && clip.linked_group===active.linked_group)).map(clip=>clip.id));
 }

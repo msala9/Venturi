@@ -17,6 +17,11 @@ import {
   nativeGapAt,
   selectedGap,
   timelineClipSelection,
+  clipSelectionAnchor,
+  reconcileSelectionAnchor,
+  firstSelectionAnchor,
+  unlockedLinkedSelection,
+  clickTimelineSelection,
 } from "./geometry.js";
 import {isTextTarget} from '../ui.js';
 import {createPresetDrop} from './preset-drop.js';
@@ -70,7 +75,7 @@ export function createInput({
   };
   const transitionContext=timeline=>{
     const rect=canvas.getBoundingClientRect();
-    return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,view.tool,view.snap,view.retimeOverwrite,[...(view.retimeVisible || [])].sort(),Boolean(view.transitionReplace),view.transitionSelection,view.playhead,[...view.selection].sort(),rect.left,rect.top,rect.width,rect.height]);
+    return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,view.tool,view.snap,view.retimeOverwrite,[...(view.retimeVisible || [])].sort(),Boolean(view.transitionReplace),view.transitionSelection,view.selectedGap,view.playhead,[...view.selection].sort(),view.selectionAnchor,rect.left,rect.top,rect.width,rect.height]);
   };
   const modal=()=>Boolean(canvas.ownerDocument?.querySelector?.('dialog[open]'));
   const gapContext=timeline=>JSON.stringify([timeline?.id,timeline?.revision,getGapContext()]);
@@ -86,9 +91,12 @@ export function createInput({
     return JSON.stringify([source.transition,source.locked,source.clip?.start_frame,source.clip?.length_frames,source.left?.start_frame,source.left?.length_frames,source.right?.start_frame,source.right?.length_frames]);
   };
   const sourceCurrent=g=>!g.source || sourceIdentity(getTimeline(),g.source)===g.sourceIdentity;
-  const selectTransition=selection=>{view.selectedGap=null;view.selection=[];view.transitionSelection=structuredClone(selection);onTransitionSelect(view.transitionSelection);invalidate();};
-  const selectionIntent=()=>JSON.stringify([view.selection,view.transitionSelection]);
-  const cancel = () => {
+  const selectTransition=selection=>{view.selectedGap=null;view.selection=[];view.selectionAnchor=null;view.transitionSelection=structuredClone(selection);onTransitionSelect(view.transitionSelection);invalidate();};
+  const selectionIntent=()=>JSON.stringify([view.selection,view.selectionAnchor,view.transitionSelection,view.selectedGap]);
+  const projectEpoch=()=>getGapContext()?.project_epoch ?? null;
+  const checkSelectionAnchor=()=>view.selectionAnchor=reconcileSelectionAnchor(getTimeline(),view.selectionAnchor,projectEpoch());
+  const cancel = (notify=true) => {
+    const previous=gesture;
     const slipping = gesture?.kind === "slip";
     const pointerId=gesture?.pointerId;
     gesture = null;
@@ -96,7 +104,17 @@ export function createInput({
     presetDrop?.dnd.end();
     view.draft = null;
     view.lasso = null;
-    if(view.selectedGap){view.selectedGap=null;onSelect();}
+    let restored=false;
+    if(previous?.selectionBefore && !previous.moved && clipSelectionOwned(previous)){
+      const before=previous.selectionBefore,intent=selectionIntent();
+      view.selection=[...before.ids];view.selectionAnchor=reconcileSelectionAnchor(getTimeline(),before.anchor,projectEpoch());
+      view.transitionSelection=selectedTransition(getTimeline(),before.transition)?structuredClone(before.transition):null;
+      const gapView={selection:view.selection,transitionSelection:view.transitionSelection,selectedGap:before.gap};
+      view.selectedGap=before.gap?.context===gapContext(getTimeline()) && selectedGap(getTimeline(),gapView)?structuredClone(before.gap):null;
+      restored=true;
+      if(previous.selectionPublished && selectionIntent()!==intent){if(view.transitionSelection)onTransitionSelect(view.transitionSelection);else onSelect();}
+    }
+    if(!restored && !previous?.selectionBefore && previous?.kind!=='lasso' && view.selectedGap){view.selectedGap=null;if(notify)onSelect();}
     if(slipping)onSlip({phase:"cancel"});
     if(pointerId!==undefined && canvas.hasPointerCapture(pointerId))canvas.releasePointerCapture(pointerId);
     invalidate();
@@ -136,7 +154,7 @@ export function createInput({
     if(getTimeline()!==timeline || gapContext(timeline)!==context || selectionIntent()!==intent || modal() || !canEdit())return false;
     waiting=true;invalidate();
     try{const receipt=await onCommand({kind:'delete',clip_ids:ids,ripple:true});followRipple(Math.min(...starts),owner,receipt,affected);return true;}catch(error){onNotice(error.message);return false;}
-    finally{waiting=false;if(getTimeline()?.id===owner.timelineId && getGapContext()?.project_epoch===owner.epoch && selectionIntent()===intent)view.selection=[];view.selectedGap=null;onSelect();invalidate();}
+    finally{waiting=false;if(getTimeline()?.id===owner.timelineId && getGapContext()?.project_epoch===owner.epoch && selectionIntent()===intent){view.selection=[];view.selectionAnchor=null;}view.selectedGap=null;onSelect();invalidate();}
   }
   const canCloseGap=()=>Boolean(checkGapSelection() && !waiting && !gesture && !transitionDrag && !presetDrop?.active() && !modal() && canEdit());
   const canSelectTimeline=()=>Boolean(getTimeline() && !waiting && !gesture && !transitionDrag && !presetDrop?.active() && !view.draft && !view.lasso && !modal() && canNavigate());
@@ -145,7 +163,17 @@ export function createInput({
     const timeline=getTimeline(),context=gapContext(timeline),playhead=view.playhead,ids=timelineClipSelection(timeline,mode==='from_playhead'?playhead:null);
     onNavigationIntent();
     if(getTimeline()!==timeline || gapContext(timeline)!==context || view.playhead!==playhead || !canSelectTimeline())return false;
-    view.selectedGap=null;view.transitionSelection=null;view.selection=ids;onSelect();invalidate();return true;
+    view.selectedGap=null;view.transitionSelection=null;view.selection=ids;view.selectionAnchor=firstSelectionAnchor(timeline,ids,projectEpoch());onSelect();invalidate();return true;
+  }
+  function selectClip(clipId,modifiers={}){
+    if(!canSelectTimeline() || modifiers.defaultPrevented || modifiers.isComposing || modifiers.keyCode===229 || modifiers.repeat || modifiers.getModifierState?.('AltGraph') || modifiers.altKey)return false;
+    checkSelectionAnchor();
+    const timeline=getTimeline(),context=gapContext(timeline),intent=selectionIntent();
+    const result=clickTimelineSelection(timeline,{ids:view.selection,anchor:view.selectionAnchor},clipId,{shift:Boolean(modifiers.shiftKey),toggle:Boolean(modifiers.ctrlKey || modifiers.metaKey),projectEpoch:projectEpoch()},view);
+    if(!result)return false;
+    onNavigationIntent();
+    if(getTimeline()!==timeline || gapContext(timeline)!==context || selectionIntent()!==intent || !canSelectTimeline())return false;
+    view.selection=result.ids;view.selectionAnchor=result.anchor;view.selectedGap=null;view.transitionSelection=null;onSelect();invalidate();return true;
   }
   function handleSelectionKey(event,{timelineFocused=true}={}){
     const action=timelineSelectionAction(event,{dialogOpen:modal(),timelineFocused});
@@ -158,7 +186,7 @@ export function createInput({
     const context=gapContext(timeline);
     onNavigationIntent();
     if(getTimeline()!==timeline || gapContext(timeline)!==context || modal() || !canNavigate())return false;
-    view.selection=[];view.transitionSelection=null;view.selectedGap={...gap,frame,timeline_id:timeline.id,revision:timeline.revision,context};onSelect();invalidate();return true;
+    view.selection=[];view.selectionAnchor=null;view.transitionSelection=null;view.selectedGap={...gap,frame,timeline_id:timeline.id,revision:timeline.revision,context};onSelect();invalidate();return true;
   }
   function handleGapKey(event){
     if(event.key==='Escape' && view.selectedGap && !event.defaultPrevented && !event.isComposing && !isTextTarget(event.target) && !modal()){
@@ -179,15 +207,20 @@ export function createInput({
       if(selectionIntent()===intent && current?.id===timelineId && selected && ['kind','duration','direction','ease','curve'].every(key=>selected.transition[key]===draft.transition[key]))selectTransition(draft.selection);
     }catch(error){onNotice(error.message);}finally{waiting=false;}
   }
-  function beginClipGesture(hit,event,x,y,timeline){
-    view.selectedGap=null;
-    view.transitionSelection=null;
-    if(event.ctrlKey && view.selection.includes(hit.clip.id)){
-      const group=linkedSelection(timeline,[hit.clip.id]);view.selection=view.selection.filter(id=>!group.includes(id));onSelect();invalidate();return false;
+  const clipViewport=()=>{const rect=canvas.getBoundingClientRect();return JSON.stringify([view.scale,view.origin,view.scrollY,view.tool,view.snap,view.playhead,rect.left,rect.top,rect.width,rect.height]);};
+  function clipSelectionOwned(g){return getTimeline()===g.timeline && gapContext(g.timeline)===g.selectionContext && selectionIntent()===g.selectionIntent;}
+  function clipSelectionCurrent(g){return clipSelectionOwned(g) && clipViewport()===g.selectionViewport && !modal() && canNavigate();}
+  function beginClipGesture(hit,event,x,y,timeline,notify=true){
+    if(!canNavigate())return false;
+    const before={ids:[...view.selection],anchor:checkSelectionAnchor(),gap:structuredClone(view.selectedGap || null),transition:structuredClone(view.transitionSelection || null)};
+    const modifiers={shift:Boolean(event.shiftKey),toggle:Boolean(event.ctrlKey || event.metaKey),projectEpoch:projectEpoch()};
+    if(hit.kind!=='fade'){
+      const selected=clickTimelineSelection(timeline,before,hit.clip.id,modifiers,view);if(!selected)return false;
+      if(modifiers.shift || modifiers.toggle || !before.ids.includes(hit.clip.id)){view.selection=selected.ids;view.selectionAnchor=selected.anchor;}
+      view.selectedGap=null;view.transitionSelection=null;if(notify)onSelect();
     }
-    const ids=view.selection.includes(hit.clip.id)?view.selection:event.ctrlKey || event.shiftKey?[...view.selection,hit.clip.id]:[hit.clip.id];
-    view.selection=linkedSelection(timeline,ids);onSelect();
-    gesture={...hit,x,y,frame:xToFrame(x,view,timeline.fps),moved:false};
+    gesture={...hit,x,y,frame:xToFrame(x,view,timeline.fps),moved:false,timeline,pointerId:event.pointerId};
+    if(hit.kind!=='fade')Object.assign(gesture,{selectionBefore:before,selectionPublished:notify,clickModifiers:modifiers,selectionContext:gapContext(timeline),selectionViewport:clipViewport(),selectionIntent:selectionIntent()});
     if(hit.kind==='fade'){
       if(!canEdit()){gesture=null;onNotice('A writable idle session is required to edit a fade');return false;}
       gesture.timeline=timeline;gesture.pointerId=event.pointerId;
@@ -199,21 +232,30 @@ export function createInput({
     }
     return true;
   }
+  function beginSelectionDrag(g){
+    if(!g.selectionBefore || g.moved)return true;
+    if(!canEdit()){cancel(false);onNotice('A writable idle session is required to edit these clips');return false;}
+    const ids=g.kind!=='slip' && g.selectionBefore.ids.includes(g.clip.id)?[...g.selectionBefore.ids]:unlockedLinkedSelection(g.timeline,[g.clip.id]);
+    const affected=linkedSelection(g.timeline,ids);
+    if(g.timeline.tracks.some(track=>track.locked && track.clips.some(clip=>affected.includes(clip.id)))){cancel(false);onNotice('Unlock the selected clips and their linked tracks before editing');return false;}
+    view.selection=ids;
+    view.selectionAnchor=clipSelectionAnchor(g.timeline,g.clip.id,projectEpoch());view.selectedGap=null;view.transitionSelection=null;
+    g.selectionIntent=selectionIntent();if(g.fromTransitionBody)g.context=transitionContext(g.timeline);return true;
+  }
   function beginBodyClipDrag(g){
     const timeline=getTimeline(),left=frameToX(g.clip.start_frame,view,timeline.fps),right=frameToX(g.clip.start_frame+g.clip.length_frames,view,timeline.fps),kind=g.x-left<8?'trim_start':right-g.x<8?'trim_end':'move';
     gesture=null;
-    if(!beginClipGesture({kind,clip:g.clip,track:g.track},{...g.modifiers,pointerId:g.pointerId},g.x,g.y,timeline)){cancel();if(canvas.hasPointerCapture(g.pointerId))canvas.releasePointerCapture(g.pointerId);return false;}
+    if(!beginClipGesture({kind,clip:g.clip,track:g.track},{...g.modifiers,pointerId:g.pointerId},g.x,g.y,timeline,false)){cancel(false);if(canvas.hasPointerCapture(g.pointerId))canvas.releasePointerCapture(g.pointerId);return false;}
     gesture={...gesture,fromTransitionBody:true,pointerId:g.pointerId,timeline,context:transitionContext(timeline),source:g.source,sourceIdentity:g.sourceIdentity};return true;
   }
   const down = (event) => {
-    if (waiting || gesture || transitionDrag || presetDrop?.active() || modal()) return;
+    if (waiting || gesture || transitionDrag || presetDrop?.active() || modal() || event.defaultPrevented || event.isComposing || !canNavigate()) return;
     const timeline = getTimeline();
     if (!timeline) return;
     onNavigationIntent();
     canvas.focus();
     const [x, y] = point(event);
     const hit = hitTest(x, y, timeline, view,canvas.getBoundingClientRect().width);
-    if(view.selectedGap && hit.kind!=='blank' && event.button===0 && !event.altKey){view.selectedGap=null;onSelect();}
     if (event.button === 0 && hit.kind === "marker") {
       gesture = {kind:"marker",marker:hit.marker,mode:hit.edge || (event.altKey && !hit.marker.duration_frames ? "extend" : "move"),frame:xToFrame(x,view,timeline.fps),x,y,moved:false,editable:canEdit()};
     } else if(event.button===0 && hit.kind==='transition'){
@@ -241,10 +283,6 @@ export function createInput({
       view.playhead = xToFrame(x, view, timeline.fps);
       onSeek(false);
     } else if (hit.kind === "blank") {
-      view.selectedGap=null;
-      view.transitionSelection=null;
-      if (!event.ctrlKey) view.selection = [];
-      onSelect();
       const frame=xToFrame(x,view,timeline.fps),gap=nativeGapAt(timeline,timeline.tracks[hit.track]?.id,frame);
       gesture = { kind: "lasso", x, y, timeline,context:transitionContext(timeline),gapContext:gapContext(timeline),pointerId:event.pointerId,moved:false,gap:gap?{...gap,frame}:null };
     } else return;
@@ -265,6 +303,11 @@ export function createInput({
     const timeline = getTimeline(),
       [x, y] = point(event),
       g = gesture;
+    if(g.selectionBefore){
+      if(event.pointerId!==g.pointerId)return;
+      if(!clipSelectionCurrent(g) || (g.moved && !canEdit()) || (!allowRelease && event.buttons!==undefined && !(event.buttons&1))){cancel(false);return;}
+      if(Math.hypot(x-g.x,y-g.y)>=4 && !beginSelectionDrag(g))return;
+    }
     if(g.kind==='lasso'){
       if(event.pointerId!==g.pointerId)return;
       if(timeline!==g.timeline || transitionContext(timeline)!==g.context || gapContext(timeline)!==g.gapContext || modal()){cancel();return;}
@@ -397,17 +440,31 @@ export function createInput({
     if (!gesture) return;
     const g = gesture,
       timeline = getTimeline();
+    if(g.selectionBefore){
+      if(event.pointerId!==g.pointerId || event.button!==0)return;
+      if(!clipSelectionCurrent(g) || (g.moved && !canEdit())){cancel();return;}
+      const [x,y]=point(event);
+      if(!g.moved && Math.hypot(x-g.x,y-g.y)>=4){move(event,true);if(gesture!==g)return;}
+      if(!g.moved){
+        const selection=clickTimelineSelection(timeline,g.selectionBefore,g.clip.id,g.clickModifiers,view);
+        gesture=null;view.draft=null;
+        if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+        if(selection){view.selection=selection.ids;view.selectionAnchor=selection.anchor;view.selectedGap=null;view.transitionSelection=null;onSelect();}
+        if(g.kind==='slip')onSlip({phase:'end'});
+        invalidate();return;
+      }
+    }
     if(g.kind==='lasso'){
       if(event.pointerId!==g.pointerId || event.button!==0)return;
       if(timeline!==g.timeline || transitionContext(timeline)!==g.context || gapContext(timeline)!==g.gapContext || modal()){cancel();return;}
       const [x,y]=point(event);g.moved ||= Math.hypot(x-g.x,y-g.y)>=4;
-      if(!g.moved && g.gap){
-        const native=nativeGapAt(timeline,g.gap.track_id,g.gap.frame);
+      if(!g.moved){
+        const native=g.gap && nativeGapAt(timeline,g.gap.track_id,g.gap.frame);
         const selection=native && native.start_frame===g.gap.start_frame && native.length_frames===g.gap.length_frames?{...g.gap,timeline_id:timeline.id,revision:timeline.revision,context:g.gapContext}:null;
         gesture=null;view.lasso=null;if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
-        view.selection=[];view.selectedGap=selection;onSelect();invalidate();return;
+        view.selection=[];view.selectionAnchor=null;view.transitionSelection=null;view.selectedGap=selection;onSelect();invalidate();return;
       }
-      if(!g.moved)view.lasso=null;
+      view.lasso={x:Math.min(g.x,x),y:Math.min(g.y,y),width:Math.abs(x-g.x),height:Math.abs(y-g.y)};
     }
     if(g.kind==='retime_menu' || g.kind==='retime_close'){
       if(event.pointerId!==g.pointerId || event.button!==0)return;
@@ -448,6 +505,7 @@ export function createInput({
       const box = view.lasso;
       const start = xToFrame(box.x, view, timeline.fps),
         end = xToFrame(box.x + box.width, view, timeline.fps);
+      const hits=[];
       timeline.tracks.forEach((track, index) => {
         const top = RULER + index * TRACK - view.scrollY;
         if (track.locked || top > box.y + box.height || top + TRACK < box.y)
@@ -457,15 +515,16 @@ export function createInput({
             clip.start_frame < end &&
             clip.start_frame + clip.length_frames > start
           )
-            view.selection.push(clip.id);
+            hits.push(clip.id);
       });
-      view.selection = linkedSelection(timeline, [...new Set(view.selection)]);
+      view.selection=unlockedLinkedSelection(timeline,hits);view.selectionAnchor=clipSelectionAnchor(timeline,hits[0],projectEpoch());view.selectedGap=null;view.transitionSelection=null;
       onSelect();
     }
     gesture = null;
     view.lasso = null;
     if (canvas.hasPointerCapture(event.pointerId))
       canvas.releasePointerCapture(event.pointerId);
+    if(g.selectionBefore)onSelect();
     if (g.kind === "scrub") onSeek(true);
     if (g.kind === "marker" && !g.moved) { view.playhead=g.marker.start_frame;onSeek(true); }
     const markerChanged = g.kind !== "marker" || (draft && (draft.marker.start_frame!==g.marker.start_frame || draft.marker.duration_frames!==g.marker.duration_frames));
@@ -552,7 +611,7 @@ export function createInput({
     cancel();
     if(!active && view.transitionSelection){view.transitionSelection=null;onTransitionSelect(null);invalidate();}
   };
-  const pointerAbort=event=>{if((gesture?.fromTransitionBody || ['transition','retime','retime_menu','retime_close','transition_body','transition_copy'].includes(gesture?.kind)) && event?.pointerId!==undefined && event.pointerId!==gesture.pointerId)return;cancel();};
+  const pointerAbort=event=>{if(!gesture || (gesture.pointerId!==undefined && event?.pointerId!==undefined && event.pointerId!==gesture.pointerId))return;cancel();};
   const viewportChanged=()=>{if(presetDrop?.active() || transitionDrag || gesture?.fromTransitionBody || ['transition','retime','retime_menu','retime_close','transition_body','transition_copy'].includes(gesture?.kind))cancel();};
   const documentRef=canvas.ownerDocument ?? window.document;
   const visibilityChanged=()=>{if(documentRef?.hidden)viewportChanged();};
@@ -618,6 +677,8 @@ export function createInput({
     handleGapKey,
     checkGapSelection,
     selectTimelineClips,
+    selectClip,
+    checkSelectionAnchor,
     canSelectTimeline,
     handleSelectionKey,
     transitionDnd:{type:TRANSITION_DRAG_TYPE,start:startTransitionDrag,end:endTransitionDrag},

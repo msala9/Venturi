@@ -12,6 +12,30 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Timeline selection now has a persistent Shift-click anchor shared by Canvas
+and accessible clip buttons. Shift replaces the prior range and precedes Ctrl;
+plain clicks replace selection, while dragging a selected member preserves its
+group. Linked expansion excludes locked view targets without weakening native
+edit preflight. Pending selections restore their previous clip/gap/transition
+on cancellation, ignore late capture-release events and preserve a newer owner's
+gap. Pointer drafts do not trigger Inspector reads.
+
+`evidence/m4-shift-selection.json` records 877 passing JavaScript tests,
+including 23 new regressions, nine existing native selection/drag/rectangle
+oracles, syntax checks and a cached embedded build on bounded halo2. Fifteen
+actual existing-Windows-browser selection checks pass, including repeated Shift,
+Ctrl/Shift precedence, linked behavior, Reconnect, bulk/gap anchor reset and
+locked exclusion. Native project/command epochs, generation zero, empty history,
+saved model and source bytes remain unchanged. Temporary resources are closed;
+the main editor retains its five unsaved moves.
+
+Selection uses the current displayed web rows. The original desktop's reversed
+video order, separate panes and raw stale-anchor/navigation lifecycle are not
+claimed as equivalent. Physical Canvas pointer/DPI and 500-clip performance
+also remain open. The multi-selection row therefore stays partial, with counts
+unchanged at 42 done/48 partial. This qualification disables preview/export and
+does not repeat the preceding GPU renderer proof.
+
 Blend and Track Matte now pass the original Inspector's multi-selection
 semantics and actual existing-Windows-browser controls in
 `evidence/m4-batch-compositing.json`. Values come from the first unlocked video

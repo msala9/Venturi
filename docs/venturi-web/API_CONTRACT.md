@@ -879,13 +879,24 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   The command route accepts up to 256 KiB; other JSON routes retain 64 KiB.
 
 - GET `/timelines/{id}/clips/{clip}/slip/{center}` takes the usual FrameQuery.
-  It returns linked handle intersection, source FPS, all linked IDs, lock state
+  It returns linked handle intersection, source FPS, full `total_frames`, all linked IDs, lock state
   and an exact native `[delta,first,last]` source-frame map. At most 65537
   positions around center are returned; a different center can refresh the
   window explicitly. Descriptor file identity invalidates the local proxy cache
   after source replacement. No project or history mutation occurs on this read.
-  The dual viewer uses a bounded 32 MiB local MP4 Blob and never sends HTTP from
-  pointer movement. One completed timeline gesture sends the existing `slip`
+  The selected video is the preview source; an audio selection uses the first
+  linked video in native track/clip-ID order. The returned `clip_id` still
+  identifies the selected clip; source metadata and frame map identify the
+  chosen video. An unlinked audio clip retains numeric Slip without video.
+  The dual viewer prepares one shared or two sequential Source windows, each
+  at most 60 seconds and 32 MiB of local MP4 Blob storage. The full source may
+  exceed ten minutes. Both descriptors must match the manifest's pinned file
+  identity, full FPS and frame count. Local seeks subtract the window origin.
+  No HTTP is sent from pointer movement or numeric input; a committed numeric
+  change outside cached coverage or explicit Refresh recenters the windows.
+  Close, selection/project invalidation and stale/error paths detach video
+  sources and release owned Blob URLs without canceling shared server jobs.
+  One completed timeline gesture sends the existing `slip`
   command; Escape/capture loss cancels local drafts. Numeric Apply and the
   two-image source display use the same native frame map and command.
 

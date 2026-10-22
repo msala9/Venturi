@@ -1,6 +1,137 @@
 use super::*;
 
 #[test]
+fn public_slip_manifest_uses_the_same_pinned_file_version_as_source_windows_without_editing() {
+    use vv_core::{Clip, ClipSource, Id, MediaItem, MediaMeta};
+    let root = std::env::temp_dir().join(format!(
+        "vv-slip-version-host-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let path = root.join("source.png");
+    let bytes = clipboard_image_bytes();
+    std::fs::write(&path, &bytes).unwrap();
+    // Seed cached movie metadata: this regression exercises FD binding, not decoding.
+    let meta = MediaMeta {
+        duration_frames: 1_000_000,
+        fps: Rational::new(30_000, 1001),
+        width: 16,
+        height: 16,
+        has_video: true,
+        has_audio: false,
+        sample_rate: 0,
+        channels: 0,
+        audio_streams: 0,
+        file: Default::default(),
+    };
+    let media = editor.session.project.media_pool.insert(MediaItem {
+        path: path.clone(),
+        meta: meta.clone(),
+        content_hash: 42,
+        compound: None,
+        folder: None,
+    });
+    let timeline = editor.session.create_timeline(Timeline {
+        name: "Slip FD binding".into(),
+        fps: Rational::new(24_000, 1001),
+        resolution: (16, 16),
+        tracks: vec![Track::new(TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let clip = editor.session.project.alloc_clip_id();
+    editor.session.project.timelines[timeline].tracks[0]
+        .clips
+        .push(Clip::from_source_range(
+            clip,
+            ClipSource::Media(media),
+            30_000,
+            30_060,
+            12,
+            Rational::new(4, 5),
+        ));
+    editor.session.sync_timeline_media(timeline);
+    let query = FrameQuery {
+        timeline_id: timeline.raw().to_string(),
+        project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+        if_generation: editor.session.history.generation().to_string(),
+        revision: editor.session.timeline_revision(timeline),
+        frame: 12,
+        width: 16,
+    };
+    let baseline = editor.snapshot();
+    let project = json!(editor.session.project);
+    let position = editor.session.history.position();
+    let generation = editor.session.history.generation();
+    let receipts = editor.completed.len();
+    let first = editor
+        .handle(Action::SlipDetail(clip.0.to_string(), 0, query.clone()))
+        .unwrap();
+    assert_eq!(first["preview_available"], true);
+    assert_eq!(first["total_frames"], meta.duration_frames);
+    assert_ne!(first["source_version"], "42");
+    let pin = |editor: &mut Editor| {
+        let (reply, mut result) = oneshot::channel();
+        editor
+            .handle(Action::SourceSnapshot(
+                media.raw().to_string(),
+                SourceQuery {
+                    project_epoch: query.project_epoch.clone(),
+                },
+                reply,
+            ))
+            .unwrap();
+        result.try_recv().unwrap().unwrap()
+    };
+    let old = pin(&mut editor);
+    let old_version = crate::source::file_identity(&old.file).unwrap();
+    assert_eq!(first["source_version"], old_version);
+    assert_eq!(first["fps"], json!(old.meta.fps));
+    assert_eq!(first["total_frames"], old.meta.duration_frames);
+    let modified = old.file.metadata().unwrap().modified().unwrap();
+    let replacement = root.join("replacement.png");
+    std::fs::write(&replacement, &bytes).unwrap();
+    std::fs::File::options()
+        .write(true)
+        .open(&replacement)
+        .unwrap()
+        .set_times(std::fs::FileTimes::new().set_modified(modified))
+        .unwrap();
+    std::fs::rename(&replacement, &path).unwrap();
+    let fresh = pin(&mut editor);
+    let fresh_version = crate::source::file_identity(&fresh.file).unwrap();
+    assert_ne!(fresh_version, old_version);
+    assert_eq!(
+        crate::source::file_identity(&old.file).unwrap(),
+        old_version
+    );
+    assert_eq!(
+        old.file.metadata().unwrap().len(),
+        fresh.file.metadata().unwrap().len()
+    );
+    assert_eq!(
+        old.file.metadata().unwrap().modified().unwrap(),
+        fresh.file.metadata().unwrap().modified().unwrap()
+    );
+    assert_eq!(json!(fresh.meta), json!(old.meta));
+    let second = editor
+        .handle(Action::SlipDetail(clip.0.to_string(), 0, query))
+        .unwrap();
+    assert_eq!(second["source_version"], fresh_version);
+    assert_ne!(second["source_version"], first["source_version"]);
+    assert_eq!(second["frames"], first["frames"]);
+    assert_eq!(editor.snapshot(), baseline);
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(editor.session.history.generation(), generation);
+    assert_eq!(editor.completed.len(), receipts);
+    drop(fresh);
+    drop(old);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn saved_audio_presets_are_library_only_retry_safe_and_apply_with_one_native_undo() {
     use crate::audio_presets::{Edit, Kind};
     use vv_core::{AudioEffect, AudioEffectKind, Equalizer, Id};

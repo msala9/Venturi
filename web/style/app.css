@@ -525,12 +525,14 @@ label {
 #media-list details { margin-top: 12px; }
 #media-list details button { margin: 3px 0; }
 #screen[data-slip-preview="true"] > :not(#slip-view) { visibility: hidden; }
-#slip-view { position: absolute; inset: 0; overflow: auto; z-index: 3; background: var(--bg); padding: 8px; }
-.slip-frames { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.slip-frames figure { margin: 0; min-width: 0; }
-.slip-frames video { width: 100%; max-height: 200px; object-fit: contain; }
-.slip-frames figcaption { color: var(--muted); }
-.slip-controls { display: flex; gap: 5px; flex-wrap: wrap; margin: 8px 0; }
+#slip-view { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 4px; overflow: auto; z-index: 3; background: var(--bg); padding: 8px; }
+#slip-view[hidden] { display: none; }
+.slip-frames { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1 1 0; min-height: 48px; }
+.slip-frames figure { display: flex; flex-direction: column; margin: 0; min-width: 0; min-height: 0; }
+.slip-frames video { width: 100%; height: 0; min-height: 0; flex: 1 1 0; object-fit: contain; }
+.slip-frames figcaption { color: var(--muted); flex: 0 0 auto; }
+.slip-controls { display: flex; gap: 5px; flex-wrap: wrap; margin: 0; flex: 0 0 auto; }
+#slip-view > output { flex: 0 0 auto; }
 .slip-controls input { width: 80px; }
 #silence-dialog { max-width: min(550px, calc(100vw - 24px)); }
 #silence-dialog form:not([method="dialog"]) { display: grid; gap: 2px; margin: 12px 0; }

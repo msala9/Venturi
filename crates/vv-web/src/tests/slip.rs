@@ -48,11 +48,91 @@ fn fixture() -> (Session, core::TimelineId, String) {
 }
 
 #[test]
+fn linked_audio_slip_previews_the_native_video_peer_in_its_own_source_clock() {
+    let (mut session, timeline, video) = fixture();
+    let audio_id = session.project.timelines[timeline].tracks[1].clips[0].id;
+    let audio_media = session.project.media_pool.insert(MediaItem {
+        path: "separate-audio.wav".into(),
+        meta: MediaMeta {
+            duration_frames: 1000,
+            fps: Rational::new(96, 1),
+            width: 0,
+            height: 0,
+            has_video: false,
+            has_audio: true,
+            sample_rate: 48000,
+            channels: 2,
+            audio_streams: 1,
+            file: Default::default(),
+        },
+        content_hash: 99,
+        compound: None,
+        folder: None,
+    });
+    let audio = &mut session.project.timelines[timeline].tracks[1].clips[0];
+    *audio = Clip::from_source_range(
+        audio_id,
+        ClipSource::Media(audio_media),
+        360,
+        500,
+        100,
+        Rational::new(1, 4),
+    );
+    audio.linked_group = Some(core::LinkGroupId(1));
+    let before = json!(session.project);
+    let video_detail = detail(&session, timeline, &video, 2).unwrap();
+    let audio_raw = audio_id.0.to_string();
+    let mut audio_detail = detail(&session, timeline, &audio_raw, 2).unwrap();
+    assert_eq!(audio_detail["clip_id"], audio_raw);
+    audio_detail["clip_id"] = video_detail["clip_id"].clone();
+    assert_eq!(audio_detail, video_detail);
+    assert_eq!(audio_detail["fps"], json!(Rational::new(48, 1)));
+    assert_eq!(audio_detail["total_frames"], 240);
+    assert_eq!(audio_detail["preview_available"], true);
+    assert_eq!(json!(session.project), before);
+    session.project.timelines[timeline].tracks[1].clips[0].linked_group = None;
+    let unlinked = detail(&session, timeline, &audio_raw, 0).unwrap();
+    assert_eq!(unlinked["media_id"], audio_media.raw().to_string());
+    assert_eq!(unlinked["fps"], json!(Rational::new(96, 1)));
+    assert_eq!(unlinked["preview_available"], false);
+}
+
+#[test]
+fn selected_video_has_native_preview_priority_over_earlier_linked_video_tracks() {
+    let (mut session, timeline, first) = fixture();
+    let mut second = session.project.timelines[timeline].tracks[0].clips[0].clone();
+    second.id = session.project.alloc_clip_id();
+    second.source_offset += 12;
+    let second_id = second.id;
+    let mut track = Track::new(TrackKind::Video);
+    track.clips.push(second);
+    session.project.timelines[timeline].tracks.push(track);
+    let earlier = detail(&session, timeline, &first, 0).unwrap();
+    let selected = detail(&session, timeline, &second_id.0.to_string(), 0).unwrap();
+    assert_ne!(earlier["frames"], selected["frames"]);
+    let audio = session.project.timelines[timeline].tracks[1].clips[0]
+        .id
+        .0
+        .to_string();
+    assert_eq!(
+        detail(&session, timeline, &audio, 0).unwrap()["frames"],
+        earlier["frames"]
+    );
+    let center = -selected["window_start"].as_i64().unwrap();
+    let native = &session.project.timelines[timeline].tracks[2].clips[0];
+    assert_eq!(
+        selected["frames"][center as usize],
+        json!([0, native.source_in(), native.source_out() - 1])
+    );
+}
+
+#[test]
 fn split_view_edges_match_native_slip_on_conformed_linked_clips() {
     let (mut session, timeline, clip) = fixture();
     let preview = detail(&session, timeline, &clip, 0).unwrap();
     assert_eq!(preview["clip_ids"].as_array().unwrap().len(), 2);
     assert_eq!(preview["fps"], json!(Rational::new(48, 1)));
+    assert_eq!(preview["total_frames"], 240);
     assert_eq!(preview["preview_available"], true);
     let first = preview["window_start"].as_i64().unwrap();
     let expected = preview["frames"][(2 - first) as usize].clone();
@@ -98,4 +178,5 @@ fn linked_handles_intersect_and_large_windows_remain_bounded_without_mutations()
     assert_eq!(far["frames"].as_array().unwrap().len(), 65537);
     assert_eq!(far["window_start"], 67232);
     assert_eq!(far["window_end"], 132768);
+    assert_eq!(far["total_frames"], 1_000_000_000);
 }

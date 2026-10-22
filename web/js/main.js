@@ -461,6 +461,7 @@ function syncSelectionActions(){
   $("delete").disabled=disabled || (target?target.locked:!view.selection.length);
 }
 function selected() {
+  slipView?.invalidate();
   syncClipboardControls();
   compoundNavigation?.invalidate();
   updateRetimeControls();

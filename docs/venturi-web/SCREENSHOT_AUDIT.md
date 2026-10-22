@@ -14,6 +14,16 @@ on 2026-10-20. They are focused crops, not a complete desktop tour.
 Other panels were audited through source; no screenshot evidence is claimed
 for the absent complete desktop, color, masks, curves, library or export views.
 
+`evidence/m4-slip-source-windows.jpg` (2026-10-22) shows the existing Windows
+browser's complete first/last pictures at source frames 6479 and 13678 on a real
+601-second source. The -721 timeline-frame numeric draft remains read-only
+until Apply. Native descriptors and actual local video times prove independent
+bounded windows; API/Windows snapshots prove one SlipClips Undo/Redo and
+unchanged saved project/source bytes. The flexible viewer keeps pictures and
+controls within the short panel; its keyboard divider also enlarges the view.
+Continuous uncached pointer preview, physical DPI and high-resolution/hardware
+qualification remain open.
+
 `evidence/m5-custom-audio-presets.jpg` (2026-10-22) shows the existing Windows
 browser's custom audio preset chooser, Apply/Delete and named Replace warning
 after one native application and Redo. Save/Replace retain the numeric draft;

@@ -1,0 +1,5163 @@
+{
+  "status": "passed",
+  "date": "2026-10-22",
+  "build": {
+    "phase": "passed",
+    "updated_unix": 1792641566.9164858,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "7ea9a36e147e6bb265e70dbf3557e065e00dc5529d289c10760f9e818274137d",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "full_build": {
+    "phase": "passed",
+    "updated_unix": 1792641117.3760219,
+    "binary": "/home/marco/.cache/venturi-build/target/debug/vv-web",
+    "sha256": "b17763e2a6c187ba9e78a824bafa235166990f61640242ae1e23b19e251da031",
+    "toolchain": "cargo 1.99.1 (5f94df478 2026-08-27)"
+  },
+  "acceptance": {
+    "code_hashes": {
+      "crates/vv-web/src/slip.rs": "4fd7dd658f35dc954d615d6b74b09d7f48d19ae0f5d655903017bcd5fcc2ac6d",
+      "crates/vv-web/src/tests/host.rs": "ae2a062ab45baac704fcbbfdc3673cf0c5b77ab59c83755f0c1f4916deba6097",
+      "crates/vv-web/src/tests/slip.rs": "b93ad67d966b98e430e32f9c18d4149f45821c23f0168dec84df87ab4a61980c",
+      "web/js/main.js": "0b455e8de88ac7d5bc2b04e2be36df332bf384342ae888b83556ef29b7975e87",
+      "web/js/slip.js": "262f6c66dfa4cbf58d24eb8972813ed0dfbec2a983e25e0f2e4b537d808259ea",
+      "web/style/app.css": "a95ed60fb343f043cfd9106e04325de3cdd7944424c5232243f88106e23857ee",
+      "web/test/slip.test.js": "8c788ac8d880f21818a2be84f8872984137bcded69efc7bb44494572198ae357"
+    }
+  },
+  "validation": {
+    "core": 281,
+    "web_rust": 419,
+    "javascript": 800,
+    "raw_results": [
+      "281 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s",
+      "0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s",
+      "10 passed; 0 failed; 0 ignored; 0 measured; 118 filtered out; finished in 0.42s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 125 filtered out; finished in 0.16s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 125 filtered out; finished in 0.27s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 127 filtered out; finished in 0.00s",
+      "419 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.82s",
+      "3 passed; 0 failed; 0 ignored; 0 measured; 546 filtered out; finished in 0.00s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 548 filtered out; finished in 0.00s",
+      "1 passed; 0 failed; 0 ignored; 0 measured; 548 filtered out; finished in 0.00s"
+    ],
+    "fmt": true,
+    "clippy_all_targets_deny_warnings": true,
+    "native_build": true,
+    "css_slip_layout_fix_after_full_validation": true,
+    "rust_sources_identical_to_full_validation": true
+  },
+  "api": {
+    "status": "passed",
+    "root": "/home/marco/VenturiWeb-slip-windows-20261022-2",
+    "project": "Slip_Long_Source_Windows_check.vvproj",
+    "project_sha256": "28ec1af1dd2bf8a7c08c30605df94ec87979d531555e128241bc395c4b3d4df5",
+    "binary_sha256": "7ea9a36e147e6bb265e70dbf3557e065e00dc5529d289c10760f9e818274137d",
+    "timeline_id": "1",
+    "clip_id": "0",
+    "source": {
+      "audio_stream_count": 0,
+      "compound_timeline_id": null,
+      "content_hash": "13629299629119626293",
+      "duration_frames": 14424,
+      "folder": null,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "has_audio": false,
+      "has_video": true,
+      "id": "2",
+      "is_image": false,
+      "name": "long-source-601s.mp4",
+      "offline": false
+    },
+    "source_sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+    "source_logical_bytes": 200058,
+    "original_source": "/home/marco/VenturiWeb-source-boundary-20261022-1/long-source-601s.mp4",
+    "original_source_preserved": true,
+    "original_files": {
+      "long-source-601s.mp4": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f"
+    },
+    "manifest": {
+      "clip_id": "0",
+      "clip_ids": [
+        "0"
+      ],
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "2",
+      "locked": false,
+      "max_delta": 24,
+      "media_id": "2",
+      "min_delta": -7200,
+      "name": "long-source-601s.mp4",
+      "preview_available": true,
+      "project_epoch": "1792641629785076789:1",
+      "revision": "1928b8b4baef8436",
+      "source_version": "64512:8262507:200058:1792641629:711055645",
+      "total_frames": 14424,
+      "window_end": 24,
+      "window_start": -7200,
+      "frame_map_evidence": {
+        "rows_sha256": "a4177512706030bc01f2aa4dd0d9f86e5d9190052003f77d0aa28b8f3a892e5c",
+        "rows_hash_encoding": "UTF-8 JSON array, compact separators comma/colon, ensure_ascii=false",
+        "original_row_count": 7225,
+        "sampled_rows": [
+          [
+            -721,
+            6479,
+            13678
+          ],
+          [
+            0,
+            7200,
+            14399
+          ],
+          [
+            1,
+            7201,
+            14400
+          ]
+        ],
+        "bounds": {
+          "first_row": [
+            -7200,
+            0,
+            7199
+          ],
+          "last_row": [
+            24,
+            7224,
+            14423
+          ]
+        }
+      }
+    },
+    "recentered_manifest": {
+      "clip_id": "0",
+      "clip_ids": [
+        "0"
+      ],
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "2",
+      "locked": false,
+      "max_delta": 24,
+      "media_id": "2",
+      "min_delta": -7200,
+      "name": "long-source-601s.mp4",
+      "preview_available": true,
+      "project_epoch": "1792641629785076789:1",
+      "revision": "1928b8b4baef8436",
+      "source_version": "64512:8262507:200058:1792641629:711055645",
+      "total_frames": 14424,
+      "window_end": 24,
+      "window_start": -7200,
+      "frame_map_evidence": {
+        "rows_sha256": "a4177512706030bc01f2aa4dd0d9f86e5d9190052003f77d0aa28b8f3a892e5c",
+        "rows_hash_encoding": "UTF-8 JSON array, compact separators comma/colon, ensure_ascii=false",
+        "original_row_count": 7225,
+        "sampled_rows": [
+          [
+            -721,
+            6479,
+            13678
+          ],
+          [
+            0,
+            7200,
+            14399
+          ],
+          [
+            1,
+            7201,
+            14400
+          ]
+        ],
+        "bounds": {
+          "first_row": [
+            -7200,
+            0,
+            7199
+          ],
+          "last_row": [
+            24,
+            7224,
+            14423
+          ]
+        }
+      }
+    },
+    "explicit_windows": [
+      {
+        "job": {
+          "cancel_requested": false,
+          "durability_error": false,
+          "durable": false,
+          "error": null,
+          "export_revision": null,
+          "frames": 12,
+          "id": "1792641630047002344",
+          "previous_state": null,
+          "program": null,
+          "progress": null,
+          "project_epoch": null,
+          "source_asset": "source.mp4",
+          "source_assets": null,
+          "source_window": {
+            "audio_stream_index": 0,
+            "end_frame": 7206,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "source_version": "64512:8262507:200058:1792641629:711055645",
+            "start_frame": 7194,
+            "total_frames": 14424
+          },
+          "state": "ready"
+        },
+        "asset_url": "/api/v1/media/2/jobs/1792641630047002344/source.mp4?project_epoch=1792641629785076789%3A1",
+        "asset_bytes": 1760,
+        "asset_sha256": "35ae117cfadc7db470149ba1fff5ecc169b2d80f0960b18aee792dbc53f14399"
+      },
+      {
+        "job": {
+          "cancel_requested": false,
+          "durability_error": false,
+          "durable": false,
+          "error": null,
+          "export_revision": null,
+          "frames": 12,
+          "id": "1792641630102420974",
+          "previous_state": null,
+          "program": null,
+          "progress": null,
+          "project_epoch": null,
+          "source_asset": "source.mp4",
+          "source_assets": null,
+          "source_window": {
+            "audio_stream_index": 0,
+            "end_frame": 14406,
+            "fps": {
+              "den": 1,
+              "num": 24
+            },
+            "source_version": "64512:8262507:200058:1792641629:711055645",
+            "start_frame": 14394,
+            "total_frames": 14424
+          },
+          "state": "ready"
+        },
+        "asset_url": "/api/v1/media/2/jobs/1792641630102420974/source.mp4?project_epoch=1792641629785076789%3A1",
+        "asset_bytes": 1760,
+        "asset_sha256": "35ae117cfadc7db470149ba1fff5ecc169b2d80f0960b18aee792dbc53f14399"
+      }
+    ],
+    "local_edge_times_seconds": [
+      0.25,
+      0.20833333333333334
+    ],
+    "intended_browser_delta": -721,
+    "intended_browser_edges": [
+      6479,
+      13678
+    ],
+    "checks": {
+      "real_full_source_over_600_seconds": true,
+      "true_edge_separation_over_60_seconds": true,
+      "two_explicit_native_12frame_windows": true,
+      "manifest_and_both_window_versions_match": true,
+      "prepare_and_recenter_readonly": true,
+      "native_delta_one_and_exact_retry": true,
+      "one_native_slip_undo_redo": true,
+      "saved_project_bytes_unchanged": true,
+      "saved_initial_baseline_restart_exact": true
+    },
+    "hardware_gpu_used": false,
+    "gui_acceptance": false,
+    "no_gpu_or_shared_lock_fds": true,
+    "limits": {
+      "cpu": 1,
+      "memory_mib": 512,
+      "swap": 0,
+      "oom_score": 1000,
+      "runtime_seconds": 120,
+      "total_seconds": 105
+    },
+    "limitations": [
+      "Twelve-frame native proxies on a true 601-second source qualify edge addressing only; not ten-minute uninterrupted playback, audio continuity or high-resolution decoding.",
+      "Browser Slip may request its own two native windows up to 60 seconds each to cache nearby numeric drags; those are separate actual Windows checks, not claimed by this API proof."
+    ],
+    "own_test_units_stopped": true,
+    "port8811_closed": true,
+    "primary_editor_preserved": true
+  },
+  "windows": {
+    "observations": {
+      "status": "passed",
+      "browser": "Existing Codex In-app Browser on Windows id 2; temporary tab 32",
+      "existing_windows_browser": true,
+      "no_environment_install": true,
+      "console_errors": [],
+      "screenshot": "docs/venturi-web/evidence/m4-slip-source-windows.jpg",
+      "states": {
+        "preview": {
+          "delta": 1,
+          "hidden": false,
+          "labels": [
+            "First source frame 7201",
+            "Last source frame 14400"
+          ],
+          "status": "DRAFT · +1 timeline frames · raw source edges · Apply commits one Undo",
+          "videos": [
+            {
+              "currentSrc": "blob:http://127.0.0.1:8811/f271fefe-5cbe-4911-b885-6b88a1dacb19",
+              "currentTime": 30,
+              "duration": 60,
+              "error": null,
+              "hidden": false,
+              "readyState": 4,
+              "seeking": null,
+              "src": "blob:http://127.0.0.1:8811/f271fefe-5cbe-4911-b885-6b88a1dacb19",
+              "videoHeight": 16,
+              "videoWidth": 16
+            },
+            {
+              "currentSrc": "blob:http://127.0.0.1:8811/d6f442f3-add8-4f5a-bcad-fc571549237d",
+              "currentTime": 59,
+              "duration": 60,
+              "error": null,
+              "hidden": false,
+              "readyState": 4,
+              "seeking": null,
+              "src": "blob:http://127.0.0.1:8811/d6f442f3-add8-4f5a-bcad-fc571549237d",
+              "videoHeight": 16,
+              "videoWidth": 16
+            }
+          ]
+        },
+        "recentered": {
+          "delta": -721,
+          "hidden": false,
+          "labels": [
+            "First source frame 6479",
+            "Last source frame 13678"
+          ],
+          "status": "DRAFT · -721 timeline frames · raw source edges · Apply commits one Undo",
+          "videos": [
+            {
+              "currentSrc": "blob:http://127.0.0.1:8811/db209c5b-af6e-4322-801e-e037a1667167",
+              "currentTime": 30,
+              "duration": 60,
+              "error": null,
+              "hidden": false,
+              "readyState": 4,
+              "seeking": null,
+              "src": "blob:http://127.0.0.1:8811/db209c5b-af6e-4322-801e-e037a1667167",
+              "videoHeight": 16,
+              "videoWidth": 16
+            },
+            {
+              "currentSrc": "blob:http://127.0.0.1:8811/5e69430d-af6a-40f7-8b21-c6fb9f5f089d",
+              "currentTime": 30,
+              "duration": 60,
+              "error": null,
+              "hidden": false,
+              "readyState": 4,
+              "seeking": null,
+              "src": "blob:http://127.0.0.1:8811/5e69430d-af6a-40f7-8b21-c6fb9f5f089d",
+              "videoHeight": 16,
+              "videoWidth": 16
+            }
+          ]
+        },
+        "before_close": {
+          "delta": 0,
+          "hidden": false,
+          "labels": [
+            "First source frame 6479",
+            "Last source frame 13678"
+          ],
+          "status": "DRAFT · +0 timeline frames · raw source edges · Apply commits one Undo",
+          "videos": [
+            {
+              "currentSrc": "blob:http://127.0.0.1:8811/91f5d9c3-e266-4673-9eb5-7253b96c59a1",
+              "currentTime": 30,
+              "duration": 60,
+              "error": null,
+              "hidden": false,
+              "readyState": 4,
+              "seeking": null,
+              "src": "blob:http://127.0.0.1:8811/91f5d9c3-e266-4673-9eb5-7253b96c59a1",
+              "videoHeight": 16,
+              "videoWidth": 16
+            },
+            {
+              "currentSrc": "blob:http://127.0.0.1:8811/450a05a6-43b7-4462-b6ea-ccb540f3269f",
+              "currentTime": 30,
+              "duration": 60,
+              "error": null,
+              "hidden": false,
+              "readyState": 4,
+              "seeking": null,
+              "src": "blob:http://127.0.0.1:8811/450a05a6-43b7-4462-b6ea-ccb540f3269f",
+              "videoHeight": 16,
+              "videoWidth": 16
+            }
+          ]
+        },
+        "closed": {
+          "delta": 0,
+          "hidden": true,
+          "labels": [
+            "Preparing source edge…",
+            "Preparing source edge…"
+          ],
+          "videos": [
+            {
+              "currentSrc": "blob:http://127.0.0.1:8811/91f5d9c3-e266-4673-9eb5-7253b96c59a1",
+              "currentTime": 0,
+              "duration": null,
+              "error": null,
+              "hidden": true,
+              "readyState": 0,
+              "seeking": null,
+              "src": "",
+              "videoHeight": 0,
+              "videoWidth": 0
+            },
+            {
+              "currentSrc": "blob:http://127.0.0.1:8811/450a05a6-43b7-4462-b6ea-ccb540f3269f",
+              "currentTime": 0,
+              "duration": null,
+              "error": null,
+              "hidden": true,
+              "readyState": 0,
+              "seeking": null,
+              "src": "",
+              "videoHeight": 0,
+              "videoWidth": 0
+            }
+          ]
+        }
+      },
+      "checks": {
+        "numeric_change_recenter_visible": true,
+        "apply_visible": true,
+        "undo_visible": true,
+        "redo_visible": true,
+        "close_detaches_sources": true,
+        "uncropped_images_and_controls_in_short_viewer": true
+      },
+      "cleanup": {
+        "own_test_units_stopped": true,
+        "port8811_closed": true,
+        "own_tunnel_stopped": true,
+        "main_editor_preserved": true
+      },
+      "layout_before_resize": {
+        "clientHeight": 138,
+        "controls": {
+          "bottom": 267,
+          "height": 51,
+          "left": 282.8000183105469,
+          "right": 962.000030517578,
+          "top": 216,
+          "width": 679.2000122070312,
+          "x": 282.8000183105469,
+          "y": 216
+        },
+        "root": {
+          "bottom": 295.20001220703125,
+          "height": 137.60000610351562,
+          "left": 274.8000183105469,
+          "right": 985.2000427246094,
+          "top": 157.60000610351562,
+          "width": 710.4000244140625,
+          "x": 274.8000183105469,
+          "y": 157.60000610351562
+        },
+        "scrollHeight": 139,
+        "scrollTop": 1.600000023841858,
+        "status": {
+          "bottom": 287,
+          "height": 16,
+          "left": 282.8000183105469,
+          "right": 962.000030517578,
+          "top": 271,
+          "width": 679.2000122070312,
+          "x": 282.8000183105469,
+          "y": 271
+        },
+        "videos": [
+          {
+            "bottom": 196,
+            "height": 32,
+            "left": 282.8000183105469,
+            "right": 618.4000244140625,
+            "top": 164,
+            "width": 335.6000061035156,
+            "x": 282.8000183105469,
+            "y": 164
+          },
+          {
+            "bottom": 196,
+            "height": 32,
+            "left": 626.4000244140625,
+            "right": 962.000030517578,
+            "top": 164,
+            "width": 335.6000061035156,
+            "x": 626.4000244140625,
+            "y": 164
+          }
+        ]
+      },
+      "keyboard_numeric_change": "ControlOrMeta+A, pressSequentially(-721), Tab",
+      "layout_screenshot_timeline_height": 190
+    },
+    "native_states": {
+      "before": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792641630217,
+            "pending": true,
+            "project_token": "Slip_Long_Source_Windows_check.vvproj",
+            "resolved_to": null,
+            "revision": "4c94c314f1d6ed9971a2139936a181ef94fb6fa740608634cc35f7839841b69d",
+            "state": "pending"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 0,
+          "clipboard_current_project": false,
+          "clipboard_media_count": 0,
+          "clipboard_revision": null,
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "0",
+          "history": {
+            "labels": [],
+            "position": 0
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "2",
+              "duration_frames": 7200,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": null,
+              "content_hash": "13629299629119626293",
+              "duration_frames": 14424,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "long-source-601s.mp4",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792641645665728277:1",
+          "project_name": "Slip_Long_Source_Windows_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "1928b8b4baef8436",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "media",
+                      "length_frames": 7200,
+                      "linked_group": null,
+                      "media_id": "2",
+                      "name": "long-source-601s.mp4",
+                      "retime": {
+                        "max_length": 720000,
+                        "min_length": 72,
+                        "pitch_correction": true,
+                        "source_span": 7200,
+                        "speed_percent": 100.0
+                      },
+                      "slip_range": [
+                        -7200,
+                        24
+                      ],
+                      "source_in_frames": 7200,
+                      "source_out_frames": 14400,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": false
+        },
+        "manifest": {
+          "clip_id": "0",
+          "clip_ids": [
+            "0"
+          ],
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "generation": "0",
+          "locked": false,
+          "max_delta": 24,
+          "media_id": "2",
+          "min_delta": -7200,
+          "name": "long-source-601s.mp4",
+          "preview_available": true,
+          "project_epoch": "1792641645665728277:1",
+          "revision": "1928b8b4baef8436",
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "total_frames": 14424,
+          "window_end": 24,
+          "window_start": -7200,
+          "frame_map_evidence": {
+            "rows_sha256": "a4177512706030bc01f2aa4dd0d9f86e5d9190052003f77d0aa28b8f3a892e5c",
+            "rows_hash_encoding": "UTF-8 JSON array, compact separators comma/colon, ensure_ascii=false",
+            "original_row_count": 7225,
+            "sampled_rows": [
+              [
+                -721,
+                6479,
+                13678
+              ],
+              [
+                0,
+                7200,
+                14399
+              ],
+              [
+                1,
+                7201,
+                14400
+              ]
+            ],
+            "bounds": {
+              "first_row": [
+                -7200,
+                0,
+                7199
+              ],
+              "last_row": [
+                24,
+                7224,
+                14423
+              ]
+            }
+          }
+        },
+        "clip": {
+          "disabled": false,
+          "display_color": null,
+          "display_rgb": null,
+          "fade_in": 0,
+          "fade_out": 0,
+          "freeze_source_frame": null,
+          "id": "0",
+          "kind": "media",
+          "length_frames": 7200,
+          "linked_group": null,
+          "media_id": "2",
+          "name": "long-source-601s.mp4",
+          "retime": {
+            "max_length": 720000,
+            "min_length": 72,
+            "pitch_correction": true,
+            "source_span": 7200,
+            "speed_percent": 100.0
+          },
+          "slip_range": [
+            -7200,
+            24
+          ],
+          "source_in_frames": 7200,
+          "source_out_frames": 14400,
+          "speed_percent": 100.0,
+          "start_frame": 0,
+          "transition_in": null,
+          "transition_out": null
+        },
+        "source_jobs": [],
+        "source_cache_discovery": "/tmp/venturi-web-media-1565052-1792641645666407849",
+        "limits": {
+          "RuntimeMaxUSec": "5min",
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "18227200",
+          "MemoryPeak": "19099648",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "project_sha256": "28ec1af1dd2bf8a7c08c30605df94ec87979d531555e128241bc395c4b3d4df5",
+        "source_sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+        "project_and_sources_preserved": true,
+        "memory_events_zero": true,
+        "host_mem_available": 128353316864,
+        "fd_counts": {
+          "1565052": 28
+        },
+        "no_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true,
+        "pid": 1565052,
+        "pid_start_ticks": "95993577"
+      },
+      "preview": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792641630217,
+            "pending": true,
+            "project_token": "Slip_Long_Source_Windows_check.vvproj",
+            "resolved_to": null,
+            "revision": "4c94c314f1d6ed9971a2139936a181ef94fb6fa740608634cc35f7839841b69d",
+            "state": "pending"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 0,
+          "clipboard_current_project": false,
+          "clipboard_media_count": 0,
+          "clipboard_revision": null,
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "0",
+          "history": {
+            "labels": [],
+            "position": 0
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "2",
+              "duration_frames": 7200,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": null,
+              "content_hash": "13629299629119626293",
+              "duration_frames": 14424,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "long-source-601s.mp4",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792641645665728277:1",
+          "project_name": "Slip_Long_Source_Windows_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "1928b8b4baef8436",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "media",
+                      "length_frames": 7200,
+                      "linked_group": null,
+                      "media_id": "2",
+                      "name": "long-source-601s.mp4",
+                      "retime": {
+                        "max_length": 720000,
+                        "min_length": 72,
+                        "pitch_correction": true,
+                        "source_span": 7200,
+                        "speed_percent": 100.0
+                      },
+                      "slip_range": [
+                        -7200,
+                        24
+                      ],
+                      "source_in_frames": 7200,
+                      "source_out_frames": 14400,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": false
+        },
+        "manifest": {
+          "clip_id": "0",
+          "clip_ids": [
+            "0"
+          ],
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "generation": "0",
+          "locked": false,
+          "max_delta": 24,
+          "media_id": "2",
+          "min_delta": -7200,
+          "name": "long-source-601s.mp4",
+          "preview_available": true,
+          "project_epoch": "1792641645665728277:1",
+          "revision": "1928b8b4baef8436",
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "total_frames": 14424,
+          "window_end": 24,
+          "window_start": -7200,
+          "frame_map_evidence": {
+            "rows_sha256": "a4177512706030bc01f2aa4dd0d9f86e5d9190052003f77d0aa28b8f3a892e5c",
+            "rows_hash_encoding": "UTF-8 JSON array, compact separators comma/colon, ensure_ascii=false",
+            "original_row_count": 7225,
+            "sampled_rows": [
+              [
+                -721,
+                6479,
+                13678
+              ],
+              [
+                0,
+                7200,
+                14399
+              ],
+              [
+                1,
+                7201,
+                14400
+              ]
+            ],
+            "bounds": {
+              "first_row": [
+                -7200,
+                0,
+                7199
+              ],
+              "last_row": [
+                24,
+                7224,
+                14423
+              ]
+            }
+          }
+        },
+        "clip": {
+          "disabled": false,
+          "display_color": null,
+          "display_rgb": null,
+          "fade_in": 0,
+          "fade_out": 0,
+          "freeze_source_frame": null,
+          "id": "0",
+          "kind": "media",
+          "length_frames": 7200,
+          "linked_group": null,
+          "media_id": "2",
+          "name": "long-source-601s.mp4",
+          "retime": {
+            "max_length": 720000,
+            "min_length": 72,
+            "pitch_correction": true,
+            "source_span": 7200,
+            "speed_percent": 100.0
+          },
+          "slip_range": [
+            -7200,
+            24
+          ],
+          "source_in_frames": 7200,
+          "source_out_frames": 14400,
+          "speed_percent": 100.0,
+          "start_frame": 0,
+          "transition_in": null,
+          "transition_out": null
+        },
+        "source_jobs": [
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671955816491",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14424,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12984,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671583497647",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7921,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 6481,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          }
+        ],
+        "source_cache_discovery": "/tmp/venturi-web-media-1565052-1792641645666407849",
+        "limits": {
+          "RuntimeMaxUSec": "5min",
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "46002176",
+          "MemoryPeak": "49188864",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "project_sha256": "28ec1af1dd2bf8a7c08c30605df94ec87979d531555e128241bc395c4b3d4df5",
+        "source_sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+        "project_and_sources_preserved": true,
+        "memory_events_zero": true,
+        "host_mem_available": 128347340800,
+        "fd_counts": {
+          "1565052": 28
+        },
+        "no_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true,
+        "pid": 1565052,
+        "pid_start_ticks": "95993577"
+      },
+      "recentered": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792641630217,
+            "pending": true,
+            "project_token": "Slip_Long_Source_Windows_check.vvproj",
+            "resolved_to": null,
+            "revision": "4c94c314f1d6ed9971a2139936a181ef94fb6fa740608634cc35f7839841b69d",
+            "state": "pending"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 0,
+          "clipboard_current_project": false,
+          "clipboard_media_count": 0,
+          "clipboard_revision": null,
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "0",
+          "history": {
+            "labels": [],
+            "position": 0
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "2",
+              "duration_frames": 7200,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": null,
+              "content_hash": "13629299629119626293",
+              "duration_frames": 14424,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "long-source-601s.mp4",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792641645665728277:1",
+          "project_name": "Slip_Long_Source_Windows_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "1928b8b4baef8436",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "media",
+                      "length_frames": 7200,
+                      "linked_group": null,
+                      "media_id": "2",
+                      "name": "long-source-601s.mp4",
+                      "retime": {
+                        "max_length": 720000,
+                        "min_length": 72,
+                        "pitch_correction": true,
+                        "source_span": 7200,
+                        "speed_percent": 100.0
+                      },
+                      "slip_range": [
+                        -7200,
+                        24
+                      ],
+                      "source_in_frames": 7200,
+                      "source_out_frames": 14400,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": false
+        },
+        "manifest": {
+          "clip_id": "0",
+          "clip_ids": [
+            "0"
+          ],
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "generation": "0",
+          "locked": false,
+          "max_delta": 24,
+          "media_id": "2",
+          "min_delta": -7200,
+          "name": "long-source-601s.mp4",
+          "preview_available": true,
+          "project_epoch": "1792641645665728277:1",
+          "revision": "1928b8b4baef8436",
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "total_frames": 14424,
+          "window_end": 24,
+          "window_start": -7200,
+          "frame_map_evidence": {
+            "rows_sha256": "a4177512706030bc01f2aa4dd0d9f86e5d9190052003f77d0aa28b8f3a892e5c",
+            "rows_hash_encoding": "UTF-8 JSON array, compact separators comma/colon, ensure_ascii=false",
+            "original_row_count": 7225,
+            "sampled_rows": [
+              [
+                -721,
+                6479,
+                13678
+              ],
+              [
+                0,
+                7200,
+                14399
+              ],
+              [
+                1,
+                7201,
+                14400
+              ]
+            ],
+            "bounds": {
+              "first_row": [
+                -7200,
+                0,
+                7199
+              ],
+              "last_row": [
+                24,
+                7224,
+                14423
+              ]
+            }
+          }
+        },
+        "clip": {
+          "disabled": false,
+          "display_color": null,
+          "display_rgb": null,
+          "fade_in": 0,
+          "fade_out": 0,
+          "freeze_source_frame": null,
+          "id": "0",
+          "kind": "media",
+          "length_frames": 7200,
+          "linked_group": null,
+          "media_id": "2",
+          "name": "long-source-601s.mp4",
+          "retime": {
+            "max_length": 720000,
+            "min_length": 72,
+            "pitch_correction": true,
+            "source_span": 7200,
+            "speed_percent": 100.0
+          },
+          "slip_range": [
+            -7200,
+            24
+          ],
+          "source_in_frames": 7200,
+          "source_out_frames": 14400,
+          "speed_percent": 100.0,
+          "start_frame": 0,
+          "transition_in": null,
+          "transition_out": null
+        },
+        "source_jobs": [
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641691094813009",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14398,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12958,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641690720346391",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7199,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 5759,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671955816491",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14424,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12984,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671583497647",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7921,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 6481,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          }
+        ],
+        "source_cache_discovery": "/tmp/venturi-web-media-1565052-1792641645666407849",
+        "limits": {
+          "RuntimeMaxUSec": "5min",
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "47419392",
+          "MemoryPeak": "52428800",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "project_sha256": "28ec1af1dd2bf8a7c08c30605df94ec87979d531555e128241bc395c4b3d4df5",
+        "source_sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+        "project_and_sources_preserved": true,
+        "memory_events_zero": true,
+        "host_mem_available": 128354611200,
+        "fd_counts": {
+          "1565052": 28
+        },
+        "no_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true,
+        "pid": 1565052,
+        "pid_start_ticks": "95993577"
+      },
+      "applied": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792641630217,
+            "pending": true,
+            "project_token": "Slip_Long_Source_Windows_check.vvproj",
+            "resolved_to": null,
+            "revision": "4c94c314f1d6ed9971a2139936a181ef94fb6fa740608634cc35f7839841b69d",
+            "state": "pending"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 0,
+          "clipboard_current_project": false,
+          "clipboard_media_count": 0,
+          "clipboard_revision": null,
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "1",
+          "history": {
+            "labels": [
+              "SlipClips"
+            ],
+            "position": 1
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "3",
+              "duration_frames": 7200,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": null,
+              "content_hash": "13629299629119626293",
+              "duration_frames": 14424,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "long-source-601s.mp4",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792641645665728277:1",
+          "project_name": "Slip_Long_Source_Windows_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "876b1fe3ee8b7c50",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "media",
+                      "length_frames": 7200,
+                      "linked_group": null,
+                      "media_id": "2",
+                      "name": "long-source-601s.mp4",
+                      "retime": {
+                        "max_length": 720000,
+                        "min_length": 72,
+                        "pitch_correction": true,
+                        "source_span": 7200,
+                        "speed_percent": 100.0
+                      },
+                      "slip_range": [
+                        -6479,
+                        745
+                      ],
+                      "source_in_frames": 6479,
+                      "source_out_frames": 13679,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": true
+        },
+        "manifest": {
+          "clip_id": "0",
+          "clip_ids": [
+            "0"
+          ],
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "generation": "1",
+          "locked": false,
+          "max_delta": 745,
+          "media_id": "2",
+          "min_delta": -6479,
+          "name": "long-source-601s.mp4",
+          "preview_available": true,
+          "project_epoch": "1792641645665728277:1",
+          "revision": "876b1fe3ee8b7c50",
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "total_frames": 14424,
+          "window_end": 745,
+          "window_start": -6479,
+          "frame_map_evidence": {
+            "rows_sha256": "b253e8df36bd1ec2d770d77c7aa958c7646cce0c124bafb977d7ee0fa6e62637",
+            "rows_hash_encoding": "UTF-8 JSON array, compact separators comma/colon, ensure_ascii=false",
+            "original_row_count": 7225,
+            "sampled_rows": [
+              [
+                -721,
+                5758,
+                12957
+              ],
+              [
+                0,
+                6479,
+                13678
+              ],
+              [
+                1,
+                6480,
+                13679
+              ]
+            ],
+            "bounds": {
+              "first_row": [
+                -6479,
+                0,
+                7199
+              ],
+              "last_row": [
+                745,
+                7224,
+                14423
+              ]
+            }
+          }
+        },
+        "clip": {
+          "disabled": false,
+          "display_color": null,
+          "display_rgb": null,
+          "fade_in": 0,
+          "fade_out": 0,
+          "freeze_source_frame": null,
+          "id": "0",
+          "kind": "media",
+          "length_frames": 7200,
+          "linked_group": null,
+          "media_id": "2",
+          "name": "long-source-601s.mp4",
+          "retime": {
+            "max_length": 720000,
+            "min_length": 72,
+            "pitch_correction": true,
+            "source_span": 7200,
+            "speed_percent": 100.0
+          },
+          "slip_range": [
+            -6479,
+            745
+          ],
+          "source_in_frames": 6479,
+          "source_out_frames": 13679,
+          "speed_percent": 100.0,
+          "start_frame": 0,
+          "transition_in": null,
+          "transition_out": null
+        },
+        "source_jobs": [
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641691094813009",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14398,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12958,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641690720346391",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7199,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 5759,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671955816491",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14424,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12984,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671583497647",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7921,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 6481,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          }
+        ],
+        "source_cache_discovery": "/tmp/venturi-web-media-1565052-1792641645666407849",
+        "limits": {
+          "RuntimeMaxUSec": "5min",
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "47284224",
+          "MemoryPeak": "52428800",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "project_sha256": "28ec1af1dd2bf8a7c08c30605df94ec87979d531555e128241bc395c4b3d4df5",
+        "source_sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+        "project_and_sources_preserved": true,
+        "memory_events_zero": true,
+        "host_mem_available": 128348676096,
+        "fd_counts": {
+          "1565052": 28
+        },
+        "no_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true,
+        "pid": 1565052,
+        "pid_start_ticks": "95993577"
+      },
+      "undone": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792641630217,
+            "pending": true,
+            "project_token": "Slip_Long_Source_Windows_check.vvproj",
+            "resolved_to": null,
+            "revision": "4c94c314f1d6ed9971a2139936a181ef94fb6fa740608634cc35f7839841b69d",
+            "state": "pending"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 0,
+          "clipboard_current_project": false,
+          "clipboard_media_count": 0,
+          "clipboard_revision": null,
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "2",
+          "history": {
+            "labels": [
+              "SlipClips"
+            ],
+            "position": 0
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "4",
+              "duration_frames": 7200,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": null,
+              "content_hash": "13629299629119626293",
+              "duration_frames": 14424,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "long-source-601s.mp4",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792641645665728277:1",
+          "project_name": "Slip_Long_Source_Windows_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "1928b8b4baef8436",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "media",
+                      "length_frames": 7200,
+                      "linked_group": null,
+                      "media_id": "2",
+                      "name": "long-source-601s.mp4",
+                      "retime": {
+                        "max_length": 720000,
+                        "min_length": 72,
+                        "pitch_correction": true,
+                        "source_span": 7200,
+                        "speed_percent": 100.0
+                      },
+                      "slip_range": [
+                        -7200,
+                        24
+                      ],
+                      "source_in_frames": 7200,
+                      "source_out_frames": 14400,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": true
+        },
+        "manifest": {
+          "clip_id": "0",
+          "clip_ids": [
+            "0"
+          ],
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "generation": "2",
+          "locked": false,
+          "max_delta": 24,
+          "media_id": "2",
+          "min_delta": -7200,
+          "name": "long-source-601s.mp4",
+          "preview_available": true,
+          "project_epoch": "1792641645665728277:1",
+          "revision": "1928b8b4baef8436",
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "total_frames": 14424,
+          "window_end": 24,
+          "window_start": -7200,
+          "frame_map_evidence": {
+            "rows_sha256": "a4177512706030bc01f2aa4dd0d9f86e5d9190052003f77d0aa28b8f3a892e5c",
+            "rows_hash_encoding": "UTF-8 JSON array, compact separators comma/colon, ensure_ascii=false",
+            "original_row_count": 7225,
+            "sampled_rows": [
+              [
+                -721,
+                6479,
+                13678
+              ],
+              [
+                0,
+                7200,
+                14399
+              ],
+              [
+                1,
+                7201,
+                14400
+              ]
+            ],
+            "bounds": {
+              "first_row": [
+                -7200,
+                0,
+                7199
+              ],
+              "last_row": [
+                24,
+                7224,
+                14423
+              ]
+            }
+          }
+        },
+        "clip": {
+          "disabled": false,
+          "display_color": null,
+          "display_rgb": null,
+          "fade_in": 0,
+          "fade_out": 0,
+          "freeze_source_frame": null,
+          "id": "0",
+          "kind": "media",
+          "length_frames": 7200,
+          "linked_group": null,
+          "media_id": "2",
+          "name": "long-source-601s.mp4",
+          "retime": {
+            "max_length": 720000,
+            "min_length": 72,
+            "pitch_correction": true,
+            "source_span": 7200,
+            "speed_percent": 100.0
+          },
+          "slip_range": [
+            -7200,
+            24
+          ],
+          "source_in_frames": 7200,
+          "source_out_frames": 14400,
+          "speed_percent": 100.0,
+          "start_frame": 0,
+          "transition_in": null,
+          "transition_out": null
+        },
+        "source_jobs": [
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641691094813009",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14398,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12958,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641690720346391",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7199,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 5759,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671955816491",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14424,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12984,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671583497647",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7921,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 6481,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          }
+        ],
+        "source_cache_discovery": "/tmp/venturi-web-media-1565052-1792641645666407849",
+        "limits": {
+          "RuntimeMaxUSec": "5min",
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "46936064",
+          "MemoryPeak": "52428800",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "project_sha256": "28ec1af1dd2bf8a7c08c30605df94ec87979d531555e128241bc395c4b3d4df5",
+        "source_sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+        "project_and_sources_preserved": true,
+        "memory_events_zero": true,
+        "host_mem_available": 128347607040,
+        "fd_counts": {
+          "1565052": 28
+        },
+        "no_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true,
+        "pid": 1565052,
+        "pid_start_ticks": "95993577"
+      },
+      "redone": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792641630217,
+            "pending": true,
+            "project_token": "Slip_Long_Source_Windows_check.vvproj",
+            "resolved_to": null,
+            "revision": "4c94c314f1d6ed9971a2139936a181ef94fb6fa740608634cc35f7839841b69d",
+            "state": "pending"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 0,
+          "clipboard_current_project": false,
+          "clipboard_media_count": 0,
+          "clipboard_revision": null,
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "3",
+          "history": {
+            "labels": [
+              "SlipClips"
+            ],
+            "position": 1
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "5",
+              "duration_frames": 7200,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": null,
+              "content_hash": "13629299629119626293",
+              "duration_frames": 14424,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "long-source-601s.mp4",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792641645665728277:1",
+          "project_name": "Slip_Long_Source_Windows_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "876b1fe3ee8b7c50",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "media",
+                      "length_frames": 7200,
+                      "linked_group": null,
+                      "media_id": "2",
+                      "name": "long-source-601s.mp4",
+                      "retime": {
+                        "max_length": 720000,
+                        "min_length": 72,
+                        "pitch_correction": true,
+                        "source_span": 7200,
+                        "speed_percent": 100.0
+                      },
+                      "slip_range": [
+                        -6479,
+                        745
+                      ],
+                      "source_in_frames": 6479,
+                      "source_out_frames": 13679,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": true
+        },
+        "manifest": {
+          "clip_id": "0",
+          "clip_ids": [
+            "0"
+          ],
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "generation": "3",
+          "locked": false,
+          "max_delta": 745,
+          "media_id": "2",
+          "min_delta": -6479,
+          "name": "long-source-601s.mp4",
+          "preview_available": true,
+          "project_epoch": "1792641645665728277:1",
+          "revision": "876b1fe3ee8b7c50",
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "total_frames": 14424,
+          "window_end": 745,
+          "window_start": -6479,
+          "frame_map_evidence": {
+            "rows_sha256": "b253e8df36bd1ec2d770d77c7aa958c7646cce0c124bafb977d7ee0fa6e62637",
+            "rows_hash_encoding": "UTF-8 JSON array, compact separators comma/colon, ensure_ascii=false",
+            "original_row_count": 7225,
+            "sampled_rows": [
+              [
+                -721,
+                5758,
+                12957
+              ],
+              [
+                0,
+                6479,
+                13678
+              ],
+              [
+                1,
+                6480,
+                13679
+              ]
+            ],
+            "bounds": {
+              "first_row": [
+                -6479,
+                0,
+                7199
+              ],
+              "last_row": [
+                745,
+                7224,
+                14423
+              ]
+            }
+          }
+        },
+        "clip": {
+          "disabled": false,
+          "display_color": null,
+          "display_rgb": null,
+          "fade_in": 0,
+          "fade_out": 0,
+          "freeze_source_frame": null,
+          "id": "0",
+          "kind": "media",
+          "length_frames": 7200,
+          "linked_group": null,
+          "media_id": "2",
+          "name": "long-source-601s.mp4",
+          "retime": {
+            "max_length": 720000,
+            "min_length": 72,
+            "pitch_correction": true,
+            "source_span": 7200,
+            "speed_percent": 100.0
+          },
+          "slip_range": [
+            -6479,
+            745
+          ],
+          "source_in_frames": 6479,
+          "source_out_frames": 13679,
+          "speed_percent": 100.0,
+          "start_frame": 0,
+          "transition_in": null,
+          "transition_out": null
+        },
+        "source_jobs": [
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641691094813009",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14398,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12958,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641690720346391",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7199,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 5759,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671955816491",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14424,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12984,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671583497647",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7921,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 6481,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          }
+        ],
+        "source_cache_discovery": "/tmp/venturi-web-media-1565052-1792641645666407849",
+        "limits": {
+          "RuntimeMaxUSec": "5min",
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "46964736",
+          "MemoryPeak": "52428800",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "project_sha256": "28ec1af1dd2bf8a7c08c30605df94ec87979d531555e128241bc395c4b3d4df5",
+        "source_sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+        "project_and_sources_preserved": true,
+        "memory_events_zero": true,
+        "host_mem_available": 128340107264,
+        "fd_counts": {
+          "1565052": 28
+        },
+        "no_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true,
+        "pid": 1565052,
+        "pid_start_ticks": "95993577"
+      },
+      "closed": {
+        "session": {
+          "api_version": 1,
+          "audio_effects": {
+            "compressor": {
+              "attack_ms": [
+                0.10000000149011612,
+                200.0
+              ],
+              "crossovers_hz": [
+                20.0,
+                20000.0
+              ],
+              "makeup_db": [
+                -12.0,
+                24.0
+              ],
+              "ratio": [
+                1.0,
+                20.0
+              ],
+              "release_ms": [
+                5.0,
+                2000.0
+              ],
+              "threshold_db": [
+                -60.0,
+                0.0
+              ]
+            },
+            "defaults": {
+              "Equalizer": {
+                "enabled": true,
+                "kind": {
+                  "Equalizer": {
+                    "bands": [
+                      {
+                        "enabled": false,
+                        "freq_hz": 80.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighPass"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 120.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowShelf"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 2500.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "Peak"
+                      },
+                      {
+                        "enabled": true,
+                        "freq_hz": 8000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "HighShelf"
+                      },
+                      {
+                        "enabled": false,
+                        "freq_hz": 18000.0,
+                        "gain_db": 0.0,
+                        "q": 0.7071067690849304,
+                        "shape": "LowPass"
+                      }
+                    ]
+                  }
+                }
+              },
+              "Mono": {
+                "enabled": true,
+                "kind": "Mono"
+              },
+              "MultibandCompressor": {
+                "enabled": true,
+                "kind": {
+                  "MultibandCompressor": {
+                    "bands": [
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      },
+                      {
+                        "attack_ms": 10.0,
+                        "makeup_db": 0.0,
+                        "ratio": 3.0,
+                        "release_ms": 150.0,
+                        "threshold_db": -24.0
+                      }
+                    ],
+                    "crossovers_hz": [
+                      200.0,
+                      2000.0
+                    ]
+                  }
+                }
+              },
+              "Normalize": {
+                "enabled": true,
+                "kind": {
+                  "Normalize": {
+                    "mode": "SamplePeak",
+                    "set_level": "Relative",
+                    "target_db": -1.0
+                  }
+                }
+              }
+            },
+            "eq": {
+              "freq_hz": [
+                20.0,
+                20000.0
+              ],
+              "gain_db": [
+                -24.0,
+                24.0
+              ],
+              "q": [
+                0.10000000149011612,
+                18.0
+              ],
+              "shapes": [
+                "HighPass",
+                "LowShelf",
+                "Peak",
+                "HighShelf",
+                "LowPass"
+              ]
+            },
+            "normalization": [
+              {
+                "default": -1.0,
+                "mode": "SamplePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -1.0,
+                "mode": "TruePeak",
+                "range": [
+                  -30.0,
+                  0.0
+                ]
+              },
+              {
+                "default": -23.0,
+                "mode": "Loudness",
+                "range": [
+                  -40.0,
+                  -5.0
+                ]
+              }
+            ],
+            "presets": {
+              "Equalizer": [
+                "mixer.eq_preset_flat",
+                "mixer.eq_preset_voice",
+                "mixer.eq_preset_warm",
+                "mixer.eq_preset_bright",
+                "mixer.eq_preset_mud",
+                "mixer.eq_preset_rumble",
+                "mixer.eq_preset_telephone"
+              ],
+              "MultibandCompressor": [
+                "mixer.preset_default",
+                "mixer.preset_glue",
+                "mixer.preset_voice",
+                "mixer.preset_deesser",
+                "mixer.preset_low_end",
+                "mixer.preset_broadcast",
+                "mixer.preset_master"
+              ]
+            }
+          },
+          "autosave": {
+            "base_changed": false,
+            "created_unix_ms": 1792641630217,
+            "pending": true,
+            "project_token": "Slip_Long_Source_Windows_check.vvproj",
+            "resolved_to": null,
+            "revision": "4c94c314f1d6ed9971a2139936a181ef94fb6fa740608634cc35f7839841b69d",
+            "state": "pending"
+          },
+          "capabilities": {
+            "editing": true,
+            "export": false,
+            "media_imports": true,
+            "native_assets": true,
+            "playback": false,
+            "preview": false,
+            "scopes": false,
+            "software_preview": false,
+            "source_playback": true
+          },
+          "clipboard_count": 0,
+          "clipboard_current_project": false,
+          "clipboard_media_count": 0,
+          "clipboard_revision": null,
+          "command_epoch": "0",
+          "folders": [],
+          "generation": "3",
+          "history": {
+            "labels": [
+              "SlipClips"
+            ],
+            "position": 1
+          },
+          "import_warnings": [],
+          "media": [
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": "1",
+              "content_hash": "5",
+              "duration_frames": 7200,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "1",
+              "is_image": false,
+              "name": "Timeline 1",
+              "offline": false
+            },
+            {
+              "audio_stream_count": 0,
+              "compound_timeline_id": null,
+              "content_hash": "13629299629119626293",
+              "duration_frames": 14424,
+              "folder": null,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "has_audio": false,
+              "has_video": true,
+              "id": "2",
+              "is_image": false,
+              "name": "long-source-601s.mp4",
+              "offline": false
+            }
+          ],
+          "persistence_notice": null,
+          "project_epoch": "1792641645665728277:1",
+          "project_name": "Slip_Long_Source_Windows_check.vvproj",
+          "recording_formats": [
+            {
+              "id": "mp3",
+              "label": "MP3"
+            },
+            {
+              "id": "wav",
+              "label": "WAV"
+            },
+            {
+              "id": "flac",
+              "label": "FLAC"
+            },
+            {
+              "id": "aac",
+              "label": "AAC (.m4a)"
+            },
+            {
+              "id": "opus",
+              "label": "Opus"
+            },
+            {
+              "id": "vorbis",
+              "label": "Ogg Vorbis"
+            }
+          ],
+          "timelines": [
+            {
+              "api_version": 1,
+              "export_scales": [
+                {
+                  "height": 1080,
+                  "percent": 100,
+                  "width": 1920
+                },
+                {
+                  "height": 810,
+                  "percent": 75,
+                  "width": 1440
+                },
+                {
+                  "height": 540,
+                  "percent": 50,
+                  "width": 960
+                },
+                {
+                  "height": 270,
+                  "percent": 25,
+                  "width": 480
+                }
+              ],
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "id": "1",
+              "marker_colors": [
+                "Red",
+                "Orange",
+                "Yellow",
+                "Green",
+                "Cyan",
+                "Blue",
+                "Indigo",
+                "Purple",
+                "Magenta",
+                "Rose",
+                "Slate",
+                "Gray"
+              ],
+              "markers": [],
+              "master": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "name": "Timeline 1",
+              "resolution": {
+                "height": 1080,
+                "width": 1920
+              },
+              "revision": "876b1fe3ee8b7c50",
+              "timeline_id": "1",
+              "tracks": [
+                {
+                  "armed": false,
+                  "clips": [
+                    {
+                      "disabled": false,
+                      "display_color": null,
+                      "display_rgb": null,
+                      "fade_in": 0,
+                      "fade_out": 0,
+                      "freeze_source_frame": null,
+                      "id": "0",
+                      "kind": "media",
+                      "length_frames": 7200,
+                      "linked_group": null,
+                      "media_id": "2",
+                      "name": "long-source-601s.mp4",
+                      "retime": {
+                        "max_length": 720000,
+                        "min_length": 72,
+                        "pitch_correction": true,
+                        "source_span": 7200,
+                        "speed_percent": 100.0
+                      },
+                      "slip_range": [
+                        -6479,
+                        745
+                      ],
+                      "source_in_frames": 6479,
+                      "source_out_frames": 13679,
+                      "speed_percent": 100.0,
+                      "start_frame": 0,
+                      "transition_in": null,
+                      "transition_out": null
+                    }
+                  ],
+                  "crossings": [],
+                  "id": "0",
+                  "kind": "video",
+                  "label": "V1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                },
+                {
+                  "armed": false,
+                  "clips": [],
+                  "crossings": [],
+                  "id": "1",
+                  "kind": "audio",
+                  "label": "A1",
+                  "locked": false,
+                  "mix": {
+                    "effects": [],
+                    "gain_db": 0.0,
+                    "pan": 0.0
+                  },
+                  "muted": false,
+                  "solo": false
+                }
+              ],
+              "transition_defaults": [
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "InOut",
+                  "kind": "Push"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 11,
+                  "ease": "None",
+                  "kind": "CrossDissolve"
+                },
+                {
+                  "curve": 0.5,
+                  "direction": "Right",
+                  "duration": 4,
+                  "ease": "None",
+                  "kind": "SmoothCut"
+                }
+              ]
+            }
+          ],
+          "unsaved": true
+        },
+        "manifest": {
+          "clip_id": "0",
+          "clip_ids": [
+            "0"
+          ],
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "generation": "3",
+          "locked": false,
+          "max_delta": 745,
+          "media_id": "2",
+          "min_delta": -6479,
+          "name": "long-source-601s.mp4",
+          "preview_available": true,
+          "project_epoch": "1792641645665728277:1",
+          "revision": "876b1fe3ee8b7c50",
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "total_frames": 14424,
+          "window_end": 745,
+          "window_start": -6479,
+          "frame_map_evidence": {
+            "rows_sha256": "b253e8df36bd1ec2d770d77c7aa958c7646cce0c124bafb977d7ee0fa6e62637",
+            "rows_hash_encoding": "UTF-8 JSON array, compact separators comma/colon, ensure_ascii=false",
+            "original_row_count": 7225,
+            "sampled_rows": [
+              [
+                -721,
+                5758,
+                12957
+              ],
+              [
+                0,
+                6479,
+                13678
+              ],
+              [
+                1,
+                6480,
+                13679
+              ]
+            ],
+            "bounds": {
+              "first_row": [
+                -6479,
+                0,
+                7199
+              ],
+              "last_row": [
+                745,
+                7224,
+                14423
+              ]
+            }
+          }
+        },
+        "clip": {
+          "disabled": false,
+          "display_color": null,
+          "display_rgb": null,
+          "fade_in": 0,
+          "fade_out": 0,
+          "freeze_source_frame": null,
+          "id": "0",
+          "kind": "media",
+          "length_frames": 7200,
+          "linked_group": null,
+          "media_id": "2",
+          "name": "long-source-601s.mp4",
+          "retime": {
+            "max_length": 720000,
+            "min_length": 72,
+            "pitch_correction": true,
+            "source_span": 7200,
+            "speed_percent": 100.0
+          },
+          "slip_range": [
+            -6479,
+            745
+          ],
+          "source_in_frames": 6479,
+          "source_out_frames": 13679,
+          "speed_percent": 100.0,
+          "start_frame": 0,
+          "transition_in": null,
+          "transition_out": null
+        },
+        "source_jobs": [
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641691094813009",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14398,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12958,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641690720346391",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7199,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 5759,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671955816491",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 14424,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 12984,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          },
+          {
+            "cancel_requested": false,
+            "durability_error": false,
+            "durable": false,
+            "error": null,
+            "export_revision": null,
+            "frames": 1440,
+            "id": "1792641671583497647",
+            "previous_state": null,
+            "program": null,
+            "progress": null,
+            "project_epoch": null,
+            "source_asset": "source.mp4",
+            "source_assets": null,
+            "source_window": {
+              "audio_stream_index": 0,
+              "end_frame": 7921,
+              "fps": {
+                "den": 1,
+                "num": 24
+              },
+              "source_version": "64512:8262507:200058:1792641629:711055645",
+              "start_frame": 6481,
+              "total_frames": 14424
+            },
+            "state": "ready"
+          }
+        ],
+        "source_cache_discovery": "/tmp/venturi-web-media-1565052-1792641645666407849",
+        "limits": {
+          "RuntimeMaxUSec": "5min",
+          "ControlGroup": "/user.slice/user-1000.slice/user@1000.service/app.slice/venturi-windows-ui-20261021.service",
+          "MemoryCurrent": "47050752",
+          "MemoryPeak": "52428800",
+          "CPUQuotaPerSecUSec": "1s",
+          "IOWeight": "10",
+          "MemoryMax": "536870912",
+          "MemorySwapMax": "0",
+          "OOMScoreAdjust": "1000",
+          "Nice": "19",
+          "memory_events": "low 0\nhigh 0\nmax 0\noom 0\noom_kill 0\noom_group_kill 0\nsock_throttled 0\n"
+        },
+        "project_sha256": "28ec1af1dd2bf8a7c08c30605df94ec87979d531555e128241bc395c4b3d4df5",
+        "source_sha256": "af4069691f5b3f4161e2c8539a4e4d8d1541bcfbc5358840362fa58b091e122f",
+        "project_and_sources_preserved": true,
+        "memory_events_zero": true,
+        "host_mem_available": 128332771328,
+        "fd_counts": {
+          "1565052": 28
+        },
+        "no_gpu_or_shared_lock_fds": true,
+        "main_editor_preserved": true,
+        "pid": 1565052,
+        "pid_start_ticks": "95993577"
+      }
+    },
+    "actual_source_windows": {
+      "preview": [
+        {
+          "audio_stream_index": 0,
+          "end_frame": 7921,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "start_frame": 6481,
+          "total_frames": 14424
+        },
+        {
+          "audio_stream_index": 0,
+          "end_frame": 14424,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "start_frame": 12984,
+          "total_frames": 14424
+        }
+      ],
+      "recentered": [
+        {
+          "audio_stream_index": 0,
+          "end_frame": 7199,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "start_frame": 5759,
+          "total_frames": 14424
+        },
+        {
+          "audio_stream_index": 0,
+          "end_frame": 14398,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "source_version": "64512:8262507:200058:1792641629:711055645",
+          "start_frame": 12958,
+          "total_frames": 14424
+        }
+      ]
+    },
+    "screenshot": "docs/venturi-web/evidence/m4-slip-source-windows.jpg",
+    "screenshot_sha256": "d68c75d471f7182c6d9166af4c702685bf5a8ba79beb235434f8e0cf1e0630ef"
+  },
+  "verified": {
+    "real_601_second_source": true,
+    "independent_far_separated_edge_windows": true,
+    "native_absolute_frames_and_verified_local_seeks": true,
+    "numeric_recenter_readonly": true,
+    "single_native_slip_undo_redo": true,
+    "saved_project_and_source_bytes_preserved": true,
+    "closed_dom_sources_detached": true,
+    "blob_revocation": "Deterministic tested URL ownership; browser DOM confirms detachment, not a browser-internal URL registry inspection.",
+    "no_gpu_or_shared_lock": true,
+    "main_editor_preserved": true,
+    "settled_seek_evidence": "Actual DRAFT output (production paint requires both !seeking and exact local offsets), readyState 4, visible/error-free videos, matching currentSrc and unique actual native-window/currentTime correspondence.",
+    "closed_unloaded_evidence": "The actual src attribute is empty, root/videos are hidden, readyState is 0, decoded dimensions are 0x0, duration is null and currentTime is 0. Any sticky currentSrc must match a previously observed loaded owned Blob URL."
+  },
+  "native_lifecycle": {
+    "compound_cache": "Exact baseline+1/+2/+3 expected only for the known Timeline1 compound after native Apply/Undo/Redo; all other media fields exact.",
+    "dirty": "Native Undo increments history.generation, so restored parameters remain dirty until Save.",
+    "autosave": "An existing pending recovery record is retained exactly; otherwise each dirty generation produces an independently checked ready recovery record.",
+    "source_paths": [
+      "crates/vv-core/src/command.rs:1408",
+      "crates/vv-core/src/edit.rs:683",
+      "crates/vv-session/src/session.rs:53",
+      "crates/vv-session/src/session.rs:171",
+      "crates/vv-web/src/autosave.rs:234"
+    ]
+  },
+  "inputs": {
+    "slip-windows-full-build-validation.json": "11c06762f096b5194e537972d22a90622f5a03dc0246e744c27ff140f8e7fe44",
+    "slip-windows-api-proof.json": "99c3fc6e99586140d38e8f80d0f5e120fe3a0c54d7787e9c2fd7a9fce694beae",
+    "windows-slip-native-states.json": "6f3f063979d39cc65469dc2a21a075d1323f7d9cb6a56b02babfcd6fc7736458",
+    "windows-slip-windows-observations.json": "bf877690d45c40883a638156692442f155edd878467dcf62b3c7344634ed4cd8"
+  },
+  "limitations": [
+    "The real 601-second 16x16 silent source proves long absolute addressing and separated bounded windows, not uninterrupted long-duration playback or audio continuity.",
+    "Continuous pointer movement outside uncached proxy windows is not qualified by this numeric recenter check.",
+    "High-resolution decode, hardware GPU operation, physical audio and cross-machine physical DPI behavior are not qualified.",
+    "The existing Windows browser and environment were reused; no browser or driver installation. The main editor retains five unsaved MoveClips.",
+    "Public manifests contain frame_map_evidence rather than the dense API frames field. Full raw private input files and their SHA-256 values are retained; all assertions run against the full arrays before compaction.",
+    "The read-only Windows bridge does not directly expose video.seeking; null observations are retained as null. Settled state is supported by the observed production DRAFT status and exact native-window/time checks, without fabricating a false flag.",
+    "After detach/load the Windows bridge may retain a prior owned Blob string in currentSrc. The evidence retains that value; it does not claim currentSrc became blank. Native unloaded DOM fields, empty src and deterministic URL release tests establish reset/detach behavior without inspecting a browser-internal URL registry."
+  ]
+}

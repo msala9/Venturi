@@ -8,14 +8,9 @@ use vv_session::Session;
 
 pub fn detail(session: &Session, id: core::TimelineId, raw: &str, center: i64) -> Result<Value> {
     let (lane, clip_id, clip) = inspector::find(session, id, raw)?;
-    let core::ClipSource::Media(media_id) = clip.source else {
+    let core::ClipSource::Media(_) = clip.source else {
         return Err(ApiError::invalid("Slip requires source media"));
     };
-    let media = session
-        .project
-        .media_pool
-        .get(media_id)
-        .ok_or_else(ApiError::missing)?;
     let timeline = &session.project.timelines[id];
     let mut min = i64::MIN;
     let mut max = i64::MAX;
@@ -41,17 +36,37 @@ pub fn detail(session: &Session, id: core::TimelineId, raw: &str, center: i64) -
             "Slip preview exceeds linked source handles",
         ));
     }
+    let (preview_lane, preview_clip) = timeline
+        .tracks
+        .iter()
+        .enumerate()
+        .filter(|(_, track)| track.kind == core::TrackKind::Video)
+        .flat_map(|(lane, track)| track.clips.iter().map(move |clip| (lane, clip)))
+        .filter(|(_, linked)| {
+            linked.id == clip_id
+                || clip.linked_group.is_some() && linked.linked_group == clip.linked_group
+        })
+        .min_by_key(|(lane, linked)| (linked.id != clip_id, *lane, linked.id.0))
+        .unwrap_or((lane, clip));
+    let core::ClipSource::Media(media_id) = preview_clip.source else {
+        return Err(ApiError::invalid("Slip requires source media"));
+    };
+    let media = session
+        .project
+        .media_pool
+        .get(media_id)
+        .ok_or_else(ApiError::missing)?;
     let start = min.max(center.saturating_sub(32768));
     let end = max.min(center.saturating_add(32768));
-    let mut sample = clip.clone();
+    let mut sample = preview_clip.clone();
     let frames: Vec<_> = (start..=end)
         .map(|delta| {
-            sample.source_offset = clip.source_offset + delta;
+            sample.source_offset = preview_clip.source_offset + delta;
             [delta, sample.source_in(), sample.source_out() - 1]
         })
         .collect();
     Ok(
-        json!({"clip_id":raw,"clip_ids":ids,"media_id":media_id.raw().to_string(),"source_version":media.content_hash.to_string(),"fps":media.meta.fps,"name":vv_session::file_label(&media.path),"min_delta":min,"max_delta":max,"locked":locked,"preview_available":timeline.tracks[lane].kind==core::TrackKind::Video && media.meta.has_video && !media.meta.is_image() && media.compound.is_none(),"window_start":start,"window_end":end,"frames":frames}),
+        json!({"clip_id":raw,"clip_ids":ids,"media_id":media_id.raw().to_string(),"source_version":media.content_hash.to_string(),"fps":media.meta.fps,"total_frames":media.meta.duration_frames,"name":vv_session::file_label(&media.path),"min_delta":min,"max_delta":max,"locked":locked,"preview_available":timeline.tracks[preview_lane].kind==core::TrackKind::Video && media.meta.has_video && !media.meta.is_image() && media.compound.is_none(),"window_start":start,"window_end":end,"frames":frames}),
     )
 }
 

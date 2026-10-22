@@ -12,6 +12,37 @@ working browser controls. Overall engineering progress is estimated at 65–70%,
 with substantial uncertainty in remaining interaction and release qualification.
 No completion date is supported by the current evidence.
 
+Long-source Slip edges now pass `evidence/m4-slip-source-windows.json` and its
+Windows screenshot. The dual viewer uses one shared or two sequential bounded
+Source windows instead of requesting a full movie proxy. Both windows match
+the public manifest's pinned file version, full source FPS and frame count.
+Local seeks subtract each window origin; frame choices remain entirely native.
+An audio selection now previews its linked video, with the selected video
+taking priority, matching the original timeline UI. Native tests cover peers
+with different source clocks and selected-video priority.
+
+Pointer drafts and numeric input remain local. Committing a numeric change
+outside cached coverage recenters the windows. Incomplete numeric text stays
+editable and cannot be overwritten by late media events or applied as the
+previous valid delta. Selection/close/stale/error paths detach both videos and
+release owned Blob URLs without canceling shared jobs. A flexible Slip layout
+keeps full images and controls visible in the short existing Windows viewport.
+
+Cached halo2 validation passes 419 web Rust, 281 core and 800 JavaScript tests,
+targeted multimedia/five desktop checks, fmt, Clippy with warnings denied and
+native build. After the CSS-only layout correction, unchanged Rust hashes were
+verified and fmt/JavaScript/embedded build passed again. API and Windows checks
+passed on the final binary using the existing real 601-second, silent 16x16,
+200058-byte source. Native API checks use two 12-frame windows; the browser
+actually prepares separate 60-second windows, verifies absolute/local frame
+clocks, recenters through real keyboard input and completes one SlipClips
+Undo/Redo. Saved source/project bytes and the main editor's five unsaved edits
+remain intact. Temporary tabs, services and tunnels are closed. No local build,
+browser installation or hardware GPU work occurred. Continuous edge preview
+after a pointer leaves downloaded windows, physical Canvas/DPI and broader
+playback qualification remain open; the Slip row stays partial and ledger
+counts remain 39 done and 51 partial.
+
 Custom EQ/compressor parameter presets now pass
 `evidence/m5-custom-audio-presets.json`. Cards provide named Save, explicit
 same-name Replace, Apply and Delete alongside the existing built-in presets.

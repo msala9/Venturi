@@ -2,6 +2,84 @@ use super::*;
 use serde_json::json;
 
 #[test]
+fn journal_stage_reopens_readonly_and_checks_full_bytes_and_inode_before_pinning() {
+    let (path, root, assets) = fixture();
+    let write = |name: &str| {
+        let mut file = File::from(
+            openat(
+                &root,
+                name,
+                OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                Mode::RUSR | Mode::WUSR,
+            )
+            .unwrap(),
+        );
+        file.write_all(b"copied metadata").unwrap();
+        file.sync_all().unwrap();
+        file
+    };
+    let writer = write("owned.json");
+    let written = writer.metadata().unwrap();
+    let (mut pinned, identity) =
+        pin_written_stage(writer, &root, "owned.json", b"copied metadata").unwrap();
+    let reopened = pinned.metadata().unwrap();
+    assert_eq!(
+        (written.dev(), written.ino(), written.len()),
+        (reopened.dev(), reopened.ino(), reopened.len())
+    );
+    assert_eq!(stable_identity(&pinned).unwrap(), identity);
+    assert!(pinned.write_all(b"must not write").is_err());
+    assert_eq!(
+        read(&root, "owned.json", 1024).unwrap().unwrap().1,
+        b"copied metadata"
+    );
+    drop(pinned);
+
+    let writer = write("changed.json");
+    assert_eq!(
+        pin_written_stage(writer, &root, "changed.json", b"forged metadata")
+            .err()
+            .unwrap()
+            .1,
+        "ASSET_JOURNAL_CONFLICT"
+    );
+    assert!(!path.join("changed.json").exists());
+
+    let writer = write("replacement.json");
+    std::fs::rename(path.join("replacement.json"), path.join("original.json")).unwrap();
+    std::fs::write(path.join("replacement.json"), b"copied metadata").unwrap();
+    assert_eq!(
+        pin_written_stage(writer, &root, "replacement.json", b"copied metadata")
+            .err()
+            .unwrap()
+            .1,
+        "ASSET_JOURNAL_CONFLICT"
+    );
+    assert_eq!(
+        std::fs::read(path.join("replacement.json")).unwrap(),
+        b"copied metadata"
+    );
+
+    let writer = write("link.json");
+    std::fs::remove_file(path.join("link.json")).unwrap();
+    std::os::unix::fs::symlink(path.join("original.json"), path.join("link.json")).unwrap();
+    assert!(pin_written_stage(writer, &root, "link.json", b"copied metadata").is_err());
+    assert!(
+        std::fs::symlink_metadata(path.join("link.json"))
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
+    assert_eq!(
+        std::fs::read(path.join("original.json")).unwrap(),
+        b"copied metadata"
+    );
+    drop(assets);
+    drop(root);
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
 fn tree_import_recovery_accepts_only_its_new_roster_entries_after_partial_publication() {
     let (path, root, assets) = fixture();
     std::fs::write(path.join("assets/existing.json"), b"existing").unwrap();
@@ -173,6 +251,14 @@ fn restart_rolls_forward_after_one_installed_image_and_records_original_full_req
     intent(&mut prepared, &root);
     renameat(&prepared.stage, "after-0.json", &assets, "a.json").unwrap();
     assets.sync_all().unwrap();
+    assert!(state(&assets, &prepared.manifest.targets[0]).unwrap());
+    let (installed, bytes) = read(&assets, "a.json", 1024).unwrap().unwrap();
+    assert_eq!(
+        crate::source::file_identity(&installed).unwrap(),
+        prepared.manifest.targets[0].after_identity
+    );
+    assert_eq!(digest(&bytes), prepared.manifest.targets[0].after_sha256);
+    drop(installed);
     drop(prepared);
     recover(&root, &assets).unwrap();
     assert_eq!(std::fs::read(path.join("assets/a.json")).unwrap(), b"new-a");

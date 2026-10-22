@@ -30,7 +30,8 @@ asset publication on the NAS leaves the complete Session unchanged; importing
 that asset creates an independent exact-byte project copy with one Undo entry,
 preserves the timeline and saves. See `evidence/halo1-workspace-migration.json`
 and `evidence/f5-nas-readonly-stage-gate.json`. Native/Web interprocess safety
-on CIFS and the remaining full F5 acceptance still need qualification.
+on CIFS now passes the real native component/Web process gate below. The full
+F5 GUI and placement acceptance remains open.
 
 Complete all remaining in-scope capabilities against the original native GUI,
 the UX specification and M7 release criteria. FUNCTIONAL_PARITY.csv
@@ -278,6 +279,27 @@ service is stopped Saved. This qualifies the connected implementation and
 isolated Web workflow; canonical shared-filesystem/native-Web interprocess and
 physical desktop acceptance still remain. Neither F5 capability advances to
 done, and protected port8814 remains unchanged.
+
+The halo1 CIFS gate now passes actual native `Library` and `AudioPresetLibrary`
+against the real Web process, using an owned catalog inside the authoritative
+mount. It covers asset, folder, attribute and EQ/compressor edits in both
+directions, stale writes, explicit Refresh, shared/exclusive locks and durable
+native multi-record recovery. Complete Web Session, source project, legacy
+Settings and the other audio catalog remain unchanged. The test removes its
+fixture; ds4 remains on the same PID. See
+`evidence/f5-native-web-cifs-catalog-gate.json`.
+
+That gate found and fixed a real folder-rename failure on CIFS: the Web journal
+captured staged metadata identities before closing its writer. It now closes
+and reopens read-only, verifies the same inode/length and all bytes, then pins
+the strong identity. Replacement, symlink and recovery checks remain intact.
+The focused 98 Web asset cases, formatting, all-target Clippy and embedded
+build pass; both real interprocess tests pass on CIFS. This qualifies filesystem
+coordination, not the complete F5 capability. Asset drag from Library directly
+to the timeline remains missing Web production behavior; manual Add to project
+and cached repeated imports already exist. Implement native placement and its
+context guards before calling that gap a qualification-only item. Physical
+desktop GUI acceptance and the remaining release requirements also stay open.
 
 ### F6 — AI Review
 

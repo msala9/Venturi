@@ -30,7 +30,10 @@ R9700 preview and Save were checked in Windows. Actual native asset publication
 and reimport also pass on CIFS: the shared and independent project copies have
 identical SHA-256 bytes, library Save preserves the entire Session and Import
 adds one Undo entry without changing the timeline. Native/Web concurrent
-coordination on CIFS remains an explicit acceptance item.
+coordination on CIFS now passes the actual component/process gate in
+`evidence/f5-native-web-cifs-catalog-gate.json`. Its private owned fixture covers
+assets, folders, attribute and audio presets without editing canonical catalogs.
+Full desktop GUI and asset drag placement acceptance remain open.
 
 Build sources are separately bootstrapped at
 `/home/halo/.cache/venturi-build/source`, with Cargo outputs in the adjacent
@@ -39,8 +42,11 @@ required native icon and embedded VAD model; it excludes project media,
 evidence, Git history and build caches. The nine FFmpeg/ALSA/Vulkan development
 packages are installed without upgrading or removing existing packages.
 Use the cached Rust 1.99.1 toolchain, with matching rustfmt/Clippy components.
-Node is not yet bootstrapped on halo1; unchanged JavaScript gates remain the
-previous qualified proofs. Do not launch a Windows build as a workaround.
+Node 24.22.0 is bootstrapped at
+`/home/halo/.local/share/venturi-web/.runtime/node-67ca5783febb`; its verified
+artifact was streamed without writing a Windows binary or installing a browser.
+Run focused JavaScript checks there, within the same bounded single-job policy.
+Do not launch a Windows build as a workaround.
 
 The initial immutable halo1 binary `vv-web-5615f3825555` (source `d13567c`) is
 retained for rollback, but its native asset Save has the diagnosed CIFS staging

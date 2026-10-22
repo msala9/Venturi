@@ -202,13 +202,21 @@ impl PreparedEdit {
             remove_owned(&self.stage, &stage, &file);
             return Err(error);
         }
+        let (file, stage_identity) = pin_written_stage(file, &self.stage, &stage, bytes)?;
+        let after_identity = match crate::source::file_identity(&file) {
+            Ok(identity) => identity,
+            Err(error) => {
+                remove_owned(&self.stage, &stage, &file);
+                return Err(error);
+            }
+        };
         self.manifest.targets.push(Target {
             asset,
             name,
             before,
             stage,
-            stage_identity: stable_identity(&file)?,
-            after_identity: crate::source::file_identity(&file)?,
+            stage_identity,
+            after_identity,
             after_sha256: digest(bytes),
             bytes: bytes.len() as u64,
         });
@@ -278,6 +286,49 @@ impl PreparedEdit {
         }
         finish(root, &self.stage, &self.manifest, &identity)
     }
+}
+fn pin_written_stage(
+    file: File,
+    directory: &File,
+    name: &str,
+    expected: &[u8],
+) -> Result<(File, String)> {
+    let written = match file.metadata() {
+        Ok(metadata) => metadata,
+        Err(_) => {
+            remove_owned(directory, name, &file);
+            return Err(ApiError::io());
+        }
+    };
+    // CIFS finalizes write timestamps when the last writer closes.
+    drop(file);
+    let result = (|| {
+        let mut file = regular(directory, name)?;
+        let reopened = file.metadata().map_err(|_| ApiError::io())?;
+        if (written.dev(), written.ino(), written.len())
+            != (reopened.dev(), reopened.ino(), reopened.len())
+            || reopened.len() != expected.len() as u64
+        {
+            return Err(changed());
+        }
+        let identity = stable_identity(&file)?;
+        let mut actual = Vec::new();
+        (&mut file)
+            .take(expected.len() as u64 + 1)
+            .read_to_end(&mut actual)
+            .map_err(|_| ApiError::io())?;
+        if actual != expected
+            || stable_identity(&file)? != identity
+            || stable_identity(&regular(directory, name)?)? != identity
+        {
+            return Err(changed());
+        }
+        Ok((file, identity))
+    })();
+    if result.is_err() {
+        remove_owned_metadata(directory, name, &written);
+    }
+    result
 }
 impl Drop for PreparedEdit {
     fn drop(&mut self) {
@@ -670,10 +721,14 @@ fn atomic(directory: &File, name: &str, bytes: &[u8], replace: bool) -> Result<(
     result
 }
 fn remove_owned(directory: &File, name: &str, file: &File) {
-    if let (Ok(owned), Ok(live)) = (
-        file.metadata(),
-        regular(directory, name).and_then(|file| file.metadata().map_err(|_| ApiError::io())),
-    ) && (owned.dev(), owned.ino()) == (live.dev(), live.ino())
+    if let Ok(owned) = file.metadata() {
+        remove_owned_metadata(directory, name, &owned);
+    }
+}
+fn remove_owned_metadata(directory: &File, name: &str, owned: &std::fs::Metadata) {
+    if let Ok(live) =
+        regular(directory, name).and_then(|file| file.metadata().map_err(|_| ApiError::io()))
+        && (owned.dev(), owned.ino()) == (live.dev(), live.ino())
     {
         let _ = unlinkat(directory, name, AtFlags::empty());
     }

@@ -1,0 +1,93 @@
+{
+  "date": "2026-10-22",
+  "host": "halo1",
+  "base_commit": "8e9e412",
+  "source_sha256": {
+    "crates/vv-app/src/tests/audio_preset_library.rs": "79e9aeefcbc198883f18a0af90fc3d4e6afd6522aa2cfd2d3e145fe24a581011",
+    "crates/vv-web/src/asset_journal.rs": "09fff8ecd49deda99bd314d67e4beea8aa5674b10744cd32e9f59bef324b7c9f",
+    "crates/vv-web/src/tests/asset_journal.rs": "71128e9426fcffc6fa8cfc8a51d61eda20128a1d75fe76f967b8e6d859b24ae1"
+  },
+  "filesystem": {
+    "mount": "/mnt/madrock-share",
+    "source": "//192.168.1.200/shared",
+    "type": "cifs",
+    "library": "/mnt/madrock-share/madrock-library",
+    "fixture": "unique owned hidden subdirectory inside the authoritative mounted library; canonical catalogs were not edited",
+    "cleanup": true
+  },
+  "native": {
+    "binary": "/home/halo/.cache/venturi-build/target/debug/deps/vv_app-6f642db5e0800d9e",
+    "sha256": "dbc8d304808e6538fec9817067a758973d26b2b56f4d072a427ecd82a9645013",
+    "test_build": "passed; Rust 1.99.1, cargo test --locked -p vv-app --no-run",
+    "clippy": "cargo clippy --locked -p vv-app --tests -- -D warnings: passed"
+  },
+  "web": {
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-e17997c36672",
+    "sha256": "e17997c366721c776c764bd56d6a28c8b4c40464fe4af3261fa4654b95409f5d",
+    "bytes": 77293064,
+    "asset_cases": 98,
+    "asset_failed": 0,
+    "formatting": "passed",
+    "all_target_clippy": "passed",
+    "embedded_build": "passed"
+  },
+  "tests": [
+    {
+      "name": "shared_audio_presets_native_web_process_interoperability",
+      "passed": true,
+      "seconds": 0.24,
+      "native_shared_lock_web_write_refusal_ms": 1.596869,
+      "native_exclusive_lock_web_write_refusal_ms": 1.436782
+    },
+    {
+      "name": "shared_library_native_web_full_catalog_process_interoperability",
+      "passed": true,
+      "seconds": 0.61
+    }
+  ],
+  "acceptance": {
+    "actual_native_library_and_real_web_process": true,
+    "native_to_web_and_web_to_native_updates": true,
+    "stale_asset_and_attribute_preset_writes_refused": true,
+    "native_explicit_refresh": true,
+    "folder_rename_remove_reparent_and_stale_cas": true,
+    "native_shared_and_exclusive_locks": true,
+    "two_record_native_asset_folder_recovery": true,
+    "two_record_native_attribute_preset_recovery": true,
+    "web_preserves_pending_native_markers": true,
+    "clipboard_payload_preserved": true,
+    "audio_catalog_and_legacy_settings_preserved": true,
+    "complete_web_session_and_source_project_preserved": true,
+    "owned_web_child_killed_and_waited": true,
+    "owned_fixture_removed": true,
+    "ds4_pid_unchanged": "58396"
+  },
+  "diagnosed_failure": {
+    "web_sha256": "11fd31925c23e18599e597d70ea02206d24ddb106776293fe83150a6ef10fced",
+    "operation": "folder-web-rename",
+    "expected_http_status": 200,
+    "actual_http_status": 409,
+    "code": "ASSET_JOURNAL_CONFLICT",
+    "cause": "Journal staged identities were captured before the WRONLY writer closed; CIFS finalized write timestamps on close.",
+    "fix": "Close the synced writer; reopen by pinned directory fd read-only with NOFOLLOW/NONBLOCK; verify the same dev/inode/length, all expected bytes, strong fd and live-path identities before recording the baseline. Keep post-rename identity plus full SHA recovery guards.",
+    "no_sleep_retry_or_guard_relaxation": true
+  },
+  "resources": {
+    "one_heavy_job_at_a_time": true,
+    "cpu_quota": 8,
+    "compiler_jobs": 2,
+    "memory_max_gib": 4,
+    "swap_max_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "finite_unit": "venturi-halo1-f4-native-tools-20261022.service",
+    "terminal_main_pid": 0,
+    "gpu": "disabled for native/Web interop children; no render or browser needed"
+  },
+  "remaining": [
+    "Desktop GUI sharing workflow and asset drag placement are still open; the native component process test does not replace GUI acceptance.",
+    "Web native asset drag-to-timeline placement is missing production behavior, not just an unperformed test. Existing Add-to-project cached reuse is already implemented.",
+    "Full F5 and release acceptance remain partial; ledger stays 47 done / 43 partial / 2 excluded."
+  ]
+}

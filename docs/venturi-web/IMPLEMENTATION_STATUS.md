@@ -17,7 +17,15 @@ NAS without changing the complete Session, imports an independent exact-byte
 copy with one Undo entry, preserves the timeline and saves. See
 `evidence/halo1-workspace-migration.json` and
 `evidence/f5-nas-readonly-stage-gate.json`. Native/Web concurrent coordination
-on CIFS and the rest of F5 still require their own acceptance. Existing
+on CIFS now passes `evidence/f5-native-web-cifs-catalog-gate.json`: actual native
+components and real Web children cover assets, folders, attribute and audio
+presets, stale writes, locks and durable recovery in an owned fixture on the
+authoritative mount. A journal writer-close timestamp bug found by that gate
+is fixed with read-only reopen, complete-byte and strong identity checks.
+The 98 affected Web cases, formatting, all-target Clippy and build pass.
+Library asset drag-to-timeline remains missing Web production behavior;
+manual Add to project and cached repeated imports already exist. Physical
+desktop GUI and the rest of F5 still require acceptance. Existing
 halo2 editors and dirty histories remain preserved. This migration does not
 advance the functional ledger or imply full F1-F7 completion.
 

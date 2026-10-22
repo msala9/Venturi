@@ -51,9 +51,9 @@ impl InteropWeb {
                 .args(["--listen", "127.0.0.1:0", "--projects-root"])
                 .arg(server.root.join("projects"))
                 .arg("--presets-root")
-                .arg(server.root.join("presets"))
+                .arg(server.root.join("library/presets"))
                 .arg("--assets-root")
-                .arg(server.root.join("assets"))
+                .arg(server.root.join("library"))
                 .current_dir(&server.root)
                 .env("TMPDIR", &temp)
                 .env("TMP", &temp)
@@ -155,6 +155,44 @@ impl InteropWeb {
         )
     }
 
+    fn library_item(
+        &self,
+        session: &serde_json::Value,
+        catalog: &str,
+        id: &str,
+    ) -> serde_json::Value {
+        let (status, item) = self.request(
+            "GET",
+            &format!(
+                "/api/v1/{catalog}/items/{id}?project_epoch={}",
+                session["project_epoch"].as_str().unwrap()
+            ),
+            None,
+        );
+        assert_eq!(status, 200, "{item}");
+        assert!(item.get("error").is_none(), "{item}");
+        item
+    }
+
+    fn library_command(
+        &self,
+        session: &serde_json::Value,
+        catalog: &str,
+        id: &str,
+        edit: serde_json::Value,
+    ) -> (u16, serde_json::Value) {
+        let kind = match catalog {
+            "native-assets" => "edit_native_asset_library",
+            "presets" => "edit_preset_library",
+            _ => panic!("Unknown interop catalog"),
+        };
+        self.request("POST", &format!("/api/v1/{catalog}/commands"), Some(json!({
+            "command_id":id,"client_id":"native-web-interop","command_epoch":session["command_epoch"],
+            "project_epoch":session["project_epoch"],"if_generation":session["generation"],"if_revision":null,
+            "operation":{"kind":kind,"edit":edit},
+        })))
+    }
+
     fn save(
         &self,
         session: &serde_json::Value,
@@ -196,7 +234,7 @@ fn shared_audio_presets_native_web_process_interoperability() {
     assert!(binary.is_absolute() && binary.is_file());
     let binary = binary.canonicalize().unwrap();
     let web = InteropWeb::start(&binary);
-    let shared = web.root.join("presets");
+    let shared = web.root.join("library/presets");
     let settings_path = web.root.join("settings.json");
     let legacy = json!({"eq_presets":[{"name":"Legacy","params":eq(-1.0)}],
         "compressor_presets":[{"name":"Legacy","params":MultibandCompressor::DEFAULT}]});
@@ -379,6 +417,348 @@ fn shared_audio_presets_native_web_process_interoperability() {
         !owned_root.exists(),
         "The owned interoperability fixture was not cleaned up"
     );
+}
+
+#[test]
+#[ignore = "Set VENTURI_INTEROP_WEB to an existing vv-web binary and TMPDIR to a private filesystem qualification directory; run explicitly under finite limits"]
+fn shared_library_native_web_full_catalog_process_interoperability() {
+    use crate::library::{AttributePreset, Library};
+    use vv_core::attributes::{Attribute, TimelineFormat};
+    use vv_core::clipboard::{ClipboardOrigin, ClipboardPayload};
+    use vv_core::{Clip, ClipSource, Rational, Timeline, Track, TrackKind};
+
+    let binary = PathBuf::from(std::env::var_os("VENTURI_INTEROP_WEB").expect(
+        "Set VENTURI_INTEROP_WEB to the exact existing vv-web binary; this test never builds one",
+    ));
+    assert!(binary.is_absolute() && binary.is_file());
+    let mut web = InteropWeb::start(&binary.canonicalize().unwrap());
+    web.deadline = std::time::Instant::now() + std::time::Duration::from_secs(90);
+    let shared = web.root.join("library");
+    let preset_root = shared.join("presets");
+    let mut native = Library::open(shared.clone());
+    assert!(native.error().is_none(), "{:?}", native.error());
+    let parent = native.add_folder("Parent".into(), None).unwrap();
+    let folder = native
+        .add_folder("Child".into(), Some(parent.clone()))
+        .unwrap();
+
+    let mut source = vv_session::Session::default();
+    let timeline = source.create_timeline(Timeline {
+        name: "Native solid compound".into(),
+        fps: Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![Track::new(TrackKind::Video)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let clip = Clip::from_source_range(
+        source.project.alloc_clip_id(),
+        ClipSource::SolidColor,
+        0,
+        24,
+        0,
+        Rational::one(),
+    );
+    source.project.timelines[timeline].tracks[0].insert_sorted(clip.clone());
+    source.sync_timeline_media(timeline);
+    let media = source
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(timeline))
+        .unwrap()
+        .0;
+    let source_before = serde_json::to_value(&source.project).unwrap();
+    let payload = ClipboardPayload::new(
+        ClipboardOrigin {
+            instance: 1,
+            epoch: 1,
+        },
+        &source.project,
+        &[media],
+        &[],
+    );
+    let original_payload = payload.to_text();
+    native.add_asset("Native compound".into(), Some(folder.clone()), payload);
+    while native.pending().next().is_some() {
+        let errors = native.poll();
+        assert!(errors.is_empty(), "{errors:?}");
+        assert!(
+            std::time::Instant::now() < web.deadline,
+            "Native asset did not finish"
+        );
+        std::thread::sleep(std::time::Duration::from_millis(5));
+    }
+    let asset_id = native.assets[0].id.clone();
+    let mut preset = AttributePreset::new(
+        "Native look".into(),
+        TimelineFormat {
+            fps: Rational::new(24, 1),
+            resolution: (16, 16),
+        },
+        Some(clip),
+        None,
+    );
+    preset.attributes = vec![Attribute::Zoom];
+    let preset_id = native.add_preset(preset.clone()).unwrap();
+    let peer_id = native.add_preset(preset.clone()).unwrap();
+    let settings_path = web.root.join("settings.json");
+    let legacy =
+        json!({"eq_presets":[{"name":"Legacy","params":eq(-1.0)}],"compressor_presets":[]});
+    let settings_bytes = serde_json::to_vec_pretty(&legacy).unwrap();
+    std::fs::write(&settings_path, &settings_bytes).unwrap();
+    let settings = crate::settings::Settings::load(&settings_path);
+    let mut audio = AudioPresetLibrary::open(preset_root.clone(), settings.audio_preset_values());
+    audio.bank().save("Voice", &eq(-6.0)).unwrap();
+    audio
+        .bank()
+        .save("Voice", &MultibandCompressor::DEFAULT)
+        .unwrap();
+    let audio_bytes = std::fs::read(preset_root.join(AUDIO_PRESET_FILE)).unwrap();
+    assert_eq!(
+        web.request(
+            "POST",
+            "/api/v1/lease",
+            Some(json!({"client_id":"native-web-interop"}))
+        )
+        .0,
+        200
+    );
+    let (status, session) = web.request("GET", "/api/v1/session", None);
+    assert_eq!(status, 200);
+    assert_eq!(session["capabilities"]["preview"], false);
+    let epoch = session["project_epoch"].as_str().unwrap();
+    let folders_path = format!("/api/v1/native-assets/folders?project_epoch={epoch}");
+    let item_path =
+        |catalog: &str, id: &str| format!("/api/v1/{catalog}/items/{id}?project_epoch={epoch}");
+    let options = |name: &str| json!({"name":name,"attributes":preset.attributes,"anchor":preset.anchor,"append_filters":preset.append_filters});
+    let asset = web.library_item(&session, "native-assets", &asset_id);
+    assert_eq!(asset["name"], "Native compound");
+    assert_eq!(asset["folder"], folder);
+    let first_preset = web.library_item(&session, "presets", &preset_id);
+    assert_eq!(first_preset["name"], "Native look");
+    assert_eq!(web.catalog(&session).0, 200);
+
+    let (status, ack) = web.library_command(
+        &session,
+        "native-assets",
+        "asset-web-first",
+        json!({"action":"update","id":asset_id,"revision":asset["revision"],"name":"Web compound"}),
+    );
+    assert_eq!(status, 200, "{ack}");
+    assert!(
+        native
+            .rename_asset(&asset_id, "Stale draft".into())
+            .is_err()
+    );
+    assert_eq!(native.assets[0].name, "Native compound");
+    native.refresh().unwrap();
+    assert_eq!(native.assets[0].name, "Web compound");
+    let stale_asset = web.library_item(&session, "native-assets", &asset_id);
+    native
+        .rename_asset(&asset_id, "Native refreshed".into())
+        .unwrap();
+    let asset_file = shared.join(format!("assets/{asset_id}.json"));
+    let asset_bytes = std::fs::read(&asset_file).unwrap();
+    let (status, refused) = web.library_command(&session, "native-assets", "asset-web-stale", json!({"action":"update","id":asset_id,"revision":stale_asset["revision"],"name":"Must not write"}));
+    assert_eq!(status, 409, "{refused}");
+    assert_eq!(std::fs::read(&asset_file).unwrap(), asset_bytes);
+    assert_eq!(
+        web.library_item(&session, "native-assets", &asset_id)["name"],
+        "Native refreshed"
+    );
+
+    let (status, ack) = web.library_command(&session, "presets", "preset-web-first", json!({"action":"update","id":preset_id,"revision":first_preset["revision"],"options":options("Web look")}));
+    assert_eq!(status, 200, "{ack}");
+    assert!(
+        native
+            .update_preset(&preset_id, |preset| preset.name = "Stale draft".into())
+            .is_err()
+    );
+    assert_eq!(native.preset(&preset_id).unwrap().name, "Native look");
+    native.refresh().unwrap();
+    assert_eq!(native.preset(&preset_id).unwrap().name, "Web look");
+    let stale_preset = web.library_item(&session, "presets", &preset_id);
+    native
+        .update_preset(&preset_id, |preset| {
+            preset.name = "Native refreshed look".into()
+        })
+        .unwrap();
+    let preset_file = preset_root.join(format!("{preset_id}.json"));
+    let preset_bytes = std::fs::read(&preset_file).unwrap();
+    let (status, refused) = web.library_command(&session, "presets", "preset-web-stale", json!({"action":"update","id":preset_id,"revision":stale_preset["revision"],"options":options("Must not write")}));
+    assert_eq!(status, 409, "{refused}");
+    assert_eq!(std::fs::read(&preset_file).unwrap(), preset_bytes);
+
+    let (status, folders) = web.request("GET", &folders_path, None);
+    assert_eq!(status, 200);
+    let (status, ack) = web.library_command(&session, "native-assets", "folder-web-rename", json!({"action":"rename_folder","id":folder,"folders_revision":folders["folders_revision"],"name":"Web child"}));
+    assert_eq!(status, 200, "{ack}");
+    assert!(native.rename_folder(&folder, "Stale child".into()).is_err());
+    assert_eq!(native.folder(&folder).unwrap().name, "Child");
+    native.refresh().unwrap();
+    assert_eq!(native.folder(&folder).unwrap().name, "Web child");
+    native.remove_folder(&folder).unwrap();
+    let folder_bytes = std::fs::read(shared.join("folders.json")).unwrap();
+    let (status, refused) = web.library_command(&session, "native-assets", "folder-web-stale", json!({"action":"rename_folder","id":parent,"folders_revision":folders["folders_revision"],"name":"Must not write"}));
+    assert_eq!(status, 409, "{refused}");
+    assert_eq!(
+        std::fs::read(shared.join("folders.json")).unwrap(),
+        folder_bytes
+    );
+    let moved = web.library_item(&session, "native-assets", &asset_id);
+    assert_eq!(moved["folder"], parent);
+    assert_eq!(native.assets[0].payload.to_text(), original_payload);
+
+    for (catalog, kind, directory, id) in [
+        ("native-assets", Kind::Assets, &shared, &asset_id),
+        ("presets", Kind::Presets, &preset_root, &preset_id),
+    ] {
+        let before = web.library_item(&session, catalog, id);
+        let file = if catalog == "native-assets" {
+            shared.join(format!("assets/{id}.json"))
+        } else {
+            preset_root.join(format!("{id}.json"))
+        };
+        let bytes = std::fs::read(&file).unwrap();
+        for exclusive in [false, true] {
+            let guard = if exclusive {
+                Guard::write(directory, kind)
+            } else {
+                Guard::snapshot(directory, kind)
+            }
+            .unwrap();
+            let (status, listed) = web.request("GET", &item_path(catalog, id), None);
+            assert_eq!(status, if exclusive { 409 } else { 200 }, "{listed}");
+            let edit = if catalog == "native-assets" {
+                json!({"action":"update","id":id,"revision":before["revision"],"name":"Blocked"})
+            } else {
+                json!({"action":"update","id":id,"revision":before["revision"],"options":options("Blocked")})
+            };
+            let (status, refused) = web.library_command(
+                &session,
+                catalog,
+                &format!("lock-{catalog}-{exclusive}"),
+                edit,
+            );
+            assert_eq!(status, 409, "{refused}");
+            assert_eq!(refused["error"]["code"], "LIBRARY_BUSY");
+            assert_eq!(std::fs::read(&file).unwrap(), bytes);
+            drop(guard);
+        }
+        let mut writer = Guard::write(directory, kind).unwrap();
+        let paths = if catalog == "native-assets" {
+            vec![format!("assets/{asset_id}.json"), "folders.json".into()]
+        } else {
+            vec![format!("{preset_id}.json"), format!("{peer_id}.json")]
+        };
+        let mut targets = Vec::new();
+        let mut originals = Vec::new();
+        for path in paths {
+            let record = writer.read(&path).unwrap().unwrap();
+            let mut after: serde_json::Value = serde_json::from_str(&record.bytes).unwrap();
+            if path == "folders.json" {
+                after["folders"]
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .find(|entry| entry["id"] == parent)
+                    .unwrap()["name"] = json!("Recovered parent");
+            } else {
+                after["name"] = json!("Recovered native record");
+            }
+            originals.push((directory.join(&path), record.bytes.clone()));
+            targets.push(Target {
+                path,
+                before: Some(record),
+                after: Some(serde_json::to_string_pretty(&after).unwrap()),
+            });
+        }
+        writer.fail_after_intent_for_test();
+        assert!(
+            writer
+                .commit(targets)
+                .unwrap_err()
+                .contains("durable native library intent")
+        );
+        drop(writer);
+        let marker = directory.join(if catalog == "native-assets" {
+            ".venturi-native-assets-pending.json"
+        } else {
+            ".venturi-native-presets-pending.json"
+        });
+        let pending = std::fs::read(&marker).unwrap();
+        let (status, refused) = web.request("GET", &item_path(catalog, id), None);
+        assert_eq!(status, 409, "{refused}");
+        assert_eq!(
+            refused["error"]["code"],
+            if catalog == "native-assets" {
+                "LIBRARY_BUSY"
+            } else {
+                "LIBRARY_RECOVERY_REQUIRED"
+            }
+        );
+        let edit = if catalog == "native-assets" {
+            json!({"action":"update","id":id,"revision":before["revision"],"name":"Blocked pending"})
+        } else {
+            json!({"action":"update","id":id,"revision":before["revision"],"options":options("Blocked pending")})
+        };
+        assert_eq!(
+            web.library_command(&session, catalog, &format!("pending-{catalog}"), edit)
+                .0,
+            409
+        );
+        for (path, bytes) in &originals {
+            assert_eq!(std::fs::read(path).unwrap(), bytes.as_bytes());
+        }
+        assert_eq!(std::fs::read(&marker).unwrap(), pending);
+        native.refresh().unwrap();
+        assert!(!marker.exists());
+        let recovered = web.library_item(&session, catalog, id);
+        assert_eq!(recovered["name"], "Recovered native record");
+        assert_ne!(recovered["revision"], before["revision"]);
+        if catalog == "native-assets" {
+            assert_eq!(native.folder(&parent).unwrap().name, "Recovered parent");
+            assert_eq!(native.assets[0].payload.to_text(), original_payload);
+        } else {
+            assert_eq!(
+                native.preset(&peer_id).unwrap().name,
+                "Recovered native record"
+            );
+        }
+    }
+    audio.refresh().unwrap();
+    assert_eq!(
+        audio.bank::<Equalizer>().resolve("Voice").unwrap(),
+        eq(-6.0)
+    );
+    assert_eq!(
+        audio
+            .bank::<MultibandCompressor>()
+            .resolve("Voice")
+            .unwrap(),
+        MultibandCompressor::DEFAULT
+    );
+    assert_eq!(
+        std::fs::read(preset_root.join(AUDIO_PRESET_FILE)).unwrap(),
+        audio_bytes
+    );
+    assert_eq!(web.request("GET", "/api/v1/session", None), (200, session));
+    assert_eq!(
+        serde_json::to_value(&source.project).unwrap(),
+        source_before
+    );
+    assert_eq!(std::fs::read(settings_path).unwrap(), settings_bytes);
+    assert_eq!(settings.audio_preset_values(), legacy);
+    eprintln!(
+        "Native/Web full-catalog interop passed at {} with {}",
+        shared.display(),
+        binary.display()
+    );
+    let owned_root = web.root.clone();
+    drop((native, audio));
+    drop(web);
+    assert!(!owned_root.exists());
 }
 
 #[test]

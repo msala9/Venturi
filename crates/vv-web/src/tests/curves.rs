@@ -27,6 +27,170 @@ fn fixture() -> (Session, TimelineId, String) {
     (session, id, clip_id.0.to_string())
 }
 
+fn viewport_request(start: i64, end: i64, points: usize) -> ViewportRequest {
+    ViewportRequest {
+        query: crate::preview::FrameQuery {
+            timeline_id: "1".into(),
+            project_epoch: "reader".into(),
+            if_generation: "0".into(),
+            revision: "revision".into(),
+            frame: 0,
+            width: 64,
+        },
+        target: Target::Transform {
+            param: TransformParam::Opacity,
+        },
+        source_start: start,
+        source_end: end,
+        points,
+    }
+}
+
+#[test]
+fn curve_viewport_matches_native_fractional_ease_hold_and_unclamped_bezier_overshoot() {
+    let (mut session, id, raw) = fixture();
+    let request = viewport_request(25, 26, 5);
+    let value = viewport(&session, id, &raw, &request).unwrap();
+    for (index, row) in value["samples"].as_array().unwrap().iter().enumerate() {
+        let at = 25.0 + index as f32 / 4.0;
+        let expected = 20.0 + 60.0 * Interpolation::EaseIn.ease((at - 25.0) / 15.0);
+        assert_eq!(row[0], json!(25.0 + index as f64 / 4.0));
+        assert_eq!(row[1], json!(expected));
+    }
+    assert_ne!(value["samples"][1][1], json!(20.0));
+    for interpolation in [
+        Interpolation::Hold,
+        Interpolation::Bezier {
+            c1: [0.25, 3.0],
+            c2: [0.75, 3.0],
+        },
+    ] {
+        let track = session.project.timelines[id].tracks[0].clips[0]
+            .effects
+            .transform
+            .track_mut(TransformParam::Opacity);
+        *track = Keyframed::constant(100.0);
+        track.upsert(25, 20.0, interpolation);
+        track.upsert(26, 80.0, Interpolation::Linear);
+        let result = viewport(&session, id, &raw, &request).unwrap();
+        for (index, row) in result["samples"].as_array().unwrap().iter().enumerate() {
+            let expected = match index {
+                0 => 20.0,
+                4 => 80.0,
+                _ => 20.0 + 60.0 * interpolation.ease(index as f32 / 4.0),
+            };
+            assert_eq!(row[1], json!(expected));
+        }
+        if matches!(interpolation, Interpolation::Hold) {
+            assert_eq!(result["samples"][3][1], 20.0);
+            assert_eq!(result["samples"][4][1], 80.0);
+        } else {
+            assert!(result["samples"][2][1].as_f64().unwrap() > 100.0);
+        }
+    }
+    *session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(TransformParam::Opacity) = Keyframed::constant(37.0);
+    let clip = &session.project.timelines[id].tracks[0].clips[0];
+    let constant = viewport(
+        &session,
+        id,
+        &raw,
+        &viewport_request(clip.source_in(), clip.source_out(), 2),
+    )
+    .unwrap();
+    assert_eq!(constant["samples"][0][1], 37.0);
+    assert_eq!(constant["samples"][1][1], 37.0);
+}
+
+#[test]
+fn curve_viewport_uses_late_dense_keys_and_full_track_page_neighbors_without_editing() {
+    let (mut session, id, raw) = fixture();
+    let clip = &mut session.project.timelines[id].tracks[0].clips[0];
+    *clip = Clip::from_source_range(
+        clip.id,
+        ClipSource::SolidColor,
+        12,
+        1000,
+        100,
+        Rational::new(1, 2),
+    );
+    clip.freeze = Some(20);
+    let track = clip.effects.transform.track_mut(TransformParam::Opacity);
+    track.upsert(-5, 11.0, Interpolation::Hold);
+    for frame in 0..=600 {
+        track.upsert(frame, (frame % 100) as f32, Interpolation::EaseOut);
+    }
+    let before = json!(session.project);
+    let generation = session.history.generation();
+    let result = viewport(&session, id, &raw, &viewport_request(550, 551, 3)).unwrap();
+    assert_eq!(result["samples"][1], json!([550.5, 50.75]));
+    let clip = &session.project.timelines[id].tracks[0].clips[0];
+    let page = detail_page(&session, id, clip, 0, 256, 2);
+    let curve = page["tracks"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|row| row["target"] == json!(viewport_request(0, 0, 2).target))
+        .unwrap();
+    assert_eq!(curve["keys"][0]["source_frame"], 255);
+    assert_eq!(
+        curve["keys"][0]["previous_key"],
+        json!({"source_frame":254,"value":54.0,"interpolation":"EaseOut","controls":Interpolation::EaseOut.control_points()})
+    );
+    assert_eq!(curve["keys"][1]["next_key"]["source_frame"], 257);
+    let first = detail_page(&session, id, clip, 0, 0, 1);
+    let last = detail_page(&session, id, clip, 0, 601, 1);
+    let key = |page: &Value| {
+        page["tracks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|row| row["target"] == json!(viewport_request(0, 0, 2).target))
+            .unwrap()["keys"][0]
+            .clone()
+    };
+    assert_eq!(key(&first)["source_frame"], -5);
+    assert!(key(&first)["previous_key"].is_null());
+    assert_eq!(key(&first)["next_key"]["source_frame"], 0);
+    assert!(key(&last)["next_key"].is_null());
+    assert_eq!(json!(session.project), before);
+    assert_eq!(session.history.generation(), generation);
+}
+
+#[test]
+fn curve_viewport_rejects_invalid_ranges_targets_counts_and_nonfinite_native_values() {
+    let (mut session, id, raw) = fixture();
+    let clip = &session.project.timelines[id].tracks[0].clips[0];
+    let start = clip.source_in();
+    let end = clip.source_out();
+    for (start, end, points) in [
+        (start - 1, end, 2),
+        (start, end + 1, 2),
+        (end, start, 2),
+        (start, end, 1),
+        (start, end, 2049),
+    ] {
+        assert!(viewport(&session, id, &raw, &viewport_request(start, end, points)).is_err());
+    }
+    assert_eq!(
+        viewport(&session, id, &raw, &viewport_request(end, end, 2048)).unwrap()["samples"]
+            .as_array()
+            .unwrap()
+            .len(),
+        2048
+    );
+    let mut request = viewport_request(start, end, 2);
+    request.target = Target::Gain;
+    assert!(viewport(&session, id, &raw, &request).is_err());
+    *session.project.timelines[id].tracks[0].clips[0]
+        .effects
+        .transform
+        .track_mut(TransformParam::Opacity) = Keyframed::constant(f32::NAN);
+    assert!(viewport(&session, id, &raw, &viewport_request(start, end, 2)).is_err());
+}
+
 fn change() -> Edit {
     Edit {
         target: Target::Transform {

@@ -657,6 +657,11 @@ function selected() {
           const payload={query:{project_epoch:state.project_epoch,if_generation:state.generation,timeline_id:state.timeline,revision:state.revision,frame:inspectorFrame,width:960},source_frame:sourceFrame};
           return request(`/timelines/${encodeURIComponent(state.timeline)}/clips/${encodeURIComponent(clip.id)}/keyframe-navigation`,payload,(url,options)=>fetch(url,{...options,signal:AbortSignal.any([signal,AbortSignal.timeout(5000)].filter(Boolean))}));
         },
+        readCurveViewport:async({target,source_start,source_end,points},{signal}={})=>{
+          if(identity!==detailIdentity(inspectorState(clip.id)) || !canNavigateInspector())throw Error('The curve viewport context changed');
+          const payload={query:{project_epoch:state.project_epoch,if_generation:state.generation,timeline_id:state.timeline,revision:state.revision,frame:inspectorFrame,width:960},target,source_start,source_end,points};
+          return request(`/timelines/${encodeURIComponent(state.timeline)}/clips/${encodeURIComponent(clip.id)}/curve-viewport`,payload,(url,options)=>fetch(url,{...options,signal:AbortSignal.any([signal,AbortSignal.timeout(5000)].filter(Boolean))}));
+        },
         maskCommit:commitMask,
         drawMaskPath:()=>{
           if(identity!==detailIdentity(inspectorState(clip.id)) || !canEditInspector())return;

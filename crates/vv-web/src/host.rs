@@ -45,6 +45,7 @@ pub enum Action {
     ClipDetail(String, FrameQuery, Option<usize>),
     InspectorSelection(crate::selection::Request),
     KeyframeNavigation(String, KeyframeNavigationRequest),
+    CurveViewport(String, crate::curves::ViewportRequest),
     ProjectView(crate::project_view::Request),
     SlipDetail(String, i64, FrameQuery),
     PrepareTakePlan(
@@ -2234,6 +2235,16 @@ impl Editor {
                 detail["revision"] = json!(query.revision);
                 detail["timeline_id"] = json!(query.timeline_id);
                 Ok(detail)
+            }
+            Action::CurveViewport(clip, request) => {
+                let query = &request.query;
+                let (id, _) = self.validate_view_frame(query)?;
+                let mut value = crate::curves::viewport(&self.session, id, &clip, &request)?;
+                value["project_epoch"] = json!(query.project_epoch);
+                value["generation"] = json!(query.if_generation);
+                value["timeline_id"] = json!(query.timeline_id);
+                value["revision"] = json!(query.revision);
+                Ok(value)
             }
             Action::KeyframeNavigation(clip, request) => {
                 let query = request.query;

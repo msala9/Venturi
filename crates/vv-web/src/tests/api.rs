@@ -201,6 +201,87 @@ async fn inspector_selection_http_uses_one_guarded_read_without_a_writer_client(
         }
     }
     assert_eq!(host.call(Action::Session).await.unwrap(), session);
+    let viewport = json!({"query":body["query"],"target":{"kind":"transform","param":"Opacity"},"source_start":0,"source_end":48,"points":3});
+    for case in 0..11 {
+        let mut payload = viewport.clone();
+        let path = if case == 1 { "999" } else { &timeline };
+        let expected = match case {
+            0 => StatusCode::OK,
+            1 => StatusCode::UNPROCESSABLE_ENTITY,
+            2 => {
+                payload["query"]["if_generation"] = json!("999");
+                StatusCode::CONFLICT
+            }
+            3 => {
+                payload["unexpected"] = json!(true);
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+            4 => {
+                payload["query"]["unexpected"] = json!(true);
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+            5 => {
+                payload["target"]["unexpected"] = json!(true);
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+            6 => {
+                payload["points"] = json!(2049);
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+            7 => {
+                payload["source_end"] = json!(49);
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+            8 => {
+                payload["source_start"] = json!(0.5);
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+            9 => {
+                payload["target"] = json!({"kind":"gain"});
+                StatusCode::NOT_FOUND
+            }
+            _ => {
+                payload["target"] = json!({"kind":"gain","unexpected":true});
+                StatusCode::UNPROCESSABLE_ENTITY
+            }
+        };
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!(
+                        "/api/v1/timelines/{path}/clips/{clip}/curve-viewport"
+                    ))
+                    .header("host", "127.0.0.1:8787")
+                    .header("content-type", "application/json")
+                    .body(Body::from(payload.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        let status = response.status();
+        assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+        assert_eq!(status, expected, "curve case {case}: {value}");
+        if case == 0 {
+            assert_eq!(value["clip_id"], clip);
+            assert_eq!(value["project_epoch"], session["project_epoch"]);
+            assert_eq!(value["generation"], session["generation"]);
+            assert_eq!(value["timeline_id"], timeline);
+            assert_eq!(value["revision"], current["revision"]);
+            assert_eq!(value["target"], payload["target"]);
+            assert_eq!(value["source_start"], 0);
+            assert_eq!(value["source_end"], 48);
+            assert_eq!(value["points"], 3);
+            assert_eq!(
+                value["samples"],
+                json!([[0.0, 100.0], [24.0, 100.0], [48.0, 100.0]])
+            );
+        }
+    }
+    assert_eq!(host.call(Action::Session).await.unwrap(), session);
     drop(app);
     drop(host);
     std::fs::remove_dir_all(root).unwrap();
@@ -1695,6 +1776,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/timeline/input.js", 200),
         ("/js/timeline/preset-drop.js", 200),
         ("/js/timeline/asset-drop.js", 200),
+        ("/js/curve-viewport.js", 200),
         ("/js/compound-navigation.js", 200),
         ("/js/export.js", 200),
         ("/js/scopes.js", 200),

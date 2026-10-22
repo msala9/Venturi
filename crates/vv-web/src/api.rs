@@ -122,6 +122,10 @@ pub fn router(state: AppState) -> Router {
             post(keyframe_navigation),
         )
         .route(
+            "/api/v1/timelines/{id}/clips/{clip}/curve-viewport",
+            post(curve_viewport),
+        )
+        .route(
             "/api/v1/timelines/{id}/presets/capture",
             post(capture_preset),
         )
@@ -1774,6 +1778,27 @@ async fn project_view(
         .await
         .map(Json)
 }
+async fn curve_viewport(
+    State(state): State<AppState>,
+    Path((id, clip)): Path<(String, String)>,
+    payload: std::result::Result<
+        Json<crate::curves::ViewportRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid native curve viewport request"))?
+        .0;
+    if request.query.timeline_id != id {
+        return Err(ApiError::invalid("Timeline ID does not match the query"));
+    }
+    state
+        .host
+        .call(Action::CurveViewport(clip, request))
+        .await
+        .map(Json)
+}
+
 async fn keyframe_navigation(
     State(state): State<AppState>,
     Path((id, clip)): Path<(String, String)>,
@@ -2031,6 +2056,7 @@ async fn assets(request: Request) -> Response {
         "/js/inspector.js" => asset!("/web/js/inspector.js", "text/javascript"),
         "/js/keyframe-navigation.js" => asset!("/web/js/keyframe-navigation.js", "text/javascript"),
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
+        "/js/curve-viewport.js" => asset!("/web/js/curve-viewport.js", "text/javascript"),
         "/js/eventkeys.js" => asset!("/web/js/eventkeys.js", "text/javascript"),
         "/js/keyselection.js" => asset!("/web/js/keyselection.js", "text/javascript"),
         "/js/keyframe-lanes.js" => asset!("/web/js/keyframe-lanes.js", "text/javascript"),

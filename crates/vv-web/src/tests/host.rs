@@ -4490,3 +4490,103 @@ fn keyframe_ruler_navigation_is_revision_bound_read_only_and_can_map_the_exclusi
     drop(editor);
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[test]
+fn curve_viewport_is_a_revision_bound_reader_even_on_locked_clips_and_past_content() {
+    use vv_core::{Clip, ClipId, ClipSource, Id, Interpolation, TransformParam};
+    let root = std::env::temp_dir().join(format!("vv-curve-reader-{}", crate::asset_jobs::nonce()));
+    let mut editor = Editor::new(&root).unwrap();
+    let mut track = Track::new(TrackKind::Video);
+    track.locked = true;
+    let raw = "9007199254740993";
+    let mut clip = Clip::from_source_range(
+        ClipId(raw.parse().unwrap()),
+        ClipSource::SolidColor,
+        100,
+        160,
+        12,
+        Rational::one(),
+    );
+    clip.effects
+        .transform
+        .track_mut(TransformParam::Opacity)
+        .upsert(100, 20.0, Interpolation::Linear);
+    clip.effects
+        .transform
+        .track_mut(TransformParam::Opacity)
+        .upsert(160, 80.0, Interpolation::Hold);
+    track.clips.push(clip);
+    let timeline = editor.session.create_timeline(Timeline {
+        name: "Curve reader".into(),
+        fps: Rational::new(24, 1),
+        resolution: (64, 64),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let query = FrameQuery {
+        timeline_id: timeline.raw().to_string(),
+        project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+        if_generation: editor.session.history.generation().to_string(),
+        revision: editor.session.timeline_revision(timeline),
+        frame: 10000,
+        width: 64,
+    };
+    let request = |query| crate::curves::ViewportRequest {
+        query,
+        target: crate::inspector::Target::Transform {
+            param: TransformParam::Opacity,
+        },
+        source_start: 100,
+        source_end: 160,
+        points: 3,
+    };
+    let before = editor.snapshot();
+    let project = json!(editor.session.project);
+    let receipts = editor.completed.len();
+    let value = editor
+        .handle(Action::CurveViewport(raw.into(), request(query.clone())))
+        .unwrap();
+    assert_eq!(
+        value,
+        json!({"project_epoch":query.project_epoch,"generation":query.if_generation,
+        "timeline_id":query.timeline_id,"revision":query.revision,"clip_id":raw,
+        "target":{"kind":"transform","param":"Opacity"},"source_start":100,"source_end":160,
+        "points":3,"samples":[[100.0,20.0],[130.0,50.0],[160.0,80.0]]})
+    );
+    for field in [
+        "epoch",
+        "generation",
+        "revision",
+        "timeline",
+        "width",
+        "frame",
+    ] {
+        let mut stale = query.clone();
+        match field {
+            "epoch" => stale.project_epoch.push('x'),
+            "generation" => stale.if_generation = "999".into(),
+            "revision" => stale.revision.push('x'),
+            "timeline" => stale.timeline_id = "999".into(),
+            "width" => stale.width = 0,
+            _ => stale.frame = -1,
+        }
+        assert!(
+            editor
+                .handle(Action::CurveViewport(raw.into(), request(stale)))
+                .is_err(),
+            "{field}"
+        );
+    }
+    assert!(
+        editor
+            .handle(Action::CurveViewport("999".into(), request(query)))
+            .is_err()
+    );
+    assert_eq!(editor.snapshot(), before);
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.completed.len(), receipts);
+    assert!(editor.lease.is_none());
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}

@@ -43,7 +43,7 @@ export function laneDragDelta(picks,range,axis,x0,x){
   return low>high?0:Math.max(low,Math.min(high,frame(x)-frame(x0)));
 }
 
-export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRange,canNavigate=()=>true,canEdit=()=>false,commit,operation,notice=()=>{},activate=()=>{},linkZoom=()=>false,seek,windowRef=root.ownerDocument?.defaultView ?? window}={}){
+export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRange,canNavigate=()=>true,canEdit=()=>false,commit,operation,notice=()=>{},activate=()=>{},linkZoom=()=>false,seek,onViewportWheel,windowRef=root.ownerDocument?.defaultView ?? window}={}){
   const rows=animatedKeyRows(detail);
   if(!rows.length || !keySelection)return null;
   const documentRef=root.ownerDocument ?? document,section=documentRef.createElement('div'),heading=documentRef.createElement('p');
@@ -139,6 +139,7 @@ export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRan
   });
   const abort=event=>{if(gesture?.id===event.pointerId)cancel();};
   listen(canvas,'pointercancel',abort);listen(canvas,'lostpointercapture',abort);
+  if(onViewportWheel)listen(canvas,'wheel',onViewportWheel,{passive:false});
   listen(canvas,'dblclick',event=>{if(event.button!==0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || !available() || !axis)return;const found=hit(point(event));if(found?.key && Number.isSafeInteger(found.key.timeline_frame) && typeof seek==='function'){event.preventDefault();seek(found.key.timeline_frame);}});
   listen(canvas,'keydown',event=>{
     if(event.defaultPrevented || event.isComposing)return;

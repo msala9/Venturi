@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {bindCurveGesture, curveGeometry, curveHandles, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport,createZoomLink,zoomParameters,createKeyEditorGuard,createKeyPickSelection,keyPickIdentity,pointerKeyOperation,pointerCurveDraft} from "../js/curves.js";
+import {bindCurveGesture, curveGeometry, curveHandles, curveHandleOperation, renderCurves, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport,createZoomLink,zoomParameters,createKeyEditorGuard,createKeyPickSelection,keyPickIdentity,pointerKeyOperation,pointerCurveDraft} from "../js/curves.js";
 
 test('native graph selection inserts additive picks, retains peers/pages and shares exact view identities',()=>{
   const state=new Map(),selection=createKeyPickSelection(state,'epoch:tl:clip'),a={target:{kind:'transform',param:'PositionX'},source_frame:10},b={target:{kind:'text'},source_frame:3000};let changes=0;
@@ -132,7 +132,7 @@ test("Bezier handle coordinates use native controls and one command per complete
   assert.ok(g.min < -15 && g.max > 125);
   const normalized = g.control(handles[0], g.x(9.2), g.y(-15));
   assert.ok(Math.abs(normalized[0] - 0.2) < 1e-10); assert.equal(normalized[1], -0.5);
-  assert.deepEqual(curveHandles(curve, 18), []);
+  assert.deepEqual(curveHandles(curve,18),handles);
   const events = {}, drafts = [], commits = [];
   const canvas = {addEventListener: (name, action) => { events[name] = action; }, focus() {}, setPointerCapture() {}, releasePointerCapture() { events.lostpointercapture(); }, getBoundingClientRect: () => ({left: 0, top: 0})};
   bindCurveGesture(canvas, {getCurve: () => curve, getGeometry: () => g, getHandles: () => handles, isBusy: () => false, canEdit: () => true, select() {}, draft() { assert.fail("A handle cannot move a key"); }, draftHandle: (index, point) => drafts.push({index, point}), finish: (point) => commits.push(point), reset() {}});
@@ -141,6 +141,81 @@ test("Bezier handle coordinates use native controls and one command per complete
   events.pointermove(point(g.x(10), g.y(5))); events.pointermove(point(g.x(11), g.y(8)));
   assert.equal(commits.length, 0); assert.equal(drafts.length, 2);
   events.pointerup(point(g.x(11), g.y(8))); assert.equal(commits.length, 1);
+});
+
+test('native selected keys show the union of incoming and outgoing segments, including off-page and negative neighbours',()=>{
+  const key=(source_frame,value)=>({source_frame,value,controls:[[.2,.3],[.8,.7]],interpolation:{Bezier:{c1:[.2,.3],c2:[.8,.7]}}});
+  const before=key(-20,1),first=key(10,3),last=key(30,8),after=key(80,9);
+  first.previous_key=before;first.next_key=last;last.previous_key=first;last.next_key=after;
+  const curve={keys:[first,last]},handles=curveHandles(curve,new Set([10,30]));
+  assert.deepEqual(handles.map(handle=>[handle.segment_frame,handle.index]),[[-20,0],[-20,1],[10,0],[10,1],[30,0],[30,1]]);
+  assert.deepEqual(curveHandles(curve,[30]).map(handle=>handle.segment_frame),[10,10,30,30]);assert.equal(curveHandles(curve,[]).length,0);
+  const target={kind:'transform',param:'ZoomX'},selection=[{target,source_frame:10},{target:{kind:'text'},source_frame:30}],snapshot=structuredClone(selection),operation=curveHandleOperation('clip',target,handles[1],[.75,1.5],true);
+  assert.deepEqual(operation,{kind:'edit_key_selection',clip_id:'clip',edit:{picks:[{target,source_frame:-20}],link_zoom:true,action:{kind:'interpolation',interpolation:{Bezier:{c1:[.2,.3],c2:[.75,1.5]}}}}});assert.deepEqual(selection,snapshot);assert.deepEqual(before.controls,[[.2,.3],[.8,.7]]);
+});
+
+test('incoming tangent releases preserve segment identity and current mixed selection, with final release coordinates and Escape cancellation',()=>{
+  const curve={min:0,max:100,samples:[[0,0],[20,20]],keys:[{source_frame:0,value:0,controls:[[.2,.2],[.8,.8]]},{source_frame:20,value:20}]},handle=curveHandles(curve,[20])[1],events={},commands=[];let identity='mixed';
+  const canvas={isConnected:true,addEventListener:(name,fn)=>events[name]=fn,focus(){},setPointerCapture(){},releasePointerCapture(){events.lostpointercapture();},getBoundingClientRect:()=>({left:0,top:0})},g={x:x=>x,y:y=>y,frame:Math.round,value:y=>y,control:(h,x,y)=>[x/20,y/20]};
+  bindCurveGesture(canvas,{getCurve:()=>curve,getGeometry:()=>g,getHandles:()=>[handle],getSelectionIdentity:()=>identity,isBusy:()=>false,canEdit:()=>true,select(){assert.fail('Handle must not replace picks');},draft(){},draftHandle(){},finish:(point,members,segment)=>commands.push(curveHandleOperation('clip',{kind:'gain'},segment,point)),reset(){}});
+  const point=(x,y)=>({button:0,pointerId:1,clientX:x,clientY:y});events.pointerdown(point(16,16));events.pointermove(point(18,20));events.pointerup(point(19,24));assert.equal(commands.length,1);assert.equal(commands[0].edit.picks[0].source_frame,0);assert.deepEqual(commands[0].edit.action.interpolation.Bezier.c2,[.95,1.2]);
+  events.pointerdown(point(16,16));events.pointermove(point(18,20));identity='changed peer';events.pointerup(point(19,24));assert.equal(commands.length,1);
+  events.pointerdown(point(16,16));events.pointermove(point(18,20));events.keydown({key:'Escape',preventDefault(){},stopPropagation(){}});events.pointerup(point(19,24));assert.equal(commands.length,1);
+});
+
+function renderedCurveHarness(t,{disabled=false,readCurveViewport}={}){
+  const prior={document:globalThis.document,window:globalThis.window,Option:globalThis.Option,ResizeObserver:globalThis.ResizeObserver,getComputedStyle:globalThis.getComputedStyle};
+  class Node{
+    constructor(tag){this.tagName=tag;this.children=[];this.dataset={};this.style={};this.events=new Map();this.attributes={};this.isConnected=true;this.value='';this.open=false;this.rect={left:0,top:0,width:400,height:190};this.classList={contains:name=>(this.className || '').split(' ').includes(name)};}
+    append(...nodes){for(const node of nodes){if(node.parentNode)node.parentNode.children=node.parentNode.children.filter(item=>item!==node);this.children.push(node);node.parentNode=this;node.parentElement=this;}}
+    replaceChildren(...nodes){this.children=[];this.append(...nodes);}
+    remove(){this.isConnected=false;}
+    get options(){return this.children;}
+    get selectedOptions(){return this.children.filter(node=>node.selected);}
+    setAttribute(key,value){this.attributes[key]=value;}
+    addEventListener(key,fn){this.events.set(key,[...(this.events.get(key)||[]),fn]);}
+    removeEventListener(key,fn){this.events.set(key,(this.events.get(key)||[]).filter(value=>value!==fn));}
+    emit(key,patch={}){const event={target:this,currentTarget:this,pointerId:1,button:0,clientX:180,clientY:20,preventDefault(){this.defaultPrevented=true;},stopPropagation(){this.stopped=true;},...patch};for(const fn of this.events.get(key)||[])fn(event);return event;}
+    getBoundingClientRect(){return {...this.rect,height:Number.parseFloat(this.style.height)||this.rect.height};}
+    getContext(){return this.ctx??=new Proxy({}, {get:(obj,key)=>obj[key]??((...args)=>{(this.calls??=[]).push([key,...args]);})});}
+    reportValidity(){return true;}
+    focus(){globalThis.document.activeElement=this;}
+    setPointerCapture(){}hasPointerCapture(){return true;}releasePointerCapture(){this.emit('lostpointercapture');}
+  }
+  const document=new Node('document'),window=new Node('window');document.createElement=tag=>new Node(tag);document.querySelector=()=>null;document.defaultView=window;document.body=new Node('body');document.activeElement=document.body;window.devicePixelRatio=1;window.ResizeObserver=class{observe(){}disconnect(){}};window.getComputedStyle=()=>({getPropertyValue:()=>''});
+  Object.assign(globalThis,{document,window,ResizeObserver:window.ResizeObserver,getComputedStyle:window.getComputedStyle,Option:class extends Node{constructor(label,value){super('option');this.textContent=label;this.value=value;}}});
+  const root=new Node('root'),selection=createKeyPickSelection(),commands=[],notices=[],state=new Map([['curves',true]]),target={kind:'transform',param:'PositionX'},detail={project_epoch:'epoch',generation:'7',timeline_id:'tl',revision:'rev',clip_id:'clip',source_frame:10,timeline_frame:10,video:false,curves:{source_start:0,source_end:20,tracks:[{name:'Position X',target,key_count:2,min:-100,max:100,default:0,samples:[[0,0],[20,20]],keys:[{source_frame:0,timeline_frame:0,value:0,controls:[[.2,.2],[.8,.8]]},{source_frame:20,timeline_frame:20,value:20}]}]},event_keys:[{name:'Text',target:{kind:'text'},key_count:1,keys:[{source_frame:10,timeline_frame:10}]}]};
+  let available=true;const control=renderCurves(root,detail,{disabled,commit:operation=>commands.push(operation),notice:message=>notices.push(message),openState:state,keySelection:selection,canInteract:()=>available,canNavigate:()=>available,readCurveViewport});
+  t.after(()=>{control.cancel();Object.assign(globalThis,prior);});
+  const all=node=>[node,...node.children.flatMap(all)],find=label=>all(root).find(node=>node.attributes['aria-label']===label),graph=find('Native keyframe curve. Select keys below for keyboard editing.');
+  return {root,selection,commands,notices,state,control,target,detail,graph,all:()=>all(root),find,setAvailable:value=>available=value};
+}
+
+test('typed row activation blanks only scalar controls, keeps mixed deletion and restores manual scalar choice',async t=>{
+  const h=renderedCurveHarness(t);h.selection.set([{target:h.target,source_frame:0},{target:{kind:'text'},source_frame:10}]);h.selection.activate({kind:'text'});
+  assert.ok(h.all().some(node=>node.textContent?.startsWith('No scalar curve for text')));const key=h.find('Curve keyframe');assert.equal(key.hidden,true);
+  const before=h.selection.get();h.graph.emit('keydown',{key:'a',ctrlKey:true});assert.deepEqual(h.selection.get(),before);h.graph.emit('pointerdown');h.graph.emit('pointerup',{clientX:240});assert.deepEqual(h.commands,[]);
+  h.graph.emit('keydown',{key:'Delete'});for(let i=0;i<8;i++)await Promise.resolve();assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0].edit.picks,before);assert.deepEqual(h.commands[0].edit.action,{kind:'delete'});
+  h.find('Curve parameter').value='0';h.find('Curve parameter').emit('change');assert.equal(key.hidden,false);assert.ok(!h.all().some(node=>node.textContent?.startsWith('No scalar curve for text')));
+});
+
+test('curve and lane wheel share one time viewport, keep readonly navigation and never send edit commands',t=>{
+  const h=renderedCurveHarness(t,{disabled:true});const zoom=h.graph.emit('wheel',{deltaY:-100,deltaX:0,altKey:true,clientX:280});assert.equal(zoom.defaultPrevented,true);assert.equal(zoom.stopped,true);
+  const saved=()=>[...h.state].find(([key])=>key.startsWith('curves-viewport:'))?.[1],first=saved();assert.ok(first.source_end-first.source_start<20);
+  const lanes=h.all().find(node=>node.className==='keyframe-lanes-canvas'),pan=lanes.emit('wheel',{deltaX:30,deltaY:0});assert.equal(pan.defaultPrevented,true);assert.ok(saved().source_start>=first.source_start);assert.equal(h.commands.length,0);
+  const plain=lanes.emit('wheel',{deltaX:0,deltaY:20});assert.equal(plain.defaultPrevented,undefined);h.setAvailable(false);const captured=structuredClone(saved());h.graph.emit('wheel',{deltaY:-100,altKey:true});assert.deepEqual(saved(),captured);
+});
+
+test('accepted native overshoot samples survive selection and horizontal pointer drafts without shifting the grabbed value',async t=>{
+  const reads=[];let h;
+  h=renderedCurveHarness(t,{readCurveViewport:async query=>{const samples=Array.from({length:query.points},(_,index)=>[query.source_start+(query.source_end-query.source_start)*index/(query.points-1),index===Math.floor(query.points/2)?500:index===query.points-1?20:0]);const value={...h.detail,...query,samples};reads.push(value);return value;}});
+  await new Promise(resolve=>setTimeout(resolve,100));assert.equal(reads.length,1);
+  const g=curveGeometry({...h.detail.curves.tracks[0],samples:reads[0].samples},{source_start:0,source_end:20},400,190,[],110),point={clientX:g.x(0),clientY:g.y(0)};
+  h.graph.emit('pointerdown',point);assert.deepEqual(h.selection.get(),[{target:h.target,source_frame:0}]);assert.equal(reads.length,1);
+  h.graph.calls=[];h.graph.emit('pointermove',{clientX:point.clientX+15,clientY:point.clientY});assert.equal(h.commands.length,0);
+  const peak=reads[0].samples.find(sample=>sample[1]===500);assert.ok(h.graph.calls.some(([kind,x,y])=>kind==='lineTo' && Math.abs(x-g.x(peak[0]))<1e-8 && Math.abs(y-g.y(500))<1e-8));
+  h.graph.emit('pointerup',{clientX:point.clientX+15,clientY:point.clientY});for(let i=0;i<8;i++)await Promise.resolve();
+  assert.equal(h.commands.length,1);assert.equal(h.commands[0].edit.action.delta_source_frames,1);assert.ok(Math.abs(h.commands[0].edit.action.grabbed.value)<1e-8);assert.equal(reads.length,1);
 });
 
 test('dedicated key editor ownership rejects detached, disposed, read-only and changed Inspector scopes',async()=>{

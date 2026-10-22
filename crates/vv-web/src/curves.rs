@@ -8,6 +8,98 @@ use std::collections::{BTreeMap, BTreeSet};
 use vv_core::{self as core, Clip, Keyframed, TimelineId};
 use vv_session::Session;
 
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ViewportRequest {
+    pub query: crate::preview::FrameQuery,
+    #[serde(deserialize_with = "viewport_target")]
+    pub target: Target,
+    pub source_start: i64,
+    pub source_end: i64,
+    pub points: usize,
+}
+
+fn viewport_target<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> std::result::Result<Target, D::Error> {
+    let value = Value::deserialize(deserializer)?;
+    let target: Target = serde_json::from_value(value.clone()).map_err(serde::de::Error::custom)?;
+    // Internally tagged unit variants otherwise accept extra fields.
+    if json!(target) != value {
+        return Err(serde::de::Error::custom("Unexpected curve target fields"));
+    }
+    Ok(target)
+}
+
+// Match the native editor's fractional f32 sampling, including Bezier overshoot.
+fn sample(track: &Keyframed<f32>, at: f32) -> f32 {
+    let keys = track.keyframes();
+    let Some(first) = keys.first() else {
+        return track.default;
+    };
+    let last = keys.last().unwrap();
+    if at <= first.0 as f32 {
+        return first.1;
+    }
+    if at >= last.0 as f32 {
+        return last.1;
+    }
+    let index = keys.partition_point(|(frame, _, _)| (*frame as f32) <= at) - 1;
+    let ((f0, v0, interpolation), (f1, v1, _)) = (keys[index], keys[index + 1]);
+    let t = (at - f0 as f32) / (f1 - f0) as f32;
+    v0 + (v1 - v0) * interpolation.ease(t)
+}
+
+pub fn viewport(
+    session: &Session,
+    id: TimelineId,
+    raw: &str,
+    request: &ViewportRequest,
+) -> Result<Value> {
+    let (lane, _, clip) = inspector::find(session, id, raw)?;
+    if !(2..=2048).contains(&request.points)
+        || request.source_end < request.source_start
+        || request.source_start < clip.source_in()
+        || request.source_end > clip.source_out()
+    {
+        return Err(ApiError::invalid(
+            "Curve viewport exceeds the native clip range or sample limit",
+        ));
+    }
+    let curve = curves(session, id, clip, lane)
+        .into_iter()
+        .find(|curve| curve.target == request.target)
+        .ok_or_else(ApiError::missing)?;
+    let span = request.source_end - request.source_start;
+    let mut samples = Vec::with_capacity(request.points);
+    for index in 0..request.points {
+        let fraction = index as f64 / (request.points - 1) as f64;
+        let frame = request.source_start as f64 + fraction * span as f64;
+        let at =
+            request.source_start as f32 + index as f32 / (request.points - 1) as f32 * span as f32;
+        let value = sample(curve.track, at);
+        if !value.is_finite() {
+            return Err(ApiError::invalid(
+                "The native curve produced a non-finite value",
+            ));
+        }
+        samples.push((frame, value));
+    }
+    Ok(
+        json!({"clip_id":raw,"target":request.target,"source_start":request.source_start,
+        "source_end":request.source_end,"points":request.points,"samples":samples}),
+    )
+}
+
+fn neighbor(key: Option<&(i64, f32, core::Interpolation)>) -> Value {
+    key.map_or(Value::Null, |&(frame, value, interpolation)| {
+        json!({
+            "source_frame":frame,"value":value,"interpolation":interpolation,
+            "controls":interpolation.control_points()
+        })
+    })
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Edit {
@@ -180,7 +272,8 @@ pub fn detail_page(
             }
         }
         let samples: Vec<_> = frames.into_iter().map(|frame| (frame, curve.track.value_at(frame))).collect();
-        let keys: Vec<_> = curve.track.keyframes().iter().skip(offset).take(limit).map(|&(frame, value, interpolation)| json!({"source_frame":frame,"timeline_frame":clip.timeline_frame_at(frame),"value":value,"interpolation":interpolation,"controls":interpolation.control_points()})).collect();
+        let all_keys = curve.track.keyframes();
+        let keys: Vec<_> = all_keys.iter().enumerate().skip(offset).take(limit).map(|(index, &(frame, value, interpolation))| json!({"source_frame":frame,"timeline_frame":clip.timeline_frame_at(frame),"value":value,"interpolation":interpolation,"controls":interpolation.control_points(),"previous_key":neighbor(index.checked_sub(1).and_then(|index| all_keys.get(index))),"next_key":neighbor(all_keys.get(index + 1))})).collect();
         json!({"name":curve.name,"target":curve.target,"min":curve.bounds.0,"max":curve.bounds.1,"default":curve.track.default,"samples":samples,"keys":keys,"key_count":curve.track.keyframes().len()})
     }).collect();
     json!({"source_start":start,"source_end":end,"timeline_start":clip.timeline_start,"timeline_end":clip.timeline_end(),"tracks":entries})

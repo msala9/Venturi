@@ -1,0 +1,274 @@
+{
+  "date": "2026-10-22",
+  "status": "partial_integrated_acceptance",
+  "source_commit": "442b43d9d8d21d606e4eaa80272ed857cb98bd35",
+  "binary_sha256": "c48c2c82914cc8d7137ca35f94d93959f18027051f8eca749310db1c4f920366",
+  "runtime_unit": "venturi-f2-20261022.service",
+  "limits": {
+    "cpu": 1,
+    "memory_bytes": 4294967296,
+    "swap": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "tasks": 128,
+    "runtime_seconds": 600,
+    "gpu_lock": "/tmp/HALO_BENCHMARK.lock",
+    "gpu_lock_nonblocking": true
+  },
+  "browser": {
+    "existing_windows_browser": true,
+    "single_work_tab": true,
+    "tab_closed": true,
+    "errors": [],
+    "observations": {
+      "first": {
+        "currentTime": 32.899508,
+        "duration": 300.01,
+        "paused": false,
+        "src": "/api/v1/preview/program/1792665914159431471/program.mp4?project_epoch=1792665765148667236%3A1&if_generation=6&timeline_id=3&revision=304c0756ee0ca3fe&start_frame=0&end_frame=7200&width=960&audio_origin_frame=0",
+        "status": "COMPOSED PREVIEW \u00b7 64\u00d764 \u00b7 revision 304c0756"
+      },
+      "afterNaturalEightTimesPlayback": {
+        "fast": "",
+        "status": "End of timeline",
+        "timecode": "00:05:00:02",
+        "video": {
+          "duration": 0.128,
+          "ended": true,
+          "paused": true,
+          "src": "/api/v1/preview/program/1792666207689362490/program.mp4?project_epoch=1792665765148667236%3A1&if_generation=6&timeline_id=3&revision=304c0756ee0ca3fe&start_frame=7200&end_frame=7203&width=960&audio_origin_frame=0",
+          "time": 0.128
+        }
+      },
+      "scope": "Natural EOF at 8x with native fast audio; manual End seek was excluded from acceptance"
+    },
+    "source_natural_eof": true,
+    "zoom_fit_and_100_percent_received_preview_pixels": true
+  },
+  "canvas": {
+    "inspector_scrolled_before_pointer_drag": true,
+    "one_native_move_command": {
+      "labels": [
+        "MoveClips"
+      ],
+      "position": 1
+    },
+    "new_video_and_audio_lane": true,
+    "track_count_after_drag": 4,
+    "track_count_after_single_undo": 2,
+    "redo_and_save": true
+  },
+  "source": {
+    "synthetic_diagnostic_only": true,
+    "actual_container_two_streams": true,
+    "source_sha256": "bb5177530288caed98ee23df6acfc4e3cb18bc68e06dc23be511e9fd3610e3f9",
+    "source_dimensions": [
+      1280,
+      720
+    ],
+    "pcm_frames": 3840,
+    "all_equals_native_selected_sum_with_max_s16_error": 0,
+    "proxy_jobs": [
+      {
+        "id": "1792666294508930682",
+        "mode": "selected",
+        "index": 0,
+        "bytes": 228591,
+        "sha256": "a9108855bfdc0147dc5723adbbcf044e64b8037860747d592148cc5b5dc10a46",
+        "descriptor": {
+          "audio_mode": "selected",
+          "audio_stream_index": 0,
+          "end_frame": 48,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "source_version": "64512:8263781:1580140:1792665760:503600964",
+          "start_frame": 0,
+          "total_frames": 48
+        }
+      },
+      {
+        "id": "1792666294917829676",
+        "mode": "selected",
+        "index": 1,
+        "bytes": 228764,
+        "sha256": "d1f55d6e93ee08ab2b553b42f25b60ed555d03b48d3cd93ce4d7dee5be698d74",
+        "descriptor": {
+          "audio_mode": "selected",
+          "audio_stream_index": 1,
+          "end_frame": 48,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "source_version": "64512:8263781:1580140:1792665760:503600964",
+          "start_frame": 0,
+          "total_frames": 48
+        }
+      },
+      {
+        "id": "1792666295327400439",
+        "mode": "all",
+        "index": 0,
+        "bytes": 238614,
+        "sha256": "22ab7a5c5e9186073143cce73d84a4ec577faaba7d275b0202476ff691b5339d",
+        "descriptor": {
+          "audio_mode": "all",
+          "audio_stream_index": null,
+          "end_frame": 48,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "source_version": "64512:8263781:1580140:1792665760:503600964",
+          "start_frame": 0,
+          "total_frames": 48
+        }
+      }
+    ],
+    "waveforms": [
+      {
+        "index": 0,
+        "id": "1792665860302424604",
+        "sha256": "f15d34af0d96ed9298171f14e958fb6d94f97a99be2f7001551d40f5bfbd611b",
+        "bytes": 856
+      },
+      {
+        "index": 1,
+        "id": "1792666295736711832",
+        "sha256": "f15d34af0d96ed9298171f14e958fb6d94f97a99be2f7001551d40f5bfbd611b",
+        "bytes": 856
+      }
+    ],
+    "waveform_contents_equal_for_constant_tone_peak_envelopes": true,
+    "distinct_waveform_envelope_acceptance_pending": true,
+    "project_and_history_unchanged": true
+  },
+  "program": [
+    {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": false,
+      "error": null,
+      "export_revision": null,
+      "frames": 0,
+      "id": "1792665914159431471",
+      "previous_state": null,
+      "program": {
+        "audio_origin_frame": 0,
+        "audio_present": true,
+        "end_frame": 7200,
+        "export_settings": null,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "6",
+        "height": 64,
+        "project_epoch": "1792665765148667236:1",
+        "revision": "304c0756ee0ca3fe",
+        "start_frame": 0,
+        "width": 64
+      },
+      "progress": {
+        "compose_fps": 4957.954869397739,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 7200,
+        "decode_fps": 5038.397575439114,
+        "decoder_fallback": false,
+        "decoders": [],
+        "elapsed_ms": 3577.008905,
+        "encode_fps": 2088.3550743675046,
+        "encoder": "X264",
+        "fps": 2012.8549274606853,
+        "startup_ms": 53.231104,
+        "total_frames": 7200
+      },
+      "project_epoch": null,
+      "source_asset": null,
+      "source_assets": null,
+      "source_window": null,
+      "state": "ready"
+    },
+    {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": false,
+      "error": null,
+      "export_revision": null,
+      "frames": 0,
+      "id": "1792666207689362490",
+      "previous_state": null,
+      "program": {
+        "audio_origin_frame": 0,
+        "audio_present": true,
+        "end_frame": 7203,
+        "export_settings": null,
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "6",
+        "height": 64,
+        "project_epoch": "1792665765148667236:1",
+        "revision": "304c0756ee0ca3fe",
+        "start_frame": 7200,
+        "width": 64
+      },
+      "progress": {
+        "compose_fps": 466.01811443478687,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 3,
+        "decode_fps": 179415.1067519885,
+        "decoder_fallback": false,
+        "decoders": [],
+        "elapsed_ms": 349.76855,
+        "encode_fps": 9.521017749827102,
+        "encoder": "X264",
+        "fps": 8.577100485449591,
+        "startup_ms": 343.592454,
+        "total_frames": 3
+      },
+      "project_epoch": null,
+      "source_asset": null,
+      "source_assets": null,
+      "source_window": null,
+      "state": "ready"
+    }
+  ],
+  "saved_project": {
+    "name": "Venturi_F1_Editing.vvproj",
+    "sha256": "a8def0cc62ad4766033b4de092e96346381def872e37b87bab1a23807471d060",
+    "saved": true
+  },
+  "preservation": {
+    "protected_main_five_unsaved_move_clips_and_undo": true,
+    "delivered_editor": {
+      "project_name": "Venturi_Editing_Delivery.vvproj",
+      "unsaved": false,
+      "generation": "0",
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    },
+    "qualification_stopped": true
+  },
+  "limitations": [
+    "Source fixture is a two-second synthetic 1280x720 clip, not sustained representative-footage throughput.",
+    "Program boundary was crossed by natural EOF at 8x with native fast audio on a 64x64 diagnostic timeline, not a five-minute 1x gapless or physical-output claim.",
+    "The manual End-key seek attempt was excluded after cancellation/unavailable status; it does not prove natural continuation.",
+    "Two constant-amplitude sine tracks have equal peak envelopes; ordinal-specific descriptors/jobs were verified, distinct-envelope content acceptance remains pending.",
+    "Viewer physical wheel/pan/fullscreen acceptance remains pending.",
+    "Screenshot exposed crowded Viewer heading; compact layout correction is pending in the next block.",
+    "First Canvas click can be displaced by browser focus scrolling; preventScroll correction is written but not yet qualified.",
+    "Ordinary-resolution composed export and broader F1/DPI acceptance will be covered with the effects montage."
+  ],
+  "screenshots": [
+    "f2-program-boundary-windows.jpg",
+    "f2-source-zoom-windows.jpg"
+  ],
+  "parity_rows_closed": 0
+}

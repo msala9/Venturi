@@ -72,7 +72,23 @@ initial memory-admission failures exposed reclaimable linker file cache being
 counted as process working memory; the conservative clean-cache correction
 and its regression pass within the unchanged 4 GiB cap. The implementation
 still awaits integrated Windows-browser qualification; they are not installed in the delivered editor.
-No capability row is newly accepted by this source implementation alone.
+No capability row is newly accepted by this implementation alone.
+
+`evidence/f2-media-workflow.json` adds the bounded R9700/Windows pass: actual
+Inspector-scrolled new-track drag, one MoveClips Undo removing both lanes,
+Redo/Save, HD two-stream Source playback to EOF and exact native selected-stream
+PCM summation. Fit/100% explicitly report received 960x540 preview pixels.
+Natural 8x playback crosses Program 0..7200 to7200..7203 with audio origin0 and
+finishes at frame7202. This is a 64x64 transport fixture, not ordinary-resolution
+throughput, gapless playback or physical output acceptance. A manual End-key
+seek was excluded; equal constant-tone peak envelopes cannot establish distinct
+waveform content. The saved project and source bytes remain intact; the finite
+instance and work tab are stopped, while the delivered port8811 remains df50859.
+
+The pass also exposed crowded Viewer-heading layout and focus-induced Canvas
+scrolling on the first click. Corrections join the next coherent effects/key-ruler
+block. Full-resolution composed export, distinct waveform envelopes, physical
+zoom/fullscreen/DPI and broader acceptance remain open; no ledger row is closed.
 
 ## Accepted usable workflow baseline
 

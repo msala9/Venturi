@@ -32,7 +32,47 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-Current native font/effects montage delivery: **http://127.0.0.1:8851/**,
+Current native retime/transitions delivery: **http://127.0.0.1:8852/**,
+source `0bc344c`, binary `a4b48324385d`, service
+`venturi-web-halo1-retime-transition-ui.service`, PID223042.
+The owned candidate was Saved/reopened with empty Undo before its guarded binary
+handoff. Earlier36 Sessions/37 PIDs remain unchanged. Source options now fit the
+actual narrow Viewer instead of opening behind Media; every insertion control is
+accessible. Native right-End speed handling includes the clip body, and minimum
+duration uses the same native rounding (401 source frames =>4 timeline frames).
+
+Actual Windows125% inserts four linked River video/audio ranges and applies
+150%/50%-with-pitch/200%/100% through the native Ripple policy. Starts are
+0/32/128/152, lengths32/96/24/48. A lower-End drag32to28 preserves source0–48
+and neighbours, changes native speed, and has exact one-entry Undo/Redo. Push,
+CrossDissolve and moving-video SmoothCut8 are created at32/128/152; transition
+Undo/Redo and Saved/reopen retain exact models and all three other timelines.
+
+Eight R9700 native/API320x180 frames and four audible80ms native/PCM16 windows
+match exactly. SmoothCut152 differs from an otherwise identical native Dissolve
+control by83008 bytes, closing the previous solid-only rendering gap. The whole
+200-frame1920x1080 H264/AAC Web export and decoded AAC stream are byte-exact to
+a fresh native Timeline2 export. Windows download/natural8.341s EOF and Program
+EOF199 pass. Saved `Venturi_Retime_Transitions_V1.vvproj` is frame152/empty Undo,
+SHA `9108445df19159777510681c028401de7b2cbb81a2ddf75edd7034efb077d075`.
+Native25/client84 pass; corrected obsolete client expectations reuse unchanged
+results. R3 only rebuilds Source CSS and the explicit-timeline native proof CLI;
+Clippy/build pass, overall gate peak2,035,302,400 bytes. The initial sample176 was
+silent; retained raw evidence and unchanged nonzero criteria use audible158.
+Five candidate media copies, four fixed NAS files, the prior Library copy and
+shared proxy retain bytes/identity. See `evidence/f3-retime-transitions-workflow.json`,
+`f3-retime-transitions-workspace.png` and `f3-source-options-fit.png`.
+
+`speed_pitch_preserve` advances to done: **52 done /38 partial /2 excluded**.
+Native transition direction/ease hover-preview, Escape restoration, closed-wheel
+changes, seconds/frame scrubbing and a curve slider remain a production
+interaction difference, not an unexecuted check. Finish these together with
+actual duration-handle/Effects drag/drop/Alt-copy/replacement and100%/150% mapping.
+The lower-End125% mapping and moving-video render/export gap are now closed;
+do not hold pitch processing open for unrelated Canvas/DPI/globalM7 work.
+The full F1–F7/M7 goal remains active.
+
+Preserved native font/effects montage delivery: **http://127.0.0.1:8851/**,
 source `9a946dd`, binary `da479e56f98c`, service
 `venturi-web-halo1-effects-montage.service`, PID 214422.
 The compact font family/style chooser now previews native snapshot-only changes;
@@ -50,9 +90,13 @@ audio windows match native PCM16 quantization. The complete701-frame FullHD
 H264/AAC Web export is byte-exact to a fresh native R9700 export, downloaded and
 played to natural29.226s EOF. The first strict lossyAAC-versus-PCM threshold
 failure is retained; equal native/Web MP4 and decodedAAC settle that question.
-Saved `Venturi_Effects_Montage_V1.vvproj` SHA
+Render-qualified `Venturi_Effects_Montage_V1.vvproj` SHA
 `33540edbeafacf947bbf60f2c16ff83a2778766dc9ea777717da07346ac36d87`
-is unchanged; all35 prior Sessions/36 PIDs/37 Saved files/39 local files, four
+is retained in its backup. Deferred native view persistence subsequently changed
+only timeline1's saved playhead144 to48; the settled Saved SHA is
+`05aa9dbae497d559aa158ab6efbf7e6276b7aded009f155355ca4dff76c9268b`.
+The exact RON diff contains only that view field; rendering/audio/edit models and
+all35 prior Sessions/36 PIDs/37 Saved files/39 local files, four
 fixed NAS files and the proxy remain unchanged. See
 `evidence/f3-effects-montage-workflow.json` and its two workspace images.
 

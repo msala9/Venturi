@@ -1,10 +1,32 @@
 # Usable editing workflow — handover
 
-## Current halo1 native font/effects delivery — 2026-10-23
+## Current halo1 retime/transitions delivery — 2026-10-23
+
+Open **http://127.0.0.1:8852/**, source `0bc344c`, binary `a4b48324385d`, service
+`venturi-web-halo1-retime-transition-ui.service` (PID223042). Saved project
+`Venturi_Retime_Transitions_V1.vvproj` opens Timeline2/frame152 with empty Undo.
+Four linked moving-video segments use150%/50%-with-pitch/200%/100%; native
+Push/Dissolve/SmoothCut8 cross the three cuts. Right-End speed dragging now also
+works through the clip body. Source insertion options fit the actual Viewer.
+
+Export1792770341063976604 is durable:200frames,1920x1080 H264/AAC. Its entire MP4
+and decoded AAC are byte-exact to a native Timeline2 export. MP4 SHA:
+`85d113a2c72217c20af0b50fa7572c7b2430859e41be106ec55ef91a5480b57f`.
+The Windows download reaches natural8.341s EOF. Eight native/API images and four
+audible PCM samples also match; moving SmoothCut differs from native Dissolve.
+See `evidence/f3-retime-transitions-workflow.json` and its two workspace images.
+
+The ledger is **52 done /38 partial /2 excluded**. Pitch processing is accepted;
+native transition hover/wheel previews, seconds/frame scrubbing, curve slider,
+remaining physical transition actions and100%/150% mapping still need closure.
+Earlier36 editors/37 PIDs, NAS assets and proxy are preserved. Only this owned,
+Saved/empty-Undo qualification process was replaced during the guarded upgrade.
+
+## Preserved halo1 native font/effects delivery — 2026-10-23
 
 Open **http://127.0.0.1:8851/**, source `9a946dd`, binary `da479e56f98c`, service
 `venturi-web-halo1-effects-montage.service` (PID214422). The Saved project is
-`Venturi_Effects_Montage_V1.vvproj`; the current Windows tab shows frame48/title
+`Venturi_Effects_Montage_V1.vvproj`, at frame48/title
 properties. Font choices preview without a project edit; Escape/outside cancels,
 click/Enter confirms once. Prior editors and their histories remain alive.
 

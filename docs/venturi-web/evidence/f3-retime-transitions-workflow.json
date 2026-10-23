@@ -1,0 +1,340 @@
+{
+  "source_commit": "0bc344c",
+  "url": "http://127.0.0.1:8852/",
+  "binary_sha256": "a4b48324385d3f3408b48188c47e9c64198eb8fbe4ce783e053ec114fc4535eb",
+  "oracle_sha256": "1f33737d6f5f770a9bd40eba42716eb183f6403cbb1e7160ecfbc122563f3fa4",
+  "project": "Venturi_Retime_Transitions_V1.vvproj",
+  "project_sha256": "9108445df19159777510681c028401de7b2cbb81a2ddf75edd7034efb077d075",
+  "timeline_id": "2",
+  "implementation": [
+    "Native speed minimum-duration rounding, including odd-span401 =>4frames and fractional linked bounds; no browser edit engine.",
+    "A visible speed strip also owns native right End/roll hit zones through the clip body; fade/transition/Slip/locked priority remains intact.",
+    "Open Source options fit the actual Source Viewer bounds, wrap controls and scroll internally.",
+    "Native export proof CLI accepts an explicit timeline ID; omitted ID preserves prior first-timeline behavior."
+  ],
+  "gate": {
+    "native_cases": 25,
+    "client_cases": 84,
+    "formatting": true,
+    "clippy_all_targets": true,
+    "build": true,
+    "r1_failure": "One obsolete client assertion expected trim_end instead of native retime for a visible speed strip; corrected and affected14cases rerun. Native25 and unchanged70client cases reused.",
+    "r2_clippy_seconds": 8.09,
+    "r2_build_seconds": 40.3,
+    "r3_clippy_seconds": 8.05,
+    "r3_build_seconds": 40.58,
+    "r3_scope": "Source CSS and explicit native oracle export timeline only; native25/client84 reused.",
+    "max_memory_peak_bytes": 2035302400,
+    "resources": "halo1 only; one heavy worker; <=8CPU,4GiB,noSwap,Nice19,IOWeight10,OOMScore1000; nonblocking shared GPU lock"
+  },
+  "browser": {
+    "viewport": {
+      "width": 962,
+      "height": 964,
+      "devicePixelRatio": 1.25
+    },
+    "source_options_all_controls_accessible": true,
+    "source_range_insertions": [
+      [
+        0,
+        48
+      ],
+      [
+        64,
+        112
+      ],
+      [
+        0,
+        48
+      ],
+      [
+        64,
+        112
+      ]
+    ],
+    "native_speed_dialogs": [
+      {
+        "start": 0,
+        "length": 32,
+        "speed_percent": 150.0,
+        "source_in": 0,
+        "source_out": 48,
+        "pitch": false
+      },
+      {
+        "start": 32,
+        "length": 96,
+        "speed_percent": 50.0,
+        "source_in": 64,
+        "source_out": 112,
+        "pitch": true
+      },
+      {
+        "start": 128,
+        "length": 24,
+        "speed_percent": 200.0,
+        "source_in": 0,
+        "source_out": 47,
+        "pitch": false
+      },
+      {
+        "start": 152,
+        "length": 48,
+        "speed_percent": 100.0,
+        "source_in": 64,
+        "source_out": 112,
+        "pitch": true
+      }
+    ],
+    "lower_end_drag": {
+      "length_before": 32,
+      "length_after": 28,
+      "speed_before": 150,
+      "speed_after": 171.42857142857142,
+      "source_range_unchanged": [
+        0,
+        48
+      ],
+      "linked_audio_unchanged_source": true,
+      "neighbours_unchanged": true,
+      "single_native_history_label": "ClipSpeed",
+      "undo_redo_exact": true,
+      "restored_original_montage": true,
+      "proof_assertion_correction": "Initial ad-hoc assertion incorrectly expected a RetimeClip history label and dialog-style ripple; native handle uses ClipSpeed and leaves neighbours fixed. Production output and exact Undo/Redo matched."
+    },
+    "transition_create_undo_redo_exact": true,
+    "save_reopen_models_and_bytes_exact": true,
+    "other_three_timelines_preserved": true,
+    "program_playback": {
+      "preparing_frames": "10/200",
+      "final_frame": 199,
+      "returned_to_stopped": true
+    },
+    "final_saved_frame": 152,
+    "final_saved_empty_undo": true
+  },
+  "crossings": [
+    {
+      "end_frame": 36,
+      "kind": "Push",
+      "left_clip": "20",
+      "right_clip": "22",
+      "start_frame": 28,
+      "transition": {
+        "curve": 0.5,
+        "direction": "Right",
+        "duration": 8,
+        "ease": "InOut",
+        "kind": "Push"
+      },
+      "track_id": "0"
+    },
+    {
+      "end_frame": 132,
+      "kind": "CrossDissolve",
+      "left_clip": "22",
+      "right_clip": "24",
+      "start_frame": 124,
+      "transition": {
+        "curve": 0.5,
+        "direction": "Right",
+        "duration": 8,
+        "ease": "None",
+        "kind": "CrossDissolve"
+      },
+      "track_id": "0"
+    },
+    {
+      "end_frame": 156,
+      "kind": "SmoothCut",
+      "left_clip": "24",
+      "right_clip": "26",
+      "start_frame": 148,
+      "transition": {
+        "curve": 0.5,
+        "direction": "Right",
+        "duration": 8,
+        "ease": "None",
+        "kind": "SmoothCut"
+      },
+      "track_id": "0"
+    }
+  ],
+  "frames": [
+    {
+      "frame": 32,
+      "sha256": "24008f82fc545756f150458f248e8522060332e96ddae76a52754c03b5640c8e",
+      "byte_exact_native_api": true,
+      "native_stdout": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=32 size=320x180 bytes=230400\n"
+    },
+    {
+      "frame": 128,
+      "sha256": "9bd1fc19d4cd32f13fc0009bee9216d2e48b148757f4dedeefa2c5b97c221052",
+      "byte_exact_native_api": true,
+      "native_stdout": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=128 size=320x180 bytes=230400\n"
+    },
+    {
+      "frame": 147,
+      "sha256": "2e8fb51ce94e89a2ae2401bb85c0b38227addc431cbaa34bda04682349a4f890",
+      "byte_exact_native_api": true,
+      "native_stdout": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=147 size=320x180 bytes=230400\n"
+    },
+    {
+      "frame": 148,
+      "sha256": "977cc09810a1d25c61c9dc8d0feed8bd8e04b0324f473a9e9bc3812a5c4f6942",
+      "byte_exact_native_api": true,
+      "native_stdout": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=148 size=320x180 bytes=230400\n"
+    },
+    {
+      "frame": 150,
+      "sha256": "57c2d075e54157e355ed33822f345b67ffb18c810fd3747cc596aceda43812e7",
+      "byte_exact_native_api": true,
+      "native_stdout": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=150 size=320x180 bytes=230400\n"
+    },
+    {
+      "frame": 152,
+      "sha256": "429b50aaa3c14e69394c255043cf744af7f1758a55548153067a17e145b4b3c0",
+      "byte_exact_native_api": true,
+      "native_stdout": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=152 size=320x180 bytes=230400\n"
+    },
+    {
+      "frame": 155,
+      "sha256": "8b3ca9e4f26ad96d9d095253ebc54a7029cf3a47e9720d5420ce10ffbe2e3a40",
+      "byte_exact_native_api": true,
+      "native_stdout": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=155 size=320x180 bytes=230400\n"
+    },
+    {
+      "frame": 156,
+      "sha256": "d5da681513ce48a084b0afa3e4b42438b435ff0b9be75b0dca509969271875e4",
+      "byte_exact_native_api": true,
+      "native_stdout": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=156 size=320x180 bytes=230400\n"
+    }
+  ],
+  "audio": [
+    {
+      "frame": 12,
+      "start_sample": 24000,
+      "count": 3840,
+      "native_f32_sha256": "aa0629804ded66a6a3b574f4316564a3eb1035105d3c9a7daa5854911bd92176",
+      "pcm16_sha256": "ec14f944ad80cc9e76b99223882eb2841fe1bebb5533e6411c98b5ab9fd1732b",
+      "byte_exact_after_native_pcm16_quantization": true,
+      "measurement": {
+        "peak": 0.15206383168697357,
+        "rms": 0.039301454636102566
+      },
+      "native_stdout": "native_audio timeline=2 start=24000 frames=3840 samples=7680 sample_rate=48000 channels=2 format=f32le\n"
+    },
+    {
+      "frame": 38,
+      "start_sample": 76000,
+      "count": 3840,
+      "native_f32_sha256": "667851fc1349754b55e52a6344b5cf1259609b11d918baa035c8778e70a206d5",
+      "pcm16_sha256": "f6da82d0201078f234eaa749080dffb1abe936f472798b0de05dbb2cb1454141",
+      "byte_exact_after_native_pcm16_quantization": true,
+      "measurement": {
+        "peak": 0.1009400337934494,
+        "rms": 0.02766180200588611
+      },
+      "native_stdout": "native_audio timeline=2 start=76000 frames=3840 samples=7680 sample_rate=48000 channels=2 format=f32le\n"
+    },
+    {
+      "frame": 140,
+      "start_sample": 280000,
+      "count": 3840,
+      "native_f32_sha256": "74d0addd0747657c3a1dacc48e6c5c2c51cb565a5f644419dc087030b47f6419",
+      "pcm16_sha256": "82d008733dee0967ed947780bfa30dc562ee83aa6ff099878827db21cab9a4b6",
+      "byte_exact_after_native_pcm16_quantization": true,
+      "measurement": {
+        "peak": 0.13840697705745697,
+        "rms": 0.03790403240280011
+      },
+      "native_stdout": "native_audio timeline=2 start=280000 frames=3840 samples=7680 sample_rate=48000 channels=2 format=f32le\n"
+    },
+    {
+      "frame": 158,
+      "start_sample": 316000,
+      "count": 3840,
+      "native_f32_sha256": "3c0cb9d72169af6d4b0294f0b09f7b711f3d3188d600ce3b33b0cfe969a75853",
+      "pcm16_sha256": "cdea34146fc01e7243d9e57d3a74454ed8e474bf53c302e89e99ba04b809ec5f",
+      "byte_exact_after_native_pcm16_quantization": true,
+      "measurement": {
+        "peak": 0.14204496145248413,
+        "rms": 0.037920061973235906
+      },
+      "native_stdout": "native_audio timeline=2 start=316000 frames=3840 samples=7680 sample_rate=48000 channels=2 format=f32le\n"
+    }
+  ],
+  "smooth_control": {
+    "frame": 152,
+    "window": [
+      148,
+      156
+    ],
+    "changed_kind_count": 1,
+    "original_sha256": "9108445df19159777510681c028401de7b2cbb81a2ddf75edd7034efb077d075",
+    "control_sha256": "d359c2a9ba340d10470c909573716c669f87cecfcdd7c956bd4e0fca2437dd72",
+    "native_smooth_sha256": "429b50aaa3c14e69394c255043cf744af7f1758a55548153067a17e145b4b3c0",
+    "native_dissolve_sha256": "c2749260094a7e7b1b9a382d934781277bed4bf6e138b54a3d5ec76adb6bf42a",
+    "nonconstant_smooth_output": true,
+    "different_from_native_dissolve": true,
+    "different_bytes": 83008,
+    "native_stdout": "native_adapter=AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan) frame=152 size=320x180 bytes=230400\n"
+  },
+  "first_capture_failure": {
+    "reason": "The planned normal-speed sample176 fell on a silent source interval. The raw failed capture and eight successful images/three audible samples are retained.",
+    "correction": "Moved only that sample to audible158; same source/model, exact comparison and nonzero requirement unchanged. Reused served image cache."
+  },
+  "export": {
+    "job_id": "1792770341063976604",
+    "frames": 200,
+    "width": 1920,
+    "height": 1080,
+    "fps": "24/1",
+    "bytes": 3115523,
+    "sha256": "85d113a2c72217c20af0b50fa7572c7b2430859e41be106ec55ef91a5480b57f",
+    "native_sha256": "85d113a2c72217c20af0b50fa7572c7b2430859e41be106ec55ef91a5480b57f",
+    "full_mp4_byte_exact": true,
+    "decoded_aac_native_sha256": "942036617929820842c78281475cfbd2b4884a78ff3b6da09c2bdd40c1f7c101",
+    "decoded_aac_web_sha256": "942036617929820842c78281475cfbd2b4884a78ff3b6da09c2bdd40c1f7c101",
+    "decoded_aac_bytes": 3203072,
+    "decoded_aac_exact_native_web": true,
+    "web_elapsed_ms": 1595.956826,
+    "native_stdout": "{\"compose_fps\":449.4371882360967,\"compositor\":\"AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)\",\"decode_fps\":198.6504964579842,\"elapsed_seconds\":1.6332121050000001,\"encode_fps\":179.11334591469657,\"encoder\":\"Some(X264)\",\"frames\":200,\"timeline_id\":2}\n",
+    "native_memory_peak_bytes": 435048448,
+    "windows_download_sha256_matches": true,
+    "windows_playback": {
+      "currentTime": 8.341,
+      "duration": 8.341,
+      "ended": true,
+      "error": null,
+      "height": 1080,
+      "paused": true,
+      "width": 1920
+    }
+  },
+  "protection": {
+    "prior_sessions": 36,
+    "prior_pids": 37,
+    "candidate_saved_files": 2,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "runtime_handoff": "Owned8852 was explicitly Saved/reopened with empty Undo before replacing its qualification binary; prior36Sessions/37PIDs were verified before/after and at final. A TIME_WAIT bind check was corrected using SO_REUSEADDR only after ss proved no listener; no foreign process was stopped.",
+  "accepted": [
+    "speed_pitch_preserve"
+  ],
+  "remaining": {
+    "speed_handles_constant": "Actual handle mapping at100% and150% scaling;125% lower-End drag now qualifies.",
+    "transitions": "Native direction/ease hover-preview with Escape restoration and closed-wheel changes, seconds/frame scrubbing and curve slider remain a production interaction difference. Actual Effects drag/drop, Alt-copy, explicit replacement and duration-handle100%/150% acceptance remain named follow-up.",
+    "full_goal": "Other F1-F7 capabilities and applicable M7 remain active; no global percentage inferred."
+  },
+  "ledger": {
+    "done": 52,
+    "partial": 38,
+    "excluded": 2
+  }
+}

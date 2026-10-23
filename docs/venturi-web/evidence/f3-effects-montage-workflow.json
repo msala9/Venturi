@@ -268,5 +268,10 @@
   "images": [
     "f3-font-draft-workspace.png",
     "f3-effects-montage-workspace.png"
-  ]
+  ],
+  "settled_saved_state": {
+    "project_sha256": "05aa9dbae497d559aa158ab6efbf7e6276b7aded009f155355ca4dff76c9268b",
+    "render_qualified_backup_sha256": "33540edbeafacf947bbf60f2c16ff83a2778766dc9ea777717da07346ac36d87",
+    "change": "Deferred native ProjectView persistence changed only saved playhead1 from144 to48; verified exact RON diff and matching render/audio/edit models. Historical acceptance hashes above remain unchanged."
+  }
 }

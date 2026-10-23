@@ -1,0 +1,154 @@
+{
+  "source_commit": "d47b549e47b3510fe67f36cfb44b38c1e37b52c1",
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "a24e6c790bd41709a0b5ae62ee05c48c28b3a42bfc6a9ba81cb783351736e12b",
+    "crates/vv-web/src/asset_store.rs": "dc4df7d95146daa1b8f3e62f9b0850d388b2c19d10e6cb29f842e1fe97064958",
+    "crates/vv-web/src/tests/api.rs": "02941110d6d72e25ba87922b5f4218343741d718284ad4783af1b9b7e9db5a8f",
+    "crates/vv-web/src/tests/asset_store.rs": "1ef2175b0c40b1bdbe01883c99a6be7690fb9e8ff0fcff0ae3110560c6d333ae",
+    "web/js/catalog-interactions.js": "563c47a35a18c973e7b4dc9e97683466fd4ded7b4c183a35ee74822b2aa6ff0a",
+    "web/js/native-asset-pool.js": "c1c660f632212783b553d7ab45f1ffdcdabb3d3753e0f362543fb7072c732dc1",
+    "web/js/native-assets.js": "f8d57a730d41e65056feceab85b5747608a167343863a6fba5c591bf6b32e299",
+    "web/style/native-browser.css": "a1eca5b2636540e85537ad5b014a6372c9fee7d5801c67f9008d5e75db2c6937",
+    "web/test/catalog-interactions.test.js": "d2cd24c86fca1deda665a4f3f57c97c30fde16d648247cceb6adabfbd23fa111",
+    "web/test/native-asset-pool.test.js": "fe40597adb7dcd587b21dd89b698dee5309845c2ffa93ece101347f7f58d3c33",
+    "web/test/native-assets-panel.test.js": "44744c2bb76a8dfb1db998d8902ad1841e84ba8374692d0f4e9324e8a12ab160"
+  },
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-library-browser.service",
+    "pid": "324852",
+    "binary_sha256": "a114a5e5cd63c0d8b6b3e5a083df9a38dd54a00bce3954d554efde221a2468c2",
+    "project": "Venturi_Library_Replacement_V1.vvproj",
+    "project_epoch": "1792795143577529124:1",
+    "saved": true,
+    "empty_undo": true
+  },
+  "implemented": [
+    "Compact native Library Grid/List/Details reuse existing catalog geometry, metadata, selection, accessible menu and pointer controller.",
+    "Folder tree, Grid breadcrumbs and global Grid search; explicit collapse survives catalog refresh.",
+    "Name/Duration sorting and filtering precede32-row paging; filtered totals/pages and catalog_total are distinct. Omitted sort retains the legacy source-ID contract.",
+    "Native first-root presentation metadata uses payload data without probing or exposing source paths. Missing/invalid/unknown media retain truthful generic glyphs.",
+    "Visible-order Shift/Ctrl and keyboard selection, owned marquee, F2 asset/folder rename and contextual import/preview/relink/confirmed delete/folder commands.",
+    "Internal media/folder moves use isolated MIME and opaque current ownership, native folder/CAS commands, deferred dragend and no project edits. Offline sources remain internally movable.",
+    "External Library placement tickets remain separate from internal moves; existing prepare/cancel/ACK/reopen/Source safety retained."
+  ],
+  "gate": {
+    "host": "halo1",
+    "client_cases": 215,
+    "native_cases": 21,
+    "native_passed_names": [
+      "asset_store::tests::batch_moves_guard_unchanged_folder_tree_and_noop_asset_revisions_without_rewriting_native_json",
+      "asset_store::tests::delete_assets_maximum_ordered_receipt_survives_reopen_with_native_32_id_budget",
+      "asset_store::tests::delete_assets_revision_cancel_malformed_selected_and_foreign_media_are_fail_closed",
+      "asset_store::tests::delete_assets_uses_current_archive_and_backup_references_and_preserves_project_copies",
+      "asset_store::tests::deliberate_relink_default_serialization_preserves_legacy_mutation_identity",
+      "asset_store::tests::deliberate_relink_uses_native_fps_crop_adaptation_preserves_ids_and_durable_report",
+      "asset_store::tests::global_lock_cas_idempotent_create_and_malformed_assets_never_overwrite_native_data",
+      "asset_store::tests::listing_is_shallow_paged_and_reports_bad_native_json_without_importing_it",
+      "asset_store::tests::native_asset_placement_metadata_describes_only_the_selected_root_without_native_format_changes",
+      "asset_store::tests::native_folder_queries_keep_candidate_paging_and_orphan_metadata_and_revision_guards",
+      "asset_store::tests::native_json_capture_update_backup_archive_restore_and_restart_preserve_payload_and_folder",
+      "asset_store::tests::native_pending_marker_blocks_web_reads_and_writes_without_touching_foreign_recovery_data",
+      "asset_store::tests::native_pool_browse_filters_sparse_catalog_before_paging_and_preserves_legacy_queries",
+      "asset_store::tests::native_pool_browse_native_duration_name_ties_root_metadata_invalid_and_archived_rows",
+      "asset_store::tests::native_pool_browse_strict_query_and_metadata_budget_refuse_partial_catalog_results",
+      "asset_store::tests::nofollow_regular_file_and_pinned_directory_checks_preserve_foreign_links",
+      "asset_store::tests::remove_folder_reparents_direct_native_children_and_active_assets_preserving_archives_backup_and_payload",
+      "api::tests::health_assets_snapshot_and_host_boundary",
+      "api::tests::native_asset_http_library_readers_import_routes_security_and_download_contract",
+      "api::tests::native_asset_requests_and_mutations_are_strict_and_keep_legacy_mutation_bytes",
+      "api::tests::native_asset_folder_edits_reuse_library_operation_and_require_strict_folder_and_asset_revisions"
+    ],
+    "clippy_seconds": 8.75,
+    "build_seconds": 42.22,
+    "memory_peak_bytes": 2121814016,
+    "cpu_limit": 8,
+    "memory_limit_gib": 4,
+    "swap": false,
+    "serial": true,
+    "lock": "/tmp/HALO_BENCHMARK.lock",
+    "native_audio_source_hashes": {
+      "crates/vv-audio/src/loudness.rs": "62ad4d4dacd6b511430c37e3bf1b4be58d9e8b901d5593aa00c8a46f4836cf8c",
+      "crates/vv-audio/src/mixer.rs": "3f4b214e42fbb73bfb287cffe74fa6d6dd4ba2df345d3fc994ef34d7911334a0",
+      "crates/vv-audio/src/tests/loudness.rs": "e639da23898c4c29b7ecadd542e7dc6e689f1f1b85acb02f4d0e80d774275804",
+      "crates/vv-audio/src/tests/mixer.rs": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce"
+    },
+    "first_attempt": "214/215 client cases passed; the old external-only effectAllowed=copy expectation was updated to copyMove for internal folder moves. No production change followed that assertion correction."
+  },
+  "live_readonly": {
+    "catalog_total": 3,
+    "total": 3,
+    "sorted_name_ids": [
+      "0823179a-6985-4e4d-af73-a7ffdf9c3523",
+      "50870a9b-d79c-45a6-85dd-0c5f03ada5d6",
+      "b8246f41-75f9-4373-8b14-3fcfbe044952"
+    ],
+    "sorted_name_descending_ids": [
+      "b8246f41-75f9-4373-8b14-3fcfbe044952",
+      "50870a9b-d79c-45a6-85dd-0c5f03ada5d6",
+      "0823179a-6985-4e4d-af73-a7ffdf9c3523"
+    ],
+    "sorted_duration_ids": [
+      "0823179a-6985-4e4d-af73-a7ffdf9c3523",
+      "50870a9b-d79c-45a6-85dd-0c5f03ada5d6",
+      "b8246f41-75f9-4373-8b14-3fcfbe044952"
+    ],
+    "root_folder_count": 0,
+    "replacement_asset_presentation": {
+      "audio_streams": 0,
+      "channels": 0,
+      "duration_frames": 1000000000,
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "has_audio": false,
+      "has_video": true,
+      "height": 36,
+      "is_image": true,
+      "kind": "image",
+      "sample_rate": 0,
+      "width": 64
+    },
+    "trimmed_search": true,
+    "empty_search_total_zero_pages_one": true,
+    "session_unchanged": true
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 11,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "saved_project_hashes": {
+    "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+    "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+    "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+    "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+    "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+    "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+    "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+    "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+    "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+    "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+    "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+  },
+  "limits": [
+    "Actual browser reload loads the embedded candidate and reconnects as writer without console warnings/errors; the tab then reports0x0. Both Playwright and the documented accessibility click time out in Input.dispatchMouseEvent. Showing the existing browser does not restore dimensions. No further click/screenshot loop or new browser is used.",
+    "New pool visual, physical folder drag/marquee/F2 acceptance remains open; deterministic controller coverage is not claimed as physical UI acceptance. No screenshot is claimed.",
+    "Actual Project-to-Library pointer capture remains unverified; explicit AddToLibrary remains available.",
+    "Native Library thumbnails and media-type filtering remain unimplemented in this increment; no project thumbnail URL is fabricated for Library UUIDs.",
+    "Shared preset work and broader offline/large-media, device, dense/DPI and integrated F1-F7/M7 requirements remain open."
+  ],
+  "ledger": {
+    "done": 60,
+    "partial": 30,
+    "excluded": 2,
+    "full_goal": "active"
+  }
+}

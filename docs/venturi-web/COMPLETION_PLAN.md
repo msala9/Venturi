@@ -1,5 +1,37 @@
 # Active completion plan — full Venturi Web scope
 
+## Native Library pool browser — 2026-10-24
+
+Source `d47b549`, runtime `a114a5e5cd63`, owns halo1/8855. The Library now uses
+compact Grid/List/Details, native first-root metadata, folder tree/breadcrumbs,
+global Grid search and Name/Duration ordering before32-row pagination. Legacy
+queries retain candidate-ID paging; explicit sort returns truthful filtered
+total/pages and catalog_total within10000 entries/16MiB metadata. Selected-row
+source checks remain bounded; no probe, decoder or thumbnail endpoint is added.
+
+Visible-order selection, keyboard/marquee, F2 asset/folder rename, native context
+actions and isolated internal folder/media moves reuse existing controllers and
+native CAS commands. Offline moves need no source read. External placement
+tickets and Project pool IDs remain separate. Explicit folder collapse survives
+Refresh. Existing transfer/reopen/review/ACK safety is retained.
+
+The serial halo1 gate passes215 client and21 unique native cases, Clippy8.75s
+and build42.22s, peak2,121,814,016B within4GiB/no swap. Live read-only queries
+verify all3 current assets, both name directions, duration, root, trimmed/empty
+search and the updated64x36 asset metadata without any Session/history change.
+All39 protected Sessions/40 PIDs,11 Saved files,5 local media,4 fixed NAS files
+and shared proxy remain unchanged. See `evidence/f5-native-library-pool.json`.
+
+Browser reload reconnects the embedded candidate as writer without console
+errors. The existing tab reports0x0 and input times out through both documented
+click APIs; showing the same browser does not restore its dimensions. Actual
+pool visual/physical gestures remain unverified; no screenshot is claimed.
+Library thumbnails/type filtering, Project-to-Library physical capture and
+broader shared-library/preset/offline/device/dense/DPI/M7 acceptance remain open.
+Ledger stays **60 done /30 partial /2 excluded**; full F1-F7/M7 remains active.
+Next close global native preset browsing and receivable preset shortcut behavior
+as one functional block, without repeating unchanged DSP/render/export checks.
+
 ## Native Library reopen lifecycle and compact replacement review — 2026-10-24
 
 Source `3b334fe`, runtime `9ba94a68b995`, owns halo1/8855. Library now refreshes

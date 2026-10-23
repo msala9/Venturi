@@ -1,0 +1,151 @@
+{
+  "status": "accepted",
+  "capability": "anchor_flip",
+  "acceptance_kind": "Reconciliation of existing capability-specific acceptance, not new implementation or a new render run.",
+  "requirements": [
+    {
+      "requirement": "Native Pivot/Flip Inspector controls, selected targets and reset semantics",
+      "evidence": [
+        "evidence/f1-selected-inspector.json",
+        "evidence/f1-native-gestures-gate.json",
+        "crates/vv-web/src/tests/inspector.rs:selected_inspector_flip_and_resets_preserve_unrelated_axes_and_restore_exact_tracks"
+      ]
+    },
+    {
+      "requirement": "Actual control edits, Undo/Redo and Saved restart",
+      "evidence": "evidence/f1-native-gestures-workflow.json",
+      "saved_and_reopened": [
+        {
+          "timeline_id": "5",
+          "clip_id": "5",
+          "flip": [
+            true,
+            false
+          ],
+          "anchor_x": {
+            "default": 24.0,
+            "key_count": 0,
+            "keyframe_info": {
+              "next_frame": null,
+              "on_keyframe": false,
+              "previous_frame": null
+            },
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "on_keyframe": false,
+            "param": "AnchorX",
+            "value": 24.0
+          },
+          "anchor_y": {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframe_info": {
+              "next_frame": null,
+              "on_keyframe": false,
+              "previous_frame": null
+            },
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "on_keyframe": false,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          "length_frames": 112,
+          "fade_in": 16
+        },
+        {
+          "timeline_id": "5",
+          "clip_id": "5",
+          "flip": [
+            true,
+            false
+          ],
+          "anchor_x": {
+            "default": 24.0,
+            "key_count": 0,
+            "keyframe_info": {
+              "next_frame": null,
+              "on_keyframe": false,
+              "previous_frame": null
+            },
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "on_keyframe": false,
+            "param": "AnchorX",
+            "value": 24.0
+          },
+          "anchor_y": {
+            "default": 0.0,
+            "key_count": 0,
+            "keyframe_info": {
+              "next_frame": null,
+              "on_keyframe": false,
+              "previous_frame": null
+            },
+            "keyframes": [],
+            "max": 1000000.0,
+            "min": -1000000.0,
+            "on_keyframe": false,
+            "param": "AnchorY",
+            "value": 0.0
+          },
+          "length_frames": 112,
+          "fade_in": 16
+        }
+      ]
+    },
+    {
+      "requirement": "TS-017 native/API rendered equivalence with nonneutral Pivot/Flip",
+      "source_project_sha256": "7fb3569f706f4010137234c0cb3a5e02682b5796b28ccc95a55bd34ace7d4ed9",
+      "fixture_project_sha256": "713af3f2871a42609ed73d72a0d5dcafa057e7c28a1e1f9b518672a59afb2053",
+      "fixture_change": "Only the media root prefix is replaced; project parameters are retained.",
+      "evidence": "evidence/f3-mask-inspector-workflow.json:native_api_transform_crop_fade",
+      "frames": [
+        {
+          "frame": 0,
+          "sha256": "6f77f852d070d718abceaf639531c5424c1abecf4b2b603c640169f3546be7a1",
+          "byte_exact_native_api": true
+        },
+        {
+          "frame": 8,
+          "sha256": "fc5fe5514e497861d76edd10c2b1b1bfb7d726e66ee6aced57c17adabbe26c9c",
+          "byte_exact_native_api": true
+        },
+        {
+          "frame": 24,
+          "sha256": "0ecf5077d568a52b4d84a9b60810a4f36a56510d1310761fecce510975d7d334",
+          "byte_exact_native_api": true
+        }
+      ],
+      "nonblack_affected_frames": [
+        8,
+        24
+      ],
+      "adapter": {
+        "active_programs": 0,
+        "available": true,
+        "backend": "Vulkan",
+        "device_id": "0x7551",
+        "driver": "radv",
+        "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+        "exact_context_resident": false,
+        "frame_rendered": false,
+        "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+        "resident": false,
+        "software": false,
+        "vendor_id": "0x1002"
+      }
+    }
+  ],
+  "supporting_private_artifact_hashes": {
+    "f1-gestures-saved.json": "b245682795d77ccb0d1d53c16172e58895c3976d81fe4eab51c71889d56dffb1",
+    "f1-gestures-reopened.json": "feda39a537a00260b108491965ac1fab968af948801d484b2ec2d007572d055f",
+    "f3-mask-inspector-fixture.json": "f52d49da30844804914fa7b4b53ce43c6634ae75e52ec3f3be395d9fb53e30f8",
+    "prepare-f3-mask-inspector-fixture.py": "cf8e341b39aa1e2af3b30ebb5542b56bb7745e2c81d8b4a9b0f467cfa7e219c0",
+    "focused-parity-web-f1-status.json": "1e95b200478bc906dcbce0e0e14c78761428686932f1eed0dd994891cedaf55f"
+  },
+  "remaining_scope": "Global DPI/dense/release acceptance remains in F1/F7. Clip fade100%/150% mapping and prolonged uncached held Slip remain in their own partial capabilities. No unrelated requirement is claimed closed."
+}

@@ -1,0 +1,115 @@
+{
+  "source_commit": "8aeab66bff1ea08490c2c8b0255e9d73fe28b413",
+  "source_hashes": {
+    "crates/vv-web/src/preset_store.rs": "dd40ecce8ed815741f9c1b33f85c7276916f8720045cd0d85f6d53a66b4e8cab",
+    "crates/vv-web/src/tests/preset_store.rs": "b24d1e0021c5c6f3f93d454569d300768f82120333fdae06ed83058ce46e7774",
+    "web/js/preset-shortcuts.js": "e7c77fd5c15b3920f1124d343abca2d4b34c6121d3c357f36a546459980d8e16",
+    "web/js/presets.js": "97065b10c3342435b450e681963da8478ebff83fa136f7a5d548421559c21aaa",
+    "web/test/preset-panel.test.js": "65aa35e4620fd292288b1f15833b239d5d9592aa523f091b01a29522d0abe8f4",
+    "web/test/preset-shortcuts.test.js": "92f0be5102e74fce08fdf32f0534cffee255cd1782b0e5118875c549b65fcf31"
+  },
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-preset-catalog-shortcuts.service",
+    "pid": "328385",
+    "binary_sha256": "f9b6a50578fc0a339300f3796c1cc5a9f669f386ae3472134d9575063ec479bf",
+    "project": "Venturi_Library_Replacement_V1.vvproj",
+    "project_epoch": "1792795936158033270:1",
+    "saved": true,
+    "empty_undo": true
+  },
+  "implemented": [
+    "Explicit sort=name filters the bounded complete saved-preset catalog before native stable lowercase-name ordering and32-row paging. Legacy omitted-sort source paging remains unchanged.",
+    "The panel preserves native returned order and uses catalog_total to stop legacy unrelated-page scanning. No source media probe or path exposure.",
+    "Explicit session-local preset activation supports receivable native letters/digits/symbols/navigation/F1-F24, full Ctrl(command/Meta)/Shift/Alt identity and imported native aliases without changing saved bytes.",
+    "Native editor defaults, actual broad Web handlers and browser/system chords retain priority with specific reasons; duplicate complete chords and logical symbol/Shift overlap are rejected.",
+    "Text/local controls, menus/listboxes/dialogs, hidden documents, IME/AltGraph/repeat/noncancelable events cannot trigger capture. Epoch/revision/writer/selection/one-command/error revocation retained."
+  ],
+  "gate": {
+    "host": "halo1",
+    "client_cases": 83,
+    "native_cases": 19,
+    "native_passed_names": [
+      "preset_store::tests::independent_library_handles_share_files_and_refuse_concurrent_writes",
+      "preset_store::tests::invalid_shortcut_or_stale_update_preserves_active_and_backup_bytes",
+      "preset_store::tests::native_library_create_export_update_backup_archive_and_restore_preserve_source_data",
+      "preset_store::tests::native_preset_browse_filters_global_names_before_pages_and_keeps_legacy_candidate_queries",
+      "preset_store::tests::native_preset_browse_preserves_case_equivalent_id_order_invalid_records_archive_and_payloads",
+      "preset_store::tests::native_preset_browse_strict_query_and_aggregate_metadata_budget_never_return_partial_results",
+      "preset_store::tests::omitted_shortcut_keeps_legacy_library_command_receipt_serialization",
+      "preset_store::tests::pending_desktop_preset_transaction_blocks_reads_and_writes_without_removing_its_marker",
+      "preset_store::tests::permanent_delete_preflight_is_strict_locked_bounded_and_preserves_foreign_pending_data",
+      "preset_store::tests::permanent_delete_preserves_opposite_state_backups_and_recreated_files_during_bound_retry",
+      "preset_store::tests::permanent_delete_recovers_durable_intent_before_or_after_unlink_and_refuses_foreign_replacements",
+      "preset_store::tests::preset_pages_bound_reads_and_preserve_corrupt_entries_links_and_collisions",
+      "preset_store::tests::preset_readers_refuse_an_inflight_catalog_writer_and_allow_parallel_readers",
+      "preset_store::tests::raw_json_import_keeps_native_identifiers_and_rejects_unsupported_versions",
+      "preset_store::tests::restoring_missing_or_corrupt_previous_settings_preserves_all_existing_bytes",
+      "preset_store::tests::restoring_previous_atomically_exchanges_both_native_versions_repeatedly",
+      "preset_store::tests::shortcut_update_clear_restore_and_restart_keep_native_payload_and_unrelated_bindings",
+      "api::tests::health_assets_snapshot_and_host_boundary",
+      "api::tests::embedded_editor_module_imports_are_served_with_javascript_mime"
+    ],
+    "clippy_seconds": 8.4,
+    "build_seconds": 41.18,
+    "memory_peak_bytes": 2083926016,
+    "cpu_limit": 8,
+    "memory_limit_gib": 4,
+    "swap": false,
+    "serial": true,
+    "native_audio_source_hashes": {
+      "crates/vv-audio/src/loudness.rs": "62ad4d4dacd6b511430c37e3bf1b4be58d9e8b901d5593aa00c8a46f4836cf8c",
+      "crates/vv-audio/src/mixer.rs": "3f4b214e42fbb73bfb287cffe74fa6d6dd4ba2df345d3fc994ef34d7911334a0",
+      "crates/vv-audio/src/tests/loudness.rs": "e639da23898c4c29b7ecadd542e7dc6e689f1f1b85acb02f4d0e80d774275804",
+      "crates/vv-audio/src/tests/mixer.rs": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce"
+    }
+  },
+  "live_readonly": {
+    "catalog_total": 1,
+    "ids": [
+      "ab83b9ee-0ac8-4198-b801-fe7279369130"
+    ],
+    "legacy_metadata_identical": true,
+    "trimmed_search": true,
+    "empty_total_zero_pages_one": true,
+    "native_shortcut_catalog_keys": 117,
+    "session_unchanged": true
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 11,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "saved_project_hashes": {
+    "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+    "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+    "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+    "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+    "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+    "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+    "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+    "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+    "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+    "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+    "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+  },
+  "limits": [
+    "New shortcuts are covered by received-event/controller tests, not a new physical keyboard acceptance claim. The existing Windows tab still reports0x0 and refuses Input clicks; no screenshot or fabricated UI action is claimed.",
+    "Customized external desktop Keymaps are not exposed by the native catalog; the Web reserves native defaults and actual Web handlers without claiming to mirror external remaps.",
+    "Shared preset cross-project/offline/physical and global F1-F7/M7 acceptance remains open. Existing native DSP/render/export evidence is reused.",
+    "Native Library thumbnail development is separate unaccepted work. The native Library has no media-type filter (pool_view.rs138-169); its absence is not a new exclusion or a missing native capability."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "full_goal": "active",
+    "change": "anchor_flip accepted by explicit existing parameter-to-frame evidence chain; shared_library/shared_presets remain partial"
+  }
+}

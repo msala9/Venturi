@@ -1,5 +1,45 @@
 # Implementation status
 
+## Native preset catalog/shortcuts and Pivot/Flip reconciliation — 2026-10-24
+
+Source `8aeab66`, runtime `f9b6a50578fc`, owns halo1/8855. Saved presets now
+use globally filtered native alphabetical ordering before32-row paging. Explicit
+sort=name has truthful total/pages/catalog_total; omitted sort retains legacy
+source paging. The panel preserves returned Unicode order and skips legacy
+empty-page scanning when the authoritative filtered total is available.
+
+Session-local explicit shortcut Enable now supports receivable native keys and
+complete modifier chords, including Ctrl+Alt+Shift+F8. Native imported aliases
+normalize only in memory. Native/default editor and actual browser/Web command
+conflicts show precise reasons; text, local controls, menus, hidden documents,
+composition/AltGraph/repeat and stale ownership cannot consume the command.
+Saving never implicitly enables a shortcut. External desktop Keymap remaps are
+not exposed or claimed mirrored. Shared preset broader acceptance stays open.
+
+The serial halo1 gate passes83 client and19 native cases, Clippy8.40s/build41.18s,
+peak2,083,926,016B within4GiB/no swap. Live global/legacy/search reads retain the
+same preset metadata and all117 native shortcut keys without Session/history
+changes. All39 protected Sessions/40 PIDs,11 Saved files,5 local media,4 fixed
+NAS files and shared proxy stay unchanged. See
+`evidence/f5-native-preset-catalog-shortcuts.json`. Physical keyboard/pool visual
+acceptance remains open because the existing Windows browser reports0x0 and
+cannot deliver input. No new screenshot, renderer or export pass is claimed.
+
+`anchor_flip` is accepted from an explicit existing evidence chain, not new
+development: actual Saved/reopened TL5/clip5 contains AnchorX24/FlipH=true. The
+TS-017 fixture changes only its media-root prefix and compares native/API frames
+0/8/24 exactly on R9700; frames8/24 cover those nonneutral values. Selected/reset
+semantics and actual Undo/Redo/persistence are already proved. The old pending
+render note is superseded. See `evidence/f1-anchor-flip-acceptance.json`.
+Fade100%/150% mapping and prolonged uncached held Slip remain partial, alongside
+global DPI/dense/M7. Ledger is now **61 done /29 partial /2 excluded**.
+
+Next complete native Library thumbnails using the existing producer/queue/cache.
+Native Library has no media-type filter; adding one is not required for parity
+and is not another excluded capability. Its native Grid/Details thumbnails are
+required; List, compound, offline and audio-only rows retain glyphs. This source
+is in development and is not accepted by this increment. Full F1-F7/M7 stays active.
+
 ## Native Library pool browser — 2026-10-24
 
 Source `d47b549`, runtime `a114a5e5cd63`, owns halo1/8855. The Library now uses

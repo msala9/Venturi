@@ -7,6 +7,52 @@ import {createTitleFontChooser} from './fonts.js';
 import {renderColorPicker} from './color-picker.js';
 import {renderTransitionControls} from './transition-controls.js';
 
+export function createInspectorViewportKeeper(root,{getContext,documentRef=root.ownerDocument ?? globalThis.document,windowRef=documentRef?.defaultView ?? globalThis.window,Observer=windowRef?.MutationObserver ?? globalThis.MutationObserver,requestFrame=callback=>windowRef.requestAnimationFrame(callback),cancelFrame=id=>windowRef.cancelAnimationFrame(id)}={}){
+  let context=null,pending=null,frame=null,disposed=false,lastFocus=null,restoring=false;const listeners=[];
+  const listen=(node,key,handler,options)=>{node?.addEventListener?.(key,handler,options);listeners.push(()=>node?.removeEventListener?.(key,handler,options));};
+  const key=()=>{const value=getContext();return value==null?null:typeof value==='string'?value:JSON.stringify(value);};
+  const nodes=()=>[...root.querySelectorAll('[aria-label],[id]')];
+  const signature=node=>{const label=node?.getAttribute?.('aria-label') || '',id=node?.id || '';return label || id?{label,id,tag:node.tagName,type:node.type || ''}:null;};
+  const matches=(node,value)=>{const actual=signature(node);return actual && ['label','id','tag','type'].every(name=>actual[name]===value[name]);};
+  const describe=node=>{const value=signature(node);if(!value)return null;const index=nodes().filter(candidate=>matches(candidate,value)).indexOf(node);return index>=0?{...value,index}:null;};
+  const find=value=>value?nodes().filter(node=>matches(node,value))[value.index]:null;
+  const visible=node=>!!node && node.isConnected!==false && (node.getClientRects?.().length ?? 1)>0 && !node.closest?.('[hidden],[inert],details:not([open])') && (node.getBoundingClientRect?.().height ?? 0)>0;
+  const observer=typeof Observer==='function'?new Observer(()=>schedule()):null;
+  function stop(){pending=null;if(frame!==null){cancelFrame(frame);frame=null;}observer?.disconnect();}
+  function cancel(){stop();lastFocus=null;}
+  function contextChanged(){const next=key();if(next===context)return false;cancel();context=next;root.scrollTop=0;return true;}
+  function remember(node){if(!root.contains(node))return;const value=describe(node);if(value)lastFocus={node,context:key()};}
+  function capture(){
+    if(disposed)return;const changed=contextChanged();if(context===null)return;
+    if(pending?.context===context){pending.focused=false;schedule();return;}
+    const bounds=root.getBoundingClientRect(),active=documentRef.activeElement,blank=!active || active===documentRef.body || active===root || active.isConnected===false;
+    const focused=!changed && root.contains(active)?active:!changed && blank && lastFocus?.context===context && root.contains(lastFocus.node)?lastFocus.node:null;
+    let anchor=visible(focused) && describe(focused)?focused:null;
+    if(!changed && !anchor)anchor=nodes().filter(node=>visible(node)).map(node=>({node,rect:node.getBoundingClientRect()})).filter(({rect})=>rect.bottom>bounds.top && rect.top<bounds.bottom).sort((a,b)=>Math.abs(a.rect.top-bounds.top)-Math.abs(b.rect.top-bounds.top))[0]?.node ?? null;
+    const snapshot={top:changed?0:root.scrollTop,anchor:anchor?describe(anchor):null,offset:anchor?anchor.getBoundingClientRect().top-bounds.top:0,focus:focused?describe(focused):null,oldFocus:focused,selection:focused?{start:focused.selectionStart,end:focused.selectionEnd,direction:focused.selectionDirection}:null};
+    pending={context,snapshot,focused:false};observer?.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['disabled','open','hidden','inert']});schedule();
+  }
+  function restore(){
+    if(!pending || disposed)return;if(key()!==pending.context){contextChanged();return;}
+    if(root.isConnected===false || documentRef.hidden || documentRef.querySelector?.('dialog[open]')){cancel();return;}
+    const owner=pending,snapshot=owner.snapshot,bounds=root.getBoundingClientRect();if(bounds.height<=0)return;
+    const anchor=find(snapshot.anchor),desired=visible(anchor)?root.scrollTop+anchor.getBoundingClientRect().top-bounds.top-snapshot.offset:snapshot.top;
+    root.scrollTop=Math.max(0,desired);
+    if(!snapshot.focus || owner.focused)return;
+    const target=find(snapshot.focus);if(!visible(target) || target.disabled || documentRef.hasFocus?.()===false || Math.abs(root.scrollTop-Math.max(0,desired))>1)return;
+    const active=documentRef.activeElement,owned=!active || active===documentRef.body || active===root || active===snapshot.oldFocus || active===target || active.isConnected===false;
+    if(!owned){cancel();return;}
+    restoring=true;try{target.focus?.({preventScroll:true});if(Number.isInteger(snapshot.selection?.start))try{target.setSelectionRange?.(snapshot.selection.start,snapshot.selection.end,snapshot.selection.direction);}catch{}owner.focused=true;lastFocus={node:target,context:owner.context};}finally{restoring=false;}
+  }
+  function schedule(){if(disposed || !pending || frame!==null)return;frame=requestFrame(()=>{frame=null;restore();});}
+  listen(documentRef,'pointerdown',event=>{stop();const target=event.target?.closest?.('input,textarea,select,button,[tabindex]') ?? event.target;if(root.contains(target))remember(target);else lastFocus=null;},true);
+  listen(documentRef,'focusin',event=>{if(restoring)return;if(root.contains(event.target)){if(pending)stop();remember(event.target);}else if(event.target!==documentRef.body){cancel();}},true);
+  listen(documentRef,'wheel',()=>stop(),{capture:true,passive:true});listen(documentRef,'touchstart',()=>stop(),{capture:true,passive:true});
+  listen(documentRef,'keydown',event=>{if(['Tab','Escape','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key))stop();},true);
+  listen(windowRef,'blur',cancel);listen(documentRef,'visibilitychange',()=>{if(documentRef.hidden)cancel();});
+  return {capture,restore:schedule,contextChanged,cancel,dispose(){if(disposed)return;cancel();disposed=true;for(const remove of listeners)remove();}};
+}
+
 export function inspectorGroup(section,group){
   if(!['video','audio','selection'].includes(group))throw Error('Choose an Inspector group');
   section.setAttribute('data-inspector-group',group);return section;
@@ -254,7 +300,7 @@ export function renderSelectedVideoEffects(root,detail,options){
     const parent=group('Selected solid color'),info=solid;
     colorRow(parent,'Solid color',info.value,value=>controls.submit({action:'solid_color',value}));keyDiamond(parent,'solid color',[info],controls,{action:'toggle_color_key'});
   }
-  return [...renderSelectedFilters(section,detail,{controls,keyRow:(parent,label,parameters,edit)=>keyDiamond(parent,label,parameters,controls,edit),openState:options.visualState || new Map(),notice:options.notice,timelineSize:options.timelineSize}),controls];
+  return [...renderSelectedFilters(section,detail,{controls,keyRow:(parent,label,parameters,edit)=>keyDiamond(parent,label,parameters,controls,edit),openState:options.visualState || new Map(),notice:options.notice,timelineSize:options.timelineSize,bindNumber:bindInspectorNumber}),controls];
 }
 export function transformPatch(param,value,linked=false){return {transform:zoomParameters(param,linked).map(param=>({param,value}))};}
 export function keyframeOperation(clip, target, frame, value, interpolation = "Linear",linked=false) {

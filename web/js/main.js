@@ -19,7 +19,7 @@ import { buildProgramWindow } from "./program-range.js";
 import { sourceSampleAtFrame,sourceAudioQuery } from "./source-clock.js";
 import { createSourceSeek } from "./source-seek.js";
 import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "./source-assets.js";
-import { inspectorGroup,editingShortcutAllowed,selectionInspectorRows,renderInspectorSelection, detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,retimePropertySelection,compoundSelectionOperation,renderRetime,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
+import { createInspectorViewportKeeper,inspectorGroup,editingShortcutAllowed,selectionInspectorRows,renderInspectorSelection, detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,retimePropertySelection,compoundSelectionOperation,renderRetime,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
 import {createZoomLink} from './curves.js';
 import {createFontCatalogReader} from './fonts.js';
 import {effectDragItem,effectPlacementOperation} from './timeline/effect-drop.js';
@@ -106,12 +106,13 @@ let selectionFollowsPlayhead=true;
 try {selectionFollowsPlayhead=localStorage.getItem("venturi-selection-follows-playhead")!=="false";} catch {}
 function updateInspectorToggle(){$("show-inspector").setAttribute("aria-expanded",String(innerWidth<=950?editor.classList.contains("inspector-drawer-open"):!editor.classList.contains("inspector-collapsed")));audioMeters?.sync();}
 function updateBrowserToggle(){for(const button of document.querySelectorAll('#workspaces [data-panel]'))button.setAttribute('aria-expanded',String(innerWidth<=760?editor.classList.contains('browser-drawer-open'):!editor.classList.contains('browser-collapsed')));}
-let inspectorSelectionRead=null;
+let inspectorSelectionRead=null,inspectorViewport=null;
 function setInspectorTab(tab){
   if(!['video','audio','selection'].includes(tab))return;
   if($('inspector').dataset.inspectorTab!==tab)cancelInspectorDraft();
   clipListDismissal.close();
   $('inspector').dataset.inspectorTab=tab;
+  inspectorViewport?.contextChanged();
   for(const button of document.querySelectorAll('button[data-inspector-tab]'))button.setAttribute('aria-selected',String(button.dataset.inspectorTab===tab));
   if(tab==='selection')inspectorSelectionRead?.read();else inspectorSelectionRead?.cancel();
   audioMeters?.sync();
@@ -195,6 +196,7 @@ function revealNativeFilters(){
 function showWorkspace(name) {
   clipListDismissal.close();
   editor.dataset.workspace = name;
+  inspectorViewport?.contextChanged();
   scopes?.setVisible(scopesWanted && name === "Color" && !scopesSuspended && $("screen").dataset.viewerMode !== "source" && $("slip-view").hidden);
   document.querySelectorAll("[data-workspace]").forEach((button) => {
     if (button.tagName === "BUTTON")
@@ -631,6 +633,11 @@ let mixerDetail = null;
 let mixerMixDrafts = null;
 const mixerPaths = new Set();
 const visualState = new Map();
+inspectorViewport=createInspectorViewportKeeper($('inspector-content'),{getContext:()=>{
+  if(!documentState || !timeline)return null;
+  const transition=view.transitionSelection,gap=!view.selection.length && !transition?view.selectedGap:null;
+  return JSON.stringify([documentState.project_epoch,timeline.id,$('inspector').dataset.inspectorTab,editor.dataset.workspace,[...view.selection].sort(),transition?{track_id:transition.track_id,clip_id:transition.clip_id,slot:transition.slot}:null,gap?{track_id:gap.track_id,start_frame:gap.start_frame,length_frames:gap.length_frames}:null]);
+}});
 const curveWindow=createCurveWindow({notice,onChange:open=>{
   for(const button of document.querySelectorAll('[data-ui="curves"]'))button.setAttribute('aria-pressed',String(open));
   selected();
@@ -667,6 +674,7 @@ function syncSelectionActions(){
   for(const button of document.querySelectorAll('[data-timeline-command]'))button.disabled=disabled;
 }
 function selected() {
+  inspectorViewport?.capture();
   cancelInspectorDraft();
   timelineContextMenu?.invalidate();
   inspectorSelectionRead?.cancel();inspectorSelectionRead=null;
@@ -2148,7 +2156,7 @@ sourceWaveform=createSourceWaveform({root:$('source-waveform'),canvas:$('source-
   onSeek:async frame=>{fastTransport?.stop();audioScrub?.stop();await sourcePlayer.seekFrame(frame);syncSourcePosition();audioScrub?.request();},onError:error=>notice(error.message || String(error))});
 for(const event of ['play','pause','ended'])$('export-preview-video').addEventListener(event,()=>sourceAssets.refresh());
 document.addEventListener('visibilitychange',()=>{void proxyControls?.visible(!document.hidden);sourceAssets.refresh();sourcePlayer?.invalidatePrefetch();audioMeters?.sync();if(document.hidden){programPlayer?.invalidatePrefetch();audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>{void proxyControls?.refresh();sourceAssets.refresh();sourcePlayer?.invalidatePrefetch();},true);
-window.addEventListener('pagehide',()=>{fastTransport?.stop();programPlayer?.pauseLocal();void projectView?.flush({persist:true});});
+window.addEventListener('pagehide',()=>{inspectorViewport?.cancel();fastTransport?.stop();programPlayer?.pauseLocal();void projectView?.flush({persist:true});});
 $("source-assets-refresh").addEventListener("click",()=>{
   const position=sourcePosition(),item=documentState?.media.find(media=>media.id===sourceOpenId);
   if(item && !item.has_video && sourceWaveformDemand.entries.length){sourceAssets.demand('source_waveform',sourceWaveformDemand.entries.map(entry=>({...entry,force:true})),sourceWaveformDemand.epoch);return;}

@@ -2,6 +2,7 @@ import { request } from "./api.js";
 import {renderAudioPresets} from './audio-presets.js';
 import {bindMixerControl,mixerGainPosition} from './mixer-controls.js';
 import {createAudioGraph} from './audio-graphs.js';
+import {createCompressorControls} from './compressor-controls.js';
 
 export function mixerDraftContext(query) {
   const params=new URLSearchParams(query),keys=['project_epoch','if_generation','timeline_id','revision'];
@@ -94,8 +95,9 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
       let ready=false;
       card.addEventListener("toggle",()=>{
         if(!card.open || ready)return;ready=true;
-        const draft=structuredClone(effect),form=document.createElement("form"),bindings=[];let graph=null,fields=form;card.append(form);
-        const synchronize=()=>graph?.sync();
+        const draft=structuredClone(effect),form=document.createElement("form"),bindings=[];let graph=null,dynamics=null,fields=form;card.append(form);
+        const refreshBindings=except=>{for(const {input,object,key,type} of bindings){if(input===except)continue;if(type==='check')input.checked=object[key];else if(type!=='number' || Number(input.value)!==object[key])input.value=object[key];}};
+        const synchronize=except=>{graph?.sync();dynamics?.sync();refreshBindings(except);};
         function check(label,object,key) {
           const row=document.createElement("label");row.className="field";row.textContent=label;
           const input=document.createElement("input");input.type="checkbox";input.checked=object[key];input.disabled=disabled;
@@ -104,7 +106,7 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
         function number(label,object,key,range) {
           const row=document.createElement("label");row.className="field";row.textContent=label;
           const input=document.createElement("input");input.type="number";input.step="any";input.required=true;input.min=range[0];input.max=range[1];input.value=object[key];input.disabled=disabled;
-          input.addEventListener("input",()=>{object[key]=Number(input.value);synchronize();});bindings.push({input,object,key,type:'number'});row.append(input);fields.append(row);return input;
+          input.addEventListener("input",()=>{object[key]=Number(input.value);synchronize(input);});bindings.push({input,object,key,type:'number'});row.append(input);fields.append(row);return input;
         }
         function select(label,object,key,values) {
           const row=document.createElement("label");row.className="field";row.textContent=label;
@@ -128,10 +130,19 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
           const current=()=>!disposed && card.isConnected!==false && card.open && section.open && root.open && context()===expected;
           const canInteract=()=>!disabled && current() && !document.hidden && (card.getClientRects?.().length ?? 1)>0 && !document.querySelector?.('dialog[open]') && (form.checkValidity?.() ?? true) && (audioPresets?.canCommit?.() ?? true);
           const merge=(target,source)=>{for(const [key,value] of Object.entries(source)){if(value && typeof value==='object' && target[key] && typeof target[key]==='object'){merge(target[key],value);}else target[key]=structuredClone(value);}};
+          const applyParameters=async parameters=>{const next=structuredClone(draft);next.kind[kind]=parameters;await commit(chainOperation(track.channel,track.effects.map((entry,own)=>own===index?next:entry)));merge(data,parameters);refreshBindings();graph?.sync();dynamics?.sync();};
           graph=createAudioGraph({root:form,kind,label:`${track.label} insert ${index+1}`,getParameters:()=>data,getEnabled:()=>draft.enabled,defaults:catalog.defaults[kind].kind[kind],catalog:kind==='Equalizer'?catalog.eq:catalog.compressor,canInteract,isCurrent:current,isValid:()=>form.reportValidity(),getContext:context,notice,
-            onCommit:async parameters=>{const next=structuredClone(draft);next.kind[kind]=parameters;await commit(chainOperation(track.channel,track.effects.map((entry,own)=>own===index?next:entry)));merge(data,parameters);for(const {input,object,key,type} of bindings){if(type==='check')input.checked=object[key];else if(type!=='number' || Number(input.value)!==object[key])input.value=object[key];}},
+            onCommit:applyParameters,
             readResponse:()=>request(`/timelines/${encodeURIComponent(timeline)}/audio/${encodeURIComponent(track.channel)}/${kind==='Equalizer'?'eq':'compressor'}/${index}?${query}`)});
-          graphs.push(graph);for(const details of [card,section,root])details.addEventListener('toggle',()=>{if(current()){graph.sync();void graph.refresh();}else graph.cancel();});
+          if(kind==='MultibandCompressor'){
+            let previousInputs=[];
+            dynamics=createCompressorControls({root:form,label:`${track.label} insert ${index+1}`,getParameters:()=>data,defaults:catalog.defaults[kind].kind[kind],catalog:catalog.compressor,canInteract,isCurrent:current,isValid:()=>form.reportValidity(),getContext:context,notice,
+              onStart:()=>{graph.cancel();previousInputs=bindings.filter(binding=>binding.type==='number').map(({input})=>[input,input.value]);},
+              onDraft:parameters=>{for(const {input,object,key,type} of bindings){const band=data.bands.indexOf(object);if(type==='number' && band>=0)input.value=parameters.bands[band][key];}},
+              onCancel:()=>{for(const [input,value] of previousInputs)input.value=value;},onCommit:applyParameters});
+            graphs.push(dynamics);
+          }
+          graphs.push(graph);for(const details of [card,section,root])details.addEventListener('toggle',()=>{if(current()){graph.sync();dynamics?.sync();refreshBindings();void graph.refresh();}else{graph.cancel();dynamics?.cancel();}});
         }
         if(kind === "Equalizer") {
           for(const [bandIndex,band] of data.bands.entries()) {
@@ -161,7 +172,7 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
           mode.addEventListener("change",()=>{const value=range();data.target_db=normalizationModeTarget(previousMode,data.mode,data.target_db,catalog.normalization);previousMode=data.mode;target.min=value.range[0];target.max=value.range[1];target.value=data.target_db;});
         }
         const apply=document.createElement("button");apply.textContent=`Apply ${track.label} insert ${index+1}`;apply.disabled=disabled;form.append(apply);
-        form.addEventListener("submit",(event)=>{event.preventDefault();graph?.cancel();if(!disposed && !disabled && form.reportValidity())report(track.effects.map((entry,i)=>i===index ? draft : entry));});
+        form.addEventListener("submit",(event)=>{event.preventDefault();graph?.cancel();dynamics?.cancel();if(!disposed && !disabled && form.reportValidity())report(track.effects.map((entry,i)=>i===index ? draft : entry));});
         for(const [label,delta] of [["Move up",-1],["Move down",1],["Remove",0]]) {
           const button=document.createElement("button");button.type="button";button.textContent=`${label} ${track.label} insert ${index+1}`;button.disabled=disabled || (delta && (index+delta<0 || index+delta>=track.effects.length));
           button.addEventListener("click",()=>{const effects=[...track.effects];const [entry]=effects.splice(index,1);if(delta)effects.splice(index+delta,0,entry);report(effects);});form.append(button);

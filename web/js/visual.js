@@ -53,7 +53,27 @@ function colorWheel(canvas,hues,initial,onCommit,onError,disabled=false,canInter
   if(disabled){paint(initial[0],initial[1],false);return {cancel(){}};}
   return bindColorWheel(canvas,{x:initial[0],y:initial[1],paint,onCommit,onReset,onError,canInteract});
 }
-export function renderSelectedFilters(root,detail,{controls,keyRow,openState,notice,timelineSize}){
+function bindGradeRange(input,slider,{canInteract,complete}){
+  const listeners=[],win=input.ownerDocument?.defaultView ?? globalThis.window;let gesture=null,canceled=false,dirty=false,disposed=false;
+  const listen=(node,key,handler)=>{node?.addEventListener?.(key,handler);listeners.push(()=>node?.removeEventListener?.(key,handler));};
+  const live=()=>!disposed && slider.isConnected!==false && !slider.disabled && canInteract();
+  const release=id=>{if(id===null)return;try{if(slider.hasPointerCapture?.(id))slider.releasePointerCapture(id);}catch{}};
+  const cancel=()=>{const before=gesture;gesture=null;dirty=false;canceled=true;if(before){input.value=before.text;slider.value=before.slider;release(before.id);}else slider.value=input.value;};
+  const start=id=>{canceled=false;dirty=false;gesture={id,text:input.value,slider:input.value};};
+  const finish=()=>{const before=gesture;gesture=null;if(before)release(before.id);const changed=dirty || before && Number(input.value)!==Number(before.text);dirty=false;if(changed)complete();};
+  listen(slider,'pointerdown',event=>{if(gesture || !live() || event.button!==0 || event.isPrimary===false || event.ctrlKey || event.metaKey || event.altKey)return;start(event.pointerId);try{slider.setPointerCapture?.(event.pointerId);}catch{cancel();}});
+  listen(slider,'input',()=>{if(!live()){cancel();return;}if(canceled)return;if(!gesture)start(null);dirty ||= Number(input.value)!==Number(slider.value);input.value=slider.value;});
+  listen(slider,'pointermove',event=>{if(gesture?.id===event.pointerId && (!live() || event.buttons!==undefined && !(event.buttons&1)))cancel();});
+  listen(slider,'pointerup',event=>{if(!gesture || gesture.id!==event.pointerId)return;if(!live()){cancel();return;}input.value=slider.value;finish();});
+  listen(slider,'change',()=>{if(canceled || !live()){cancel();return;}if(gesture && gesture.id!==null)return;if(dirty)finish();});
+  for(const key of ['pointercancel','lostpointercapture'])listen(slider,key,event=>{if(gesture?.id===event.pointerId)cancel();});
+  listen(slider,'keydown',event=>{event.stopPropagation();if(event.key==='Escape'){event.preventDefault();cancel();}else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key) && live() && !gesture)start(null);});
+  listen(slider,'blur',cancel);listen(win,'blur',cancel);listen(input,'input',()=>{if(!gesture)slider.value=input.value;});listen(input,'change',()=>{if(!gesture)slider.value=input.value;});
+  for(const key of ['pointermove','pointerup','pointercancel','lostpointercapture','blur'])listen(input,key,()=>{if(!gesture)slider.value=input.value;});
+  listen(input,'keydown',event=>{if(event.key==='Escape' && !gesture)slider.value=input.value;});
+  return {cancel,dispose(){if(disposed)return;cancel();disposed=true;for(const remove of listeners)remove();}};
+}
+export function renderSelectedFilters(root,detail,{controls,keyRow,openState,notice,timelineSize,bindNumber}){
   if(!detail.filters)return [];
   const gestures=[],section=document.createElement('details'),heading=document.createElement('summary');section.dataset.visualPath='selected-filters';section.open=openState.get('selected-filters') ?? true;heading.textContent='Selected filters and color';section.append(heading);root.append(section);
   const help=document.createElement('details'),helpTitle=document.createElement('summary'),note=document.createElement('p');help.className='inspector-help';helpTitle.textContent='Editing selected filters';note.className='muted';note.textContent='Add affects the selected video clips; existing filters keep their settings. Parameter edits skip clips without this filter. Apply changes a constant default or writes a native key. Moving a filter refuses incompatible peer stack positions.';help.append(helpTitle,note);section.append(help);
@@ -67,11 +87,18 @@ export function renderSelectedFilters(root,detail,{controls,keyRow,openState,not
     const reset=(params,flags={})=>({action:'reset_filter',filter:kind,params,reset_enabled:false,reset_color:false,reset_grade:false,...flags});
     const params=[];
     function keyControls(parent,label,values,parameters){keyRow(parent,label,values,{action:'toggle_filter_keys',filter:kind,params:parameters});controls.button(`Reset ${label}`,reset(parameters),parent);params.push(...parameters);}
-    function number(parent,label,parameter,range,patch,key){
-      const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));form.className='property-row inspector-number';field.className='field';field.textContent=label.startsWith(`${kind} `)?label.slice(kind.length+1):label.replace(/^(Shadows|Midtones|Highlights|Offset)(Luma|Sat)$/,'$2').replace(/^Saturation$/,'Sat');input.type='number';input.step='any';input.required=true;input.min=range[0];input.max=range[1];input.value=parameter.value;input.setAttribute('aria-label',label);field.append(input);form.append(field);
+    function number(parent,label,parameter,range,patch,key,{scrub=false,slider=false}={}){
+      const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));form.className='property-row inspector-number';field.className='field';field.textContent=label==='LowRange'?'Shadows range':label==='HighRange'?'Highlights range':label.startsWith(`${kind} `)?label.slice(kind.length+1):label.replace(/^(Shadows|Midtones|Highlights|Offset)(Luma|Sat)$/,'$2').replace(/^Saturation$/,'Sat');input.type='number';input.step='any';input.required=true;input.min=range[0];input.max=range[1];input.value=parameter.value;input.setAttribute('aria-label',label);field.append(input);form.append(field);
       const button=controls.register(document.createElement('button'));button.className='inspector-number-apply';button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(button);
-      const complete=()=>{const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && value>=range[0] && value<=range[1] && value!==parameter.value && form.reportValidity())edit(patch(value));};
-      form.addEventListener('submit',event=>{event.preventDefault();complete();});input.addEventListener('change',complete);parent.append(form);if(key)keyControls(form,label,[parameter],[key]);return input;
+      const live=()=>controls.available() && section.open && card.open && input.isConnected!==false;
+      const complete=()=>{const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && value>=range[0] && value<=range[1] && value!==parameter.value && form.reportValidity())return edit(patch(value));};
+      const submit=event=>{event.preventDefault();complete();};form.addEventListener('submit',submit);input.addEventListener('change',complete);controls.own({dispose(){form.removeEventListener?.('submit',submit);input.removeEventListener?.('change',complete);}});
+      if(scrub && typeof bindNumber==='function'){input.title='Drag to adjust; Shift for fine control. Click to type. Escape cancels a drag.';controls.own(bindNumber(input,{canInteract:live,apply:complete,speed:0.005}));}
+      if(slider){
+        const rangeInput=controls.register(document.createElement('input'));rangeInput.type='range';rangeInput.min=range[0];rangeInput.max=range[1];rangeInput.step='any';rangeInput.value=parameter.value;rangeInput.className='inspector-inline-slider';rangeInput.setAttribute('aria-label',`${label} slider`);field.className+=' inspector-slider-field';form.className+=' inspector-grade-range';field.append(rangeInput);
+        controls.own(bindGradeRange(input,rangeInput,{canInteract:live,complete}));
+      }
+      parent.append(form);if(key)keyControls(form,label,[parameter],[key]);return input;
     }
     if(['BoxBlur','GaussianBlur','DropShadow'].includes(kind))number(card,kind==='DropShadow'?'DropShadow softness':`${kind} radius`,filter.radius,[0,detail.filters.blur_radius_max],radius=>({radius}),{kind:'radius'});
     if(['BoxBlur','GaussianBlur'].includes(kind)){
@@ -107,7 +134,8 @@ export function renderSelectedFilters(root,detail,{controls,keyRow,openState,not
       }
       for(const parameter of filter.grade || []){
         const key={kind:'grade',param:parameter.param},parent=scalarParents.get(parameter.param) || (grouped.has(parameter.param)?coordinates:card);
-        number(parent,parameter.param,parameter,parameter.range,value=>({grade:[{param:parameter.param,value}]}),grouped.has(parameter.param)?null:key);
+        const boundary=['LowRange','HighRange'].includes(parameter.param),scalar=boundary || /Luma$|Sat$|^Saturation$/.test(parameter.param);
+        number(parent,parameter.param,parameter,parameter.range,value=>({grade:[{param:parameter.param,value}]}),grouped.has(parameter.param)?null:key,{scrub:scalar,slider:boundary});
         if(grouped.has(parameter.param))controls.button(`Reset ${parameter.param}`,reset([key]),parent);
       }
       card.append(coordinates);

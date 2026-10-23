@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { detailIdentity, propertyOperation, keyframeOperation,transformPatch,keyPageIndex,transitionSelectionOperation,editingShortcutAllowed,selectionInspectorRows,bindInspectorNumber,bindKeyEditorDelete,renderSelectedAudioGain } from "../js/inspector.js";
+import { detailIdentity, propertyOperation, keyframeOperation,transformPatch,keyPageIndex,transitionSelectionOperation,editingShortcutAllowed,selectionInspectorRows,bindInspectorNumber,bindKeyEditorDelete,renderSelectedAudioGain,createInspectorViewportKeeper } from "../js/inspector.js";
 
 test('nonmodal key editor owns one mixed-key Delete without deleting timeline clips or consuming text edits',()=>{
   const events=new Map(),root={addEventListener:(key,fn)=>events.set(key,fn),removeEventListener:(key,fn)=>{if(events.get(key)===fn)events.delete(key);}};
@@ -80,6 +80,59 @@ test('canceling before dispatch abandons only that queued edit and does not leav
 test('canceling an already dispatched edit retains its pending and unknown-outcome safeguards',async t=>{
   let reject;const h=selectedLifecycleHarness(t,{commit:()=>new Promise((_,fail)=>{reject=fail;})});h.apply(4);await settleInspector();assert.equal(h.commands.length,1);h.controls.cancel();h.apply(5);assert.equal(h.controls.available(),false);assert.equal(h.commands.length,1);
   reject(Object.assign(Error('Confirm the native write outcome before editing'),{code:'OUTCOME_UNKNOWN'}));await settleInspector();h.controls.cancel();h.apply(6);await settleInspector();assert.equal(h.commands.length,1);assert.equal(h.controls.available(),false);assert.match(h.notices.at(-1),/outcome/);
+});
+
+function viewportHarness(){
+  class Surface extends EventTarget{
+    constructor(){super();this.handlers=new Map();}
+    addEventListener(key,handler,options){super.addEventListener(key,handler,options);if(!this.handlers.has(key))this.handlers.set(key,new Set());this.handlers.get(key).add(handler);}
+    removeEventListener(key,handler,options){super.removeEventListener(key,handler,options);this.handlers.get(key)?.delete(handler);}
+    count(){return [...this.handlers.values()].reduce((sum,handlers)=>sum+handlers.size,0);}
+  }
+  const doc=new Surface(),view=new Surface(),frames=new Map();let context='epoch/timeline/audio/Audio/clip9',frameId=0,observer;
+  doc.body={isConnected:true};doc.activeElement=doc.body;doc.querySelector=()=>doc.dialog?{}:null;
+  const root={ownerDocument:doc,children:[],isConnected:true,clientHeight:200,scrollHeight:200,getBoundingClientRect:()=>({top:100,bottom:300,height:200}),querySelectorAll(){return this.children;},contains(node){return this.children.includes(node);},get scrollTop(){return this.top ?? 0;},set scrollTop(value){this.top=Math.max(0,Math.min(this.scrollHeight-this.clientHeight,value));}};
+  class Observer{
+    constructor(callback){this.callback=callback;observer=this;}observe(){this.connected=true;}disconnect(){this.connected=false;}emit(){if(this.connected)this.callback();}
+  }
+  function fire(target,type,properties={}){const event=new Event(type,{cancelable:true});for(const [name,value] of Object.entries(properties))Object.defineProperty(event,name,{value});target.dispatchEvent(event);}
+  function node(label,at,{disabled=false}={}){return {tagName:'INPUT',type:'number',id:'',label,at,disabled,focuses:0,get isConnected(){return root.contains(this);},getAttribute(name){return name==='aria-label'?this.label:null;},getClientRects(){return this.isConnected?[this.getBoundingClientRect()]:[];},getBoundingClientRect(){const top=100+this.at-root.scrollTop;return {top,bottom:top+24,height:24};},focus(options){this.focuses++;this.focusOptions=options;doc.activeElement=this;fire(doc,'focusin',{target:this});},closest(){return null;}};}
+  const keeper=createInspectorViewportKeeper(root,{getContext:()=>context,documentRef:doc,windowRef:view,Observer,requestFrame:callback=>{const id=++frameId;frames.set(id,callback);return id;},cancelFrame:id=>frames.delete(id)});
+  const flush=()=>{const pending=[...frames.values()];frames.clear();for(const callback of pending)callback();};
+  keeper.contextChanged();
+  return {root,doc,view,keeper,frames,fire,node,flush,get observer(){return observer;},mutate:()=>observer.emit(),replace(nodes,height){if(root.contains(doc.activeElement))doc.activeElement=doc.body;root.children=nodes;root.scrollHeight=height;root.scrollTop=root.scrollTop;observer.emit();},focus(target){doc.activeElement=target;fire(doc,'focusin',{target});},context(value){context=value;},dispose(){keeper.dispose();}};
+}
+
+test('Inspector viewport survives clamped busy rebuilds and delayed lazy hydration using the same native control anchor',()=>{
+  const h=viewportHarness();try{
+    const old=h.node('A1 low threshold',1600);h.replace([old],2400);h.root.scrollTop=1500;h.focus(old);old.disabled=true;h.doc.activeElement=h.doc.body;h.keeper.capture();
+    h.replace([],200);h.flush();assert.equal(h.root.scrollTop,0);h.keeper.capture();h.replace([],200);h.flush();assert.equal(h.frames.size,0);
+    const fresh=h.node('A1 low threshold',1800,{disabled:true});h.replace([fresh],2600);h.flush();assert.equal(h.root.scrollTop,1700);assert.equal(fresh.focuses,0);
+    fresh.disabled=false;h.mutate();h.flush();assert.equal(h.root.scrollTop,1700);assert.equal(h.doc.activeElement,fresh);assert.deepEqual(fresh.focusOptions,{preventScroll:true});
+    fresh.at=2100;h.root.scrollHeight=2900;h.mutate();h.flush();assert.equal(h.root.scrollTop,2000);assert.equal(fresh.focuses,1);assert.equal(fresh.getBoundingClientRect().top-h.root.getBoundingClientRect().top,100);assert.equal(h.frames.size,0);
+  }finally{h.dispose();}
+});
+
+test('Inspector viewport uses remembered scroll when the anchor is not yet present and resets for a different context',()=>{
+  const h=viewportHarness();try{
+    h.root.scrollHeight=2000;h.root.scrollTop=1200;h.keeper.capture();h.replace([],200);h.flush();assert.equal(h.root.scrollTop,0);
+    h.root.scrollHeight=2200;h.mutate();h.flush();assert.equal(h.root.scrollTop,1200);
+    h.context('epoch/timeline/video/Color/clip10');h.mutate();h.flush();assert.equal(h.root.scrollTop,0);assert.equal(h.observer.connected,false);assert.equal(h.frames.size,0);
+    h.root.scrollTop=400;h.keeper.capture();h.root.scrollHeight=2500;h.mutate();h.flush();assert.equal(h.root.scrollTop,400);
+  }finally{h.dispose();}
+});
+
+test('Inspector restoration yields to user wheel, pointer or keyboard navigation and never steals outside or dialog focus',()=>{
+  for(const interrupt of [h=>h.fire(h.doc,'wheel'),h=>h.fire(h.doc,'pointerdown',{target:h.doc.body}),h=>h.fire(h.doc,'keydown',{key:'Tab'}),h=>h.focus({isConnected:true}),h=>{h.doc.dialog=true;}]){
+    const h=viewportHarness();try{
+      const old=h.node('A1 ratio',1300);h.replace([old],2000);h.root.scrollTop=1200;h.focus(old);h.keeper.capture();h.replace([],200);interrupt(h);
+      const fresh=h.node('A1 ratio',1500);h.replace([fresh],2400);h.flush();assert.equal(fresh.focuses,0);assert.equal(h.root.scrollTop,0);assert.equal(h.observer.connected,false);
+    }finally{h.dispose();}
+  }
+});
+
+test('Inspector viewport disposal cancels queued frames and removes its scoped listeners and observer',()=>{
+  const h=viewportHarness();h.root.scrollHeight=2000;h.root.scrollTop=800;h.keeper.capture();assert.equal(h.frames.size,1);h.dispose();h.dispose();h.replace([h.node('Later control',900)],2000);h.flush();assert.equal(h.root.scrollTop,800);assert.equal(h.frames.size,0);assert.equal(h.observer.connected,false);assert.equal(h.doc.count(),0);assert.equal(h.view.count(),0);
 });
 
 test('selected transition edits preserve native fields and canonical cut anchor without mutating the snapshot',()=>{

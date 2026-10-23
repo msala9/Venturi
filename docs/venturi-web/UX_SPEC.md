@@ -1,5 +1,26 @@
 # UX/UI specification — professional NLE with AI review
 
+## Native Media interactions — 2026-10-23
+
+`9e00d2c` on halo1/8833 completes the compact pool interaction follow-up.
+Background marquee replaces media selection on release, regardless of Ctrl/Shift;
+folders are not selectable hits. Item right-click preserves an existing selected
+group or selects the outside clicked item. Folder right-click/drag targets its
+own ID without selecting it. Media drops use the destination folder, a media
+row's containing folder, root background, or the current Grid breadcrumb. Folder
+drops reject self/descendant cycles and unchanged parents without adding Undo.
+A successful move expands its destination and reveals the first dragged item.
+
+Context menus own keyboard focus and navigation, support ContextMenu/Shift+F10,
+and dismiss without hijacking outside actions. F2, menu Rename and the delayed
+second name click rename folders/compound timelines inline. Escape/empty/unchanged
+values cancel; Enter/blur trims and commits once. Original file names remain
+immutable. The separate overlay remains editable when long text scrolls inside
+its input; viewport scroll/layout/session changes cancel it. Post-command inline
+rename/reveal follows only a confirmed current receipt. The shared Library entry
+reuses the existing native asset panel; no additional permanent toolbar is added.
+See `evidence/f2-media-interactions-workflow.json` and its two screenshots.
+
 ## Native proxy controls — 2026-10-23
 
 `a95b4a6` on halo1/8830 keeps proxy controls inside Playback > Proxies: Use

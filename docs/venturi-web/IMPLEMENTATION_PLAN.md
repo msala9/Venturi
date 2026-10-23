@@ -18,7 +18,46 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8831/**, source `6764b2d`,
+The current halo1 delivery is **http://127.0.0.1:8833/**, source `9e00d2c`,
+binary `899e9aacc94f`, in `venturi-web-halo1-media-interactions-r2.service`.
+The Media pool now follows the native background marquee, media/folder context
+menus, inline folder/compound rename and media/folder/breadcrumb drops. A folder
+menu targets the clicked ID while retaining the selected media group. File names
+stay immutable. Contextual timeline duplication is immediate and rename targets
+the clicked compound; neither switches the open Program timeline. Menu actions
+reuse the existing New Timeline, OTIO, Relink and native Library flows. No new
+Viewer control row is reserved.
+
+No-op folder/media moves preserve native Undo/Redo. Metadata batches admit 256;
+prepared Relink remains 64. Drops require current local drag ownership, native
+epoch/generation and original membership. Post-command reveal/rename requires a
+successful matching receipt, rather than inferring success from a refresh. Real
+browser findings are fixed: queued drops survive dragend, folder name buttons
+initiate dragging, and long-name input scrolling retains the rename editor.
+
+The bounded halo1 gate passes 111 affected client cases and 8 native cases. Final
+30 catalog/menu cases include the new scroll regression; unchanged client files
+are reused, giving 112 distinct qualified cases without a fresh full-suite claim.
+Formatting, all-target Clippy and the final embedded build pass. Actual Windows
+verification covers context selection, new folder/rename, a real media drag with
+one Undo/Redo, five-media marquee, immediate timeline duplication, long-name
+rename and a real folder-name drag/Undo/Redo. Native Save/reopen preserves the
+model and bytes; the original five-clip timeline DTO/revision is exactly unchanged.
+Final Program is timeline 1/frame 0, Saved, with the native empty history after
+explicit reopen. Renderer/playback/export code is unchanged; reuse the prior
+457-frame Full HD/AAC exported-file EOF evidence.
+
+See `evidence/f2-media-interactions-workflow.json` and context/workspace PNGs.
+All 18 earlier Sessions/live Undo, 19 service PIDs including ds4, and 6 earlier
+Saved byte hashes are preserved, including the unsaved 8832 qualification editor.
+Halo2, AMD drivers, mounts and NAS content are untouched. Contextual Library
+publication uses the qualified pipeline but was not exercised against the NAS.
+The ledger remains **49 done / 41 partial / 2 excluded**: this completes the pool
+interaction follow-up, not a new coarse capability. Full F1-F7/M7 remains active.
+Next address degraded proxy-cache UX and actually-requested original frame-source
+FD pinning, then representative/dense/DPI/physical and remaining release work.
+
+Preserved durable proxy-cache delivery: **http://127.0.0.1:8831/**, source `6764b2d`,
 binary `4a11e6f7c63e`, in `venturi-web-halo1-proxy-durable.service`.
 Native proxy preferences and ready cache now survive server restart. A private,
 versioned cache under the native user cache shares ready video across projects
@@ -44,8 +83,8 @@ Saved projects are preserved. Halo2 and NAS are untouched.
 Full F1-F7/M7 remains active. Malformed/foreign cache files and pre-intent crash
 leftovers are preserved/refused; arbitrary-power-loss automatic recovery is not
 claimed. Source browser/audio conversion and its broader acceptance remain in
-Source capabilities. Next implement pool marquee, contextual actions and folder
-drag as one native interaction block. Keep original frame-source FD pinning,
+Source capabilities. The pool interaction follow-up is delivered above. Keep
+original frame-source FD pinning,
 representative/dense/DPI/physical acceptance and other F1-F7/M7 work explicit.
 
 Preserved initial proxy workflow: halo1/8830, source `a95b4a6`, binary `f8fe8912da80`.

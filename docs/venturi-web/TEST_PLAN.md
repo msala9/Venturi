@@ -10,6 +10,26 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F2 native Media interactions (`9e00d2c`, halo1/8833):111 affected JavaScript
+cases pass; final 30 catalog/menu cases cover the browser findings, including one
+new scroll regression. Reuse the 82 unchanged other cases: 112 distinct qualified
+client cases, without claiming a fresh 112-case aggregate. All 7 native catalog
+cases and the embedded-module MIME case pass; formatting, all-target Clippy and
+the final embedded build pass. The native wrapper no-op tests preserve generation
+and Redo; mixed batches match the native changed subset and one Undo, malformed
+final IDs refuse atomically, and deleting a folder retains direct/deep content.
+
+Actual Windows pointer input verifies five-media replacement marquee, a media
+move with one Undo/Redo, and dragging the folder name button without changing
+media selection. Context group/target semantics, immediate duplicate, inline
+long-name rename on the inactive copy and Saved native reopen pass. Preserve the
+original Program timeline DTO/revision and five clips exactly. The native graph
+and Saved bytes match across reopen, with Program 1/frame 0 and empty history.
+All 18 prior Sessions, 19 service PIDs and 6 Saved hashes match. Final editor peak
+295919616 bytes remains below 4 GiB/no-swap. No NAS writes, browser installation,
+Windows heavy qualification or halo2 work. Reuse unchanged Program/export evidence.
+See `evidence/f2-media-interactions-workflow.json`; broader M7 acceptance remains.
+
 F2 native proxies (`a95b4a6`, halo1/8830):90 distinct affected native cases pass
 (72 web,18 cross-native), plus7 new proxy client cases and the final23 affected
 proxy/catalog cases. The prior1296-case aggregate client result is reused;
@@ -17,7 +37,7 @@ there is no claim of a fresh full1303-case run after the fixture correction.
 Formatting, all-target Clippy and the final embedded binary pass. An earlier
 cold feature combination hit its180-second build deadline; matching package
 feature unification completed the cross-native gate. Final style-only fixes
-reuse the native behavior results. Build peak2663776256 bytes stays below4 GiB.
+reuse the native behavior results. Build peak2663776256 bytes stays below 4 GiB.
 
 The integrated Windows pass uses the Saved457-frame Full HD video/still/two-stream
 audio montage. Native generation parks at1/264 frames across two observations,

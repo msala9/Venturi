@@ -1,0 +1,252 @@
+{
+  "feature_block": "Native Media pool interaction fidelity",
+  "source_commit": "9e00d2c5fef1c24c3cb066293fe03bfb0454a11b",
+  "delivery": {
+    "host": "halo1",
+    "url": "http://127.0.0.1:8833/",
+    "unit": "venturi-web-halo1-media-interactions-r2.service",
+    "pid": 160185,
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-899e9aacc94f",
+    "binary_sha256": "899e9aacc94ff5db97aec38093a4487a994e805b9e4a84e218adb1f38a72fa94",
+    "project": "Venturi_Project_Media.vvproj",
+    "saved_sha256": {
+      "Venturi_Project_Media.vvproj": "65771ef34b838b65d79395caed16e792baabe7d133ade8d83776d598c30ab8ab"
+    },
+    "project_epoch": "1792735283888232075:2",
+    "generation": "0",
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 0
+      }
+    },
+    "saved": true,
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "source_hashes": {
+      "crates/vv-web/src/api.rs": "0a9305de8bcdf5de32d01d16b3db93c881f81fccde5b50e251bc6eff2add461d",
+      "crates/vv-web/src/catalog.rs": "e67f0646798b07cc42df88be3d324ae136f472b9e02d0670f29f22e14e88453f",
+      "crates/vv-web/src/tests/catalog.rs": "7cd515f13352d3cc978d437cb61fb887f1846d59f16883da112fbcf37cbec48d",
+      "web/js/catalog.js": "ac9dbfd78f5d0a3ef97432e8777c1cc2bbfc971f036851eaab4a449c50d81918",
+      "web/js/main.js": "ffa2bc22d4af535560482f3b207c54dbfe8d3bc80c34257bcd3e79bf8cea9453",
+      "web/js/native-assets.js": "a3848e0b168a5a84724af2e784afca83f96a0630021496adaf76db7638d76e01",
+      "web/style/native-browser.css": "8eafb0fd98de29c2d61a6556088c1e9099573a64b03946fce0197dfde0db0f85",
+      "web/test/catalog.test.js": "f81a7de208409ce8e5953e1be4269e4c633e037ac658fef4b3cee2d153ae671d",
+      "web/js/catalog-interactions.js": "6eb1938b942400f6c5f091fdcbed6786073a8deaacfcd3863fe71ed1b70a928e",
+      "web/js/catalog-menu.js": "913db9bcb532a2bc90a6d9494d47e069500e7838413b4e97c9ddd594893a97db",
+      "web/test/catalog-interactions.test.js": "7b7d58960b7900995d89d0b35b6c2fe6642b8f248bfb3436c204469b8c11b0fa",
+      "web/test/catalog-menu.test.js": "12498691b0ffc50b289156c03420d398171b0ff2d1acc8710aa7bb18d0eac272"
+    }
+  },
+  "qualification": {
+    "host": "halo1 only; existing Windows browser, one work tab",
+    "javascript": {
+      "affected_pass": 111,
+      "final_catalog_and_menu_pass": 30,
+      "distinct_qualified_with_reused_unchanged_files": 112,
+      "fresh_full_suite_claimed": false,
+      "new_real_browser_regression": "Long-name horizontal input scrolling must retain the rename editor; Media viewport scrolling cancels it."
+    },
+    "native_catalog_cases_pass": 7,
+    "embedded_module_route_cases_pass": 1,
+    "rustfmt_all_check": "passed",
+    "clippy_all_targets_D_warnings": "passed",
+    "embedded_binary_build": "passed",
+    "final_worker": "venturi-halo1-media-interactions-r5-20261023.service"
+  },
+  "native_reference": [
+    "crates/vv-app/src/pool_view.rs:386 (background marquee replacement)",
+    "crates/vv-app/src/media_pool_ui.rs:299 (contextual item/folder actions)",
+    "crates/vv-app/src/media_pool_ui.rs:646 (immediate native timeline duplication)",
+    "crates/vv-core/src/pool.rs:265 (SetMediaFolder), :305 (MoveFolder), :341 (DeleteFolder)"
+  ],
+  "browser_workflow": {
+    "media_context": "Right-click outside selection chooses the clicked row; inside selection preserves the two-media group. Menu offers Relink and Add to Library; immutable file names have no Rename or Delete item.",
+    "new_folder_and_rename": {
+      "verified_on_preserved_8832": true,
+      "folder_id": "9",
+      "parent": "8",
+      "name": "Assembly",
+      "native_history": [
+        "NewFolder",
+        "RenameFolder"
+      ]
+    },
+    "real_media_drag": {
+      "verified_on_preserved_8832": true,
+      "media_id": "6",
+      "before_folder": "7",
+      "after_folder": "9",
+      "history_after_move": {
+        "labels": [
+          "NewFolder",
+          "RenameFolder",
+          "MoveToFolder"
+        ],
+        "position": 3
+      },
+      "history_after_undo": {
+        "labels": [
+          "NewFolder",
+          "RenameFolder",
+          "MoveToFolder"
+        ],
+        "position": 2
+      },
+      "history_after_redo": {
+        "labels": [
+          "NewFolder",
+          "RenameFolder",
+          "MoveToFolder"
+        ],
+        "position": 3
+      },
+      "native_original_timeline_unchanged": true
+    },
+    "real_marquee": {
+      "verified_on_preserved_8832": true,
+      "selection_count": 5,
+      "folder_hits_ignored": true,
+      "history_unchanged": {
+        "labels": [
+          "NewFolder",
+          "RenameFolder",
+          "MoveToFolder",
+          "DuplicateTimeline"
+        ],
+        "position": 4
+      }
+    },
+    "timeline_actions": {
+      "duplicate": "Immediate unique copy, selected in Media without switching Program",
+      "rename": "Inline Assembly sequence applies to media9/timeline2; timeline1 keeps its exact native DTO/revision",
+      "final_program_timeline": "1",
+      "final_program_frame": 0
+    },
+    "real_folder_label_drag": {
+      "verified_on_final_8833": true,
+      "folder_id": "6",
+      "before_parent": "5",
+      "after_parent": "8",
+      "undo_parent": "5",
+      "history_after_move": {
+        "labels": [
+          "DuplicateTimeline",
+          "RenameTimeline",
+          "MoveToFolder"
+        ],
+        "position": 3
+      },
+      "history_after_undo": {
+        "labels": [
+          "DuplicateTimeline",
+          "RenameTimeline",
+          "MoveToFolder"
+        ],
+        "position": 2
+      },
+      "redo_persisted": true
+    },
+    "native_save_and_reopen": {
+      "saved_epoch": "1792735283888232075:1",
+      "reopened_epoch": "1792735283888232075:2",
+      "media_folders_timelines_equal": true,
+      "saved_bytes_equal": true,
+      "reopened_saved_empty_undo": true
+    },
+    "nas_publication_exercised": false,
+    "screenshots": [
+      "f2-media-interactions-context.png",
+      "f2-media-interactions-workspace.png"
+    ]
+  },
+  "unchanged_qualification": {
+    "original_timeline": "Final original timeline1 exactly equals preserved halo1/8831 native DTO, including revision, five clips and source ranges.",
+    "program_and_export": "Reuse f2-native-proxies-durable-workflow.json original-media Program EOF456 and 457-frame Full HD H.264/AAC exported-file EOF; this block changes no renderer, decoder, mixer or export code.",
+    "native_assets": "Existing prepare/commit/import/relink controller tests pass; contextual Add to Library reuses that publication flow with explicitly captured IDs. No NAS assets published for this qualification."
+  },
+  "preservation": {
+    "sessions_equal": {
+      "8813": true,
+      "8816": true,
+      "8817": true,
+      "8818": true,
+      "8819": true,
+      "8820": true,
+      "8821": true,
+      "8822": true,
+      "8823": true,
+      "8824": true,
+      "8825": true,
+      "8826": true,
+      "8827": true,
+      "8828": true,
+      "8829": true,
+      "8830": true,
+      "8831": true,
+      "8832": true
+    },
+    "session_changed_keys": {},
+    "pids_equal": {
+      "venturi-web-halo1-nas.service": true,
+      "venturi-web-halo1-color-audio-r2.service": true,
+      "venturi-web-halo1-library-edit-r2.service": true,
+      "venturi-web-halo1-native-curves.service": true,
+      "venturi-web-halo1-curve-window-r2.service": true,
+      "venturi-web-halo1-program-lookahead.service": true,
+      "venturi-web-halo1-source-placement.service": true,
+      "venturi-web-halo1-source-placement-r5.service": true,
+      "venturi-web-halo1-source-waveform-r2.service": true,
+      "venturi-web-halo1-source-waveform-r4.service": true,
+      "venturi-web-halo1-source-lookahead.service": true,
+      "venturi-web-halo1-project-pool.service": true,
+      "venturi-web-halo1-project-media.service": true,
+      "venturi-web-halo1-project-media-r2.service": true,
+      "venturi-web-halo1-media-presentation.service": true,
+      "venturi-web-halo1-proxy-workflow.service": true,
+      "venturi-web-halo1-proxy-durable.service": true,
+      "venturi-web-halo1-media-interactions.service": true,
+      "ds4-console.service": true
+    },
+    "saved_sha256_equal": {
+      "/home/halo/VenturiWeb-project-media-20261023/Venturi_Project_Media.vvproj": true,
+      "/home/halo/VenturiWeb-project-media-r2-20261023/Venturi_Project_Media.vvproj": true,
+      "/home/halo/VenturiWeb-media-presentation-20261023/Venturi_Project_Media.vvproj": true,
+      "/home/halo/VenturiWeb-proxy-workflow-20261023/Venturi_Project_Media.vvproj": true,
+      "/home/halo/VenturiWeb-proxy-durable-20261023/Venturi_Project_Media.vvproj": true,
+      "/home/halo/VenturiWeb-media-interactions-20261023/Venturi_Project_Media.vvproj": true
+    },
+    "original_media_sha256_equal": true,
+    "original_media_sha256": {
+      "River_AV_11s.mp4": "d00e254580a313111b499983e30746f0eccc464650617b51b250bcde730b363e",
+      "Renamed_Still.png": "7d924f630cdb1b821fbbeb5a34f33f387a768394194c85272de9dedd9d76fbc7",
+      "River_Two_Streams_3s.mkv": "7921a5a86d483bc3c11d5c369ec2397f79b419792f31e13848fb9f2efe5b8b76"
+    }
+  },
+  "resources": {
+    "cpu_limit": 8,
+    "memory_limit_bytes": 4294967296,
+    "swap_limit_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "benchmark_lock": "/tmp/HALO_BENCHMARK.lock (nonblocking; never stolen)",
+    "observed_disposable_build_peak_bytes": 1892052992,
+    "observed_final_editor_peak_bytes": 295919616,
+    "windows_heavy_work": "none",
+    "halo2_work": "none",
+    "driver_mount_or_nas_changes": "none"
+  },
+  "screenshots": [
+    "f2-media-interactions-context.png",
+    "f2-media-interactions-workspace.png"
+  ],
+  "remaining": [
+    "Full F1-F7/M7 goal remains active; ledger49 done/41 partial/2 excluded unchanged.",
+    "Degraded proxy-cache UX and actually-requested original frame-source FD pinning remain next coherent M7 work.",
+    "Broader dense/DPI/physical/long-duration/4K and release acceptance remain explicit.",
+    "Native asset publication via the new contextual entry was not performed against the owner NAS."
+  ]
+}

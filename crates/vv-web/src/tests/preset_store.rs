@@ -4,6 +4,208 @@ use vv_core::{
     attributes::{Attribute, KeyframeAnchor},
 };
 
+#[test]
+fn native_preset_browse_filters_global_names_before_pages_and_keeps_legacy_candidate_queries() {
+    let (root, store, mut preset) = fixture();
+    for index in 0..40 {
+        preset.name = format!("Look {:02}", 39 - index);
+        store.create(&format!("id-{index:02}"), &preset).unwrap();
+    }
+    let query = Query {
+        sort: Some(SortKey::Name),
+        ..Default::default()
+    };
+    let first = store.list(0, &query).unwrap();
+    let last = store.list(1, &query).unwrap();
+    assert_eq!(first["total"], 40);
+    assert_eq!(first["catalog_total"], 40);
+    assert_eq!(first["pages"], 2);
+    assert_eq!(first["items"].as_array().unwrap().len(), 32);
+    assert_eq!(last["items"].as_array().unwrap().len(), 8);
+    assert_eq!(first["items"][0]["id"], "id-39");
+    assert_eq!(last["items"][7]["id"], "id-00");
+    let found = store
+        .list(
+            0,
+            &Query {
+                search: " Look 00 ".into(),
+                ..query.clone()
+            },
+        )
+        .unwrap();
+    assert_eq!(found["items"].as_array().unwrap().len(), 1);
+    assert_eq!(found["items"][0]["id"], "id-39");
+    assert_eq!(found["total"], 1);
+    assert_eq!(found["catalog_total"], 40);
+    assert_eq!(found["pages"], 1);
+    assert!(
+        store
+            .list(
+                1,
+                &Query {
+                    search: "Look 00".into(),
+                    ..query.clone()
+                }
+            )
+            .is_err()
+    );
+    let empty = store
+        .list(
+            0,
+            &Query {
+                search: "no matching look".into(),
+                ..query
+            },
+        )
+        .unwrap();
+    assert_eq!(empty["total"], 0);
+    assert_eq!(empty["pages"], 1);
+    assert_eq!(empty["items"], json!([]));
+    let legacy = store
+        .list(
+            0,
+            &Query {
+                search: "Look 00".into(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    assert_eq!(legacy["items"], json!([]));
+    assert_eq!(legacy["total"], 40);
+    assert_eq!(legacy["pages"], 2);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_preset_browse_preserves_case_equivalent_id_order_invalid_records_archive_and_payloads() {
+    let (root, store, mut preset) = fixture();
+    for (id, name) in [
+        ("a", "beta"),
+        ("b", "Alpha"),
+        ("c", "alpha"),
+        ("d", "ALPHA"),
+    ] {
+        preset.name = name.into();
+        store.create(id, &preset).unwrap();
+    }
+    let original = store.export("a").unwrap();
+    std::fs::write(root.join("a.json.bak"), &original).unwrap();
+    let query = Query {
+        sort: Some(SortKey::Name),
+        ..Default::default()
+    };
+    let rows = store.list(0, &query).unwrap();
+    assert_eq!(
+        rows["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| row["id"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["b", "c", "d", "a"]
+    );
+    assert_eq!(rows["items"][3], store.item("a", false).unwrap());
+    assert_eq!(rows["items"][3]["can_restore_previous"], true);
+    assert!(
+        !serde_json::to_string(&rows)
+            .unwrap()
+            .contains(root.to_str().unwrap())
+    );
+    std::fs::write(root.join("broken.json"), b"not JSON").unwrap();
+    let outside = root.with_extension("outside");
+    std::fs::write(&outside, b"preserved outside bytes").unwrap();
+    std::os::unix::fs::symlink(&outside, root.join("link.json")).unwrap();
+    File::create(root.join("oversized.json"))
+        .unwrap()
+        .set_len(MAX_BYTES + 1)
+        .unwrap();
+    let all = store.list(0, &query).unwrap();
+    assert_eq!(all["total"], 7);
+    for id in ["broken", "link", "oversized"] {
+        assert!(
+            all["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|row| row["id"] == id && row["error"].is_string())
+        );
+    }
+    store
+        .edit(
+            "archive",
+            &Edit::Archive {
+                id: "b".into(),
+                revision: revision(&store, "b", false),
+            },
+        )
+        .unwrap();
+    let archived = store
+        .list(
+            0,
+            &Query {
+                archived: true,
+                ..query
+            },
+        )
+        .unwrap();
+    assert_eq!(archived["total"], 1);
+    assert_eq!(archived["items"][0]["id"], "b");
+    assert_eq!(archived["items"][0]["can_restore_previous"], false);
+    assert_eq!(store.export("a").unwrap(), original);
+    assert_eq!(std::fs::read(&outside).unwrap(), b"preserved outside bytes");
+    assert!(
+        root.join("link.json")
+            .symlink_metadata()
+            .unwrap()
+            .is_symlink()
+    );
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+    std::fs::remove_file(outside).unwrap();
+}
+
+#[test]
+fn native_preset_browse_strict_query_and_aggregate_metadata_budget_never_return_partial_results() {
+    let (root, store, preset) = fixture();
+    store.create("good", &preset).unwrap();
+    let parsed: Query =
+        serde_json::from_value(json!({"project_epoch":"epoch","sort":"name"})).unwrap();
+    assert_eq!(store.list(0, &parsed).unwrap()["sort"], "name");
+    for value in [
+        json!({"project_epoch":"epoch","sort":"duration"}),
+        json!({"project_epoch":"epoch","sort":"name","unknown":true}),
+    ] {
+        assert!(serde_json::from_value::<Query>(value).is_err());
+    }
+    assert!(store.list(usize::MAX, &parsed).is_err());
+    assert!(
+        store
+            .list(
+                0,
+                &Query {
+                    search: "x".repeat(129),
+                    ..parsed.clone()
+                }
+            )
+            .is_err()
+    );
+    for index in 0..4 {
+        File::create(root.join(format!("budget-{index}.json")))
+            .unwrap()
+            .set_len(MAX_BYTES)
+            .unwrap();
+    }
+    let original = store.export("good").unwrap();
+    assert_eq!(
+        store.list(0, &parsed).unwrap_err().1,
+        "PRESET_CATALOG_BUDGET"
+    );
+    assert_eq!(store.export("good").unwrap(), original);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn fixture() -> (std::path::PathBuf, Store, Preset) {
     let root = std::env::temp_dir().join(format!(
         "venturi-presets-{}-{}",

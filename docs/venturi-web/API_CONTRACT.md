@@ -782,12 +782,22 @@ Broader GUI lifecycle, physical drag acceptance and cross-project runtime remain
 separate qualification.
 
 `GET /api/v1/presets` and `/presets/pages/{page}` accept
-`{project_epoch,search?,archived?}`. Each zero-based source page opens at most 32
+`{project_epoch,search?,archived?,sort?}`. Without `sort`, each zero-based source page opens at most 32
 preset files, with a 4 MiB per-file limit and 10000-name browsing budget. Search
 filters that source page; `pages` and `total` describe source files. The panel
 advances through empty search pages with cancellation between reads. Items carry
 ID, SHA-256 revision, native options/format, source video/audio presence and
 shortcut metadata, without full source clips or numeric native IDs.
+
+Explicit `sort=name` filters the complete bounded catalog before native
+alphabetical ordering and32-row paging. Case-equivalent names retain ascending
+catalog ID order, matching the native stable lowercase-name sort. `total` and
+`pages` describe matching rows; `catalog_total` counts all active or archived
+candidates. The scan is limited to10000 entries,4MiB per record and16MiB total
+metadata; excess returns `PRESET_CATALOG_BUDGET`, never a partial catalog.
+Invalid records remain discoverable. Only selected rows inspect previous-copy
+availability; no source media is opened. The panel requests this global mode
+and retains legacy empty-page scanning only for responses without catalog_total.
 
 `GET /presets/items/{id}?project_epoch=...` reads active metadata;
 `GET /presets/items/{id}/download?project_epoch=...` returns native JSON bytes as a
@@ -809,8 +819,18 @@ validated canonical string. Existing unknown imported strings can be kept but
 are not claimed readable by the current native desktop parser. The named
 preset is the only entry changed; no other preset loses a shortcut implicitly.
 Saving/editing disables its old browser binding and never enables a new one.
-Browser activation remains a separate session-local Enable action with the
-existing conflict-filtered Ctrl+Alt+Shift+letter subset. Update creates a previous copy;
+Browser activation remains a separate session-local Enable action. Native letters,
+digits, symbols, navigation and F1–F24 bindings can activate when receivable and
+not reserved by native editor defaults or actual browser/editor handlers.
+Ctrl maps to command/Meta where appropriate; complete chords, including logical
+symbol/Shift overlap, determine duplicate admission. Unsupported/dedicated system
+keys and conflicts retain their desktop value and show a specific reason.
+Hidden pages, open dialogs/menus/listboxes, editable controls, local keyboard
+owners, composition, AltGraph, repeated keys and noncancelable events cannot
+activate a binding. Epoch/revision changes and rejected writes revoke activation;
+no binding is enabled implicitly by saving. External customized desktop keymaps
+are not exposed by the native catalog and are not claimed mirrored here.
+Update creates a previous copy;
 restore_previous atomically swaps active/previous files. Archive is recoverable.
 Delete removes only the exact active or archived record captured by the
 confirmation. Its opposite state and previous copy remain untouched; applied

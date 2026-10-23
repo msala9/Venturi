@@ -53,6 +53,24 @@ pub struct Query {
     pub search: String,
     #[serde(default)]
     pub archived: bool,
+    #[serde(default)]
+    pub sort: Option<SortKey>,
+}
+#[derive(Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SortKey {
+    Name,
+}
+fn browse_budget() -> ApiError {
+    ApiError::conflict(
+        "PRESET_CATALOG_BUDGET",
+        "Preset browsing exceeds its 16 MiB metadata budget",
+    )
+}
+fn item_value(id: &str, archived: bool, revision: &str, preset: &Preset) -> Value {
+    json!({"id":id,"revision":revision,"name":preset.name,"attributes":preset.attributes,"anchor":preset.anchor,
+        "append_filters":preset.append_filters,"shortcut":preset.shortcut,"fps":preset.fps,"resolution":preset.resolution,
+        "video":preset.video.is_some(),"audio":preset.audio.is_some(),"archived":archived,"can_restore_previous":false})
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "action", rename_all = "snake_case", deny_unknown_fields)]
@@ -553,6 +571,9 @@ impl Store {
             .store(true, std::sync::atomic::Ordering::Release);
     }
     fn raw(&self, file_name: &str) -> Result<Option<Raw>> {
+        self.raw_budgeted(file_name, None)
+    }
+    fn raw_budgeted(&self, file_name: &str, mut budget: Option<&mut u64>) -> Result<Option<Raw>> {
         let fd = match openat(
             &self.dir,
             file_name,
@@ -574,12 +595,26 @@ impl Store {
                 "Presets must be regular files within 4 MiB",
             ));
         }
+        let read_limit = if let Some(remaining) = budget.as_deref() {
+            if meta.len() > *remaining {
+                return Err(browse_budget());
+            }
+            MAX_BYTES.min(*remaining)
+        } else {
+            MAX_BYTES
+        };
         let identity = crate::source::file_identity(&file)?;
         let mut bytes = Vec::new();
         (&file)
-            .take(MAX_BYTES + 1)
+            .take(read_limit + 1)
             .read_to_end(&mut bytes)
             .map_err(|_| ApiError::io())?;
+        if let Some(remaining) = budget.as_mut() {
+            if bytes.len() as u64 > **remaining {
+                return Err(browse_budget());
+            }
+            **remaining -= bytes.len() as u64;
+        }
         if bytes.len() as u64 > MAX_BYTES || crate::source::file_identity(&file)? != identity {
             return Err(ApiError::conflict(
                 "PRESET_CHANGED",
@@ -691,27 +726,27 @@ impl Store {
             .ok_or_else(ApiError::missing)?;
         Ok(match parse(&raw.bytes) {
             Ok(preset) => {
-                let backup_name = format!("{id}.json.bak");
-                let previous = if archived {
-                    false
-                } else {
-                    openat(
-                        &self.dir,
-                        backup_name.as_str(),
-                        OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
-                        Mode::empty(),
-                    )
-                    .ok()
-                    .map(File::from)
-                    .and_then(|file| file.metadata().ok())
-                    .is_some_and(|meta| meta.is_file() && meta.len() <= MAX_BYTES)
-                };
-                json!({"id":id,"revision":raw.revision,"name":preset.name,"attributes":preset.attributes,"anchor":preset.anchor,"append_filters":preset.append_filters,"shortcut":preset.shortcut,"fps":preset.fps,"resolution":preset.resolution,"video":preset.video.is_some(),"audio":preset.audio.is_some(),"archived":archived,"can_restore_previous":previous})
+                let mut value = item_value(id, archived, &raw.revision, &preset);
+                value["can_restore_previous"] = json!(self.has_previous(id, archived));
+                value
             }
             Err(error) => {
                 json!({"id":id,"revision":raw.revision,"name":id,"error":error.2,"archived":archived})
             }
         })
+    }
+    fn has_previous(&self, id: &str, archived: bool) -> bool {
+        !archived
+            && openat(
+                &self.dir,
+                format!("{id}.json.bak").as_str(),
+                OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+                Mode::empty(),
+            )
+            .ok()
+            .map(File::from)
+            .and_then(|file| file.metadata().ok())
+            .is_some_and(|meta| meta.is_file() && meta.len() <= MAX_BYTES)
     }
     pub fn list(&self, page: usize, query: &Query) -> Result<Value> {
         let _guard = self.catalog_lock(false)?;
@@ -726,9 +761,15 @@ impl Store {
             ".json"
         };
         let mut names = Vec::new();
-        for entry in std::fs::read_dir(format!("/proc/self/fd/{}", self.dir.as_raw_fd()))
+        for (index, entry) in std::fs::read_dir(format!("/proc/self/fd/{}", self.dir.as_raw_fd()))
             .map_err(|_| ApiError::io())?
+            .enumerate()
         {
+            if query.sort.is_some() && index >= 10000 {
+                return Err(ApiError::invalid(
+                    "Preset library exceeds the 10000-entry browsing budget",
+                ));
+            }
             let entry = entry.map_err(|_| ApiError::io())?;
             let file_name = entry.file_name().to_string_lossy().into_owned();
             if let Some(id) = file_name.strip_suffix(suffix)
@@ -743,6 +784,9 @@ impl Store {
             }
         }
         names.sort();
+        if query.sort.is_some() {
+            return self.sorted_list(page, query, names);
+        }
         let total = names.len();
         let pages = total.div_ceil(32).max(1);
         let start = page
@@ -773,6 +817,58 @@ impl Store {
         }
         Ok(
             json!({"project_epoch":query.project_epoch,"page":page,"pages":pages,"page_size":32,"total":total,"archived":query.archived,"items":items}),
+        )
+    }
+    fn sorted_list(&self, page: usize, query: &Query, names: Vec<String>) -> Result<Value> {
+        let catalog_total = names.len();
+        let search = query.search.trim().to_lowercase();
+        let mut budget = crate::asset_journal::MAX_METADATA;
+        let mut rows = Vec::new();
+        for id in names {
+            let row = match self.raw_budgeted(&name(&id, query.archived)?, Some(&mut budget)) {
+                Ok(Some(raw)) => match parse(&raw.bytes) {
+                    Ok(preset) => item_value(&id, query.archived, &raw.revision, &preset),
+                    Err(error) => {
+                        json!({"id":id,"revision":raw.revision,"name":id,"error":error.2,"archived":query.archived})
+                    }
+                },
+                Ok(None) => continue,
+                Err(error) if error.1 == "PRESET_CATALOG_BUDGET" => return Err(error),
+                Err(error) => json!({"id":id,"name":id,"error":error.2,"archived":query.archived}),
+            };
+            if search.is_empty()
+                || id.to_lowercase().contains(&search)
+                || row["name"]
+                    .as_str()
+                    .unwrap_or("")
+                    .to_lowercase()
+                    .contains(&search)
+            {
+                rows.push(row);
+            }
+        }
+        // The desktop preserves catalog ID order for case-equivalent names.
+        rows.sort_by_cached_key(|row| row["name"].as_str().unwrap_or("").to_lowercase());
+        let total = rows.len();
+        let pages = total.div_ceil(32).max(1);
+        if page >= pages {
+            return Err(ApiError::invalid("Preset page is beyond the last page"));
+        }
+        let mut items = rows
+            .into_iter()
+            .skip(page * 32)
+            .take(32)
+            .collect::<Vec<_>>();
+        for row in &mut items {
+            if row.get("error").is_none() {
+                let id = row["id"].as_str().ok_or_else(ApiError::missing)?;
+                let previous = self.has_previous(id, query.archived);
+                row["can_restore_previous"] = json!(previous);
+            }
+        }
+        Ok(
+            json!({"project_epoch":query.project_epoch,"page":page,"pages":pages,"page_size":32,"total":total,
+            "catalog_total":catalog_total,"archived":query.archived,"sort":query.sort,"items":items}),
         )
     }
     pub fn edit(&self, command_id: &str, edit: &Edit) -> Result<()> {

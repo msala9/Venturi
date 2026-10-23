@@ -128,9 +128,9 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
     try{
       let result,scan=wanted;
       while(true){
-        result=await api(`/presets/pages/${scan}?${new URLSearchParams({project_epoch:context.epoch,search,archived:String(archived)})}`,undefined,{signal:controller.signal});
+        result=await api(`/presets/pages/${scan}?${new URLSearchParams({project_epoch:context.epoch,search,archived:String(archived),sort:'name'})}`,undefined,{signal:controller.signal});
         if(!active || token!==sequence || context.epoch!==getContext()?.epoch)return false;
-        const following=scan+direction;if(!search || result.items.length || following<0 || following>=result.pages)break;
+        const following=scan+direction;if(result.catalog_total!==undefined || !search || result.items.length || following<0 || following>=result.pages)break;
         message(`Searching preset page ${scan+1} of ${result.pages}…`);scan=following;
       }
       loadedEpoch=context.epoch;page=result.page;pages=result.pages;list.replaceChildren(...result.items.map((item,index)=>new Option(`${item.name}${item.error?` · ${item.error}`:''}`,String(index))));

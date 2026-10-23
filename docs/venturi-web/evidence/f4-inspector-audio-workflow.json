@@ -1,0 +1,141 @@
+{
+  "date": "2026-10-23",
+  "source_commit": "124fbb4",
+  "url": "http://127.0.0.1:8854/",
+  "service": "venturi-web-halo1-inspector-audio.service",
+  "pid": "235628",
+  "binary_sha256": "bee956b2c6c2a4b41d7eeeaad2e17534df01437f159eacac9b052817c2782287",
+  "project": "Venturi_Inspector_Audio_V1.vvproj",
+  "project_sha256": "f4a627fa7e21484f069f7c9348a209a53bede8be4140758c9363acd6ba645d3d",
+  "viewport": {
+    "width": 775,
+    "height": 964,
+    "device_pixel_ratio": 1.25
+  },
+  "gate": {
+    "native_cases_passed": 4,
+    "client_cases_unique_passed": 100,
+    "first_pass": {
+      "native_passed": 4,
+      "client_passed": 98,
+      "client_failed": 1,
+      "failure": "Queued solid-color apply survived reusable owner cancellation; corrected with local dispatch sequence."
+    },
+    "affected_rerun": {
+      "client_passed": 62,
+      "client_failed": 0
+    },
+    "formatting": "passed",
+    "javascript_syntax": "passed",
+    "all_target_clippy_seconds": 8.18,
+    "embedded_build_seconds": 41.2,
+    "maximum_observed_memory_bytes": 2048860160,
+    "source_hashes": {
+      "crates/vv-web/src/audio.rs": "535dfa02a40b07b79916ea320c39232db7c4d338ee2b8161c0ecde1296ea58db",
+      "crates/vv-web/src/commands.rs": "4a17b15b099cdb25aa852c6b488424e3dfc625c5a9302b681e3eed5e19d4da43",
+      "crates/vv-web/src/tests/audio.rs": "b188def9e2a077dc2dba711a0799c7d3c22f2c7fb1ebbb038b0dedf510001a87",
+      "web/js/color-picker.js": "e417322e354a360190b5851e34e53ae81b0d834edfc060e4c25a7a0672c1dd9f",
+      "web/js/inspector.js": "e0bc32adc30bb4e20db931590ea31cf291e6d0d315bc900efb4ae57be42e2f68",
+      "web/js/main.js": "c9725682f3955b89f91cd86fe99106cb0b9964d11b036b415445a7c715054f37",
+      "web/style/app.css": "cfb0a08a68d57ee649ad409704cdb5178d23fb127c4f66b79a4fffc31aaae4f8",
+      "web/test/color-picker.test.js": "805288c1e13e6dc96ffa690b748766c5e56e2676eb77877192d57603fa29541d",
+      "web/test/inspector-selection.test.js": "95a879efee2f40ea5736c925f8c7139aaacb543e80f9318d51cc876e50d0c9d2",
+      "web/test/inspector.test.js": "41051735ff7eb4bbc9a968bdc02fa103026beb9b61d2e0382aea196234f7a2d4"
+    }
+  },
+  "production_fixes": [
+    "Selected Inspector cancel abandons drafts without disposing mounted controls; final disposal removes listeners.",
+    "Cancellation invalidates queued color writes before native dispatch; already dispatched and unknown-outcome writes retain guards.",
+    "Fully validated exact equal native audio chains return before command allocation and compound-cache synchronization, retaining Undo/Redo, generation and dirty state.",
+    "Compact Effects heading and readable full-width transition rows replace the permanent explanatory paragraph."
+  ],
+  "windows_workflow": {
+    "audio_unchanged_apply_after_undo": {
+      "session_sha256": "6eae78f518262f964b5bf5645ed945ec4401bd51eed5dd1e479ac09e1999f231",
+      "exact_session_timelines_history_generation_saved_bytes_and_proxy_retained": true,
+      "redo_bypasses_mono": true
+    },
+    "palette_drop": {
+      "replace_off": "refused without project/history/Saved change",
+      "replace_on": "Push10 Left curve0.78601694 -> CrossDissolve11 Right None curve0.5",
+      "single_native_undo_and_exact_redo": true,
+      "other_clip_models_unchanged": true
+    },
+    "duration_handle": {
+      "from_frames": 11,
+      "to_frames": 19,
+      "window_frames": [
+        22,
+        41
+      ],
+      "one_native_undo": true,
+      "exact_undo_and_redo": true
+    },
+    "selected_inspector": {
+      "typed_value_waited_for_explicit_enter": true,
+      "position_x_enter": 10,
+      "one_native_transform_undo_restores": 0
+    },
+    "save_reopen": {
+      "tracks_and_master_exact": true,
+      "all_saved_bytes_exact": true,
+      "raw_media_exact": true,
+      "other_three_timelines_exact": true,
+      "compound_hash_token_refresh": {
+        "1": [
+          "207",
+          "207"
+        ],
+        "9": [
+          "208",
+          "208"
+        ],
+        "12": [
+          "209",
+          "209"
+        ],
+        "14": [
+          "210",
+          "210"
+        ]
+      },
+      "final_saved_empty_undo": true
+    },
+    "all_three_palette_transitions_visible": true
+  },
+  "preservation": {
+    "prior_sessions": 38,
+    "prior_pids": 39,
+    "candidate_saved_files": 3,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "prior_checkpoint_saved_bytes_unchanged": {
+    "Venturi_Project_Media.vvproj": "3ca01987cd3d10b34b4e953e9b489fcaef0e258eb00db82e05452a28224f7db6",
+    "Venturi_Transition_Gestures_V1.vvproj": "3ca01987cd3d10b34b4e953e9b489fcaef0e258eb00db82e05452a28224f7db6"
+  },
+  "reused_evidence": [
+    "f3-retime-transitions-workflow.json: unchanged native render/audio/FullHD export pipeline",
+    "f3-transition-controls-workflow.json: native transition draft preview and direct controls"
+  ],
+  "explicit_remaining": [
+    "Window-blur/queued-color cancellation is deterministic regression coverage; no physical OS app-switch acceptance claimed.",
+    "Alt-copy pointer modifier and 100%/150% DPI qualification remain open.",
+    "Color luma/saturation numeric scrubbing and LowRange/HighRange native sliders remain a concrete next production block.",
+    "Compressor dynamics direct controls, representative audio/recording and full M7 acceptance remain open."
+  ],
+  "ledger": {
+    "done": 52,
+    "partial": 38,
+    "excluded": 2
+  },
+  "screenshots": [
+    "f4-inspector-audio-before.png",
+    "f4-audio-noop-redo.png",
+    "f4-inspector-audio-workspace.png"
+  ]
+}

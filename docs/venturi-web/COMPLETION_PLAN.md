@@ -32,6 +32,48 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
+Current Inspector/audio correction: **http://127.0.0.1:8854/**,
+source `124fbb4`, binary `bee956b2c6c2`, service
+`venturi-web-halo1-inspector-audio.service`, PID235628. The owned8854 candidate
+was Saved and explicitly reopened with empty Undo before its guarded upgrade;
+all38 earlier Sessions/39 PIDs remain unchanged.
+
+Window blur now cancels selected Inspector drafts without permanently disposing
+mounted controls. Final disposal removes numeric/slider/widget listeners.
+Queued color confirmation also honors cancellation before native dispatch;
+already dispatched writes and unknown outcomes keep their existing fences.
+Fully validated identical audio inserts, including empty chains, create no native
+command and skip compound-cache resynchronization, preserving Redo and dirty state.
+The Effects palette replaces its permanent paragraph with a compact heading and
+readable full-width rows; all three transitions fit the actual775x964/DPR1.25 UI.
+
+The focused gate passes4 native cases and100 unique client cases, reusing valid
+first-pass results. One existing solid-color cancellation regression initially
+failed; the affected62-case rerun passes after the local sequence fix. Formatting,
+syntax, all-target Clippy8.18s and build41.20s pass. Maximum observed memory is
+2,048,860,160 bytes; all10 source files match the gate. No local build or render.
+
+Actual Windows verifies unchanged Master Mono Apply after Undo leaves the exact
+Session/timelines/history/generation/Saved bytes/proxy unchanged, and Redo really
+bypasses the insert. Effects drag/drop refuses an occupied cut with Replace off;
+explicit Replace creates CrossDissolve11 over Push10 with one Undo and exact Redo.
+The actual duration handle changes11to19 frames/window22to41 with one Undo and
+exact Undo/Redo; other clip models stay unchanged. PositionX waits for explicit
+Enter, changes0to10 with one native Transform, and Undo restores0. Save/reopen
+retains tracks, master, raw media, all Saved bytes and the three other timelines.
+Only synthetic compound-media hash tokens refresh. Saved/reopened
+`Venturi_Inspector_Audio_V1.vvproj` has empty Undo; see
+`evidence/f4-inspector-audio-workflow.json` and its three screenshots.
+
+Actual transition palette replacement/duration-handle acceptance at125% is now
+closed. Physical Alt-copy and100%/150% mapping remain explicit. OS window switching
+is deterministic lifecycle regression coverage, not physical acceptance. Reuse
+the prior moving-video/native FullHD export proofs for unchanged engine behavior;
+no new export of this UI project is claimed. Next implement native Color luma/Sat
+scrubbing and LowRange/HighRange sliders, preserving independent crossing bounds;
+then compressor dynamics controls and the connected V1 audio qualification.
+The ledger remains **52 done /38 partial /2 excluded**; full F1-F7/M7 stays active.
+
 Current native transition-controls delivery: **http://127.0.0.1:8853/**,
 source `1e6d910`, binary `9d4623b93873`, service
 `venturi-web-halo1-transition-controls.service`, PID230298.

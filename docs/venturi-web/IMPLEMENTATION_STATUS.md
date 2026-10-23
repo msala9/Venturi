@@ -1,5 +1,21 @@
 # Implementation status
 
+## Inspector/audio cancellation and transition gestures — 2026-10-23
+
+Delivered `124fbb4` on halo1/8854. Selected Inspector draft cancellation keeps
+mounted controls usable; final disposal removes bindings. Queued color applies
+honor cancellation. Validated unchanged audio-chain Apply preserves Redo,
+generation, native compound caches and dirty state. The Effects palette is compact.
+
+The connected Windows workflow verifies unchanged Apply/Redo, actual transition
+palette blocked/explicit replacement, duration11to19 handle and exact Save/reopen.
+Four native/100 unique client cases, formatting, Clippy and build pass, preserving
+38 prior Sessions/39 PIDs and shared files. See COMPLETION_PLAN.md and
+`evidence/f4-inspector-audio-workflow.json` for the retained first failure, focused
+rerun, hashes, screenshots and explicit physical/Alt/DPI limits. Ledger52/38/2;
+full F1-F7/M7 remains active. Next production block: native Color scalar scrubs
+and LowRange/HighRange sliders, followed by compressor dynamics controls.
+
 ## V1 audio tradeoff — owner decision, 2026-10-23
 
 The owner explicitly accepted applying audio effects with video stopped and

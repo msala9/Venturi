@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "title": "Requested native audio-source confinement and V1 stopped-audio workflow",
+  "result": "passed_with_explicit_scope",
+  "source_commit": "fc2c041",
+  "delivery": {
+    "url": "http://127.0.0.1:8837/",
+    "host": "halo1",
+    "unit": "venturi-web-halo1-audio-source-fd.service",
+    "root": "/home/halo/VenturiWeb-audio-source-fd-20261023",
+    "binary_sha256": "4a2b7b7cd0bf4ab42eee20a0cd6bc785b6736d0cfe29e9b7df15d7f9ff161665",
+    "client_changed": false,
+    "previous_delivery_preserved": {
+      "port": 8836,
+      "source_commit": "83ccf82"
+    }
+  },
+  "scope": {
+    "delivered": [
+      "Optional native AudioSourceResolver through LevelCache for existing Program audition, scrub, fast-audio-window and meter rendering",
+      "Approved-root requested opens with decoder-owned FD leases, parent lineage and strong ctime witnesses",
+      "Resolver propagation through native Normalize, pitch/stretch and level-measure threads without Project path rewriting",
+      "Connected V1 stopped Gain/EQ edit, Undo/Redo, explicit Play, Save As/reopen and native export"
+    ],
+    "unchanged": [
+      "Desktop defaults",
+      "Source direct pinned audio path",
+      "Durable composed-movie/export native audio default path",
+      "Conservative audible metadata preflight, including out-of-window DSP dependencies"
+    ],
+    "not_claimed": [
+      "Uninterrupted live DSP editing or live PCM cursor/video-lease infrastructure",
+      "Delivery of the separate mixer-fader work",
+      "Full F4 or M7 acceptance",
+      "Physical audio/recording, representative/dense/DPI and remaining release qualification"
+    ],
+    "ledger": {
+      "done": 49,
+      "partial": 41,
+      "excluded": 2,
+      "changed": false
+    },
+    "owner_decision": "V1 audio/mix/FX edits may stop video. Resume explicitly with Play after the confirmed native edit."
+  },
+  "validation": {
+    "terminal_phase": "passed",
+    "unit_result": "success",
+    "main_pid_after_gate": 0,
+    "tests": {
+      "audition": 3,
+      "frame_sources": 7,
+      "native_audio": 4,
+      "total": 14
+    },
+    "formatting": "passed",
+    "all_target_clippy": "passed",
+    "embedded_build": "passed",
+    "javascript": "Unchanged; no new client gate for this binary.",
+    "correction_before_pass": "Initial test-only file-handle type mismatch corrected before the terminal passing gate.",
+    "limits": {
+      "cpu_quota_percent": 800,
+      "memory_max_bytes": 4294967296,
+      "swap_max_bytes": 0,
+      "oom_score_adjust": 1000,
+      "tasks_max": 128,
+      "runtime_max_seconds": 1500,
+      "nice": 19,
+      "io_weight": 10
+    },
+    "memory_peak_bytes": 1976766464,
+    "coverage": [
+      "Requested-only audio opens and lease release after decoder use",
+      "Symlink/FIFO/unapproved-path refusal without blocking",
+      "In-place changed bytes with restored mtime rejected by strong witnesses",
+      "Native nested, normalized and stretched PCM equality",
+      "Weak level-cache measurements discarded when the resolver is active",
+      "Resolver errors remain fatal in Normalize/pitch fallbacks and are shared with measure threads"
+    ]
+  },
+  "windows_and_api": {
+    "project_copy": "Venturi_Audio_V1.vvproj",
+    "master_gain_db": {
+      "before": 0,
+      "after": -6
+    },
+    "master_eq": {
+      "kind": "Equalizer",
+      "enabled": true,
+      "frequency_hz": 500,
+      "gain_db_before": 0,
+      "gain_db_after": -12
+    },
+    "pcm_samples": {
+      "baseline": {
+        "wav_bytes": 15404,
+        "sha256": "ff5fa4fe0e613cce33a4604a5c2863ede40c8298028c5a5e525eafca81340d89",
+        "rms_raw": 1248.7566534586679,
+        "peak_raw": 4825
+      },
+      "gain_only": {
+        "wav_bytes": 15404,
+        "sha256": "32a630a06af2c4b28b12021d85dbbb7958f8198a7c7c66a89862ea4561f5edb6",
+        "rms_raw": 625.8573996010725,
+        "peak_raw": 2418
+      },
+      "eq": {
+        "wav_bytes": 15404,
+        "sha256": "699d3bf80e32d967f257e00d8f719da2e96f564c76ea830ad460110dcf07a55d",
+        "rms_raw": 422.7434045230136,
+        "peak_raw": 1512
+      },
+      "undo_sha256": "32a630a06af2c4b28b12021d85dbbb7958f8198a7c7c66a89862ea4561f5edb6",
+      "reopened_sha256": "699d3bf80e32d967f257e00d8f719da2e96f564c76ea830ad460110dcf07a55d",
+      "undo_matches_gain_only": true,
+      "reopened_matches_eq": true
+    },
+    "program": {
+      "job_id": "1792742190351551231",
+      "state": "ready",
+      "generation": "5",
+      "revision": "ac76f0311a0ccf58",
+      "start_frame": 0,
+      "end_frame": 457,
+      "fps": {
+        "num": 24,
+        "den": 1
+      },
+      "width": 960,
+      "height": 540,
+      "audio_present": true,
+      "native_telemetry": {
+        "state": "available",
+        "sample_rate": 48000,
+        "bin_frames": 4096,
+        "bin_count": 224,
+        "inserts_available": true,
+        "insert": {
+          "channel": "master",
+          "index": 0,
+          "kind": "Equalizer"
+        }
+      },
+      "browser_eof": {
+        "position": 456,
+        "status": "End of timeline",
+        "paused": true,
+        "src_detached": true
+      },
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)"
+    },
+    "save_reopen": {
+      "saved": true,
+      "unsaved": false,
+      "history_labels": [],
+      "history_position": 0,
+      "timeline_id": "1",
+      "playhead": 0,
+      "generation": "0",
+      "project_sha256": "100a6b0e8ed957b3a48a0792264b8ab6147f38ac871a60990200597b740ed737",
+      "original_candidate": "Venturi_Project_Media.vvproj",
+      "original_candidate_sha256": "12970f8d8e06af114a582aa0a4572a9964946e18d1174c228539be8c07e082ed",
+      "original_candidate_unchanged": true
+    },
+    "export": {
+      "job_id": "1792742294499877919",
+      "state": "ready",
+      "durable": true,
+      "width": 1920,
+      "height": 1080,
+      "start_frame": 0,
+      "end_frame": 457,
+      "fps": {
+        "num": 24,
+        "den": 1
+      },
+      "audio": true,
+      "audio_codec": "aac",
+      "audio_bitrate_kbps": 128,
+      "audio_fast_coder": false,
+      "encoder": "X264",
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "elapsed_ms": 2029.506428,
+      "browser": {
+        "ended": true,
+        "paused": true,
+        "current_time_seconds": 19.05,
+        "duration_seconds": 19.05
+      }
+    },
+    "screenshot": "m7-audio-source-fd-workspace.jpg"
+  },
+  "preservation": {
+    "prior_sessions": 21,
+    "prior_pids": 22,
+    "saved_project_hashes": 9,
+    "original_files": 3,
+    "originals_and_protected_state_unchanged": true,
+    "shared_proxy_movie": {
+      "unchanged": true,
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "bytes": 2206043
+    },
+    "final_state": "Saved, timeline1/frame0, empty Undo",
+    "runtime_memory_peak_bytes": 535867392
+  },
+  "provenance": {
+    "private_proof_files": [
+      "halo1-audio-source-fd-r2-observed.json",
+      "halo1-audio-source-fd-r2-start.json",
+      "halo1-audio-source-fd-deployed.json",
+      "halo1-audio-source-fd-opened.json",
+      "halo1-audio-source-fd-final.json",
+      "halo1-audio-source-fd-protected.json",
+      "halo1-audio-source-fd-baseline-audio.json",
+      "halo1-audio-source-fd-gain-audio.json",
+      "halo1-audio-source-fd-eq-audio.json",
+      "halo1-audio-source-fd-undo-audio.json",
+      "halo1-audio-source-fd-reopened-audio.json",
+      "halo1-audio-source-fd-prepared-audio.json",
+      "halo1-audio-source-fd-browser-playback.json",
+      "halo1-audio-source-fd-browser-export-eof.json"
+    ],
+    "publication": "Compact extraction from the owner's completed bounded gate and Windows/API workflow. No sessions, spectra, credentials or raw PCM are embedded.",
+    "source_sha256": {
+      "crates/vv-session/src/audio_render.rs": "5a839106a74de8a9d816caf62d4954717cf2af64c398edda0aaf018f8fec7d7e",
+      "crates/vv-session/src/tests/audio_render.rs": "3d7db577ae8b2cb8817da3a10c42a28ce0952279eac593c047fabb457e83656e",
+      "crates/vv-web/src/audition.rs": "d061cf3749057a6bd837c615b51de5c6f2daf7bf24b26b2fe44b122305f86ead",
+      "crates/vv-web/src/frame_sources.rs": "eacd462e48ab50e979e25216eda06faf20ac972a09e08b6980d4f45afee6a069",
+      "crates/vv-web/src/tests/audition.rs": "92e349d814687546ce5f4fdc36793f5e3ab250428cf3da108e0553f6f62d1a8a",
+      "crates/vv-web/src/tests/frame_sources.rs": "88685e64903c58ee8420be343a16196d4b46de8bcb0c7b634c46ef0097a34063"
+    }
+  }
+}

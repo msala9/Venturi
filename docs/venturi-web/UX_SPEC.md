@@ -1,5 +1,38 @@
 # UX/UI specification — professional NLE with AI review
 
+## V1 audio tradeoff — owner decision, 2026-10-23
+
+The owner explicitly accepted applying audio effects with video stopped and
+asked that V1 avoid low-benefit live-edit complexity. Keep native DSP, mixer,
+insert ordering, parameters, presets and audio export in scope. Real-time mix/FX
+updates during uninterrupted Program playback are deferred beyond V1; they are
+not a prerequisite for these ordinary editing capabilities or a third excluded
+feature. The two existing NOT-PLANNED capability rows remain the only exclusions.
+
+For V1, pause Program before committing an audio/mixer/effect change, invalidate
+obsolete prepared audio/meters, preserve the playhead, and use explicit Play to
+prepare/hear the latest confirmed native mix. Never keep playing stale baked AAC
+as if it reflected an edit. Failed/unknown writes retain existing reconciliation
+and revision guards. Keep this interaction inside the Audio workspace; add no
+persistent Viewer controls. Verify one connected stop/edit/play/save/export flow.
+Retain any unshipped real-time prototype privately; do not ship unused cursors,
+video lease APIs or a second audio-routing architecture for this deferred detail.
+
+## Requested audio-source confinement — 2026-10-23
+
+`fc2c041` on halo1/8837 changes no client controls. Existing Program audition,
+scrub, fast-audio windows and meters use native requested-source FD leases and
+strong approved-path witnesses, without changing Project paths or DSP clocks.
+Source direct pinned audio and durable composed-movie/export audio keep their
+existing paths. Conservative audible preflight remains.
+
+The connected V1 stopped-edit workflow is verified: master Gain/EQ edits change
+native PCM; Undo returns the exact gain-only PCM, Redo restores EQ, explicit
+Play reaches the end with native telemetry, and Save As/reopen retains the EQ
+PCM with empty Undo. The Full HD audio export plays to EOF. This introduces no
+live cursor or persistent Viewer controls and makes no uninterrupted-live-DSP
+claim. See `evidence/m7-audio-source-fd-workflow.json` and its workspace image.
+
 ## Original-source preview recovery — 2026-10-23
 
 `83ccf82` on halo1/8836 retains the compact workspace. Program, scopes and Auto

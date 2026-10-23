@@ -1,5 +1,17 @@
 # Test strategy and test IDs
 
+## V1 audio acceptance decision — 2026-10-23
+
+The owner accepts audio/mix/effect changes with Program stopped. Qualify the
+connected pause/edit/explicit-Play flow: the native command is confirmed once,
+the playhead remains, old prepared audio/meters are invalidated, and next Play
+uses the updated native DSP. Include a failed/unconfirmed edit, Undo/Redo, Saved
+reopen and matching export where affected. Reuse existing DSP/effect coverage.
+Uninterrupted audio edits, native continuous PCM cursors and separate video
+leases are deferred beyond V1; do not build or qualify that architecture now.
+Physical device/recording and other existing capability requirements remain
+separate and explicit. No local build/render/test fleet is authorized.
+
 ## Active full-plan qualification — 2026-10-23
 
 [COMPLETION_PLAN.md](COMPLETION_PLAN.md) controls F1–F7 full-plan completion.
@@ -10,7 +22,27 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
-M7 requested original video/still sources (`83ccf82`, halo1/8836):96 distinct
+M7 requested audio sources (`fc2c041`, halo1/8837): **14 cases** pass: 3 audition,
+7 frame-source adapter and 4 native audio. Formatting, all-target Clippy and
+embedded build pass; no client changes require a new JavaScript gate. The first
+test-only file-handle type mismatch was corrected before the terminal pass.
+The bounded worker uses at most 8 CPUs/4 GiB/no swap and peaks at 1,976,766,464 bytes.
+Coverage includes requested-only audio leases, unsafe-source refusal, strong
+restored-mtime witnesses, native nested/Normalize/pitch PCM equality and shared
+resolver failures across level-measure threads. Conservative audible metadata
+preflight remains; durable composed-movie/export audio defaults are unchanged.
+
+Actual Windows/API verification covers stopped master Gain 0 to -6 dB and native
+500 Hz EQ 0 to -12 dB, changed PCM, exact gain-only PCM after Undo, Redo, explicit
+Program Play with native insert telemetry and EOF 456 of 457 frames. Save As and
+reopen retain the exact EQ PCM and empty Undo. The native 1920x1080/24 fps AAC
+export reaches browser EOF at 19.05 seconds. Final state is Saved/frame 0; the
+original candidate and 21 prior Sessions/22 PIDs/nine Saved hashes/three
+originals/shared proxy movie remain unchanged. This verifies the connected V1
+stopped-audio workflow, not live DSP or all F4/M7 acceptance. See
+`evidence/m7-audio-source-fd-workflow.json` and its workspace image.
+
+M7 requested original video/still sources (`83ccf82`, preserved halo1/8836):96 distinct
 native cases pass (98 executions,two overlapping cases); formatting, all-target
 Clippy for vv-web/vv-session and embedded build pass. Five adapter cases exercise
 touched-only opens, root/parent/strong-ctime identity, decoder leases, proxy
@@ -32,8 +64,9 @@ Saved hashes match. Final candidate is Saved/frame0/empty Undo. Runtime peak
 296288256 bytes; worker sampled peak1907732480 bytes is not a terminal maximum.
 The4GiB/swap0 limit and successful terminal unit are recorded. No new Windows
 build, browser install, halo2 or NAS operation. See
-`evidence/m7-original-frame-sources-workflow.json`. Native requested audio
-confinement and broader representative/dense/DPI/physical/M7 gates remain open.
+`evidence/m7-original-frame-sources-workflow.json`. Requested audio confinement
+for existing audition/scrub/fast-window/meters is delivered in fc2c041 above;
+broader representative/dense/DPI/physical/M7 gates remain open.
 
 M7 degraded proxy cache (`b588603`, halo1/8835): 14 affected client cases and
 21 native proxy cases pass, plus formatting/all-target Clippy/embedded build.

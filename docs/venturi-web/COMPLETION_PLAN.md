@@ -1,5 +1,23 @@
 # Active completion plan — full Venturi Web scope
 
+## V1 audio tradeoff — owner decision, 2026-10-23
+
+The owner explicitly accepted applying audio effects with video stopped and
+asked that V1 avoid low-benefit live-edit complexity. Keep native DSP, mixer,
+insert ordering, parameters, presets and audio export in scope. Real-time mix/FX
+updates during uninterrupted Program playback are deferred beyond V1; they are
+not a prerequisite for these ordinary editing capabilities or a third excluded
+feature. The two existing NOT-PLANNED capability rows remain the only exclusions.
+
+For V1, pause Program before committing an audio/mixer/effect change, invalidate
+obsolete prepared audio/meters, preserve the playhead, and use explicit Play to
+prepare/hear the latest confirmed native mix. Never keep playing stale baked AAC
+as if it reflected an edit. Failed/unknown writes retain existing reconciliation
+and revision guards. Keep this interaction inside the Audio workspace; add no
+persistent Viewer controls. Verify one connected stop/edit/play/save/export flow.
+Retain any unshipped real-time prototype privately; do not ship unused cursors,
+video lease APIs or a second audio-routing architecture for this deferred detail.
+
 2026-10-22. The owner resumed the full implementation plan after accepting the
 usable editing workflow. This file now controls the work order. DELIVERY_PLAN.md
 and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
@@ -14,7 +32,39 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8836/**, source `83ccf82`,
+The current halo1 delivery is **http://127.0.0.1:8837/**, source `fc2c041`,
+binary `4a2b7b7cd0bf`, in `venturi-web-halo1-audio-source-fd.service`.
+An optional native audio resolver now confines the existing Program audition,
+scrub, fast-audio-window and meter paths to requested approved-root sources.
+Decode leases retain pinned FDs; parent lineage and strong ctime witnesses
+reject substitution, including restored-mtime changes. Native Normalize/pitch
+paths share the resolver without rewriting Project paths. Conservative audible
+metadata preflight remains, including out-of-window DSP dependencies. Desktop
+defaults and durable composed-movie/export audio keep their existing native path.
+
+The bounded halo1 gate passes **14 cases** (3 audition, 7 frame-source adapter,
+4 native audio), formatting, all-target Clippy and embedded build; client code
+is unchanged. The initial test-only file-handle type mismatch was corrected before
+the terminal pass. Worker peak is 1,976,766,464 bytes within the 4 GiB/no-swap cap.
+Actual Windows/API verification applies master Gain 0 to -6 dB and native
+500 Hz EQ 0 to -12 dB while stopped. Undo reproduces the exact gain-only PCM
+hash; Redo restores EQ. Explicit Play prepares the confirmed mix with native
+insert telemetry and reaches frame 456 of 457. Save As/reopen preserves the EQ
+PCM hash with empty Undo; the native Full HD 457-frame export reaches browser
+EOF at 19.05 seconds. Final state is Saved at frame 0 in
+`Venturi_Audio_V1.vvproj`; the original candidate file remains unchanged.
+All 21 earlier Sessions, 22 PIDs, nine Saved hashes, three originals and the shared
+proxy movie are preserved. See `evidence/m7-audio-source-fd-workflow.json` and
+`evidence/m7-audio-source-fd-workspace.jpg`.
+
+Ledger remains **49 done / 41 partial / 2 excluded**. This qualifies the connected
+V1 stopped-audio edit/play/save/export workflow, not full F4 or M7. Uninterrupted
+live DSP is deferred by the owner decision above; representative/dense/DPI,
+physical-device and other functional/release requirements remain explicit.
+No live cursor/video-lease infrastructure is included in this delivery.
+Mixer-fader work remains separate.
+
+Preserved requested original video/still delivery: **http://127.0.0.1:8836/**, source `83ccf82`,
 binary `05a3c90beea0`, in `venturi-web-halo1-frame-sources.service`.
 Native preview decoders now open only requested original video/still sources
 through the approved root, retain their FDs through decode and record parent/
@@ -38,9 +88,10 @@ All20 earlier Sessions,21 PIDs,eight Saved hashes and the shared proxy movie are
 preserved. See `evidence/m7-original-frame-sources-workflow.json` and workspace image.
 
 Ledger remains **49 done / 41 partial / 2 excluded**; full F1-F7/M7 stays active.
-Original audio decode confinement remains separate: preview audio preflight
-conservatively retains the native audible closure, including out-of-window
-pitch/Normalize/DSP dependencies. Continue representative/dense/DPI/physical
+Requested audio confinement for existing audition/scrub/fast-window/meters is
+delivered in fc2c041 above. Preview preflight conservatively retains the native
+audible closure, including out-of-window pitch/Normalize/DSP dependencies.
+Continue representative/dense/DPI/physical
 acceptance and remaining functional/release blocks; do not claim all M7 complete.
 
 Preserved degraded proxy-cache delivery: **http://127.0.0.1:8835/**, source `b588603`,
@@ -66,7 +117,8 @@ empty Undo. Reuse existing playback/export evidence. See
 `evidence/m7-proxy-cache-recovery-workflow.json` and the degraded/workspace images.
 Ledger remains **49 done / 41 partial / 2 excluded**; full F1-F7/M7 remains active.
 Requested video/still FD pinning and cache-hit validation are delivered in
-83ccf82 above. Audio confinement and broader release qualification remain.
+83ccf82 above; requested audition/scrub/fast-window/meter audio in fc2c041.
+Broader release qualification remains.
 
 Preserved native Media interaction delivery: **http://127.0.0.1:8833/**, source `9e00d2c`,
 binary `899e9aacc94f`, in `venturi-web-halo1-media-interactions-r2.service`.
@@ -105,7 +157,8 @@ publication uses the qualified pipeline but was not exercised against the NAS.
 The ledger remains **49 done / 41 partial / 2 excluded**: this completes the pool
 interaction follow-up, not a new coarse capability. Full F1-F7/M7 remains active.
 The degraded-cache follow-up is delivered in b588603 and requested video/still
-FD pinning in83ccf82 above. Audio confinement and broader release work remain.
+FD pinning in83ccf82 and requested audition/scrub/fast-window/meter audio in
+fc2c041 above. Broader release work remains.
 
 Preserved durable proxy-cache delivery: **http://127.0.0.1:8831/**, source `6764b2d`,
 binary `4a11e6f7c63e`, in `venturi-web-halo1-proxy-durable.service`.
@@ -134,7 +187,7 @@ Full F1-F7/M7 remains active. Malformed/foreign cache files and pre-intent crash
 leftovers are preserved/refused; arbitrary-power-loss automatic recovery is not
 claimed. Source browser/audio conversion and its broader acceptance remain in
 Source capabilities. The pool interaction follow-up is delivered above. Keep
-requested audio source confinement, representative/dense/DPI/physical acceptance
+the remaining audio-source boundaries, representative/dense/DPI/physical acceptance
 and other F1-F7/M7 work explicit.
 
 Preserved initial proxy workflow: halo1/8830, source `a95b4a6`, binary `f8fe8912da80`.
@@ -468,7 +521,9 @@ shared cache, source binding, leases and process-restart reuse are delivered in
 6764b2d; see `evidence/f2-native-proxies-durable-workflow.json`.
 `proxy_quality_settings` is accepted. Pool interactions are delivered in9e00d2c;
 degraded-cache recovery in b588603 and requested video/still binding in83ccf82.
-Continue requested audio confinement and representative-media acceptance. All41 partial
+Requested audition/scrub/fast-window/meter audio confinement is delivered in
+fc2c041. Continue representative-media acceptance and the remaining native
+audio-source boundaries. All41 partial
 ledger rows and physical/M7 gates remain active. Unknown cache contents are
 preserved; do not infer arbitrary crash cleanup or full M7 recoverability.
 
@@ -514,10 +569,12 @@ Rust/CIFS evidence is reused. Actual Windows checks cover both wide plots,
 520-pixel first-slot layout, live peaks, draft retention through EOF, one-entry
 Apply, exact Undo/Redo, Solo/Mute and Save. The candidate on 8816 retains the
 verified Saved project; 8813 remains untouched. See
-`evidence/f4-native-guides-inline-mixer-workflow.json`. Mix/effect edits still
-stop the prepared Program, and inline displays clear on pause/end. Implement
-the remaining native live-edit behavior and physical audio/recording acceptance
-before advancing the full F4 rows. The ledger remains 47/43/2.
+`evidence/f4-native-guides-inline-mixer-workflow.json`. V1 mix/effect edits stop the prepared Program; the owner accepted this tradeoff
+on2026-10-23. Uninterrupted live DSP edits are deferred beyond V1. The supported
+stop/edit/explicit-Play/Undo/Redo/Save/reopen/export flow is verified in
+`evidence/m7-audio-source-fd-workflow.json`. Remaining audio/recording acceptance
+and honest paused/EOF meter presentation stay explicit without adding a new
+streaming engine. The current ledger remains 49 done/41 partial/2 excluded.
 
 ### F5 — shared media and presets
 
@@ -705,19 +762,26 @@ disable uses originals. Uncaptured lookup errors can fall back only after curren
 original approval/version checks; already captured changed leases remain errors.
 Unknown cache files are preserved and recovery requires a fresh healthy catalog.
 This does not provide arbitrary crash cleanup. Requested video/still binding is
-delivered below; requested native audio confinement remains separate.
+delivered below; the requested audio adapter is recorded separately.
 
 Requested original video/still confinement and touched-source cache validation
 are delivered in83ccf82/halo1/8836 using additive native resolver APIs. Program,
 scopes and Auto Balance pin actual native decoder requests; native compound and
 crossing traversal shares that provider. The focused gate and actual cache
 replacement probes are recorded above. No broad new compound/transition GPU
-matrix is claimed. Audio and durable export retain their existing native paths.
-Requested audio decode confinement remains an M7 production task. The current
-preview preflight conservatively covers audible source dependencies because
-pitch correction, Normalize and DSP prefix replay can read outside the visible
-video window. Implement that at the native audio source boundary; do not rewrite
-project media paths or approximate native clocks in the Web adapter.
+matrix is claimed. Durable composed-movie/export audio retains its existing
+native path.
+
+Requested audio decode confinement for existing Program audition, scrub,
+fast-audio windows and meters is delivered in fc2c041/halo1/8837. The optional
+native LevelCache resolver pins actual decode/Normalize/pitch requests, shares
+strong source witnesses and retains leases through file use; Project paths and
+native clocks are unchanged. The 14-case gate and connected Windows V1 workflow
+are recorded in `evidence/m7-audio-source-fd-workflow.json`. Preview metadata
+preflight still conservatively covers audible out-of-window dependencies.
+This is not a claim that durable composed-movie/export audio has moved to the
+resolver, or that physical-device, representative/dense/DPI and full M7
+qualification is complete.
 
 ## Execution and verification policy
 

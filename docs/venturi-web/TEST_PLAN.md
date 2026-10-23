@@ -22,6 +22,14 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F3 Effects/Title (`4ad4ad1`, halo1/8842): see
+`evidence/f3-palette-fonts-workflow.json`. 40 native / 111 client cases, formatting,
+all-target Clippy and build pass. The JS-only monochrome click correction passes
+syntax/embedded rebuild and actual click/Undo/Redo, reusing unchanged checks.
+Actual 1280x720 Windows edits/Save/reopen/native 701-frame Full HD export and
+29.226-second exported-file EOF pass. Physical HTML drag/DPI and native hover
+preview remain explicit; no unchanged renderer/audio/transport matrix is repeated.
+
 F5 shared originals (`dc42d2a`, halo1/8840): **56 distinct native cases /
 59 executions** and **11 client cases** (6 top-level plus 5 subcases), formatting,
 all-target Clippy and embedded build pass. The first test-only missing Id import

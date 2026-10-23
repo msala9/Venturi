@@ -1,0 +1,166 @@
+{
+  "date": "2026-10-23",
+  "status": "partial_full_plan_functional_block",
+  "source_commit": "4ad4ad1",
+  "main_feature_commit": "086ad60",
+  "url": "http://127.0.0.1:8842/",
+  "unit": "venturi-web-halo1-effects-placement-r2.service",
+  "binary_sha256": "dfb6b7081bbd94101a2cbe107385884bb6cf70795fa26f61b1969507a53daa38",
+  "project": "Venturi_Effects_V1.vvproj",
+  "project_sha256": "218934c68a02615557119f7334aaf94955224473cbccaf7f166cc804ec5a5a05",
+  "frames": 701,
+  "fps": 24,
+  "resolution": [
+    1920,
+    1080
+  ],
+  "implemented": [
+    "Palette title/solid/adjustment drops reuse native five-second generators, safe targets/snapping, explicit overwrite and atomic new-track insertion.",
+    "Filter drop targets one unlocked pointer clip, adds or enables in place without losing keys/parameters/order; native BlackAndWhite entry.",
+    "Generator clicks choose a free unlocked video lane or create one instead of refusing because the first lane is occupied.",
+    "Lazy server-native family/style chooser uses the renderer database, caches successful/inflight reads, preserves unknown Saved values and native selected-title field-difference semantics. Manual fields remain collapsed."
+  ],
+  "gate": {
+    "native_cases": 40,
+    "client_cases": 111,
+    "formatting": true,
+    "clippy_all_targets_deny_warnings": true,
+    "embedded_build": true,
+    "gate_peak_bytes": 1945440256,
+    "initial_test_only_compile_correction": "ClipSource has no PartialEq; test uses matches!. No production compile failure.",
+    "ui_only_followup": "Actual browser found out-of-scope canEditInspector in monochrome click. 4ad4ad1 uses current module workspace state. JS syntax and embedded rebuild pass; unchanged 40 native/111 client/Clippy checks reused.",
+    "followup_peak_bytes": 1550626816
+  },
+  "actual_windows": [
+    "Existing Windows browser, one work tab; generator click inserts Title on V2 and Adjustment on V3 above occupied V1, each 120 frames at zero.",
+    "DejaVu Serif and Bold chosen from the real server catalog; text changed to Venturi · Native title fonts. Text Undo restores Title while retaining family/style; Redo restores the changed text.",
+    "Solid added safely at frame581 on V1 and RGBA changed to0.08/0.23/0.46/1; total701 frames. Seven existing original clips compare exactly unchanged.",
+    "Corrected monochrome click on Adjustment creates one Filters history entry; Undo removes it, Redo restores it.",
+    "Save As and actual reopen preserve native title/filter parameters and source paths. Final Saved with empty Undo and frame0.",
+    "Native Full HD H264/AAC export Ready701/701 with CPU decode/x264 and R9700 Vulkan composition; actual Windows file playback reaches natural EOF."
+  ],
+  "browser": {
+    "exportVideo": {
+      "duration": 29.226,
+      "ended": true,
+      "error": null,
+      "height": 1080,
+      "paused": true,
+      "time": 29.226,
+      "width": 1920
+    },
+    "fontFamily": "DejaVu Serif",
+    "fontStyle": "Bold",
+    "titleTextUndo": "Title",
+    "titleTextRedo": "Venturi · Native title fonts",
+    "physicalHtmlDragExercised": false,
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    }
+  },
+  "export": {
+    "cancel_requested": false,
+    "durability_error": false,
+    "durable": true,
+    "error": null,
+    "export_revision": "8f01f08498393abfb3a5c5375c0ac5e4904a45dd23be83ab85e827b19ca26368",
+    "frames": 0,
+    "id": "1792750675125657159",
+    "previous_state": null,
+    "program": {
+      "audio_present": true,
+      "end_frame": 701,
+      "export_settings": {
+        "audio": true,
+        "audio_bitrate_kbps": 128,
+        "audio_codec": "aac",
+        "audio_fast_coder": false,
+        "preset": "veryfast",
+        "quality": 18,
+        "scale_percent": 100
+      },
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "0",
+      "height": 1080,
+      "project_epoch": "1792750469730470405:2",
+      "revision": "084fe98069e4723b",
+      "start_frame": 0,
+      "width": 1920
+    },
+    "progress": {
+      "compose_fps": 454.14465083588345,
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "current_frame": 701,
+      "decode_fps": 438.3363973162144,
+      "decoder_fallback": false,
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)"
+        }
+      ],
+      "elapsed_ms": 3783.279186,
+      "encode_fps": 203.8757485363909,
+      "encoder": "X264",
+      "fps": 185.28899548149815,
+      "startup_ms": 114.80954200000001,
+      "total_frames": 701
+    },
+    "project_epoch": "1792750469730470405:2",
+    "source_asset": null,
+    "source_assets": null,
+    "source_version": null,
+    "source_window": null,
+    "state": "ready"
+  },
+  "runtime_peak_bytes": 495550464,
+  "protected": {
+    "prior_sessions": 26,
+    "prior_pids": 27,
+    "prior_saved_files": 19,
+    "candidate_saved_files": 2,
+    "nas_original_identity_and_bytes_unchanged": true,
+    "prior_effects_saved_and_seven_undo_steps_unchanged": true,
+    "candidate_local_originals_unchanged": 3
+  },
+  "saved_view_restore": {
+    "restored_sha256": "cd38a9b8628ec44bbfedd422c84a82df8901169eeeb2cf1a3c659a26783adf00",
+    "reason": "Browser pagehide persisted only playhead 457 to 580; exact original Saved bytes restored with hash/session guards",
+    "session_and_history_unchanged": true
+  },
+  "shared_proxy_movie_unchanged": true,
+  "screenshots": {
+    "f3-palette-fonts-workspace.jpg": {
+      "bytes": 103897,
+      "sha256": "baa935b6a816cbef0d4e6e4b83044465aec41442217b1f980cb44a0d85280955"
+    },
+    "f3-palette-fonts-export.jpg": {
+      "bytes": 120912,
+      "sha256": "a29757922e097492d48dcc224fec629b03ad4d581fb1d1ddec5cce4af3ba00ed"
+    }
+  },
+  "limits": {
+    "cpu_max": 8,
+    "memory_max_gib": 4,
+    "swap": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "gpu_lock": "nonblocking",
+    "host": "halo1",
+    "windows": "small source/Git/SSH and existing browser only"
+  },
+  "scope_limits": [
+    "Actual OS HTML drag, DPI/modifier/pointer acceptance remains open; deterministic timeline input and native command cases cover these new paths.",
+    "No menu-hover title preview; choices commit when confirmed. Native individual changed fields broadcast across selected titles.",
+    "Installed weight1000 is covered deterministically; this host actual chosen style is700. No fonts/browsers/drivers installed.",
+    "The unchanged 8841 candidate retains its Saved701-frame montage and seven Undo steps. Current corrected candidate reuses that Saved work instead of repeating it.",
+    "No repeat optical-flow/compound/mask/color/audio render matrix, sustained-media/dense/physical-device or full M7 acceptance. Reuse existing qualified unchanged renderer/transport evidence.",
+    "No durable-export source FD hardening or uninterrupted live DSP is claimed.",
+    "Ledger remains49 done/41 partial/2 excluded; full F1-F7 goal remains active."
+  ]
+}

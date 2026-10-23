@@ -32,7 +32,35 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8840/**, source `dc42d2a`,
+Current Effects/Title delivery: **http://127.0.0.1:8842/**, source `4ad4ad1`
+(main feature `086ad60`), binary `dfb6b7081bbd`, service
+`venturi-web-halo1-effects-placement-r2.service`. The Effects palette now places
+native Title/Solid/Adjustment generators on chosen timeline targets and applies
+filters to the pointer clip, adding or enabling them in place. Generator clicks
+choose a free unlocked video lane or add one. Track creation/insertion is one
+Undo; safe overlap, locks, linked/crossing and context guards remain. The native
+BlackAndWhite entry is available. Title typography discovers server-native
+families and styles lazily, preserving unknown Saved values and individual
+changed-field selection semantics; manual fields stay collapsed.
+
+The bounded gate passes 40 native and 111 client cases, formatting, all-target
+Clippy and embedded build (peak 1,945,440,256 bytes). Actual Windows found and fixed
+a monochrome click scope error; its JS-only rebuild reuses unchanged gate results.
+Actual browser editing creates all three generators, selects DejaVu Serif/Bold,
+verifies text and filter Undo/Redo, preserves seven original clips, and saves and
+reopens `Venturi_Effects_V1.vvproj` with empty Undo. The 701-frame Full HD H264/AAC
+export reaches actual browser EOF 29.226 seconds/ended=true, using x264/CPU decode
+and R9700 Vulkan composition. Current runtime peak is 495,550,464 bytes.
+All 26 earlier Sessions, 27 PIDs and 19 Saved files, local/NAS originals and shared
+proxy movie are preserved. A pagehide-only Saved playhead update was hash-guarded
+back to the exact previous Saved bytes without changing its Session/history.
+See `evidence/f3-palette-fonts-workflow.json` and workspace/export images.
+
+Physical HTML drag/DPI, menu-hover preview and full F1-F7/M7 acceptance are not
+claimed. Ledger stays **49 done / 41 partial / 2 excluded**. Heavy work remains
+halo1-only with 8 CPU/4 GiB/no swap and low priority; Windows uses one existing tab.
+
+Preserved shared-original delivery: **http://127.0.0.1:8840/**, source `dc42d2a`,
 binary `afa9c0ebffc6`, in `venturi-web-halo1-shared-originals.service`.
 Library now offers an explicit archived-original Reference through the configured
 read-only shared root, alongside the existing project copy. Qualified tokens bind
@@ -714,10 +742,11 @@ Full HD export workflow is recorded in `evidence/f5-shared-originals-workflow.js
 The 8839 editor and all earlier protected state remain preserved. Continue the
 full F1–F7 scope rather than treating further NAS micro-refinement as the goal.
 
-A source-only startup follow-up uses the native asset store's canonical root
+The startup follow-up `f25722d` uses the native asset store's canonical root
 when granting read access, preserving relative `--assets-root` configuration.
-The qualified absolute NAS deployment remains dc42d2a; include that small
-compatibility correction in the next bundled integration build.
+It is included in the current `4ad4ad1` bundled delivery; the preserved absolute
+NAS deployment on8840 remains dc42d2a.
+
 
 Retain the existing ds4-appliance HTTP catalog and actual NAS evidence. Complete
 native preset/compound asset sharing and its deployment/UX qualification with

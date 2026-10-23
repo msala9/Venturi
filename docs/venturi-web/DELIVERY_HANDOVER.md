@@ -1,6 +1,36 @@
 # Usable editing workflow — handover
 
-## Updated working version — 2026-10-22
+## Current halo1 Effects and Title delivery — 2026-10-23
+
+Current Effects/Title delivery: **http://127.0.0.1:8842/**, source `4ad4ad1`
+(main feature `086ad60`), binary `dfb6b7081bbd`, service
+`venturi-web-halo1-effects-placement-r2.service`. The Effects palette now places
+native Title/Solid/Adjustment generators on chosen timeline targets and applies
+filters to the pointer clip, adding or enabling them in place. Generator clicks
+choose a free unlocked video lane or add one. Track creation/insertion is one
+Undo; safe overlap, locks, linked/crossing and context guards remain. The native
+BlackAndWhite entry is available. Title typography discovers server-native
+families and styles lazily, preserving unknown Saved values and individual
+changed-field selection semantics; manual fields stay collapsed.
+
+The bounded gate passes 40 native and 111 client cases, formatting, all-target
+Clippy and embedded build (peak 1,945,440,256 bytes). Actual Windows found and fixed
+a monochrome click scope error; its JS-only rebuild reuses unchanged gate results.
+Actual browser editing creates all three generators, selects DejaVu Serif/Bold,
+verifies text and filter Undo/Redo, preserves seven original clips, and saves and
+reopens `Venturi_Effects_V1.vvproj` with empty Undo. The 701-frame Full HD H264/AAC
+export reaches actual browser EOF 29.226 seconds/ended=true, using x264/CPU decode
+and R9700 Vulkan composition. Current runtime peak is 495,550,464 bytes.
+All 26 earlier Sessions, 27 PIDs and 19 Saved files, local/NAS originals and shared
+proxy movie are preserved. A pagehide-only Saved playhead update was hash-guarded
+back to the exact previous Saved bytes without changing its Session/history.
+See `evidence/f3-palette-fonts-workflow.json` and workspace/export images.
+
+Physical HTML drag/DPI, menu-hover preview and full F1-F7/M7 acceptance are not
+claimed. Ledger stays **49 done / 41 partial / 2 excluded**. Heavy work remains
+halo1-only with 8 CPU/4 GiB/no swap and low priority; Windows uses one existing tab.
+
+## Earlier working version — 2026-10-22
 
 Open **http://127.0.0.1:8814/** in the existing Windows browser. Code
 `3952711ff4ed6857b93b5316b189fd23c652ae14` includes the native editing gestures,

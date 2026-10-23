@@ -102,6 +102,296 @@ fn preview_video_sources_preserve_original_audio_paths_metadata_and_native_clock
     assert_eq!(serde_json::to_value(&clip).unwrap(), before_clip);
 }
 
+#[cfg(target_os = "linux")]
+struct ResolverFixture {
+    root: PathBuf,
+}
+#[cfg(target_os = "linux")]
+impl ResolverFixture {
+    fn new() -> Self {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let root = std::env::temp_dir().join(format!(
+            "vv-session-video-resolver-{}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        std::fs::create_dir(&root).unwrap();
+        Self { root }
+    }
+    fn moving(&self) -> PathBuf {
+        let path = self.root.join("moving.mp4");
+        let settings = vv_media::VideoSettings {
+            preset: "ultrafast".into(),
+            ..Default::default()
+        };
+        let mut encoder = vv_media::Encoder::new(
+            &path,
+            16,
+            16,
+            vv_core::Rational::new(24, 1),
+            &settings,
+            None,
+        )
+        .unwrap();
+        let mut frame = vec![81; 256];
+        frame.extend(vec![128; 128]);
+        for _ in 0..4 {
+            encoder.write_video_frame(&frame).unwrap();
+        }
+        encoder.finish().unwrap();
+        path
+    }
+    fn still(&self) -> PathBuf {
+        let path = self.root.join("still.bmp");
+        let mut bytes = Vec::new();
+        bytes.extend(b"BM");
+        bytes.extend(78u32.to_le_bytes());
+        bytes.extend(0u32.to_le_bytes());
+        bytes.extend(54u32.to_le_bytes());
+        bytes.extend(40u32.to_le_bytes());
+        bytes.extend(4i32.to_le_bytes());
+        bytes.extend(2i32.to_le_bytes());
+        bytes.extend(1u16.to_le_bytes());
+        bytes.extend(24u16.to_le_bytes());
+        bytes.extend(0u32.to_le_bytes());
+        bytes.extend(24u32.to_le_bytes());
+        bytes.extend([0; 16]);
+        for _ in 0..8 {
+            bytes.extend([0, 0, 255]);
+        }
+        std::fs::write(&path, bytes).unwrap();
+        path
+    }
+}
+#[cfg(target_os = "linux")]
+impl Drop for ResolverFixture {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.root);
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[derive(Default)]
+struct TestVideoResolver {
+    paths: HashMap<MediaId, PathBuf>,
+    calls: Mutex<Vec<(MediaId, PathBuf, PathBuf)>>,
+    leases: Mutex<Vec<std::sync::Weak<std::fs::File>>>,
+}
+#[cfg(target_os = "linux")]
+impl VideoSourceResolver for TestVideoResolver {
+    fn resolve(
+        &self,
+        media: MediaId,
+        item: &vv_core::MediaItem,
+        decode_path: &Path,
+    ) -> Result<ResolvedVideoSource, ExportError> {
+        use std::os::fd::AsRawFd;
+        self.calls
+            .lock()
+            .unwrap()
+            .push((media, item.path.clone(), decode_path.to_owned()));
+        let path = self
+            .paths
+            .get(&media)
+            .ok_or_else(|| ExportError::Failed("resolver refused source".into()))?;
+        let lease = Arc::new(std::fs::File::open(path).map_err(ExportError::failed)?);
+        self.leases.lock().unwrap().push(Arc::downgrade(&lease));
+        Ok(ResolvedVideoSource {
+            path: PathBuf::from(format!("/proc/self/fd/{}", lease.as_raw_fd())),
+            lease,
+        })
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn video_source_resolver_opens_only_requested_decoders_keeps_leases_and_releases_them_on_sweep() {
+    let fixture = ResolverFixture::new();
+    let moving = fixture.moving();
+    let still = fixture.still();
+    let mut project = Project::default();
+    let mut item = preview_video_source_item();
+    item.path = fixture.root.join("not-opened-original.mov");
+    item.meta = vv_media::probe_media(&moving).unwrap();
+    let video = project.media_pool.insert(item.clone());
+    item.path = fixture.root.join("not-opened-still.bmp");
+    item.meta = vv_media::probe_image(&still).unwrap();
+    let image = project.media_pool.insert(item.clone());
+    item.path = fixture.root.join("unused-missing.mov");
+    let unused = project.media_pool.insert(item);
+    let resolver = Arc::new(TestVideoResolver {
+        paths: HashMap::from([(video, moving.clone()), (image, still)]),
+        ..Default::default()
+    });
+    let selected_proxy = fixture.root.join("captured-proxy.mp4");
+    let mut provider = StreamingFrameProvider {
+        cpu_threads: 2,
+        video_sources: HashMap::from([
+            (video, selected_proxy.clone()),
+            (image, fixture.root.join("ignored-still-proxy.mp4")),
+        ]),
+        resolver: Some(resolver.clone()),
+        ..Default::default()
+    };
+    let clip = Clip::from_source_range(
+        ClipId(1101),
+        ClipSource::Media(video),
+        0,
+        4,
+        0,
+        vv_core::Rational::one(),
+    );
+    let image_clip = Clip::from_source_range(
+        ClipId(1102),
+        ClipSource::Media(image),
+        0,
+        4,
+        0,
+        vv_core::Rational::one(),
+    );
+    let original = serde_json::to_value(&project).unwrap();
+    let first = provider.frame_for(&project, &clip, 0).unwrap().unwrap();
+    assert_eq!((first.width, first.height), (16, 16));
+    provider.sweep();
+    std::fs::rename(&moving, fixture.root.join("renamed-moving.mp4")).unwrap();
+    let next = provider.frame_for(&project, &clip, 1).unwrap().unwrap();
+    assert_eq!((next.width, next.height), (16, 16));
+    let image_frame = provider
+        .frame_for(&project, &image_clip, 0)
+        .unwrap()
+        .unwrap();
+    assert_eq!((image_frame.width, image_frame.height), (4, 2));
+    provider.sweep();
+    let calls = resolver.calls.lock().unwrap();
+    assert_eq!(calls.len(), 2);
+    assert_eq!(
+        calls[0],
+        (
+            video,
+            project.media_pool[video].path.clone(),
+            selected_proxy
+        )
+    );
+    assert_eq!(calls[1].2, project.media_pool[image].path);
+    assert!(calls.iter().all(|call| call.0 != unused));
+    drop(calls);
+    assert!(
+        resolver
+            .leases
+            .lock()
+            .unwrap()
+            .iter()
+            .all(|lease| lease.upgrade().is_some())
+    );
+    provider.frame_for(&project, &image_clip, 1).unwrap();
+    provider.sweep();
+    let leases = resolver.leases.lock().unwrap();
+    assert!(leases[0].upgrade().is_none());
+    assert!(leases[1].upgrade().is_some());
+    drop(leases);
+    provider.sweep();
+    assert!(provider.active.is_empty());
+    assert!(
+        resolver
+            .leases
+            .lock()
+            .unwrap()
+            .iter()
+            .all(|lease| lease.upgrade().is_none())
+    );
+    assert_eq!(serde_json::to_value(&project).unwrap(), original);
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn video_source_resolver_refusal_prevents_native_open_and_compound_entries_do_not_resolve() {
+    let mut project = Project::default();
+    let media = project.media_pool.insert(preview_video_source_item());
+    let nested = project.timelines.insert(timeline_with(Vec::new()));
+    let mut compound = project.media_pool[media].clone();
+    compound.compound = Some(nested);
+    let compound = project.media_pool.insert(compound);
+    let resolver = Arc::new(TestVideoResolver::default());
+    let mut provider = StreamingFrameProvider {
+        resolver: Some(resolver.clone()),
+        ..Default::default()
+    };
+    let clip = Clip::from_source_range(
+        ClipId(1201),
+        ClipSource::Media(compound),
+        0,
+        4,
+        0,
+        vv_core::Rational::one(),
+    );
+    assert!(provider.frame_for(&project, &clip, 0).unwrap().is_none());
+    assert!(resolver.calls.lock().unwrap().is_empty());
+    let clip = Clip::from_source_range(
+        ClipId(1202),
+        ClipSource::Media(media),
+        0,
+        4,
+        0,
+        vv_core::Rational::one(),
+    );
+    assert_eq!(
+        provider.frame_for(&project, &clip, 0).err().unwrap(),
+        ExportError::Failed("resolver refused source".into())
+    );
+    assert!(provider.active.is_empty());
+    assert_eq!(resolver.calls.lock().unwrap().len(), 1);
+    assert!(resolver.leases.lock().unwrap().is_empty());
+    let fixture = ResolverFixture::new();
+    let invalid = fixture.root.join("invalid.mp4");
+    std::fs::write(&invalid, b"not a movie").unwrap();
+    let resolver = Arc::new(TestVideoResolver {
+        paths: HashMap::from([(media, invalid)]),
+        ..Default::default()
+    });
+    provider.resolver = Some(resolver.clone());
+    assert!(provider.frame_for(&project, &clip, 0).is_err());
+    assert!(provider.active.is_empty());
+    assert!(resolver.leases.lock().unwrap()[0].upgrade().is_none());
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn video_source_resolver_preview_invalid_origin_is_rejected_without_opening_any_media() {
+    let mut project = Project::default();
+    let mut track = Track::new(TrackKind::Video);
+    track.insert_sorted(solid_color_clip(1, 0, 10, red()));
+    let timeline = project.timelines.insert(timeline_with(vec![track]));
+    let before = serde_json::to_value(&project).unwrap();
+    let mut settings = ExportSettings::new(PathBuf::from("unused-resolver-preview.mp4"));
+    settings.audio_render_origin = Some(6);
+    let resolver = Arc::new(TestVideoResolver::default());
+    let progress = Mutex::new(ExportProgress::default());
+    let cancel = Arc::new(AtomicBool::new(false));
+    assert!(
+        export_timeline_preview_with_gpu_with_resolver(
+            &project,
+            timeline,
+            &settings,
+            5..10,
+            &progress,
+            &cancel,
+            || panic!("Invalid origin must not create a compositor"),
+            |_| Ok(()),
+            2,
+            None,
+            &PreviewVideoSources::new(),
+            Some(resolver.clone())
+        )
+        .is_err()
+    );
+    assert!(resolver.calls.lock().unwrap().is_empty());
+    assert_eq!(serde_json::to_value(&project).unwrap(), before);
+}
+
 #[test]
 fn web_audio_origin_invalid_lineage_is_rejected_before_encoder_or_compositor_creation() {
     let mut project = Project::default();

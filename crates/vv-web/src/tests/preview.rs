@@ -1,6 +1,86 @@
 use super::*;
 use vv_core::Id;
 #[test]
+fn guarded_frame_cache_reopens_touched_sources_and_rejects_legacy_or_changed_lineage() {
+    let root = std::env::temp_dir().join(format!("vv-frame-cache-{}", crate::asset_jobs::nonce()));
+    let files = crate::files::Files::new(&root).unwrap();
+    for name in ["used", "other"] {
+        std::fs::create_dir(root.join(name)).unwrap();
+    }
+    let path = root.join("used/clip.mp4");
+    std::fs::write(&path, b"cache source").unwrap();
+    std::fs::hard_link(&path, root.join("other/clip.mp4")).unwrap();
+    let item = vv_core::MediaItem {
+        path,
+        meta: vv_core::MediaMeta {
+            duration_frames: 24,
+            fps: vv_core::Rational::new(24, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    };
+    let sources = Arc::new(crate::frame_sources::FrameSources::capture(&files).unwrap());
+    let lease = sources
+        .resolver(&Default::default())
+        .resolve(vv_core::MediaId::from_raw(1), &item, &item.path)
+        .unwrap();
+    let manifest = sources.manifest().unwrap();
+    drop(lease);
+    let snapshot = FrameSnapshot {
+        originals: Some(Arc::new(
+            crate::frame_sources::FrameSources::capture(&files).unwrap(),
+        )),
+        video: Default::default(),
+        project: Project::default(),
+        timeline: TimelineId::from_raw(0),
+        query: FrameQuery {
+            timeline_id: "0".into(),
+            project_epoch: "p:1".into(),
+            if_generation: "0".into(),
+            revision: "r".into(),
+            frame: 7,
+            width: 64,
+        },
+        size: (64, 64),
+    };
+    let mut cache = FrameCache::default();
+    cache.insert(CachedFrame {
+        key: "legacy".into(),
+        query: snapshot.query.clone(),
+        inputs: vec![],
+        originals: None,
+        program: true,
+        render_tag: "originals".into(),
+        data: vec![1],
+    });
+    assert!(cache.lookup(&snapshot, "legacy").unwrap().is_none());
+    cache.insert(CachedFrame {
+        key: "guarded".into(),
+        query: snapshot.query.clone(),
+        inputs: vec![],
+        originals: Some(manifest),
+        program: true,
+        render_tag: "originals".into(),
+        data: vec![2],
+    });
+    assert_eq!(cache.lookup(&snapshot, "guarded").unwrap(), Some(vec![2]));
+    assert_eq!(cache.validated_frames(&snapshot), vec![7]);
+    std::fs::rename(root.join("used"), root.join("old")).unwrap();
+    std::fs::rename(root.join("other"), root.join("used")).unwrap();
+    assert!(cache.lookup(&snapshot, "guarded").unwrap().is_none());
+    assert!(cache.validated_frames(&snapshot).is_empty());
+    std::fs::remove_dir_all(root).unwrap();
+}
+#[test]
 fn balance_reads_bypassed_native_grade_at_its_source_clock_without_mutation() {
     let mut session = vv_session::Session::default();
     let timeline = session.create_timeline(vv_core::Timeline {
@@ -29,6 +109,7 @@ fn balance_reads_bypassed_native_grade_at_its_source_clock_without_mutation() {
     clip.effects.filters.push(grade);
     session.project.timelines[timeline].tracks[0].insert_sorted(clip);
     let mut snapshot = FrameSnapshot {
+        originals: None,
         video: Default::default(),
         project: session.project.clone(),
         timeline,
@@ -79,6 +160,7 @@ fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
                 ..query.clone()
             },
             inputs: inputs.clone(),
+            originals: None,
             program: frame != 9,
             render_tag: "originals".into(),
             data: vec![0; 16],
@@ -118,6 +200,7 @@ fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
         key: "large".into(),
         query: query.clone(),
         inputs: inputs.clone(),
+        originals: None,
         program: true,
         render_tag: "originals".into(),
         data: vec![0; 16 * 1024 * 1024],
@@ -128,6 +211,7 @@ fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
         key: "too-large".into(),
         query,
         inputs,
+        originals: None,
         program: true,
         render_tag: "originals".into(),
         data: vec![0; 16 * 1024 * 1024 + 1],
@@ -146,6 +230,7 @@ fn newest_pending_seek_replaces_the_old_one() {
     let job = |frame, reply| Job {
         mode: FrameMode::Program,
         snapshot: FrameSnapshot {
+            originals: None,
             video: Default::default(),
             project: Project::default(),
             timeline: TimelineId::from_raw(0),
@@ -246,6 +331,7 @@ fn resident_context_yields_before_immediate_probe_and_cannot_reenter_during_hand
             let (reply, _receiver) = oneshot::channel();
             queue.replace(Job {
                 snapshot: FrameSnapshot {
+                    originals: None,
                     video: Default::default(),
                     project: Project::default(),
                     timeline: TimelineId::from_raw(0),

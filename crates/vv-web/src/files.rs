@@ -125,6 +125,9 @@ impl Files {
     pub fn root_file(&self) -> Result<File> {
         self.dir.try_clone().map_err(|_| ApiError::io())
     }
+    pub(crate) fn root_path(&self) -> &Path {
+        &self.root
+    }
     pub fn shared_origin(&self, path: &Path) -> Option<Value> {
         if path.parent() != Some(self.root.as_path()) {
             return None;

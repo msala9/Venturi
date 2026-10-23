@@ -29,6 +29,7 @@ fn default_width() -> u32 {
     960
 }
 pub struct FrameSnapshot {
+    pub originals: Option<Arc<crate::frame_sources::FrameSources>>,
     pub video: Arc<crate::proxy_video::Selection>,
     pub project: Project,
     pub timeline: TimelineId,
@@ -112,6 +113,7 @@ struct CachedFrame {
     key: String,
     query: FrameQuery,
     inputs: crate::program::Inputs,
+    originals: Option<crate::frame_sources::Manifest>,
     program: bool,
     render_tag: String,
     data: Vec<u8>,
@@ -122,6 +124,42 @@ struct FrameCache {
     bytes: usize,
 }
 impl FrameCache {
+    fn valid_originals(&self, entry: &CachedFrame, snapshot: &FrameSnapshot) -> bool {
+        match (&snapshot.originals, &entry.originals) {
+            (Some(sources), Some(manifest)) => sources.validate_manifest(manifest).is_ok(),
+            (None, None) => {
+                crate::program::inputs(snapshot).is_ok_and(|inputs| entry.inputs == inputs)
+            }
+            _ => false,
+        }
+    }
+    fn lookup(&self, snapshot: &FrameSnapshot, key: &str) -> Result<Option<Vec<u8>>> {
+        snapshot.video.validate()?;
+        Ok(self
+            .entries
+            .iter()
+            .find(|entry| entry.key == key && self.valid_originals(entry, snapshot))
+            .map(|entry| entry.data.clone()))
+    }
+    fn validated_frames(&self, snapshot: &FrameSnapshot) -> Vec<i64> {
+        if snapshot.video.validate().is_err() {
+            return vec![];
+        }
+        let mut frames: Vec<_> = self
+            .entries
+            .iter()
+            .filter(|entry| {
+                entry.program
+                    && entry.render_tag == snapshot.video.tag
+                    && entry.query.same_composition(&snapshot.query)
+                    && self.valid_originals(entry, snapshot)
+            })
+            .map(|entry| entry.query.frame)
+            .collect();
+        frames.sort_unstable();
+        frames.dedup();
+        frames
+    }
     fn insert(&mut self, entry: CachedFrame) {
         if entry.data.len() > 16 * 1024 * 1024 {
             return;
@@ -134,6 +172,7 @@ impl FrameCache {
         self.bytes += entry.data.len();
         self.entries.push_back(entry);
     }
+    #[cfg(test)]
     fn frames(
         &self,
         query: &FrameQuery,
@@ -351,19 +390,16 @@ impl Preview {
                     job.mode,
                     snapshot.video.tag,
                 );
-                let inputs = crate::program::inputs(&snapshot).ok();
-                let cached = inputs.as_ref().and_then(|inputs| {
-                    worker_cache
-                        .lock()
-                        .unwrap()
-                        .entries
-                        .iter()
-                        .find(|entry| entry.key == key && entry.inputs == *inputs)
-                        .map(|entry| entry.data.clone())
-                });
-                if let Some(data) = cached {
-                    let _ = job.reply.send(Ok(data));
-                    continue;
+                match worker_cache.lock().unwrap().lookup(&snapshot, &key) {
+                    Ok(Some(data)) => {
+                        let _ = job.reply.send(Ok(data));
+                        continue;
+                    }
+                    Err(error) => {
+                        let _ = job.reply.send(Err(error));
+                        continue;
+                    }
+                    Ok(None) => {}
                 }
                 let poll_failed = AtomicBool::new(false);
                 let mut result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -381,13 +417,17 @@ impl Preview {
                     compositor.set_precision(snapshot.project.precision);
                     let data = match job.mode {
                         FrameMode::Program => encode_png(
-                            &vv_session::export::render_frame_rgba_with_sources(
+                            &vv_session::export::render_frame_rgba_with_resolver(
                                 &snapshot.project,
                                 snapshot.timeline,
                                 snapshot.query.frame,
                                 snapshot.size,
                                 compositor,
                                 &snapshot.video.sources,
+                                snapshot
+                                    .originals
+                                    .as_ref()
+                                    .map(|sources| sources.resolver(&snapshot.video.sources)),
                             )
                             .map_err(|_| {
                                 ApiError(
@@ -415,7 +455,12 @@ impl Preview {
                 }))
                 .unwrap_or_else(|_| Err(unavailable()));
                 if result.is_ok()
-                    && let Err(error) = snapshot.video.validate()
+                    && let Err(error) = snapshot.video.validate().and_then(|()| {
+                        snapshot
+                            .originals
+                            .as_ref()
+                            .map_or(Ok(()), |sources| sources.validate())
+                    })
                 {
                     result = Err(error);
                 }
@@ -428,11 +473,24 @@ impl Preview {
                 }
                 if let Ok(data) = &result {
                     rendered_worker.store(true, Ordering::Relaxed);
-                    if let Some(inputs) = inputs.filter(crate::program::unchanged) {
+                    let inputs = if snapshot.originals.is_some() {
+                        Some(vec![])
+                    } else {
+                        crate::program::inputs(&snapshot)
+                            .ok()
+                            .filter(crate::program::unchanged)
+                    };
+                    let originals = snapshot
+                        .originals
+                        .as_ref()
+                        .map(|sources| sources.manifest())
+                        .transpose();
+                    if let (Some(inputs), Ok(originals)) = (inputs, originals) {
                         worker_cache.lock().unwrap().insert(CachedFrame {
                             key,
                             query: snapshot.query,
                             inputs,
+                            originals,
                             program: matches!(job.mode, FrameMode::Program),
                             render_tag: snapshot.video.tag.clone(),
                             data: data.clone(),
@@ -518,13 +576,8 @@ impl Preview {
         let global = gpu_lock(path)?;
         operation(Some(&global))
     }
-    pub fn cached_frames(
-        &self,
-        query: &FrameQuery,
-        inputs: &crate::program::Inputs,
-        render_tag: &str,
-    ) -> Vec<i64> {
-        self.cache.lock().unwrap().frames(query, inputs, render_tag)
+    pub fn cached_frames(&self, snapshot: &FrameSnapshot) -> Vec<i64> {
+        self.cache.lock().unwrap().validated_frames(snapshot)
     }
     pub fn export_program(
         &self,
@@ -586,8 +639,8 @@ impl Preview {
                 poll_failed: &poll_failed,
             })
         };
-        let result = if !snapshot.video.sources.is_empty() {
-            vv_session::export::export_timeline_preview_with_gpu(
+        let result = if snapshot.originals.is_some() || !snapshot.video.sources.is_empty() {
+            vv_session::export::export_timeline_preview_with_gpu_with_resolver(
                 &snapshot.project,
                 snapshot.timeline,
                 settings,
@@ -599,6 +652,10 @@ impl Preview {
                 2,
                 observer,
                 &snapshot.video.sources,
+                snapshot
+                    .originals
+                    .as_ref()
+                    .map(|sources| sources.resolver(&snapshot.video.sources)),
             )
         } else {
             match observer {
@@ -629,6 +686,9 @@ impl Preview {
         };
         if result.is_ok() {
             snapshot.video.validate()?;
+            if let Some(sources) = &snapshot.originals {
+                sources.validate()?;
+            }
         }
         if poll_failed.load(Ordering::Relaxed) {
             return Err(unavailable());
@@ -722,13 +782,17 @@ fn balance_values(
     compositor: &Compositor,
 ) -> Result<Vec<u8>> {
     let grade = balance_grade(snapshot, clip)?;
-    let pixels = vv_session::export::render_balance_frame_rgba(
+    let pixels = vv_session::export::render_balance_frame_rgba_with_resolver(
         &snapshot.project,
         snapshot.timeline,
         clip,
         snapshot.query.frame,
         snapshot.size,
         compositor,
+        snapshot
+            .originals
+            .as_ref()
+            .map(|sources| sources.resolver(&Default::default())),
     )
     .map_err(|_| {
         ApiError::invalid("Native isolated balance rendering failed; check offline media")
@@ -765,13 +829,17 @@ fn render_scopes(
     kinds: [vv_render::ScopeKind; 2],
     compositor: &Compositor,
 ) -> Result<(Vec<u8>, (u32, u32))> {
-    let source = vv_session::export::render_scope_source(
+    let source = vv_session::export::render_scope_source_with_resolver(
         &snapshot.project,
         snapshot.timeline,
         clip,
         snapshot.query.frame,
         snapshot.size,
         compositor,
+        snapshot
+            .originals
+            .as_ref()
+            .map(|sources| sources.resolver(&Default::default())),
     )
     .map_err(|_| {
         ApiError::invalid("Native isolated scope rendering failed; check offline media")

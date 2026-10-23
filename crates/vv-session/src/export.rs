@@ -29,6 +29,21 @@ const AUDIO_AHEAD_CHUNKS: usize = 2;
 /// Video-only decode paths; callers retain the original project and audio sources.
 pub type PreviewVideoSources = HashMap<MediaId, PathBuf>;
 
+pub struct ResolvedVideoSource {
+    pub path: PathBuf,
+    pub lease: Arc<dyn Send + Sync>,
+}
+
+/// Resolves only video inputs actually opened by the native frame provider.
+pub trait VideoSourceResolver: Send + Sync {
+    fn resolve(
+        &self,
+        media: MediaId,
+        item: &vv_core::MediaItem,
+        decode_path: &Path,
+    ) -> Result<ResolvedVideoSource, ExportError>;
+}
+
 fn video_decode_path<'a>(
     media: MediaId,
     item: &'a vv_core::MediaItem,
@@ -206,6 +221,7 @@ struct ActiveClipDecoder {
     /// A conformed clip asks for the same source frame on consecutive
     /// timeline frames, and the decoder does not go back.
     last: Option<(FrameIdx, Arc<vv_media::FrameYuv420>)>,
+    _source_lease: Option<Arc<dyn Send + Sync>>,
 }
 
 impl ActiveClipDecoder {
@@ -215,6 +231,7 @@ impl ActiveClipDecoder {
         is_image: bool,
         hw: &[vv_media::HwDevice],
         cpu_threads: usize,
+        source_lease: Option<Arc<dyn Send + Sync>>,
     ) -> Result<Self, ExportError> {
         // `Decoder::open` on an image would hit EOF after the first frame.
         let mut decoder = if is_image {
@@ -237,6 +254,7 @@ impl ActiveClipDecoder {
         let mut me = Self {
             decoder,
             last: None,
+            _source_lease: source_lease,
         };
         me.advance_to(target_source_frame)?;
         Ok(me)
@@ -280,6 +298,7 @@ struct StreamingFrameProvider {
     used: Vec<Option<vv_media::HwDevice>>,
     cpu_threads: usize,
     video_sources: PreviewVideoSources,
+    resolver: Option<Arc<dyn VideoSourceResolver>>,
 }
 
 impl StreamingFrameProvider {
@@ -321,13 +340,25 @@ impl FrameProvider for StreamingFrameProvider {
 
         let decoder = match self.active.entry(clip.id) {
             Entry::Occupied(e) => e.into_mut(),
-            Entry::Vacant(e) => e.insert(ActiveClipDecoder::open_for(
-                &path,
-                source_frame,
-                is_image,
-                &self.hw,
-                self.cpu_threads,
-            )?),
+            Entry::Vacant(e) => {
+                let resolved = self
+                    .resolver
+                    .as_ref()
+                    .map(|resolver| resolver.resolve(media_id, item, &path))
+                    .transpose()?;
+                let path = resolved
+                    .as_ref()
+                    .map_or(path.as_path(), |source| source.path.as_path());
+                let source_lease = resolved.as_ref().map(|source| source.lease.clone());
+                e.insert(ActiveClipDecoder::open_for(
+                    path,
+                    source_frame,
+                    is_image,
+                    &self.hw,
+                    self.cpu_threads,
+                    source_lease,
+                )?)
+            }
         };
         let frame = decoder.advance_to(source_frame)?;
         let device = decoder.decoder.hw_device();
@@ -386,6 +417,7 @@ pub fn export_timeline_with_gpu<G>(
         None,
         None,
         None,
+        None,
         create_compositor,
         acquire_gpu,
         cpu_threads,
@@ -412,6 +444,7 @@ pub fn export_timeline_with_gpu_cancellable<G>(
         progress,
         cancel,
         Some(cancel.clone()),
+        None,
         None,
         None,
         create_compositor,
@@ -443,6 +476,7 @@ pub fn export_timeline_with_gpu_observed<G>(
         Some(cancel.clone()),
         Some(observer),
         None,
+        None,
         create_compositor,
         acquire_gpu,
         cpu_threads,
@@ -463,6 +497,36 @@ pub fn export_timeline_preview_with_gpu<G>(
     observer: Option<&mut AudioObserver<'_>>,
     sources: &PreviewVideoSources,
 ) -> Result<(), ExportError> {
+    export_timeline_preview_with_gpu_with_resolver(
+        project,
+        timeline_id,
+        settings,
+        range,
+        progress,
+        cancel,
+        create_compositor,
+        acquire_gpu,
+        cpu_threads,
+        observer,
+        sources,
+        None,
+    )
+}
+
+pub fn export_timeline_preview_with_gpu_with_resolver<G>(
+    project: &Project,
+    timeline_id: TimelineId,
+    settings: &ExportSettings,
+    range: std::ops::Range<FrameIdx>,
+    progress: &Mutex<ExportProgress>,
+    cancel: &Arc<AtomicBool>,
+    create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
+    acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
+    cpu_threads: usize,
+    observer: Option<&mut AudioObserver<'_>>,
+    sources: &PreviewVideoSources,
+    resolver: Option<Arc<dyn VideoSourceResolver>>,
+) -> Result<(), ExportError> {
     export_timeline_configured(
         project,
         timeline_id,
@@ -473,6 +537,7 @@ pub fn export_timeline_preview_with_gpu<G>(
         Some(cancel.clone()),
         observer,
         Some(sources),
+        resolver,
         create_compositor,
         acquire_gpu,
         cpu_threads,
@@ -489,6 +554,7 @@ fn export_timeline_configured<G>(
     audio_cancel: Option<Arc<AtomicBool>>,
     audio_observer: Option<&mut AudioObserver<'_>>,
     video_sources: Option<&PreviewVideoSources>,
+    video_resolver: Option<Arc<dyn VideoSourceResolver>>,
     create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
     acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
     cpu_threads: usize,
@@ -625,6 +691,7 @@ fn export_timeline_configured<G>(
                 hw: settings.hw_decode.clone(),
                 cpu_threads,
                 video_sources: video_sources.cloned().unwrap_or_default(),
+                resolver: video_resolver,
                 ..Default::default()
             };
             for frame in decode_range {
@@ -763,12 +830,25 @@ pub fn render_frame_rgba_with_sources(
     compositor: &vv_render::Compositor,
     sources: &PreviewVideoSources,
 ) -> Result<Vec<u8>, ExportError> {
+    render_frame_rgba_with_resolver(project, timeline_id, frame, size, compositor, sources, None)
+}
+
+pub fn render_frame_rgba_with_resolver(
+    project: &Project,
+    timeline_id: TimelineId,
+    frame: FrameIdx,
+    size: (u32, u32),
+    compositor: &vv_render::Compositor,
+    sources: &PreviewVideoSources,
+    resolver: Option<Arc<dyn VideoSourceResolver>>,
+) -> Result<Vec<u8>, ExportError> {
     let timeline = project
         .timelines
         .get(timeline_id)
         .ok_or(ExportError::TimelineNotFound)?;
     let mut provider = StreamingFrameProvider {
         video_sources: sources.clone(),
+        resolver,
         ..Default::default()
     };
     let layers = decode_video_frame(
@@ -809,6 +889,18 @@ pub fn render_scope_source(
     size: (u32, u32),
     compositor: &vv_render::Compositor,
 ) -> Result<vv_render::PooledTexture, ExportError> {
+    render_scope_source_with_resolver(project, timeline_id, clip_id, frame, size, compositor, None)
+}
+
+pub fn render_scope_source_with_resolver(
+    project: &Project,
+    timeline_id: TimelineId,
+    clip_id: vv_core::ClipId,
+    frame: FrameIdx,
+    size: (u32, u32),
+    compositor: &vv_render::Compositor,
+    resolver: Option<Arc<dyn VideoSourceResolver>>,
+) -> Result<vv_render::PooledTexture, ExportError> {
     let timeline = project
         .timelines
         .get(timeline_id)
@@ -817,7 +909,10 @@ pub fn render_scope_source(
     let layers = decode_video_frame_isolated(
         project,
         timeline,
-        &mut StreamingFrameProvider::default(),
+        &mut StreamingFrameProvider {
+            resolver,
+            ..Default::default()
+        },
         compositor,
         frame,
         timeline.resolution,
@@ -839,6 +934,26 @@ pub fn render_balance_frame_rgba(
     size: (u32, u32),
     compositor: &vv_render::Compositor,
 ) -> Result<Vec<u8>, ExportError> {
+    render_balance_frame_rgba_with_resolver(
+        project,
+        timeline_id,
+        clip_id,
+        frame,
+        size,
+        compositor,
+        None,
+    )
+}
+
+pub fn render_balance_frame_rgba_with_resolver(
+    project: &Project,
+    timeline_id: TimelineId,
+    clip_id: vv_core::ClipId,
+    frame: FrameIdx,
+    size: (u32, u32),
+    compositor: &vv_render::Compositor,
+    resolver: Option<Arc<dyn VideoSourceResolver>>,
+) -> Result<Vec<u8>, ExportError> {
     let timeline = project
         .timelines
         .get(timeline_id)
@@ -847,7 +962,10 @@ pub fn render_balance_frame_rgba(
     let layers = decode_video_frame_isolated(
         project,
         timeline,
-        &mut StreamingFrameProvider::default(),
+        &mut StreamingFrameProvider {
+            resolver,
+            ..Default::default()
+        },
         compositor,
         frame,
         timeline.resolution,

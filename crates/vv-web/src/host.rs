@@ -2786,6 +2786,7 @@ impl Editor {
                     let (id, size) = self.validate_frame(&query)?;
                     crate::audition::pin(
                         FrameSnapshot {
+                            originals: None,
                             video: Default::default(),
                             project: self.session.project.clone(),
                             timeline: id,
@@ -2802,6 +2803,9 @@ impl Editor {
                 let result = (|| {
                     let (id, size) = self.validate_frame(&query)?;
                     Ok(FrameSnapshot {
+                        originals: Some(Arc::new(crate::frame_sources::FrameSources::capture(
+                            &self.files,
+                        )?)),
                         video: Default::default(),
                         project: self.session.project.clone(),
                         timeline: id,

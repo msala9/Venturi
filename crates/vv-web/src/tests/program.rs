@@ -320,6 +320,7 @@ fn task() -> ProgramTask {
     ProgramTask {
         snapshot: FrameSnapshot {
             video: Default::default(),
+            originals: None,
             project,
             timeline,
             query: query.frame(),
@@ -330,6 +331,145 @@ fn task() -> ProgramTask {
         export: None,
     }
 }
+
+#[test]
+fn requested_original_preview_inputs_keep_native_audible_audio_dependencies_and_legacy_exports() {
+    let root =
+        std::env::temp_dir().join(format!("vv-program-inputs-{}", crate::asset_jobs::nonce()));
+    std::fs::create_dir(&root).unwrap();
+    let files = crate::files::Files::new(&root).unwrap();
+    let audio_path = root.join("audio.wav");
+    let child_path = root.join("child.wav");
+    std::fs::write(&audio_path, b"audio witness only").unwrap();
+    std::fs::write(&child_path, b"child witness only").unwrap();
+    let media = |path: PathBuf, audio: bool| vv_core::MediaItem {
+        path,
+        meta: vv_core::MediaMeta {
+            width: 16,
+            height: 16,
+            fps: Rational::new(24, 1),
+            duration_frames: 480,
+            has_video: !audio,
+            has_audio: audio,
+            sample_rate: if audio { 48_000 } else { 0 },
+            channels: if audio { 2 } else { 0 },
+            audio_streams: if audio { 1 } else { 0 },
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    };
+    let mut task = task();
+    let timeline = task.snapshot.timeline;
+    let offline = task
+        .snapshot
+        .project
+        .media_pool
+        .insert(media(root.join("unused.mp4"), false));
+    task.snapshot.project.timelines[timeline].tracks[0].clips[0].source =
+        ClipSource::Media(offline);
+    assert!(
+        task.inputs().is_err(),
+        "Legacy callers keep the existing broad witness contract"
+    );
+    task.snapshot.originals = Some(Arc::new(
+        crate::frame_sources::FrameSources::capture(&files).unwrap(),
+    ));
+    assert!(
+        task.inputs().unwrap().is_empty(),
+        "Video files are captured only when native decode requests them"
+    );
+
+    let audible = task
+        .snapshot
+        .project
+        .media_pool
+        .insert(media(audio_path.clone(), true));
+    let child_media = task
+        .snapshot
+        .project
+        .media_pool
+        .insert(media(child_path.clone(), true));
+    let missing = task
+        .snapshot
+        .project
+        .media_pool
+        .insert(media(root.join("silent.wav"), true));
+    let audio_clip = |id, source, start| {
+        Clip::from_source_range(
+            ClipId(id),
+            ClipSource::Media(source),
+            0,
+            48,
+            start,
+            Rational::one(),
+        )
+    };
+    let mut active = Track::new(TrackKind::Audio);
+    active.insert_sorted(audio_clip(2, audible, 240));
+    let mut child_track = Track::new(TrackKind::Audio);
+    child_track.insert_sorted(audio_clip(3, child_media, 0));
+    let child = task.snapshot.project.timelines.insert(Timeline {
+        name: "audio child".into(),
+        fps: Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![child_track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let mut compound = media(root.join("compound"), true);
+    compound.compound = Some(child);
+    let compound = task.snapshot.project.media_pool.insert(compound);
+    let mut nested = Track::new(TrackKind::Audio);
+    nested.insert_sorted(audio_clip(4, compound, 0));
+    let mut muted = Track::new(TrackKind::Audio);
+    muted.muted = true;
+    muted.insert_sorted(audio_clip(5, missing, 0));
+    let mut excluded = Track::new(TrackKind::Audio);
+    let mut disabled = audio_clip(6, missing, 0);
+    disabled.disabled = true;
+    excluded.insert_sorted(disabled);
+    let mut frozen = audio_clip(7, missing, 48);
+    frozen.freeze = Some(0);
+    excluded.insert_sorted(frozen);
+    task.snapshot.project.timelines[timeline]
+        .tracks
+        .extend([active, nested, muted, excluded]);
+    let before = serde_json::to_value(&task.snapshot.project).unwrap();
+    let actual = task.inputs().unwrap();
+    assert_eq!(
+        actual.iter().map(|(path, _)| path).collect::<Vec<_>>(),
+        vec![&audio_path, &child_path]
+    );
+    assert_eq!(
+        before,
+        serde_json::to_value(&task.snapshot.project).unwrap()
+    );
+    task.snapshot.project.timelines[timeline].tracks[1].solo = true;
+    assert_eq!(
+        task.inputs()
+            .unwrap()
+            .iter()
+            .map(|(path, _)| path)
+            .collect::<Vec<_>>(),
+        vec![&audio_path]
+    );
+    task.snapshot.project.timelines[timeline].tracks[1].muted = true;
+    assert!(
+        task.inputs().unwrap().is_empty(),
+        "A muted solo track suppresses the other audio tracks natively"
+    );
+    task.export = Some(export_options());
+    assert!(
+        task.inputs().is_err(),
+        "Durable export preflight is unchanged, including offline video dependencies"
+    );
+    drop(task);
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn program_bounds_and_cache_identity_include_native_revision_and_output_range() {
     let mut task = task();

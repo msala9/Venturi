@@ -21,6 +21,7 @@ mod error;
 mod eventkeys;
 mod export_store;
 mod files;
+mod frame_sources;
 mod host;
 mod image_derivative;
 mod inspector;

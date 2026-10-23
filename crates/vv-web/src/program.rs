@@ -5,6 +5,7 @@ use crate::{
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{
+    collections::HashSet,
     fs::File,
     io::Read,
     os::unix::fs::MetadataExt,
@@ -573,12 +574,75 @@ pub fn inputs(snapshot: &FrameSnapshot) -> Result<Inputs> {
         .map(|path| Ok((path.clone(), identity(&path)?)))
         .collect()
 }
+pub fn preview_inputs(snapshot: &FrameSnapshot) -> Result<Inputs> {
+    if snapshot.originals.is_none() {
+        return inputs(snapshot);
+    }
+    let timeline = snapshot
+        .project
+        .timelines
+        .get(snapshot.timeline)
+        .ok_or_else(ApiError::missing)?;
+    if ExportSettings::new(PathBuf::new())
+        .audio_for_timeline(timeline)
+        .is_none()
+    {
+        return Ok(vec![]);
+    }
+    audio_inputs(snapshot)
+}
+fn audio_inputs(snapshot: &FrameSnapshot) -> Result<Inputs> {
+    let mut pending = vec![snapshot.timeline];
+    let mut visited = HashSet::new();
+    let mut paths = std::collections::BTreeSet::new();
+    while let Some(id) = pending.pop() {
+        if !visited.insert(id) {
+            continue;
+        }
+        let timeline = snapshot
+            .project
+            .timelines
+            .get(id)
+            .ok_or_else(|| ApiError::invalid("A compound timeline is missing"))?;
+        // Pitch correction and Normalize can read outside the visible window.
+        for (_, track) in timeline.audible_tracks() {
+            for clip in track
+                .clips
+                .iter()
+                .filter(|clip| !clip.disabled && clip.freeze.is_none())
+            {
+                let vv_core::ClipSource::Media(id) = clip.source else {
+                    continue;
+                };
+                let Some(media) = snapshot.project.media_pool.get(id) else {
+                    continue;
+                };
+                if let Some(child) = media.compound {
+                    pending.push(child);
+                } else if media.meta.has_audio {
+                    paths.insert(media.path.clone());
+                }
+            }
+        }
+    }
+    paths
+        .into_iter()
+        .map(|path| Ok((path.clone(), identity(&path)?)))
+        .collect()
+}
 pub fn unchanged(inputs: &Inputs) -> bool {
     inputs
         .iter()
         .all(|(path, before)| identity(path).is_ok_and(|now| now == *before))
 }
 impl ProgramTask {
+    pub fn inputs(&self) -> Result<Inputs> {
+        if self.export.is_some() {
+            inputs(&self.snapshot)
+        } else {
+            preview_inputs(&self.snapshot)
+        }
+    }
     pub fn key(&self) -> String {
         match &self.export {
             Some(options) => format!(
@@ -720,6 +784,11 @@ impl ProgramTask {
         durable: bool,
     ) -> Result<()> {
         self.snapshot.video.validate()?;
+        if self.export.is_none()
+            && let Some(originals) = &self.snapshot.originals
+        {
+            originals.validate()?;
+        }
         if !unchanged(inputs) {
             return Err(ApiError::conflict(
                 "SOURCE_CHANGED",
@@ -808,6 +877,11 @@ impl ProgramTask {
             return Err(ApiError::invalid("Program preparation was canceled"));
         }
         self.snapshot.video.validate()?;
+        if self.export.is_none()
+            && let Some(originals) = &self.snapshot.originals
+        {
+            originals.validate()?;
+        }
         if !unchanged(inputs) {
             return Err(ApiError::conflict(
                 "SOURCE_CHANGED",

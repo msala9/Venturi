@@ -1841,15 +1841,13 @@ async fn preview_cache(
     let query = query
         .map_err(|_| ApiError::invalid("Invalid cache query"))?
         .0;
-    let snapshot = state.host.frame_snapshot(query.clone()).await?;
-    let video = crate::proxy_video::Selection::capture(&state.source.proxies, &snapshot)?;
-    let (frames, programs) = match crate::program::inputs(&snapshot) {
-        Ok(inputs) => (
-            state.preview.cached_frames(&query, &inputs, &video.tag),
-            state.source.cached_programs(&query, &inputs, &video.tag),
-        ),
-        Err(_) => (vec![], vec![]),
-    };
+    let mut snapshot = state.host.frame_snapshot(query.clone()).await?;
+    snapshot.video = std::sync::Arc::new(crate::proxy_video::Selection::capture(
+        &state.source.proxies,
+        &snapshot,
+    )?);
+    let frames = state.preview.cached_frames(&snapshot);
+    let programs = state.source.cached_programs(&snapshot);
     state.host.call(Action::CheckFrame(query)).await?;
     Ok((
         [(header::CACHE_CONTROL, "no-store")],

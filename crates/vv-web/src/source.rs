@@ -130,6 +130,8 @@ struct Job {
     source_assets: Option<Value>,
     source_version: Option<String>,
     inputs: Inputs,
+    originals: Option<Arc<crate::frame_sources::FrameSources>>,
+    original_manifest: Option<crate::frame_sources::Manifest>,
     source_asset: Option<&'static str>,
     render_tag: String,
     export_epoch: Option<String>,
@@ -139,6 +141,27 @@ struct Job {
     durability_error: bool,
 }
 impl Job {
+    fn validate_program_sources(&self) -> Result<()> {
+        if !program::unchanged(&self.inputs) {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Media changed since Program preparation",
+            ));
+        }
+        if let Some(originals) = &self.originals {
+            if let Some(manifest) = &self.original_manifest {
+                originals.validate_manifest(manifest)?;
+            } else if self.state == "ready" {
+                return Err(ApiError::conflict(
+                    "SOURCE_CHANGED",
+                    "Prepared Program source witnesses are unavailable",
+                ));
+            } else {
+                originals.validate()?;
+            }
+        }
+        Ok(())
+    }
     fn charge(&self) -> u64 {
         if self.durable.is_some() {
             0
@@ -281,6 +304,8 @@ impl MediaJobs {
                     source_assets: None,
                     source_version: None,
                     inputs: vec![],
+                    originals: None,
+                    original_manifest: None,
                     source_asset: None,
                     render_tag: "originals".into(),
                     export_epoch: Some(stored.record.epoch.clone()),
@@ -325,6 +350,7 @@ impl MediaJobs {
                         job.durable.is_some(),
                     )
                 };
+                let mut original_manifest = None;
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     let _proxy_pause = worker_proxies.suspend()?;
                     match work {
@@ -361,13 +387,24 @@ impl MediaJobs {
                         Work::Assets(spec, index, waveform) => {
                             generate_assets(&spec, &directory, &cancel, index, waveform)
                         }
-                        Work::Program(task) => task.generate(
-                            &directory,
-                            &cancel,
-                            progress.as_ref().unwrap(),
-                            &inputs,
-                            durable,
-                        ),
+                        Work::Program(task) => {
+                            task.generate(
+                                &directory,
+                                &cancel,
+                                progress.as_ref().unwrap(),
+                                &inputs,
+                                durable,
+                            )?;
+                            if task.export.is_none() {
+                                original_manifest = task
+                                    .snapshot
+                                    .originals
+                                    .as_ref()
+                                    .map(|sources| sources.manifest())
+                                    .transpose()?;
+                            }
+                            Ok(())
+                        }
                     }
                 }))
                 .unwrap_or_else(|_| Err(ApiError::invalid("Native source generation failed")));
@@ -388,13 +425,14 @@ impl MediaJobs {
                     };
                     match result {
                         Ok(()) => {
+                            job.original_manifest = original_manifest;
                             let published = match (&worker_exports, &mut job.durable) {
                                 (Some(store), Some(stored)) => {
                                     store.publish_output(stored).map(|output| {
                                         stored.record.output = Some(output);
                                     })
                                 }
-                                _ => Ok(()),
+                                _ => job.validate_program_sources(),
                             };
                             match published {
                                 Ok(()) => {
@@ -571,6 +609,8 @@ impl MediaJobs {
             source_version: Some(identity),
             program_query: None,
             inputs: vec![],
+            originals: None,
+            original_manifest: None,
             source_asset: Some(source_asset),
             render_tag: "originals".into(),
             export_epoch: None,
@@ -657,7 +697,8 @@ impl MediaJobs {
             touched: Instant::now(), export: None, descriptor: None, source_window: None,
             source_assets: Some(json!({"source_version":identity,"total_frames":spec.meta.duration_frames,"fps":spec.meta.fps,"has_video":spec.meta.has_video,"has_audio":spec.meta.has_audio,"audio_stream_index":audio_stream_index,"include_waveform":include_waveform})),
             source_version: None,
-            inputs: vec![], source_asset: None, render_tag: "originals".into(), export_epoch: None, program_query: None,
+            inputs: vec![], originals: None, original_manifest: None,
+            source_asset: None, render_tag: "originals".into(), export_epoch: None, program_query: None,
             durable: None, explicit_cancel: false, durability_error: false,
         });
         if self
@@ -679,6 +720,7 @@ impl MediaJobs {
     pub fn prepare_program(&self, mut task: ProgramTask) -> Result<Value> {
         if task.export.is_some() {
             self.check_exports()?;
+            task.snapshot.originals = None;
         }
         task.validate()?;
         if task.export.is_none() {
@@ -689,11 +731,25 @@ impl MediaJobs {
         }
         let render_tag = task.snapshot.video.tag.clone();
         let key = task.key();
-        let inputs = program::inputs(&task.snapshot)?;
+        let inputs = task.inputs()?;
+        task.snapshot.video.validate()?;
+        let originals = if task.export.is_none() {
+            task.snapshot.originals.clone()
+        } else {
+            None
+        };
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs.iter_mut().find(|j| {
             j.inputs == inputs
                 && j.render_tag == render_tag
+                && j.originals.is_some() == originals.is_some()
+                && j.validate_program_sources().is_ok()
+                && (j.state != "ready"
+                    || originals.as_ref().is_none_or(|originals| {
+                        j.original_manifest
+                            .as_ref()
+                            .is_some_and(|manifest| originals.validate_manifest(manifest).is_ok())
+                    }))
                 && ((j.key == key && !matches!(j.state, "failed" | "canceled"))
                     || (task.export.is_none()
                         && j.state == "ready"
@@ -769,6 +825,8 @@ impl MediaJobs {
             source_version: None,
             program_query: task.export.is_none().then(|| task.query.clone()),
             inputs,
+            originals,
+            original_manifest: None,
             source_asset: None,
             render_tag,
             export_epoch: task
@@ -803,15 +861,23 @@ impl MediaJobs {
         preempt_assets(&jobs);
         Ok(jobs.back().unwrap().value())
     }
-    pub fn cached_programs(
-        &self,
-        query: &crate::preview::FrameQuery,
-        inputs: &Inputs,
-        render_tag: &str,
-    ) -> Vec<Value> {
+    pub fn cached_programs(&self, snapshot: &crate::preview::FrameSnapshot) -> Vec<Value> {
+        if snapshot.video.validate().is_err() {
+            return vec![];
+        }
+        let Ok(inputs) = program::preview_inputs(snapshot) else {
+            return vec![];
+        };
         self.jobs.lock().unwrap().iter().filter_map(|job| {
             let range = job.program_query.as_ref()?;
-            (job.state == "ready" && job.render_tag == render_tag && range.frame().same_composition(query) && job.inputs == *inputs)
+            let originals_match = match (&snapshot.originals, &job.originals, &job.original_manifest) {
+                (Some(originals), Some(_), Some(manifest)) => originals.validate_manifest(manifest).is_ok(),
+                (None, None, _) => true,
+                _ => false,
+            };
+            (job.state == "ready" && job.render_tag == snapshot.video.tag
+                && range.frame().same_composition(&snapshot.query) && job.inputs == inputs
+                && originals_match && job.validate_program_sources().is_ok())
                 .then(|| json!({"id":job.id,"start_frame":range.start_frame,"end_frame":range.end_frame}))
         }).collect()
     }
@@ -821,11 +887,8 @@ impl MediaJobs {
             .iter_mut()
             .find(|j| j.id == id && (j.key == query.preview_key() || j.key == query.key()))
             .ok_or_else(ApiError::missing)?;
-        if !cancel && !program::unchanged(&job.inputs) {
-            return Err(ApiError::conflict(
-                "SOURCE_CHANGED",
-                "Media changed since Program preparation",
-            ));
+        if !cancel {
+            job.validate_program_sources()?;
         }
         if cancel && matches!(job.state, "queued" | "running") {
             job.cancel.store(true, Ordering::Relaxed);
@@ -957,12 +1020,7 @@ impl MediaJobs {
                 "Wait for composed preview preparation",
             ));
         }
-        if !program::unchanged(&job.inputs) {
-            return Err(ApiError::conflict(
-                "SOURCE_CHANGED",
-                "Media changed since Program preparation",
-            ));
-        }
+        job.validate_program_sources()?;
         let file = open_cache_asset(&job.directory.join("program.mp4"))?;
         job.touch();
         Ok(file)
@@ -997,12 +1055,7 @@ impl MediaJobs {
                 "Wait for composed preview preparation",
             ));
         }
-        if !program::unchanged(&job.inputs) {
-            return Err(ApiError::conflict(
-                "SOURCE_CHANGED",
-                "Media changed since Program preparation",
-            ));
-        }
+        job.validate_program_sources()?;
         let mut page = crate::audio_telemetry::read(&job.directory, from_bin, limit, insert)?;
         page["job_id"] = json!(id);
         page["query"] = serde_json::to_value(query).map_err(|_| ApiError::io())?;

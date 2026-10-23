@@ -236,6 +236,7 @@ impl Task {
         });
         Ok(Self {
             snapshot: FrameSnapshot {
+                originals: None,
                 video: Default::default(),
                 project,
                 timeline,

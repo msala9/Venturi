@@ -95,6 +95,8 @@ fn cache_fixture_job(directory: PathBuf, state: &'static str, bytes: u64) -> Job
         source_window: None,
         source_assets: None,
         inputs: vec![],
+        originals: None,
+        original_manifest: None,
         source_asset: Some("source.mp4"),
         render_tag: "originals".into(),
         source_version: None,
@@ -105,6 +107,176 @@ fn cache_fixture_job(directory: PathBuf, state: &'static str, bytes: u64) -> Job
         durability_error: false,
     }
 }
+fn cache_program_snapshot(query: &ProgramQuery) -> crate::preview::FrameSnapshot {
+    let mut project = vv_core::Project::default();
+    let mut track = vv_core::Track::new(vv_core::TrackKind::Video);
+    track.insert_sorted(vv_core::Clip::from_source_range(
+        vv_core::ClipId(1),
+        vv_core::ClipSource::SolidColor,
+        0,
+        query.end_frame,
+        0,
+        vv_core::Rational::one(),
+    ));
+    let timeline = project.timelines.insert(vv_core::Timeline {
+        name: "cache".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (960, 540),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    crate::preview::FrameSnapshot {
+        video: Default::default(),
+        originals: None,
+        project,
+        timeline,
+        query: query.frame(),
+        size: (960, 540),
+    }
+}
+
+#[test]
+fn requested_original_movie_manifest_guards_ready_hits_assets_and_telemetry_without_rendering() {
+    let root = cache_fixture_root("requested-originals");
+    let files = crate::files::Files::new(&root).unwrap();
+    let path = root.join("used.mp4");
+    std::fs::write(&path, b"first original").unwrap();
+    let originals = Arc::new(crate::frame_sources::FrameSources::capture(&files).unwrap());
+    let query = ProgramQuery {
+        project_epoch: "p:1".into(),
+        if_generation: "0".into(),
+        timeline_id: "1".into(),
+        revision: "r".into(),
+        start_frame: 0,
+        end_frame: 48,
+        audio_origin_frame: None,
+        width: 960,
+    };
+    let mut snapshot = cache_program_snapshot(&query);
+    snapshot.originals = Some(originals.clone());
+    let media = snapshot.project.media_pool.insert(vv_core::MediaItem {
+        path: path.clone(),
+        meta: vv_core::MediaMeta {
+            width: 16,
+            height: 16,
+            duration_frames: 48,
+            fps: vv_core::Rational::new(24, 1),
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    });
+    snapshot.project.timelines[snapshot.timeline].tracks[0].clips[0].source =
+        vv_core::ClipSource::Media(media);
+    let resolver = originals.resolver(&Default::default());
+    let item = &snapshot.project.media_pool[media];
+    let pinned = resolver.resolve(media, item, &item.path).unwrap();
+    drop(pinned);
+    let manifest = originals.manifest().unwrap();
+    assert!(program::inputs(&snapshot).is_ok());
+    let mut unused = item.clone();
+    unused.path = root.join("unused-offline.mp4");
+    let unused = snapshot.project.media_pool.insert(unused);
+    let mut hidden = vv_core::Clip::from_source_range(
+        vv_core::ClipId(2),
+        vv_core::ClipSource::Media(unused),
+        0,
+        48,
+        48,
+        vv_core::Rational::one(),
+    );
+    hidden.disabled = true;
+    snapshot.project.timelines[snapshot.timeline].tracks[0].insert_sorted(hidden);
+    assert!(program::inputs(&snapshot).is_err());
+    assert!(program::preview_inputs(&snapshot).unwrap().is_empty());
+
+    let jobs = MediaJobs::start().unwrap();
+    let directory = jobs.root.join("requested");
+    std::fs::create_dir(&directory).unwrap();
+    std::fs::write(directory.join("program.mp4"), b"prepared movie").unwrap();
+    let mut job = cache_fixture_job(directory, "ready", 14);
+    job.id = "requested".into();
+    job.key = query.preview_key();
+    job.source_asset = None;
+    job.originals = Some(originals);
+    job.program_query = Some(query.clone());
+    jobs.jobs.lock().unwrap().push_back(job);
+    assert!(
+        jobs.cached_programs(&snapshot).is_empty(),
+        "Ready without finalized provenance is not a cache hit"
+    );
+    assert_eq!(
+        jobs.program_asset("requested", &query).unwrap_err().1,
+        "SOURCE_CHANGED"
+    );
+    jobs.jobs.lock().unwrap()[0].original_manifest = Some(manifest);
+    assert_eq!(jobs.cached_programs(&snapshot).len(), 1);
+    assert_eq!(
+        jobs.program_status("requested", &query, false).unwrap()["state"],
+        "ready"
+    );
+    assert!(jobs.program_asset("requested", &query).is_ok());
+
+    let mut inside = query.clone();
+    inside.start_frame = 12;
+    inside.end_frame = 24;
+    let mut candidate = cache_program_snapshot(&inside);
+    candidate.project = snapshot.project.clone();
+    candidate.originals = Some(Arc::new(
+        crate::frame_sources::FrameSources::capture(&files).unwrap(),
+    ));
+    let receipt = jobs
+        .prepare_program(ProgramTask {
+            snapshot: candidate,
+            query: inside,
+            preview: crate::preview::Preview::disabled(),
+            export: None,
+        })
+        .unwrap();
+    assert_eq!(
+        receipt["id"], "requested",
+        "A covering hit uses only captured video sources, not unrelated offline media"
+    );
+    assert_eq!(jobs.jobs.lock().unwrap().len(), 1);
+
+    let times = std::fs::metadata(&path).unwrap();
+    std::fs::write(&path, b"other original").unwrap();
+    File::open(&path)
+        .unwrap()
+        .set_times(
+            std::fs::FileTimes::new()
+                .set_accessed(times.accessed().unwrap())
+                .set_modified(times.modified().unwrap()),
+        )
+        .unwrap();
+    assert!(jobs.cached_programs(&snapshot).is_empty());
+    for error in [
+        jobs.program_status("requested", &query, false).unwrap_err(),
+        jobs.program_asset("requested", &query).unwrap_err(),
+        jobs.program_meters("requested", &query, 0, 1, None)
+            .unwrap_err(),
+    ] {
+        assert_eq!(error.1, "SOURCE_CHANGED");
+    }
+    assert_eq!(
+        jobs.jobs.lock().unwrap().len(),
+        1,
+        "Changed-source reads never enqueue a render"
+    );
+    drop(snapshot);
+    drop(resolver);
+    drop(jobs);
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn cache_fixture_root(label: &str) -> PathBuf {
     let path = std::env::temp_dir().join(format!(
         "vv-cache-{label}-{}-{}",
@@ -1158,6 +1330,8 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         source_assets: None,
         program_query: None,
         inputs: vec![],
+        originals: None,
+        original_manifest: None,
         source_asset: Some("source.mp4"),
         render_tag: "originals".into(),
         source_version: None,
@@ -1204,6 +1378,8 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
             jobs.root.join("source-no-longer-present"),
             "old-identity".into(),
         )],
+        originals: None,
+        original_manifest: None,
         source_asset: None,
         render_tag: "originals".into(),
         source_version: None,
@@ -1227,39 +1403,30 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
         audio_origin_frame: None,
         width: 960,
     };
-    let inputs = jobs.jobs.lock().unwrap()[0].inputs.clone();
+    let mut snapshot = cache_program_snapshot(&query);
     assert!(
-        jobs.cached_programs(&query.frame(), &inputs, "originals")
-            .is_empty(),
+        jobs.cached_programs(&snapshot).is_empty(),
         "Exports are not preview cache"
     );
     jobs.jobs.lock().unwrap()[0].program_query = Some(query.clone());
+    jobs.jobs.lock().unwrap()[0].inputs.clear();
+    jobs.jobs.lock().unwrap()[0].render_tag = "proxy:low".into();
+    assert!(jobs.cached_programs(&snapshot).is_empty());
+    jobs.jobs.lock().unwrap()[0].render_tag = "originals".into();
+    assert_eq!(jobs.cached_programs(&snapshot)[0]["end_frame"], 48);
+    jobs.jobs.lock().unwrap()[0].inputs = vec![(jobs.root.join("missing"), "old".into())];
     assert!(
-        jobs.cached_programs(&query.frame(), &inputs, "proxy:low")
-            .is_empty()
-    );
-    assert_eq!(
-        jobs.cached_programs(&query.frame(), &inputs, "originals")[0]["end_frame"],
-        48
-    );
-    assert!(
-        jobs.cached_programs(&query.frame(), &vec![], "originals")
-            .is_empty(),
+        jobs.cached_programs(&snapshot).is_empty(),
         "Changed inputs cannot advertise cached movies"
     );
-    let mut changed = query.clone();
-    changed.revision = "new".into();
-    assert!(
-        jobs.cached_programs(&changed.frame(), &inputs, "originals")
-            .is_empty()
-    );
+    jobs.jobs.lock().unwrap()[0].inputs.clear();
+    snapshot.query.revision = "new".into();
+    assert!(jobs.cached_programs(&snapshot).is_empty());
+    snapshot.query = query.frame();
     assert!(jobs.export_asset("export-test", "p:2").is_err());
     assert!(jobs.export_status("another-job", "p:1", false).is_err());
     jobs.jobs.lock().unwrap()[0].state = "running";
-    assert!(
-        jobs.cached_programs(&query.frame(), &inputs, "originals")
-            .is_empty()
-    );
+    assert!(jobs.cached_programs(&snapshot).is_empty());
     assert!(jobs.export_asset("export-test", "p:1").is_err());
     jobs.export_status("export-test", "p:1", true).unwrap();
     assert!(cancel.load(Ordering::Relaxed));
@@ -1376,6 +1543,8 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
         source_window: None,
         source_assets: None,
         inputs: vec![],
+        originals: None,
+        original_manifest: None,
         source_asset: None,
         render_tag: "originals".into(),
         source_version: None,
@@ -1417,6 +1586,7 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
         let task = ProgramTask {
             snapshot: crate::preview::FrameSnapshot {
                 video: Default::default(),
+                originals: None,
                 project: project.clone(),
                 timeline,
                 query: query.frame(),
@@ -1962,6 +2132,7 @@ fn accepted_legacy_source_and_program_work_preempt_assets_without_canceling_fore
                 .prepare_program(ProgramTask {
                     snapshot: crate::preview::FrameSnapshot {
                         video: Default::default(),
+                        originals: None,
                         project,
                         timeline,
                         query: query.frame(),

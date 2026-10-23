@@ -56,6 +56,7 @@ fn proxy_lookup_is_nonblocking_ready_only_and_keeps_missing_future_media_for_nat
         master: Default::default(),
     });
     let snapshot = FrameSnapshot {
+        originals: None,
         video: Default::default(),
         project,
         timeline,

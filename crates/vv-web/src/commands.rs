@@ -419,6 +419,19 @@ pub enum Operation {
         length_frames: FrameIdx,
         generator: Generator,
     },
+    PlaceGenerator {
+        generator: crate::effect_placement::Generator,
+        start_frame: FrameIdx,
+        target: AssetDropTarget,
+        #[serde(default, skip_serializing_if = "is_false")]
+        overwrite: bool,
+    },
+    ApplyPaletteFilter {
+        clip_id: String,
+        filter: core::FilterKind,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        preset: Option<crate::effect_placement::Preset>,
+    },
 }
 
 fn is_false(value: &bool) -> bool {
@@ -498,7 +511,7 @@ fn clip_ref(tl: &Timeline, id: &str) -> Result<edit::ClipRef> {
         .find_map(|(i, t)| t.clip(id).map(|_| (i, id)))
         .ok_or_else(ApiError::missing)
 }
-fn track_index(tl: &Timeline, index: &str) -> Result<usize> {
+pub(crate) fn track_index(tl: &Timeline, index: &str) -> Result<usize> {
     let i = index.parse::<usize>().map_err(|_| ApiError::missing())?;
     if i >= tl.tracks.len() {
         return Err(ApiError::missing());
@@ -993,6 +1006,28 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
                 *start_frame,
                 Some(*length_frames),
             );
+        }
+        Operation::PlaceGenerator {
+            generator,
+            start_frame,
+            target,
+            overwrite,
+        } => {
+            crate::effect_placement::generator(
+                session,
+                id,
+                *generator,
+                *start_frame,
+                target,
+                *overwrite,
+            )?;
+        }
+        Operation::ApplyPaletteFilter {
+            clip_id,
+            filter,
+            preset,
+        } => {
+            crate::effect_placement::filter(session, id, clip_id, *filter, *preset)?;
         }
         Operation::SetMarker { marker } => {
             let existing = marker
@@ -1994,7 +2029,7 @@ fn validate_native_placement(
     validate_edge_trial(project, &trial, id, &HashSet::new())?;
     Ok(())
 }
-fn overwrite_targets(
+pub(crate) fn overwrite_targets(
     timeline: &Timeline,
     ranges: &[(usize, FrameIdx, FrameIdx)],
     excluded: &HashSet<ClipId>,
@@ -2033,7 +2068,7 @@ fn overwrite_targets(
     }
     Ok(())
 }
-fn validate_edge_trial(
+pub(crate) fn validate_edge_trial(
     before: &core::Project,
     trial: &core::Project,
     id: TimelineId,

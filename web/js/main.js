@@ -18,6 +18,8 @@ import { createSourceSeek } from "./source-seek.js";
 import { createSourceAssets,createSourceAssetQueue,sourceAssetKey,mediaThumbnail } from "./source-assets.js";
 import { inspectorGroup,editingShortcutAllowed,selectionInspectorRows,renderInspectorSelection, detailIdentity, renderProperties, renderMarkers,renderTransitionSelection,videoPropertySelection,audioPropertySelection,retimePropertySelection,compoundSelectionOperation,renderRetime,renderBlendMatte,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects } from "./inspector.js";
 import {createZoomLink} from './curves.js';
+import {createFontCatalogReader} from './fonts.js';
+import {effectDragItem,effectPlacementOperation} from './timeline/effect-drop.js';
 import {createCurveWindow} from './curve-window.js';
 import {maskFocusAfterEdit} from './masks.js';
 import { renderMixer, mixerDraftContext } from "./mixer.js";
@@ -54,6 +56,7 @@ import {createProjectView} from './project-view.js';
 import {resolveMarkRange,setMarkIn,setMarkOut,markRangeContext,markRangeAction} from './mark-range.js';
 
 const $ = (id) => document.getElementById(id);
+const readFonts=createFontCatalogReader(()=>request('/fonts'));
 const editor = $("editor");
 const clipListDismissal=installClipListDismissal(document.querySelector('.timeline-list-menu'));
 let scopes = null, scopesWanted=false, scopePlayback = false, scopesSuspended = false, previewCache = null, audioMeters = null;
@@ -261,19 +264,28 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
     if(name==='Presets'){presetPanel?.open();return;}
     if (name === "Effects") for (const [label,generator] of [["Add title","title"],["Add adjustment clip","adjustment"]]) {
       const action=document.createElement("button");action.textContent=label;
+      bindPaletteDrag(action,{kind:'generator',generator});
       action.addEventListener("click",()=>addGenerator(generator));$("panel-content").append(action);
     }
     if(name==='Effects'){
-      const solid=document.createElement('button');solid.textContent='▰ Color Fill';solid.addEventListener('click',()=>$('add-solid').click());$('panel-content').prepend(solid);
+      const solid=document.createElement('button');solid.textContent='▰ Color Fill';bindPaletteDrag(solid,{kind:'generator',generator:'solid'});solid.addEventListener('click',()=>$('add-solid').click());$('panel-content').prepend(solid);
       const heading=document.createElement('p');heading.textContent='Filters';$('panel-content').append(heading);
       for(const [label,kind] of [['Color Correction','ColorCorrection'],['Exposure','Exposure'],['Box Blur','BoxBlur'],['Gaussian Blur','GaussianBlur'],['Drop Shadow','DropShadow']]){
-        const effect=document.createElement('button');effect.textContent=`☼ ${label}`;effect.addEventListener('click',()=>{
+        const effect=document.createElement('button');effect.textContent=`☼ ${label}`;bindPaletteDrag(effect,{kind:'filter',filter:kind});effect.addEventListener('click',()=>{
           setInspectorTab('video');revealNativeFilters();
           const section=document.querySelector('[data-visual-path="selected-filters"]'),choice=section?.querySelector('[aria-label="Visual filter type"]'),add=section?.querySelector('[aria-label="Add visual filter to selection"]');
           if(!choice || !add || ![...choice.options].some(option=>option.value===kind))return notice('Select a video clip to add this filter');
           choice.value=kind;choice.dispatchEvent(new Event('change'));if(!add.disabled)add.click();
         });$('panel-content').append(effect);
       }
+      const monochrome=document.createElement('button');monochrome.textContent='☼ Black and white';
+      bindPaletteDrag(monochrome,{kind:'filter',filter:'ColorCorrection',preset:'BlackAndWhite'});
+      monochrome.addEventListener('click',()=>{
+        if(!writable || busy || unresolved || !canEditInspector())return;
+        const clip=timeline?.tracks.filter(track=>track.kind==='video' && !track.locked).flatMap(track=>track.clips).find(clip=>view.selection.includes(clip.id));
+        if(!clip)return notice('Select an unlocked video clip, or drag Black and white onto one');
+        run({kind:'apply_palette_filter',clip_id:clip.id,filter:'ColorCorrection',preset:'BlackAndWhite'});
+      });$('panel-content').append(monochrome);
     }
     if(name==='Effects'){const transitions=document.createElement('div');transitions.id='transition-presets';$("panel-content").append(transitions);renderTransitionPresets();}
     for (const label of (name==='Effects'?[]:panels[name]) || []) {
@@ -690,7 +702,7 @@ function selected() {
       if(!current() || detail.clip_id!==selection.clip_ids[0])return;
       target.replaceChildren();
       const primary=timeline.tracks.flatMap(track=>track.clips).find(item=>item.id===detail.clip_id);
-      const options={selection,getSelection,frame:inspectorFrame,getFrame:()=>view.playhead,canInteract:()=>current() && canEditInspector(),canNavigate:()=>current() && canNavigateInspector(),commit,notice,primaryName:primary?.name,visualState,zoomLink,timelineSize:[timeline.resolution.width,timeline.resolution.height],
+      const options={selection,getSelection,frame:inspectorFrame,getFrame:()=>view.playhead,canInteract:()=>current() && canEditInspector(),canNavigate:()=>current() && canNavigateInspector(),commit,notice,primaryName:primary?.name,visualState,zoomLink,readFonts,timelineSize:[timeline.resolution.width,timeline.resolution.height],
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;updateTime();seek();selected();void projectView?.update();}};
       if(role==='video'){const properties=renderSelectedVideoProperties(target,detail,options);if(properties)visualControls.push(properties);renderBlendMatte(target,detail,options);visualControls.push(...renderSelectedVideoEffects(target,detail,options));}
       else if(role==='audio'){const gain=renderSelectedAudioGain(target,detail,options);if(gain)visualControls.push(gain);}
@@ -1303,9 +1315,25 @@ function renderHistory() {
   }
 }
 function addGenerator(generator) {
-  const track=timeline?.tracks.find((t)=>t.kind === "video" && !t.locked);
-  if (!track) return notice("Add or unlock a video track first");
-  run({kind:"add_generator",generator,track:track.id,start_frame:view.playhead,length_frames:Math.round(5*timeline.fps.num/timeline.fps.den)});
+  if(!timeline || !documentState || !writable || busy || unresolved)return;
+  const length=Math.round(timeline.fps.num/timeline.fps.den*5);
+  const track=timeline.tracks.find(track=>track.kind==='video' && !track.locked && !track.clips.some(clip=>clip.start_frame<view.playhead+length && clip.start_frame+clip.length_frames>view.playhead));
+  run({kind:'place_generator',generator,start_frame:view.playhead,target:track?{kind:'track',track_id:track.id}:{kind:'new_video_track'},overwrite:false});
+}
+function bindPaletteDrag(button,entry){
+  button.draggable=true;button.title='Drag to a timeline destination; click uses the current selection or playhead';
+  button.addEventListener('dragstart',event=>{
+    if(!event.dataTransfer || !documentState || !writable || busy || unresolved){event.preventDefault();return;}
+    fastTransport?.stop();audioScrub?.stop();programPlayer?.stop();sourcePlayer?.pause();
+    const item=effectDragItem(documentState,entry);
+    const current=()=>button.isConnected!==false && $('browser').dataset.browserPanel==='Effects' && documentState?.project_epoch===item?.project_epoch && documentState?.generation===item?.generation && writable && !busy && !unresolved;
+    const payload=canvasTimeline.effectDnd.start([item],current,async(draft,isCurrent)=>{
+      if(isCurrent())await commit(effectPlacementOperation(draft));
+    });
+    if(!payload){event.preventDefault();return;}
+    event.dataTransfer.setData(canvasTimeline.effectDnd.type,payload);event.dataTransfer.effectAllowed='copy';
+  });
+  button.addEventListener('dragend',()=>canvasTimeline.effectDnd.end());
 }
 function moveSelection(delta) {
   if (!timeline || !view.selection.length) return;
@@ -1441,14 +1469,7 @@ for(const [label,mode] of [['Select all timeline clips','all'],['Select clips fr
 }
 $("close-gap").addEventListener('click',()=>void canvasTimeline.closeGap());
 $("add-solid").addEventListener("click", () => {
-  const track = timeline?.tracks.find((t) => t.kind === "video" && !t.locked);
-  if (track)
-    run({
-      kind: "add_solid",
-      track: track.id,
-      start_frame: view.playhead,
-      length_frames: Math.round((5 * timeline.fps.num) / timeline.fps.den),
-    });
+  addGenerator('solid');
 });
 $("split").addEventListener("click", () =>
   run({ kind: "split", clip_ids: view.selection, frame: view.playhead }),

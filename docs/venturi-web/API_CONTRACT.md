@@ -1,5 +1,52 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Native title fonts
+
+`GET /api/v1/fonts` returns
+`{families:[{family,name,faces:[{weight,italic,name}]}]}` from the same native
+font database used by title rasterization. The empty family is named Sans-serif.
+Families without faces use the desktop's Regular/Bold/Italic/Bold Italic fallback.
+Installed face names, weights and styles are preserved; no browser-local font
+enumeration or font download is involved. The process catalog initializes once
+on a blocking worker, outside the Session actor, and remains immutable until
+restart. The route needs no writer lease, changes no project/history and accepts
+no query parameters. Ordinary origin/Host restrictions and no-store apply.
+
+The title Inspector loads this catalog when its typography section opens. A
+family choice edits only the family; a confirmed style choice submits weight and
+italic through native selected-title field-difference semantics, preserving other
+titles' text and unmodified fields. Saved unknown families/styles remain visible;
+manual fields remain available in a collapsed section. Failed reads require an
+explicit Retry. Out-of-range weights beyond the existing manual 100–900 domain
+are accepted only when that style occurs in the initialized native catalog.
+Menu-hover preview is not implemented by these confirmed choices.
+
+## Effects palette placement
+
+Timeline commands add `place_generator` with `generator: title|solid|adjustment`,
+`start_frame`, `target: {kind:track,track_id}|{kind:new_video_track}` and optional
+`overwrite` (false by default). The duration is the native five-second default
+at timeline FPS. Existing unlocked destinations and new video tracks use native
+generator insertion; track creation plus insertion is one Undo. Hovering an
+unlocked audio track resolves to the first unlocked video track, as in the native
+drop policy. A locked hovered track is rejected. New audio tracks are not valid.
+Safe placement rejects overlap; explicit overwrite retains linked, crossing and
+locked-target validation. The legacy `add_generator` operation is unchanged.
+
+`apply_palette_filter` accepts one `clip_id`, native `filter` and optional
+`preset: BlackAndWhite` for ColorCorrection only. It adds a missing filter or
+enables an existing filter in place, preserving its parameters, keys and stack
+position. The monochrome entry applies the native grade preset. It targets only
+the requested unlocked video clip; selection and linked peers are not expanded.
+An already identical filter is a no-op. Native project validation and ordinary
+mutation epoch/generation/revision/writer guards remain in force.
+
+Palette HTML drags are owned by the current editor, recompute the destination
+on release, and share the existing viewport/selection/modal/lock/cancellation
+guards. External drag payloads cannot create an active local owner. Generator
+clicks use the first unlocked video track free at the playhead, creating a video
+track when necessary. They keep safe placement rather than enabling overwrite.
+
 ## Requested original preview source binding
 
 The Web actor captures the approved projects-root descriptor without scanning

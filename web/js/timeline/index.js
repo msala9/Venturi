@@ -6,7 +6,7 @@ export function createTimeline(options) {
   const input = createInput({ ...options, invalidate: changed });
   return {
     ...draw,
-    invalidate(){input.checkPresetDrop();input.checkAssetDrop();input.checkSourceDrop();input.checkProjectPoolDrop();input.checkGapSelection();input.checkSelectionAnchor();changed();},
+    invalidate(){input.checkPresetDrop();input.checkAssetDrop();input.checkSourceDrop();input.checkProjectPoolDrop();input.checkEffectDrop();input.checkGapSelection();input.checkSelectionAnchor();changed();},
     cancel: input.cancel,
     closeGap:input.closeGap,
     rippleDelete:input.rippleDelete,
@@ -24,6 +24,7 @@ export function createTimeline(options) {
     assetDnd:{...input.assetDnd,start(items,current,onDrop){options.onNavigationIntent?.();return input.assetDnd.start(items,current,onDrop);}},
     sourceDnd:{...input.sourceDnd,start(items,current,onDrop){options.onNavigationIntent?.();return input.sourceDnd.start(items,current,onDrop);}},
     projectPoolDnd:{...input.projectPoolDnd,start(items,current,onDrop){options.onNavigationIntent?.();return input.projectPoolDnd.start(items,current,onDrop);}},
+    effectDnd:{...input.effectDnd,start(items,current,onDrop){options.onNavigationIntent?.();return input.effectDnd.start(items,current,onDrop);}},
     navigationIdle:input.navigationIdle,
     destroy() {
       input.destroy();

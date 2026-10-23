@@ -6,6 +6,106 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn native_font_catalog_http_is_cached_lease_free_strict_and_preserves_session_and_undo() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-native-fonts-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let host = Host::start(&root).unwrap();
+    host.call(Action::Lease("another-editor".into()))
+        .await
+        .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let mut first = None;
+    for _ in 0..2 {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/api/v1/fonts")
+                    .header("host", "127.0.0.1:8787")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+        let value: Value = serde_json::from_slice(
+            &to_bytes(response.into_body(), 4 * 1024 * 1024)
+                .await
+                .unwrap(),
+        )
+        .unwrap();
+        assert_eq!(value["families"][0]["family"], "");
+        assert_eq!(value["families"][0]["name"], "Sans-serif");
+        assert_eq!(
+            value,
+            crate::fonts::catalog().await.unwrap().as_ref().clone()
+        );
+        if let Some(first) = &first {
+            assert_eq!(&value, first);
+        } else {
+            first = Some(value);
+        }
+    }
+    for (method, path, request_host, status) in [
+        (
+            "GET",
+            "/api/v1/fonts?family=path",
+            "127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "GET",
+            "/api/v1/fonts?path=/tmp/font.ttf",
+            "127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "GET",
+            "/api/v1/fonts",
+            "evil.example:8787",
+            StatusCode::FORBIDDEN,
+        ),
+        (
+            "POST",
+            "/api/v1/fonts",
+            "127.0.0.1:8787",
+            StatusCode::METHOD_NOT_ALLOWED,
+        ),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(method)
+                    .uri(path)
+                    .header("host", request_host)
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), status, "{method} {path}");
+    }
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn native_asset_source_browser_http_is_lease_free_epoch_bound_strict_and_embeds_picker() {
     let root = std::env::temp_dir().join(format!(
         "vv-native-source-http-{}",
@@ -1776,6 +1876,8 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/timeline/input.js", 200),
         ("/js/timeline/preset-drop.js", 200),
         ("/js/timeline/asset-drop.js", 200),
+        ("/js/timeline/effect-drop.js", 200),
+        ("/js/fonts.js", 200),
         ("/js/curve-viewport.js", 200),
         ("/js/curve-window.js", 200),
         ("/js/source-placement.js", 200),

@@ -34,6 +34,7 @@ pub fn router(state: AppState) -> Router {
             get(|| async { Json(json!({"status":"ok","api_version":1})) }),
         )
         .route("/api/v1/session", get(session))
+        .route("/api/v1/fonts", get(font_catalog))
         .route("/api/v1/media/sources", get(media_sources))
         .route(
             "/api/v1/media/proxies",
@@ -233,6 +234,18 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FontQuery {}
+async fn font_catalog(
+    query: std::result::Result<Query<FontQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    query.map_err(|_| {
+        ApiError::invalid("The native font catalog does not accept query parameters")
+    })?;
+    let catalog = crate::fonts::catalog().await?;
+    Ok(native_asset_json(catalog.as_ref().clone()))
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -2306,6 +2319,7 @@ async fn assets(request: Request) -> Response {
         "/js/program-range.js" => asset!("/web/js/program-range.js", "text/javascript"),
         "/js/export.js" => asset!("/web/js/export.js", "text/javascript"),
         "/js/inspector.js" => asset!("/web/js/inspector.js", "text/javascript"),
+        "/js/fonts.js" => asset!("/web/js/fonts.js", "text/javascript"),
         "/js/keyframe-navigation.js" => asset!("/web/js/keyframe-navigation.js", "text/javascript"),
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
         "/js/curve-viewport.js" => asset!("/web/js/curve-viewport.js", "text/javascript"),
@@ -2374,6 +2388,9 @@ async fn assets(request: Request) -> Response {
         }
         "/js/timeline/asset-drop.js" => {
             asset!("/web/js/timeline/asset-drop.js", "text/javascript")
+        }
+        "/js/timeline/effect-drop.js" => {
+            asset!("/web/js/timeline/effect-drop.js", "text/javascript")
         }
         "/js/timeline/draw.js" => asset!("/web/js/timeline/draw.js", "text/javascript"),
         _ => return ApiError::missing().into_response(),

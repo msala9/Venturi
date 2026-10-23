@@ -1462,8 +1462,12 @@ fn patch_title(mut title: core::TitleParams, edit: &TitleEdit) -> Result<core::T
         title.font_family = family.clone();
     }
     if let Some(weight) = edit.font_weight {
-        if !(100..=900).contains(&weight) {
-            return Err(ApiError::invalid("Font weight must be 100–900"));
+        if !(100..=900).contains(&weight)
+            && !crate::fonts::supports_style(weight, edit.italic.unwrap_or(title.italic))
+        {
+            return Err(ApiError::invalid(
+                "Choose a font weight from 100–900 or an installed native font style",
+            ));
         }
         title.font_weight = weight;
     }

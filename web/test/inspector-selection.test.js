@@ -16,11 +16,12 @@ function detail(video=true){
   };
 }
 const settle=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
-function harness(t,{video=true,effects=false,commit,editDetail=()=>{}}={}){
+function harness(t,{video=true,effects=false,commit,editDetail=()=>{},readFonts}={}){
   const priorDocument=globalThis.document,priorOption=globalThis.Option;
   class Element extends EventTarget{
     constructor(tag){super();this.tagName=tag;this.children=[];this.dataset={};this.style={};this.disabled=false;this.isConnected=true;this.value='';}
     append(...children){for(const child of children){this.children.push(child);if(typeof child==='object')child.parent=this;}}
+    replaceChildren(...children){this.children=[];this.append(...children);}
     setAttribute(name,value){this[name]=String(value);}
     get options(){return this.children;}
     reportValidity(){return true;}
@@ -31,7 +32,7 @@ function harness(t,{video=true,effects=false,commit,editDetail=()=>{}}={}){
   const state=snapshot(),root=new Element('div'),native=detail(video),commands=[],notices=[],seeks=[],visualState=new Map();editDetail(native);
   let allowed=true,frame=20;
   const getSelection=()=>video?videoPropertySelection(state):audioPropertySelection(state);
-  const options={selection:getSelection(),getSelection,frame,getFrame:()=>frame,canInteract:()=>allowed,commit:operation=>{commands.push(operation);return commit?.(operation);},notice:message=>notices.push(message),primaryName:video?'First video':'First audio',visualState,timelineSize:[1920,1080],seek:frame=>seeks.push(frame)};
+  const options={selection:getSelection(),getSelection,frame,getFrame:()=>frame,canInteract:()=>allowed,commit:operation=>{commands.push(operation);return commit?.(operation);},notice:message=>notices.push(message),primaryName:video?'First video':'First audio',visualState,timelineSize:[1920,1080],seek:frame=>seeks.push(frame),readFonts};
   const all=(node=root)=>[node,...node.children.flatMap(child=>typeof child==='object'?all(child):[])];
   const field=label=>all().find(node=>node['aria-label']===label);
   const render=()=>effects?renderSelectedVideoEffects(root,native,options):video?renderSelectedVideoProperties(root,native,options):renderSelectedAudioGain(root,native,options);
@@ -224,6 +225,33 @@ const keyInfo=(on=false,previous=12,next=31)=>({on_keyframe:on,previous_frame:pr
 function titleDetail(native){
   native.title={content:{default:'Default text',value:'Current animated text',keyframes:[[0,'First','Hold']],key_count:100,keyframe_info:keyInfo(true)},font_family:'Server font',font_weight:400,italic:false,underline:false,strikethrough:false,size:96,tracking:0,line_spacing:0,case:'Mixed',align:'Center',anchor:['Center','Middle'],position:[10,-20],color:{r:1,g:1,b:1,a:1},background:{enabled:true,color:{r:0,g:0,b:0,a:1},outline_color:{r:1,g:1,b:1,a:1},outline_width:2,width:0.2,height:0.3,corner_radius:0.1,center:[5,8],opacity:80}};
 }
+const fontCatalog=()=>({families:[{family:'',name:'Sans-serif',faces:[]},{family:'Server font',name:'Server font',faces:[{weight:400,italic:false,name:'Regular'},{weight:400,italic:true,name:'Italic'},{weight:1000,italic:false,name:'Black'}]},{family:'Other server font',name:'Other server font',faces:[{weight:700,italic:true,name:'Bold Italic'}]}]});
+
+test('title fonts load only on opening typography and confirmed family/style edits preserve native field-diff semantics',async t=>{
+  let reads=0;const h=harness(t,{effects:true,editDetail:titleDetail,readFonts:async()=>{reads++;return fontCatalog();}}),group=h.all().find(node=>node.dataset.visualPath==='selected-effects:Selected title typography');
+  assert.equal(reads,0);assert.equal(h.field('Server font family').disabled,true);h.field('Title text').value='Unsubmitted text draft';group.open=true;group.dispatchEvent(new Event('toggle'));await settle();
+  assert.equal(reads,1);assert.equal(h.field('Title text').value,'Unsubmitted text draft');assert.equal(h.field('Server font family').value,'Server font');
+  const style=h.field('Server font style');style.value='400:0';style.dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands,[]);
+  style.value='400:1';style.dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands[0].edit,{action:'title',patch:{italic:true}},'Native apply_title_edit broadcasts only fields changed from the primary');
+  style.value='1000:0';style.dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands[1].edit,{action:'title',patch:{font_weight:1000}});
+  const family=h.field('Server font family');family.value='Other server font';family.dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands[2].edit,{action:'title',patch:{font_family:'Other server font'}});assert.equal(h.native.title.font_weight,400);assert.equal(h.native.title.content.value,'Current animated text');
+  group.open=false;group.dispatchEvent(new Event('toggle'));group.open=true;group.dispatchEvent(new Event('toggle'));await settle();assert.equal(reads,1);assert.equal(h.all().find(node=>node.dataset.visualPath==='selected-title-font-manual').open,false);
+});
+
+test('font catalog failures preserve manual drafts and retry only on an explicit action',async t=>{
+  let reads=0;const h=harness(t,{effects:true,editDetail:titleDetail,readFonts:async()=>{reads++;if(reads===1)throw Error('Font service unavailable');return fontCatalog();}}),group=h.all().find(node=>node.dataset.visualPath==='selected-effects:Selected title typography');
+  const manual=h.field('Font family (server)');manual.value='My manual font draft';group.open=true;group.dispatchEvent(new Event('toggle'));await settle();assert.equal(reads,1);assert.equal(h.field('Retry server fonts').hidden,false);assert.equal(manual.value,'My manual font draft');
+  group.open=false;group.dispatchEvent(new Event('toggle'));group.open=true;group.dispatchEvent(new Event('toggle'));await settle();assert.equal(reads,1);h.click('Retry server fonts');await settle();assert.equal(reads,2);assert.equal(manual.value,'My manual font draft');assert.equal(h.field('Retry server fonts').hidden,true);assert.deepEqual(h.commands,[]);
+});
+
+test('late font reads cannot republish controls for a different playhead or disposed selection',async t=>{
+  for(const action of ['frame','selection','dispose'])await t.test(action,async t=>{
+    let resolve,signal;const h=harness(t,{effects:true,editDetail:titleDetail,readFonts:options=>{signal=options.signal;return new Promise(done=>{resolve=done;});}}),group=h.all().find(node=>node.dataset.visualPath==='selected-effects:Selected title typography');
+    group.open=true;group.dispatchEvent(new Event('toggle'));
+    if(action==='frame')h.setFrame(21);else if(action==='selection')h.state.selection=['9'];else h.control.at(-1).cancel();
+    resolve(fontCatalog());await settle();assert.equal(h.field('Server font family').options.length,1);h.field('Server font family').value='Other server font';h.field('Server font family').dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands,[]);if(action==='dispose')assert.equal(signal.aborted,true);
+  });
+});
 function filterDetail(native){
   const value=(number,on=false)=>({value:number,keyframes:[],key_count:100,keyframe_info:keyInfo(on)});
   native.filters={kinds:['GaussianBlur','Exposure','DropShadow','ColorCorrection'],blur_radius_max:512,shadow_grow_max:1024,blur_directions:['Both','Horizontal','Vertical'],grade_presets:['Neutral','BlackAndWhite'],wheels:[],stack:[

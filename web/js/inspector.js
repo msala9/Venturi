@@ -3,6 +3,7 @@ import {renderMasks} from "./masks.js";
 import {renderCurves,createZoomLink,zoomParameters,createKeyPickSelection} from "./curves.js";
 import {renderEventKeys} from "./eventkeys.js";
 import {renderKeySelection} from "./keyselection.js";
+import {createTitleFontChooser} from './fonts.js';
 
 export function inspectorGroup(section,group){
   if(!['video','audio','selection'].includes(group))throw Error('Choose an Inspector group');
@@ -209,18 +210,25 @@ export function renderSelectedVideoEffects(root,detail,options){
     const title=detail.title,parent=group('Selected title typography'),before={...structuredClone(title),text:title.content.value ?? title.content.default};delete before.content;
     const submit=patch=>{const changed=titleSelectionPatch(before,patch);if(Object.keys(changed).length)controls.submit({action:'title',patch:changed});};
     const reset=(parent,label,fields)=>controls.button(`Reset ${label}`,{action:'reset_title',fields},parent);
-    function text(label,field,value,multiline=false){
+    function text(label,field,value,multiline=false,target=parent){
       const form=document.createElement('form'),row=document.createElement('label'),input=controls.register(document.createElement(multiline?'textarea':'input'));row.className='field';row.textContent=label;if(!multiline)input.type='text';input.value=value;input.maxLength=multiline?4096:128;input.setAttribute('aria-label',label);row.append(input);form.append(row);
-      const button=controls.register(document.createElement('button'));button.textContent=`Apply ${label}`;button.setAttribute('aria-label',button.textContent);form.append(button);form.addEventListener('submit',event=>{event.preventDefault();if(new TextEncoder().encode(input.value).length>(multiline?4096:128))return options.notice(`${label} exceeds its UTF-8 byte limit`);if(form.reportValidity())submit({[field]:input.value});});parent.append(form);return form;
+      const button=controls.register(document.createElement('button'));button.textContent=`Apply ${label}`;button.setAttribute('aria-label',button.textContent);form.append(button);form.addEventListener('submit',event=>{event.preventDefault();if(new TextEncoder().encode(input.value).length>(multiline?4096:128))return options.notice(`${label} exceeds its UTF-8 byte limit`);if(form.reportValidity())submit({[field]:input.value});});target.append(form);return form;
     }
     const textForm=text('Title text','text',before.text,true);keyDiamond(textForm,'title text',[title.content],controls,{action:'toggle_text_key'});
-    const fontForm=text('Font family (server)','font_family',title.font_family);reset(fontForm,'title font',['font_family']);
-    for(const [label,field,min,max] of [['Font weight','font_weight',100,900],['Font size','size',1,1000],['Letter tracking','tracking',-300,1000],['Line spacing','line_spacing',-200,500]]){
+    const fonts=document.createElement('div');parent.append(fonts);
+    controls.own(createTitleFontChooser({root:fonts,group:parent,title,readFonts:options.readFonts,register:controls.register,sync:controls.sync,isCurrent:controls.current,canInteract:controls.available,onFamily:font_family=>submit({font_family}),onFace:face=>submit({font_weight:face.weight,italic:face.italic})}));
+    reset(fonts,'title font',['font_family']);reset(fonts,'title style',['font_weight','italic']);
+    const manual=document.createElement('details'),manualTitle=document.createElement('summary');manual.dataset.visualPath='selected-title-font-manual';manual.className='inspector-help';manual.open=options.visualState?.get(manual.dataset.visualPath) ?? false;manualTitle.textContent='Manual font and style';manual.append(manualTitle);parent.append(manual);
+    text('Font family (server)','font_family',title.font_family,false,manual);
+    if(title.font_weight>=100 && title.font_weight<=900)selectedNumber(manual,'Font weight',{value:title.font_weight,min:100,max:900,step:1},controls,value=>submit({font_weight:value}));
+    else{const current=document.createElement('p');current.className='muted';current.textContent=`Current server style weight: ${title.font_weight} · choose a listed server style to change it`;manual.append(current);}
+    for(const [label,field,min,max] of [['Font size','size',1,1000],['Letter tracking','tracking',-300,1000],['Line spacing','line_spacing',-200,500]]){
       selectedNumber(parent,label,{value:title[field],min,max,step:field==='font_weight'?1:'any'},controls,value=>submit({[field]:value}));reset(parent,label.toLowerCase(),[field]);
     }
     function checkbox(parent,label,checked,change){const row=document.createElement('label'),input=controls.register(document.createElement('input'));input.type='checkbox';input.checked=checked;input.setAttribute('aria-label',label);row.append(input,label);input.addEventListener('change',()=>{if(controls.current())change(input.checked);});parent.append(row);}
-    for(const field of ['italic','underline','strikethrough'])checkbox(parent,`Title ${field}`,title[field],value=>submit({[field]:value}));
-    reset(parent,'title style',['font_weight','italic']);reset(parent,'title decorations',['underline','strikethrough']);
+    checkbox(manual,'Title italic',title.italic,value=>submit({italic:value}));
+    for(const field of ['underline','strikethrough'])checkbox(parent,`Title ${field}`,title[field],value=>submit({[field]:value}));
+    reset(parent,'title decorations',['underline','strikethrough']);
     function choice(parent,label,value,values,change){const row=document.createElement('label'),select=controls.register(document.createElement('select'));row.className='field';row.textContent=label;select.setAttribute('aria-label',label);for(const value of values)select.append(new Option(value,value));select.value=value;row.append(select);select.addEventListener('change',()=>{if(controls.current() && values.includes(select.value))change(select.value);});parent.append(row);}
     choice(parent,'Title case',title.case,['Mixed','Upper','Lower','Title'],value=>submit({case:value}));reset(parent,'title case',['case']);
     choice(parent,'Title alignment',title.align,['Left','Center','Right','Justify'],value=>submit({align:value}));reset(parent,'title alignment',['align']);

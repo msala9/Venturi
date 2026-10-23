@@ -102,7 +102,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       if(attached(value))scheduleHeartbeat(value);
     }
   }
-  async function openLegacy(item, epoch, quality = "medium",audioSelection={index:0,explicit:false,mode:'selected'}) {
+  async function openLegacy(item, epoch, quality = "medium",audioSelection={index:0,explicit:false,mode:'selected'},expectedVersion) {
     if(disposed)return;
     const resetSequence=sequence+1;
     reset();
@@ -122,6 +122,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       if(typeof job.id!=='string' || !job.id)throw Error('Source preparation returned an invalid job; reopen Source');
       const sourceVersion=job.source_version;
       if(sourceVersion!=null && (typeof sourceVersion!=='string' || !sourceVersion || sourceVersion.length>256))throw Error('Source identity is unavailable; reopen Source');
+      if(expectedVersion!==undefined && sourceVersion!==expectedVersion)throw Error('Source identity changed; reopen Source');
       if(item.native_asset && sourceVersion!==item.native_asset.source_version)throw Error('Library Source identity changed; open its preview again');
       const id=job.id,asset=sourceAsset(job);
       if(!['source.mp4','source.png','source.jpg','source.webp'].includes(asset))throw Error('Source preparation returned an unsupported asset; reopen Source');
@@ -151,7 +152,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       ready = !still;
       cancel.disabled = true;
       status.textContent = still ? `${item.name} · ORIGINAL STILL · embedded color profile and transparency preserved` : `${item.name} · SOURCE PROXY · ${quality} · ${audioSelection.mode==='all'?'all audio streams':audioSelection.explicit?`audio stream ${audioSelection.index} (zero-based)`:'first audio stream'}`;
-      binding={sequence:seq,path:jobPath,signal,job:id,asset,epoch,url,element:still?image:video,item,audioSelection,sourceVersion};preparing=false;scheduleHeartbeat(binding);
+      binding={sequence:seq,path:jobPath,signal,job:id,asset,epoch,url,element:still?image:video,item,quality,audioSelection,sourceVersion};preparing=false;scheduleHeartbeat(binding);
       const completed=binding;notify('ready');
       if(current(completed))onReady?.({ item, epoch, job:id,audio_mode:audioSelection.mode,audio_stream_index:audioSelection.mode==='all'?null:audioSelection.index });
     } catch (error) {
@@ -361,11 +362,20 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     if(!windowed || item.is_image)return openLegacy(item,epoch,quality,audioSelection);
     return prepareWindow(item,epoch,quality,startFrame,{audioSelection,version:item.native_asset?.source_version});
   }
-  async function seekFrame(frame,{retain=false}={}){
+  // An owned preparation pause must not revoke the next queued seek's intent.
+  const playing=()=>!!(playbackIntent && (video.playbackRate ?? 1)===1 && (preparing || nativeSeeking || ready && binding?.verified && attached(binding) && !video.paused && !video.ended));
+  async function reopen(quality){
+    const value=binding,context=value?{item:value.item,epoch:value.epoch,quality:value.quality,version:value.window?.source_version ?? value.sourceVersion,audioSelection:value.audioSelection}:windowContext;
+    if(!context || disposed)return;
+    const item=structuredClone(context.item),audioSelection={...context.audioSelection},frame=currentWindow()?.frame ?? stateContext?.frame ?? context.startFrame ?? 0,resume=playing();
+    if(!windowed || item.is_image)return openLegacy(item,context.epoch,quality,audioSelection,context.version);
+    return prepareWindow(item,context.epoch,quality,frame,{version:context.version,audioSelection,autoplay:resume,reason:'quality'});
+  }
+  async function seekFrame(frame,{retain=false,resume=false}={}){
     const value=binding,context=value?.window?{item:value.item,epoch:value.epoch,quality:value.quality,version:value.window.source_version,audioSelection:value.audioSelection}:windowContext;
     if(!windowed || !context || disposed)return;
-    requestedWindow(context.item,frame);playbackIntent=false;clearFuture();
-    if(!value?.window || !attached(value) || frame<value.window.start_frame || frame>=value.window.end_frame)return prepareWindow(context.item,context.epoch,context.quality,frame,{version:context.version,audioSelection:context.audioSelection,reason:'seek',continuation:retain===true && !!value?.window && attached(value)});
+    requestedWindow(context.item,frame);const autoplay=resume===true && playing();playbackIntent=autoplay;clearFuture();
+    if(!value?.window || !attached(value) || frame<value.window.start_frame || frame>=value.window.end_frame)return prepareWindow(context.item,context.epoch,context.quality,frame,{version:context.version,audioSelection:context.audioSelection,autoplay,reason:'seek',continuation:retain===true && !!value?.window && attached(value)});
     const seq=++sequence;controller?.abort();stopHeartbeat();controller=new AbortController();const signal=controller.signal;
     binding={...value,sequence:seq,signal,verified:false};ready=false;preparing=true;nativeSeeking=false;seekingTarget=null;startingPlayback=false;
     try{
@@ -375,7 +385,8 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       await seekMedia((frame-value.window.start_frame)*value.window.fps.den/value.window.fps.num,signal);
       if(seq!==sequence || signal.aborted || !attached(binding))return;
       if(localFrame(binding)!==frame)throw Error('Source seek did not reach the requested absolute frame');
-      binding.verified=true;ready=true;preparing=false;seekingTarget=null;windowContext={...context,startFrame:frame};scheduleHeartbeat(binding);notify('ready','seek',frame);
+      binding.verified=true;ready=true;preparing=false;seekingTarget=null;windowContext={...context,startFrame:frame};const completed=binding;scheduleHeartbeat(completed);notify('ready','seek',frame);
+      if(autoplay && seq===sequence && binding===completed)await play(completed);
     }catch(error){if(seq===sequence && !signal.aborted){const retry=windowContext;detach(`${error.message} · reopen Source`,'error',stateContext?.reason,retry);}}
   }
   const cancelPreparation=async () => {
@@ -390,7 +401,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   const imageError=()=>{if(image?.complete===false || image?.naturalWidth>0 || (image?.currentSrc && image.currentSrc!==image.src))return;if(binding?.element===image && attached(binding))detach('Browser could not load this original image; reopen Source');};
   const played=()=>{
     if(!windowed)return;
-    if(preparing){if(!startingPlayback)pause();return;}
+    if(preparing || nativeSeeking){if(!startingPlayback)pause();return;}
     if(!binding?.window)return;
     if(!currentWindow() || video.paused)return;
     playbackIntent=true;startingPlayback=true;const value=binding;queueMicrotask(()=>{if(binding===value)startingPlayback=false;});
@@ -407,18 +418,20 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     if(!windowed || video.seeking===false || isInternalSeek() || (seekingTarget!==null && Math.abs(video.currentTime-seekingTarget)<1e-6))return;
     if(preparing){pause('native_seek');return;}
     if(!binding?.window)return;
-    playbackIntent=false;clearFuture();binding.verified=false;ready=false;nativeSeeking=true;
-    const value=binding,frame=localFrame(value);
+    const resume=(nativeSeeking?playbackIntent:playing()) && (video.playbackRate ?? 1)===1,value=binding,frame=localFrame(value);
+    playbackIntent=resume;clearFuture();controller?.abort();stopHeartbeat();controller=new AbortController();
+    binding={...value,sequence:++sequence,signal:controller.signal,verified:false};ready=false;nativeSeeking=true;seekingTarget=null;startingPlayback=false;
     if(frame!==null && windowContext)windowContext={...windowContext,startFrame:frame};
-    beginState(value.item,value.epoch,frame,'native_seek',value.audioSelection);
-    if(binding===value && nativeSeeking)pauseVideo();
+    const owner=binding;beginState(value.item,value.epoch,frame,'native_seek',value.audioSelection);
+    if(binding===owner && attached(owner) && nativeSeeking)pauseVideo();
   };
   const seeked=()=>{
     if(!preparing && binding?.window && attached(binding) && !video.seeking){
-      const frame=localFrame(binding);
-      if(frame===null){if(nativeSeeking)detach('Source seek is outside the verified window; reopen Source');return;}
-      binding.verified=true;ready=true;nativeSeeking=false;scheduleHeartbeat(binding);
+      const frame=localFrame(binding),resume=nativeSeeking && playbackIntent;
+      if(frame===null || nativeSeeking && frame!==stateContext?.frame){if(nativeSeeking)detach('Source seek did not reach the requested absolute frame; reopen Source');return;}
+      binding.verified=true;ready=true;nativeSeeking=false;const completed=binding;scheduleHeartbeat(completed);
       if(stateContext?.state==='preparing' && stateContext.reason==='native_seek')notify('ready','native_seek',frame);
+      if(binding===completed && resume)void play(completed);
     }
   };
   const ended=()=>{
@@ -432,10 +445,10 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
   const events=[['play',played],['pause',paused],['seeking',seeking],['seeked',seeked],['ended',ended],['timeupdate',startPrefetch],['ratechange',invalidatePrefetch]];
   for(const [name,callback] of events)video.addEventListener(name,callback);
   const playable=()=>ready && binding && attached(binding);
-  return { open, reset, stop:reset, pause, hold, prefetchState, invalidatePrefetch, internalPause:event=>internalPauseEvents.has(event), seekFrame, current:currentWindow, verifiedSource, preparing:()=>preparing || nativeSeeking,
+  return { open, reopen, playing, reset, stop:reset, pause, hold, prefetchState, invalidatePrefetch, internalPause:event=>internalPauseEvents.has(event), seekFrame, current:currentWindow, verifiedSource, preparing:()=>preparing || nativeSeeking,
     dispose(){if(disposed)return;disposed=true;reset();cancel.removeEventListener?.('click',cancelPreparation);video.removeEventListener?.('error',videoError);image?.removeEventListener?.('error',imageError);for(const [name,callback] of events)video.removeEventListener?.(name,callback);},
     async toggle() {
-      if(windowed && preparing){pause();return;}
+      if(windowed && (preparing || nativeSeeking)){pause();return;}
       if(windowed && binding?.window && playable()){
         if(video.paused){
           const position=currentWindow();
@@ -451,7 +464,7 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
       if(playable()){if(video.paused){try{await video.play();}catch(error){if(error.name!=="AbortError")throw error;}}else video.pause();}
     },
     step(delta, fps, totalFrames) {
-      if(windowed && binding?.window){const value=currentWindow();if(!value || !Number.isSafeInteger(delta))return;const frame=value.frame+delta;if(frame<0 || frame>=binding.window.total_frames)return;return seekFrame(frame);}
+      if(windowed){const value=currentWindow();if(!value || !Number.isSafeInteger(delta)){if(preparing || nativeSeeking)pause();return;}const frame=value.frame+delta;if(frame<0 || frame>=binding.window.total_frames){pause();return;}return seekFrame(frame);}
       if(playable()){video.pause();const frame=Math.max(0,Math.min(totalFrames-1,Math.round(video.currentTime*fps)+delta));video.currentTime=frame/fps;}
     },
   };

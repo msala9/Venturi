@@ -1,4 +1,4 @@
-import {renderFilters,renderSelectedFilters} from "./visual.js";
+import {renderFilters,renderSelectedFilters,bindScalarRange} from "./visual.js";
 import {renderMasks} from "./masks.js";
 import {renderCurves,createZoomLink,zoomParameters,createKeyPickSelection} from "./curves.js";
 import {renderEventKeys} from "./eventkeys.js";
@@ -174,8 +174,11 @@ function selectedNumber(parent,label,parameter,controls,apply,displayLabel){
   const button=controls.register(document.createElement('button'));button.className='inspector-number-apply';button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(field,button);
   const complete=()=>{const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && form.reportValidity())apply(value);};
   const submit=event=>{event.preventDefault();complete();};form.addEventListener('submit',submit);input.addEventListener('change',complete);controls.own({dispose(){form.removeEventListener?.('submit',submit);input.removeEventListener?.('change',complete);}});
-  input.title='Drag to adjust; Shift for fine control. Click to type. Escape cancels a drag.';controls.own(bindInspectorNumber(input,{canInteract:()=>controls.available(),apply:complete,speed:/Zoom/.test(label) ? 0.01 : /Rotation|Opacity/.test(label) ? 0.5 : 1}));
-  if(/^(Rotation|Opacity|CropLeft|CropRight|CropTop|CropBottom|CropSoftness)$/.test(label)){
+  const live=()=>controls.available() && !input.closest?.('details:not([open])');
+  input.title='Drag to adjust; Shift for fine control. Click to type. Escape cancels a drag.';controls.own(bindInspectorNumber(input,{canInteract:live,apply:complete,speed:parameter.speed ?? (/Zoom/.test(label) ? 0.01 : /Rotation|Opacity/.test(label) ? 0.5 : 1)}));
+  if(parameter.slider){
+    const slider=controls.register(document.createElement('input'));slider.type='range';slider.min=parameter.min;slider.max=parameter.max;slider.step='any';slider.value=parameter.value;slider.className='inspector-inline-slider';slider.setAttribute('aria-label',`${label} slider`);field.className+=' inspector-slider-field';field.append(slider);controls.own(bindScalarRange(input,slider,{canInteract:live,complete}));
+  }else if(/^(Rotation|Opacity|CropLeft|CropRight|CropTop|CropBottom|CropSoftness)$/.test(label)){
     const slider=controls.register(document.createElement('input'));slider.type='range';slider.min=label==='Rotation'?-180:parameter.min;slider.max=label==='Rotation'?180:parameter.max;slider.step=label==='Rotation' || label==='Opacity'?0.5:1;slider.value=parameter.value;slider.className='inspector-inline-slider';slider.setAttribute('aria-label',`${label} slider`);field.className+=' inspector-slider-field';field.append(slider);
     let before=null,canceled=false;const listeners=[],listen=(target,key,handler)=>{target?.addEventListener?.(key,handler);listeners.push(()=>target?.removeEventListener?.(key,handler));};
     listen(slider,'pointerdown',()=>{if(controls.available()){canceled=false;before=input.value;}});listen(slider,'input',()=>{if(!canceled && controls.available())input.value=slider.value;});
@@ -185,7 +188,7 @@ function selectedNumber(parent,label,parameter,controls,apply,displayLabel){
     listen(input,'change',()=>{slider.value=input.value;});
   }
   parent.append(form);
-  return input;
+  return form;
 }
 function keyDiamond(parent,label,parameters,controls,edit){
   const keys=document.createElement('span');keys.className='inspector-key-controls';parent.append(keys);
@@ -270,7 +273,7 @@ export function renderSelectedVideoEffects(root,detail,options){
     if(title.font_weight>=100 && title.font_weight<=900)selectedNumber(manual,'Font weight',{value:title.font_weight,min:100,max:900,step:1},controls,value=>submit({font_weight:value}));
     else{const current=document.createElement('p');current.className='muted';current.textContent=`Current server style weight: ${title.font_weight} · choose a listed server style to change it`;manual.append(current);}
     for(const [label,field,min,max] of [['Font size','size',1,1000],['Letter tracking','tracking',-300,1000],['Line spacing','line_spacing',-200,500]]){
-      selectedNumber(parent,label,{value:title[field],min,max,step:field==='font_weight'?1:'any'},controls,value=>submit({[field]:value}));reset(parent,label.toLowerCase(),[field]);
+      const row=selectedNumber(parent,label,{value:title[field],min,max,speed:1,slider:true},controls,value=>submit({[field]:value}));reset(row,label.toLowerCase(),[field]);
     }
     function checkbox(parent,label,checked,change){const row=document.createElement('label'),input=controls.register(document.createElement('input'));input.type='checkbox';input.checked=checked;input.setAttribute('aria-label',label);row.append(input,label);input.addEventListener('change',()=>{if(controls.current())change(input.checked);});parent.append(row);}
     checkbox(manual,'Title italic',title.italic,value=>submit({italic:value}));
@@ -289,7 +292,7 @@ export function renderSelectedVideoEffects(root,detail,options){
     if(bg.enabled){
     colorRow(background,'Background color',bg.color,color=>backgroundPatch({color}));colorRow(background,'Background outline color',bg.outline_color,outline_color=>backgroundPatch({outline_color}));
     reset(background,'background color',['background_color']);reset(background,'background outline color',['background_outline_color']);
-    for(const [label,field,min,max] of [['Background outline width','outline_width',0,100],['Background width','width',0,1],['Background height','height',0,1],['Background corner radius','corner_radius',0,0.5],['Background opacity','opacity',0,100]]){selectedNumber(background,label,{value:bg[field],min,max},controls,value=>backgroundPatch({[field]:value}));reset(background,label.toLowerCase(),[`background_${field}`]);}
+    for(const [label,field,min,max,speed] of [['Background outline width','outline_width',0,100,0.5],['Background width','width',0,1,0.005],['Background height','height',0,1,0.005],['Background corner radius','corner_radius',0,0.5,0.005],['Background opacity','opacity',0,100,0.5]]){const row=selectedNumber(background,label,{value:bg[field],min,max,speed,slider:true},controls,value=>backgroundPatch({[field]:value}));reset(row,label.toLowerCase(),[`background_${field}`]);}
     for(const axis of [0,1])selectedNumber(background,`Background center ${axis?'Y':'X'}`,{value:bg.center[axis],min:hasSize?-size[axis]:-1_000_000,max:hasSize?size[axis]:1_000_000},controls,value=>backgroundPatch({center:bg.center.map((current,index)=>index===axis?value:current)}));
     reset(background,'background center',['background_center']);
     }

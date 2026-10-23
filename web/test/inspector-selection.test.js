@@ -49,6 +49,7 @@ function detail(video=true){
   };
 }
 const settle=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
+const scalarEvent=(node,type,properties={})=>{const event=new Event(type,{cancelable:true});for(const [key,value] of Object.entries({pointerId:1,button:0,buttons:type==='pointerup'?0:1,clientX:0,...properties}))Object.defineProperty(event,key,{value});node.dispatchEvent(event);return event;};
 function harness(t,{video=true,effects=false,commit,editDetail=()=>{},readFonts}={}){
   const priorDocument=globalThis.document,priorOption=globalThis.Option;
   class Element extends EventTarget{
@@ -263,6 +264,32 @@ const keyInfo=(on=false,previous=12,next=31)=>({on_keyframe:on,previous_frame:pr
 function titleDetail(native){
   native.title={content:{default:'Default text',value:'Current animated text',keyframes:[[0,'First','Hold']],key_count:100,keyframe_info:keyInfo(true)},font_family:'Server font',font_weight:400,italic:false,underline:false,strikethrough:false,size:96,tracking:0,line_spacing:0,case:'Mixed',align:'Center',anchor:['Center','Middle'],position:[10,-20],color:{r:1,g:1,b:1,a:1},background:{enabled:true,color:{r:0,g:0,b:0,a:1},outline_color:{r:1,g:1,b:1,a:1},outline_width:2,width:0.2,height:0.3,corner_radius:0.1,center:[5,8],opacity:80}};
 }
+
+test('title scalar scrubs use explicit native speeds and keep full background and selected-field ownership',async t=>{
+  const h=harness(t,{effects:true,editDetail:titleDetail});
+  for(const [label,field,travel,shiftKey,expected,background] of [
+    ['Font size','size',10,false,106,false],['Letter tracking','tracking',10,true,1,false],['Line spacing','line_spacing',10,false,10,false],
+    ['Background width','width',10,false,.25,true],['Background height','height',10,true,.305,true],['Background corner radius','corner_radius',10,false,.15,true],
+    ['Background outline width','outline_width',10,false,7,true],['Background opacity','opacity',10,false,85,true],
+  ]){
+    const input=h.field(label),count=h.commands.length;scalarEvent(input,'pointerdown');scalarEvent(input,'pointermove',{clientX:travel,shiftKey});assert.equal(h.commands.length,count);
+    scalarEvent(input,'pointerup',{pointerId:2,clientX:travel,shiftKey});assert.equal(h.commands.length,count);scalarEvent(input,'pointerup',{clientX:travel,shiftKey});await settle();
+    assert.equal(h.commands.length,count+1,label);assert.deepEqual(h.commands.at(-1).edit,{action:'title',patch:background?{background:{...h.native.title.background,[field]:expected}}:{[field]:expected}},label);
+  }
+  assert.ok(h.commands.every(command=>command.clip_ids.join(',')==='9,2' && command.timeline_frame===20));assert.equal(h.native.title.background.width,.2);
+});
+
+test('title native sliders preserve ranges and cancel drafts before one fresh release or keyboard edit',async t=>{
+  const h=harness(t,{effects:true,editDetail:titleDetail}),input=h.field('Background width'),slider=h.field('Background width slider');
+  for(const [label,min,max] of [['Font size',1,1000],['Letter tracking',-300,1000],['Line spacing',-200,500],['Background width',0,1],['Background height',0,1],['Background corner radius',0,.5],['Background outline width',0,100],['Background opacity',0,100]]){
+    const range=h.field(`${label} slider`);assert.ok(range,label);assert.equal(Number(range.min),min);assert.equal(Number(range.max),max);assert.equal(range.step,'any');
+  }
+  for(const cancel of [()=>scalarEvent(slider,'keydown',{key:'Escape'}),()=>scalarEvent(slider,'pointercancel'),()=>h.control.at(-1).cancel(),()=>h.setFrame(21)]){
+    h.setFrame(20);scalarEvent(slider,'pointerdown');slider.value='.8';scalarEvent(slider,'input');assert.deepEqual(h.commands,[]);cancel();scalarEvent(slider,'pointerup');scalarEvent(slider,'change');await settle();assert.equal(Number(input.value),.2);assert.deepEqual(h.commands,[]);
+  }
+  h.setFrame(20);scalarEvent(slider,'pointerdown');slider.value='.23456789';scalarEvent(slider,'input');scalarEvent(slider,'pointerup',{pointerId:2});assert.deepEqual(h.commands,[]);scalarEvent(slider,'pointerup');scalarEvent(slider,'change');await settle();assert.equal(h.commands.length,1);assert.equal(h.commands[0].edit.patch.background.width,.23456789);
+  const size=h.field('Font size slider');scalarEvent(size,'keydown',{key:'ArrowRight'});size.value='97';scalarEvent(size,'input');scalarEvent(size,'change');scalarEvent(size,'change');await settle();assert.equal(h.commands.length,2);assert.deepEqual(h.commands[1].edit,{action:'title',patch:{size:97}});
+});
 const fontCatalog=()=>({families:[{family:'',name:'Sans-serif',faces:[]},{family:'Server font',name:'Server font',faces:[{weight:400,italic:false,name:'Regular'},{weight:400,italic:true,name:'Italic'},{weight:1000,italic:false,name:'Black'}]},{family:'Other server font',name:'Other server font',faces:[{weight:700,italic:true,name:'Bold Italic'}]}]});
 
 test('title fonts load only on opening typography and confirmed family/style edits preserve native field-diff semantics',async t=>{

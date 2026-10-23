@@ -55,6 +55,85 @@ test('hold during an exact seek preserves its waiter while explicit pause cancel
   }finally{h.player.dispose();}
 });
 
+test('ordinary Source playback resumes only after the latest exact seek, while frame stepping stays paused',async()=>{
+  const h=harness();try{
+    await h.open(137);await h.player.toggle();h.video.waitSeek=true;
+    const first=h.player.seekFrame(147,{resume:h.player.playing()});await settle();assert.equal(h.video.paused,true);assert.equal(h.video.plays,1);assert.equal(h.player.playing(),true);
+    const latest=h.player.seekFrame(161,{resume:h.player.playing()});await settle();assert.equal(h.player.current(),null);assert.equal(h.video.plays,1);
+    h.video.finishSeek();await Promise.all([first,latest]);assert.equal(h.player.current().frame,161);assert.equal(h.video.paused,false);assert.equal(h.video.plays,2);assert.equal(h.requests.length,1);
+    h.video.waitSeek=false;await h.player.step(1);assert.equal(h.player.current().frame,162);assert.equal(h.video.paused,true);assert.equal(h.player.playing(),false);assert.equal(h.video.plays,2);
+    await h.player.seekFrame(163,{resume:true});assert.equal(h.video.paused,true);assert.equal(h.video.plays,2,'resume cannot manufacture an intent from a paused Source');
+  }finally{h.player.dispose();}
+});
+
+test('a Source seek across windows retains native lineage and never overrides a later pause, step, replacement or changed source',async t=>{
+  for(const outcome of ['ready','pause','hold','step','reset','replacement','version','cancel'])await t.test(outcome,async()=>{
+    const ack=deferred();let h;h=harness({api:(body,ready)=>h.requests.length===2?ack.promise:ready(body)});
+    try{
+      await h.open();await h.player.toggle();const seeking=h.player.seekFrame(3000,{resume:h.player.playing()});await settle();
+      assert.equal(h.video.paused,true);assert.equal(h.video.plays,1);assert.equal(h.player.playing(),true);
+      if(outcome==='pause')h.player.pause();if(outcome==='hold')h.player.hold();if(outcome==='step')h.player.step(1);if(outcome==='reset')h.player.reset();if(outcome==='cancel')h.cancel.dispatchEvent(new Event('click'));
+      if(outcome==='replacement')await h.player.open({...h.item,id:'other'},'other-epoch','medium',17);
+      const job=h.ready(h.requests[1],'seek-next');if(outcome==='version')job.source_window.source_version='changed-file';ack.resolve(job);await seeking;
+      assert.equal(h.video.plays,outcome==='ready'?2:1);assert.equal(h.video.paused,outcome!=='ready');
+      if(['ready','hold'].includes(outcome)){assert.equal(h.player.current().frame,3000);assert.equal(h.player.current().source_version,'file-version');}
+      else if(outcome==='replacement'){assert.equal(h.player.current().media_id,'other');assert.equal(h.player.current().epoch,'other-epoch');assert.equal(h.player.current().frame,17);}
+      else assert.equal(h.player.current(),null);
+      if(outcome==='version')assert.match(h.status.textContent,/changed/);
+    }finally{h.player.dispose();}
+  });
+});
+
+test('a queued latest seek keeps its original 1x intent while a previous window is preparing',async()=>{
+  const ack=deferred();let h;h=harness({api:(body,ready)=>h.requests.length===2?ack.promise:ready(body)});
+  try{
+    await h.open();await h.player.toggle();const old=h.player.seekFrame(3000,{resume:h.player.playing()});await settle();
+    assert.equal(h.player.playing(),true);await h.player.seekFrame(4000,{resume:h.player.playing()});
+    assert.equal(h.player.current().frame,4000);assert.equal(h.video.plays,2);const src=h.video.src;
+    ack.resolve(h.ready(h.requests[1],'obsolete-seek'));await old;assert.equal(h.video.src,src);assert.equal(h.player.current().frame,4000);assert.equal(h.video.plays,2);
+  }finally{h.player.dispose();}
+});
+
+test('native video seeks resume ordinary playback only after verification and explicit Pause still cancels',async t=>{
+  for(const outcome of ['resume','paused','fast','pause','native-play','mismatch'])await t.test(outcome,async()=>{
+    const h=harness();try{
+      await h.open(137);if(outcome!=='paused')await h.player.toggle();if(outcome==='fast')h.video.playbackRate=2;
+      h.video.nativeSeek(1);assert.equal(h.player.current(),null);assert.equal(h.video.paused,true);
+      if(outcome==='resume'){h.video.nativeSeek(2);assert.equal(h.player.playing(),true);}
+      if(outcome==='pause')await h.player.toggle();if(outcome==='native-play')await h.video.play();if(outcome==='mismatch')h.video.position=2;
+      h.video.finishSeek();await settle();assert.equal(h.video.paused,outcome!=='resume');
+      assert.equal(h.video.plays,outcome==='paused'?0:['resume','native-play'].includes(outcome)?2:1);
+      if(outcome==='resume'){assert.equal(h.player.current().frame,185);h.video.finishSeek();await settle();assert.equal(h.video.plays,2,'a late duplicate seeked event cannot restart playback');}
+      if(['pause','native-play','mismatch'].includes(outcome))assert.equal(h.player.current(),null);
+    }finally{h.player.dispose();}
+  });
+});
+
+test('quality reopen retains the displayed source, absolute frame and verified identity, including Library authority',async()=>{
+  for(const library of [false,true]){
+    const h=harness();if(library)h.item.native_asset={id:'asset-a',revision:'a'.repeat(64),if_generation:'7',source_version:'file-version'};
+    try{
+      await h.open(137);await h.player.seekFrame(161);await h.player.toggle();const source=h.player.current();
+      await h.player.reopen('high');assert.equal(h.player.current().media_id,source.media_id);assert.equal(h.player.current().epoch,source.epoch);assert.equal(h.player.current().frame,161);assert.equal(h.player.current().source_version,source.source_version);
+      assert.equal(h.requests.at(-1).quality,'high');assert.equal(h.requests.at(-1).window.start_frame,161);assert.equal(h.video.paused,false);assert.equal(h.video.plays,2);
+      if(library){assert.equal(h.requests.at(-1).revision,'a'.repeat(64));assert.equal(h.requests.at(-1).if_generation,'7');assert.equal(h.requests.at(-1).source_version,'file-version');assert.match(h.video.src,/native-assets\/items\/asset-a\/source\/jobs/);}
+    }finally{h.player.dispose();}
+  }
+});
+
+test('quality reopen cannot attach a changed original or autoplay after explicit cancellation',async()=>{
+  for(const outcome of ['version','pause','replacement']){
+    const ack=deferred();let h;h=harness({api:(body,ready)=>h.requests.length===2?ack.promise:ready(body)});
+    try{
+      await h.open(137);await h.player.toggle();const reopening=h.player.reopen('high');await settle();
+      if(outcome==='pause')h.player.pause();if(outcome==='replacement')await h.player.open({...h.item,id:'pool-b'},'epoch','medium',0);
+      const job=h.ready(h.requests[1],'late-quality');if(outcome==='version')job.source_window.source_version='different';ack.resolve(job);await reopening;
+      assert.equal(h.video.plays,1);assert.equal(h.video.paused,true);assert.ok(!h.video.src.includes('late-quality'));
+      if(outcome==='replacement')assert.equal(h.player.current().media_id,'pool-b');else assert.equal(h.player.current(),null);
+    }finally{h.player.dispose();}
+  }
+});
+
 test('preparing notification precedes network access and reentrant ready reset suppresses obsolete onReady',async()=>{
   let h;const order=[];
   h=harness({api:(body,ready)=>{order.push('network');return ready(body);},onStateChange:value=>{order.push(value.state);if(value.state==='ready')h.player.reset();}});

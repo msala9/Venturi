@@ -361,12 +361,12 @@ test('Source window heartbeat verifies exact range/version and obsolete heartbea
   try{await changed.open();const timer=[...changed.timers.entries()][0];changed.timers.delete(timer[0]);timer[1].callback();await settle();assert.equal(changed.player.current(),null);assert.match(changed.status.textContent,/changed/);}finally{changed.player.dispose();}
 });
 
-test('Source fast startup pauses and internal seek corrections retain intent; user seeks and pauses revoke it',async()=>{
+test('Source fast startup pauses and internal seek corrections retain intent; fast user seeks and pauses revoke it',async()=>{
   let correcting=false;const h=windowHarness({isInternalSeek:()=>correcting,beforeWindowChange:()=>h.video.pause()});try{
     await h.open();h.video.fastPause=true;await h.player.toggle();correcting=true;h.video.userSeek(1);assert.equal(h.player.current().frame,29);h.video.seeking=false;correcting=false;h.finish();await settle();assert.equal(h.requests.length,2);assert.equal(h.video.plays,2);
   }finally{h.player.dispose();}
   for(const action of ['pause','seek']){
-    const f=windowHarness();try{await f.open();await f.player.toggle();if(action==='pause')f.video.pause();else{f.video.userSeek(1);f.video.seeking=false;f.video.dispatchEvent(new Event('seeked'));}f.finish();await settle();assert.equal(f.requests.length,1);}finally{f.player.dispose();}
+    const f=windowHarness();try{await f.open();if(action==='seek')f.video.playbackRate=2;await f.player.toggle();if(action==='pause')f.video.pause();else{f.video.userSeek(1);f.video.seeking=false;f.video.dispatchEvent(new Event('seeked'));}f.finish();await settle();assert.equal(f.requests.length,1);}finally{f.player.dispose();}
   }
 });
 

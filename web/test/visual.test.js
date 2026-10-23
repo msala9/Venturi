@@ -54,7 +54,7 @@ test('queued native wheel reset rejects stale ownership and restores coordinates
   canvas.isConnected=false;events.dblclick();await settle();assert.equal(resets,1);
 });
 
-function selectedWheelHarness(t,{shadowColor=null}={}){
+function selectedWheelHarness(t,{shadowColor=null,editDetail=()=>{}}={}){
   const globals={document:globalThis.document,window:globalThis.window,Option:globalThis.Option,requestAnimationFrame:globalThis.requestAnimationFrame},view=new EventTarget();
   class Element extends EventTarget{
     constructor(tag){super();this.tagName=tag;this.children=[];this.dataset={};this.style={};this.isConnected=true;this.value='';this.disabled=false;this.ownerDocument=globalThis.document;this.captured=new Set();}
@@ -71,9 +71,10 @@ function selectedWheelHarness(t,{shadowColor=null}={}){
   const wheels=['Shadows','Midtones','Highlights','Offset'].map(name=>({name,x:`${name}X`,y:`${name}Y`,luma:`${name}Luma`,saturation:name==='Offset'?'Saturation':`${name}Sat`}));
   const grade=wheels.flatMap(wheel=>[wheel.x,wheel.y,wheel.luma,wheel.saturation]).concat(['LowRange','HighRange']).map((param,index)=>({param,value:param==='LowRange'?Math.fround(1/3):param==='HighRange'?Math.fround(2/3):param.endsWith('Sat') || param==='Saturation'?1:0,range:['LowRange','HighRange'].includes(param)?[0,1]:param.endsWith('Sat') || param==='Saturation'?[0,2]:[-1,1],key_count:100,keyframes:[],keyframe_info:{on_keyframe:index===1,previous_frame:index<4?[4,8,12,10][index]:null,next_frame:index<4?[50,40,45,30][index]:null}}));
   const detail={clip_id:'9',video:true,locked:false,color_info:null,filters:{kinds:['ColorCorrection'],grade_presets:[],wheels,wheel_hues:[],stack:[{kind:'ColorCorrection',enabled:true,grade}]}};
-  if(shadowColor){detail.filters.kinds.push('DropShadow');detail.filters.blur_radius_max=8192;detail.filters.shadow_grow_max=8192;detail.filters.stack.push({kind:'DropShadow',enabled:true,radius:{value:2},grow:{value:0},offset:[{value:0},{value:0}],color:{...shadowColor}});}
+  if(shadowColor){detail.filters.kinds.push('DropShadow');detail.filters.blur_radius_max=250;detail.filters.shadow_grow_max=100;detail.filters.stack.push({kind:'DropShadow',enabled:true,radius:{value:2},grow:{value:0},offset:[{value:0},{value:0}],color:{...shadowColor}});}
+  editDetail(detail);
   const root=new Element('div'),commands=[],seeks=[],notices=[],selection={project_epoch:'epoch',generation:'1',timeline_id:'timeline',revision:'revision',selection:['2','9'],clip_ids:['9','2']};let allowed=true,frame=20;
-  const controls=renderSelectedVideoEffects(root,detail,{selection:structuredClone(selection),getSelection:()=>selection,frame,getFrame:()=>frame,canInteract:()=>allowed,canNavigate:()=>allowed,commit:async operation=>{commands.push(operation);},notice:message=>notices.push(message),seek:target=>seeks.push(target),visualState:new Map()});
+  const controls=renderSelectedVideoEffects(root,detail,{selection:structuredClone(selection),getSelection:()=>selection,frame,getFrame:()=>frame,canInteract:()=>allowed,canNavigate:()=>allowed,commit:async operation=>{commands.push(operation);},notice:message=>notices.push(message),seek:target=>seeks.push(target),visualState:new Map(),timelineSize:[1920,1080]});
   const all=(node=root)=>[node,...node.children.flatMap(child=>child && typeof child==='object'?all(child):[])],field=label=>all().find(node=>node['aria-label']===label);
   return {root,commands,seeks,notices,selection,detail,all,field,controls,view,send(node,type,properties={}){const event=new Event(type,{cancelable:true});for(const [key,value] of Object.entries({pointerId:1,button:0,buttons:type==='pointerup'?0:1,clientX:0,...properties}))Object.defineProperty(event,key,{value});node.dispatchEvent(event);},click(label){const node=field(label);assert.ok(node,label);node.dispatchEvent(new Event('click'));},setAllowed:value=>{allowed=value;},setFrame:value=>{frame=value;}};
 }
@@ -167,4 +168,38 @@ test('boundary keyboard changes keep precise fields and native keys while dispos
   h.send(slider,'keydown',{key:'ArrowRight'});slider.value='.8';h.send(slider,'input');h.send(slider,'change');h.send(slider,'change');await settle();assert.equal(h.commands.length,2);assert.equal(h.commands[1].edit.patch.grade[0].value,.8);
   h.click('Toggle HighRange keyframes at playhead');await settle();assert.deepEqual(h.commands[2].edit,{action:'toggle_filter_keys',filter:'ColorCorrection',params:[{kind:'grade',param:'HighRange'}]});
   h.send(slider,'pointerdown');slider.value='.2';h.send(slider,'input');h.controls.at(-1).dispose();h.send(slider,'pointerup');h.send(slider,'change');h.send(number,'pointerdown');h.send(number,'pointerup',{clientX:30});await settle();assert.equal(h.commands.length,3);assert.equal(Number(number.value),.8);assert.equal(slider.captured.size,0);
+});
+
+function nativeScalarFilters(detail){
+  detail.filters.kinds.push('Exposure','GaussianBlur');
+  detail.filters.stack.push({kind:'Exposure',enabled:true,amount:{value:0},amount_range:[-20,20]},{kind:'GaussianBlur',enabled:true,radius:{value:2},direction:'Both',direction_info:{value:'Both'}});
+  detail.filters.blur_directions=['Both','Horizontal','Vertical'];
+  const shadow=detail.filters.stack.find(filter=>filter.kind==='DropShadow');shadow.amount={value:80};shadow.amount_range=[0,100];
+}
+
+test('non-Color filter scalar controls use native speeds, authoritative limits and selected native patches',async t=>{
+  const h=selectedWheelHarness(t,{shadowColor:{r:0,g:0,b:0,a:1},editDetail:nativeScalarFilters});
+  for(const [label,travel,shiftKey,filter,patch] of [
+    ['Exposure stops',20,false,'Exposure',{amount:.2}],['GaussianBlur radius',10,false,'GaussianBlur',{radius:7}],
+    ['DropShadow softness',10,true,'DropShadow',{radius:2.5}],['DropShadow grow',10,false,'DropShadow',{grow:5}],
+    ['DropShadow opacity',10,false,'DropShadow',{amount:85}],['DropShadow offset X',10,false,'DropShadow',{offset:[5,0]}],
+  ]){
+    const input=h.field(label),count=h.commands.length;h.send(input,'pointerdown');h.send(input,'pointermove',{clientX:travel,shiftKey});assert.equal(h.commands.length,count);
+    h.send(input,'pointerup',{clientX:travel,shiftKey});await settle();assert.equal(h.commands.length,count+1,label);assert.deepEqual(h.commands.at(-1).edit,{action:'filter',filter,patch},label);
+  }
+  for(const [label,min,max] of [['Exposure stops',-20,20],['GaussianBlur radius',0,250],['DropShadow softness',0,250],['DropShadow grow',0,100],['DropShadow opacity',0,100]]){
+    const slider=h.field(`${label} slider`);assert.ok(slider,label);assert.equal(Number(slider.min),min);assert.equal(Number(slider.max),max);assert.equal(slider.step,'any');
+  }
+  assert.equal(h.field('DropShadow offset X slider'),undefined);assert.equal(Number(h.field('DropShadow offset X').min),-1920);assert.equal(Number(h.field('DropShadow offset Y').max),1080);
+  assert.ok(h.commands.every(command=>command.clip_ids.join(',')==='9,2' && command.timeline_frame===20));assert.equal(h.detail.filters.stack.find(filter=>filter.kind==='Exposure').amount.value,0);
+});
+
+test('non-Color filter range drafts cancel on blur, stale context or Escape, then commit one fresh owner release',async t=>{
+  const h=selectedWheelHarness(t,{shadowColor:{r:0,g:0,b:0,a:1},editDetail:nativeScalarFilters}),input=h.field('Exposure stops'),slider=h.field('Exposure stops slider');
+  for(const cancel of [()=>h.send(slider,'keydown',{key:'Escape'}),()=>h.view.dispatchEvent(new Event('blur')),()=>h.setAllowed(false),()=>h.setFrame(21)]){
+    h.setAllowed(true);h.setFrame(20);h.send(slider,'pointerdown');slider.value='1.23456789';h.send(slider,'input');assert.deepEqual(h.commands,[]);cancel();h.send(slider,'pointerup');h.send(slider,'change');await settle();assert.deepEqual(h.commands,[]);assert.equal(Number(input.value),0);assert.equal(slider.captured.size,0);
+  }
+  h.setAllowed(true);h.setFrame(20);h.send(slider,'pointerdown');slider.value='.23456789';h.send(slider,'input');h.send(slider,'pointerup',{pointerId:2});assert.deepEqual(h.commands,[]);h.send(slider,'pointerup');h.send(slider,'change');h.send(slider,'change');await settle();
+  assert.deepEqual(h.commands.map(command=>command.edit),[{action:'filter',filter:'Exposure',patch:{amount:.23456789}}]);
+  h.send(slider,'pointerdown');slider.value='2';h.send(slider,'input');h.controls.at(-1).dispose();h.send(slider,'pointerup');h.send(slider,'change');await settle();assert.equal(h.commands.length,1);assert.equal(Number(input.value),.23456789);assert.equal(slider.captured.size,0);
 });

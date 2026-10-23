@@ -53,7 +53,7 @@ function colorWheel(canvas,hues,initial,onCommit,onError,disabled=false,canInter
   if(disabled){paint(initial[0],initial[1],false);return {cancel(){}};}
   return bindColorWheel(canvas,{x:initial[0],y:initial[1],paint,onCommit,onReset,onError,canInteract});
 }
-function bindGradeRange(input,slider,{canInteract,complete}){
+export function bindScalarRange(input,slider,{canInteract,complete}){
   const listeners=[],win=input.ownerDocument?.defaultView ?? globalThis.window;let gesture=null,canceled=false,dirty=false,disposed=false;
   const listen=(node,key,handler)=>{node?.addEventListener?.(key,handler);listeners.push(()=>node?.removeEventListener?.(key,handler));};
   const live=()=>!disposed && slider.isConnected!==false && !slider.disabled && canInteract();
@@ -87,29 +87,29 @@ export function renderSelectedFilters(root,detail,{controls,keyRow,openState,not
     const reset=(params,flags={})=>({action:'reset_filter',filter:kind,params,reset_enabled:false,reset_color:false,reset_grade:false,...flags});
     const params=[];
     function keyControls(parent,label,values,parameters){keyRow(parent,label,values,{action:'toggle_filter_keys',filter:kind,params:parameters});controls.button(`Reset ${label}`,reset(parameters),parent);params.push(...parameters);}
-    function number(parent,label,parameter,range,patch,key,{scrub=false,slider=false}={}){
+    function number(parent,label,parameter,range,patch,key,{scrub=false,slider=false,speed=0.005}={}){
       const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));form.className='property-row inspector-number';field.className='field';field.textContent=label==='LowRange'?'Shadows range':label==='HighRange'?'Highlights range':label.startsWith(`${kind} `)?label.slice(kind.length+1):label.replace(/^(Shadows|Midtones|Highlights|Offset)(Luma|Sat)$/,'$2').replace(/^Saturation$/,'Sat');input.type='number';input.step='any';input.required=true;input.min=range[0];input.max=range[1];input.value=parameter.value;input.setAttribute('aria-label',label);field.append(input);form.append(field);
       const button=controls.register(document.createElement('button'));button.className='inspector-number-apply';button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(button);
       const live=()=>controls.available() && section.open && card.open && input.isConnected!==false;
       const complete=()=>{const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && value>=range[0] && value<=range[1] && value!==parameter.value && form.reportValidity())return edit(patch(value));};
       const submit=event=>{event.preventDefault();complete();};form.addEventListener('submit',submit);input.addEventListener('change',complete);controls.own({dispose(){form.removeEventListener?.('submit',submit);input.removeEventListener?.('change',complete);}});
-      if(scrub && typeof bindNumber==='function'){input.title='Drag to adjust; Shift for fine control. Click to type. Escape cancels a drag.';controls.own(bindNumber(input,{canInteract:live,apply:complete,speed:0.005}));}
+      if(scrub && typeof bindNumber==='function'){input.title='Drag to adjust; Shift for fine control. Click to type. Escape cancels a drag.';controls.own(bindNumber(input,{canInteract:live,apply:complete,speed}));}
       if(slider){
         const rangeInput=controls.register(document.createElement('input'));rangeInput.type='range';rangeInput.min=range[0];rangeInput.max=range[1];rangeInput.step='any';rangeInput.value=parameter.value;rangeInput.className='inspector-inline-slider';rangeInput.setAttribute('aria-label',`${label} slider`);field.className+=' inspector-slider-field';form.className+=' inspector-grade-range';field.append(rangeInput);
-        controls.own(bindGradeRange(input,rangeInput,{canInteract:live,complete}));
+        controls.own(bindScalarRange(input,rangeInput,{canInteract:live,complete}));
       }
       parent.append(form);if(key)keyControls(form,label,[parameter],[key]);return input;
     }
-    if(['BoxBlur','GaussianBlur','DropShadow'].includes(kind))number(card,kind==='DropShadow'?'DropShadow softness':`${kind} radius`,filter.radius,[0,detail.filters.blur_radius_max],radius=>({radius}),{kind:'radius'});
+    if(['BoxBlur','GaussianBlur','DropShadow'].includes(kind))number(card,kind==='DropShadow'?'DropShadow softness':`${kind} radius`,filter.radius,[0,detail.filters.blur_radius_max],radius=>({radius}),{kind:'radius'},{scrub:true,slider:true,speed:0.5});
     if(['BoxBlur','GaussianBlur'].includes(kind)){
       const field=document.createElement('label'),select=controls.register(document.createElement('select'));field.className='field';field.textContent=`${kind} direction`;select.setAttribute('aria-label',field.textContent);for(const value of detail.filters.blur_directions)select.append(new Option(value,value));select.value=filter.direction_info?.value ?? filter.direction;field.append(select);card.append(field);
       select.addEventListener('change',()=>{if(controls.current() && detail.filters.blur_directions.includes(select.value) && select.value!==(filter.direction_info?.value ?? filter.direction))edit({direction:select.value});});keyControls(field,`${kind} direction`,[filter.direction_info || {}],[{kind:'direction'}]);
     }
-    if(filter.amount_range)number(card,kind==='Exposure'?'Exposure stops':`${kind} opacity`,filter.amount,filter.amount_range,amount=>({amount}),{kind:'amount'});
+    if(filter.amount_range)number(card,kind==='Exposure'?'Exposure stops':`${kind} opacity`,filter.amount,filter.amount_range,amount=>({amount}),{kind:'amount'},{scrub:true,slider:true,speed:kind==='Exposure'?0.01:0.5});
     if(kind==='DropShadow'){
-      number(card,'DropShadow grow',filter.grow,[0,detail.filters.shadow_grow_max],grow=>({grow}),{kind:'grow'});
+      number(card,'DropShadow grow',filter.grow,[0,detail.filters.shadow_grow_max],grow=>({grow}),{kind:'grow'},{scrub:true,slider:true,speed:0.5});
       const offset=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent='DropShadow offset';offset.append(legend);card.append(offset);
-      for(const axis of [0,1]){const bound=Number.isFinite(timelineSize?.[axis]) && timelineSize[axis]>0?timelineSize[axis]:8192;number(offset,`DropShadow offset ${axis?'Y':'X'}`,filter.offset[axis],[-bound,bound],value=>({offset:filter.offset.map((own,index)=>index===axis?value:own.value)}));}
+      for(const axis of [0,1]){const bound=Number.isFinite(timelineSize?.[axis]) && timelineSize[axis]>0?timelineSize[axis]:8192;number(offset,`DropShadow offset ${axis?'Y':'X'}`,filter.offset[axis],[-bound,bound],value=>({offset:filter.offset.map((own,index)=>index===axis?value:own.value)}),null,{scrub:true,speed:0.5});}
       keyControls(offset,'DropShadow offset',filter.offset,[{kind:'offset',axis:0},{kind:'offset',axis:1}]);
       const color=document.createElement('div');color.className='inspector-color-row';card.append(color);
       gestures.push(renderColorPicker(color,{label:'DropShadow color',value:filter.color,controls,apply:value=>edit({color:value}),openState}));

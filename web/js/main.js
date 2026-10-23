@@ -585,7 +585,12 @@ async function previewNativeAsset(asset,{isCurrent=()=>true}={}){
 }
 $('source-mode').addEventListener('click',reopenSource);
 $('program-mode').addEventListener('click',()=>viewerModeSet('program'));
-$('source-quality').addEventListener('change',reopenSource);
+function reopenSourceQuality(){
+  if(!currentSourceItem())return openSource();
+  cancelSourcePreview();fastTransport?.stop();audioScrub?.stop();rememberSourceRange();
+  return sourcePlayer.reopen($('source-quality').value).catch(error=>notice(error.message));
+}
+$('source-quality').addEventListener('change',()=>{void reopenSourceQuality();});
 function rememberSourceRange() { if (sourceOpenId) sourceRanges.set(sourceOpenId,{source_in:Number($("source-in").value),source_out:Number($("source-out").value)});sourcePlacement?.refresh();refreshSourceWaveform(); }
 for (const id of ["source-in","source-out"]) $(id).addEventListener("input",rememberSourceRange);
 for (const [id,out] of [["source-mark-in",false],["source-mark-out",true]]) $(id).addEventListener("click",()=>{
@@ -2153,7 +2158,7 @@ sourceAssets=createSourceAssetQueue({loader:createSourceAssets({getState:()=>doc
   hasAsset:entry=>{const asset=mediaAssets.get(sourceAssetKey(entry.item.id,entry.audioStreamIndex)),thumbnail=mediaThumbnail(mediaAssets,entry.item.id);return Boolean((!entry.item.has_video || thumbnail?.contentHash===entry.item.content_hash && (!entry.sourceVersion || thumbnail.sourceVersion===entry.sourceVersion)) && (!entry.item.has_audio || !entry.includeWaveform || asset?.contentHash===entry.item.content_hash && asset.waveform && (!entry.sourceVersion || asset.sourceVersion===entry.sourceVersion)));}});
 sourceWaveform=createSourceWaveform({root:$('source-waveform'),canvas:$('source-waveform-canvas'),content:$('source-waveform-content'),getContext:sourceWaveformContext,getAssets:()=>mediaAssets,
   onDemand:(entries,epoch)=>{sourceWaveformDemand={entries,epoch};sourceAssets.demand('source_waveform',entries,epoch);},
-  onSeek:async frame=>{fastTransport?.stop();audioScrub?.stop();await sourcePlayer.seekFrame(frame);syncSourcePosition();audioScrub?.request();},onError:error=>notice(error.message || String(error))});
+  onSeek:seekSourceFrame,onError:error=>notice(error.message || String(error))});
 for(const event of ['play','pause','ended'])$('export-preview-video').addEventListener(event,()=>sourceAssets.refresh());
 document.addEventListener('visibilitychange',()=>{void proxyControls?.visible(!document.hidden);sourceAssets.refresh();sourcePlayer?.invalidatePrefetch();audioMeters?.sync();if(document.hidden){programPlayer?.invalidatePrefetch();audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>{void proxyControls?.refresh();sourceAssets.refresh();sourcePlayer?.invalidatePrefetch();},true);
 window.addEventListener('pagehide',()=>{inspectorViewport?.cancel();fastTransport?.stop();programPlayer?.pauseLocal();void projectView?.flush({persist:true});});
@@ -2162,13 +2167,14 @@ $("source-assets-refresh").addEventListener("click",()=>{
   if(item && !item.has_video && sourceWaveformDemand.entries.length){sourceAssets.demand('source_waveform',sourceWaveformDemand.entries.map(entry=>({...entry,force:true})),sourceWaveformDemand.epoch);return;}
   if(item)void sourceAssets.load(item,documentState.project_epoch,{sourceVersion:position?.source_version,audioStreamIndex:position?.audio_stream_index ?? 0,includeWaveform:Boolean(item.has_audio),force:true});
 });
+async function seekSourceFrame(frame){
+  const resume=sourcePlayer.playing();fastTransport?.stop();audioScrub?.stop();
+  await sourcePlayer.seekFrame(frame,{resume});syncSourcePosition();if(!resume)audioScrub?.request();
+}
 sourceSeek=createSourceSeek({range:$("source-position"),frame:$("source-seek-frame"),seek:$("source-seek"),status:$("source-position-status"),getMedia:()=>{
   const item=viewerMode==="source"?currentSourceItem():null;
   return item ? {...item,epoch:documentState.project_epoch} : null;
-},getPosition:()=>sourcePosition(true),onSeek:async frame=>{
-  fastTransport?.stop();audioScrub?.stop();
-  await sourcePlayer.seekFrame(frame);syncSourcePosition();audioScrub?.request();
-},onError:notice});
+},getPosition:()=>sourcePosition(true),onSeek:seekSourceFrame,onError:notice});
 bindSourceScrub($("source-video"),audioScrub,()=>viewerMode==="source" && !fastTransport?.active());
 for(const event of ["loadstart","emptied","error","seeked"])$("source-video").addEventListener(event,syncSourcePosition);
 $("source-video").addEventListener("timeupdate", () => {
@@ -2263,7 +2269,7 @@ proxyControls=createProxyControls({root:$('proxy-controls'),getContext:()=>docum
   onChange:(settings,meta)=>{
     const changed=proxySettings && (proxySettings.enabled!==settings.enabled || proxySettings.quality!==settings.quality);
     proxyCacheAvailable=meta.cache?.available!==false;proxySettings=settings;$('source-quality').value=settings.enabled?settings.quality:'original';paintProxyBadges();
-    if(changed){programPlayer?.stop();viewer?.invalidate();previewCache?.refresh();if(viewerMode==='source' && sourceOpenId){const item=currentSourceItem();if(item)openSourceItem(item);}else if(viewerMode==='program')void seek();}
+    if(changed){programPlayer?.stop();viewer?.invalidate();previewCache?.refresh();if(viewerMode==='source' && sourceOpenId){if(currentSourceItem())void reopenSourceQuality();}else if(viewerMode==='program')void seek();}
     if(settings.enabled && proxyCacheAvailable){const epoch=meta.project_epoch;void queueProjectProxies({project_epoch:epoch,settings,cache:meta.cache},()=>documentState?.project_epoch===epoch && proxyCacheAvailable && writable && !busy && !unresolved);}
   }
 });

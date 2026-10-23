@@ -1,3 +1,5 @@
+import {renderColorPicker} from './color-picker.js';
+
 export function wheelDelta(x,y,dx,dy,radius,fine=false) {
   const scale=(fine ? 0.2 : 1)/(radius*2.5);let nextX=x+dx*scale,nextY=y-dy*scale;
   const length=Math.hypot(nextX,nextY);if(length>1){nextX/=length;nextY/=length;}return [nextX,nextY];
@@ -82,7 +84,8 @@ export function renderSelectedFilters(root,detail,{controls,keyRow,openState,not
       const offset=document.createElement('fieldset'),legend=document.createElement('legend');legend.textContent='DropShadow offset';offset.append(legend);card.append(offset);
       for(const axis of [0,1]){const bound=Number.isFinite(timelineSize?.[axis]) && timelineSize[axis]>0?timelineSize[axis]:8192;number(offset,`DropShadow offset ${axis?'Y':'X'}`,filter.offset[axis],[-bound,bound],value=>({offset:filter.offset.map((own,index)=>index===axis?value:own.value)}));}
       keyControls(offset,'DropShadow offset',filter.offset,[{kind:'offset',axis:0},{kind:'offset',axis:1}]);
-      for(const axis of ['r','g','b','a'])number(card,`DropShadow color ${axis.toUpperCase()}`,{value:filter.color[axis]},[0,1],value=>({color:{...filter.color,[axis]:value}}));
+      const color=document.createElement('div');color.className='inspector-color-row';card.append(color);
+      gestures.push(renderColorPicker(color,{label:'DropShadow color',value:filter.color,controls,apply:value=>edit({color:value}),openState}));
       controls.button('Reset DropShadow color',reset([],{reset_color:true}),card);
     }
     if(kind==='ColorCorrection'){

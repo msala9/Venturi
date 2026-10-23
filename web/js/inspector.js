@@ -4,6 +4,7 @@ import {renderCurves,createZoomLink,zoomParameters,createKeyPickSelection} from 
 import {renderEventKeys} from "./eventkeys.js";
 import {renderKeySelection} from "./keyselection.js";
 import {createTitleFontChooser} from './fonts.js';
+import {renderColorPicker} from './color-picker.js';
 
 export function inspectorGroup(section,group){
   if(!['video','audio','selection'].includes(group))throw Error('Choose an Inspector group');
@@ -201,14 +202,12 @@ export function renderSelectedVideoEffects(root,detail,options){
   const note=document.createElement('p');note.className='muted';note.textContent=`Values from ${options.primaryName || 'the first selected video clip'}. Title and Solid controls follow this primary type; edits affect only matching selected clips. Filter parameters affect selected clips already carrying that filter. Rust chooses defaults or keys at each clip's clamped playhead.`;inspectorHelp(section,note);
   const group=label=>{const node=document.createElement('details'),summary=document.createElement('summary');node.dataset.visualPath=`selected-effects:${label}`;node.open=options.visualState?.get(node.dataset.visualPath) ?? label==='Selected solid color';node.className='inspector-property-group';summary.textContent=label;node.append(summary);section.append(node);return node;};
   function colorRow(parent,label,value,apply){
-    const form=document.createElement('form'),fields={};form.className='property-row inspector-color-row';
-    for(const axis of ['r','g','b','a']){const field=document.createElement('label'),input=controls.register(document.createElement('input'));field.className='field';field.textContent=`${label} ${axis.toUpperCase()}`;input.type='number';input.min=0;input.max=1;input.step='any';input.required=true;input.value=value[axis];input.setAttribute('aria-label',field.textContent);fields[axis]=input;field.append(input);form.append(field);}
-    const button=controls.register(document.createElement('button'));button.textContent=`Apply ${label}`;button.setAttribute('aria-label',button.textContent);form.append(button);
-    form.addEventListener('submit',event=>{event.preventDefault();const rgba=Object.fromEntries(Object.entries(fields).map(([axis,input])=>[axis,Number(input.value)]));if(Object.values(fields).every(input=>String(input.value).trim()) && Object.values(rgba).every(value=>Number.isFinite(value) && value>=0 && value<=1) && form.reportValidity() && JSON.stringify(rgba)!==JSON.stringify(value))apply(rgba);});parent.append(form);
+    const row=document.createElement('div');row.className='inspector-color-row';parent.append(row);
+    controls.own(renderColorPicker(row,{label,value,controls,apply,openState:options.visualState}));
   }
   if(detail.title){
     const title=detail.title,parent=group('Selected title typography'),before={...structuredClone(title),text:title.content.value ?? title.content.default};delete before.content;
-    const submit=patch=>{const changed=titleSelectionPatch(before,patch);if(Object.keys(changed).length)controls.submit({action:'title',patch:changed});};
+    const submit=patch=>{const changed=titleSelectionPatch(before,patch);if(Object.keys(changed).length)return controls.submit({action:'title',patch:changed});};
     const reset=(parent,label,fields)=>controls.button(`Reset ${label}`,{action:'reset_title',fields},parent);
     function text(label,field,value,multiline=false,target=parent){
       const form=document.createElement('form'),row=document.createElement('label'),input=controls.register(document.createElement(multiline?'textarea':'input'));row.className='field';row.textContent=label;if(!multiline)input.type='text';input.value=value;input.maxLength=multiline?4096:128;input.setAttribute('aria-label',label);row.append(input);form.append(row);

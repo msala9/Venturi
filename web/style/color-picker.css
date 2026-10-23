@@ -1,0 +1,25 @@
+.color-picker { margin: 3px 0; }
+.color-picker-swatch { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; }
+.color-picker-chip, .color-picker-alpha { background-color: #999; background-image: conic-gradient(#666 25%, transparent 0 50%, #666 0 75%, transparent 0); background-size: 8px 8px; }
+.color-picker-chip { position: relative; width: 36px; height: 20px; flex: 0 0 auto; border: 1px solid var(--border); border-radius: 3px; overflow: hidden; }
+.color-picker-chip::after { content: ''; position: absolute; inset: 0; background: var(--color); }
+.color-picker-popup { position: fixed; inset: auto; z-index: 100; box-sizing: border-box; width: min(284px, calc(100vw - 16px)); margin: 0; padding: 10px; overflow: auto; border: 1px solid var(--border); border-radius: 5px; background: var(--raised); color: var(--text); box-shadow: 0 8px 28px #0009; }
+.color-picker-popup[hidden] { display: none; }
+.color-picker-square { position: relative; height: 160px; margin: 8px 0; background: #000; touch-action: none; cursor: crosshair; }
+.color-picker-colors { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.color-picker-dot, .color-picker-thumb { position: absolute; width: 10px; height: 10px; border: 1px solid white; outline: 1px solid #111; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.color-picker-slider-row { display: grid; grid-template-columns: 38px 1fr; align-items: center; gap: 6px; margin: 6px 0; font-size: 11px; }
+.color-picker-slider { position: relative; height: 22px; touch-action: none; cursor: crosshair; }
+.color-picker-hue { background: #888; }
+.color-picker-alpha::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, transparent, var(--color)); }
+.color-picker-thumb { top: 50%; }
+.color-picker-status { min-height: 24px; margin: 6px 0; color: var(--muted); font-size: 10px; }
+.color-picker-hex { display: flex; align-items: end; gap: 4px; }
+.color-picker-hex .field { flex: 1; min-width: 0; }
+.color-picker-hex input { width: 100%; box-sizing: border-box; }
+.color-picker-precision { margin: 7px 0; }
+.color-picker-precision summary { font-size: 11px; }
+.color-picker-linear { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.color-picker-linear .field { min-width: 0; font-size: 10px; }
+.color-picker-linear input { box-sizing: border-box; width: 100%; min-width: 0; }
+.color-picker-linear button { grid-column: 1 / -1; }

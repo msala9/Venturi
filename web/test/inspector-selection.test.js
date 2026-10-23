@@ -2,6 +2,39 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {videoPropertySelection,audioPropertySelection,renderSelectedVideoProperties,renderSelectedAudioGain,renderSelectedVideoEffects,titleSelectionPatch,renderProperties} from '../js/inspector.js';
 
+test('selected title color pickers retain native linear precision and existing background patch ownership',async t=>{
+  const rgba={r:0.1234567890123,g:0.402391823472,b:0.918273645546,a:0.456789012345};
+  const h=harness(t,{effects:true,editDetail:native=>{titleDetail(native);native.title.color={...rgba};native.title.background.color={...rgba,r:0.000123456789};native.title.background.outline_color={...rgba,g:0.876543210123};}});
+  const before=structuredClone(h.native);
+  for(const label of ['Title color','Background color','Background outline color']){
+    assert.ok(h.field(`Choose ${label}`),label);h.click(`Choose ${label}`);await settle();
+  }
+  assert.deepEqual(h.commands,[]);assert.deepEqual(h.native,before);
+  assert.equal(Number(h.field('Title color A').value),rgba.a);
+  h.apply('Title color R',0.2);await settle();
+  h.apply('Background color G',0.3);await settle();
+  h.apply('Background outline color B',0.4);await settle();
+  assert.deepEqual(h.commands.map(command=>command.edit),[
+    {action:'title',patch:{color:{...rgba,r:Math.fround(0.2)}}},
+    {action:'title',patch:{background:{...before.title.background,color:{...before.title.background.color,g:Math.fround(0.3)}}}},
+    {action:'title',patch:{background:{...before.title.background,outline_color:{...before.title.background.outline_color,b:Math.fround(0.4)}}}},
+  ]);
+  assert.ok(h.commands.every(command=>command.clip_ids.join(',')==='9,2' && command.timeline_frame===20));
+});
+
+test('selected solid picker keeps own-clock keys and blocks stale or disposed color commits',async t=>{
+  const rgba={r:0.1234567890123,g:0.402391823472,b:0.918273645546,a:0.456789012345};
+  const h=harness(t,{effects:true,editDetail:native=>{native.color_info={value:{...rgba},keyframe_info:keyInfo(true,4,33)};}});
+  h.click('Choose Solid color');await settle();h.apply('Solid color A',rgba.a);await settle();assert.deepEqual(h.commands,[]);
+  h.apply('Solid color A',0.25);await settle();h.click('Toggle solid color keyframes at playhead');await settle();
+  assert.deepEqual(h.commands.map(command=>command.edit),[{action:'solid_color',value:{...rgba,a:0.25}},{action:'toggle_color_key'}]);
+  h.state.generation='new';h.apply('Solid color R',0.8);await settle();
+  h.state.generation='7';h.setFrame(21);h.apply('Solid color G',0.8);await settle();h.setFrame(20);
+  h.allow(false);h.apply('Solid color B',0.8);await settle();h.allow(true);
+  h.apply('Solid color R',0.9);h.control.at(-1).cancel();await settle();
+  assert.equal(h.commands.length,2);assert.deepEqual(h.native.color_info.value,rgba);
+});
+
 const axes=['ZoomX','ZoomY','PositionX','PositionY','Rotation','AnchorX','AnchorY','CropLeft','CropTop','CropRight','CropBottom','CropSoftness','Opacity'];
 const snapshot=()=>({project_epoch:'epoch',generation:'7',timeline:{id:'timeline',revision:'revision',tracks:[
   {id:'audio',kind:'audio',locked:false,clips:[{id:'a-later',start_frame:40,linked_group:'linked'},{id:'a-primary',start_frame:4}]},
@@ -285,7 +318,7 @@ test('title text keys and row/background resets use native own-clock actions and
 
 test('Solid color uses native evaluated color and a selected diamond without inventing a reset control',async t=>{
   const h=harness(t,{effects:true,editDetail:native=>{native.color={r:0,g:0,b:0,a:1};native.color_info={value:{r:0.2,g:0.3,b:0.4,a:1},keyframe_info:keyInfo(true,4,33)};}});
-  assert.equal(h.field('Solid color R').value,0.2);h.apply('Solid color R',0.5);await settle();h.click('Toggle solid color keyframes at playhead');await settle();h.click('Next solid color keyframe');
+  assert.equal(Number(h.field('Solid color R').value),0.2);h.apply('Solid color R',0.5);await settle();h.click('Toggle solid color keyframes at playhead');await settle();h.click('Next solid color keyframe');
   assert.deepEqual(h.commands.map(command=>command.edit),[{action:'solid_color',value:{r:0.5,g:0.3,b:0.4,a:1}},{action:'toggle_color_key'}]);assert.deepEqual(h.seeks,[33]);assert.equal(h.all().some(node=>node.textContent==='Reset solid color'),false);assert.equal(h.field('Title text'),undefined);
 });
 

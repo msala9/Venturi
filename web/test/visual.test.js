@@ -54,14 +54,14 @@ test('queued native wheel reset rejects stale ownership and restores coordinates
   canvas.isConnected=false;events.dblclick();await settle();assert.equal(resets,1);
 });
 
-function selectedWheelHarness(t){
+function selectedWheelHarness(t,{shadowColor=null}={}){
   const globals={document:globalThis.document,Option:globalThis.Option,requestAnimationFrame:globalThis.requestAnimationFrame};
   class Element extends EventTarget{
-    constructor(tag){super();this.tagName=tag;this.children=[];this.dataset={};this.isConnected=true;this.value='';this.disabled=false;}
+    constructor(tag){super();this.tagName=tag;this.children=[];this.dataset={};this.style={};this.isConnected=true;this.value='';this.disabled=false;}
     append(...nodes){for(const node of nodes){node.parent=this;this.children.push(node);}}
     setAttribute(name,value){this[name]=String(value);}
     reportValidity(){return true;}
-    getContext(){return {};}
+    getContext(){return null;}
     focus(){}
   }
   globalThis.document={createElement:tag=>new Element(tag)};globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};globalThis.requestAnimationFrame=()=>1;
@@ -69,11 +69,23 @@ function selectedWheelHarness(t){
   const wheels=['Shadows','Midtones','Highlights','Offset'].map(name=>({name,x:`${name}X`,y:`${name}Y`,luma:`${name}Luma`,saturation:name==='Offset'?'Saturation':`${name}Sat`}));
   const grade=wheels.flatMap(wheel=>[wheel.x,wheel.y,wheel.luma,wheel.saturation]).concat(['LowRange','HighRange']).map((param,index)=>({param,value:param.endsWith('Sat') || param==='Saturation'?1:0,range:param.endsWith('Sat') || param==='Saturation'?[0,2]:[-1,1],key_count:100,keyframes:[],keyframe_info:{on_keyframe:index===1,previous_frame:index<4?[4,8,12,10][index]:null,next_frame:index<4?[50,40,45,30][index]:null}}));
   const detail={clip_id:'9',video:true,locked:false,color_info:null,filters:{kinds:['ColorCorrection'],grade_presets:[],wheels,wheel_hues:[],stack:[{kind:'ColorCorrection',enabled:true,grade}]}};
+  if(shadowColor){detail.filters.kinds.push('DropShadow');detail.filters.blur_radius_max=8192;detail.filters.shadow_grow_max=8192;detail.filters.stack.push({kind:'DropShadow',enabled:true,radius:{value:2},grow:{value:0},offset:[{value:0},{value:0}],color:{...shadowColor}});}
   const root=new Element('div'),commands=[],seeks=[],notices=[],selection={project_epoch:'epoch',generation:'1',timeline_id:'timeline',revision:'revision',selection:['2','9'],clip_ids:['9','2']};let allowed=true,frame=20;
-  renderSelectedVideoEffects(root,detail,{selection:structuredClone(selection),getSelection:()=>selection,frame,getFrame:()=>frame,canInteract:()=>allowed,canNavigate:()=>allowed,commit:async operation=>{commands.push(operation);},notice:message=>notices.push(message),seek:target=>seeks.push(target),visualState:new Map()});
-  const all=(node=root)=>[node,...node.children.flatMap(child=>all(child))],field=label=>all().find(node=>node['aria-label']===label);
-  return {root,commands,seeks,notices,selection,detail,all,field,click(label){const node=field(label);assert.ok(node,label);node.dispatchEvent(new Event('click'));},setAllowed:value=>{allowed=value;},setFrame:value=>{frame=value;}};
+  const controls=renderSelectedVideoEffects(root,detail,{selection:structuredClone(selection),getSelection:()=>selection,frame,getFrame:()=>frame,canInteract:()=>allowed,canNavigate:()=>allowed,commit:async operation=>{commands.push(operation);},notice:message=>notices.push(message),seek:target=>seeks.push(target),visualState:new Map()});
+  const all=(node=root)=>[node,...node.children.flatMap(child=>child && typeof child==='object'?all(child):[])],field=label=>all().find(node=>node['aria-label']===label);
+  return {root,commands,seeks,notices,selection,detail,all,field,controls,click(label){const node=field(label);assert.ok(node,label);node.dispatchEvent(new Event('click'));},setAllowed:value=>{allowed=value;},setFrame:value=>{frame=value;}};
 }
+
+test('selected DropShadow picker preserves linear alpha and uses selected native patch and reset ownership',async t=>{
+  const rgba={r:0.1234567890123,g:0.402391823472,b:0.918273645546,a:0.456789012345};
+  const h=selectedWheelHarness(t,{shadowColor:rgba});h.click('Choose DropShadow color');await settle();assert.deepEqual(h.commands,[]);
+  const input=h.field('DropShadow color G');input.value=0.3;input.parent.parent.dispatchEvent(new Event('submit',{cancelable:true}));await settle();
+  assert.deepEqual(h.commands[0],{kind:'edit_inspector_selection',clip_ids:['9','2'],timeline_frame:20,edit:{action:'filter',filter:'DropShadow',patch:{color:{...rgba,g:Math.fround(0.3)}}}});
+  h.click('Reset DropShadow color');await settle();assert.deepEqual(h.commands[1].edit,{action:'reset_filter',filter:'DropShadow',params:[],reset_enabled:false,reset_color:true,reset_grade:false});
+  h.click('Choose DropShadow color');for(const control of h.controls){control.cancel?.();control.dispose?.();}
+  input.value=0.8;input.parent.parent.dispatchEvent(new Event('submit',{cancelable:true}));await settle();
+  assert.equal(h.commands.length,2);assert.deepEqual(h.detail.filters.stack[1].color,rgba);
+});
 
 test('selected wheel joint diamond and arrows use all four full-track metadata rows and one selected native operation',async t=>{
   const h=selectedWheelHarness(t),params=['ShadowsX','ShadowsY','ShadowsLuma','ShadowsSat'].map(param=>({kind:'grade',param}));

@@ -2298,6 +2298,7 @@ async fn assets(request: Request) -> Response {
         "/style/native-shell.css" => asset!("/web/style/native-shell.css", "text/css"),
         "/style/native-browser.css" => asset!("/web/style/native-browser.css", "text/css"),
         "/style/native-inspector.css" => asset!("/web/style/native-inspector.css", "text/css"),
+        "/style/color-picker.css" => asset!("/web/style/color-picker.css", "text/css"),
 
         "/js/proxies.js" => asset!("/web/js/proxies.js", "text/javascript"),
         "/js/main.js" => asset!("/web/js/main.js", "text/javascript"),
@@ -2320,6 +2321,7 @@ async fn assets(request: Request) -> Response {
         "/js/export.js" => asset!("/web/js/export.js", "text/javascript"),
         "/js/inspector.js" => asset!("/web/js/inspector.js", "text/javascript"),
         "/js/fonts.js" => asset!("/web/js/fonts.js", "text/javascript"),
+        "/js/color-picker.js" => asset!("/web/js/color-picker.js", "text/javascript"),
         "/js/keyframe-navigation.js" => asset!("/web/js/keyframe-navigation.js", "text/javascript"),
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
         "/js/curve-viewport.js" => asset!("/web/js/curve-viewport.js", "text/javascript"),

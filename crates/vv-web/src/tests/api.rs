@@ -1878,6 +1878,8 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/timeline/asset-drop.js", 200),
         ("/js/timeline/effect-drop.js", 200),
         ("/js/fonts.js", 200),
+        ("/js/color-picker.js", 200),
+        ("/style/color-picker.css", 200),
         ("/js/curve-viewport.js", 200),
         ("/js/curve-window.js", 200),
         ("/js/source-placement.js", 200),
@@ -2782,6 +2784,7 @@ async fn embedded_editor_module_imports_are_served_with_javascript_mime() {
         "/style/native-shell.css",
         "/style/native-browser.css",
         "/style/native-inspector.css",
+        "/style/color-picker.css",
     ] {
         assert!(
             stylesheets.contains(&expected),

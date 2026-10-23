@@ -487,6 +487,7 @@ function updatePlayAvailability() {
   $("play").title = viewerMode === "source" ? "Play source media" : `Play composed timeline · native ${documentState?.capabilities.software_preview ? "CPU" : "GPU"} compositor`;
 }
 function viewerModeSet(mode) {
+  cancelTitleFontDraft();
   cancelSourcePreview();
   if(mode!==viewerMode)nativePlacementIntent++;
   maskSelectionSequence++;
@@ -633,7 +634,8 @@ const curveWindow=createCurveWindow({notice,onChange:open=>{
   selected();
 }});
 function openCurveWindow(){curveWindow.open();}
-let visualControls=[];
+let visualControls=[],titleFontDraftOwner=null;
+function cancelTitleFontDraft(){titleFontDraftOwner=null;viewer?.cancelDraft();}
 function selectedKeyController(){return visualControls.find(control=>control.hasSelectedKeys?.());}
 function currentDeleteOwner(target=document.activeElement){const owner=commandOwnership.owner(target);return owner==='keys' && !selectedKeyController()?'timeline':owner;}
 function deleteOwnedSelection(owner=currentDeleteOwner()){
@@ -663,6 +665,7 @@ function syncSelectionActions(){
   for(const button of document.querySelectorAll('[data-timeline-command]'))button.disabled=disabled;
 }
 function selected() {
+  cancelTitleFontDraft();
   timelineContextMenu?.invalidate();
   inspectorSelectionRead?.cancel();inspectorSelectionRead=null;
   if(view.selection.length || view.transitionSelection)view.selectedGap=null;
@@ -756,7 +759,18 @@ function selected() {
       if(!current() || detail.clip_id!==selection.clip_ids[0])return;
       target.replaceChildren();
       const primary=timeline.tracks.flatMap(track=>track.clips).find(item=>item.id===detail.clip_id);
+      const draftOwner={};
       const options={selection,getSelection,frame:inspectorFrame,getFrame:()=>view.playhead,canInteract:()=>current() && canEditInspector(),canNavigate:()=>current() && canNavigateInspector(),commit,notice,primaryName:primary?.name,visualState,zoomLink,readFonts,timelineSize:[timeline.resolution.width,timeline.resolution.height],
+        previewTitleFont:patch=>{
+          if(patch===null){if(titleFontDraftOwner===draftOwner)cancelTitleFontDraft();return;}
+          if(!current() || !canEditInspector() || !documentState?.capabilities.preview)return;
+          titleFontDraftOwner=draftOwner;
+          const query={project_epoch:selection.project_epoch,if_generation:selection.generation,timeline_id:selection.timeline_id,revision:selection.revision,frame:inspectorFrame,width:960};
+          return viewer?.previewDraft({query,clip_ids:[...selection.clip_ids],...patch},{isCurrent:()=>titleFontDraftOwner===draftOwner && current() && canEditInspector()}).then(shown=>{
+            if(!shown && titleFontDraftOwner===draftOwner && current() && canEditInspector())throw Error('Preview could not be shown; confirm to apply or cancel');
+            return shown;
+          });
+        },
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;updateTime();seek();selected();void projectView?.update();}};
       if(role==='video'){const properties=renderSelectedVideoProperties(target,detail,options);if(properties)visualControls.push(properties);renderBlendMatte(target,detail,options);visualControls.push(...renderSelectedVideoEffects(target,detail,options));}
       else if(role==='audio'){const gain=renderSelectedAudioGain(target,detail,options);if(gain)visualControls.push(gain);}
@@ -1385,6 +1399,7 @@ async function mutate(operation, project = false,route=null,preparedMutation=nul
     operation,
   };
   busy = true;
+  cancelTitleFontDraft();
   timelineContextMenu?.invalidate();
   compoundNavigation?.invalidate();
   nativeAssets?.invalidate();
@@ -1833,6 +1848,7 @@ setInterval(() => {
   if (writable)
     request("/lease", { client_id: clientId }).catch(() => {
       writable = false;
+      cancelTitleFontDraft();
       nativeAssets?.invalidate();
       mediaImport?.invalidate();mediaRelink?.invalidate();otioImport?.invalidate();syncClipboardControls();
       $("connection").textContent = "Disconnected · read only";
@@ -1992,7 +2008,7 @@ programPlayer = createProgramPlayer({
   isInternalSeek: () => Boolean(fastTransport?.correcting($("program-video"))),
   isInternalPause: event => Boolean(fastTransport?.pausing($("program-video"),event)),
   onFrame: (frame) => { if (viewerMode === "program") { view.playhead = frame; syncPlayheadSelection(true); updateTime(); scopes?.onPlaybackFrame(); } },
-  onState: (state) => { const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; scopesSuspended=["preparing","failed"].includes(state); $("workspace-tools").hidden=viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.invalidate(state==='preparing'?"PREPARING PROGRAM":undefined); scopes?.setVisible(scopesWanted && !scopesSuspended && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden,{defer:state==='ready'}); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; sourceAssets?.refresh();viewerZoom?.refresh();voiceover?.syncPlayback();audioMeters?.sync(); },
+  onState: (state) => { cancelTitleFontDraft(); const active = state !== "stopped" && viewerMode === "program"; scopePlayback=active; scopesSuspended=["preparing","failed"].includes(state); $("workspace-tools").hidden=viewerMode==="source" || editor.dataset.workspace==="Edit"; scopes?.invalidate(state==='preparing'?"PREPARING PROGRAM":undefined); scopes?.setVisible(scopesWanted && !scopesSuspended && viewerMode==="program" && editor.dataset.workspace==="Color" && $("slip-view").hidden,{defer:state==='ready'}); $("program-view").hidden = !active; transformOverlay?.invalidate(); syncViewerMasks(); maskOverlay?.invalidate(); $("screen").dataset.programPlayback = String(active); if (viewerMode === "program") $("play").textContent = state === "preparing" ? "Cancel preparation" : state === "failed" ? "Retry playback" : "▶ Play"; sourceAssets?.refresh();viewerZoom?.refresh();voiceover?.syncPlayback();audioMeters?.sync(); },
   onUserPause:({frame,query,reason,isCurrent,playback})=>{
     const current=()=>isCurrent() && viewerMode==='program' && programPlayer?.state()==='ready' && programPlayer.range()===query && $('program-video').paused && documentState?.project_epoch===query.project_epoch && documentState?.generation===query.if_generation && timeline?.id===query.timeline_id && timeline?.revision===query.revision;
     if(!Number.isSafeInteger(frame) || frame<query.start_frame || frame>=query.end_frame || !current())return;

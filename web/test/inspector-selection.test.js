@@ -56,6 +56,11 @@ function harness(t,{video=true,effects=false,commit,editDetail=()=>{},readFonts}
     append(...children){for(const child of children){this.children.push(child);if(typeof child==='object')child.parent=this;}}
     replaceChildren(...children){this.children=[];this.append(...children);}
     setAttribute(name,value){this[name]=String(value);}
+    getAttribute(name){return this[name] ?? null;}
+    removeAttribute(name){delete this[name];}
+    remove(){if(this.parent)this.parent.children=this.parent.children.filter(node=>node!==this);this.parent=null;}
+    contains(target){return this===target || this.children.some(node=>typeof node==='object' && node.contains(target));}
+    focus(){globalThis.document.activeElement=this;}
     get options(){return this.children;}
     reportValidity(){return true;}
   }
@@ -264,10 +269,11 @@ test('title fonts load only on opening typography and confirmed family/style edi
   let reads=0;const h=harness(t,{effects:true,editDetail:titleDetail,readFonts:async()=>{reads++;return fontCatalog();}}),group=h.all().find(node=>node.dataset.visualPath==='selected-effects:Selected title typography');
   assert.equal(reads,0);assert.equal(h.field('Server font family').disabled,true);h.field('Title text').value='Unsubmitted text draft';group.open=true;group.dispatchEvent(new Event('toggle'));await settle();
   assert.equal(reads,1);assert.equal(h.field('Title text').value,'Unsubmitted text draft');assert.equal(h.field('Server font family').value,'Server font');
-  const style=h.field('Server font style');style.value='400:0';style.dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands,[]);
-  style.value='400:1';style.dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands[0].edit,{action:'title',patch:{italic:true}},'Native apply_title_edit broadcasts only fields changed from the primary');
-  style.value='1000:0';style.dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands[1].edit,{action:'title',patch:{font_weight:1000}});
-  const family=h.field('Server font family');family.value='Other server font';family.dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands[2].edit,{action:'title',patch:{font_family:'Other server font'}});assert.equal(h.native.title.font_weight,400);assert.equal(h.native.title.content.value,'Current animated text');
+  const choose=(label,value)=>{h.click(label);const option=h.all().find(node=>node.role==='option' && node.textContent===value);assert(option,value);option.dispatchEvent(new Event('click',{cancelable:true}));};
+  choose('Server font style','Regular');await settle();assert.deepEqual(h.commands,[]);
+  choose('Server font style','Italic');await settle();assert.deepEqual(h.commands[0].edit,{action:'title',patch:{italic:true}},'Native apply_title_edit broadcasts only fields changed from the primary');
+  choose('Server font style','Black');await settle();assert.deepEqual(h.commands[1].edit,{action:'title',patch:{font_weight:1000}});
+  choose('Server font family','Other server font');await settle();assert.deepEqual(h.commands[2].edit,{action:'title',patch:{font_family:'Other server font'}});assert.equal(h.native.title.font_weight,400);assert.equal(h.native.title.content.value,'Current animated text');
   group.open=false;group.dispatchEvent(new Event('toggle'));group.open=true;group.dispatchEvent(new Event('toggle'));await settle();assert.equal(reads,1);assert.equal(h.all().find(node=>node.dataset.visualPath==='selected-title-font-manual').open,false);
 });
 
@@ -282,7 +288,7 @@ test('late font reads cannot republish controls for a different playhead or disp
     let resolve,signal;const h=harness(t,{effects:true,editDetail:titleDetail,readFonts:options=>{signal=options.signal;return new Promise(done=>{resolve=done;});}}),group=h.all().find(node=>node.dataset.visualPath==='selected-effects:Selected title typography');
     group.open=true;group.dispatchEvent(new Event('toggle'));
     if(action==='frame')h.setFrame(21);else if(action==='selection')h.state.selection=['9'];else h.control.at(-1).cancel();
-    resolve(fontCatalog());await settle();assert.equal(h.field('Server font family').options.length,1);h.field('Server font family').value='Other server font';h.field('Server font family').dispatchEvent(new Event('change'));await settle();assert.deepEqual(h.commands,[]);if(action==='dispose')assert.equal(signal.aborted,true);
+    resolve(fontCatalog());await settle();assert.equal(h.field('Server font family').value,'Server font');h.click('Server font family');await settle();assert(!h.all().some(node=>node.role==='listbox'));assert.deepEqual(h.commands,[]);if(action==='dispose')assert.equal(signal.aborted,true);
   });
 });
 function filterDetail(native){

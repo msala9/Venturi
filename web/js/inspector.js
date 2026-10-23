@@ -215,7 +215,7 @@ export function renderSelectedVideoEffects(root,detail,options){
     }
     const textForm=text('Title text','text',before.text,true);keyDiamond(textForm,'title text',[title.content],controls,{action:'toggle_text_key'});
     const fonts=document.createElement('div');parent.append(fonts);
-    controls.own(createTitleFontChooser({root:fonts,group:parent,title,readFonts:options.readFonts,register:controls.register,sync:controls.sync,isCurrent:controls.current,canInteract:controls.available,onFamily:font_family=>submit({font_family}),onFace:face=>submit({font_weight:face.weight,italic:face.italic})}));
+    controls.own(createTitleFontChooser({root:fonts,group:parent,title,readFonts:options.readFonts,register:controls.register,sync:controls.sync,isCurrent:controls.current,canInteract:controls.available,onPreview:options.previewTitleFont,onFamily:font_family=>submit({font_family}),onFace:face=>submit({font_weight:face.weight,italic:face.italic})}));
     reset(fonts,'title font',['font_family']);reset(fonts,'title style',['font_weight','italic']);
     const manual=document.createElement('details'),manualTitle=document.createElement('summary');manual.dataset.visualPath='selected-title-font-manual';manual.className='inspector-help';manual.open=options.visualState?.get(manual.dataset.visualPath) ?? false;manualTitle.textContent='Manual font and style';manual.append(manualTitle);parent.append(manual);
     text('Font family (server)','font_family',title.font_family,false,manual);

@@ -8,6 +8,25 @@ use vv_session::Session;
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = std::env::args().collect();
     match args.get(1).map(String::as_str){
+        Some("audio") if args.len()==7=>{
+            let project=vv_core::load_project(std::path::Path::new(&args[2]))?;
+            let raw:u64=args[3].parse()?;
+            let id=project.timelines.keys().find(|id|id.raw()==raw).ok_or("Timeline not found")?;
+            let start:u64=args[4].parse()?;let count:u64=args[5].parse()?;
+            if count==0 || count>u64::from(vv_audio::mixer::PROJECT_SAMPLE_RATE)*5{return Err("Audio reference is limited to five seconds".into());}
+            let end=start.checked_add(count).ok_or("Audio range overflow")?;
+            let mut output=OpenOptions::new().create_new(true).write(true).open(&args[6])?;
+            let mut levels=vv_session::audio_render::LevelCache::default();levels.threads=1;
+            let mut failed=None;let mut samples=0usize;
+            vv_session::audio_render::render_offline(&project,&project.timelines[id],start..end,&mut levels,|chunk|{
+                let bytes:Vec<u8>=chunk.iter().flat_map(|sample|sample.to_le_bytes()).collect();
+                if let Err(error)=output.write_all(&bytes){failed=Some(error);return std::ops::ControlFlow::Break(());}
+                samples+=chunk.len();std::ops::ControlFlow::Continue(())
+            }).map_err(|error|std::io::Error::other(error.to_string()))?;
+            if let Some(error)=failed{return Err(error.into());}
+            output.sync_all()?;
+            println!("native_audio timeline={raw} start={start} frames={count} samples={samples} sample_rate=48000 channels=2 format=f32le");
+        }
         Some("fixture_parity") if args.len()==3=>fixture_parity(std::path::Path::new(&args[2]))?,
         Some("export") if args.len()==4=>{
             let project=vv_core::load_project(std::path::Path::new(&args[2]))?;
@@ -86,7 +105,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             OpenOptions::new().create_new(true).write(true).open(&args[5])?.write_all(&rgba)?;
             println!("native_adapter={} frame={frame} size={width}x{height} bytes={}",compositor.adapter_name(),rgba.len());
         }
-        _=>return Err("Usage: verify_preview fixture_parity NEW_OUTPUT_DIR | fixture|fixture_av|fixture_sync SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba [TIMELINE_ID] | export PROJECT OUTPUT.mp4".into()),
+        _=>return Err("Usage: verify_preview fixture_parity NEW_OUTPUT_DIR | fixture|fixture_av|fixture_sync SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba [TIMELINE_ID] | audio PROJECT TIMELINE START_SAMPLE SAMPLE_COUNT OUTPUT.f32le | export PROJECT OUTPUT.mp4".into()),
     }
     Ok(())
 }

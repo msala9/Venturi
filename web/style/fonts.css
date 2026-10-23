@@ -1,0 +1,8 @@
+.font-combobox{width:100%;min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:24px;position:relative}
+.font-combobox::after{content:'▾';position:absolute;right:8px;color:var(--muted)}
+.font-combobox[aria-expanded="true"]{border-color:var(--primary)}
+.font-listbox{position:fixed;inset:auto;margin:0;padding:4px;box-sizing:border-box;overflow:auto;overscroll-behavior:contain;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:5px;box-shadow:0 8px 24px #0008;z-index:30;font:inherit}
+.font-option{box-sizing:border-box;min-height:28px;line-height:20px;padding:4px 8px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default}
+.font-option.is-active{background:var(--raised);outline:1px solid var(--primary);outline-offset:-1px}
+.font-option[aria-disabled="true"]{color:var(--muted);opacity:.65}
+.font-chooser-status{font-size:11px;line-height:1.35;margin:4px 0 8px}

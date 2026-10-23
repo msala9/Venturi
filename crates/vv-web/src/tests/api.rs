@@ -171,6 +171,81 @@ async fn native_library_source_http_is_read_only_strict_and_requires_pinned_iden
 }
 
 #[tokio::test]
+async fn title_font_draft_http_is_strict_origin_bound_and_never_changes_session() {
+    let root = std::env::temp_dir().join(format!(
+        "vv-title-draft-http-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let host = Host::start(&root).unwrap();
+    host.call(Action::Lease("other-editor".into()))
+        .await
+        .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let valid = json!({"query":{"project_epoch":"epoch","if_generation":"0","timeline_id":"1","revision":"r","frame":0,"width":320},"clip_ids":["1"],"font_family":"DejaVu Serif"});
+    let mut unknown = valid.clone();
+    unknown["path"] = json!("/tmp/font.ttf");
+    let mut wrong_query = valid.clone();
+    wrong_query["query"]["path"] = json!("/tmp/font.ttf");
+    for (body, origin, status) in [
+        (
+            valid.to_string(),
+            "http://127.0.0.1:8787",
+            StatusCode::SERVICE_UNAVAILABLE,
+        ),
+        (
+            unknown.to_string(),
+            "http://127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            wrong_query.to_string(),
+            "http://127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            valid.to_string(),
+            "https://foreign.example",
+            StatusCode::FORBIDDEN,
+        ),
+        (
+            " ".repeat(256 * 1024 + 1),
+            "http://127.0.0.1:8787",
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/v1/preview/title-font")
+                    .header("host", "127.0.0.1:8787")
+                    .header("origin", origin)
+                    .header("content-type", "application/json")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), status);
+        assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    }
+    drop(app);
+    drop(host);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn native_font_catalog_http_is_cached_lease_free_strict_and_preserves_session_and_undo() {
     let root = std::env::temp_dir().join(format!(
         "vv-native-fonts-http-{}",
@@ -2045,6 +2120,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/fonts.js", 200),
         ("/js/color-picker.js", 200),
         ("/style/color-picker.css", 200),
+        ("/style/fonts.css", 200),
         ("/style/context-menu.css", 200),
         ("/js/command-ownership.js", 200),
         ("/js/timeline/context-actions.js", 200),

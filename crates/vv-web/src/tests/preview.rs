@@ -1,5 +1,174 @@
 use super::*;
 use vv_core::Id;
+
+#[test]
+fn title_draft_cache_and_queue_are_isolated_from_committed_program_frames() {
+    fn snapshot() -> FrameSnapshot {
+        let mut session = vv_session::Session::default();
+        let timeline = session.create_timeline(vv_core::Timeline {
+            name: "Draft cache".into(),
+            fps: vv_core::Rational::new(24, 1),
+            resolution: (64, 64),
+            tracks: vec![vv_core::Track::new(vv_core::TrackKind::Video)],
+            markers: vec![],
+            master: Default::default(),
+        });
+        FrameSnapshot {
+            originals: None,
+            video: Default::default(),
+            project: session.project,
+            timeline,
+            query: FrameQuery {
+                timeline_id: timeline.raw().to_string(),
+                project_epoch: "test:1".into(),
+                if_generation: "1".into(),
+                revision: "test".into(),
+                frame: 0,
+                width: 64,
+            },
+            size: (64, 64),
+        }
+    }
+    let captured = snapshot();
+    let inputs = crate::program::inputs(&captured).unwrap();
+    let draft = FrameMode::Draft("a".repeat(64));
+    let other = FrameMode::Draft("b".repeat(64));
+    let program = FrameMode::Program;
+    assert_ne!(draft.cache_key(&captured), program.cache_key(&captured));
+    assert_ne!(draft.cache_key(&captured), other.cache_key(&captured));
+    assert!(draft.priority() < program.priority());
+    let mut cache = FrameCache::default();
+    cache.insert(CachedFrame {
+        key: draft.cache_key(&captured),
+        query: captured.query.clone(),
+        inputs: inputs.clone(),
+        originals: None,
+        program: draft.is_program(),
+        render_tag: captured.video.tag.clone(),
+        data: vec![1],
+    });
+    assert!(cache.validated_frames(&captured).is_empty());
+    assert!(
+        cache
+            .lookup(&captured, &program.cache_key(&captured))
+            .unwrap()
+            .is_none()
+    );
+    cache.insert(CachedFrame {
+        key: program.cache_key(&captured),
+        query: captured.query.clone(),
+        inputs,
+        originals: None,
+        program: program.is_program(),
+        render_tag: captured.video.tag.clone(),
+        data: vec![2],
+    });
+    assert_eq!(cache.validated_frames(&captured), vec![0]);
+    assert_eq!(
+        cache
+            .lookup(&captured, &draft.cache_key(&captured))
+            .unwrap(),
+        Some(vec![1])
+    );
+    assert_eq!(
+        cache
+            .lookup(&captured, &program.cache_key(&captured))
+            .unwrap(),
+        Some(vec![2])
+    );
+    let queue = Queue::default();
+    let (first, mut first_reply) = oneshot::channel();
+    queue.replace(Job {
+        snapshot: snapshot(),
+        mode: draft.clone(),
+        reply: first,
+    });
+    let (second, mut second_reply) = oneshot::channel();
+    queue.replace(Job {
+        snapshot: snapshot(),
+        mode: other.clone(),
+        reply: second,
+    });
+    assert!(matches!(
+        first_reply.try_recv(),
+        Err(oneshot::error::TryRecvError::Closed)
+    ));
+    let (committed, _committed_reply) = oneshot::channel();
+    queue.replace(Job {
+        snapshot: snapshot(),
+        mode: program,
+        reply: committed,
+    });
+    assert!(matches!(
+        second_reply.try_recv(),
+        Err(oneshot::error::TryRecvError::Closed)
+    ));
+    let (rejected, mut rejected_reply) = oneshot::channel();
+    queue.replace(Job {
+        snapshot: snapshot(),
+        mode: draft,
+        reply: rejected,
+    });
+    assert!(matches!(
+        rejected_reply.try_recv(),
+        Err(oneshot::error::TryRecvError::Closed)
+    ));
+    assert!(
+        queue
+            .next(std::time::Duration::from_millis(1))
+            .unwrap()
+            .mode
+            .is_program()
+    );
+    let (canceled, canceled_reply) = oneshot::channel();
+    queue.replace(Job {
+        snapshot: snapshot(),
+        mode: other,
+        reply: canceled,
+    });
+    drop(canceled_reply);
+    assert!(
+        queue
+            .next(std::time::Duration::from_millis(1))
+            .unwrap()
+            .reply
+            .is_closed()
+    );
+}
+
+#[tokio::test]
+async fn title_draft_rejects_unbounded_or_noncanonical_tags_before_native_work() {
+    let captured = || FrameSnapshot {
+        originals: None,
+        video: Default::default(),
+        project: Project::default(),
+        timeline: TimelineId::from_raw(0),
+        query: FrameQuery {
+            timeline_id: "0".into(),
+            project_epoch: "test".into(),
+            if_generation: "0".into(),
+            revision: "test".into(),
+            frame: 0,
+            width: 64,
+        },
+        size: (64, 64),
+    };
+    let preview = Preview::disabled();
+    for tag in [
+        String::new(),
+        "a".repeat(65),
+        "A".repeat(64),
+        "g".repeat(64),
+    ] {
+        assert_eq!(
+            preview.draft(captured(), tag).await.unwrap_err().1,
+            "INVALID_OPERATION"
+        );
+    }
+    assert!(preview.draft(captured(), "a".repeat(64)).await.is_err());
+    assert_eq!(preview.diagnostic()["frame_rendered"], false);
+}
+
 #[test]
 fn guarded_frame_cache_reopens_touched_sources_and_rejects_legacy_or_changed_lineage() {
     let root = std::env::temp_dir().join(format!("vv-frame-cache-{}", crate::asset_jobs::nonce()));

@@ -19,7 +19,22 @@ titles' text and unmodified fields. Saved unknown families/styles remain visible
 manual fields remain available in a collapsed section. Failed reads require an
 explicit Retry. Out-of-range weights beyond the existing manual 100–900 domain
 are accepted only when that style occurs in the initialized native catalog.
-Menu-hover preview is not implemented by these confirmed choices.
+`POST /api/v1/preview/title-font` accepts a strict body containing `query`
+(the existing full FrameQuery), `clip_ids`, and at least one of `font_family`,
+`font_weight` or `italic`. It applies the existing selected-title native command
+to an owned frame snapshot, then renders with the existing compositor and source
+resolver. It changes no live project, history, revision or writer lease. The
+route rechecks the original composition after rendering and returns a no-store
+PNG with `x-venturi-preview-draft: 1`. Its body is limited to 256 KiB; ordinary
+origin restrictions, frame budgets and nonblocking shared GPU ownership apply.
+Draft cache keys are separate from confirmed Program frames.
+
+The compact font combobox previews stable pointer-enter or keyboard choices
+after 130 ms; it sends no pointer-move requests. Click/Enter confirms one native
+edit. Escape, Tab, outside click, panel close, changed selection/composition or
+playback cancels and restores only the still-current confirmed frame. Closed
+combobox wheel bursts confirm once after 150 ms. Unknown saved families/styles
+remain visible and disabled in the catalog rather than being silently replaced.
 
 ## Effects palette placement
 

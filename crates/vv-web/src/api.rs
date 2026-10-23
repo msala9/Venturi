@@ -207,6 +207,10 @@ pub fn router(state: AppState) -> Router {
         .route("/api/v1/commands/{id}", get(lookup))
         .route("/api/v1/lease", post(lease))
         .route("/api/v1/preview/frame", get(frame))
+        .route(
+            "/api/v1/preview/title-font",
+            post(title_font_preview).layer(DefaultBodyLimit::max(256 * 1024)),
+        )
         .route("/api/v1/preview/cache", get(preview_cache))
         .route("/api/v1/preview/audio.wav", get(audition))
         .route("/api/v1/preview/audio/window", post(program_audio_window))
@@ -2149,6 +2153,45 @@ async fn frame(
     )
         .into_response())
 }
+async fn title_font_preview(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::title_preview::Request>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid title font preview"))?
+        .0;
+    if !state.preview.available() {
+        return Err(ApiError(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "GPU_UNAVAILABLE",
+            "Native preview is unavailable",
+        ));
+    }
+    let original = payload.query.clone();
+    let snapshot = state.host.frame_snapshot(original.clone()).await?;
+    let (mut snapshot, tag) = crate::title_preview::apply(snapshot, &payload)?;
+    snapshot.video = std::sync::Arc::new(crate::proxy_video::Selection::capture(
+        &state.source.proxies,
+        &snapshot,
+    )?);
+    let data = state.preview.draft(snapshot, tag).await?;
+    state.host.call(Action::CheckFrame(original)).await?;
+    Ok((
+        [
+            (header::CONTENT_TYPE, "image/png"),
+            (header::CACHE_CONTROL, "no-store"),
+            (
+                header::HeaderName::from_static("x-venturi-preview-draft"),
+                "1",
+            ),
+        ],
+        data,
+    )
+        .into_response())
+}
 async fn scopes(
     State(state): State<AppState>,
     Path((clip, first, second)): Path<(String, vv_render::ScopeKind, vv_render::ScopeKind)>,
@@ -2540,6 +2583,7 @@ async fn assets(request: Request) -> Response {
         "/style/native-browser.css" => asset!("/web/style/native-browser.css", "text/css"),
         "/style/native-inspector.css" => asset!("/web/style/native-inspector.css", "text/css"),
         "/style/color-picker.css" => asset!("/web/style/color-picker.css", "text/css"),
+        "/style/fonts.css" => asset!("/web/style/fonts.css", "text/css"),
         "/style/context-menu.css" => asset!("/web/style/context-menu.css", "text/css"),
 
         "/js/proxies.js" => asset!("/web/js/proxies.js", "text/javascript"),

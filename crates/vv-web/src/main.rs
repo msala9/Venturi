@@ -54,6 +54,7 @@ mod snapshot;
 mod source;
 mod source_audio;
 mod take;
+mod title_preview;
 mod visual;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {

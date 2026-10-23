@@ -16,11 +16,42 @@ export function createViewer({ image, empty, status, getState, matches = matches
     controller = null,
     url = null,
     pendingURL = null,
-    displayed = null;
+    displayed = null,
+    draft = false,
+    draftURL = null,
+    destroyed = false;
   function clearPending() {
     if (pendingURL) {
       URL.revokeObjectURL(pendingURL);
       pendingURL = null;
+    }
+  }
+  function clearDraft() {
+    const active = draft;
+    draft = false;
+    if (draftURL) URL.revokeObjectURL(draftURL);
+    draftURL = null;
+    if (active) {
+      image.hidden = true;
+      empty.hidden = false;
+    }
+  }
+  function cancelDraft() {
+    if (!draft) return;
+    sequence++;
+    controller?.abort();
+    clearPending();
+    clearDraft();
+    if (!destroyed && url && displayed && matches(displayed, getState())) {
+      image.src = url;
+      image.hidden = false;
+      empty.hidden = true;
+      image.classList.remove("stale");
+      status.textContent = "CURRENT";
+    } else {
+      displayed = null;
+      image.classList.add("stale");
+      status.textContent = "PREVIEW UNAVAILABLE";
     }
   }
   function invalidate() {
@@ -28,12 +59,14 @@ export function createViewer({ image, empty, status, getState, matches = matches
     sequence++;
     controller?.abort();
     clearPending();
+    clearDraft();
     image.classList.add("stale");
     status.textContent = image.hidden
       ? "PREVIEW UNAVAILABLE"
       : "STALE_REVISION";
   }
   async function seek() {
+    if (destroyed) return;
     displayed = null;
     const current = getState();
     if (!current) {
@@ -43,6 +76,7 @@ export function createViewer({ image, empty, status, getState, matches = matches
     const seq = ++sequence;
     controller?.abort();
     clearPending();
+    clearDraft();
     controller = new AbortController();
     image.classList.add("stale");
     status.textContent = "SEEKING";
@@ -85,13 +119,88 @@ export function createViewer({ image, empty, status, getState, matches = matches
       }
     }
   }
+  async function previewDraft(body, { isCurrent = () => true } = {}) {
+    if (destroyed || matches !== matchesFrame || !body?.query || !url || !displayed)
+      return false;
+    let request, encoded;
+    try {
+      request = structuredClone(body);
+      encoded = JSON.stringify(request);
+      if (!isCurrent() || !matchesFrame(request.query, displayed)
+        || !matchesFrame(request.query, getState())) {
+        cancelDraft();
+        return false;
+      }
+    } catch {
+      cancelDraft();
+      return false;
+    }
+    const seq = ++sequence;
+    controller?.abort();
+    clearPending();
+    clearDraft();
+    image.src = url;
+    image.hidden = false;
+    empty.hidden = true;
+    draft = true;
+    controller = new AbortController();
+    image.classList.add("stale");
+    status.textContent = "FONT PREVIEW · SEEKING";
+    const current = () => seq === sequence && !destroyed
+      && matchesFrame(request.query, getState()) && isCurrent();
+    try {
+      const response = await fetch("/api/v1/preview/title-font", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: encoded,
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(30_000)]),
+        cache: "no-store",
+      });
+      if (!current()) {
+        if (seq === sequence) cancelDraft();
+        return false;
+      }
+      if (!response.ok || response.headers.get("x-venturi-preview-draft") !== "1"
+        || Number(response.headers.get("content-length")) > 16 * 1024 * 1024)
+        throw new Error("INVALID_FONT_PREVIEW");
+      const blob = await response.blob();
+      if (!current()) {
+        if (seq === sequence) cancelDraft();
+        return false;
+      }
+      if (blob.type !== "image/png" || !blob.size || blob.size > 16 * 1024 * 1024)
+        throw new Error("INVALID_FONT_PREVIEW");
+      const next = URL.createObjectURL(blob);
+      pendingURL = next;
+      image.src = next;
+      await image.decode();
+      if (!current()) {
+        if (seq === sequence) cancelDraft();
+        return false;
+      }
+      draftURL = next;
+      pendingURL = null;
+      image.hidden = false;
+      image.classList.remove("stale");
+      empty.hidden = true;
+      status.textContent = "FONT PREVIEW";
+      return true;
+    } catch {
+      if (seq === sequence) cancelDraft();
+      return false;
+    }
+  }
   return {
-    current: () => displayed && matches(displayed,getState()) ? {...displayed} : null,
+    current: () => !draft && displayed && matches(displayed,getState()) ? {...displayed} : null,
+    previewDraft,
+    cancelDraft,
     seek,
     invalidate,
     destroy() {
+      destroyed = true;
       invalidate();
       if (url) URL.revokeObjectURL(url);
+      url = null;
     },
   };
 }

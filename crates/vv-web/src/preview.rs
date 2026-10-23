@@ -88,6 +88,7 @@ struct Job {
 #[derive(Clone, Debug)]
 enum FrameMode {
     Program,
+    Draft(String),
     Scopes(vv_core::ClipId, [vv_render::ScopeKind; 2]),
     Balance(vv_core::ClipId),
 }
@@ -95,9 +96,30 @@ impl FrameMode {
     fn priority(&self) -> u8 {
         match self {
             Self::Program => 2,
-            Self::Balance(_) => 1,
+            Self::Balance(_) | Self::Draft(_) => 1,
             Self::Scopes(..) => 0,
         }
+    }
+    fn cache_key(&self, snapshot: &FrameSnapshot) -> String {
+        let mode = match self {
+            Self::Draft(tag) => format!("Draft({tag})"),
+            _ => format!("{self:?}"),
+        };
+        format!(
+            "{}:{}:{}:{}:{}:{}x{}:{}:{}",
+            snapshot.query.project_epoch,
+            snapshot.query.if_generation,
+            snapshot.query.timeline_id,
+            snapshot.query.revision,
+            snapshot.query.frame,
+            snapshot.size.0,
+            snapshot.size.1,
+            mode,
+            snapshot.video.tag,
+        )
+    }
+    fn is_program(&self) -> bool {
+        matches!(self, Self::Program)
     }
 }
 impl FrameQuery {
@@ -378,18 +400,7 @@ impl Preview {
                         continue;
                     }
                 };
-                let key = format!(
-                    "{}:{}:{}:{}:{}:{}x{}:{:?}:{}",
-                    snapshot.query.project_epoch,
-                    snapshot.query.if_generation,
-                    snapshot.query.timeline_id,
-                    snapshot.query.revision,
-                    snapshot.query.frame,
-                    snapshot.size.0,
-                    snapshot.size.1,
-                    job.mode,
-                    snapshot.video.tag,
-                );
+                let key = job.mode.cache_key(&snapshot);
                 match worker_cache.lock().unwrap().lookup(&snapshot, &key) {
                     Ok(Some(data)) => {
                         let _ = job.reply.send(Ok(data));
@@ -416,7 +427,7 @@ impl Preview {
                     let compositor = &mut compositor.as_mut().unwrap().compositor;
                     compositor.set_precision(snapshot.project.precision);
                     let data = match job.mode {
-                        FrameMode::Program => encode_png(
+                        FrameMode::Program | FrameMode::Draft(_) => encode_png(
                             &vv_session::export::render_frame_rgba_with_resolver(
                                 &snapshot.project,
                                 snapshot.timeline,
@@ -491,7 +502,7 @@ impl Preview {
                             query: snapshot.query,
                             inputs,
                             originals,
-                            program: matches!(job.mode, FrameMode::Program),
+                            program: job.mode.is_program(),
                             render_tag: snapshot.video.tag.clone(),
                             data: data.clone(),
                         });
@@ -711,6 +722,16 @@ impl Preview {
     }
     pub async fn frame(&self, snapshot: FrameSnapshot) -> Result<Vec<u8>> {
         self.render(snapshot, FrameMode::Program).await
+    }
+    pub async fn draft(&self, snapshot: FrameSnapshot, tag: String) -> Result<Vec<u8>> {
+        if tag.len() != 64
+            || !tag
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            return Err(ApiError::invalid("Invalid title preview tag"));
+        }
+        self.render(snapshot, FrameMode::Draft(tag)).await
     }
     pub async fn scopes(
         &self,

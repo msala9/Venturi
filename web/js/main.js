@@ -9,6 +9,7 @@ import { createViewer } from "./viewer.js";
 import {createViewerZoom,isViewerFullscreenShortcut} from './viewer-zoom.js';
 import { createSourcePlayer, sourceSelection } from "./source.js";
 import {createSourcePlacement} from './source-placement.js';
+import {createSourceWaveform} from './source-waveform.js';
 import { createProgramPlayer } from "./program.js";
 import { buildProgramWindow } from "./program-range.js";
 import { sourceSampleAtFrame,sourceAudioQuery } from "./source-clock.js";
@@ -394,6 +395,7 @@ let viewer = null, viewerZoom=null, viewerMode = "program", sourcePlayer = null,
 let transformOverlay=null,transformDetail=null,maskOverlay=null,maskChoice=null,maskPickerIdentity=null,maskSelectionSequence=0,maskSelectionIdentity=null;
 let sourceOpenId = null;
 let sourcePlacement=null;
+let sourceWaveform=null,sourceWaveformBinding=null,sourceWaveformDemand={entries:[],epoch:null};
 let sourceSeek=null;
 let sourceAssets=null,derivativesTransportPending=false;
 const sourceRanges = new Map();
@@ -438,6 +440,21 @@ function viewerModeSet(mode) {
   if (mode === "program") { sourcePlayer?.pause(); sourceAssets?.cancelSource(); updateTime(); seek(); }
   viewerZoom?.refresh();
   sourcePlacement?.refresh();
+  refreshSourceWaveform();
+}
+function sourceWaveformContext(){
+  const item=viewerMode==='source'?documentState?.media.find(item=>item.id===sourceOpenId):null;
+  if(!item || item.has_video || !item.has_audio || item.is_image || item.compound_timeline_id)return null;
+  const epoch=documentState.project_epoch,identity=JSON.stringify([epoch,item.id,item.content_hash,item.duration_frames,item.fps,item.audio_stream_count]),position=sourcePosition(true),verified=sourcePlayer?.verifiedSource();
+  if(sourceWaveformBinding?.identity!==identity)sourceWaveformBinding=null;
+  if(position?.source_version)sourceWaveformBinding={identity,sourceVersion:position.source_version,frame:position.frame};
+  const mark=id=>$(id).value.trim()===''?NaN:Number($(id).value);
+  return {item,epoch,sourceVersion:sourceWaveformBinding?.sourceVersion ?? null,frame:sourceWaveformBinding?.frame ?? 0,marks:{source_in:mark('source-in'),source_out:mark('source-out')},verified:Boolean(verified?.epoch===epoch && verified.media_id===item.id),preparing:sourcePlayer?.preparing()===true,playing:!$('source-video').paused};
+}
+function refreshSourceWaveform(){
+  const item=viewerMode==='source'?documentState?.media.find(item=>item.id===sourceOpenId):null;
+  $('source-view').dataset.sourceAudioOnly=String(Boolean(item && !item.has_video && item.has_audio));
+  sourceWaveform?.refresh();
 }
 function sourcePosition(allowPreparing=false) {
   const position=sourcePlayer?.current();
@@ -445,6 +462,7 @@ function sourcePosition(allowPreparing=false) {
 }
 function syncSourcePosition() {
   sourceSeek?.sync();
+  refreshSourceWaveform();
   const valid=Boolean(sourcePosition());
   $("source-mark-in").disabled=!valid;$("source-mark-out").disabled=!valid;
   $("source-assets-refresh").disabled=!valid;
@@ -477,7 +495,7 @@ function openSource() {
 $("source-mode").addEventListener("click", openSource);
 $("program-mode").addEventListener("click", () => viewerModeSet("program"));
 $("source-quality").addEventListener("change", openSource);
-function rememberSourceRange() { if (sourceOpenId) sourceRanges.set(sourceOpenId,{source_in:Number($("source-in").value),source_out:Number($("source-out").value)});sourcePlacement?.refresh(); }
+function rememberSourceRange() { if (sourceOpenId) sourceRanges.set(sourceOpenId,{source_in:Number($("source-in").value),source_out:Number($("source-out").value)});sourcePlacement?.refresh();refreshSourceWaveform(); }
 for (const id of ["source-in","source-out"]) $(id).addEventListener("input",rememberSourceRange);
 for (const [id,out] of [["source-mark-in",false],["source-mark-out",true]]) $(id).addEventListener("click",()=>{
   const item = documentState?.media.find((m)=>m.id===sourceOpenId);
@@ -1086,7 +1104,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
     canvasTimeline.cancel();view.retime=false;view.retimeOverwrite=false;view.transitionSelection=null;view.transitionReplace=false;$("transition-replace").checked=false;updateRetimeControls();
     sourcePlayer?.reset();
     sourceAssets?.cancel();
-    sourceOpenId = null; sourceRanges.clear();
+    sourceOpenId = null; sourceRanges.clear();sourceWaveformBinding=null;
     resetTimelineViewport();
     selectedMedia = null;
     mediaState.selected=[];mediaState.anchor=null;mediaState.folder="*";
@@ -1153,6 +1171,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
   catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
   nativeAssets?.invalidate();
   sourcePlacement?.refresh();
+  refreshSourceWaveform();
   mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
   if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
   $("viewer-message").textContent = next.capabilities.preview
@@ -1632,6 +1651,7 @@ maskOverlay=createViewerMaskOverlay({screen:$("screen"),image:$("preview"),toggl
 viewerZoom=createViewerZoom({screen:$('screen'),media:[$('preview'),$('program-video'),$('source-video'),$('source-image')],select:$('viewer-zoom'),status:$('viewer-zoom-status'),
   getActive:()=>{
     if(!$('slip-view').hidden)return null;
+    if(viewerMode==='source' && $('source-view').dataset.sourceAudioOnly==='true')return null;
     const element=viewerMode==='source'?$('source-image').hidden?$('source-video'):$('source-image'):$('program-view').hidden?$('preview'):$('program-video');
     return !element.hidden && element.getAttribute('src')?element:null;
   },getContext:()=>JSON.stringify([documentState?.project_epoch,timeline?.id,viewerMode,sourceOpenId]),
@@ -1736,7 +1756,7 @@ sourcePlayer = createSourcePlayer({
   },
   isInternalSeek: () => Boolean(fastTransport?.correcting($("source-video"))),
   isInternalPause: event => Boolean(fastTransport?.pausing($("source-video"),event)),
-  onStateChange:()=>{sourceAssets?.refresh();viewerZoom?.refresh();sourcePlacement?.refresh();},
+  onStateChange:state=>{if(state.state==='error')sourceWaveformBinding=null;refreshSourceWaveform();sourceAssets?.refresh();viewerZoom?.refresh();sourcePlacement?.refresh();},
   onReady: ({ item, epoch, source_window }) => {
     syncSourcePosition();
     const sourceVersion=source_window?.source_version,changed=sourceVersion && [...mediaAssets.values()].some(asset=>asset.mediaId===item.id && asset.sourceVersion!==sourceVersion);
@@ -1745,7 +1765,7 @@ sourcePlayer = createSourcePlayer({
   },
 });
 sourcePlacement=createSourcePlacement({
-  root:$("source-placement"),surfaces:[$("source-video"),$("source-image")],handles:[[$("source-video-drag"),'video_only'],[$("source-audio-drag"),'audio_only']],
+  root:$("source-placement"),surfaces:[$("source-video"),$("source-image"),$("source-waveform-canvas")],handles:[[$("source-video-drag"),'video_only'],[$("source-audio-drag"),'audio_only']],
   sourceDnd:canvasTimeline.sourceDnd,canCommit:()=>writable && !busy && !unresolved && viewerMode==='source' && !sourcePlayer.preparing() && !document.querySelector('dialog[open]'),
   canInsert:()=>canvasTimeline.navigationIdle(),
   getContext:()=>{
@@ -1784,7 +1804,7 @@ function releaseMediaAsset(asset) {
 }
 function removeMediaAssets(id){
   for(const [key,asset] of mediaAssets)if(asset.mediaId===id){releaseMediaAsset(asset);mediaAssets.delete(key);}
-  updateMediaThumbnail(id);canvasTimeline.invalidate();
+  updateMediaThumbnail(id);canvasTimeline.invalidate();refreshSourceWaveform();
 }
 function installMediaAsset({item,epoch,thumbnail,waveform,waveformBytes=0,bytes,thumbnailURL,sourceVersion,audioStreamIndex=0}) {
   if(documentState?.project_epoch!==epoch || documentState.media.find(media=>media.id===item.id)?.content_hash!==item.content_hash || !Number.isSafeInteger(bytes) || bytes<0 || bytes>16*1024*1024)return false;
@@ -1797,16 +1817,20 @@ function installMediaAsset({item,epoch,thumbnail,waveform,waveformBytes=0,bytes,
   while(mediaAssets.size>64 || [...mediaAssets.values()].reduce((total,asset)=>total+asset.bytes,0)>64*1024*1024){
     const oldest=mediaAssets.keys().next().value,asset=mediaAssets.get(oldest);releaseMediaAsset(asset);mediaAssets.delete(oldest);updateMediaThumbnail(asset.mediaId);
   }
-  canvasTimeline.invalidate();return true;
+  canvasTimeline.invalidate();refreshSourceWaveform();return true;
 }
 sourceAssets=createSourceAssetQueue({loader:createSourceAssets({getState:()=>documentState,onReady:installMediaAsset,onStatus:message=>{$("source-assets-status").textContent=message;},onError:error=>notice(error.message || String(error))}),getState:()=>documentState,
   isIdle:()=>Boolean(documentState && !document.hidden && !busy && !unresolved && !derivativesTransportPending && !document.querySelector('dialog[open]') && canvasTimeline.navigationIdle() && programPlayer?.state()!=='preparing' && !sourcePlayer?.preparing() && $('source-video').paused && $('program-video').paused && $('export-preview-video').paused && !fastTransport?.active()),
   hasAsset:entry=>{const asset=mediaAssets.get(sourceAssetKey(entry.item.id,entry.audioStreamIndex)),thumbnail=mediaThumbnail(mediaAssets,entry.item.id);return Boolean((!entry.item.has_video || thumbnail?.contentHash===entry.item.content_hash && (!entry.sourceVersion || thumbnail.sourceVersion===entry.sourceVersion)) && (!entry.item.has_audio || !entry.includeWaveform || asset?.contentHash===entry.item.content_hash && asset.waveform && (!entry.sourceVersion || asset.sourceVersion===entry.sourceVersion)));}});
+sourceWaveform=createSourceWaveform({root:$('source-waveform'),canvas:$('source-waveform-canvas'),content:$('source-waveform-content'),getContext:sourceWaveformContext,getAssets:()=>mediaAssets,
+  onDemand:(entries,epoch)=>{sourceWaveformDemand={entries,epoch};sourceAssets.demand('source_waveform',entries,epoch);},
+  onSeek:async frame=>{fastTransport?.stop();audioScrub?.stop();await sourcePlayer.seekFrame(frame);syncSourcePosition();audioScrub?.request();},onError:error=>notice(error.message || String(error))});
 for(const event of ['play','pause','ended'])$('export-preview-video').addEventListener(event,()=>sourceAssets.refresh());
 document.addEventListener('visibilitychange',()=>{sourceAssets.refresh();audioMeters?.sync();if(document.hidden){programPlayer?.invalidatePrefetch();audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>sourceAssets.refresh(),true);
 window.addEventListener('pagehide',()=>{fastTransport?.stop();programPlayer?.pauseLocal();void projectView?.flush({persist:true});});
 $("source-assets-refresh").addEventListener("click",()=>{
   const position=sourcePosition(),item=documentState?.media.find(media=>media.id===sourceOpenId);
+  if(item && !item.has_video && sourceWaveformDemand.entries.length){sourceAssets.demand('source_waveform',sourceWaveformDemand.entries.map(entry=>({...entry,force:true})),sourceWaveformDemand.epoch);return;}
   if(item)void sourceAssets.load(item,documentState.project_epoch,{sourceVersion:position?.source_version,audioStreamIndex:position?.audio_stream_index ?? 0,includeWaveform:Boolean(item.has_audio),force:true});
 });
 sourceSeek=createSourceSeek({range:$("source-position"),frame:$("source-seek-frame"),seek:$("source-seek"),status:$("source-position-status"),getMedia:()=>{
@@ -1826,6 +1850,7 @@ for (const event of ["play", "pause", "ended"]) $("source-video").addEventListen
   if(event==='play' && !$("source-video").paused)exportPanel?.stopPreview();
   $("play").textContent = $("source-video").paused ? "▶ Play" : "❚❚ Pause";
   sourceAssets?.refresh();
+  refreshSourceWaveform();
 });
 for (const event of ["play", "pause", "ended"]) $("program-video").addEventListener(event, () => {
   if(event==='play' && !$("program-video").paused)exportPanel?.stopPreview();

@@ -82,7 +82,7 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
   createURL = blob => URL.createObjectURL(blob), revokeURL = url => URL.revokeObjectURL(url) }) {
   let current = null, disposed = false;
   const attempted = new Set();
-  const identity = (item, epoch, index,waveform) => JSON.stringify([epoch, item.id, item.content_hash,index,waveform]);
+  const identity = (item, epoch, index,waveform,version) => JSON.stringify([epoch, item.id, item.content_hash,index,waveform,version ?? null]);
   function owns(attempt) {
     const state = getState();
     return !disposed && current === attempt && !attempt.controller.signal.aborted && state?.project_epoch === attempt.epoch &&
@@ -184,7 +184,7 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
     const {sourceVersion,force=false,audioStreamIndex=0,includeWaveform=true}=options,explicitStream=Object.hasOwn(options,'audioStreamIndex'),explicitWaveform=Object.hasOwn(options,'includeWaveform');
     if(typeof includeWaveform!=='boolean' || !includeWaveform && !item.has_video)return Promise.resolve(null);
     if(!Number.isSafeInteger(audioStreamIndex) || audioStreamIndex<0 || audioStreamIndex>0 && (!item.has_audio || !Number.isSafeInteger(item.audio_stream_count) || audioStreamIndex>=item.audio_stream_count))return Promise.resolve(null);
-    const key = identity(item, epoch,audioStreamIndex,includeWaveform);
+    const key = identity(item, epoch,audioStreamIndex,includeWaveform,sourceVersion);
     if (!force && current?.key === key && (sourceVersion==null || current.sourceVersion === sourceVersion) && current.pending) return current.promise;
     if (!force && attempted.has(key)) {
       if (current && (current.key !== key || current.sourceVersion !== sourceVersion)) cancel();
@@ -210,8 +210,10 @@ export function createSourceAssets({ getState, onReady, onStatus = () => {}, onE
 export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdle=()=>true,setTimer=setTimeout,clearTimer=clearTimeout}){
   const scopes=new Map(),attempted=new Map();
   let epoch=null,active=null,timer=null,disposed=false,sourceRequest=null;
-  const baseKey=entry=>JSON.stringify([entry.epoch,entry.item.id,entry.item.content_hash,entry.audioStreamIndex]);
+  const baseKey=entry=>JSON.stringify([entry.epoch,entry.item.id,entry.item.content_hash,entry.audioStreamIndex,entry.sourceVersion ?? null]);
   const key=entry=>JSON.stringify([baseKey(entry),entry.includeWaveform]);
+  const visibleWaveform=id=>(scopes.get('source_waveform') || []).some(entry=>key(entry)===id);
+  const retryable=(attempt,id)=>Boolean(attempt?.resumable && visibleWaveform(id) || attempt?.ready && attempt.left);
   const valid=entry=>{
     const state=getState(),item=state?.media?.find(item=>item.id===entry.item.id);
     return entry.epoch===state?.project_epoch && item?.content_hash===entry.item.content_hash && !item.offline && !item.compound_timeline_id && (item.has_video || item.has_audio) && (entry.includeWaveform || item.has_video) && Number.isSafeInteger(entry.audioStreamIndex) && entry.audioStreamIndex>=0 && (!entry.audioStreamIndex || item.has_audio && Number.isSafeInteger(item.audio_stream_count) && entry.audioStreamIndex<item.audio_stream_count);
@@ -228,7 +230,7 @@ export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdl
   }
   function wanted(){
     const entries=new Map();
-    for(const scope of ['source','timeline','pool'])for(const entry of scopes.get(scope) || []){
+    for(const scope of ['source','source_waveform','timeline','pool'])for(const entry of scopes.get(scope) || []){
       if(entries.size>=64 && !entries.has(baseKey(entry)))continue;
       if(valid(entry) && (!entries.has(baseKey(entry)) || !entries.get(baseKey(entry)).includeWaveform && entry.includeWaveform))entries.set(baseKey(entry),entry);
     }
@@ -254,13 +256,14 @@ export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdl
   async function pump(){
     if(disposed || active || !currentEpoch() || !isIdle())return;
     const entries=wanted();
-    for(const entry of entries.values())if(!entry.force && (hasAsset(entry) || attempted.has(key(entry)) && (!attempted.get(key(entry)).ready || !attempted.get(key(entry)).left))){settleSource(entry,null);}
-    const entry=[...entries.values()].find(entry=>entry.force || !hasAsset(entry) && (!attempted.has(key(entry)) || attempted.get(key(entry)).ready && attempted.get(key(entry)).left));
+    for(const entry of entries.values())if(!entry.force && (hasAsset(entry) || attempted.has(key(entry)) && !retryable(attempted.get(key(entry)),key(entry)))){settleSource(entry,null);}
+    const entry=[...entries.values()].find(entry=>entry.force || !hasAsset(entry) && (!attempted.has(key(entry)) || retryable(attempted.get(key(entry)),key(entry))));
     if(!entry)return;
-    const token={key:key(entry),entry,canceled:false},reload=attempted.get(token.key)?.ready;active=token;attempted.set(token.key,{ready:false,left:false});
+    const token={key:key(entry),entry,canceled:false},reload=retryable(attempted.get(token.key),token.key);active=token;attempted.set(token.key,{ready:false,left:false});
     try{
       const result=await loader.load(entry.item,entry.epoch,{audioStreamIndex:entry.audioStreamIndex,includeWaveform:entry.includeWaveform,sourceVersion:entry.sourceVersion,force:Boolean(entry.force || reload)});
       if(!token.canceled && result)attempted.set(token.key,{ready:true,left:!wanted().has(token.key)});
+      if(token.canceled && !entry.force && valid(entry))attempted.set(token.key,{ready:false,left:true,resumable:true});
       settleSource(entry,token.canceled?null:result);
     }finally{
       if(active===token)active=null;
@@ -269,9 +272,11 @@ export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdl
     }
   }
   function demand(scope,items,demandEpoch=getState()?.project_epoch){
-    if(disposed || !['pool','timeline'].includes(scope))return;
+    if(disposed || !['pool','timeline','source_waveform'].includes(scope))return;
     currentEpoch();
-    scopes.set(scope,items.slice(0,64).map(entry=>({item:{...entry.item,fps:entry.item.fps && {...entry.item.fps}},epoch:demandEpoch,audioStreamIndex:entry.audioStreamIndex ?? 0,includeWaveform:entry.includeWaveform!==false})));
+    const entries=items.slice(0,64).map(entry=>({item:{...entry.item,fps:entry.item.fps && {...entry.item.fps}},epoch:demandEpoch,audioStreamIndex:entry.audioStreamIndex ?? 0,includeWaveform:entry.includeWaveform!==false,sourceVersion:entry.sourceVersion,force:entry.force===true}));
+    scopes.set(scope,entries);
+    for(const entry of entries)if(entry.force){const id=key(entry);attempted.delete(id);if(active?.key===id){active.canceled=true;loader.cancel();}}
     refresh();
   }
   function load(item,requestEpoch,options={}){
@@ -285,5 +290,5 @@ export function createSourceAssetQueue({loader,getState,hasAsset=()=>false,isIdl
     scopes.set('source',[entry]);if(entry.force){attempted.delete(identity);if(active?.key===identity){active.canceled=true;loader.cancel();}}
     refresh();return promise;
   }
-  return {load,demand,refresh,cancel,cancelSource(){scopes.delete('source');sourceRequest?.resolve(null);sourceRequest=null;refresh();},dispose(){disposed=true;cancel();attempted.clear();loader.dispose();}};
+  return {load,demand,refresh,cancel,cancelSource(){scopes.delete('source');scopes.delete('source_waveform');sourceRequest?.resolve(null);sourceRequest=null;refresh();},dispose(){disposed=true;cancel();attempted.clear();loader.dispose();}};
 }

@@ -75,6 +75,12 @@ button[aria-selected="true"],button[aria-pressed="true"] { background: #673a21; 
 .source-stream-handles { position: absolute; left: 8px; bottom: 6px; display: flex; gap: 4px; z-index: 11; opacity: 0; }
 #source-view:hover .source-stream-handles, .source-stream-handles:focus-within { opacity: 1; }
 .source-stream-handles button { min-width: 25px; padding: 2px 5px; cursor: grab; background: #222d; }
+#source-waveform { position: absolute; inset: 0; z-index: 1; overflow: auto; background: #151515; cursor: grab; }
+#source-waveform[hidden] { display: none; }
+#source-waveform:focus-visible { outline: 1px solid var(--primary); outline-offset: -1px; }
+#source-waveform-content { position: relative; min-height: 100%; }
+#source-waveform-canvas { position: sticky; top: 0; display: block; width: 100%; }
+#source-view[data-source-audio-only="true"] > .viewer-zoom-viewport { visibility: hidden; pointer-events: none; }
 #source-placement { width: 100%; }
 #source-placement[open] { display: grid; gap: 5px; }
 #source-placement label { justify-content: space-between; }

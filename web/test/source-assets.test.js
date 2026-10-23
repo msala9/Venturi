@@ -309,6 +309,16 @@ test('native still sentinel metadata is preserved and default omitted descriptor
   const result=await h.loader.load(h.item,'epoch');assert.equal(result.item.duration_frames,1_000_000_000);assert.ok(result.thumbnail);assert.equal(result.waveform,null);h.loader.dispose();
 });
 
+test('the real derivative loader admits a new FD version on a later stream without force or metadata changes',async()=>{
+  let version='fd-old';
+  const h=harness({api:(_path,body,_fetcher,job)=>{const value=job();value.source_assets.source_version=version;value.source_assets.audio_stream_index=body.audio_stream_index;return value;}});h.item.audio_stream_count=2;
+  try{
+    await h.loader.load(h.item,'epoch',{audioStreamIndex:1,includeWaveform:true,sourceVersion:version});assert.equal(h.ready.length,1);
+    version='fd-new';await h.loader.load(h.item,'epoch',{audioStreamIndex:1,includeWaveform:true,sourceVersion:version});
+    assert.equal(h.ready.length,2);assert.equal(h.ready[1].sourceVersion,'fd-new');assert.equal(h.errors.length,0);assert.equal(h.calls.filter(call=>call.kind==='api').length,2);
+  }finally{h.loader.dispose();}
+});
+
 function queueHarness({complete=true}={}){
   const items=Array.from({length:70},(_,index)=>({id:`m${index}`,name:`Media ${index}`,content_hash:`hash${index}`,duration_frames:240,fps:{num:24,den:1},has_video:true,has_audio:true,audio_stream_count:2}));
   let state={project_epoch:'epoch',media:items},idle=true,timerId=0,cancels=0;
@@ -354,6 +364,59 @@ test('visible demand is bounded and a full waveform upgrades a same-media thumbn
   assert.equal(h.calls[0].options.includeWaveform,true);assert.equal(h.calls[0].item.id,'m0');
   for(let index=1;index<64;index++){h.tick();await flush();}if(h.timers.size){h.tick();await flush();}
   assert.equal(h.calls.length,64);assert.ok(h.calls.every(call=>Number(call.item.id.slice(1))<64));h.queue.dispose();assert.equal(h.timers.size,0);
+});
+
+test('visible Source waveform streams retain FD versions and share one priority loader above background derivatives',async()=>{
+  const h=queueHarness({complete:false});h.items[0].has_video=false;h.items[0].audio_stream_count=128;
+  const streams=[127,64].map(index=>({...h.entry(0,index,true),sourceVersion:'original-fd'}));
+  h.queue.demand('pool',[h.entry(2)]);h.queue.demand('timeline',[h.entry(1,0,true)]);h.queue.demand('source_waveform',streams);
+  const explicit=h.queue.load(h.items[3],'epoch',{includeWaveform:true,sourceVersion:'foreground-fd'});
+  h.tick();await flush();assert.equal(h.calls.length,1);assert.equal(h.calls[0].item.id,'m3');
+  h.pending[0].resolve({item:h.items[3]});await explicit;await flush();h.tick();await flush();
+  assert.equal(h.calls.length,2);assert.equal(h.calls[1].options.audioStreamIndex,127);assert.equal(h.calls[1].options.sourceVersion,'original-fd');
+  h.pending[1].resolve({item:h.items[0]});await flush();h.tick();await flush();assert.equal(h.calls[2].options.audioStreamIndex,64);
+  h.queue.cancelSource();assert.equal(h.cancels,1);h.pending[2].resolve(null);await flush();h.queue.dispose();
+});
+
+test('changed Source FD identity requeues a visible lane after failure without a metadata hash change',async()=>{
+  const h=queueHarness({complete:false}),entry={...h.entry(0,1,true),sourceVersion:'fd-old'};
+  h.queue.demand('source_waveform',[entry]);h.tick();await flush();h.pending[0].resolve(null);await flush();
+  h.queue.demand('source_waveform',[entry]);h.tick();await flush();assert.equal(h.calls.length,1);
+  h.queue.demand('source_waveform',[{...entry,sourceVersion:'fd-new'}]);h.tick();await flush();
+  assert.equal(h.calls.length,2);assert.equal(h.calls[1].options.sourceVersion,'fd-new');h.pending[1].resolve(null);await flush();h.queue.dispose();
+});
+
+test('visible waveform analysis resumes a canceled observer once after playback while failures remain manual',async()=>{
+  const h=queueHarness({complete:false}),entry={...h.entry(0,1,true),sourceVersion:'fd'};
+  h.queue.demand('source_waveform',[entry]);const explicit=h.queue.load(h.items[0],'epoch',{audioStreamIndex:1,includeWaveform:true,sourceVersion:'fd'});
+  h.tick();await flush();h.setIdle(false);assert.equal(h.cancels,1);h.pending[0].resolve(null);await explicit;await flush();
+  h.setIdle(true);h.tick();await flush();assert.equal(h.calls.length,2);assert.equal(h.calls[1].options.force,true);
+  h.pending[1].resolve(null);await flush();h.queue.demand('source_waveform',[entry]);h.tick();await flush();
+  assert.equal(h.calls.length,2,'A real failure of the resumed read is not retried by painting');h.queue.dispose();
+});
+
+test('leaving and returning to a visible waveform revalidates a canceled read without retrying background work',async()=>{
+  const h=queueHarness({complete:false}),entry={...h.entry(0,1,true),sourceVersion:'fd'};
+  h.queue.demand('source_waveform',[entry]);h.tick();await flush();h.queue.demand('source_waveform',[]);assert.equal(h.cancels,1);
+  h.pending[0].resolve(null);await flush();h.queue.demand('source_waveform',[entry]);h.tick();await flush();
+  assert.equal(h.calls.length,2);h.pending[1].resolve({item:h.items[0]});await flush();h.queue.dispose();
+});
+
+test('a foreground Source read canceled before the first waveform paint resumes only after its lane becomes visible',async()=>{
+  const h=queueHarness({complete:false}),entry={...h.entry(0,1,true),sourceVersion:'fd'};
+  const opening=h.queue.load(h.items[0],'epoch',{audioStreamIndex:1,includeWaveform:true,sourceVersion:'fd'});
+  h.tick();await flush();h.setIdle(false);h.pending[0].resolve(null);await opening;await flush();h.setIdle(true);
+  h.tick();await flush();assert.equal(h.calls.length,1);
+  h.queue.demand('source_waveform',[entry]);h.tick();await flush();assert.equal(h.calls.length,2);assert.equal(h.calls[1].options.force,true);
+  h.pending[1].resolve({item:h.items[0]});await flush();h.queue.dispose();
+});
+
+test('explicit waveform Refresh retries each requested stream once while playback cancels only the active observer',async()=>{
+  const h=queueHarness({complete:false}),entry={...h.entry(0,1,true),sourceVersion:'fd'};
+  h.queue.demand('source_waveform',[entry]);h.tick();await flush();h.pending[0].resolve(null);await flush();
+  h.queue.demand('source_waveform',[{...entry,force:true}]);h.tick();await flush();assert.equal(h.calls.length,2);assert.equal(h.calls[1].options.force,true);
+  h.setIdle(false);assert.equal(h.cancels,1);h.pending[1].resolve(null);await flush();h.setIdle(true);h.tick();await flush();
+  assert.equal(h.calls.length,2,'A canceled explicit retry does not repeat on pause');h.queue.dispose();
 });
 
 test('timeline visible geometry requests only on-screen file derivatives and binds the actual audio stream',()=>{

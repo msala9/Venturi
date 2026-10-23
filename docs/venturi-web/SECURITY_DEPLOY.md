@@ -69,11 +69,15 @@ should still be closed while saving the same project from the web.
 
 The full editing soak and release review remain open. The failed/interrupted
 earlier backend soaks are retained as failure evidence, not release acceptance.
-The owner's current delivery uses an enabled, unprivileged, resource-limited
-loopback service on halo2, reached through the existing SSH tunnel. Earlier
-protected editor services remain live. No public listener is enabled by this
-deployment. See `evidence/current-workspace-delivery.json` and
-`RELEASE_CHECKLIST.md`; deployment must preserve dirty sessions and client drafts.
+The owner's current development checkpoint uses the unprivileged, resource-limited
+`venturi-web-halo1-timeline-ruler.service` on halo1, bound to loopback port8855
+and reached through the existing Windows SSH tunnel. It is a transient systemd
+unit running as `halo`, not a newly enabled boot service. Source `9cb8439` and
+runtime `2dc4cc86af23` are bound in `evidence/f1-native-ruler-scrubbing.json`.
+Earlier protected halo1/halo2 editor services remain live. No public listener
+is enabled. See `RELEASE_CHECKLIST.md`; deployment must preserve dirty sessions,
+client drafts and Undo chains. A saved project alone does not authorize restarting
+an editor with nonempty Undo history. Final reboot/rollback acceptance stays open.
 
 Last-saved project reopening uses a private, bounded version-1 cursor containing
 only the root token and SHA-256. Atomic writes and NOFOLLOW reads preserve
@@ -103,3 +107,14 @@ offline Cargo metadata cannot resolve an uncached `tokio-stream` package, so the
 inventory includes optional, platform and development edges. Uncached manifests
 remain explicit. It is not an exact linked-binary manifest or a completed
 distribution/license review. No packages were downloaded to collect it.
+
+The subsequent `evidence/f7-linux-normal-dependencies.json` resolves the selected
+Linux `vv-web` normal dependency graph with `cargo tree --frozen`, matching the
+qualified build's default features. It records272 unique packages,265 third-party
+license declarations, lockfile checksums and current cached-manifest hashes.
+The earlier missing `tokio-stream` workspace dependency does not block this
+selected graph. Collection takes172ms and78.4MiB with zero swap; no download,
+build or lockfile change occurs. Six workspace crates omit their own Cargo
+license field; repository LICENSE is recorded separately rather than inventing
+package declarations. Build/dev edges, exact linked system libraries, notices,
+assets and packaging/distribution review remain outside this inventory.

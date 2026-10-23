@@ -58,7 +58,7 @@ const editor = $("editor");
 const clipListDismissal=installClipListDismissal(document.querySelector('.timeline-list-menu'));
 let scopes = null, scopesWanted=false, scopePlayback = false, scopesSuspended = false, previewCache = null, audioMeters = null;
 let slipScopesState = null;
-let catalog = null,proxyControls=null,proxySettings=null;
+let catalog = null,proxyControls=null,proxySettings=null,proxyCacheAvailable=true;
 const proxyQueueAttempts=new Set();
 let proxyQueueOwner=null;
 let silencePanel = null;
@@ -422,7 +422,7 @@ function proxyAPI(path,body,options={}){
   return request(path,payload,(url,init)=>fetch(url,{...init,method:options.method || init.method,signal:options.signal?AbortSignal.any([init.signal,options.signal].filter(Boolean)):init.signal}));
 }
 async function queueProjectProxies(context,isCurrent,manual=false){
-  if(proxyQueueOwner || !documentState || context.project_epoch!==documentState.project_epoch || !context.settings.enabled || !writable || busy || unresolved)return;
+  if(proxyQueueOwner || !proxyCacheAvailable || context.cache?.available===false || !documentState || context.project_epoch!==documentState.project_epoch || !context.settings.enabled || !writable || busy || unresolved)return;
   const candidates=documentState.media.filter(item=>item.has_video && !item.is_image && !item.compound_timeline_id && !item.offline);
   const attempt=JSON.stringify([context.project_epoch,context.settings.quality,candidates.map(item=>[item.id,item.content_hash])]);
   if(!manual && proxyQueueAttempts.has(attempt))return;
@@ -430,7 +430,7 @@ async function queueProjectProxies(context,isCurrent,manual=false){
   const owner={epoch:context.project_epoch,quality:context.settings.quality};proxyQueueOwner=owner;
   try{
     for(let offset=0;offset<candidates.length;offset+=32){
-      if(!isCurrent() || proxyControls?.settings()?.quality!==owner.quality || !proxyControls?.settings()?.enabled)return;
+      if(!isCurrent() || !proxyCacheAvailable || proxyControls?.settings()?.quality!==owner.quality || !proxyControls?.settings()?.enabled)return;
       const result=await proxyAPI('/media/proxies/prepare',{project_epoch:owner.epoch,media_ids:candidates.slice(offset,offset+32).map(item=>item.id)});
       if(!isCurrent())return;if(result.project_epoch!==owner.epoch)throw Error('The project changed while queuing proxies');
       if(result.errors?.length)throw Error(result.errors.map(item=>`${candidates.find(media=>media.id===item.media_id)?.name || item.media_id}: ${item.error || item.code}`).join(' · '));
@@ -2063,9 +2063,9 @@ proxyControls=createProxyControls({root:$('proxy-controls'),getContext:()=>docum
   onPrepare:(context,current)=>queueProjectProxies(context,current,true),
   onChange:(settings,meta)=>{
     const changed=proxySettings && (proxySettings.enabled!==settings.enabled || proxySettings.quality!==settings.quality);
-    proxySettings=settings;$('source-quality').value=settings.enabled?settings.quality:'original';paintProxyBadges();
+    proxyCacheAvailable=meta.cache?.available!==false;proxySettings=settings;$('source-quality').value=settings.enabled?settings.quality:'original';paintProxyBadges();
     if(changed){programPlayer?.stop();viewer?.invalidate();previewCache?.refresh();if(viewerMode==='source' && sourceOpenId){const selected=selectedMedia;selectedMedia=sourceOpenId;openSource();selectedMedia=selected;}else if(viewerMode==='program')void seek();}
-    if(settings.enabled){const epoch=meta.project_epoch;void queueProjectProxies({project_epoch:epoch,settings},()=>documentState?.project_epoch===epoch && writable && !busy && !unresolved);}
+    if(settings.enabled && proxyCacheAvailable){const epoch=meta.project_epoch;void queueProjectProxies({project_epoch:epoch,settings,cache:meta.cache},()=>documentState?.project_epoch===epoch && proxyCacheAvailable && writable && !busy && !unresolved);}
   }
 });
 void proxyControls.refresh();

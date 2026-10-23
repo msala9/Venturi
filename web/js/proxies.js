@@ -13,9 +13,12 @@ export function checkedProxyCatalog(value,epoch){
     seen.add(job.media_id);return {id:job.id,media_id:job.media_id,state:job.state,progress:job.progress,total:job.total,error:job.error,quality:job.quality,source_version:job.source_version};
   });
   if(value.suspended!==undefined && typeof value.suspended!=='boolean')throw Error('The proxy suspension status is invalid');
+  const legacy=value.cache===undefined,cache=legacy?{available:true,error:null}:value.cache;
+  if(!cache || typeof cache!=='object' || Array.isArray(cache) || Object.keys(cache).length!==2 || typeof cache.available!=='boolean' || !Object.hasOwn(cache,'error') || (cache.available?cache.error!==null:!cache.error || typeof cache.error!=='object' || Array.isArray(cache.error) || Object.keys(cache.error).length!==2 || !text(cache.error.code,80) || !text(cache.error.message,2048)))throw Error('The native proxy cache status is invalid');
   const capacity=value.capacity;
+  if(!legacy && (cache.available?!capacity:capacity!==null))throw Error('The proxy cache capacity does not match its availability');
   if(capacity && (!['max_jobs','max_bytes','max_job_bytes','charged_bytes','used_jobs'].every(key=>Number.isSafeInteger(capacity[key]) && capacity[key]>=0) || capacity.used_jobs>capacity.max_jobs || capacity.charged_bytes>capacity.max_bytes))throw Error('The proxy queue capacity is invalid');
-  return {project_epoch:epoch,settings:{enabled:settings.enabled,quality:settings.quality,paused:settings.paused},jobs,capacity:capacity?{...capacity}:null,suspended:value.suspended===true};
+  return {project_epoch:epoch,settings:{enabled:settings.enabled,quality:settings.quality,paused:settings.paused},jobs:cache.available?jobs:jobs.filter(job=>job.state!=='ready'),capacity:capacity?{...capacity}:null,cache:{available:cache.available,error:cache.error?{code:cache.error.code,message:cache.error.message}:null},suspended:value.suspended===true};
 }
 
 export function createProxyControls({root,getContext,canWrite,api=apiRequest,onChange=()=>{},onPrepare,notice=()=>{},setTimer=setTimeout,clearTimer=clearTimeout,canObserve=()=>!globalThis.document?.hidden && !globalThis.document?.querySelector?.('dialog[open]')}){
@@ -36,20 +39,21 @@ export function createProxyControls({root,getContext,canWrite,api=apiRequest,onC
   const stopRead=()=>{sequence++;reader?.controller.abort();reader=null;clearPoll();};
   const jobLabel=job=>{
     const state=activeStates.has(job.state) && catalog?.settings.paused?'Paused':activeStates.has(job.state) && catalog?.suspended?'Suspended':job.state==='generating'?'Generating':job.state[0].toUpperCase()+job.state.slice(1);
-    return `${state}${activeStates.has(job.state)?` · ${job.progress}/${job.total} frames`:''}${job.error?` · ${job.error}`:''}${failure?' · last known status':''}`;
+    return `${catalog?.cache.available===false?'Cache unavailable · ':''}${state}${activeStates.has(job.state)?` · ${job.progress}/${job.total} frames`:''}${job.error?` · ${job.error}`:''}${failure?' · last known status':''}`;
   };
   function render(){
     if(disposed)return;
     const live=current(epoch),settings=live?catalog?.settings:null,busy=Boolean(writer || preparing);
     enabled.checked=settings?.enabled===true;quality.value=settings?.quality || 'medium';enabled.disabled=quality.disabled=pause.disabled=!settings || !canWrite() || busy || !shown || !canObserve() || Boolean(failure);
     pause.textContent=settings?.paused?'Resume proxy generation':'Pause proxy generation';pause.setAttribute('aria-pressed',String(settings?.paused===true));refreshButton.disabled=!contextEpoch() || busy || Boolean(reader);
-    generate.disabled=enabled.disabled || !settings?.enabled || Boolean(reader) || typeof onPrepare!=='function';
+    generate.disabled=enabled.disabled || !settings?.enabled || catalog?.cache.available===false || Boolean(reader) || typeof onPrepare!=='function';
     const jobs=live?catalog?.jobs || []:[],names=new Map((getContext()?.media || []).map(item=>[item.id,item.name]));
     summary.textContent=`Proxy jobs · ${jobs.length}`;jobsList.replaceChildren(...jobs.map(job=>{const row=document.createElement('li');row.textContent=`${names.get(job.media_id) || job.media_id} · ${jobLabel(job)}`;return row;}));
-    status.textContent=failure || (preparing?'Queuing proxy generation…':writer?'Saving proxy settings…':reader?'Reading proxy status…':!settings?'Read proxy settings for this project':`${settings.enabled?'Proxies enabled':'Proxies disabled'}${settings.paused?' · generation paused':''}${catalog.suspended?' · background generation suspended':''} · ${jobs.filter(job=>job.state==='ready').length} ready · ${jobs.filter(job=>job.state==='failed').length} failed`);
+    const warning=live && catalog?.cache.available===false?` · Proxy cache unavailable · ${catalog.cache.error.code}: ${catalog.cache.error.message}`:'';
+    status.textContent=failure || (preparing?'Queuing proxy generation…':writer?'Saving proxy settings…':reader?'Reading proxy status…':!settings?'Read proxy settings for this project':`${settings.enabled?'Proxies enabled':'Proxies disabled'}${settings.paused?' · generation paused':''}${catalog.suspended?' · background generation suspended':''}${catalog.cache.available?` · ${jobs.filter(job=>job.state==='ready').length} ready`:''} · ${jobs.filter(job=>job.state==='failed').length} failed`)+warning;
   }
-  const publish=next=>{const preferencesChanged=!catalog || ['enabled','quality','paused'].some(key=>catalog.settings[key]!==next.settings[key]);catalog=next;failure=null;render();onChange({...next.settings},{project_epoch:next.project_epoch,jobs:next.jobs.map(job=>({...job})),capacity:next.capacity?{...next.capacity}:null,suspended:next.suspended,preferencesChanged});};
-  function schedule(){clearPoll();if(observable() && !reader && !writer && !preparing && !failure && catalog?.jobs.some(job=>activeStates.has(job.state)))timer=setTimer(()=>{timer=null;void refresh();},1000);}
+  const publish=next=>{const preferencesChanged=!catalog || ['enabled','quality','paused'].some(key=>catalog.settings[key]!==next.settings[key]);catalog=next;failure=null;render();onChange({...next.settings},{project_epoch:next.project_epoch,jobs:next.jobs.map(job=>({...job})),capacity:next.capacity?{...next.capacity}:null,cache:{available:next.cache.available,error:next.cache.error?{...next.cache.error}:null},suspended:next.suspended,preferencesChanged});};
+  function schedule(){clearPoll();if(observable() && !reader && !writer && !preparing && !failure && catalog?.cache.available && catalog.jobs.some(job=>activeStates.has(job.state)))timer=setTimer(()=>{timer=null;void refresh();},1000);}
   function refresh(){
     if(disposed)return Promise.resolve(null);
     const nextEpoch=contextEpoch();
@@ -57,7 +61,7 @@ export function createProxyControls({root,getContext,canWrite,api=apiRequest,onC
     if(!observable()){stopRead();render();return Promise.resolve(null);}
     if(writer)return writer.promise;
     if(reader)return reader.promise;
-    clearPoll();failure=null;const ticket={epoch,sequence:++sequence,controller:new AbortController(),promise:null};reader=ticket;render();
+    clearPoll();const ticket={epoch,sequence:++sequence,controller:new AbortController(),promise:null};reader=ticket;render();
     ticket.promise=(async()=>{
       try{const value=await api(`/media/proxies?${new URLSearchParams({project_epoch:ticket.epoch})}`,undefined,{signal:ticket.controller.signal});if(reader!==ticket || ticket.controller.signal.aborted || ticket.sequence!==sequence || !current(ticket.epoch) || !observable())return null;const next=checkedProxyCatalog(value,ticket.epoch);publish(next);return next;}
       catch(error){if(reader===ticket && !ticket.controller.signal.aborted && current(ticket.epoch)){failure=error.message;render();notice(error.message);}return null;}
@@ -75,9 +79,9 @@ export function createProxyControls({root,getContext,canWrite,api=apiRequest,onC
     })();return ticket.promise;
   }
   async function prepare(){
-    if(disposed || writer || reader || preparing || failure || !shown || !canObserve() || !catalog?.settings.enabled || !current(epoch) || !canWrite() || typeof onPrepare!=='function')return;
+    if(disposed || writer || reader || preparing || failure || !shown || !canObserve() || !catalog?.settings.enabled || !catalog.cache.available || !current(epoch) || !canWrite() || typeof onPrepare!=='function')return;
     const ticket={epoch,quality:catalog.settings.quality};preparing=ticket;clearPoll();render();
-    try{await onPrepare({project_epoch:ticket.epoch,settings:{...catalog.settings}},()=>current(ticket.epoch) && canWrite() && catalog?.settings.quality===ticket.quality);}
+    try{await onPrepare({project_epoch:ticket.epoch,settings:{...catalog.settings}},()=>current(ticket.epoch) && canWrite() && catalog?.cache.available===true && catalog.settings.quality===ticket.quality);}
     catch(error){if(preparing===ticket && current(ticket.epoch)){failure=error.message;render();notice(error.message);}}
     finally{if(preparing===ticket){preparing=null;render();if(!failure && shown)void refresh();}}
   }
@@ -85,5 +89,5 @@ export function createProxyControls({root,getContext,canWrite,api=apiRequest,onC
   generate.addEventListener('click',()=>{void prepare();});
   const visibility=()=>{if(!canObserve()){stopRead();render();}else if(shown)void refresh();};ownerDocument.addEventListener?.('visibilitychange',visibility);
   render();
-  return {refresh,visible(value){shown=Boolean(value);if(!shown){stopRead();render();return Promise.resolve(null);}return refresh();},statusFor(mediaId){if(!current(epoch))return null;const job=catalog?.jobs.find(job=>job.media_id===mediaId && job.quality===catalog.settings.quality);return job?{...job,label:jobLabel(job),stale:Boolean(failure)}:null;},settings:()=>current(epoch) && catalog?{...catalog.settings}:null,dispose(){if(disposed)return;stopRead();disposed=true;ownerDocument.removeEventListener?.('visibilitychange',visibility);for(const node of [enabled,quality,pause,generate,refreshButton])node.disabled=true;catalog=null;}};
+  return {refresh,visible(value){shown=Boolean(value);if(!shown){stopRead();render();return Promise.resolve(null);}return refresh();},statusFor(mediaId){if(!current(epoch) || catalog?.cache.available===false)return null;const job=catalog?.jobs.find(job=>job.media_id===mediaId && job.quality===catalog.settings.quality);return job?{...job,label:jobLabel(job),stale:Boolean(failure)}:null;},settings:()=>current(epoch) && catalog?{...catalog.settings}:null,dispose(){if(disposed)return;stopRead();disposed=true;ownerDocument.removeEventListener?.('visibilitychange',visibility);for(const node of [enabled,quality,pause,generate,refreshButton])node.disabled=true;catalog=null;}};
 }

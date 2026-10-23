@@ -2880,6 +2880,94 @@ async fn native_proxy_settings_http_are_epoch_writer_bound_and_never_edit_projec
             assert!(body["jobs"].as_array().unwrap().is_empty());
         }
     }
+    let foreign = root.join(".proxy-test-cache/foreign-preserved.txt");
+    let sentinel = b"Unrecognized cache files belong to their owner";
+    std::fs::write(&foreign, sentinel).unwrap();
+    for (method, path, body, expected_status, expected_enabled) in [
+        (
+            "GET",
+            format!("/api/v1/media/proxies?project_epoch={epoch}"),
+            None,
+            StatusCode::OK,
+            true,
+        ),
+        (
+            "GET",
+            "/api/v1/media/proxies?project_epoch=old".into(),
+            None,
+            StatusCode::CONFLICT,
+            true,
+        ),
+        (
+            "PUT",
+            "/api/v1/media/proxies".into(),
+            Some(
+                json!({"project_epoch":epoch,"client_id":"other","enabled":false,"quality":"low","paused":true}),
+            ),
+            StatusCode::CONFLICT,
+            true,
+        ),
+        (
+            "PUT",
+            "/api/v1/media/proxies".into(),
+            Some(
+                json!({"project_epoch":epoch,"client_id":"owner","enabled":false,"quality":"low","paused":true}),
+            ),
+            StatusCode::OK,
+            false,
+        ),
+    ] {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method(method)
+                    .uri(&path)
+                    .header("host", "127.0.0.1:8787")
+                    .header(header::CONTENT_TYPE, "application/json")
+                    .body(
+                        body.map(|value| Body::from(value.to_string()))
+                            .unwrap_or_else(Body::empty),
+                    )
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), expected_status, "{method} {path}");
+        assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+        let value: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap();
+        if expected_status == StatusCode::OK {
+            assert_eq!(value["project_epoch"], epoch);
+            assert_eq!(value["settings"]["enabled"], expected_enabled);
+            assert_eq!(value["cache"]["available"], false);
+            assert_eq!(
+                value["cache"]["error"]["code"],
+                "PROXY_CACHE_RECOVERY_REQUIRED"
+            );
+            assert!(value["capacity"].is_null());
+        }
+        assert_eq!(std::fs::read(&foreign).unwrap(), sentinel);
+    }
+    std::fs::remove_file(&foreign).unwrap();
+    let recovered = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri(format!("/api/v1/media/proxies?project_epoch={epoch}"))
+                .header("host", "127.0.0.1:8787")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(recovered.status(), StatusCode::OK);
+    let recovered: Value =
+        serde_json::from_slice(&to_bytes(recovered.into_body(), 65536).await.unwrap()).unwrap();
+    assert_eq!(recovered["settings"]["enabled"], false);
+    assert_eq!(recovered["cache"]["available"], true);
+    assert!(recovered["cache"]["error"].is_null());
+    assert!(recovered["capacity"].is_object());
     let after = host.call(Action::Session).await.unwrap();
     for key in [
         "project_epoch",
@@ -2896,6 +2984,7 @@ async fn native_proxy_settings_http_are_epoch_writer_bound_and_never_edit_projec
     let settings: Value =
         serde_json::from_slice(&std::fs::read(root.join(".venturi-proxy-settings.json")).unwrap())
             .unwrap();
+    assert_eq!(settings["enabled"], false);
     assert_eq!(settings["quality"], "low");
     assert_eq!(settings["paused"], true);
 }

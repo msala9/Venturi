@@ -1,4 +1,5 @@
 use super::*;
+use sha2::Digest;
 
 struct Fixture {
     root: PathBuf,
@@ -69,9 +70,12 @@ impl Fixture {
         source
     }
     fn artifact(&self) -> Arc<Artifact> {
-        let source = self.source();
         let logical_key = format!("fixture-{}", crate::asset_jobs::nonce());
-        let Acquisition::Write(reservation) = self.manager.0.cache.acquire(&logical_key).unwrap()
+        self.artifact_for(&logical_key)
+    }
+    fn artifact_for(&self, logical_key: &str) -> Arc<Artifact> {
+        let source = self.source();
+        let Acquisition::Write(reservation) = self.manager.0.cache.acquire(logical_key).unwrap()
         else {
             panic!("Expected a new cache reservation");
         };
@@ -528,4 +532,188 @@ fn native_proxy_cache_contention_yields_to_foreground_then_recovers_without_a_fa
     drop(foreground);
     let done = finish(&f.manager, job["id"].as_str().unwrap());
     assert_eq!(done["state"], "ready", "{done}");
+}
+
+#[test]
+fn native_proxy_degraded_catalog_retains_persistable_settings_and_masks_only_latest_ready_jobs() {
+    let f = Fixture::new();
+    f.manager.configure(true, "medium", true).unwrap();
+    let source = f.source();
+    let logical_key = key(
+        &source,
+        &identity(&source.file).unwrap(),
+        ProxyQuality::Medium,
+    )
+    .unwrap();
+    let artifact = f.artifact_for(&logical_key);
+    let ready = f.manager.enqueue(f.input(source)).unwrap();
+    assert_eq!(ready["state"], "ready");
+    {
+        let mut state = f.manager.0.shared.state.lock().unwrap();
+        let ready = &state.jobs[0];
+        let old = Job {
+            id: "older-failed-ready-source".into(),
+            epoch: ready.epoch.clone(),
+            media_id: ready.media_id.clone(),
+            key: ready.key.clone(),
+            version: ready.version.clone(),
+            quality: ready.quality,
+            total: ready.total,
+            progress: 0,
+            state: "failed",
+            error: Some("PROXY_FAILED"),
+            spec: None,
+            cancel: Arc::new(AtomicBool::new(false)),
+        };
+        state.jobs.push_front(old);
+    }
+    let mut other = f.source();
+    other.media_id = "2".into();
+    other.meta.width = 18;
+    f.manager.enqueue(f.input(other)).unwrap();
+    {
+        let mut state = f.manager.0.shared.state.lock().unwrap();
+        let job = state.jobs.back_mut().unwrap();
+        job.state = "failed";
+        job.error = Some("PROXY_FAILED");
+        job.spec = None;
+    }
+    let mut queued = f.source();
+    queued.media_id = "3".into();
+    queued.meta.width = 20;
+    f.manager.enqueue(f.input(queued)).unwrap();
+    let foreign = f.manager.0.cache.path.join("foreign.txt");
+    std::fs::write(&foreign, b"foreign cache data must remain untouched").unwrap();
+    let degraded = f.manager.status("p:1").unwrap();
+    assert_eq!(degraded["cache"]["available"], false);
+    assert_eq!(
+        degraded["cache"]["error"]["code"],
+        "PROXY_CACHE_RECOVERY_REQUIRED"
+    );
+    assert!(
+        degraded["cache"]["error"]["message"]
+            .as_str()
+            .is_some_and(|message| !message.is_empty())
+    );
+    assert!(degraded["capacity"].is_null());
+    assert_eq!(
+        degraded["settings"],
+        json!({"enabled":true,"quality":"medium","paused":true})
+    );
+    let rows = degraded["jobs"].as_array().unwrap();
+    assert_eq!(rows.len(), 2);
+    assert!(rows.iter().all(|job| job["media_id"] != "1"));
+    assert!(
+        rows.iter()
+            .any(|job| job["media_id"] == "2" && job["state"] == "failed")
+    );
+    assert!(
+        rows.iter()
+            .any(|job| job["media_id"] == "3" && job["state"] == "queued")
+    );
+    assert_eq!(
+        f.manager
+            .0
+            .shared
+            .state
+            .lock()
+            .unwrap()
+            .jobs
+            .iter()
+            .find(|job| job.id == ready["id"].as_str().unwrap())
+            .unwrap()
+            .state,
+        "ready"
+    );
+    let settings = f.manager.configure(false, "medium", true).unwrap();
+    assert_eq!(
+        settings,
+        json!({"enabled":false,"quality":"medium","paused":true})
+    );
+    let reopened = Manager::start_with_cache(&f.root, &f.manager.0.cache.path).unwrap();
+    assert_eq!(reopened.settings().unwrap(), settings);
+    assert_eq!(reopened.status("p:1").unwrap()["cache"]["available"], false);
+    assert_eq!(
+        std::fs::read(&foreign).unwrap(),
+        b"foreign cache data must remain untouched"
+    );
+    std::fs::remove_file(&foreign).unwrap();
+    let recovered = f.manager.status("p:1").unwrap();
+    assert_eq!(recovered["cache"], json!({"available":true,"error":null}));
+    assert!(recovered["capacity"].is_object());
+    assert!(
+        recovered["jobs"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|job| job["id"] == ready["id"] && job["state"] == "ready")
+    );
+    artifact.validate(&f.manager.0.root).unwrap();
+}
+
+#[test]
+fn native_proxy_malformed_cache_falls_back_only_for_verified_originals_and_captured_leases_still_fail()
+ {
+    let f = Fixture::new();
+    f.manager.configure(true, "medium", true).unwrap();
+    let source = f.source();
+    let logical_key = key(
+        &source,
+        &identity(&source.file).unwrap(),
+        ProxyQuality::Medium,
+    )
+    .unwrap();
+    let artifact = f.artifact_for(&logical_key);
+    let original_path = f.root.join("source.mp4");
+    let lease = f.manager.resolve(&source, &original_path).unwrap().unwrap();
+    lease.validate().unwrap();
+    let entry = f.manager.0.cache.path.join(format!(
+        "{:x}",
+        sha2::Sha256::digest(logical_key.as_bytes())
+    ));
+    let record = entry.join("ready.json");
+    std::fs::write(&record, b"malformed owned record").unwrap();
+    assert_eq!(
+        f.manager.status("p:1").unwrap()["cache"]["available"],
+        false
+    );
+    assert!(
+        f.manager
+            .resolve(&source, &original_path)
+            .unwrap()
+            .is_none()
+    );
+    assert_eq!(lease.validate().unwrap_err().1, "SOURCE_CHANGED");
+    assert_eq!(std::fs::read(&record).unwrap(), b"malformed owned record");
+    let moved = f.root.join("moved.mp4");
+    std::fs::rename(&original_path, &moved).unwrap();
+    std::os::unix::fs::symlink(&moved, &original_path).unwrap();
+    assert_eq!(
+        f.manager.resolve(&source, &original_path).err().unwrap().1,
+        "SOURCE_CHANGED"
+    );
+    assert_eq!(lease.validate().unwrap_err().1, "SOURCE_CHANGED");
+    assert_eq!(std::fs::read(&record).unwrap(), b"malformed owned record");
+    drop(artifact);
+}
+
+#[test]
+fn native_proxy_degraded_cache_does_not_relax_settings_or_cache_root_open_validation() {
+    let f = Fixture::new();
+    let foreign = f.manager.0.cache.path.join("foreign.txt");
+    std::fs::write(&foreign, b"preserve").unwrap();
+    f.manager.configure(false, "low", true).unwrap();
+    let malformed =
+        br#"{"version":1,"enabled":false,"quality":"low","paused":true,"unknown":true}"#;
+    std::fs::write(f.root.join(SETTINGS), malformed).unwrap();
+    assert!(f.manager.settings().is_err());
+    assert!(f.manager.status("p:1").is_err());
+    assert!(f.manager.configure(false, "medium", false).is_err());
+    assert!(Manager::start_with_cache(&f.root, &f.manager.0.cache.path).is_err());
+    assert_eq!(std::fs::read(f.root.join(SETTINGS)).unwrap(), malformed);
+    std::fs::remove_file(f.root.join(SETTINGS)).unwrap();
+    let linked = f.root.join("linked-cache");
+    std::os::unix::fs::symlink(&f.manager.0.cache.path, &linked).unwrap();
+    assert!(Manager::start_with_cache(&f.root, &linked).is_err());
+    assert_eq!(std::fs::read(&foreign).unwrap(), b"preserve");
 }

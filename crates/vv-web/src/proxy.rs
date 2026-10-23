@@ -505,8 +505,9 @@ impl Manager {
         Ok(value)
     }
     pub fn status(&self, epoch: &str) -> Result<Value> {
+        self.settings()?;
         let mut state = self.0.shared.state.lock().map_err(|_| ApiError::io())?;
-        let ((charged_bytes, used_entries), evicted) = read_cache(|| {
+        let census = read_cache(|| {
             let usage = self.0.cache.usage()?;
             let mut evicted = Vec::new();
             for (index, job) in state.jobs.iter().enumerate() {
@@ -515,12 +516,25 @@ impl Manager {
                 }
             }
             Ok((usage, evicted))
-        })?;
-        for index in evicted {
-            let job = &mut state.jobs[index];
-            job.state = "canceled";
-            job.error = Some("PROXY_CACHE_EVICTED");
-        }
+        });
+        let cache_available = census.is_ok();
+        let (cache, capacity) = match census {
+            Ok(((charged_bytes, used_entries), evicted)) => {
+                for index in evicted {
+                    let job = &mut state.jobs[index];
+                    job.state = "canceled";
+                    job.error = Some("PROXY_CACHE_EVICTED");
+                }
+                (
+                    json!({"available":true,"error":null}),
+                    json!({"max_jobs":MAX_JOBS,"max_bytes":MAX_CACHE,"max_job_bytes":MAX_FILE,"charged_bytes":charged_bytes,"used_jobs":state.jobs.len(),"used_entries":used_entries}),
+                )
+            }
+            Err(error) => (
+                json!({"available":false,"error":{"code":error.1,"message":error.2}}),
+                Value::Null,
+            ),
+        };
         let mut seen = HashSet::new();
         let jobs = state
             .jobs
@@ -531,10 +545,11 @@ impl Manager {
                     && job.quality.id() == state.settings.quality
                     && seen.insert(job.media_id.as_str())
             })
+            .filter(|job| cache_available || job.state != "ready")
             .map(Job::value)
             .collect::<Vec<_>>();
         Ok(
-            json!({"project_epoch":epoch,"settings":state.settings.value(),"suspended":state.suspended>0,"jobs":jobs,"capacity":{"max_jobs":MAX_JOBS,"max_bytes":MAX_CACHE,"max_job_bytes":MAX_FILE,"charged_bytes":charged_bytes,"used_jobs":state.jobs.len(),"used_entries":used_entries}}),
+            json!({"project_epoch":epoch,"settings":state.settings.value(),"suspended":state.suspended>0,"jobs":jobs,"cache":cache,"capacity":capacity}),
         )
     }
     pub fn resolve(&self, spec: &SourceSpec, original_path: &Path) -> Result<Option<Lease>> {
@@ -547,7 +562,14 @@ impl Manager {
         }
         let key = key(spec, &version, state.settings.quality()?)?;
         drop(state);
-        if let Some(stored) = self.0.cache.lookup(&key)? {
+        let stored = match self.0.cache.lookup(&key) {
+            Ok(stored) => stored,
+            Err(_) => {
+                check_original(&self.0.root, spec, &version, original_path)?;
+                return Ok(None);
+            }
+        };
+        if let Some(stored) = stored {
             let artifact = Arc::new(Artifact {
                 stored,
                 original: spec.file.try_clone().map_err(|_| ApiError::io())?,

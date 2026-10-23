@@ -257,7 +257,6 @@ async fn proxy_status(
         .host
         .call(Action::ProxyContext(query.project_epoch.clone(), None))
         .await?;
-    state.source.proxies.settings()?;
     state.source.proxies.status(&query.project_epoch).map(Json)
 }
 async fn proxy_configure(

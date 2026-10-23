@@ -1,0 +1,192 @@
+{
+  "feature_block": "F2 native project media presentation and reveal",
+  "source_commit": "e20400174e03f10cb28b9ec93dd09a8c5d0a0023",
+  "delivery": {
+    "host": "halo1",
+    "url": "http://127.0.0.1:8829/",
+    "unit": "venturi-web-halo1-media-presentation.service",
+    "binary_sha256": "c8a3bc799e10eb1ba81d028ec088d6ca30c3e002153fa90c6180658c8004bb9e",
+    "project_root": "/home/halo/VenturiWeb-media-presentation-20261023",
+    "project": "Venturi_Project_Media.vvproj",
+    "saved_sha256": "e516cf9959de69f991a4f15861676500b77caec5b22db9b33401092a0a7cdc06",
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "program_frame": 0
+  },
+  "qualification": {
+    "javascript_cases": 1296,
+    "javascript": [
+      "# tests 1296",
+      "# pass 1296",
+      "# fail 0",
+      "# cancelled 0",
+      "# duration_ms 5548.804414"
+    ],
+    "native_cases": 9,
+    "compiled_native_cases": 559,
+    "native_filters": [
+      "snapshot::tests",
+      "host::tests::project_pool_placement_uses_current_session_media_without_source_jobs_and_replays_exact_selection",
+      "api::project_media_tests",
+      "api::tests::health_assets_snapshot_and_host_boundary",
+      "api::tests::embedded_editor_module_imports_are_served_with_javascript_mime"
+    ],
+    "format_clippy_all_targets_embedded_build": "passed",
+    "qualified_source_sha256": {
+      "crates/vv-web/src/snapshot.rs": "894fd963c0ea53ac86665fcd1793e9457e22e76aba79cc45aaad8ed5ad99179a",
+      "crates/vv-web/src/tests/snapshot.rs": "cc486df9d67f87763ec793523e6df0a6ec147e1c909e961f8752c0173c03451c",
+      "web/js/catalog.js": "9d261b54b3ca76ded493e03b4fce749459de654b3011cb62082e1a7d1995631c",
+      "web/js/main.js": "0feb18fd29e4c580f51dbe8fae6818a6c56824fb81e753508848d98fc7e4b575",
+      "web/style/native-browser.css": "076e17b162c9e24e7811c11920157387f041c1f071ea22206fabe3d79cec3cde",
+      "web/test/catalog.test.js": "f00fca0726b78adb13e0e575e696fe17eebf33e1f0643eb7643ec684a07a3418"
+    },
+    "gate_seconds": 105.48405742645264
+  },
+  "native_reference": [
+    "crates/vv-app/src/pool_view.rs",
+    "crates/vv-app/src/media_pool.rs",
+    "crates/vv-app/src/settings.rs"
+  ],
+  "browser_workflow": {
+    "browser": "Existing Windows work tab; no Linux browser or download",
+    "details": {
+      "default": true,
+      "thumbnail_css_pixels": [
+        64,
+        36
+      ],
+      "row_height_css_pixels": 46,
+      "real_video_dimensions": [
+        1920,
+        1080
+      ],
+      "video_fps": 24,
+      "real_audio_sample_rate": 48000,
+      "real_audio_channels": 2
+    },
+    "list": {
+      "row_height_css_pixels": 23,
+      "thumbnail_images": 0,
+      "metadata_hidden": true
+    },
+    "grid": {
+      "root": [
+        "Footage",
+        "Timeline 1"
+      ],
+      "navigation": [
+        "Footage",
+        "SceneA"
+      ],
+      "breadcrumb": [
+        "Project media root",
+        "Footage",
+        "SceneA"
+      ],
+      "immediate_media_ids": [
+        "7",
+        "6"
+      ],
+      "global_search_outside_current_folder": "River_Two_Streams_3s.mkv"
+    },
+    "tree_search": "Two_Streams includes only Footage / SceneB and matching audio",
+    "duration_sort_visible_media_ids": [
+      "6",
+      "7",
+      "8",
+      "1"
+    ],
+    "shift_range_media_ids": [
+      "6",
+      "7"
+    ],
+    "collapse_scene_a_prunes_selected_ids": true,
+    "name_column": {
+      "keyboard_left_then_shift_left_css_pixels": 119.40000915527344,
+      "pointer_left_20_css_pixels": 108.40000915527344,
+      "home_and_doubleclick_restore_automatic_width": true
+    },
+    "existing_path_import": {
+      "source": "Repair/River_AV_11s.mp4",
+      "reused_id": "6",
+      "grid_enters_parent_and_selects_item": true,
+      "details_opens_ancestors": true,
+      "opens_source": true,
+      "no_duplicate_media_undo_or_saved_byte_change": true
+    },
+    "client_reload": {
+      "layout_preference": "list",
+      "folders_default_collapsed": true,
+      "native_session_and_saved_bytes_equal": true
+    },
+    "final": {
+      "layout": "details",
+      "pool_width_css_pixels": 270,
+      "media_ids": [
+        "7",
+        "6",
+        "8",
+        "1"
+      ],
+      "horizontal_overflow": false,
+      "saved": true
+    }
+  },
+  "unchanged_qualification": {
+    "evidence": "f2-project-media-workflow.json",
+    "export_sha256": "f2c54c544df7df29387b07ce6b06b1d3176763e219b75d2679967f0e60ce6543",
+    "scope": "Native import, relink, rendering, playback and export code unchanged; prior actual457-frame Full HD/AAC export and recovery/Undo evidence reused. No new export or server restart claimed."
+  },
+  "preservation": {
+    "preserved_sessions": 14,
+    "preserved_pids": {
+      "venturi-web-halo1-nas.service": "84786",
+      "venturi-web-halo1-color-audio-r2.service": "99965",
+      "venturi-web-halo1-library-edit-r2.service": "105609",
+      "venturi-web-halo1-native-curves.service": "109843",
+      "venturi-web-halo1-curve-window-r2.service": "114229",
+      "venturi-web-halo1-program-lookahead.service": "116676",
+      "venturi-web-halo1-source-placement.service": "121987",
+      "venturi-web-halo1-source-placement-r5.service": "123540",
+      "venturi-web-halo1-source-waveform-r2.service": "126135",
+      "venturi-web-halo1-source-waveform-r4.service": "127416",
+      "venturi-web-halo1-source-lookahead.service": "129350",
+      "venturi-web-halo1-project-pool.service": "131552",
+      "venturi-web-halo1-project-media.service": "136307",
+      "venturi-web-halo1-project-media-r2.service": "139773",
+      "ds4-console.service": "58396"
+    },
+    "prior_8828_saved_sha256": "fc4754ffd4a3b70f47d941d07f864ad3eaf13c66c3a7c77113b4c52c55703549",
+    "prior_8827_history": {
+      "labels": [
+        "ImportMedia",
+        "InsertClips",
+        "RelinkMedia",
+        "RelinkMedia"
+      ],
+      "position": 4
+    },
+    "all_sessions_equal": true
+  },
+  "resources": {
+    "host": "halo1",
+    "cpu_max": 8,
+    "memory_max_gib": 4,
+    "swap_max": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "one_heavy_workload": true,
+    "shared_gpu_lock": "nonblocking",
+    "live_editor_peak_bytes": 219750400,
+    "halo2": "untouched",
+    "nas": "Existing canonical mount and ds4 roots; no writes, mount changes, bulk copy or archive scan."
+  },
+  "screenshots": [
+    "f2-media-presentation-details-halo1.png",
+    "f2-media-presentation-grid-halo1.png"
+  ],
+  "remaining": "Full F1-F7/M7 remains active at48done/42partial/2excluded. Native proxy enable/quality/real queue pause-resume and Program proxy input resolution remain production gaps. Pool marquee/context-menu/folder drag parity and long4K/dense/DPI/physical acceptance are not claimed complete."
+}

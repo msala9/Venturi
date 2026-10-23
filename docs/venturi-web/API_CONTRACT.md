@@ -1,5 +1,14 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Project media presentation metadata
+
+`GET /api/v1/session` media entries include numeric `width`, `height`,
+`sample_rate` and `channels` directly from native `MediaMeta`, alongside the
+existing fps, duration and stream fields. Zero remains unknown; the browser
+omits unavailable dimensions/rates. These read-only fields do not probe sources
+or mutate the project/history. Pool layout, expansion, navigation, selection and
+column sizing remain client presentation state, not project edit operations.
+
 ## Approved source folders
 
 `GET /api/v1/media/sources` accepts strict query

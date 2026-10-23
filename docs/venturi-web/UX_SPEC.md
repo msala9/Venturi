@@ -13,6 +13,21 @@ browser widths use explicit drawers instead of horizontal overflow. Existing
 functional, accessibility and session-preservation requirements remain.
 
 
+Media presentation (`e204001`, halo1/8829) follows native Details/List/Grid.
+Three22px buttons share the existing counter row. Details uses64×36 thumbnails,
+46px rows and real native metadata; List uses16px glyphs/23px rows without image
+demand; Grid uses minimum80px tiles and16:9 thumbnails. Details/List show a
+folder-first tree with14px depth, arrows and exclusive folder selection. Grid
+shows immediate children, double-click/Enter navigation and ancestor breadcrumbs;
+its search spans all project media. Tree search includes matching ancestors.
+Name/Duration retain native ordering and a64px duration column. The divider
+supports pointer resizing,8px arrows/1px Shift arrows and Home/double-click reset.
+Only layout persists as a browser preference. Imported/pasted/Library items
+reveal their ancestor tree or the last item's Grid parent. Hidden selection is
+pruned to preserve existing Web mutation safety. Native pool marquee, contextual
+menus and folder drag are separate open work. See Details/Grid screenshots in
+`evidence/f2-media-presentation-workflow.json`.
+
 Project import/recovery (`e41e9cc`, halo1/8828) uses compact modal choosers, adding
 no permanent row to the Viewer. File > Import media browses approved nested
 sources, selects files across folders/pages or imports an explicit child tree;

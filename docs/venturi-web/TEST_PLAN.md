@@ -10,6 +10,19 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F2 media presentation (`e204001`, halo1/8829):1296 serial client cases and9
+native cases pass (snapshot5, project placement1, prepared project media HTTP1,
+health/assets1 and module MIME1), plus formatting/all-target Clippy/build.
+Windows checks native default Details, List23px/no images, Grid folders and
+breadcrumbs/global search, tree matching ancestors, duration/Shift visible order,
+collapse pruning, pointer/keyboard column resize/reset, reused-file import reveal
+and layout persistence on reload. Native Session, Saved bytes and empty history
+are exactly equal before/after. Fourteen prior Sessions/PIDs and ds4 are unchanged.
+See `evidence/f2-media-presentation-workflow.json`. Renderer/export code is
+unchanged; reuse the preceding457-frame Full HD/AAC export and import/recovery
+proof. No new export, acoustic, server-restart or whole-pool interaction acceptance
+is claimed. Next production block is native proxy management and Program inputs.
+
 F2 project import/recovery (`e41e9cc`, halo1/8828):83 affected native cases pass
 across new project jobs/HTTP/legacy coordination and existing jobs, catalog,
 approval and file guards;559 native cases exist in the compiled test binary.

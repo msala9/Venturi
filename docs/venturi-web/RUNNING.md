@@ -2,6 +2,32 @@
 
 ## Current halo1 working instance
 
+Use **http://127.0.0.1:8829/** in the existing Windows browser. Source `e204001`,
+binary `vv-web-c8a3bc799e10`, runs as unprivileged `halo` in
+`venturi-web-halo1-media-presentation.service`, projects in
+`/home/halo/VenturiWeb-media-presentation-20261023`. Saved
+`Venturi_Project_Media.vvproj` retains the457-frame1920×1080/24fps video/still/
+two-stream audio montage on V1/A1/A2 at Program frame0, with fresh empty history.
+All prior servers and their live Undo remain available, including8827 and8828.
+
+The three small Media buttons switch Grid, List and Details. Details is the
+native default; expand folder arrows to see children. Grid opens folders with a
+double-click or Enter and provides ancestor breadcrumbs. Search in Grid covers
+the project; tree search includes matching ancestors. List omits thumbnails and
+uses23px rows. Details shows native dimensions, fps and audio metadata. Drag the
+Name/Duration divider or use Left/Right (Shift for1px); Home/double-click resets.
+The layout preference survives client reload. Import, clipboard and Library
+reveal imported items in their parents. Local navigation changes no project,
+Saved bytes or Undo. See `evidence/f2-media-presentation-workflow.json`.
+
+The hidden same-port tunnel forwards8829 to halo1. Existing NAS roots and ds4
+are unchanged. Eight-CPU/4-GiB/no-swap/low-priority limits and the nonblocking GPU
+lock remain. No automatic restart/boot enablement/deadline applies. Fourteen
+prior Sessions and ds4 are preserved; halo2 is untouched. Full F1-F7/M7 remains
+active, with native proxy management and remaining interaction/release work open.
+
+## Preserved project import/recovery instance
+
 Use **http://127.0.0.1:8828/** in the existing Windows browser. Source `e41e9cc`,
 binary `vv-web-3f777879477e`, runs as unprivileged `halo` in
 `venturi-web-halo1-project-media-r2.service`, with projects in

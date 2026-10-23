@@ -18,7 +18,27 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-Current delivery: halo1/8828, source `e41e9cc`, binary `3f777879477e`.
+The current halo1 delivery is **http://127.0.0.1:8829/**, source `e204001`,
+binary `c8a3bc799e10`, in `venturi-web-halo1-media-presentation.service`.
+Project Media now provides native Details (default), dense List and thumbnail
+Grid in the existing compact counter row. Tree folders, Grid breadcrumbs,
+ancestor-aware search, real dimensions/audio metadata, visible-order selection,
+resizable Name/Duration columns and reveal after import/clipboard/Library use
+the same project pool. Only the layout preference persists; folder navigation
+and column width remain transient. The1296-case serial client gate,9 affected
+native cases, formatting, all-target Clippy and embedded build pass. Windows
+verifies all three layouts, nested navigation/search, Shift selection, collapse
+pruning, pointer/keyboard column sizing, path-reuse import reveal and layout
+persistence after client reload. Saved bytes, native project/history and Program
+frame0 remain unchanged. See `evidence/f2-media-presentation-workflow.json` and
+Details/Grid screenshots. Fourteen earlier halo1 Sessions/live histories and ds4
+remain intact; halo2 and NAS are untouched. Ledger48done/42partial/2excluded and
+full F1-F7/M7 remain active. Next implement native proxy enable/quality, real
+queue pause/resume and Program decode proxy selection; exports retain originals.
+Pool marquee/context-menu/folder drag, physical and representative acceptance
+remain explicit open work.
+
+Preserved import/recovery delivery: halo1/8828, source `e41e9cc`, binary `3f777879477e`.
 Approved nested file/tree import and prepared project Relink now complete the
 ordinary native import/recovery workflow. Native folder merge/pruning, path
 deduplication, per-file errors, selected/folder missing-name search and explicit

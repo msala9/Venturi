@@ -36,6 +36,30 @@ playback cancels and restores only the still-current confirmed frame. Closed
 combobox wheel bursts confirm once after 150 ms. Unknown saved families/styles
 remain visible and disabled in the catalog rather than being silently replaced.
 
+## Native selected-transition previews
+
+`POST /api/v1/preview/transition` accepts a strict body containing `query`
+(the full FrameQuery), `clip_id`, `slot` (`in`, `out`, `cut_after`) and the complete
+native `transition` (`kind`, `duration`, `direction`, `ease`, `curve`). The selected
+slot must already exist and keep its kind; a crossing must still bind the same
+adjacent clips. The adapter applies the existing native transition command to
+an owned frame snapshot. Native locked-track, duration and parameter validation
+remain authoritative. No live project, revision, history or writer lease changes.
+
+The route shares the bounded native draft renderer, source resolver and proxy
+selection used by title-font previews, rechecks composition after rendering and
+returns a no-store PNG with `x-venturi-preview-draft: 1`. Body limit256KiB,
+ordinary origin restrictions and nonblocking shared GPU ownership apply. Its
+domain-separated cache tag cannot replace a confirmed Program image.
+
+The selected-transition Inspector provides seconds and frame duration fields,
+numeric scrubbing, a curve slider and direction/ease comboboxes. Stable popup
+pointer-enter/keyboard choices preview after130ms; click/Enter confirms once.
+Escape, Tab, outside click, context changes and playback cancel and restore only
+the current confirmed image. Closed wheel bursts confirm once after150ms.
+Numeric/slider pointer movement stays local; release confirms one native command.
+The existing Apply and Remove controls remain available.
+
 ## Effects palette placement
 
 Timeline commands add `place_generator` with `generator: title|solid|adjustment`,

@@ -119,8 +119,13 @@ export function createViewer({ image, empty, status, getState, matches = matches
       }
     }
   }
-  async function previewDraft(body, { isCurrent = () => true } = {}) {
-    if (destroyed || matches !== matchesFrame || !body?.query || !url || !displayed)
+  async function previewDraft(body, { isCurrent = () => true, kind = "font" } = {}) {
+    const preview = kind === "font"
+      ? { path: "/api/v1/preview/title-font", label: "FONT PREVIEW", error: "INVALID_FONT_PREVIEW" }
+      : kind === "transition"
+        ? { path: "/api/v1/preview/transition", label: "TRANSITION PREVIEW", error: "INVALID_TRANSITION_PREVIEW" }
+        : null;
+    if (!preview || destroyed || matches !== matchesFrame || !body?.query || !url || !displayed)
       return false;
     let request, encoded;
     try {
@@ -145,11 +150,11 @@ export function createViewer({ image, empty, status, getState, matches = matches
     draft = true;
     controller = new AbortController();
     image.classList.add("stale");
-    status.textContent = "FONT PREVIEW · SEEKING";
+    status.textContent = `${preview.label} · SEEKING`;
     const current = () => seq === sequence && !destroyed
       && matchesFrame(request.query, getState()) && isCurrent();
     try {
-      const response = await fetch("/api/v1/preview/title-font", {
+      const response = await fetch(preview.path, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: encoded,
@@ -162,14 +167,14 @@ export function createViewer({ image, empty, status, getState, matches = matches
       }
       if (!response.ok || response.headers.get("x-venturi-preview-draft") !== "1"
         || Number(response.headers.get("content-length")) > 16 * 1024 * 1024)
-        throw new Error("INVALID_FONT_PREVIEW");
+        throw new Error(preview.error);
       const blob = await response.blob();
       if (!current()) {
         if (seq === sequence) cancelDraft();
         return false;
       }
       if (blob.type !== "image/png" || !blob.size || blob.size > 16 * 1024 * 1024)
-        throw new Error("INVALID_FONT_PREVIEW");
+        throw new Error(preview.error);
       const next = URL.createObjectURL(blob);
       pendingURL = next;
       image.src = next;
@@ -183,7 +188,7 @@ export function createViewer({ image, empty, status, getState, matches = matches
       image.hidden = false;
       image.classList.remove("stale");
       empty.hidden = true;
-      status.textContent = "FONT PREVIEW";
+      status.textContent = preview.label;
       return true;
     } catch {
       if (seq === sequence) cancelDraft();

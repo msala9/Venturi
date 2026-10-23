@@ -211,6 +211,10 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/preview/title-font",
             post(title_font_preview).layer(DefaultBodyLimit::max(256 * 1024)),
         )
+        .route(
+            "/api/v1/preview/transition",
+            post(transition_preview).layer(DefaultBodyLimit::max(256 * 1024)),
+        )
         .route("/api/v1/preview/cache", get(preview_cache))
         .route("/api/v1/preview/audio.wav", get(audition))
         .route("/api/v1/preview/audio/window", post(program_audio_window))
@@ -2192,6 +2196,45 @@ async fn title_font_preview(
     )
         .into_response())
 }
+async fn transition_preview(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::transition_preview::Request>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid transition preview"))?
+        .0;
+    if !state.preview.available() {
+        return Err(ApiError(
+            StatusCode::SERVICE_UNAVAILABLE,
+            "GPU_UNAVAILABLE",
+            "Native preview is unavailable",
+        ));
+    }
+    let original = payload.query.clone();
+    let snapshot = state.host.frame_snapshot(original.clone()).await?;
+    let (mut snapshot, tag) = crate::transition_preview::apply(snapshot, &payload)?;
+    snapshot.video = std::sync::Arc::new(crate::proxy_video::Selection::capture(
+        &state.source.proxies,
+        &snapshot,
+    )?);
+    let data = state.preview.draft(snapshot, tag).await?;
+    state.host.call(Action::CheckFrame(original)).await?;
+    Ok((
+        [
+            (header::CONTENT_TYPE, "image/png"),
+            (header::CACHE_CONTROL, "no-store"),
+            (
+                header::HeaderName::from_static("x-venturi-preview-draft"),
+                "1",
+            ),
+        ],
+        data,
+    )
+        .into_response())
+}
 async fn scopes(
     State(state): State<AppState>,
     Path((clip, first, second)): Path<(String, vv_render::ScopeKind, vv_render::ScopeKind)>,
@@ -2608,6 +2651,7 @@ async fn assets(request: Request) -> Response {
         "/js/export.js" => asset!("/web/js/export.js", "text/javascript"),
         "/js/inspector.js" => asset!("/web/js/inspector.js", "text/javascript"),
         "/js/fonts.js" => asset!("/web/js/fonts.js", "text/javascript"),
+        "/js/transition-controls.js" => asset!("/web/js/transition-controls.js", "text/javascript"),
         "/js/color-picker.js" => asset!("/web/js/color-picker.js", "text/javascript"),
         "/js/keyframe-navigation.js" => asset!("/web/js/keyframe-navigation.js", "text/javascript"),
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),

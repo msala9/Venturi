@@ -5,6 +5,7 @@ import {renderEventKeys} from "./eventkeys.js";
 import {renderKeySelection} from "./keyselection.js";
 import {createTitleFontChooser} from './fonts.js';
 import {renderColorPicker} from './color-picker.js';
+import {renderTransitionControls} from './transition-controls.js';
 
 export function inspectorGroup(section,group){
   if(!['video','audio','selection'].includes(group))throw Error('Choose an Inspector group');
@@ -447,23 +448,8 @@ export function transitionSelectionOperation(target,patch){
   if(!Number.isSafeInteger(value.duration) || value.duration<1 || value.duration>target.max || !['Left','Right','Up','Down'].includes(value.direction) || !['None','In','Out','InOut'].includes(value.ease) || !Number.isFinite(value.curve) || value.curve<0 || value.curve>1)throw Error('Choose transition values within the native limits');
   return Object.keys(value).every(key=>value[key]===target.transition[key])?null:{kind:'set_transition',clip_id:target.clip_id,slot:target.slot,transition:value};
 }
-export function renderTransitionSelection(root,target,{disabled,getTarget,canInteract,commit,notice}){
-  const heading=document.createElement('strong');heading.textContent=`${target.transition.kind} · ${target.slot==='cut_after'?'Cross transition':`Transition ${target.slot}`}`;root.append(heading);
-  const form=document.createElement('form');form.className='property-row';const fields={};
-  for(const [name,label,choices] of [['duration','Duration frames',null],['direction','Push direction',['Left','Right','Up','Down']],['ease','Ease',['None','In','Out','InOut']],['curve','Curve',null]]){
-    if(name==='direction' && target.transition.kind!=='Push')continue;
-    const row=document.createElement('label');row.className='field';row.textContent=label;const input=document.createElement(choices?'select':'input');
-    if(choices)for(const value of choices)input.append(new Option(value,value));
-    else{input.type='number';input.required=true;input.min=name==='duration'?1:0;input.max=name==='duration'?target.max:1;input.step=name==='duration'?1:'any';}
-    input.value=target.transition[name];input.disabled=disabled;row.append(input);form.append(row);fields[name]=input;
-  }
-  const apply=document.createElement('button'),remove=document.createElement('button');apply.textContent='Apply transition';remove.textContent='Remove transition';remove.type='button';apply.disabled=remove.disabled=disabled;form.append(apply,remove);root.append(form);
-  const identity=JSON.stringify(target);let waiting=false;
-  const send=patch=>{if(disabled || waiting || !canInteract() || JSON.stringify(getTarget())!==identity){notice('Transition changed; read its current properties before editing');return;}
-    try{const operation=transitionSelectionOperation(target,patch);if(!operation)return;waiting=true;apply.disabled=remove.disabled=true;Promise.resolve().then(()=>commit(operation)).catch(error=>{waiting=false;apply.disabled=remove.disabled=disabled || !canInteract() || JSON.stringify(getTarget())!==identity;notice(error.message);});}catch(error){notice(error.message);}};
-  form.addEventListener('submit',event=>{event.preventDefault();if(form.reportValidity())send(Object.fromEntries(Object.entries(fields).map(([name,input])=>[name,['duration','curve'].includes(name)?Number(input.value):input.value])));});
-  remove.addEventListener('click',()=>send(null));
-  for(const node of [...Object.values(fields),apply,remove])node.addEventListener('keydown',event=>{if([' ','Enter','Delete','ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key))event.stopPropagation();});
+export function renderTransitionSelection(root,target,options){
+  return renderTransitionControls(root,target,{...options,bindNumber:bindInspectorNumber,operation:transitionSelectionOperation});
 }
 function renderTransitions(root, detail, disabled, report,defaults=[],notice) {
   const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.visualPath='transitions';summary.textContent="Transitions";section.append(summary);

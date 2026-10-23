@@ -236,3 +236,71 @@ test("seek, invalidation and destruction discard drafts without restoring an obs
   assert.equal(h.requests.length, count);
   assert.deepEqual([...h.revoked].sort(), [...h.created].sort());
 });
+
+test("transition drafts post the native body, supersede late font replies and cancel to the confirmed frame", async (t) => {
+  const h = draftHarness(t), base = await h.committed();
+  const font = h.viewer.previewDraft(h.body()), fontRequest = h.requests.at(-1);
+  const body = { query: h.state(), clip_id: "7", slot: "in",
+    transition: { kind: "CrossDissolve", duration: 12, direction: "Left", ease: "InOut", curve: 0.5 } };
+  const transition = h.viewer.previewDraft(body, { kind: "transition" });
+  const request = h.requests.at(-1);
+  assert.equal(request.path, "/api/v1/preview/transition");
+  assert.equal(request.options.method, "POST");
+  assert.deepEqual(JSON.parse(request.options.body), body);
+  assert.equal(fontRequest.options.signal.aborted, true);
+  assert.equal(h.status.textContent, "TRANSITION PREVIEW · SEEKING");
+  assert.equal(h.viewer.current(), null);
+  request.respond(png());
+  assert.equal(await transition, true);
+  const transitionURL = h.image.src;
+  fontRequest.respond(png());
+  assert.equal(await font, false);
+  assert.equal(h.image.src, transitionURL);
+  assert.equal(h.status.textContent, "TRANSITION PREVIEW");
+  const count = h.requests.length;
+  h.viewer.cancelDraft();
+  assert.equal(h.requests.length, count);
+  assert.equal(h.image.src, base);
+  assert.deepEqual(h.viewer.current(), h.state());
+  assert.equal(h.revoked.includes(transitionURL), true);
+  const failed = h.viewer.previewDraft(body, { kind: "transition" });
+  h.requests.at(-1).respond(png({ draft: false }));
+  assert.equal(await failed, false);
+  assert.equal(h.image.src, base);
+  assert.equal(h.status.textContent, "CURRENT");
+  assert.deepEqual(h.viewer.current(), h.state());
+  const fontAgain = h.viewer.previewDraft(h.body());
+  assert.equal(h.requests.at(-1).path, "/api/v1/preview/title-font");
+  h.requests.at(-1).respond(png());
+  assert.equal(await fontAgain, true);
+  assert.equal(h.status.textContent, "FONT PREVIEW");
+  h.viewer.destroy();
+  assert.deepEqual([...h.revoked].sort(), [...h.created].sort());
+});
+
+test("a late font decode cannot replace an owned transition and invalid draft kinds cannot select a route", async (t) => {
+  const h = draftHarness(t), base = await h.committed(), decode = h.holdDecode();
+  const font = h.viewer.previewDraft(h.body());
+  h.requests.at(-1).respond(png());
+  await decode.started;
+  const body = { query: h.state(), clip_id: "7", slot: "out", transition: null };
+  const transition = h.viewer.previewDraft(body, { kind: "transition" });
+  h.requests.at(-1).respond(png());
+  assert.equal(await transition, true);
+  const transitionURL = h.image.src, count = h.requests.length;
+  for (const kind of ["/api/v1/commands", "__proto__", "title-font", "", null]) {
+    assert.equal(await h.viewer.previewDraft(body, { kind }), false);
+    assert.equal(h.requests.length, count);
+    assert.equal(h.image.src, transitionURL);
+    assert.equal(h.status.textContent, "TRANSITION PREVIEW");
+  }
+  decode.finish();
+  assert.equal(await font, false);
+  assert.equal(h.image.src, transitionURL);
+  assert.equal(h.viewer.current(), null);
+  h.viewer.cancelDraft();
+  assert.equal(h.image.src, base);
+  assert.equal(h.status.textContent, "CURRENT");
+  h.viewer.destroy();
+  assert.deepEqual([...h.revoked].sort(), [...h.created].sort());
+});

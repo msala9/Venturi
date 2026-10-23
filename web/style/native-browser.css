@@ -121,3 +121,12 @@
 .native-source-selection-count { margin: 0; color: var(--muted); font-size: 10px; }
 #imports, #media-relink-dialog { width: min(660px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; }
 #media-relink-root { display: grid; gap: 5px; min-width: 0; }
+
+#browser .catalog-thumbnail { position: relative; }
+#browser .catalog-proxy-status { position: absolute; right: 3px; bottom: 2px; padding: 0 2px; font-size: 9px; line-height: 11px; background: var(--bg); color: var(--primary); pointer-events: none; }
+.proxy-menu { min-width: 240px; max-width: 340px; }
+.proxy-controls { display: flex; flex-direction: column; gap: 4px; padding: 4px; }
+.proxy-controls .proxy-setting { display: flex; align-items: center; gap: 5px; }
+.proxy-controls .proxy-setting select { flex: 1; min-width: 0; }
+.proxy-status, .proxy-controls p { font-size: 10px; margin: 3px 0; white-space: normal; }
+.proxy-jobs ul { margin: 0; padding-left: 14px; max-height: 160px; overflow: auto; font-size: 10px; }

@@ -29,6 +29,7 @@ fn default_width() -> u32 {
     960
 }
 pub struct FrameSnapshot {
+    pub video: Arc<crate::proxy_video::Selection>,
     pub project: Project,
     pub timeline: TimelineId,
     pub query: FrameQuery,
@@ -112,6 +113,7 @@ struct CachedFrame {
     query: FrameQuery,
     inputs: crate::program::Inputs,
     program: bool,
+    render_tag: String,
     data: Vec<u8>,
 }
 #[derive(Default)]
@@ -132,12 +134,20 @@ impl FrameCache {
         self.bytes += entry.data.len();
         self.entries.push_back(entry);
     }
-    fn frames(&self, query: &FrameQuery, inputs: &crate::program::Inputs) -> Vec<i64> {
+    fn frames(
+        &self,
+        query: &FrameQuery,
+        inputs: &crate::program::Inputs,
+        render_tag: &str,
+    ) -> Vec<i64> {
         let mut frames: Vec<_> = self
             .entries
             .iter()
             .filter(|entry| {
-                entry.program && entry.query.same_composition(query) && entry.inputs == *inputs
+                entry.program
+                    && entry.render_tag == render_tag
+                    && entry.query.same_composition(query)
+                    && entry.inputs == *inputs
             })
             .map(|entry| entry.query.frame)
             .collect();
@@ -241,6 +251,7 @@ pub struct Preview {
     resident: Arc<AtomicBool>,
     active_programs: Arc<AtomicUsize>,
     cache: Arc<Mutex<FrameCache>>,
+    proxies: Arc<Mutex<Option<crate::proxy::Manager>>>,
 }
 impl Preview {
     pub fn disabled() -> Self {
@@ -253,6 +264,7 @@ impl Preview {
             resident: Arc::new(AtomicBool::new(false)),
             active_programs: Arc::new(AtomicUsize::new(0)),
             cache: Arc::new(Mutex::new(FrameCache::default())),
+            proxies: Arc::new(Mutex::new(None)),
         }
     }
     pub fn start(device: u32, lock_path: &Path) -> Self {
@@ -275,6 +287,8 @@ impl Preview {
         let rendered_worker = rendered.clone();
         let cache = Arc::new(Mutex::new(FrameCache::default()));
         let worker_cache = cache.clone();
+        let proxies = Arc::new(Mutex::new(None::<crate::proxy::Manager>));
+        let worker_proxies = proxies.clone();
         std::thread::spawn(move || {
             let initialized = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 let local = worker_gate.lock().unwrap();
@@ -313,8 +327,20 @@ impl Preview {
                     continue;
                 }
                 let snapshot = job.snapshot;
+                let proxy_manager = worker_proxies.lock().unwrap().clone();
+                let _proxy_pause = match proxy_manager
+                    .as_ref()
+                    .map(crate::proxy::Manager::suspend)
+                    .transpose()
+                {
+                    Ok(guard) => guard,
+                    Err(error) => {
+                        let _ = job.reply.send(Err(error));
+                        continue;
+                    }
+                };
                 let key = format!(
-                    "{}:{}:{}:{}:{}:{}x{}:{:?}",
+                    "{}:{}:{}:{}:{}:{}x{}:{:?}:{}",
                     snapshot.query.project_epoch,
                     snapshot.query.if_generation,
                     snapshot.query.timeline_id,
@@ -323,6 +349,7 @@ impl Preview {
                     snapshot.size.0,
                     snapshot.size.1,
                     job.mode,
+                    snapshot.video.tag,
                 );
                 let inputs = crate::program::inputs(&snapshot).ok();
                 let cached = inputs.as_ref().and_then(|inputs| {
@@ -354,12 +381,13 @@ impl Preview {
                     compositor.set_precision(snapshot.project.precision);
                     let data = match job.mode {
                         FrameMode::Program => encode_png(
-                            &vv_session::export::render_frame_rgba(
+                            &vv_session::export::render_frame_rgba_with_sources(
                                 &snapshot.project,
                                 snapshot.timeline,
                                 snapshot.query.frame,
                                 snapshot.size,
                                 compositor,
+                                &snapshot.video.sources,
                             )
                             .map_err(|_| {
                                 ApiError(
@@ -386,6 +414,11 @@ impl Preview {
                     data
                 }))
                 .unwrap_or_else(|_| Err(unavailable()));
+                if result.is_ok()
+                    && let Err(error) = snapshot.video.validate()
+                {
+                    result = Err(error);
+                }
                 if poll_failed.load(Ordering::Relaxed) {
                     result = Err(unavailable());
                 }
@@ -401,6 +434,7 @@ impl Preview {
                             query: snapshot.query,
                             inputs,
                             program: matches!(job.mode, FrameMode::Program),
+                            render_tag: snapshot.video.tag.clone(),
                             data: data.clone(),
                         });
                     }
@@ -418,6 +452,7 @@ impl Preview {
                 resident,
                 active_programs: Arc::new(AtomicUsize::new(0)),
                 cache,
+                proxies,
             },
             _ => Self {
                 queue: None,
@@ -428,8 +463,12 @@ impl Preview {
                 resident,
                 active_programs: Arc::new(AtomicUsize::new(0)),
                 cache,
+                proxies,
             },
         }
+    }
+    pub fn attach_proxies(&self, manager: crate::proxy::Manager) {
+        *self.proxies.lock().unwrap() = Some(manager);
     }
     pub fn available(&self) -> bool {
         self.queue.is_some()
@@ -479,8 +518,13 @@ impl Preview {
         let global = gpu_lock(path)?;
         operation(Some(&global))
     }
-    pub fn cached_frames(&self, query: &FrameQuery, inputs: &crate::program::Inputs) -> Vec<i64> {
-        self.cache.lock().unwrap().frames(query, inputs)
+    pub fn cached_frames(
+        &self,
+        query: &FrameQuery,
+        inputs: &crate::program::Inputs,
+        render_tag: &str,
+    ) -> Vec<i64> {
+        self.cache.lock().unwrap().frames(query, inputs, render_tag)
     }
     pub fn export_program(
         &self,
@@ -542,8 +586,8 @@ impl Preview {
                 poll_failed: &poll_failed,
             })
         };
-        let result = match observer {
-            Some(observer) => vv_session::export::export_timeline_with_gpu_observed(
+        let result = if !snapshot.video.sources.is_empty() {
+            vv_session::export::export_timeline_preview_with_gpu(
                 &snapshot.project,
                 snapshot.timeline,
                 settings,
@@ -554,19 +598,38 @@ impl Preview {
                 acquire,
                 2,
                 observer,
-            ),
-            None => vv_session::export::export_timeline_with_gpu_cancellable(
-                &snapshot.project,
-                snapshot.timeline,
-                settings,
-                snapshot.query.frame..end,
-                progress,
-                cancel,
-                create,
-                acquire,
-                2,
-            ),
+                &snapshot.video.sources,
+            )
+        } else {
+            match observer {
+                Some(observer) => vv_session::export::export_timeline_with_gpu_observed(
+                    &snapshot.project,
+                    snapshot.timeline,
+                    settings,
+                    snapshot.query.frame..end,
+                    progress,
+                    cancel,
+                    create,
+                    acquire,
+                    2,
+                    observer,
+                ),
+                None => vv_session::export::export_timeline_with_gpu_cancellable(
+                    &snapshot.project,
+                    snapshot.timeline,
+                    settings,
+                    snapshot.query.frame..end,
+                    progress,
+                    cancel,
+                    create,
+                    acquire,
+                    2,
+                ),
+            }
         };
+        if result.is_ok() {
+            snapshot.video.validate()?;
+        }
         if poll_failed.load(Ordering::Relaxed) {
             return Err(unavailable());
         }

@@ -319,6 +319,7 @@ fn task() -> ProgramTask {
     };
     ProgramTask {
         snapshot: FrameSnapshot {
+            video: Default::default(),
             project,
             timeline,
             query: query.frame(),

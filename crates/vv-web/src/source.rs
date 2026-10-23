@@ -131,6 +131,7 @@ struct Job {
     source_version: Option<String>,
     inputs: Inputs,
     source_asset: Option<&'static str>,
+    render_tag: String,
     export_epoch: Option<String>,
     program_query: Option<ProgramQuery>,
     durable: Option<StoredExport>,
@@ -205,10 +206,16 @@ pub struct MediaJobs {
     send: mpsc::SyncSender<(String, Work)>,
     exports: Option<Arc<ExportStore>>,
     exports_blocked: bool,
+    pub(crate) proxies: crate::proxy::Manager,
 }
 enum Work {
-    Source(Box<SourceSpec>, ProxyQuality, Option<SourceWindow>, u32),
-    SourceAll(Box<SourceSpec>, ProxyQuality, Option<SourceWindow>),
+    Source(
+        Box<SourceSpec>,
+        (ProxyQuality, u32),
+        Option<SourceWindow>,
+        u32,
+    ),
+    SourceAll(Box<SourceSpec>, (ProxyQuality, u32), Option<SourceWindow>),
     Program(Box<ProgramTask>),
     Assets(Box<SourceSpec>, u32, bool),
 }
@@ -218,17 +225,18 @@ impl MediaJobs {
     }
     #[cfg(test)]
     pub fn start() -> std::io::Result<Self> {
-        Self::start_inner(None, false)
+        Self::start_inner(None, false, None)
     }
     pub fn start_with_exports(root: File) -> std::io::Result<Self> {
         match ExportStore::open(&root) {
-            Ok(store) => Self::start_inner(Some(Arc::new(store)), false),
-            Err(_) => Self::start_inner(None, true),
+            Ok(store) => Self::start_inner(Some(Arc::new(store)), false, Some(root)),
+            Err(_) => Self::start_inner(None, true, Some(root)),
         }
     }
     fn start_inner(
         exports: Option<Arc<ExportStore>>,
         mut exports_blocked: bool,
+        proxy_root: Option<File>,
     ) -> std::io::Result<Self> {
         let root = std::env::temp_dir().join(format!(
             "venturi-web-media-{}-{}",
@@ -239,6 +247,13 @@ impl MediaJobs {
                 .as_nanos()
         ));
         std::fs::DirBuilder::new().mode(0o700).create(&root)?;
+        let proxy_path = proxy_root
+            .as_ref()
+            .map(|file| PathBuf::from(format!("/proc/self/fd/{}", file.as_raw_fd())))
+            .unwrap_or_else(|| root.clone());
+        let proxies = crate::proxy::Manager::start(&proxy_path)
+            .map_err(|error| std::io::Error::other(error.2))?;
+        let worker_proxies = proxies.clone();
         let worker_root = root.clone();
         let mut recovered = VecDeque::<Job>::new();
         if let Some(store) = &exports {
@@ -267,6 +282,7 @@ impl MediaJobs {
                     source_version: None,
                     inputs: vec![],
                     source_asset: None,
+                    render_tag: "originals".into(),
                     export_epoch: Some(stored.record.epoch.clone()),
                     program_query: None,
                     explicit_cancel: stored.record.cancel_requested,
@@ -309,8 +325,9 @@ impl MediaJobs {
                         job.durable.is_some(),
                     )
                 };
-                let result =
-                    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| match work {
+                let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    let _proxy_pause = worker_proxies.suspend()?;
+                    match work {
                         Work::Source(spec, quality, window, audio_stream_index) => generate(
                             &spec,
                             &directory,
@@ -351,8 +368,9 @@ impl MediaJobs {
                             &inputs,
                             durable,
                         ),
-                    }))
-                    .unwrap_or_else(|_| Err(ApiError::invalid("Native source generation failed")));
+                    }
+                }))
+                .unwrap_or_else(|_| Err(ApiError::invalid("Native source generation failed")));
                 let mut jobs = owned.lock().unwrap();
                 if let Some(job) = jobs.iter_mut().find(|j| j.id == id) {
                     let result = if job.source_assets.is_some() && cancel.load(Ordering::Relaxed) {
@@ -431,6 +449,7 @@ impl MediaJobs {
             send,
             exports,
             exports_blocked,
+            proxies,
         })
     }
     pub fn prepare(&self, spec: SourceSpec, quality: &str) -> Result<Value> {
@@ -469,8 +488,15 @@ impl MediaJobs {
     ) -> Result<Value> {
         crate::source_audio::selection(&spec.meta, mode, audio_stream_index)
             .map_err(|_| ApiError::invalid("Invalid source audio mode or stream ordinal"))?;
-        let quality = ProxyQuality::from_id(quality)
-            .ok_or_else(|| ApiError::invalid("Choose low, medium or high proxy quality"))?;
+        let original = quality == "original";
+        let quality = if original {
+            ProxyQuality::High
+        } else {
+            ProxyQuality::from_id(quality).ok_or_else(|| {
+                ApiError::invalid("Choose original, low, medium or high Source quality")
+            })?
+        };
+        let max_width = if original { 8192 } else { quality.max_width() };
         let seconds = spec.meta.duration_frames as f64 / spec.meta.fps.as_f64();
         if let Some(window) = window {
             window.validate(&spec.meta)?;
@@ -492,6 +518,11 @@ impl MediaJobs {
         };
         let identity = spec.identity()?;
         let key = source_audio_key(&spec, quality, window, &identity, mode, audio_stream_index);
+        let key = if original {
+            format!("{key}:original-width")
+        } else {
+            key
+        };
         let source_window = window.map(|window| {
             let mut descriptor = window.descriptor(&spec, &identity, audio_stream_index);
             descriptor["audio_mode"] = json!(mode);
@@ -508,7 +539,7 @@ impl MediaJobs {
             job.touch();
             return Ok(job.value());
         }
-        admit_source_audio_memory(&spec.meta, quality.max_width(), window, mode)?;
+        admit_source_audio_memory(&spec.meta, max_width, window, mode)?;
         if jobs.iter().any(|job| job.state == "queued") {
             return Err(ApiError::conflict(
                 "SOURCE_BUSY",
@@ -541,16 +572,22 @@ impl MediaJobs {
             program_query: None,
             inputs: vec![],
             source_asset: Some(source_asset),
+            render_tag: "originals".into(),
             export_epoch: None,
             durable: None,
             explicit_cancel: false,
             durability_error: false,
         });
         let work = match mode {
-            crate::source_audio::AudioMode::Selected => {
-                Work::Source(Box::new(spec), quality, window, audio_stream_index)
+            crate::source_audio::AudioMode::Selected => Work::Source(
+                Box::new(spec),
+                (quality, max_width),
+                window,
+                audio_stream_index,
+            ),
+            crate::source_audio::AudioMode::All => {
+                Work::SourceAll(Box::new(spec), (quality, max_width), window)
             }
-            crate::source_audio::AudioMode::All => Work::SourceAll(Box::new(spec), quality, window),
         };
         if self.send.try_send((id.clone(), work)).is_err() {
             reject_ephemeral(&mut jobs);
@@ -620,7 +657,7 @@ impl MediaJobs {
             touched: Instant::now(), export: None, descriptor: None, source_window: None,
             source_assets: Some(json!({"source_version":identity,"total_frames":spec.meta.duration_frames,"fps":spec.meta.fps,"has_video":spec.meta.has_video,"has_audio":spec.meta.has_audio,"audio_stream_index":audio_stream_index,"include_waveform":include_waveform})),
             source_version: None,
-            inputs: vec![], source_asset: None, export_epoch: None, program_query: None,
+            inputs: vec![], source_asset: None, render_tag: "originals".into(), export_epoch: None, program_query: None,
             durable: None, explicit_cancel: false, durability_error: false,
         });
         if self
@@ -639,16 +676,24 @@ impl MediaJobs {
         }
         Ok(jobs.back().unwrap().value())
     }
-    pub fn prepare_program(&self, task: ProgramTask) -> Result<Value> {
+    pub fn prepare_program(&self, mut task: ProgramTask) -> Result<Value> {
         if task.export.is_some() {
             self.check_exports()?;
         }
         task.validate()?;
+        if task.export.is_none() {
+            task.snapshot.video = Arc::new(crate::proxy_video::Selection::capture(
+                &self.proxies,
+                &task.snapshot,
+            )?);
+        }
+        let render_tag = task.snapshot.video.tag.clone();
         let key = task.key();
         let inputs = program::inputs(&task.snapshot)?;
         let mut jobs = self.jobs.lock().unwrap();
         if let Some(job) = jobs.iter_mut().find(|j| {
             j.inputs == inputs
+                && j.render_tag == render_tag
                 && ((j.key == key && !matches!(j.state, "failed" | "canceled"))
                     || (task.export.is_none()
                         && j.state == "ready"
@@ -725,6 +770,7 @@ impl MediaJobs {
             program_query: task.export.is_none().then(|| task.query.clone()),
             inputs,
             source_asset: None,
+            render_tag,
             export_epoch: task
                 .export
                 .as_ref()
@@ -761,10 +807,11 @@ impl MediaJobs {
         &self,
         query: &crate::preview::FrameQuery,
         inputs: &Inputs,
+        render_tag: &str,
     ) -> Vec<Value> {
         self.jobs.lock().unwrap().iter().filter_map(|job| {
             let range = job.program_query.as_ref()?;
-            (job.state == "ready" && range.frame().same_composition(query) && job.inputs == *inputs)
+            (job.state == "ready" && job.render_tag == render_tag && range.frame().same_composition(query) && job.inputs == *inputs)
                 .then(|| json!({"id":job.id,"start_frame":range.start_frame,"end_frame":range.end_frame}))
         }).collect()
     }
@@ -1560,7 +1607,7 @@ fn source_audio_working_bytes(
 fn generate(
     spec: &SourceSpec,
     directory: &Path,
-    quality: ProxyQuality,
+    video_quality: (ProxyQuality, u32),
     window: Option<SourceWindow>,
     audio_stream_index: u32,
     cancel: &AtomicBool,
@@ -1569,7 +1616,7 @@ fn generate(
     generate_audio(
         spec,
         directory,
-        quality,
+        video_quality,
         window,
         (crate::source_audio::AudioMode::Selected, audio_stream_index),
         cancel,
@@ -1579,16 +1626,17 @@ fn generate(
 fn generate_audio(
     spec: &SourceSpec,
     directory: &Path,
-    quality: ProxyQuality,
+    video_quality: (ProxyQuality, u32),
     window: Option<SourceWindow>,
     selection: (crate::source_audio::AudioMode, u32),
     cancel: &AtomicBool,
     mut progress: impl FnMut(u64),
 ) -> Result<()> {
+    let (quality, max_width) = video_quality;
     let (mode, audio_stream_index) = selection;
     crate::source_audio::selection(&spec.meta, mode, audio_stream_index)
         .map_err(|_| ApiError::invalid("Invalid source audio mode or ordinal"))?;
-    admit_source_audio_memory(&spec.meta, quality.max_width(), window, mode)?;
+    admit_source_audio_memory(&spec.meta, max_width, window, mode)?;
     validate_source_audio(&spec.meta, audio_stream_index)?;
     if spec.meta.is_image() {
         if window.is_some() {
@@ -1644,10 +1692,11 @@ fn generate_audio(
         });
         let bounds = crate::source_audio::sample_bounds(frames.clone(), actual.fps)
             .map_err(|_| ApiError::invalid("Invalid source audio mix range"))?;
-        vv_media::browser_proxy::generate_with_audio(
+        vv_media::browser_proxy::generate_with_audio_width(
             &path,
             directory,
             quality,
+            max_width,
             window.map(|_| frames),
             &mut keep_running,
             |output, keep_running| {
@@ -1669,18 +1718,20 @@ fn generate_audio(
         )
     } else {
         match window {
-            Some(window) => vv_media::browser_proxy::generate_range_selected(
+            Some(window) => vv_media::browser_proxy::generate_range_selected_width(
                 &path,
                 directory,
                 quality,
+                max_width,
                 window.start_frame..window.end_frame,
                 selected,
                 &mut keep_running,
             ),
-            None => vv_media::browser_proxy::generate_selected(
+            None => vv_media::browser_proxy::generate_selected_width(
                 &path,
                 directory,
                 quality,
+                max_width,
                 selected,
                 &mut keep_running,
             ),

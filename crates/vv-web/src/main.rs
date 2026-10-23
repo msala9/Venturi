@@ -35,6 +35,8 @@ mod program;
 mod project_media;
 mod project_media_placement;
 mod project_view;
+mod proxy;
+mod proxy_video;
 mod receipts;
 mod recording;
 mod resume;
@@ -153,6 +155,7 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
         gpu.map(|id| preview::Preview::start(id, &gpu_lock))
             .unwrap_or_else(preview::Preview::disabled)
     };
+    preview.attach_proxies(source.proxies.clone());
     if preview.hardware_enabled() {
         vv_media::hw::set_budget_bytes(128 * 1024 * 1024);
     }

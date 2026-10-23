@@ -29,6 +29,7 @@ fn balance_reads_bypassed_native_grade_at_its_source_clock_without_mutation() {
     clip.effects.filters.push(grade);
     session.project.timelines[timeline].tracks[0].insert_sorted(clip);
     let mut snapshot = FrameSnapshot {
+        video: Default::default(),
         project: session.project.clone(),
         timeline,
         query: FrameQuery {
@@ -79,15 +80,24 @@ fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
             },
             inputs: inputs.clone(),
             program: frame != 9,
+            render_tag: "originals".into(),
             data: vec![0; 16],
         });
     }
+    assert!(cache.frames(&query, &inputs, "proxy:low").is_empty());
     assert_eq!(cache.entries.len(), 8);
     assert_eq!(cache.bytes, 128);
-    assert_eq!(cache.frames(&query, &inputs), vec![2, 3, 4, 5, 6, 7, 8]);
+    assert_eq!(
+        cache.frames(&query, &inputs, "originals"),
+        vec![2, 3, 4, 5, 6, 7, 8]
+    );
     assert!(
         cache
-            .frames(&query, &vec![(PathBuf::from("source"), "version2".into())])
+            .frames(
+                &query,
+                &vec![(PathBuf::from("source"), "version2".into())],
+                "originals"
+            )
             .is_empty()
     );
     for field in ["epoch", "generation", "timeline", "revision", "width"] {
@@ -99,13 +109,17 @@ fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
             "revision" => changed.revision = "new".into(),
             _ => changed.width = 640,
         }
-        assert!(cache.frames(&changed, &inputs).is_empty(), "{field}");
+        assert!(
+            cache.frames(&changed, &inputs, "originals").is_empty(),
+            "{field}"
+        );
     }
     cache.insert(CachedFrame {
         key: "large".into(),
         query: query.clone(),
         inputs: inputs.clone(),
         program: true,
+        render_tag: "originals".into(),
         data: vec![0; 16 * 1024 * 1024],
     });
     assert_eq!(cache.entries.len(), 1);
@@ -115,6 +129,7 @@ fn cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode() {
         query,
         inputs,
         program: true,
+        render_tag: "originals".into(),
         data: vec![0; 16 * 1024 * 1024 + 1],
     });
     assert_eq!(cache.entries.len(), 1);
@@ -131,6 +146,7 @@ fn newest_pending_seek_replaces_the_old_one() {
     let job = |frame, reply| Job {
         mode: FrameMode::Program,
         snapshot: FrameSnapshot {
+            video: Default::default(),
             project: Project::default(),
             timeline: TimelineId::from_raw(0),
             query: FrameQuery {
@@ -230,6 +246,7 @@ fn resident_context_yields_before_immediate_probe_and_cannot_reenter_during_hand
             let (reply, _receiver) = oneshot::channel();
             queue.replace(Job {
                 snapshot: FrameSnapshot {
+                    video: Default::default(),
                     project: Project::default(),
                     timeline: TimelineId::from_raw(0),
                     query: FrameQuery {

@@ -62,7 +62,12 @@ export function mediaRowInfo(item) {
   return {metadata:metadata.join(" · "),duration,glyph:item.compound_timeline_id?"▤":item.is_image?"▣":item.has_video?"▻":"♪"};
 }
 
-export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice,onDemand=()=>{},onDragStart=()=>{},onDragEnd=()=>{},onRelink,onPresentationChange=()=>{},intersectionObserver=globalThis.IntersectionObserver}) {
+export function renderMediaProxyStatus(card,job){
+  card.querySelectorAll('.catalog-proxy-status')[0]?.remove();if(!job)return;
+  const badge=document.createElement('span');badge.className='catalog-proxy-status';badge.textContent=job.state==='ready'?'P':job.state==='failed'?'!':job.label.startsWith('Paused')?'II':'...';badge.title=`Proxy ${job.label}`;badge.setAttribute('aria-label',badge.title);card.title+=` · ${badge.title}`;card.querySelectorAll('.catalog-thumbnail')[0]?.append(badge);
+}
+
+export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice,onDemand=()=>{},onDragStart=()=>{},onDragEnd=()=>{},onRelink,onPresentationChange=()=>{},proxyStatus=()=>null,intersectionObserver=globalThis.IntersectionObserver}) {
   root.replaceChildren();
   state.selected = (state.selected || []).filter((id) => documentState.media.some((item) => item.id === id));
   const folders = folderPaths(documentState.folders || []);
@@ -224,6 +229,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
       });
       card.addEventListener('dragend',event=>{if(dragging===card){dragging=null;onDragEnd(event);}});
       const thumbnail=state.layout==='list'?null:mediaThumbnail(assets,item.id);if(thumbnail?.thumbnailURL){const image = document.createElement("img"); image.alt = ""; image.src = thumbnail.thumbnailURL;thumbnailSlot.replaceChildren(image);}
+      renderMediaProxyStatus(card,proxyStatus(item.id));
       list.append(card);
       if(state.layout!=='list')observer?.observe(card);
     }

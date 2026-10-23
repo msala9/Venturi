@@ -236,6 +236,7 @@ impl Task {
         });
         Ok(Self {
             snapshot: FrameSnapshot {
+                video: Default::default(),
                 project,
                 timeline,
                 size: (640, 360),

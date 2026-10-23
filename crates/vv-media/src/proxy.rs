@@ -120,6 +120,26 @@ pub fn generate_proxy_at(
     quality: ProxyQuality,
     hw: &[crate::hw::HwDevice],
     software_threads: usize,
+    on_frame: impl FnMut(u64) -> bool,
+) -> Result<PathBuf, crate::MediaError> {
+    generate_proxy_at_width(
+        source_path,
+        final_path,
+        quality,
+        quality.max_width(),
+        hw,
+        software_threads,
+        on_frame,
+    )
+}
+
+pub fn generate_proxy_at_width(
+    source_path: &Path,
+    final_path: &Path,
+    quality: ProxyQuality,
+    max_width: u32,
+    hw: &[crate::hw::HwDevice],
+    software_threads: usize,
     mut on_frame: impl FnMut(u64) -> bool,
 ) -> Result<PathBuf, crate::MediaError> {
     crate::probe::ensure_init();
@@ -139,7 +159,7 @@ pub fn generate_proxy_at(
         )));
     };
     let (src_w, src_h) = (first_frame.width, first_frame.height);
-    let (dst_w, dst_h) = scaled_dimensions(src_w, src_h, quality.max_width());
+    let (dst_w, dst_h) = scaled_dimensions(src_w, src_h, max_width.clamp(2, 8192));
 
     let tmp_path = final_path.with_extension(format!("tmp-{}.mp4", std::process::id()));
 
@@ -207,6 +227,26 @@ pub fn generate_proxy_range_at(
     quality: ProxyQuality,
     range: Range<vv_core::FrameIdx>,
     software_threads: usize,
+    on_frame: impl FnMut(u64) -> bool,
+) -> Result<PathBuf, crate::MediaError> {
+    generate_proxy_range_at_width(
+        source_path,
+        final_path,
+        quality,
+        quality.max_width(),
+        range,
+        software_threads,
+        on_frame,
+    )
+}
+
+pub fn generate_proxy_range_at_width(
+    source_path: &Path,
+    final_path: &Path,
+    quality: ProxyQuality,
+    max_width: u32,
+    range: Range<vv_core::FrameIdx>,
+    software_threads: usize,
     mut on_frame: impl FnMut(u64) -> bool,
 ) -> Result<PathBuf, crate::MediaError> {
     if !on_frame(0) {
@@ -239,7 +279,7 @@ pub fn generate_proxy_range_at(
             }
             if encoder.is_none() {
                 let (width, height) =
-                    scaled_dimensions(frame.width, frame.height, quality.max_width());
+                    scaled_dimensions(frame.width, frame.height, max_width.clamp(2, 8192));
                 encoder = Some(ProxyEncoder::new(
                     &tmp_path,
                     width,

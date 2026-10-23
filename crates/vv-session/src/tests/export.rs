@@ -2,6 +2,106 @@ use super::*;
 use vv_core::ClipSource;
 use vv_core::{Clip, Keyframed, Rgba, Track, TrackKind};
 
+fn preview_video_source_item() -> vv_core::MediaItem {
+    vv_core::MediaItem {
+        path: "original.mov".into(),
+        meta: vv_core::MediaMeta {
+            duration_frames: 1000,
+            fps: vv_core::Rational::new(30000, 1001),
+            width: 3840,
+            height: 2160,
+            has_video: true,
+            has_audio: true,
+            sample_rate: 48_000,
+            channels: 2,
+            audio_streams: 2,
+            file: Default::default(),
+        },
+        content_hash: 42,
+        compound: None,
+        folder: None,
+    }
+}
+
+#[test]
+fn preview_video_sources_override_only_regular_moving_video() {
+    let mut project = Project::default();
+    let media = project.media_pool.insert(preview_video_source_item());
+    let item = &project.media_pool[media];
+    let sources = PreviewVideoSources::from([(media, PathBuf::from("proxy.mp4"))]);
+    assert_eq!(
+        video_decode_path(media, item, &sources),
+        Path::new("proxy.mp4")
+    );
+    assert_eq!(
+        video_decode_path(media, item, &PreviewVideoSources::new()),
+        item.path.as_path()
+    );
+    assert!(StreamingFrameProvider::default().video_sources.is_empty());
+    let mut still = item.clone();
+    still.meta.has_audio = false;
+    still.meta.duration_frames = vv_core::IMAGE_DURATION_FRAMES;
+    let mut audio = item.clone();
+    audio.meta.has_video = false;
+    audio.meta.width = 0;
+    audio.meta.height = 0;
+    let mut compound = item.clone();
+    compound.compound = Some(project.timelines.insert(timeline_with(Vec::new())));
+    for excluded in [still, audio, compound] {
+        assert_eq!(
+            video_decode_path(media, &excluded, &sources),
+            excluded.path.as_path()
+        );
+    }
+}
+
+#[test]
+fn preview_video_sources_preserve_original_audio_paths_metadata_and_native_clocks() {
+    let mut project = Project::default();
+    let media = project.media_pool.insert(preview_video_source_item());
+    let mut audio = preview_video_source_item();
+    audio.path = "original.wav".into();
+    audio.meta.has_video = false;
+    audio.meta.width = 0;
+    audio.meta.height = 0;
+    let audio = project.media_pool.insert(audio);
+    let mut clip = Clip::from_source_range(
+        ClipId(9),
+        ClipSource::Media(media),
+        100,
+        200,
+        24,
+        vv_core::Rational::new(5, 4),
+    );
+    clip.freeze = Some(135);
+    let before = serde_json::to_value(&project).unwrap();
+    let before_clip = serde_json::to_value(&clip).unwrap();
+    let clock = clip.source_frame_at(26);
+    let sources = PreviewVideoSources::from([
+        (media, PathBuf::from("proxy-960.mp4")),
+        (audio, PathBuf::from("must-not-be-used.mp4")),
+    ]);
+    assert_eq!(
+        video_decode_path(media, &project.media_pool[media], &sources),
+        Path::new("proxy-960.mp4")
+    );
+    assert_eq!(
+        video_decode_path(audio, &project.media_pool[audio], &sources),
+        Path::new("original.wav")
+    );
+    assert_eq!(project.media_pool[media].path, Path::new("original.mov"));
+    assert_eq!(project.media_pool[audio].path, Path::new("original.wav"));
+    assert_eq!(media_source_frame(&clip, 26), Some((media, 135)));
+    assert_eq!(clip.source_frame_at(26), clock);
+    assert_ne!(clock, 135);
+    assert_eq!(
+        crate::frame_provider::clip_source_size(&project, &clip, (1920, 1080)),
+        (3840, 2160)
+    );
+    assert_eq!(serde_json::to_value(&project).unwrap(), before);
+    assert_eq!(serde_json::to_value(&clip).unwrap(), before_clip);
+}
+
 #[test]
 fn web_audio_origin_invalid_lineage_is_rejected_before_encoder_or_compositor_creation() {
     let mut project = Project::default();
@@ -15,6 +115,22 @@ fn web_audio_origin_invalid_lineage_is_rejected_before_encoder_or_compositor_cre
     let cancel = Arc::new(AtomicBool::new(false));
     for origin in [-1, 6] {
         settings.audio_render_origin = Some(origin);
+        assert!(
+            export_timeline_preview_with_gpu(
+                &project,
+                id,
+                &settings,
+                5..10,
+                &progress,
+                &cancel,
+                || panic!("invalid preview origin must not create a compositor"),
+                |_| Ok(()),
+                1,
+                None,
+                &PreviewVideoSources::new(),
+            )
+            .is_err()
+        );
         assert!(
             export_timeline_with_gpu_cancellable(
                 &project,

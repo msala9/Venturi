@@ -35,6 +35,11 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/session", get(session))
         .route("/api/v1/media/sources", get(media_sources))
+        .route(
+            "/api/v1/media/proxies",
+            get(proxy_status).put(proxy_configure),
+        )
+        .route("/api/v1/media/proxies/prepare", post(proxy_prepare))
         .route("/api/v1/projects/otio/prepare", post(prepare_otio))
         .route("/api/v1/clipboard", get(clipboard_text))
         .route(
@@ -224,6 +229,124 @@ pub fn router(state: AppState) -> Router {
         .layer(DefaultBodyLimit::max(64 * 1024))
         .layer(middleware::from_fn_with_state(state.clone(), security))
         .with_state(state)
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ProxySettingsRequest {
+    project_epoch: String,
+    client_id: String,
+    enabled: bool,
+    quality: String,
+    paused: bool,
+}
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ProxyPrepareRequest {
+    project_epoch: String,
+    client_id: String,
+    media_ids: Vec<String>,
+}
+async fn proxy_status(
+    State(state): State<AppState>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Json<Value>> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid proxy query"))?
+        .0;
+    state
+        .host
+        .call(Action::ProxyContext(query.project_epoch.clone(), None))
+        .await?;
+    state.source.proxies.settings()?;
+    state.source.proxies.status(&query.project_epoch).map(Json)
+}
+async fn proxy_configure(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<ProxySettingsRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid proxy settings"))?
+        .0;
+    state
+        .host
+        .call(Action::ProxyContext(
+            payload.project_epoch.clone(),
+            Some(payload.client_id),
+        ))
+        .await?;
+    let manager = state.source.proxies.clone();
+    let epoch = payload.project_epoch;
+    tokio::task::spawn_blocking(move || {
+        manager.configure(payload.enabled, &payload.quality, payload.paused)?;
+        manager.status(&epoch)
+    })
+    .await
+    .map_err(|_| ApiError::io())?
+    .map(Json)
+}
+async fn proxy_prepare(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<ProxyPrepareRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Json<Value>> {
+    let payload = payload
+        .map_err(|_| ApiError::invalid("Invalid proxy preparation"))?
+        .0;
+    if payload.media_ids.is_empty()
+        || payload.media_ids.len() > 32
+        || payload
+            .media_ids
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+            .len()
+            != payload.media_ids.len()
+    {
+        return Err(ApiError::invalid(
+            "Choose one to32 distinct moving-video sources",
+        ));
+    }
+    state
+        .host
+        .call(Action::ProxyContext(
+            payload.project_epoch.clone(),
+            Some(payload.client_id),
+        ))
+        .await?;
+    let mut specs = vec![];
+    for id in payload.media_ids {
+        specs.push(
+            state
+                .host
+                .proxy_source_snapshot(
+                    id,
+                    SourceQuery {
+                        project_epoch: payload.project_epoch.clone(),
+                    },
+                )
+                .await?,
+        );
+    }
+    let manager = state.source.proxies.clone();
+    let epoch = payload.project_epoch;
+    tokio::task::spawn_blocking(move || {
+        let mut errors = vec![];
+        for spec in specs {
+            let id = spec.spec.media_id.clone();
+            if let Err(error) = manager.enqueue(spec) {
+                errors.push(json!({"media_id":id,"code":error.1,"error":error.2}));
+            }
+        }
+        let mut result = manager.status(&epoch)?;
+        result["errors"] = json!(errors);
+        Ok(Json(result))
+    })
+    .await
+    .map_err(|_| ApiError::io())?
 }
 #[derive(serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -1720,10 +1843,11 @@ async fn preview_cache(
         .map_err(|_| ApiError::invalid("Invalid cache query"))?
         .0;
     let snapshot = state.host.frame_snapshot(query.clone()).await?;
+    let video = crate::proxy_video::Selection::capture(&state.source.proxies, &snapshot)?;
     let (frames, programs) = match crate::program::inputs(&snapshot) {
         Ok(inputs) => (
-            state.preview.cached_frames(&query, &inputs),
-            state.source.cached_programs(&query, &inputs),
+            state.preview.cached_frames(&query, &inputs, &video.tag),
+            state.source.cached_programs(&query, &inputs, &video.tag),
         ),
         Err(_) => (vec![], vec![]),
     };
@@ -1748,9 +1872,24 @@ async fn frame(
     let query = query
         .map_err(|_| ApiError::invalid("Invalid preview query"))?
         .0;
-    let snapshot = state.host.frame_snapshot(query).await?;
+    let mut snapshot = state.host.frame_snapshot(query).await?;
+    snapshot.video = std::sync::Arc::new(crate::proxy_video::Selection::capture(
+        &state.source.proxies,
+        &snapshot,
+    )?);
+    let count = snapshot.video.sources.len().to_string();
     let data = state.preview.frame(snapshot).await?;
-    Ok(([(header::CONTENT_TYPE, "image/png")], data).into_response())
+    Ok((
+        [
+            (header::CONTENT_TYPE, "image/png"),
+            (
+                header::HeaderName::from_static("x-venturi-proxy-count"),
+                count.as_str(),
+            ),
+        ],
+        data,
+    )
+        .into_response())
 }
 async fn scopes(
     State(state): State<AppState>,
@@ -2123,6 +2262,7 @@ async fn assets(request: Request) -> Response {
         "/style/native-browser.css" => asset!("/web/style/native-browser.css", "text/css"),
         "/style/native-inspector.css" => asset!("/web/style/native-inspector.css", "text/css"),
 
+        "/js/proxies.js" => asset!("/web/js/proxies.js", "text/javascript"),
         "/js/main.js" => asset!("/web/js/main.js", "text/javascript"),
         "/js/compound-navigation.js" => asset!("/web/js/compound-navigation.js", "text/javascript"),
         "/js/project-view.js" => asset!("/web/js/project-view.js", "text/javascript"),

@@ -302,3 +302,29 @@ fn generate_proxy_keeps_the_colors_of_an_nv12_source() {
         "proxy U/V {u}/{v}, source {source_u}/{source_v}"
     );
 }
+
+#[test]
+fn explicit_browser_source_width_preserves_original_dimensions_and_frame_clock() {
+    let (directory, source) = range_fixture("source-width");
+    let smaller = directory.join("smaller.mp4");
+    let original = directory.join("original.mp4");
+    generate_proxy_range_at_width(&source, &smaller, ProxyQuality::Low, 8, 5..10, 1, |_| true)
+        .unwrap();
+    generate_proxy_range_at_width(
+        &source,
+        &original,
+        ProxyQuality::High,
+        8192,
+        5..10,
+        1,
+        |_| true,
+    )
+    .unwrap();
+    let reduced = crate::probe_media(&smaller).unwrap();
+    let full = crate::probe_media(&original).unwrap();
+    assert_eq!((reduced.width, reduced.height), (8, 8));
+    assert_eq!((full.width, full.height), (16, 16));
+    assert_eq!(full.duration_frames, 5);
+    assert_eq!(full.fps, vv_core::Rational::new(25, 1));
+    std::fs::remove_dir_all(directory).unwrap();
+}

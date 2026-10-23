@@ -33,6 +33,7 @@ pub enum Action {
         oneshot::Sender<Result<crate::files::SourceBrowserTask>>,
     ),
     Session,
+    ProxyContext(String, Option<String>),
     Timeline(String),
     Projects,
     Recovery,
@@ -90,6 +91,11 @@ pub enum Action {
     ),
     EqResponse(String, usize, FrameQuery),
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
+    ProxySourceSnapshot(
+        String,
+        SourceQuery,
+        oneshot::Sender<Result<crate::proxy::Input>>,
+    ),
 }
 type Message = (Action, oneshot::Sender<Result<Value>>);
 #[derive(Clone, Deserialize)]
@@ -2733,6 +2739,40 @@ impl Editor {
                 let _ = reply.send(result);
                 Ok(Value::Null)
             }
+            Action::ProxySourceSnapshot(media_id, query, reply) => {
+                let result = (|| {
+                    if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
+                        return Err(ApiError::conflict(
+                            "REVISION_CONFLICT",
+                            "Project changed before the media request",
+                        ));
+                    }
+                    use vv_core::Id;
+                    let id = vv_core::MediaId::from_raw(
+                        media_id.parse().map_err(|_| ApiError::missing())?,
+                    );
+                    let media = self
+                        .session
+                        .project
+                        .media_pool
+                        .get(id)
+                        .ok_or_else(ApiError::missing)?;
+                    if media.compound.is_some() {
+                        return Err(ApiError::invalid("Compound sources use the Program viewer"));
+                    }
+                    Ok(crate::proxy::Input {
+                        original_path: media.path.clone(),
+                        spec: SourceSpec {
+                            file: self.files.media_file(&media.path)?,
+                            epoch: query.project_epoch,
+                            media_id,
+                            meta: media.meta.clone(),
+                        },
+                    })
+                })();
+                let _ = reply.send(result);
+                Ok(Value::Null)
+            }
             Action::SpeechSnapshot(request, reply) => {
                 let result = (|| {
                     let (id, _) = self.validate_frame(&request.query)?;
@@ -2746,6 +2786,7 @@ impl Editor {
                     let (id, size) = self.validate_frame(&query)?;
                     crate::audition::pin(
                         FrameSnapshot {
+                            video: Default::default(),
                             project: self.session.project.clone(),
                             timeline: id,
                             query,
@@ -2761,6 +2802,7 @@ impl Editor {
                 let result = (|| {
                     let (id, size) = self.validate_frame(&query)?;
                     Ok(FrameSnapshot {
+                        video: Default::default(),
                         project: self.session.project.clone(),
                         timeline: id,
                         query,
@@ -2768,6 +2810,13 @@ impl Editor {
                     })
                 })();
                 let _ = reply.send(result);
+                Ok(Value::Null)
+            }
+            Action::ProxyContext(epoch, client) => {
+                self.validate_asset_epoch(&epoch, None)?;
+                if let Some(client) = client {
+                    self.lease(&client)?;
+                }
                 Ok(Value::Null)
             }
             Action::Session => Ok(self.snapshot()),
@@ -3038,6 +3087,16 @@ impl Host {
     pub async fn source_snapshot(&self, id: String, query: SourceQuery) -> Result<SourceSpec> {
         let (tx, rx) = oneshot::channel();
         self.call(Action::SourceSnapshot(id, query, tx)).await?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
+    pub async fn proxy_source_snapshot(
+        &self,
+        id: String,
+        query: SourceQuery,
+    ) -> Result<crate::proxy::Input> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::ProxySourceSnapshot(id, query, tx))
+            .await?;
         rx.await.map_err(|_| ApiError::io())?
     }
     pub async fn frame_snapshot(&self, query: FrameQuery) -> Result<FrameSnapshot> {

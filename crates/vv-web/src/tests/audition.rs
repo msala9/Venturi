@@ -191,6 +191,7 @@ fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_th
         master: Default::default(),
     });
     let snapshot = |project| FrameSnapshot {
+        video: Default::default(),
         project,
         timeline,
         query: FrameQuery {

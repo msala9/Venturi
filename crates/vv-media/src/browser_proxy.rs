@@ -26,6 +26,24 @@ pub fn generate_selected(
     directory: &Path,
     quality: ProxyQuality,
     audio_stream_index: usize,
+    keep_running: impl FnMut(u64) -> bool,
+) -> Result<(), MediaError> {
+    generate_selected_width(
+        source,
+        directory,
+        quality,
+        quality.max_width(),
+        audio_stream_index,
+        keep_running,
+    )
+}
+
+pub fn generate_selected_width(
+    source: &Path,
+    directory: &Path,
+    quality: ProxyQuality,
+    max_width: u32,
+    audio_stream_index: usize,
     mut keep_running: impl FnMut(u64) -> bool,
 ) -> Result<(), MediaError> {
     let video = directory.join("video.mp4");
@@ -34,7 +52,15 @@ pub fn generate_selected(
     let meta = crate::probe_media(source)?;
     validate_audio_stream(&meta, audio_stream_index)?;
     if meta.has_video {
-        crate::proxy::generate_proxy_at(source, &video, quality, &[], 2, &mut keep_running)?;
+        crate::proxy::generate_proxy_at_width(
+            source,
+            &video,
+            quality,
+            max_width,
+            &[],
+            2,
+            &mut keep_running,
+        )?;
     }
     if meta.has_audio {
         let mut samples = Vec::new();
@@ -96,6 +122,26 @@ pub fn generate_range_selected(
     quality: ProxyQuality,
     range: Range<vv_core::FrameIdx>,
     audio_stream_index: usize,
+    keep_running: impl FnMut(u64) -> bool,
+) -> Result<(), MediaError> {
+    generate_range_selected_width(
+        source,
+        directory,
+        quality,
+        quality.max_width(),
+        range,
+        audio_stream_index,
+        keep_running,
+    )
+}
+
+pub fn generate_range_selected_width(
+    source: &Path,
+    directory: &Path,
+    quality: ProxyQuality,
+    max_width: u32,
+    range: Range<vv_core::FrameIdx>,
+    audio_stream_index: usize,
     mut keep_running: impl FnMut(u64) -> bool,
 ) -> Result<(), MediaError> {
     if !keep_running(0) {
@@ -108,10 +154,11 @@ pub fn generate_range_selected(
     let audio = directory.join("audio.m4a");
     let output = directory.join("source.mp4");
     if meta.has_video {
-        crate::proxy::generate_proxy_range_at(
+        crate::proxy::generate_proxy_range_at_width(
             source,
             &video,
             quality,
+            max_width,
             range.clone(),
             2,
             &mut keep_running,
@@ -208,6 +255,26 @@ pub fn generate_with_audio(
     directory: &Path,
     quality: ProxyQuality,
     range: Option<Range<vv_core::FrameIdx>>,
+    keep_running: impl FnMut(u64) -> bool,
+    prepare_audio: impl FnOnce(&Path, &mut dyn FnMut(u64) -> bool) -> Result<(), MediaError>,
+) -> Result<(), MediaError> {
+    generate_with_audio_width(
+        source,
+        directory,
+        quality,
+        quality.max_width(),
+        range,
+        keep_running,
+        prepare_audio,
+    )
+}
+
+pub fn generate_with_audio_width(
+    source: &Path,
+    directory: &Path,
+    quality: ProxyQuality,
+    max_width: u32,
+    range: Option<Range<vv_core::FrameIdx>>,
     mut keep_running: impl FnMut(u64) -> bool,
     prepare_audio: impl FnOnce(&Path, &mut dyn FnMut(u64) -> bool) -> Result<(), MediaError>,
 ) -> Result<(), MediaError> {
@@ -219,16 +286,25 @@ pub fn generate_with_audio(
     let audio = directory.join("audio.m4a");
     if meta.has_video {
         if let Some(range) = range {
-            crate::proxy::generate_proxy_range_at(
+            crate::proxy::generate_proxy_range_at_width(
                 source,
                 &video,
                 quality,
+                max_width,
                 range,
                 2,
                 &mut keep_running,
             )?;
         } else {
-            crate::proxy::generate_proxy_at(source, &video, quality, &[], 2, &mut keep_running)?;
+            crate::proxy::generate_proxy_at_width(
+                source,
+                &video,
+                quality,
+                max_width,
+                &[],
+                2,
+                &mut keep_running,
+            )?;
         }
     } else if let Some(range) = &range {
         crate::proxy::validate_range(range, meta.fps, meta.duration_frames)?;

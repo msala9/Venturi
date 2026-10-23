@@ -2782,3 +2782,120 @@ fn prepared_audio_telemetry_query_is_strict_bounded_and_retains_origin() {
         assert!(serde_json::from_value::<ProgramMetersQuery>(invalid).is_err());
     }
 }
+
+#[tokio::test]
+async fn native_proxy_settings_http_are_epoch_writer_bound_and_never_edit_project() {
+    let root = std::env::temp_dir().join(format!("vv-proxy-http-{}", crate::asset_jobs::nonce()));
+    std::fs::create_dir(&root).unwrap();
+    let host = Host::start(&root).unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let epoch = before["project_epoch"].as_str().unwrap();
+    let source = MediaJobs::start_with_exports(std::fs::File::open(&root).unwrap()).unwrap();
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source,
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    for (method, path, body, status) in [
+        (
+            "GET",
+            format!("/api/v1/media/proxies?project_epoch={epoch}"),
+            None,
+            StatusCode::OK,
+        ),
+        (
+            "GET",
+            "/api/v1/media/proxies?project_epoch=old".into(),
+            None,
+            StatusCode::CONFLICT,
+        ),
+        (
+            "PUT",
+            "/api/v1/media/proxies".into(),
+            Some(
+                json!({"project_epoch":epoch,"client_id":"owner","enabled":true,"quality":"low","paused":true}),
+            ),
+            StatusCode::OK,
+        ),
+        (
+            "PUT",
+            "/api/v1/media/proxies".into(),
+            Some(
+                json!({"project_epoch":epoch,"client_id":"other","enabled":false,"quality":"medium","paused":false}),
+            ),
+            StatusCode::CONFLICT,
+        ),
+        (
+            "PUT",
+            "/api/v1/media/proxies".into(),
+            Some(
+                json!({"project_epoch":epoch,"client_id":"owner","enabled":true,"quality":"original","paused":true}),
+            ),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "PUT",
+            "/api/v1/media/proxies".into(),
+            Some(
+                json!({"project_epoch":epoch,"client_id":"owner","enabled":true,"quality":"low","paused":true,"extra":true}),
+            ),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+        (
+            "POST",
+            "/api/v1/media/proxies/prepare".into(),
+            Some(json!({"project_epoch":epoch,"client_id":"owner","media_ids":[]})),
+            StatusCode::UNPROCESSABLE_ENTITY,
+        ),
+    ] {
+        let mut request = Request::builder()
+            .method(method)
+            .uri(&path)
+            .header("host", "127.0.0.1:8787");
+        let bytes = body.map(|value| value.to_string());
+        if bytes.is_some() {
+            request = request.header(header::CONTENT_TYPE, "application/json");
+        }
+        let response = app
+            .clone()
+            .oneshot(
+                request
+                    .body(bytes.map(Body::from).unwrap_or_else(Body::empty))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), status, "{method} {path}");
+        assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+        if status == StatusCode::OK {
+            let body: Value =
+                serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap())
+                    .unwrap();
+            assert_eq!(body["project_epoch"], epoch);
+            assert!(body["jobs"].as_array().unwrap().is_empty());
+        }
+    }
+    let after = host.call(Action::Session).await.unwrap();
+    for key in [
+        "project_epoch",
+        "generation",
+        "history",
+        "timelines",
+        "media",
+        "folders",
+        "view",
+        "unsaved",
+    ] {
+        assert_eq!(before[key], after[key], "{key}");
+    }
+    let settings: Value =
+        serde_json::from_slice(&std::fs::read(root.join(".venturi-proxy-settings.json")).unwrap())
+            .unwrap();
+    assert_eq!(settings["quality"], "low");
+    assert_eq!(settings["paused"], true);
+}

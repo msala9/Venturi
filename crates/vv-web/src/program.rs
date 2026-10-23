@@ -702,6 +702,7 @@ impl ProgramTask {
             descriptor["audio_origin_frame"] = json!(origin);
         }
         if self.export.is_none() {
+            descriptor["video_sources"] = json!({"mode":if self.snapshot.video.sources.is_empty(){"originals"}else{"proxy"},"proxy_count":self.snapshot.video.sources.len(),"version":self.snapshot.video.tag});
             descriptor["telemetry"] = if settings.audio_for_timeline(tl).is_some() {
                 json!({"state":"pending"})
             } else {
@@ -718,6 +719,7 @@ impl ProgramTask {
         inputs: &Inputs,
         durable: bool,
     ) -> Result<()> {
+        self.snapshot.video.validate()?;
         if !unchanged(inputs) {
             return Err(ApiError::conflict(
                 "SOURCE_CHANGED",
@@ -805,6 +807,7 @@ impl ProgramTask {
         if cancel.load(Ordering::Relaxed) {
             return Err(ApiError::invalid("Program preparation was canceled"));
         }
+        self.snapshot.video.validate()?;
         if !unchanged(inputs) {
             return Err(ApiError::conflict(
                 "SOURCE_CHANGED",

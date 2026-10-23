@@ -96,6 +96,7 @@ fn cache_fixture_job(directory: PathBuf, state: &'static str, bytes: u64) -> Job
         source_assets: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
+        render_tag: "originals".into(),
         source_version: None,
         export_epoch: None,
         program_query: None,
@@ -1158,6 +1159,7 @@ fn cache_assets_are_scoped_to_epoch_media_and_source_file_identity() {
         program_query: None,
         inputs: vec![],
         source_asset: Some("source.mp4"),
+        render_tag: "originals".into(),
         source_version: None,
         export_epoch: None,
         durable: None,
@@ -1203,6 +1205,7 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
             "old-identity".into(),
         )],
         source_asset: None,
+        render_tag: "originals".into(),
         source_version: None,
         export_epoch: Some("p:1".into()),
         durable: None,
@@ -1226,25 +1229,37 @@ fn completed_exports_keep_their_snapshot_when_sources_or_current_revision_change
     };
     let inputs = jobs.jobs.lock().unwrap()[0].inputs.clone();
     assert!(
-        jobs.cached_programs(&query.frame(), &inputs).is_empty(),
+        jobs.cached_programs(&query.frame(), &inputs, "originals")
+            .is_empty(),
         "Exports are not preview cache"
     );
     jobs.jobs.lock().unwrap()[0].program_query = Some(query.clone());
+    assert!(
+        jobs.cached_programs(&query.frame(), &inputs, "proxy:low")
+            .is_empty()
+    );
     assert_eq!(
-        jobs.cached_programs(&query.frame(), &inputs)[0]["end_frame"],
+        jobs.cached_programs(&query.frame(), &inputs, "originals")[0]["end_frame"],
         48
     );
     assert!(
-        jobs.cached_programs(&query.frame(), &vec![]).is_empty(),
+        jobs.cached_programs(&query.frame(), &vec![], "originals")
+            .is_empty(),
         "Changed inputs cannot advertise cached movies"
     );
     let mut changed = query.clone();
     changed.revision = "new".into();
-    assert!(jobs.cached_programs(&changed.frame(), &inputs).is_empty());
+    assert!(
+        jobs.cached_programs(&changed.frame(), &inputs, "originals")
+            .is_empty()
+    );
     assert!(jobs.export_asset("export-test", "p:2").is_err());
     assert!(jobs.export_status("another-job", "p:1", false).is_err());
     jobs.jobs.lock().unwrap()[0].state = "running";
-    assert!(jobs.cached_programs(&query.frame(), &inputs).is_empty());
+    assert!(
+        jobs.cached_programs(&query.frame(), &inputs, "originals")
+            .is_empty()
+    );
     assert!(jobs.export_asset("export-test", "p:1").is_err());
     jobs.export_status("export-test", "p:1", true).unwrap();
     assert!(cancel.load(Ordering::Relaxed));
@@ -1362,6 +1377,7 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
         source_assets: None,
         inputs: vec![],
         source_asset: None,
+        render_tag: "originals".into(),
         source_version: None,
         export_epoch: None,
         program_query: None,
@@ -1400,6 +1416,7 @@ fn a_full_pending_queue_refuses_exports_before_creating_durable_history() {
     for _ in 0..3 {
         let task = ProgramTask {
             snapshot: crate::preview::FrameSnapshot {
+                video: Default::default(),
                 project: project.clone(),
                 timeline,
                 query: query.frame(),
@@ -1803,6 +1820,7 @@ fn dormant_assets_service() -> (MediaJobs, mpsc::Receiver<(String, Work)>, Sourc
     let (send, receive) = mpsc::sync_channel(1);
     (
         MediaJobs {
+            proxies: crate::proxy::Manager::start(&root).unwrap(),
             root: Arc::new(root),
             jobs: Arc::new(Mutex::new(VecDeque::from([analysis, foreign]))),
             send,
@@ -1943,6 +1961,7 @@ fn accepted_legacy_source_and_program_work_preempt_assets_without_canceling_fore
             service
                 .prepare_program(ProgramTask {
                     snapshot: crate::preview::FrameSnapshot {
+                        video: Default::default(),
                         project,
                         timeline,
                         query: query.frame(),
@@ -2000,12 +2019,14 @@ fn selected_source_audio_validates_before_admission_and_cache_keys_separate_only
     let metadata = serde_json::to_value(&spec.meta).unwrap();
     let (send, receiver) = mpsc::sync_channel(1);
     let service = MediaJobs {
+        proxies: crate::proxy::Manager::start(&root).unwrap(),
         root: Arc::new(root.clone()),
         jobs: Arc::new(Mutex::new(VecDeque::new())),
         send,
         exports: None,
         exports_blocked: false,
     };
+    let source_entries_before = std::fs::read_dir(&root).unwrap().count();
     assert!(
         service
             .prepare_selected(cloned_source(&spec), "low", Some(window), 2)
@@ -2017,7 +2038,10 @@ fn selected_source_audio_validates_before_admission_and_cache_keys_separate_only
             .is_err()
     );
     assert!(service.jobs.lock().unwrap().is_empty());
-    assert_eq!(std::fs::read_dir(&root).unwrap().count(), 1);
+    assert_eq!(
+        std::fs::read_dir(&root).unwrap().count(),
+        source_entries_before
+    );
     let pending = service
         .prepare_selected(cloned_source(&spec), "low", Some(window), 1)
         .unwrap();
@@ -2282,7 +2306,7 @@ fn selected_source_worker_refuses_changed_stream_metadata_before_creating_a_prox
         generate(
             &spec,
             &output,
-            ProxyQuality::Low,
+            (ProxyQuality::Low, ProxyQuality::Low.max_width()),
             None,
             1,
             &AtomicBool::new(false),
@@ -2301,7 +2325,7 @@ fn selected_source_worker_refuses_changed_stream_metadata_before_creating_a_prox
     generate(
         &spec,
         &output,
-        ProxyQuality::Low,
+        (ProxyQuality::Low, ProxyQuality::Low.max_width()),
         None,
         0,
         &AtomicBool::new(false),
@@ -2315,7 +2339,7 @@ fn selected_source_worker_refuses_changed_stream_metadata_before_creating_a_prox
     generate_audio(
         &spec,
         &all_output,
-        ProxyQuality::Low,
+        (ProxyQuality::Low, ProxyQuality::Low.max_width()),
         Some(SourceWindow {
             start_frame: 0,
             end_frame: 1,

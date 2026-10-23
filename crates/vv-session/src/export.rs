@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-use vv_core::{Clip, ClipId, FrameIdx, Project, Timeline, TimelineId, TrackKind};
+use vv_core::{Clip, ClipId, FrameIdx, MediaId, Project, Timeline, TimelineId, TrackKind};
 
 use vv_audio::mixer::{PROJECT_SAMPLE_RATE, timeline_frame_to_sample};
 
@@ -25,6 +25,23 @@ pub(crate) const PROJECT_CHANNELS: u16 = 2;
 const RENDER_AHEAD_FRAMES: usize = 8;
 /// Mixed audio chunks (a few seconds each) ready ahead of the encoder.
 const AUDIO_AHEAD_CHUNKS: usize = 2;
+
+/// Video-only decode paths; callers retain the original project and audio sources.
+pub type PreviewVideoSources = HashMap<MediaId, PathBuf>;
+
+fn video_decode_path<'a>(
+    media: MediaId,
+    item: &'a vv_core::MediaItem,
+    sources: &'a PreviewVideoSources,
+) -> &'a Path {
+    if item.compound.is_none() && item.meta.has_video && !item.meta.is_image() {
+        sources
+            .get(&media)
+            .map_or(item.path.as_path(), PathBuf::as_path)
+    } else {
+        &item.path
+    }
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ExportSettings {
@@ -262,6 +279,7 @@ struct StreamingFrameProvider {
     /// As `ExportProgress::decoders`.
     used: Vec<Option<vv_media::HwDevice>>,
     cpu_threads: usize,
+    video_sources: PreviewVideoSources,
 }
 
 impl StreamingFrameProvider {
@@ -298,7 +316,7 @@ impl FrameProvider for StreamingFrameProvider {
             return Ok(None);
         }
 
-        let path = item.path.clone();
+        let path = video_decode_path(media_id, item, &self.video_sources).to_owned();
         let is_image = item.meta.is_image();
 
         let decoder = match self.active.entry(clip.id) {
@@ -367,6 +385,7 @@ pub fn export_timeline_with_gpu<G>(
         cancel,
         None,
         None,
+        None,
         create_compositor,
         acquire_gpu,
         cpu_threads,
@@ -393,6 +412,7 @@ pub fn export_timeline_with_gpu_cancellable<G>(
         progress,
         cancel,
         Some(cancel.clone()),
+        None,
         None,
         create_compositor,
         acquire_gpu,
@@ -422,6 +442,37 @@ pub fn export_timeline_with_gpu_observed<G>(
         cancel,
         Some(cancel.clone()),
         Some(observer),
+        None,
+        create_compositor,
+        acquire_gpu,
+        cpu_threads,
+    )
+}
+
+/// Preview video may use prepared sources while native audio reads the originals.
+pub fn export_timeline_preview_with_gpu<G>(
+    project: &Project,
+    timeline_id: TimelineId,
+    settings: &ExportSettings,
+    range: std::ops::Range<FrameIdx>,
+    progress: &Mutex<ExportProgress>,
+    cancel: &Arc<AtomicBool>,
+    create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
+    acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
+    cpu_threads: usize,
+    observer: Option<&mut AudioObserver<'_>>,
+    sources: &PreviewVideoSources,
+) -> Result<(), ExportError> {
+    export_timeline_configured(
+        project,
+        timeline_id,
+        settings,
+        range,
+        progress,
+        cancel,
+        Some(cancel.clone()),
+        observer,
+        Some(sources),
         create_compositor,
         acquire_gpu,
         cpu_threads,
@@ -437,6 +488,7 @@ fn export_timeline_configured<G>(
     cancel: &AtomicBool,
     audio_cancel: Option<Arc<AtomicBool>>,
     audio_observer: Option<&mut AudioObserver<'_>>,
+    video_sources: Option<&PreviewVideoSources>,
     create_compositor: impl FnOnce() -> Result<vv_render::Compositor, ExportError>,
     acquire_gpu: impl Fn(&vv_render::Compositor) -> Result<G, ExportError> + Sync,
     cpu_threads: usize,
@@ -572,6 +624,7 @@ fn export_timeline_configured<G>(
             let mut provider = StreamingFrameProvider {
                 hw: settings.hw_decode.clone(),
                 cpu_threads,
+                video_sources: video_sources.cloned().unwrap_or_default(),
                 ..Default::default()
             };
             for frame in decode_range {
@@ -691,11 +744,33 @@ pub fn render_frame_rgba(
     size: (u32, u32),
     compositor: &vv_render::Compositor,
 ) -> Result<Vec<u8>, ExportError> {
+    render_frame_rgba_with_sources(
+        project,
+        timeline_id,
+        frame,
+        size,
+        compositor,
+        &PreviewVideoSources::new(),
+    )
+}
+
+/// Uses prepared video without changing native frame, crop, or audio metadata.
+pub fn render_frame_rgba_with_sources(
+    project: &Project,
+    timeline_id: TimelineId,
+    frame: FrameIdx,
+    size: (u32, u32),
+    compositor: &vv_render::Compositor,
+    sources: &PreviewVideoSources,
+) -> Result<Vec<u8>, ExportError> {
     let timeline = project
         .timelines
         .get(timeline_id)
         .ok_or(ExportError::TimelineNotFound)?;
-    let mut provider = StreamingFrameProvider::default();
+    let mut provider = StreamingFrameProvider {
+        video_sources: sources.clone(),
+        ..Default::default()
+    };
     let layers = decode_video_frame(
         project,
         timeline,

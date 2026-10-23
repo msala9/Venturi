@@ -86,3 +86,9 @@
   content: attr(data-compact-label); font-size: 10px; line-height: 1.35; white-space: normal; overflow-wrap: anywhere;
 }
 .native-source-directory::before { content: '▸ '; font-size: 10px; }
+.native-source-entries > .native-source-media { width: 100%; border: 1px solid transparent; border-radius: 0; background: transparent; text-align: left; }
+.native-source-entries > .native-source-media:hover { background: var(--raised); }
+.native-source-entries > .native-source-media[aria-pressed="true"] { border-color: var(--primary); background: var(--raised); }
+.native-source-selection-count { margin: 0; color: var(--muted); font-size: 10px; }
+#imports, #media-relink-dialog { width: min(660px, calc(100vw - 24px)); max-height: calc(100vh - 24px); overflow: auto; }
+#media-relink-root { display: grid; gap: 5px; min-width: 0; }

@@ -16,6 +16,35 @@ pub const MAX_MEDIA_IMPORTS: usize = 256;
 mod approved_sources;
 pub use approved_sources::{SourceBrowserTask, SourceTree, SourceTreeWitness, SourcesQuery};
 pub(crate) use approved_sources::{open_approved_media, source_entry, validate_approved_file};
+pub(crate) use approved_sources::{
+    scan_project_media_tree, scan_relink_tree, validate_directory_token,
+};
+pub(crate) fn project_media_tokens(values: &[String]) -> Result<Vec<String>> {
+    if values.is_empty() || values.len() > 4096 {
+        return Err(ApiError::invalid(
+            "Choose 1 to 256 unique approved media files",
+        ));
+    }
+    let mut seen = std::collections::HashSet::new();
+    let mut tokens = Vec::new();
+    for token in values {
+        approved_sources::validate_media_token(token)?;
+        if !vv_media::is_media_path(Path::new(token)) {
+            return Err(ApiError::invalid(
+                "Choose native media files inside the approved root",
+            ));
+        }
+        if seen.insert(token.as_str()) {
+            tokens.push(token.clone());
+        }
+        if tokens.len() > MAX_MEDIA_IMPORTS {
+            return Err(ApiError::invalid(
+                "Choose at most 256 unique approved media files",
+            ));
+        }
+    }
+    Ok(tokens)
+}
 pub(crate) fn scan_media_tree(
     root: &Path,
     dir: &File,

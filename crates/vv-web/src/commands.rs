@@ -109,6 +109,12 @@ pub enum Operation {
     ImportPreparedMedia {
         job_id: String,
     },
+    ImportPreparedProjectMedia {
+        job_id: String,
+    },
+    RelinkPreparedMedia {
+        job_id: String,
+    },
     ImportClipboardImage {
         job_id: String,
         name: String,
@@ -623,6 +629,8 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             ));
         }
         Operation::ImportPreparedMedia { .. }
+        | Operation::ImportPreparedProjectMedia { .. }
+        | Operation::RelinkPreparedMedia { .. }
         | Operation::ImportClipboardImage { .. }
         | Operation::ImportPreparedOtio { .. }
         | Operation::PastePreparedClipboard { .. } => {

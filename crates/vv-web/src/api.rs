@@ -65,6 +65,18 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/media/imports/prepare", post(prepare_media_import))
         .route(
+            "/api/v1/media/project-imports/prepare",
+            post(prepare_project_import),
+        )
+        .route(
+            "/api/v1/media/relinks/prepare",
+            post(prepare_project_relink),
+        )
+        .route(
+            "/api/v1/media/jobs/{job}",
+            get(project_media_status).delete(cancel_project_media),
+        )
+        .route(
             "/api/v1/media/imports/{job}",
             get(media_import_status).delete(cancel_media_import),
         )
@@ -512,6 +524,74 @@ async fn prepare_media_import(
             payload
                 .map_err(|_| ApiError::invalid("Invalid media import preparation"))?
                 .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn prepare_project_import(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::project_media::ImportRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::PrepareProjectImport(
+            payload
+                .map_err(|_| ApiError::invalid("Invalid project media import preparation"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn prepare_project_relink(
+    State(state): State<AppState>,
+    payload: std::result::Result<
+        Json<crate::project_media::RelinkRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::PrepareProjectRelink(
+            payload
+                .map_err(|_| ApiError::invalid("Invalid project media relink preparation"))?
+                .0,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn project_media_status(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::ProjectMediaJobStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid project media job query"))?
+                .0,
+            false,
+        ))
+        .await
+        .map(native_asset_json)
+}
+async fn cancel_project_media(
+    State(state): State<AppState>,
+    Path(job): Path<String>,
+    query: std::result::Result<Query<SourceQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    state
+        .host
+        .call(Action::ProjectMediaJobStatus(
+            job,
+            query
+                .map_err(|_| ApiError::invalid("Invalid project media job cancellation"))?
+                .0,
+            true,
         ))
         .await
         .map(native_asset_json)
@@ -2096,6 +2176,7 @@ async fn assets(request: Request) -> Response {
             asset!("/web/js/native-asset-folders.js", "text/javascript")
         }
         "/js/media-import.js" => asset!("/web/js/media-import.js", "text/javascript"),
+        "/js/media-relink.js" => asset!("/web/js/media-relink.js", "text/javascript"),
         "/js/otio-import.js" => asset!("/web/js/otio-import.js", "text/javascript"),
         "/js/clipboard.js" => asset!("/web/js/clipboard.js", "text/javascript"),
         "/js/clipboard-image.js" => asset!("/web/js/clipboard-image.js", "text/javascript"),
@@ -2133,3 +2214,7 @@ async fn assets(request: Request) -> Response {
 #[cfg(test)]
 #[path = "tests/api.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "tests/project_media_api.rs"]
+mod project_media_tests;

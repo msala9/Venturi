@@ -31,6 +31,7 @@ import { createSilencePanel } from "./silence.js";
 import { createLibraryPanel } from "./library.js";
 import {createNativeAssetPanel,nativeAssetMutation} from './native-assets.js';
 import {createMediaImportPanel} from './media-import.js';
+import {createMediaRelinkPanel} from './media-relink.js';
 import {createOtioImportPanel} from './otio-import.js';
 import {createClipboard,bindClipboardEvents,clipboardBlocked} from './clipboard.js';
 import {createClipboardImagePanel,clipboardEventImage} from './clipboard-image.js';
@@ -59,7 +60,7 @@ let slipScopesState = null;
 let catalog = null;
 let silencePanel = null;
 let sharedLibrary = null;
-let nativeAssets=null,mediaImport=null,otioImport=null,libraryMode='shared';
+let nativeAssets=null,mediaImport=null,mediaRelink=null,otioImport=null,libraryMode='shared';
 let nativePlacementIntent=0,nativePlacementCompletion=null;
 let clipboard=null,clipboardImages=null,clipboardFocus='timeline',clipboardFocusSequence=0;
 const clipboardButtons=[];
@@ -1092,7 +1093,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
     $("project-persistence-notice").textContent=next.persistence_notice || "";
     recoveryPanel?.update(next.autosave);
     $("connection").textContent="Connected · writer";
-    mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
+    mediaImport?.invalidate();mediaRelink?.invalidate();otioImport?.invalidate();syncClipboardControls();
     return;
   }
   if(preserveAudioDrafts)invalidateTimeline();
@@ -1169,11 +1170,11 @@ async function refresh({preserveAudioDrafts=false}={}) {
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
   catalog?.dispose();
-  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDragStart:startProjectPoolDrag,onDragEnd:()=>canvasTimeline.projectPoolDnd.end(),onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDragStart:startProjectPoolDrag,onDragEnd:()=>canvasTimeline.projectPoolDnd.end(),onRelink:openMediaRelink,onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
   nativeAssets?.invalidate();
   sourcePlacement?.refresh();
   refreshSourceWaveform();
-  mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
+  mediaImport?.invalidate();mediaRelink?.invalidate();otioImport?.invalidate();syncClipboardControls();
   if (document.querySelector('[data-panel="History"]').getAttribute("aria-selected") === "true") renderHistory();
   $("viewer-message").textContent = next.capabilities.preview
     ? "Seek a timeline frame"
@@ -1217,7 +1218,7 @@ async function mutate(operation, project = false,route=null,preparedMutation=nul
   busy = true;
   compoundNavigation?.invalidate();
   nativeAssets?.invalidate();
-  mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
+  mediaImport?.invalidate();mediaRelink?.invalidate();otioImport?.invalidate();syncClipboardControls();
   notice("Applying command…");
   try {
     const receipt = await sendMutation(
@@ -1373,9 +1374,17 @@ $("insert-media").addEventListener("click",()=>{
 });
 mediaImport=createMediaImportPanel({dialog:$("imports"),root:$("import-list"),status:$("import-error"),getContext:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),onImported:ids=>{
   if(ids.some(id=>!documentState?.media.some(item=>item.id===id)))throw Error('The imported media are not yet visible in the refreshed project');
-  mediaState.selected=[...ids];selectedMedia=ids.at(-1) || null;catalog?.search(mediaState.query || '');if(selectedMedia)openSource();
+  mediaState.selected=[...ids];mediaState.anchor=ids[0] || null;selectedMedia=ids.at(-1) || null;mediaState.folder='*';mediaState.kind='all';mediaState.query='';$('search').value='';
+  const folder=$('media-list').querySelector('[aria-label="Media folder"]'),kind=$('media-list').querySelector('[aria-label="Media type"]');if(folder)folder.value='*';if(kind)kind.value='all';catalog?.search('');if(selectedMedia)openSource();
 }});
 $("import-button").addEventListener("click",()=>void mediaImport.open());
+function openMediaRelink(scope){
+  stopProjectPoolPlayback();
+  const epoch=documentState?.project_epoch,intent=nativePlacementIntent;
+  void mediaRelink.open(scope,()=>documentState?.project_epoch===epoch && nativePlacementIntent===intent);
+}
+mediaRelink=createMediaRelinkPanel({dialog:$('media-relink-dialog'),root:$('media-relink-root'),status:$('media-relink-status'),getContext:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),onRelinked:ids=>{sourceAssets?.refresh();if(viewerMode==='source' && ids?.includes(selectedMedia))openSource();}});
+
 function clipboardContext(){
   if(!documentState)return null;
   const rect=$("timeline").getBoundingClientRect();
@@ -1569,7 +1578,7 @@ setInterval(() => {
     request("/lease", { client_id: clientId }).catch(() => {
       writable = false;
       nativeAssets?.invalidate();
-      mediaImport?.invalidate();otioImport?.invalidate();syncClipboardControls();
+      mediaImport?.invalidate();mediaRelink?.invalidate();otioImport?.invalidate();syncClipboardControls();
       $("connection").textContent = "Disconnected · read only";
     });
 }, 30_000);

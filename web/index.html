@@ -457,11 +457,23 @@
         </div>
       </form>
       <p class="muted">
-        Place files directly in the configured project root on the server, then
-        select the files to import. Source files are preserved.
+        Browse approved source folders on the server. Select files or a folder
+        subtree and choose its destination in the project. Source files stay in place.
       </p>
       <div id="import-list"></div>
       <p id="import-error" role="alert"></p>
+    </dialog>
+    <dialog id="media-relink-dialog" aria-labelledby="media-relink-title">
+      <form method="dialog">
+        <div class="panel-heading">
+          <h2 id="media-relink-title">Relink project media</h2>
+          <div class="spacer"></div>
+          <button aria-label="Close media relink">×</button>
+        </div>
+      </form>
+      <p class="muted">Find missing files under an approved source folder, or choose explicit replacements. Apply uses one Undo.</p>
+      <div id="media-relink-root"></div>
+      <p id="media-relink-status" role="alert"></p>
     </dialog>
     <dialog id="paste-attributes-dialog" aria-labelledby="paste-attributes-title">
       <h2 id="paste-attributes-title">Paste selected properties</h2>

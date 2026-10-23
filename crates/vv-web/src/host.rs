@@ -65,6 +65,9 @@ pub enum Action {
     PresetExport(String, SourceQuery, oneshot::Sender<Result<Vec<u8>>>),
     PrepareNativeAsset(NativeAssetRequest),
     PrepareMediaImport(MediaImportRequest),
+    PrepareProjectImport(crate::project_media::ImportRequest),
+    PrepareProjectRelink(crate::project_media::RelinkRequest),
+    ProjectMediaJobStatus(String, SourceQuery, bool),
     PrepareOtio(OtioImportRequest),
     OtioImportStatus(String, SourceQuery, bool),
     Clipboard(ClipboardQuery),
@@ -522,8 +525,9 @@ impl Editor {
                 }
             }
             if let Some(report)=media_import_receipt {
-                value["media_ids"]=report["media_ids"].clone();
-                value["errors"]=report["errors"].clone();
+                for field in ["media_ids","errors","folder_ids","changed","new_count","reused_count","relinked_media_ids","not_found","skipped","ambiguous_count"] {
+                    if let Some(value_field)=report.get(field) {value[field]=value_field.clone();}
+                }
                 if matches!(&request.operation,Operation::PlaceNativeAssets{..}) { value["timeline_id"]=report["timeline_id"].clone(); }
             }
             if let Some(report)=otio_import_receipt {
@@ -927,8 +931,50 @@ impl Editor {
             } => {
                 crate::reviewmeta::edit(&self.files, &self.session, project_token, revision, edit)?;
             }
+            Operation::EditCatalog {
+                edit: crate::catalog::Edit::Relink { .. },
+            } => {
+                let job = self
+                    .legacy_media_imports
+                    .get(&request.command_id)
+                    .ok_or_else(|| {
+                        ApiError::conflict(
+                            "MEDIA_IMPORT_PREPARATION_REQUIRED",
+                            "Prepare replacement media outside the session before relinking",
+                        )
+                    })?
+                    .job
+                    .clone();
+                self.media_import_receipt = Some(crate::project_media::commit(
+                    &mut self.session,
+                    &self.asset_jobs,
+                    &job,
+                    &request.project_epoch,
+                    &request.if_generation,
+                    "project_relink",
+                )?);
+            }
             Operation::EditCatalog { edit } => {
                 crate::catalog::edit(&mut self.session, &self.files, edit)?;
+            }
+            Operation::ImportPreparedProjectMedia { job_id }
+            | Operation::RelinkPreparedMedia { job_id } => {
+                let kind = if matches!(
+                    request.operation,
+                    Operation::ImportPreparedProjectMedia { .. }
+                ) {
+                    "project_import"
+                } else {
+                    "project_relink"
+                };
+                self.media_import_receipt = Some(crate::project_media::commit(
+                    &mut self.session,
+                    &self.asset_jobs,
+                    job_id,
+                    &request.project_epoch,
+                    &request.if_generation,
+                    kind,
+                )?);
             }
             Operation::Undo | Operation::Redo | Operation::HistoryJump { .. } => {
                 commands::history(&mut self.session, &request.operation)?
@@ -1210,6 +1256,35 @@ impl Editor {
         self.asset_jobs
             .prepare_media_import(&request.project_epoch, &request.if_generation, tokens)
     }
+    fn prepare_project_import(
+        &self,
+        request: crate::project_media::ImportRequest,
+    ) -> Result<Value> {
+        let (epoch, generation) = request.binding();
+        self.validate_asset_epoch(epoch, Some(generation))?;
+        if self.session.path().is_none() {
+            return Err(ApiError::invalid(
+                "Create or open a project before importing media",
+            ));
+        }
+        let work = crate::project_media::import_work(&self.session, &request)?;
+        self.asset_jobs
+            .prepare_project_media(epoch, generation, work)
+    }
+    fn prepare_project_relink(
+        &self,
+        request: crate::project_media::RelinkRequest,
+    ) -> Result<Value> {
+        self.validate_asset_epoch(&request.project_epoch, Some(&request.if_generation))?;
+        if self.session.path().is_none() {
+            return Err(ApiError::invalid(
+                "Create or open a project before relinking media",
+            ));
+        }
+        let work = crate::project_media::relink_work(&self.session, &request.action)?;
+        self.asset_jobs
+            .prepare_project_media(&request.project_epoch, &request.if_generation, work)
+    }
     fn check_clipboard_image(&self, query: &ClipboardImageQuery) -> Result<()> {
         self.validate_asset_epoch(&query.project_epoch, Some(&query.if_generation))?;
         if self.session.path().is_none() {
@@ -1222,8 +1297,11 @@ impl Editor {
     fn prepare_legacy_media_import(&mut self, request: Mutation) -> Result<NativeEditPreparation> {
         let path_token = match &request.operation {
             Operation::ImportMedia { path_token } | Operation::ImportOtio { path_token, .. } => {
-                path_token
+                Some(path_token)
             }
+            Operation::EditCatalog {
+                edit: crate::catalog::Edit::Relink { .. },
+            } => None,
             _ => {
                 return self
                     .mutation(None, request)
@@ -1307,14 +1385,25 @@ impl Editor {
                     self.asset_jobs.prepare_otio(
                         &request.project_epoch,
                         &request.if_generation,
-                        path_token,
+                        path_token.ok_or_else(ApiError::missing)?,
                     )
                 }
+            } else if let Operation::EditCatalog {
+                edit: crate::catalog::Edit::Relink { items },
+            } = &request.operation
+            {
+                self.prepare_project_relink(crate::project_media::RelinkRequest {
+                    project_epoch: request.project_epoch.clone(),
+                    if_generation: request.if_generation.clone(),
+                    action: crate::project_media::RelinkAction::Chosen {
+                        items: items.clone(),
+                    },
+                })
             } else {
                 self.prepare_media_import(MediaImportRequest {
                     project_epoch: request.project_epoch.clone(),
                     if_generation: request.if_generation.clone(),
-                    path_tokens: vec![path_token.clone()],
+                    path_tokens: vec![path_token.ok_or_else(ApiError::missing)?.clone()],
                 })
             };
             let value = match preparation {
@@ -2424,6 +2513,22 @@ impl Editor {
             }
             Action::PrepareNativeAsset(request) => self.prepare_native_asset(request),
             Action::PrepareMediaImport(request) => self.prepare_media_import(request),
+            Action::PrepareProjectImport(request) => self.prepare_project_import(request),
+            Action::PrepareProjectRelink(request) => self.prepare_project_relink(request),
+            Action::ProjectMediaJobStatus(job, query, cancel) => {
+                if !cancel {
+                    self.validate_asset_epoch(&query.project_epoch, None)?;
+                }
+                let value = self.asset_jobs.status(&job, &query.project_epoch, false)?;
+                if value["kind"] != "project_import" && value["kind"] != "project_relink" {
+                    return Err(ApiError::missing());
+                }
+                if cancel {
+                    self.asset_jobs.status(&job, &query.project_epoch, true)
+                } else {
+                    Ok(value)
+                }
+            }
             Action::Clipboard(query) => {
                 self.validate_asset_epoch(&query.project_epoch, Some(&query.if_generation))?;
                 let clipboard = self.clipboard.as_ref().ok_or_else(|| {
@@ -2777,7 +2882,11 @@ impl Host {
     pub async fn project_mutation(&self, request: Mutation) -> Result<Value> {
         if !matches!(
             request.operation,
-            Operation::ImportMedia { .. } | Operation::ImportOtio { .. }
+            Operation::ImportMedia { .. }
+                | Operation::ImportOtio { .. }
+                | Operation::EditCatalog {
+                    edit: crate::catalog::Edit::Relink { .. }
+                }
         ) {
             return self.call(Action::Mutation(None, request)).await;
         }

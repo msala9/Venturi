@@ -1,5 +1,39 @@
 use super::*;
 
+#[test]
+fn project_source_scans_preserve_library_quota_and_relink_witnesses_all_regular_candidates() {
+    let root = root();
+    let dir = File::open(&root).unwrap();
+    let cancel = AtomicBool::new(false);
+    std::fs::create_dir_all(root.join("Import")).unwrap();
+    for index in 0..65 {
+        std::fs::write(root.join(format!("Import/{index:02}.wav")), b"unprobed").unwrap();
+    }
+    assert!(scan_media_tree(&root, &dir, "Import", &cancel).is_err());
+    let import = scan_project_media_tree(&root, &dir, "Import", &cancel).unwrap();
+    assert_eq!(import.tree.files.len(), 65);
+    std::fs::create_dir_all(root.join("Repair/Deep/Empty")).unwrap();
+    std::fs::write(
+        root.join("Repair/Deep/readme.txt"),
+        b"not a media extension",
+    )
+    .unwrap();
+    let scan = scan_relink_tree(&root, &dir, "Repair", &cancel).unwrap();
+    assert_eq!(scan.tree.files.len(), 1);
+    assert_eq!(scan.tree.files[0].0, root.join("Repair/Deep/readme.txt"));
+    scan.witness.validate(&root, &dir, &cancel).unwrap();
+    std::fs::write(
+        root.join("Repair/Deep/Empty/new.wav"),
+        b"new nearer candidate",
+    )
+    .unwrap();
+    assert!(scan.witness.validate(&root, &dir, &cancel).is_err());
+    let scan = scan_relink_tree(&root, &dir, "Repair", &cancel).unwrap();
+    std::fs::write(root.join("Repair/Deep/readme.txt"), b"modified candidate").unwrap();
+    assert!(scan.witness.validate(&root, &dir, &cancel).is_err());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn root() -> PathBuf {
     let path = std::env::temp_dir().join(format!(
         "vv-approved-sources-{}",

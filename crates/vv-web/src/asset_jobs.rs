@@ -23,6 +23,8 @@ use std::{
     time::{Duration, Instant},
 };
 use vv_core::clipboard::ClipboardPayload;
+#[path = "project_media_worker.rs"]
+mod project_worker;
 
 const MAX_FILE: u64 = 512 * 1024 * 1024;
 const MAX_ASSET: u64 = 2 * 1024 * 1024 * 1024;
@@ -123,6 +125,7 @@ struct PreparedImport {
     items: Vec<ImportFile>,
     errors: Vec<Value>,
     first_error: Option<ApiError>,
+    project: Option<project_worker::Prepared>,
 }
 impl PreparedImport {
     fn validate(&self, inner: &Inner) -> Result<()> {
@@ -130,9 +133,15 @@ impl PreparedImport {
         for item in &self.items {
             validate_import_file(inner, item)?;
         }
+        if let Some(project) = &self.project {
+            project.validate(inner)?;
+        }
         Ok(())
     }
     fn value(&self) -> Value {
+        if let Some(project) = &self.project {
+            return project.value(&self.items, &self.errors);
+        }
         json!({"items":self.items.iter().map(|file|json!({"path_token":file.item.path_token,"name":file.item.path_token,"state":"ready"})).collect::<Vec<_>>(),"errors":self.errors})
     }
 }
@@ -247,10 +256,14 @@ struct Work {
     import: Option<(String, String)>,
     import_set: Vec<(asset_store::ImportRef, AssetFile)>,
     edit: Option<(asset_store::Edit, crate::asset_journal::Completion)>,
-    media_import: Option<Vec<String>>,
+    media_import: Option<ImportWork>,
     otio: Option<String>,
     clipboard: Option<ClipboardWork>,
     clipboard_image: Option<(String, Vec<u8>)>,
+}
+enum ImportWork {
+    Legacy(Vec<String>),
+    Project(crate::project_media::Work),
 }
 enum Finished {
     Media(Prepared),
@@ -346,9 +359,16 @@ impl Jobs {
                             .map(Finished::Clipboard)
                     } else if let Some(token) = &work.otio {
                         run_otio(&inner, &work, token, MEDIA_IMPORT_BUDGET).map(Finished::Otio)
-                    } else if let Some(tokens) = &work.media_import {
-                        run_media_import(&inner, &work, tokens, MEDIA_IMPORT_BUDGET)
-                            .map(Finished::Import)
+                    } else if let Some(import) = &work.media_import {
+                        match import {
+                            ImportWork::Legacy(tokens) => {
+                                run_media_import(&inner, &work, tokens, MEDIA_IMPORT_BUDGET)
+                            }
+                            ImportWork::Project(input) => {
+                                project_worker::run(&inner, &work, input, MEDIA_IMPORT_BUDGET)
+                            }
+                        }
+                        .map(Finished::Import)
                     } else if let Some((edit, completion)) = &work.edit {
                         if matches!(edit, asset_store::Edit::ImportTree { .. }) {
                             run_import_tree(&inner, &work, edit, completion.clone())
@@ -838,13 +858,28 @@ impl Jobs {
     ) -> Result<Value> {
         binding(epoch, generation)?;
         let tokens = crate::files::media_import_tokens(&path_tokens)?;
+        self.enqueue_import(epoch, generation, ImportWork::Legacy(tokens))
+    }
+    pub(crate) fn prepare_project_media(
+        &self,
+        epoch: &str,
+        generation: &str,
+        input: crate::project_media::Work,
+    ) -> Result<Value> {
+        binding(epoch, generation)?;
+        self.enqueue_import(epoch, generation, ImportWork::Project(input))
+    }
+    fn enqueue_import(&self, epoch: &str, generation: &str, input: ImportWork) -> Result<Value> {
+        let (kind, total, progress) = match &input {
+            ImportWork::Legacy(tokens) => ("media_import", tokens.len(), None),
+            ImportWork::Project(input) => (input.kind(), input.reservation(), Some(0)),
+        };
         project_root(&self.0)?;
         let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
-        reserve_witnesses(&jobs, tokens.len())?;
+        reserve_witnesses(&jobs, total)?;
         reserve(&mut jobs)?;
         let id = format!("asset-{}", nonce());
         let cancel = Arc::new(AtomicBool::new(false));
-        let total = tokens.len();
         let work = Work {
             id: id.clone(),
             asset: None,
@@ -853,14 +888,14 @@ impl Jobs {
             import: None,
             import_set: Vec::new(),
             edit: None,
-            media_import: Some(tokens),
+            media_import: Some(input),
             otio: None,
             clipboard: None,
             clipboard_image: None,
         };
         let job = Job {
             id,
-            kind: "media_import",
+            kind,
             epoch: epoch.into(),
             generation: generation.into(),
             state: "queued",
@@ -879,7 +914,7 @@ impl Jobs {
             media_import: None,
             import_completed: 0,
             import_total: total,
-            otio_probe_total: None,
+            otio_probe_total: progress,
             otio: None,
             clipboard: None,
             clipboard_image: None,
@@ -1248,6 +1283,60 @@ impl Jobs {
             first_error: prepared.first_error.clone(),
         })
     }
+    pub(crate) fn project_media_payload(
+        &self,
+        id: &str,
+        epoch: &str,
+        generation: &str,
+        kind: &str,
+    ) -> Result<crate::project_media::Payload> {
+        let jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, kind)?;
+        let prepared = job.media_import.as_ref().ok_or_else(ApiError::missing)?;
+        prepared.validate(&self.0)?;
+        let data = prepared
+            .project
+            .as_ref()
+            .ok_or_else(ApiError::missing)?
+            .data
+            .clone();
+        Ok(crate::project_media::Payload {
+            items: prepared
+                .items
+                .iter()
+                .map(|file| file.item.clone())
+                .collect(),
+            errors: prepared.errors.clone(),
+            first_error: prepared.first_error.clone(),
+            data,
+        })
+    }
+    pub(crate) fn accept_project_media(
+        &self,
+        id: &str,
+        epoch: &str,
+        generation: &str,
+        kind: &str,
+    ) -> Result<()> {
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let job = jobs
+            .iter_mut()
+            .find(|job| job.id == id)
+            .ok_or_else(ApiError::missing)?;
+        ready(job, epoch, generation, kind)?;
+        let prepared = job.media_import.as_ref().ok_or_else(ApiError::missing)?;
+        prepared.validate(&self.0)?;
+        if prepared.project.is_none() {
+            return Err(ApiError::missing());
+        }
+        job.state = "applied";
+        job.media_import = None;
+        Ok(())
+    }
     // The actor calls this only after its complete native trial, immediately before
     // infallible allocation/apply. Cancellation and acceptance share this mutex.
     pub fn accept_media_import(&self, id: &str, epoch: &str, generation: &str) -> Result<()> {
@@ -1463,13 +1552,16 @@ fn reserve_witnesses(jobs: &VecDeque<Job>, additional: usize) -> Result<()> {
             if matches!(job.state, "queued" | "running") {
                 job.import_total
             } else {
-                job.media_import
+                job.media_import.as_ref().map_or(0, |prepared| {
+                    prepared.items.len()
+                        + prepared
+                            .project
+                            .as_ref()
+                            .map_or(0, project_worker::Prepared::retained)
+                }) + job
+                    .result
                     .as_ref()
-                    .map_or(0, |prepared| prepared.items.len())
-                    + job
-                        .result
-                        .as_ref()
-                        .map_or(0, |prepared| prepared.files.len().saturating_mul(3))
+                    .map_or(0, |prepared| prepared.files.len().saturating_mul(3))
                     + job.otio.as_ref().map_or(0, |prepared| {
                         prepared
                             .witnesses
@@ -2911,6 +3003,7 @@ fn run_media_import(
         items: vec![],
         errors: vec![],
         first_error: None,
+        project: None,
     };
     project_root(inner)?;
     for (index, token) in tokens.iter().enumerate() {

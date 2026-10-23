@@ -39,7 +39,7 @@ export function mediaRowInfo(item) {
   return {metadata:metadata.join(" · "),duration,glyph:item.compound_timeline_id?"▤":item.is_image?"▣":item.has_video?"▻":"♪"};
 }
 
-export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice,onDemand=()=>{},onDragStart=()=>{},onDragEnd=()=>{},intersectionObserver=globalThis.IntersectionObserver}) {
+export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice,onDemand=()=>{},onDragStart=()=>{},onDragEnd=()=>{},onRelink,intersectionObserver=globalThis.IntersectionObserver}) {
   root.replaceChildren();
   state.selected = (state.selected || []).filter((id) => documentState.media.some((item) => item.id === id));
   const folders = folderPaths(documentState.folders || []);
@@ -85,6 +85,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   const relink = button("Relink selected media", operations, async () => {
     clearRelink();const owner=relinkSequence,selection=JSON.stringify(state.selected),targets=ids();
     try {
+      if(typeof onRelink==='function'){await onRelink({kind:'selected',media_ids:targets});return;}
       const files = await getFiles();
       if(disposed || root.isConnected===false || owner!==relinkSequence || selection!==JSON.stringify(state.selected))return;
       if (!files.length) return notice("No replacement media files are listed in the server project root");
@@ -109,11 +110,13 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   const rename = button("Rename current folder", operations, () => { if (form.reportValidity()) run({kind: "rename_folder", folder: filter.value, name: name.value}); });
   const moveFolder = button("Move current folder", operations, () => run({kind: "move_folder", folder: filter.value, parent: destination.value || null}));
   const deleteFolder = button("Remove folder, keep contents", operations, () => run({kind: "delete_folder", folder: filter.value}));
+  const relinkFolder=button('Relink current project folder',operations,()=>{try{Promise.resolve(onRelink({kind:'folder',folder_id:filter.value})).catch(error=>{if(!disposed)notice(error.message);});}catch(error){notice(error.message);}});relinkFolder.hidden=typeof onRelink!=='function';
   function update(userIntent = false,notify=true) {
     list.querySelectorAll(".media-item").forEach((card) => { const selected = state.selected.includes(card.dataset.mediaId); card.classList.toggle("selected", selected); card.setAttribute("aria-pressed", selected); });
     count.textContent = `${visible.length} shown · ${state.selected.length} selected`;
     move.disabled = remove.disabled = relink.disabled = !writable || !state.selected.length;
     rename.disabled = moveFolder.disabled = deleteFolder.disabled = !writable || ["", "*"].includes(filter.value);
+    relinkFolder.disabled=!writable || typeof onRelink!=='function' || ["", "*"].includes(filter.value);
     if(notify)onSelection(state.selected.at(-1) || null, [...state.selected], {userIntent});
   }
   function render(userIntent=false,notify=true) {

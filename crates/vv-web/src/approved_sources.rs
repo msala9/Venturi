@@ -348,6 +348,19 @@ struct DirectoryWitness {
     lineage: String,
     identity: String,
 }
+fn entry_identity(metadata: &std::fs::Metadata) -> String {
+    format!(
+        "{}:{}:{}:{}:{}:{}:{}:{}",
+        metadata.dev(),
+        metadata.ino(),
+        metadata.len(),
+        metadata.mtime(),
+        metadata.mtime_nsec(),
+        metadata.ctime(),
+        metadata.ctime_nsec(),
+        metadata.mode()
+    )
+}
 struct MediaWitness {
     token: String,
     lineage: Option<String>,
@@ -372,10 +385,9 @@ impl SourceTreeWitness {
         }
         for witness in &self.media {
             check_cancel(cancel)?;
-            let file = open_approved_media(root, dir, &witness.token)?;
-            let (_, lineage) = source_entry(root, dir, &witness.token)?;
+            let (metadata, lineage) = source_entry(root, dir, &witness.token)?;
             if lineage != witness.lineage
-                || crate::asset_store::stable_identity(&file)? != witness.identity
+                || metadata.as_ref().map(entry_identity).as_ref() != Some(&witness.identity)
             {
                 return Err(changed());
             }
@@ -393,6 +405,8 @@ struct Scanner<'a> {
     dir: &'a File,
     cancel: &'a AtomicBool,
     entries: usize,
+    media_limit: usize,
+    media_only: bool,
     tree: vv_session::MediaTree,
     directories: Vec<DirectoryWitness>,
     media: Vec<MediaWitness>,
@@ -451,22 +465,21 @@ impl Scanner<'_> {
             if kind.is_dir() {
                 parts(&child, true)?;
                 self.walk(&child, Some(first_folder))?;
-            } else if vv_media::is_media_path(Path::new(&name)) {
+            } else if !self.media_only || vv_media::is_media_path(Path::new(&name)) {
                 parts(&child, false)?;
-                if self.tree.files.len() >= MAX_MEDIA {
-                    return Err(ApiError::invalid(
-                        "A library source tree supports at most 64 media files",
-                    ));
+                if self.tree.files.len() >= self.media_limit {
+                    return Err(ApiError::invalid(if self.media_limit == MAX_MEDIA {
+                        "A library source tree supports at most 64 media files"
+                    } else {
+                        "The chosen source tree exceeds its file budget"
+                    }));
                 }
-                let file = open_approved_media(self.root, self.dir, &child)?;
-                let (_, lineage) = source_entry(self.root, self.dir, &child)?;
-                validate_approved_file(self.root, self.dir, &child, &file)?;
+                let (metadata, lineage) = source_entry(self.root, self.dir, &child)?;
                 self.media.push(MediaWitness {
                     token: child.clone(),
                     lineage,
-                    identity: crate::asset_store::stable_identity(&file)?,
+                    identity: entry_identity(&metadata.ok_or_else(changed)?),
                 });
-                drop(file);
                 self.tree
                     .files
                     .push((self.root.join(child), Some(first_folder)));
@@ -492,6 +505,40 @@ pub(crate) fn scan_media_tree(
     directory_token: &str,
     cancel: &AtomicBool,
 ) -> Result<SourceTree> {
+    scan_tree(root, dir, directory_token, cancel, MAX_MEDIA, true)
+}
+pub(crate) fn scan_project_media_tree(
+    root: &Path,
+    dir: &File,
+    directory_token: &str,
+    cancel: &AtomicBool,
+) -> Result<SourceTree> {
+    scan_tree(root, dir, directory_token, cancel, 256, true)
+}
+pub(crate) fn scan_relink_tree(
+    root: &Path,
+    dir: &File,
+    directory_token: &str,
+    cancel: &AtomicBool,
+) -> Result<SourceTree> {
+    scan_tree(root, dir, directory_token, cancel, MAX_ENTRIES, false)
+}
+pub(crate) fn validate_directory_token(token: &str) -> Result<()> {
+    if token.is_empty() {
+        return Err(ApiError::invalid(
+            "Choose an explicit approved source folder",
+        ));
+    }
+    parts(token, true).map(|_| ())
+}
+fn scan_tree(
+    root: &Path,
+    dir: &File,
+    directory_token: &str,
+    cancel: &AtomicBool,
+    media_limit: usize,
+    media_only: bool,
+) -> Result<SourceTree> {
     if directory_token.is_empty() {
         return Err(ApiError::invalid(
             "Choose an explicit source folder; scanning the project root is not permitted",
@@ -503,6 +550,8 @@ pub(crate) fn scan_media_tree(
         dir,
         cancel,
         entries: 0,
+        media_limit,
+        media_only,
         tree: Default::default(),
         directories: Vec::new(),
         media: Vec::new(),

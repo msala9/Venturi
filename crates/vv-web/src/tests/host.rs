@@ -1,5 +1,73 @@
 use super::*;
 
+#[tokio::test]
+async fn legacy_catalog_relink_prepares_outside_actor_preserves_original_receipt_and_replays_before_file_checks()
+ {
+    use vv_core::Id;
+    let (root, mut editor, media) = native_asset_fixture("legacy-prepared-relink");
+    std::fs::create_dir(root.join("Nested")).unwrap();
+    std::fs::rename(root.join("capture.wav"), root.join("Nested/repaired.wav")).unwrap();
+    let operation = Operation::EditCatalog {
+        edit: crate::catalog::Edit::Relink {
+            items: vec![crate::catalog::Relink {
+                media_id: media.raw().to_string(),
+                path_token: "Nested/repaired.wav".into(),
+            }],
+        },
+    };
+    let before = editor.snapshot();
+    let direct = request(&editor, operation.clone(), "relink-actor-no-probe", None);
+    assert_eq!(
+        editor.mutation(None, direct).unwrap_err().1,
+        "MEDIA_IMPORT_PREPARATION_REQUIRED"
+    );
+    assert_eq!(editor.snapshot()["history"], before["history"]);
+    let mutation = request(&editor, operation, "legacy-relink-prepared", None);
+    let original = serde_json::to_value(&mutation).unwrap();
+    let NativeEditPreparation::Pending(guard) = editor
+        .prepare_legacy_media_import(mutation.clone())
+        .unwrap()
+    else {
+        panic!("Expected replacement preparation");
+    };
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        let status = guard.jobs.status(&guard.job, &guard.epoch, false).unwrap();
+        assert_eq!(status["kind"], "project_relink");
+        if status["state"] == "ready" {
+            break;
+        }
+        assert!(
+            matches!(status["state"].as_str(), Some("queued" | "running")),
+            "{status}"
+        );
+        assert!(Instant::now() < deadline, "{status}");
+        std::thread::sleep(Duration::from_millis(2));
+    }
+    assert_eq!(editor.snapshot()["history"], before["history"]);
+    assert_eq!(serde_json::to_value(&mutation).unwrap(), original);
+    let jobs = guard.jobs.clone();
+    let job = guard.job.clone();
+    let epoch = guard.epoch.clone();
+    let host = Host::run(editor).unwrap();
+    let ack = host
+        .finish_media_import(mutation.clone(), guard)
+        .await
+        .unwrap();
+    assert_eq!(ack["relinked_media_ids"], json!([media.raw().to_string()]));
+    assert_eq!(ack["errors"], json!([]));
+    assert_eq!(ack["changed"], true);
+    assert_eq!(
+        jobs.status(&job, &epoch, false).unwrap()["state"],
+        "applied"
+    );
+    std::fs::remove_file(root.join("Nested/repaired.wav")).unwrap();
+    assert_eq!(host.project_mutation(mutation).await.unwrap(), ack);
+    drop(host);
+    drop(jobs);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn project_pool_placement_uses_current_session_media_without_source_jobs_and_replays_exact_selection()
  {

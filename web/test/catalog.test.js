@@ -131,3 +131,10 @@ test('a late file-list read cannot reconstruct hidden Relink targets after searc
     assert.equal(h.root.querySelectorAll('.catalog-relink-form')[0].children.length,0);assert.deepEqual(h.commits,[]);h.panel.dispose();
   }
 }));
+
+test('prepared Relink delegation receives visible selected IDs or the exact project folder without using the legacy probing route',async()=>withCatalogDom(async()=>{
+  const scopes=[],h=catalogHarness({onRelink:scope=>scopes.push(scope),getFiles:()=>assert.fail('The prepared UI must not enumerate flat replacements')});try{
+    h.rows()[0].fire('click');h.rows()[1].fire('click',{ctrlKey:true});h.button('Relink selected media').fire('click');assert.deepEqual(scopes,[{kind:'selected',media_ids:['b','c']}]);assert.deepEqual(h.commits,[]);
+    h.field('Media folder').value='f';h.field('Media folder').fire('change');h.button('Relink current project folder').fire('click');assert.deepEqual(scopes[1],{kind:'folder',folder_id:'f'});assert.deepEqual(h.commits,[]);
+  }finally{h.panel.dispose();}
+}));

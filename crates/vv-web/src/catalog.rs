@@ -97,7 +97,7 @@ fn unlocked(session: &Session, selected: &[MediaId]) -> Result<()> {
     Ok(())
 }
 
-pub fn edit(session: &mut Session, files: &Files, edit: &Edit) -> Result<()> {
+pub fn edit(session: &mut Session, _files: &Files, edit: &Edit) -> Result<()> {
     if session.path().is_none() {
         return Err(ApiError::invalid("Create or open a project first"));
     }
@@ -177,82 +177,105 @@ pub fn edit(session: &mut Session, files: &Files, edit: &Edit) -> Result<()> {
                     .collect(),
             ))
         }
-        Edit::Relink { items } => {
-            let ids = media(
-                session,
-                &items
-                    .iter()
-                    .map(|item| item.media_id.clone())
-                    .collect::<Vec<_>>(),
-            )?;
-            unlocked(session, &ids)?;
-            let mut commands: Vec<Box<dyn Command>> = Vec::new();
-            for (item, id) in items.iter().zip(&ids) {
-                if session.project.media_pool[*id].compound.is_some() {
-                    return Err(ApiError::invalid(
-                        "Compound timelines cannot be relinked to files",
-                    ));
-                }
-                let (path, meta, hash) = files.prepare_media(&item.path_token)?;
-                for timeline in session.project.timelines.values() {
-                    for track in &timeline.tracks {
-                        if track.clips.iter().any(
-                            |c| matches!(c.source, core::ClipSource::Media(media) if media == *id),
-                        ) && match track.kind {
-                            core::TrackKind::Video => !meta.has_video,
-                            core::TrackKind::Audio => !meta.has_audio,
-                        } {
-                            return Err(ApiError::invalid(
-                                "Replacement media lacks a stream used by the timeline",
-                            ));
-                        }
-                    }
-                }
-                commands.push(Box::new(core::SetMediaPath::new(
-                    *id,
-                    path,
-                    hash,
-                    Some(meta),
-                )));
-            }
-            Box::new(core::CompositeCommand::new(
-                core::CommandLabel::RelinkMedia,
-                commands,
-            ))
+        Edit::Relink { .. } => {
+            return Err(ApiError::conflict(
+                "MEDIA_IMPORT_PREPARATION_REQUIRED",
+                "Prepare replacement media outside the session before relinking",
+            ));
         }
     };
     let mut trial = session.project.clone();
     let mut command = command;
     command.apply(&mut trial);
     crate::files::validate_project(&trial)?;
-    if let Edit::Relink { items } = edit {
-        let selected = media(
-            session,
-            &items
-                .iter()
-                .map(|item| item.media_id.clone())
-                .collect::<Vec<_>>(),
-        )?;
-        for timeline in trial.timelines.values() {
-            for clip in timeline.tracks.iter().flat_map(|t| &t.clips) {
-                if let core::ClipSource::Media(id) = clip.source
-                    && selected.contains(&id)
-                    && let Some(item) = trial.media_pool.get(id)
-                    && item.compound.is_none()
-                    && !item.meta.is_image()
-                    && (clip.source_out() > item.meta.duration_frames
-                        || clip.freeze.is_some_and(|f| f >= item.meta.duration_frames))
-                {
-                    return Err(ApiError::invalid(
-                        "Replacement media does not cover an existing clip source range",
-                    ));
+    command.undo(&mut trial);
+    session.apply(command);
+    Ok(())
+}
+
+pub(crate) fn prepared_relink(
+    session: &Session,
+    replacements: &[(MediaId, crate::asset_jobs::PreparedMedia)],
+) -> Result<Option<Box<dyn Command>>> {
+    if session.path().is_none() {
+        return Err(ApiError::invalid("Create or open a project first"));
+    }
+    if replacements.is_empty() {
+        return Ok(None);
+    }
+    let ids = media(
+        session,
+        &replacements
+            .iter()
+            .map(|(id, _)| id.raw().to_string())
+            .collect::<Vec<_>>(),
+    )?;
+    unlocked(session, &ids)?;
+    let mut commands: Vec<Box<dyn Command>> = Vec::new();
+    for (id, replacement) in replacements {
+        if session.project.media_pool[*id].compound.is_some() {
+            return Err(ApiError::invalid(
+                "Compound timelines cannot be relinked to files",
+            ));
+        }
+        for timeline in session.project.timelines.values() {
+            for track in &timeline.tracks {
+                for clip in &track.clips {
+                    if matches!(clip.source, core::ClipSource::Media(media) if media == *id)
+                        && match track.kind {
+                            core::TrackKind::Video => !replacement.meta.has_video,
+                            core::TrackKind::Audio => {
+                                !replacement.meta.has_audio
+                                    || clip.audio_stream_index
+                                        >= replacement.meta.audio_stream_count()
+                            }
+                        }
+                    {
+                        return Err(ApiError::invalid(
+                            "Replacement media lacks a stream used by the timeline",
+                        ));
+                    }
                 }
+            }
+        }
+        let old = &session.project.media_pool[*id];
+        if old.path != replacement.path
+            || serde_json::to_value(&old.meta).map_err(|_| ApiError::io())?
+                != serde_json::to_value(&replacement.meta).map_err(|_| ApiError::io())?
+            || old.content_hash != replacement.content_hash
+        {
+            commands.push(Box::new(core::SetMediaPath::new(
+                *id,
+                replacement.path.clone(),
+                replacement.content_hash,
+                Some(replacement.meta.clone()),
+            )));
+        }
+    }
+    if commands.is_empty() {
+        return Ok(None);
+    }
+    let mut command = core::CompositeCommand::new(core::CommandLabel::RelinkMedia, commands);
+    let mut trial = session.project.clone();
+    command.apply(&mut trial);
+    crate::files::validate_project(&trial)?;
+    for timeline in trial.timelines.values() {
+        for clip in timeline.tracks.iter().flat_map(|t| &t.clips) {
+            if let core::ClipSource::Media(id) = clip.source
+                && ids.contains(&id)
+                && let Some(item) = trial.media_pool.get(id)
+                && !item.meta.is_image()
+                && (clip.source_out() > item.meta.duration_frames
+                    || clip.freeze.is_some_and(|f| f >= item.meta.duration_frames))
+            {
+                return Err(ApiError::invalid(
+                    "Replacement media does not cover an existing clip source range",
+                ));
             }
         }
     }
     command.undo(&mut trial);
-    session.apply(command);
-    Ok(())
+    Ok(Some(Box::new(command)))
 }
 
 #[cfg(test)]

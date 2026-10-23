@@ -1792,6 +1792,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/native-assets.js", 200),
         ("/js/native-asset-folders.js", 200),
         ("/js/media-import.js", 200),
+        ("/js/media-relink.js", 200),
         ("/js/mark-range.js", 200),
         ("/api/v1/library", 200),
         ("/js/slip.js", 200),

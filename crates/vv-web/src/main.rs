@@ -32,6 +32,7 @@ mod preset_store;
 mod presets;
 mod preview;
 mod program;
+mod project_media;
 mod project_media_placement;
 mod project_view;
 mod receipts;

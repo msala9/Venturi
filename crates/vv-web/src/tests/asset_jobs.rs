@@ -1,6 +1,37 @@
 use super::*;
 
 #[test]
+fn project_media_jobs_share_descriptor_admission_and_release_ready_witnesses_on_cancel() {
+    let fixture = Fixture::new();
+    let work = crate::project_media::Work::Import {
+        tokens: vec!["tiny.png".into()],
+        directory: None,
+        parent: None,
+    };
+    let queued = fixture
+        .jobs
+        .prepare_project_media("epoch", "7", work)
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let jobs = fixture.jobs.0.jobs.lock().unwrap();
+    assert!(reserve_witnesses(&jobs, 256).is_err());
+    drop(jobs);
+    fixture.jobs.status(id, "epoch", true).unwrap();
+    let jobs = fixture.jobs.0.jobs.lock().unwrap();
+    reserve_witnesses(&jobs, 256).unwrap();
+    drop(jobs);
+    assert!(
+        fixture
+            .jobs
+            .project_media_payload(id, "epoch", "7", "project_import")
+            .is_err()
+    );
+    fixture.close();
+}
+
+#[test]
 fn native_asset_import_set_shares_file_work_and_binds_order_revisions_cancel_and_budget() {
     let fixture = Fixture::new();
     let captured = fixture.capture();
@@ -1944,7 +1975,7 @@ fn media_import_budget_records_every_unprocessed_file_and_zero_success_cannot_co
         import: None,
         import_set: Vec::new(),
         edit: None,
-        media_import: Some(tokens.clone()),
+        media_import: Some(ImportWork::Legacy(tokens.clone())),
         otio: None,
         clipboard: None,
         clipboard_image: None,

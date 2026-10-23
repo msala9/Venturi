@@ -90,6 +90,14 @@ the shared authority for Delete and interpolation commands.
 
 Each row has label, numeric control, reset, optional keyframe diamond and prev/next marker; keyboard path must be equivalent to drag. Control constraints come from source Rust, not hardcoded JS assumptions. Number input uses local edit buffer until commit; invalid intermediate text doesn't immediately reset to default.
 
+Advanced Speed percent scrubbing uses one percentage point per pixel, Shift/10
+and at most two displayed decimals during manipulation. Untouched typed precision
+is retained. Native50/100/200 presets update only the local draft, preserving
+pitch/duration policy. Only Apply sends the existing selected-target command.
+Inline Cancel restores the complete draft baseline; context-dialog Cancel/Escape
+uses its existing close path. Closing, rerendering or disposing an owner cancels
+active scrubs and removes listeners; no pointer-motion request is introduced.
+
 ## Viewer contracts
 
 Separate viewer time from authoritative timeline playhead where Source viewer is active. Program viewer state owns `(timeline_id, revision, frame, request_seq)`. A matching response is the only one allowed to render as CURRENT. Maintain source/audio clock when paused/resuming; seeking changes playback generation. Audio/video playback and microphone recording are browser-specific; avoid cpal dependencies in web host request handler.

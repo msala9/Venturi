@@ -824,7 +824,7 @@ function selected() {
         seek:frame=>{maskOverlay?.cancel();view.playhead=frame;updateTime();seek();selected();void projectView?.update();}};
       if(role==='video'){const properties=renderSelectedVideoProperties(target,detail,options);if(properties)visualControls.push(properties);renderBlendMatte(target,detail,options);visualControls.push(...renderSelectedVideoEffects(target,detail,options));}
       else if(role==='audio'){const gain=renderSelectedAudioGain(target,detail,options);if(gain)visualControls.push(gain);}
-      else renderRetime(target,detail,false,options.getFrame,commit,visualState,options.canInteract,{selection,getSelection,frame:inspectorFrame,labelControls:false,notice});
+      else {const retime=renderRetime(target,detail,false,options.getFrame,commit,visualState,options.canInteract,{selection,getSelection,frame:inspectorFrame,labelControls:false,notice});if(retime)visualControls.push(retime);}
     };
     const entry={id:selection.clip_ids[0],target,current,render};selectionTargets.push(entry);
   }
@@ -1100,7 +1100,8 @@ async function timelineContextAction(action,owner){
     const id=owner.media_ids[0],query=new URLSearchParams({project_epoch:owner.project_epoch,if_generation:owner.generation,timeline_id:owner.timeline_id,revision:owner.revision,frame:owner.playhead}),detail=await request(`/timelines/${encodeURIComponent(owner.timeline_id)}/clips/${encodeURIComponent(id)}/keys/0?${query}`);
     if(!contextOwnerCurrent(owner) || document.querySelector('dialog[open]'))throw Error('The media speed context changed; reopen its menu');
     const ui=contextModal('Change clip speed',owner),selection={project_epoch:owner.project_epoch,generation:owner.generation,timeline_id:owner.timeline_id,revision:owner.revision,clip_ids:[...owner.media_ids]};
-    renderRetime(ui.content,detail,false,()=>view.playhead,ui.apply,new Map([['retime',true]]),ui.current,{selection,getSelection:()=>ui.current()?selection:null,frame:owner.playhead,labelControls:false,notice:message=>{ui.status.textContent=message;}});return;
+    const retime=renderRetime(ui.content,detail,false,()=>view.playhead,ui.apply,new Map([['retime',true]]),ui.current,{selection,getSelection:()=>ui.current()?selection:null,frame:owner.playhead,labelControls:false,cancelButton:false,notice:message=>{ui.status.textContent=message;}});
+    ui.dialog.addEventListener('close',()=>retime?.dispose(),{once:true});return;
   }
 }
 timelineContextMenu=createTimelineContextMenu({getContext:target=>document.querySelector('dialog[open]')?null:timelineContext(target),getItems:timelineContextItems,onAction:timelineContextAction,notice});

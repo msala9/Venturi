@@ -72,7 +72,7 @@ export function renderInspectorSelection(root,rows){
   for(const row of rows){const line=document.createElement('tr');for(const value of [row.kind,row.track_id,row.name,row.start_frame,row.length_frames,row.source_frame]){const cell=document.createElement('td');cell.textContent=String(value);line.append(cell);}body.append(line);}
   table.append(head,body);root.className='inspector-selection-summary';root.replaceChildren(table);
 }
-export function bindInspectorNumber(input,{canInteract,apply,speed=1,windowRef=input.ownerDocument?.defaultView ?? globalThis.window}){
+export function bindInspectorNumber(input,{canInteract,apply,speed=1,decimals=6,windowRef=input.ownerDocument?.defaultView ?? globalThis.window}){
   let gesture=null,disposed=false;const listeners=[];
   const listen=(target,key,handler)=>{target?.addEventListener?.(key,handler);listeners.push(()=>target?.removeEventListener?.(key,handler));};
   const live=()=>!disposed && input.isConnected!==false && !input.disabled && canInteract();
@@ -83,7 +83,7 @@ export function bindInspectorNumber(input,{canInteract,apply,speed=1,windowRef=i
     const delta=event.clientX-gesture.lastX;gesture.lastX=event.clientX;if(delta===0)return;
     const bound=(value,fallback)=>String(value ?? '').trim() && Number.isFinite(Number(value))?Number(value):fallback,min=bound(input.min,-Infinity),max=bound(input.max,Infinity);
     gesture.draftValue=Math.max(min,Math.min(max,gesture.draftValue+delta*(event.shiftKey ? speed/10 : speed)));
-    input.value=String(Number(gesture.draftValue.toFixed(6)));
+    input.value=String(Number(gesture.draftValue.toFixed(decimals)));
   };
   listen(input,'pointerdown',event=>{if(gesture || !live() || event.button!==0 || event.isPrimary===false || event.ctrlKey || event.metaKey || event.altKey || !String(input.value).trim() || !Number.isFinite(Number(input.value)))return;gesture={id:event.pointerId,x:event.clientX,lastX:event.clientX,text:input.value,value:Number(input.value),draftValue:Number(input.value),moved:false};input.setPointerCapture?.(event.pointerId);});
   listen(input,'pointermove',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live() || event.buttons!==undefined && !(event.buttons&1)){cancel();return;}draft(event);});
@@ -410,8 +410,9 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   number("Fade in frames", detail.fade_in, 0, detail.length_frames, (fade_in) => ({ fade_in }));
   number("Fade out frames", detail.fade_out, 0, detail.length_frames, (fade_out) => ({ fade_out }));
   root.append(section);
-  renderRetime(root,detail,disabled,getFrame,report,visualState,canInteract,{speedControls:retimeControls,notice});
+  const retime=renderRetime(root,detail,disabled,getFrame,report,visualState,canInteract,{speedControls:retimeControls,notice});
   const controls=detail.video && filterControls ? renderFilters(root,detail,{disabled,getFrame,commit:guardedCommit,notice,openState:visualState,canInteract}) : [];
+  if(retime)controls.push(retime);
   if(keyEditorRoot){
     const selectedKeys=createKeyPickSelection(visualState,scope ?? detail.clip_id);
     const curves=renderCurves(keyEditorRoot,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,canInteract,seek,canNavigate,navigateSource,readCurveViewport,keySelection:selectedKeys,presentation:keyEditorRoot===root?'inline':'window'});if(curves)controls.push(curves);
@@ -425,19 +426,21 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
   return controls;
 }
 
-export function renderRetime(root,detail,disabled,getFrame,report,openState,canInteract=()=>true,{selection,getSelection,frame=getFrame(),labelControls=true,speedControls=true,notice=()=>{}}={}) {
+export function renderRetime(root,detail,disabled,getFrame,report,openState,canInteract=()=>true,{selection,getSelection,frame=getFrame(),labelControls=true,speedControls=true,cancelButton=true,notice=()=>{}}={}) {
   if(selection && (!selection.clip_ids?.length || selection.clip_ids[0]!==detail.clip_id || !detail.retime || detail.locked))return;
   const captured=selection?structuredClone(selection):null,identity=JSON.stringify(captured),ids=captured?.clip_ids || [detail.clip_id],controls=[];
+  const documentRef=root.ownerDocument ?? document;
   const section=inspectorGroup(document.createElement("details"),'selection'),summary=document.createElement("summary");section.dataset.visualPath=labelControls && !speedControls?"clip-label":"retime";section.open=openState?.get(section.dataset.visualPath) || false;summary.textContent=labelControls?(speedControls?"Speed, freeze and clip label":"Clip label"):"Selected media speed and freeze";section.append(summary);
-  let waiting=false,outcomeUnknown=false;
-  const current=()=>!disabled && root.isConnected!==false && section.isConnected!==false && canInteract() && getFrame()===frame && (!captured || JSON.stringify(getSelection?.())===identity);
+  let waiting=false,outcomeUnknown=false,disposed=false,scrub=null;
+  const listeners=[],listen=(node,key,handler)=>{node?.addEventListener?.(key,handler);listeners.push(()=>node?.removeEventListener?.(key,handler));};
+  const current=()=>!disposed && !disabled && !documentRef.hidden && root.isConnected!==false && section.isConnected!==false && canInteract() && getFrame()===frame && (!captured || JSON.stringify(getSelection?.())===identity);
   const sync=()=>{for(const control of controls)control.disabled=waiting || outcomeUnknown || !current();};
   const register=node=>{controls.push(node);node.disabled=!current();return node;};
   const apply=operation=>{
     if(waiting || outcomeUnknown)return;
     if(!current()){notice('Media selection changed; read its current speed before editing');return;}
     waiting=true;sync();
-    return Promise.resolve().then(()=>{if(!current())throw Error('Media selection changed; read its current speed before editing');return report(operation);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;notice(error.message);}).finally(()=>{waiting=false;sync();});
+    return Promise.resolve().then(()=>{if(!current())throw Error('Media selection changed; read its current speed before editing');return report(operation);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;if(!disposed)notice(error.message);}).finally(()=>{waiting=false;if(!disposed)sync();});
   };
   if(captured){const note=document.createElement('p');note.className='muted';note.textContent=`Values from the first selected media clip · edits apply to ${ids.length} selected unlocked media clip${ids.length===1?'':'s'} and their native linked groups. Freeze clamps the playhead separately to each clip; Undo restores the edit.`;inspectorHelp(section,note);}
   if(labelControls){
@@ -446,20 +449,40 @@ export function renderRetime(root,detail,disabled,getFrame,report,openState,canI
     const applyColor=register(document.createElement("button"));applyColor.type='button';applyColor.textContent="Apply clip label";applyColor.addEventListener("click",()=>apply({kind:"set_display_color",clip_ids:[detail.clip_id],color:color.value || null}));section.append(color,applyColor);
   }
   if (speedControls && detail.retime) {
-    const form=document.createElement("form"),label=document.createElement("label");label.className="field";label.textContent="Speed percent";
-    const percent=register(document.createElement("input"));percent.type="number";percent.min=1;percent.max=10000;percent.step="any";percent.value=detail.retime.speed_percent;percent.required=true;label.append(percent);form.append(label);
+    const form=document.createElement("form"),row=document.createElement('div'),label=document.createElement("label");row.className='tools';label.className="field";label.textContent="Speed percent";
+    const percent=register(document.createElement("input"));percent.type="number";percent.min=1;percent.max=10000;percent.step="any";percent.value=detail.retime.speed_percent;percent.required=true;percent.setAttribute('aria-label','Speed percent');percent.title='Drag: 1% per pixel; Shift: fine control. Two decimal places while dragging. Apply commits the draft.';label.append(percent);row.append(label);form.append(row);
+    const draftCurrent=()=>current() && !waiting && !outcomeUnknown && section.open;
+    const presets=[];
+    const syncPresets=()=>{for(const [value,button] of presets)button.setAttribute('aria-pressed',String(String(percent.value).trim()!=='' && Number(percent.value)===value));};
+    for(const value of [50,100,200]){
+      const button=register(document.createElement('button'));button.type='button';button.textContent=`${value}%`;button.setAttribute('aria-label',`Draft speed ${value}%`);presets.push([value,button]);row.append(button);
+      listen(button,'click',()=>{if(!draftCurrent())return;scrub?.cancel();percent.value=String(value);syncPresets();});
+    }
+    listen(percent,'input',syncPresets);listen(percent,'change',syncPresets);
+    scrub=bindInspectorNumber(percent,{canInteract:draftCurrent,apply:syncPresets,speed:1,decimals:2});
     const fit=register(document.createElement("select"));fit.setAttribute("aria-label","Speed duration policy");
     for (const [value,text] of [["keep_length","Keep length (capped by source)"],["resize","Resize safely, leave neighbours"],["ripple","Ripple unlocked tracks"]]) fit.append(new Option(text,value));fit.value="ripple";form.append(fit);
     const pitchLabel=document.createElement("label");pitchLabel.textContent="Preserve pitch";const pitch=register(document.createElement("input"));pitch.type="checkbox";pitch.checked=detail.retime.pitch_correction;pitchLabel.append(pitch);form.append(pitchLabel);
     const applySpeed=register(document.createElement("button"));applySpeed.textContent="Apply speed";form.append(applySpeed);
-    form.addEventListener("submit",(event)=>{event.preventDefault();const value=Number(percent.value);if(String(percent.value).trim() && Number.isFinite(value) && value>=1 && value<=10000 && ['keep_length','resize','ripple'].includes(fit.value) && form.reportValidity())apply({kind:"set_speed",clip_ids:[...ids],percent:value,pitch_correction:pitch.checked,fit:fit.value});});section.append(form);
+    const cancelDraft=()=>{scrub.cancel();percent.value=detail.retime.speed_percent;fit.value='ripple';pitch.checked=detail.retime.pitch_correction;syncPresets();};
+    if(cancelButton){const cancel=register(document.createElement('button'));cancel.type='button';cancel.textContent='Cancel speed changes';listen(cancel,'click',()=>{if(draftCurrent())cancelDraft();});form.append(cancel);}
+    listen(form,'submit',event=>{event.preventDefault();scrub.cancel();const value=Number(percent.value);if(String(percent.value).trim() && Number.isFinite(value) && value>=1 && value<=10000 && ['keep_length','resize','ripple'].includes(fit.value) && form.reportValidity())apply({kind:"set_speed",clip_ids:[...ids],percent:value,pitch_correction:pitch.checked,fit:fit.value});});
+    listen(form,'keydown',event=>{
+      if(event.defaultPrevented || event.isComposing || event.repeat || event.ctrlKey || event.metaKey || event.altKey)return;
+      if(['Enter',' '].includes(event.key))event.stopPropagation();
+      if(cancelButton && event.key==='Escape'){event.preventDefault();event.stopPropagation();cancelDraft();}
+    });
+    listen(section,'toggle',()=>{if(!section.open){scrub.cancel();syncPresets();}});
+    listen(documentRef,'visibilitychange',()=>{if(documentRef.hidden){scrub.cancel();syncPresets();}});
+    syncPresets();section.append(form);
     const status=document.createElement("p");status.className="muted";status.textContent=detail.retime.freeze_source_frame === null ? "Normal motion · edits include linked clips" : `Frozen at source frame ${detail.retime.freeze_source_frame} · linked clips follow native freeze semantics`;section.append(status);
     for (const [text,value] of [["Freeze at playhead",frame],["Unfreeze",null]]) {
       const button=register(document.createElement("button"));button.type='button';button.textContent=text;button.addEventListener("click",()=>{if(value===null || Number.isSafeInteger(value) && value>=0 && value<=1_000_000_000)apply({kind:"set_freeze",clip_ids:[...ids],frame:value});});section.append(button);
     }
-    if(openState?.get('retime-focus')===detail.clip_id){openState.delete('retime-focus');section.open=true;queueMicrotask(()=>{if(percent.isConnected && !percent.disabled)percent.focus({preventScroll:true});});}
+    if(openState?.get('retime-focus')===detail.clip_id){openState.delete('retime-focus');section.open=true;queueMicrotask(()=>{if(current() && percent.isConnected && !percent.disabled)percent.focus({preventScroll:true});});}
   }
   root.append(section);sync();
+  return {cancel(){scrub?.cancel();},dispose(){if(disposed)return;disposed=true;scrub?.dispose();for(const remove of listeners)remove();sync();}};
 }
 
 function renderTitle(root, detail, disabled, report) {

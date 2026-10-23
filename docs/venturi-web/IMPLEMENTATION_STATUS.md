@@ -1,5 +1,28 @@
 # Implementation status
 
+## Color-wheel capability acceptance — 2026-10-23
+
+The current ledger is **53 done /37 partial /2 excluded**. `color_wheels` is
+accepted from the combined native and connected evidence, without closing Color
+scopes/Auto Balance, full F4 or the global physical/DPI/dense/soak/M7 criteria.
+
+Native `grade_panel.rs` joint/default/key/reset semantics and `grade.rs` bounds
+are covered by `evidence/m5-native-color-state.json`, animated range persistence
+in `evidence/m5-color-ranges.json`, `web/test/visual.test.js` and the native selected
+Inspector tests. The four wheels share the verified binding; all18 parameters,
+own-source clocks, locked/readonly/stale ownership and atomic selected edits are
+covered. Actual scalar, independent crossed-range and wheel-pointer edits,
+Undo/Redo, exact Saved reopen and two nonneutral moving R9700/native frame matches
+are recorded in `evidence/f4-color-audio-controls-workflow.json`.
+
+TS026's scientific scope/context requirement remains on the scope capability;
+it does not require repeating every wheel gesture at every OS scale. Global
+release checks remain mandatory in F7. Compressor stays partial for a concrete
+native workspace gap: band input-level/gain-reduction overlays and its active
+response curve. Existing prepared telemetry already provides band levels and GR;
+connect those to the visible compressor without a new DSP/transport engine.
+
+
 ## Mask gestures and live recording waveform — 2026-10-23
 
 Current mask/recording controls: **http://127.0.0.1:8855/**,

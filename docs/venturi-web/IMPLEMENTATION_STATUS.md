@@ -1,5 +1,37 @@
 # Implementation status
 
+## Native EQ and normalization workflow — 2026-10-23
+
+Source17af3de/runtime258b3b4eb7bd on halo1/port8855 completes the compact six-band
+EQ and Loudness shortcuts. Actual new EQ gain knob ArrowUp commits0to0.1dB with
+one Undo/Redo; peers, prior Mono/compressor and tracks remain exact. Six native
+band arrays share128 frequencies; off bands1/6 correctly hide their curves.
+Real explicit Play after the stopped edit shows128 native pre/post points in
+the visible graph. A real20px EQ knob drag originally canceled when draft status
+wrapping moved the knob12.8px. The relative-motion fix retains size/ownership/
+resize/scroll guards; the same actual drag now changes0.1to4.8999977dB with one
+Undo/Redo and exact Saved reopen. The128-case affected client gate and40.66s
+embedded build pass, peak1,514,868,736B. Unchanged native/Clippy results are reused;
+overlapping client runs are not summed. Broader physical/DPI acceptance is open.
+
+Actual SamplePeak/TruePeak/Loudness controls retain native target semantics.
+Streaming−14 LUFS commits the draft Loudness mode/target in one native command,
+Undo restores SamplePeak−1 and Redo restores Loudness−14. Reapplying the same
+preset is a no-op. Native TruePeak/R128 signal measurements and normalization
+independent/master gain tests have source-bound terminal results in the workflow evidence,
+7 loudness and6 normalization cases pass, peak889,618,432B, replacing reliance
+on the old97-pass narrative. Earlier native PCM, presets,
+transport and export proofs are reused. No new export/physical output claim.
+
+Save/reopen preserves exact native models/Saved bytes with empty Undo.
+All39 prior Sessions/40 PIDs, seven candidate Saved projects, local media,
+four fixed NAS files and shared proxy retain their identities. See
+`evidence/f4-eq-normalize-workflow.json` and its screenshots. The affected
+EQ/Normalize capability rows advance: **58 done /32 partial /2 excluded**.
+Full F1-F7/M7 stays active. Next continue the remaining editing/Inspector,
+shared library/preset lifecycle and physical/integrated release requirements.
+
+
 ## Native Color workflow and integrated EQ/key controls — 2026-10-23
 
 Source `737e824`, runtime `6014c198109e`, owns only port8855 on halo1.

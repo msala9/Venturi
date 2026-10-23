@@ -344,6 +344,8 @@ Timeline with tall waveforms, mixer strips for every audio track and master (gai
 Six compact EQ band strips expose On, native shape, Hz/Gain/Q knobs and band
 reset alongside precise fields. Pointer drafts stay local until release;
 Shift provides fine adjustment and Escape cancels. Pass filters disable gain.
+Relative knob motion survives its own draft-status reflow; resize, scroll,
+changed control size or native ownership still cancels the gesture.
 Native committed band curves share the total response grid; prepared audio
 provides pre/post spectra through the existing bounded insert reader.
 Loudness normalization exposes the three native delivery presets; peak modes

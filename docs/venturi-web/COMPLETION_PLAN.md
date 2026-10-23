@@ -1,5 +1,34 @@
 # Active completion plan — full Venturi Web scope
 
+## Native Color workflow and integrated EQ/key controls — 2026-10-23
+
+Source `737e824`, runtime `6014c198109e`, owns only port8855 on halo1.
+Auto Balance actually changes six native wheel coordinates with one native
+Undo/Redo; saved reopen retains exact models/bytes and empty Undo. Both native
+scope pairs and their guides show the selected isolated clip. Real Program Play
+advances scope frames33to45 with distinct1024x256 images. Scope input clears
+outside the selected clip and restores for clip22 at40.
+
+The native-shell scope panel previously overlaid Play/seek; normal flex flow
+now allocates space and actual pointer Play reaches the button. See
+`evidence/f4-color-native-workflow.json`, static and live screenshots. Existing
+native isolated/Adjustment/stale/source and renderer proofs are reused.
+`color_auto_balance` and `color_scopes_waveform_rgb_vector_hist` advance to done:
+**56 done /34 partial /2 excluded**. Full F1-F7/M7 remains active.
+
+The same source delivers six native EQ band strips/curves/pre-post spectra,
+Loudness delivery shortcuts and reusable scalar/event/mixed key-editor cancel.
+The20 native cases pass in R1; R2 fixes a JavaScript import parenthesis and
+passes253 client cases, Clippy8.16s/build41.04s, peak1,522,782,208B on halo1.
+EQ/Normalize acceptance remains open until the connected browser workflow.
+Key-editor blur is deterministic coverage; no physical OS/DPI claim.
+All39 prior Sessions/40 PIDs, six candidate Saved projects, local media,
+four fixed NAS files and shared proxy retain their identities. No local build.
+
+Next finish the connected EQ/Normalize stopped-edit/Play/Undo/Save workflow;
+reuse prior native audio output evidence and then continue remaining F1-F7.
+
+
 ## V1 audio tradeoff — owner decision, 2026-10-23
 
 The owner explicitly accepted applying audio effects with video stopped and

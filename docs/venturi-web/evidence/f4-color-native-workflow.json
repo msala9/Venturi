@@ -1,0 +1,213 @@
+{
+  "source_commit": "737e8240546f4df0fea9c822cd7dabd6c65b2590",
+  "runtime": {
+    "unit": "venturi-web-halo1-eq-key-controls.service",
+    "pid": "271724",
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-6014c198109e",
+    "sha256": "6014c198109edc787b0be25a460b594c57975584c28b23f3cefa3bf034042e88"
+  },
+  "url": "http://127.0.0.1:8855/",
+  "project": "Venturi_Color_Native_V1.vvproj",
+  "saved_sha256": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+  "auto_balance": {
+    "native_auto_balance_changes": {
+      "ShadowsX": {
+        "before": 0.0,
+        "after": 0.2893511652946472
+      },
+      "ShadowsY": {
+        "before": 0.0,
+        "after": -0.06960396468639374
+      },
+      "MidtonesX": {
+        "before": 0.0,
+        "after": -0.44539597630500793
+      },
+      "MidtonesY": {
+        "before": 0.0,
+        "after": 0.1324576735496521
+      },
+      "HighlightsX": {
+        "before": 0.0,
+        "after": -0.5254406332969666
+      },
+      "HighlightsY": {
+        "before": 0.0,
+        "after": 0.2694583833217621
+      }
+    },
+    "one_balance_undo": true,
+    "exact_undo_redo": true,
+    "exact_saved_reopen": true,
+    "other_timelines_master_and_inspected_effects_exact": true,
+    "empty_reopened_undo": true
+  },
+  "scope_pairs": [
+    {
+      "context": "Clip 22 \u00b7 timeline frame 40 \u00b7 native isolated stack",
+      "guidesVisible": true,
+      "image": {
+        "complete": true,
+        "height": 256,
+        "src": "blob:http://127.0.0.1:8855/eb363b34-ee13-448a-b933-b289c5f94447",
+        "width": 1024
+      },
+      "pair": [
+        "Waveform",
+        "Parade"
+      ],
+      "slots": "2",
+      "status": "CURRENT",
+      "text": "Left scope\nWaveform\nParade\nVectorscope\nHistogram\nRight scope\nParade\nWaveform\nVectorscope\nHistogram\nRefresh scopes\nClip 22 \u00b7 timeline frame 40 \u00b7 native isolated stack\nCURRENT"
+    },
+    {
+      "context": "Clip 22 \u00b7 timeline frame 40 \u00b7 native isolated stack",
+      "frame": "40",
+      "guidesVisible": true,
+      "image": {
+        "complete": true,
+        "height": 256,
+        "src": "blob:http://127.0.0.1:8855/8d5ebf45-326e-401e-af51-0a71b3bd334e",
+        "width": 1024
+      },
+      "pair": [
+        "Vectorscope",
+        "Histogram"
+      ],
+      "slots": "2",
+      "status": "CURRENT"
+    }
+  ],
+  "live_scopes": {
+    "first": {
+      "context": "Clip 22 \u00b7 timeline frame 33 \u00b7 native isolated stack \u00b7 playhead 36",
+      "frame": "38",
+      "image": {
+        "complete": true,
+        "height": 256,
+        "src": "blob:http://127.0.0.1:8855/ba1b6f02-9c86-4b0e-b3d4-63eea6e90ab4",
+        "width": 1024
+      },
+      "status": "LIVE \u00b7 native frame 33",
+      "video": {
+        "currentTime": 0.261186,
+        "paused": false
+      }
+    },
+    "second": {
+      "context": "Clip 22 \u00b7 timeline frame 45 \u00b7 native isolated stack \u00b7 playhead 48",
+      "frame": "49",
+      "image": {
+        "complete": true,
+        "height": 256,
+        "src": "blob:http://127.0.0.1:8855/95558aeb-48cd-4814-b07a-ee31e183bc17",
+        "width": 1024
+      },
+      "status": "LIVE \u00b7 native frame 45"
+    }
+  },
+  "transport": {
+    "context": "Clip 22 \u00b7 timeline frame 40 \u00b7 native isolated stack",
+    "guidesVisible": true,
+    "image": {
+      "complete": true,
+      "height": 256,
+      "src": "blob:http://127.0.0.1:8855/69ae8d09-0750-42a5-b44b-35410b23aa5d",
+      "width": 1024
+    },
+    "pair": [
+      "Waveform",
+      "Parade"
+    ],
+    "playHit": "play",
+    "playRect": {
+      "bottom": 425.8999938964844,
+      "height": 22,
+      "left": 397.9500122070313,
+      "right": 441.78751373291016,
+      "top": 403.8999938964844,
+      "width": 43.837501525878906,
+      "x": 397.9500122070313,
+      "y": 403.8999938964844
+    },
+    "scopeRect": {
+      "bottom": 651,
+      "height": 222.1000061035156,
+      "left": 214,
+      "right": 775.2000122070312,
+      "top": 428.8999938964844,
+      "width": 561.2000122070312,
+      "x": 214,
+      "y": 428.8999938964844
+    },
+    "slots": "2",
+    "status": "CURRENT"
+  },
+  "scope_selection": {
+    "outside": "Left scope\nWaveform\nParade\nVectorscope\nHistogram\nRight scope\nParade\nWaveform\nVectorscope\nHistogram\nRefresh scopes\nSelect a video clip containing the playhead \u00b7 scopes use the first selected video",
+    "restored": "Left scope\nWaveform\nParade\nVectorscope\nHistogram\nRight scope\nParade\nWaveform\nVectorscope\nHistogram\nRefresh scopes\nClip 22 \u00b7 timeline frame 40 \u00b7 native isolated stack\nCURRENT"
+  },
+  "final_models_and_saved_bytes_exact": true,
+  "final_empty_undo": true,
+  "protection": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 6,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "gate": {
+    "native_cases_reused_from_r1": 20,
+    "client_cases": 253,
+    "clippy_seconds": 8.16,
+    "build_seconds": 41.04,
+    "memory_peak_bytes": 1522782208,
+    "source_hashes": {
+      "crates/vv-web/src/api.rs": "9f64e7690f1d7b76d0118f7ac896da8263b501d71d19383bdbd6fcf071b63463",
+      "crates/vv-web/src/audio.rs": "ef0f7dcaaf29580700839a4601b676570ee9a269ce1f352b179bd3ffb8fe0e70",
+      "crates/vv-web/src/tests/api.rs": "355e9947f9ddde175a9dcf897d30e4e71219158d9d1ab91a09ff3ca44c81a46a",
+      "crates/vv-web/src/tests/audio.rs": "cf7f1f1e50560ffcc067ce31b1a28c9d89af14897af1820e86436f04b7bd4b8e",
+      "web/js/audio-graphs.js": "882c454bd1b045d40fd1ce21f7352d1d6216265a0f05ec0a19650beb1dc12fff",
+      "web/js/curves.js": "0b9bfef8441d6a38921d1d22e91ecb463e4546fda8f4ee9b904816b4e3ec67b2",
+      "web/js/eq-controls.js": "e76327b907a6eaf28ee859cabbab2895dd60db875909a874e6dfac8ae3ac5043",
+      "web/js/eventkeys.js": "4d042312d844a7eac09a89e1cba33a47cf55f98b5a75fc8d789ef6bf0d07cf76",
+      "web/js/inspector.js": "20c15b138243d1af66fb3b1d3ff8f54f1877751508083a7595c7a000d23e7531",
+      "web/js/keyselection.js": "b3134b7ede0e069306c2556cf78e4066dd622a04cedbc3681ed7232d53922b19",
+      "web/js/mixer.js": "ef4e8ed3a2e2e0d24cf5ad63877cbf22ec65d420164449fa5db77bb78e6a96a1",
+      "web/style/app.css": "ca4942411cc384099df5215cf95aadfca71c6d13eabdb36b428b6fba3dad2008",
+      "web/style/native-shell.css": "15cb0332fbfcf20a409209cee45aedf618737d704336bfbbb036bd62c29982d2",
+      "web/style/tokens.css": "477673324b4ee85919106a8cd5b503ed46663111f830dd7990170b279d6d04c5",
+      "web/test/audio-graphs.test.js": "e13ba7a9ba2aec343330011d0ea0698aaee5ac7ecaedad6b95b13e32576369b7",
+      "web/test/curves.test.js": "9e246fcf3a7432a34e122083d30689500fd0ebdf0482945eef46a3843e5dc98b",
+      "web/test/eq-controls.test.js": "8fc524fc0bfafe08fdbd66a8d5966e0d5d2a2a117ae05ba79531fac4d120953d",
+      "web/test/inspector.test.js": "08024c784d9634587d6158296ec009f6c524782af9871b814d4b0a1c2c999956",
+      "web/test/keyframe-navigation.test.js": "d7c06ab566ca6d0d6f6a9585ed59d6db66ceedc28587994bc642bcf905cc0e42",
+      "web/test/keyselection.test.js": "7a6339c0ae41a419045e9a7d68ab5296f2986d42372107cdc97b65e70a5cd61e",
+      "web/test/mixer.test.js": "05191db24b0f78392cec8caaad8a623aadf49f3b03841922f1240760e9b0bdec"
+    },
+    "r1": "Native cases passed; JavaScript import failed on an extra parenthesis. R2 fixes the import and passes the client gate.",
+    "host": "halo1",
+    "cpu_limit": 8,
+    "ram_limit_bytes": 4294967296,
+    "swap_limit_bytes": 0
+  },
+  "reused_evidence": [
+    "m5-native-auto-balance.json",
+    "m5-native-scopes.json",
+    "m7-original-frame-sources-workflow.json",
+    "f4-native-guides-inline-mixer-workflow.json"
+  ],
+  "screenshots": [
+    "f4-color-native-scopes.png",
+    "f4-color-native-scopes-live-early.png"
+  ],
+  "limits": [
+    "Global physical-device,100/150% DPI,dense-project,soak and full M7 qualification remain open.",
+    "No new renderer/export matrix or physical output claim.",
+    "Key-editor blur coverage in this gate is deterministic, not physical OS switching."
+  ]
+}

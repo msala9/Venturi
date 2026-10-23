@@ -1833,7 +1833,7 @@ control with text, modal and composition guards.
   filter_amount, filter_grow and filter_offset. `set_keyframes {clip_id,edits}`
   prevalidates 1â€“64 edits and applies one native composite history step.
 
-## Native stopped-frame scopes
+## Native isolated clip scopes
 
 GET `/preview/scopes/{clip}/{first}/{second}` takes the guarded FrameQuery.
 Kinds are Waveform, Parade, Vectorscope or Histogram. It returns a 1024x256
@@ -1845,9 +1845,13 @@ uses the bounded frame resolution. Output uses the same one-running/one-pending
 queue and 8-image/16 MiB cache as exact preview, keyed additionally by clip and
 scope kinds. Analysis cannot replace a pending Program seek. Native jobs use
 the same shared hardware lock or explicit software lock. The document identity
-is checked again before delivery. The UI rejects obsolete selections/kinds,
-updates only on stopped frames and marks retained scopes stale during scrubbing
-and composed playback. There is no browser-side signal measurement.
+is checked again before delivery. The UI rejects obsolete selections/kinds and
+marks retained scopes stale during scrubbing. During composed playback one
+scope read runs at a time, at most four starts per second. The image identifies
+its native frame separately from the advancing playhead; obsolete ownership
+cannot publish. A failed live read pauses analysis until explicit Refresh.
+There is no browser-side signal measurement. Scopes occupy normal Viewer flow
+and leave transport/seek controls accessible.
 
 ## Native presets
 

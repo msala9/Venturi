@@ -70,7 +70,7 @@ impl ProgramQuery {
         }
     }
     pub fn preview_key(&self) -> String {
-        format!("{}:telemetry:v1", self.key())
+        format!("{}:telemetry:v2", self.key())
     }
 }
 pub struct ProgramTask {

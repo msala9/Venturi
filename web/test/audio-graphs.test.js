@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {nativeRound,audioFrequencyPosition,audioFrequencyAt,audioGraphHandles,audioGraphDraft,audioGraphWheel,createAudioGraph} from '../js/audio-graphs.js';
+import {nativeRound,audioFrequencyPosition,audioFrequencyAt,audioGraphHandles,audioGraphDraft,audioGraphWheel,createAudioGraph,compressorActivitySample} from '../js/audio-graphs.js';
 import {renderMixer} from '../js/mixer.js';
 
 const eqMeta={frequency_hz:[20,20000],display_db:[-27,27],gain_db:[-24,24],q_wheel_factor:Math.fround(1.15),shape_has_gain:{HighPass:false,LowShelf:true,Peak:true,HighShelf:true,LowPass:false}};
@@ -90,6 +90,28 @@ test('refused writes retain the previous numeric draft and do not refresh or cla
 test('a late native response cannot repaint a replaced graph context',async()=>{
   let resolve;const f=fixture('MultibandCompressor',{readResponse:()=>new Promise(done=>{resolve=done;})});
   try{const status=f.status.textContent;f.setContext('replacement');resolve({sample_rate:48000,enabled:true,response_kind:'makeup_only',activity:null,points:[[20,7],[20000,7]]});await settle();assert.equal(f.status.textContent,status);assert.match(f.status.textContent,/Native response unavailable/);}finally{f.control.dispose();}
+});
+
+function activityReading(parameters=compressor()){
+  return {telemetry:true,sample_rate:48000,end_sample:8192,frozen:true,spectrum_hz:Array.from({length:128},(_,i)=>20*Math.pow(1000,i/127)),insert:{kind:'MultibandCompressor',channel:'master',index:0,inactive:false,band_level:[.5,.25,.125],reduction_db:[12,6,3],sample_activity:{band_level:[.5,.25,.125],reduction_db:[3,2,1]},before_db:Array(128).fill(-20),after_db:Array(128).fill(-24),response:{sample_rate:48000,response_kind:'native_activity',parameters:structuredClone(parameters),points:Array.from({length:241},(_,i)=>[20*Math.pow(1000,i/240),0,-3])}}};
+}
+
+test('compressor activity matches immutable parameters and slot, uses exact bin values and tolerates truthful legacy spectra',()=>{
+  const reading=activityReading(),options={channel:'master',index:0,parameters:compressor()},sample=compressorActivitySample(reading,options);
+  assert.deepEqual(sample.reduction_db,[3,2,1]);assert.equal(sample.frozen,true);assert.equal(sample.response.points.length,241);
+  assert.equal(compressorActivitySample(reading,{...options,index:1}),null);assert.equal(compressorActivitySample(reading,{...options,channel:'foreign'}),null);
+  reading.insert.response.parameters.bands[0].ratio=10;assert.equal(compressorActivitySample(reading,options),null);reading.insert.response=null;reading.insert.response_error='Legacy telemetry has no captured compressor parameters';
+  assert.match(compressorActivitySample(reading,options).error,/Legacy/);reading.insert.before_db=[NaN];assert.equal(compressorActivitySample(reading,options),null);
+});
+
+test('prepared compressor activity draws supplied curves and spectra without extra reads, then clears local or stale activity',async()=>{
+  const item=fixture('MultibandCompressor');try{
+    await settle();const reads=item.reads(),sample=compressorActivitySample(activityReading(),{channel:'master',index:0,parameters:item.parameters()}),line=name=>all(item.root).find(node=>node.attributes.class===`audio-graph-${name}`);
+    item.control.setActivity(sample);assert.equal(line('active').attributes.points.split(' ').length,241);assert.equal(line('pre').attributes.points.split(' ').length,128);assert.match(item.status.textContent,/Frozen prepared sample 8192.*native activity response/);assert.equal(item.reads(),reads);assert.deepEqual(item.writes,[]);
+    item.parameters().bands[0].ratio=5;item.control.sync();assert.equal(line('active').attributes.points,'');assert.equal(line('post').attributes.points,'');assert.match(item.status.textContent,/Local parameter draft/);
+    item.parameters().bands[0].ratio=2;item.control.sync();sample.inactive=true;item.control.setActivity(sample);assert.match(item.status.textContent,/insert inactive/);
+    item.setContext('changed');item.control.sync();assert.equal(line('active').attributes.points,'');item.control.dispose();item.control.setActivity(sample);assert.equal(line('active').attributes.points,'');assert.equal(item.reads(),reads);
+  }finally{item.control.dispose();}
 });
 
 test('actual insert integration retains collapsed precise fields, full chain order, bypass state and one raw native command',async()=>{

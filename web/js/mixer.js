@@ -1,7 +1,7 @@
 import { request } from "./api.js";
 import {renderAudioPresets} from './audio-presets.js';
 import {bindMixerControl,mixerGainPosition} from './mixer-controls.js';
-import {createAudioGraph} from './audio-graphs.js';
+import {createAudioGraph,compressorActivitySample} from './audio-graphs.js';
 import {createCompressorControls} from './compressor-controls.js';
 
 export function mixerDraftContext(query) {
@@ -55,7 +55,7 @@ export function renderMixer(root, timeline, { writable, commit, notice, open = f
     form.addEventListener("submit",async(event)=>{event.preventDefault();if(disposed || waiting || button.disabled || !writable || track.locked || section.isConnected===false || !form.reportValidity())return;waiting=true;button.disabled=true;try{await commit({kind:"set_mixer",channel:track.channel,gain_db:Number(inputs.gain_db.value),pan:Number(inputs.pan.value)});}catch(error){notice(error.message);}finally{waiting=false;button.disabled=!writable || track.locked;}});
     mixInputs.push({channel:track.channel,inputs});
     console.append(form);
-    if(catalog)effectDisposers.push(renderEffects(section,track,catalog,!writable || track.locked,commit,notice,openPaths,timeline.id,query,customPresets));
+    if(catalog)effectDisposers.push(renderEffects(section,track,catalog,!writable || track.locked,commit,notice,openPaths,timeline.id,query,customPresets,meters));
   }
   if(onMeters){const meters=document.createElement("button");meters.textContent="Open native meters / spectrum";meters.addEventListener("click",onMeters);section.append(meters);}
   const note=document.createElement("p");note.className="muted";note.textContent="Native timeline mix. Source playback uses the original source audio.";section.append(note);
@@ -66,7 +66,7 @@ export function renderMixer(root, timeline, { writable, commit, notice, open = f
   const unsubscribe=meters?.subscribe({query:Object.fromEntries(new URLSearchParams(query)),visible,isCurrent:()=>section.isConnected!==false,onClear:clear,onStatus:message=>{if(!message.startsWith('Native prepared playback'))meterStatus.textContent=message;},onRead:result=>{
     if(!visible())return;
     for(const row of meterViews){const channel=result.channels.find(channel=>channel.channel===row.id);if(!channel)continue;channel.db.forEach((db,index)=>row.bars[index].value=db===null?-60:db);const db=value=>value===null?'−∞':value.toFixed(1);row.readout.textContent=`${db(channel.db[0])} / ${db(channel.db[1])} dBFS${channel.clipped.some(Boolean)?' · CLIP':''}`;}
-    meterStatus.textContent=`LIVE · native prepared audio · sample ${result.end_sample}`;
+    meterStatus.textContent=`${result.frozen?'FROZEN':'PLAYING'} · native prepared audio · sample ${result.end_sample}`;
   }});
   const syncMeters=()=>{if(!section.open)for(const control of directControls)control.cancel();meters?.sync();};section.addEventListener('toggle',syncMeters);
   section.captureMixDrafts=()=>{for(const control of directControls)control.cancel();return context?{context,channels:mixInputs.map(({channel,inputs})=>({channel,gain_db:String(inputs.gain_db.value),pan:String(inputs.pan.value)}))}:null;};
@@ -80,8 +80,8 @@ export function normalizationModeTarget(previousMode,nextMode,target,catalog) {
   if(!next || !catalog.some(value=>value.mode===previousMode))throw new Error("Choose a native normalization mode");
   return (previousMode==='Loudness')!==(nextMode==='Loudness')?next.default:target;
 }
-function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timeline,query,audioPresets) {
-  const graphs=[];let disposed=false;
+function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timeline,query,audioPresets,meters) {
+  const graphs=[],cleanups=[];let disposed=false;
   const section=document.createElement("details"),summary=document.createElement("summary");section.dataset.mixerPath=`${track.channel}:effects`;section.open=openPaths.has(section.dataset.mixerPath);summary.textContent=`${track.label} inserts (${track.effects.length})`;section.append(summary);root.append(section);
   let built=false;
   section.addEventListener("toggle",()=>{
@@ -95,9 +95,9 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
       let ready=false;
       card.addEventListener("toggle",()=>{
         if(!card.open || ready)return;ready=true;
-        const draft=structuredClone(effect),form=document.createElement("form"),bindings=[];let graph=null,dynamics=null,fields=form;card.append(form);
+        const draft=structuredClone(effect),form=document.createElement("form"),bindings=[];let graph=null,dynamics=null,fields=form,clearActivity=()=>{};card.append(form);
         const refreshBindings=except=>{for(const {input,object,key,type} of bindings){if(input===except)continue;if(type==='check')input.checked=object[key];else if(type!=='number' || Number(input.value)!==object[key])input.value=object[key];}};
-        const synchronize=except=>{graph?.sync();dynamics?.sync();refreshBindings(except);};
+        const synchronize=except=>{clearActivity();graph?.sync();dynamics?.sync();refreshBindings(except);meters?.sync();};
         function check(label,object,key) {
           const row=document.createElement("label");row.className="field";row.textContent=label;
           const input=document.createElement("input");input.type="checkbox";input.checked=object[key];input.disabled=disabled;
@@ -132,17 +132,24 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
           const merge=(target,source)=>{for(const [key,value] of Object.entries(source)){if(value && typeof value==='object' && target[key] && typeof target[key]==='object'){merge(target[key],value);}else target[key]=structuredClone(value);}};
           const applyParameters=async parameters=>{const next=structuredClone(draft);next.kind[kind]=parameters;await commit(chainOperation(track.channel,track.effects.map((entry,own)=>own===index?next:entry)));merge(data,parameters);refreshBindings();graph?.sync();dynamics?.sync();};
           graph=createAudioGraph({root:form,kind,label:`${track.label} insert ${index+1}`,getParameters:()=>data,getEnabled:()=>draft.enabled,defaults:catalog.defaults[kind].kind[kind],catalog:kind==='Equalizer'?catalog.eq:catalog.compressor,canInteract,isCurrent:current,isValid:()=>form.reportValidity(),getContext:context,notice,
-            onCommit:applyParameters,
+            onCommit:applyParameters,onDraft:()=>clearActivity(),
             readResponse:()=>request(`/timelines/${encodeURIComponent(timeline)}/audio/${encodeURIComponent(track.channel)}/${kind==='Equalizer'?'eq':'compressor'}/${index}?${query}`)});
           if(kind==='MultibandCompressor'){
             let previousInputs=[];
             dynamics=createCompressorControls({root:form,label:`${track.label} insert ${index+1}`,getParameters:()=>data,defaults:catalog.defaults[kind].kind[kind],catalog:catalog.compressor,canInteract,isCurrent:current,isValid:()=>form.reportValidity(),getContext:context,notice,
-              onStart:()=>{graph.cancel();previousInputs=bindings.filter(binding=>binding.type==='number').map(({input})=>[input,input.value]);},
+              onStart:()=>{clearActivity();graph.cancel();previousInputs=bindings.filter(binding=>binding.type==='number').map(({input})=>[input,input.value]);},
               onDraft:parameters=>{for(const {input,object,key,type} of bindings){const band=data.bands.indexOf(object);if(type==='number' && band>=0)input.value=parameters.bands[band][key];}},
               onCancel:()=>{for(const [input,value] of previousInputs)input.value=value;},onCommit:applyParameters});
             graphs.push(dynamics);
+            clearActivity=(message='')=>{graph?.setActivity(null,message);dynamics?.setActivity(null);};
+            const nativeParameters=JSON.stringify(data),sampleCurrent=()=>current() && !document.hidden && (card.getClientRects?.().length ?? 1)>0 && (meters?.visible?.() ?? false) && JSON.stringify(data)===nativeParameters && draft.enabled===effect.enabled;
+            const unsubscribe=meters?.subscribe({query:Object.fromEntries(new URLSearchParams(query)),insert:{channel:track.channel,index},visible:sampleCurrent,isCurrent:()=>!disposed && card.isConnected!==false && context()===expected,onClear:clearActivity,onStatus:message=>{if(!message.startsWith('Native prepared'))clearActivity(message);},onRead:result=>{
+              if(!sampleCurrent()){clearActivity();return;}
+              const sample=compressorActivitySample(result,{channel:track.channel,index,parameters:data});if(!sample){clearActivity(result.inserts_error || 'No matching native compressor sample');return;}graph.setActivity(sample);dynamics.setActivity(sample);
+            }});
+            if(unsubscribe)cleanups.push(unsubscribe);
           }
-          graphs.push(graph);for(const details of [card,section,root])details.addEventListener('toggle',()=>{if(current()){graph.sync();dynamics?.sync();refreshBindings();void graph.refresh();}else{graph.cancel();dynamics?.cancel();}});
+          graphs.push(graph);for(const details of [card,section,root]){const toggle=()=>{if(current()){graph.sync();dynamics?.sync();refreshBindings();void graph.refresh();}else{clearActivity();graph.cancel();dynamics?.cancel();}meters?.sync();};details.addEventListener('toggle',toggle);cleanups.push(()=>details.removeEventListener?.('toggle',toggle));}
         }
         if(kind === "Equalizer") {
           for(const [bandIndex,band] of data.bands.entries()) {
@@ -180,5 +187,5 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
       });
     }
   });
-  return ()=>{disposed=true;for(const graph of graphs)graph.dispose();};
+  return ()=>{disposed=true;for(const cleanup of cleanups)cleanup();for(const graph of graphs)graph.dispose();};
 }

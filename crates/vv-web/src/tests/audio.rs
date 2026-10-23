@@ -1,6 +1,54 @@
 use super::*;
 
 #[test]
+fn compressor_activity_curves_match_native_desktop_crossovers_without_mutating_parameters() {
+    let mut params = core::MultibandCompressor::DEFAULT;
+    params.crossovers_hz = [315.0, 2750.0];
+    for (band, makeup) in params.bands.iter_mut().zip([-8.0, 4.0, 12.0]) {
+        band.makeup_db = makeup;
+    }
+    let before = json!(params);
+    let reduction = [1.5, 9.0, 3.25];
+    let actual = compressor_activity_response(&params, reduction).unwrap();
+    assert_eq!(actual["parameters"], before);
+    assert_eq!(actual["response_kind"], "native_activity");
+    assert_eq!(actual["sample_rate"], 48_000);
+    let native = vv_audio::dynamics::CrossoverResponse::new(&params, 48_000);
+    let makeup = params.bands.map(|band| band.makeup_db);
+    let live = std::array::from_fn(|index| makeup[index] - reduction[index]);
+    let points = actual["points"].as_array().unwrap();
+    assert_eq!(points.len(), 241);
+    for (index, point) in points.iter().enumerate() {
+        let hz = 20.0_f32 * 1000.0_f32.powf(index as f32 / 240.0);
+        assert_eq!(
+            *point,
+            json!([hz, native.gain_db(makeup, hz), native.gain_db(live, hz)])
+        );
+    }
+    let inactive = compressor_activity_response(&params, [0.0; 3]).unwrap();
+    for point in inactive["points"].as_array().unwrap() {
+        assert_eq!(point[1], point[2]);
+    }
+    assert_eq!(json!(params), before);
+}
+
+#[test]
+fn compressor_activity_curves_refuse_invalid_parameters_or_unverified_reduction() {
+    for reduction in [
+        [-0.1, 0.0, 0.0],
+        [0.0, f32::NAN, 0.0],
+        [0.0, 0.0, f32::INFINITY],
+    ] {
+        assert!(
+            compressor_activity_response(&core::MultibandCompressor::DEFAULT, reduction).is_err()
+        );
+    }
+    let mut params = core::MultibandCompressor::DEFAULT;
+    params.crossovers_hz = [2000.0, 200.0];
+    assert!(compressor_activity_response(&params, [0.0; 3]).is_err());
+}
+
+#[test]
 fn compressor_graph_response_matches_native_makeup_filters_and_ignores_unobserved_activity() {
     let (mut session, id) = saved_preset_session();
     let mut params = core::MultibandCompressor::DEFAULT;

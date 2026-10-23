@@ -22,10 +22,10 @@ export function createCompressorControls({root,label,getParameters,defaults,cata
   const host=documentRef.createElement('div');host.className='compressor-controls';root.append(host);
   const validRange=range=>Array.isArray(range) && range.length===2 && range.every(Number.isFinite) && range[0]<range[1];
   if(!parameters.every(key=>validRange(catalog[key]) && (!logarithmic(key) || catalog[key][0]>0)) || !Array.isArray(defaults?.bands) || defaults.bands.length!==3){
-    host.textContent='Native dynamics metadata unavailable · use the precise fields';return {sync(){},cancel(){},dispose(){}};
+    host.textContent='Native dynamics metadata unavailable · use the precise fields';return {sync(){},cancel(){},setActivity(){},dispose(){}};
   }
-  let values=structuredClone(getParameters()),gesture=null,waiting=false,unknown=false,disposed=false;
-  const controls=[],resets=[],listeners=[];
+  let values=structuredClone(getParameters()),gesture=null,waiting=false,unknown=false,disposed=false,activity=null,activityContext=null;
+  const controls=[],resets=[],listeners=[],activityViews=[];
   const listen=(target,type,fn,options)=>{target?.addEventListener?.(type,fn,options);listeners.push(()=>target?.removeEventListener?.(type,fn,options));};
   const live=()=>!disposed && !waiting && !unknown && root.isConnected!==false && host.isConnected!==false && !documentRef?.hidden && isCurrent() && canInteract();
   const owned=button=>button.isConnected!==false && !button.disabled;
@@ -38,6 +38,14 @@ export function createCompressorControls({root,label,getParameters,defaults,cata
       button.setAttribute('aria-valuenow',String(value));const text=`${value.toFixed(key==='release_ms'?0:1)}${key==='ratio'?':1':key.endsWith('_db')?' dB':' ms'}`;button.setAttribute('aria-valuetext',text);output.textContent=text;
     }
     for(const button of resets)button.disabled=!live() || button.isConnected===false;host.setAttribute('aria-busy',String(waiting));
+    if(activity && (disposed || !isCurrent() || activityContext!==getContext() || documentRef?.hidden || gesture || waiting || !same(values,getParameters()) || !same(activity.parameters,getParameters())))activity=null;
+    for(const {svg,under,over,reduction,band} of activityViews){
+      const level=activity?.inactive?0:activity?.band_level[band] ?? 0,gr=activity?.inactive?0:activity?.reduction_db[band] ?? 0,min=catalog.threshold_db[0],max=catalog.threshold_db[1],db=20*Math.log10(Math.max(level,1e-9));
+      const y=value=>(1-clamp((value-min)/(max-min),0,1))*100,levelY=y(db),thresholdY=y(values.bands[band].threshold_db);
+      under.setAttribute('y',String(Math.max(levelY,thresholdY)));under.setAttribute('height',activity?String(100-Math.max(levelY,thresholdY)):'0');
+      over.setAttribute('y',String(levelY));over.setAttribute('height',activity?String(Math.max(0,thresholdY-levelY)):'0');reduction.setAttribute('height',activity?String(clamp(gr/24,0,1)*100):'0');
+      svg.setAttribute('aria-label',`${label} ${['Low','Mid','High'][band]} input and gain reduction: ${activity?`${level>0?db.toFixed(1):'−∞'} dBFS · ${gr.toFixed(1)} dB GR${activity.frozen?' · frozen prepared sample':''}${activity.inactive?' · inactive':''}`:'no current native sample'}`);
+    }
   }
   function release(owner){try{if(owner.button.hasPointerCapture?.(owner.id))owner.button.releasePointerCapture(owner.id);}catch{}}
   function cancel(restore=true){if(!gesture)return;const owner=gesture;gesture=null;values=structuredClone(owner.before);release(owner);if(restore)onCancel();paint();}
@@ -69,7 +77,12 @@ export function createCompressorControls({root,label,getParameters,defaults,cata
       const name=documentRef.createElement('span');name.textContent=key==='threshold_db'?'Thr':names[key];cell.append(name);
       const button=documentRef.createElement('button');button.type='button';button.className=key==='threshold_db'?'compressor-threshold':'compressor-knob';button.dataset.compressorParam=key;button.dataset.compressorBand=String(band);
       const mark=documentRef.createElement('span');mark.className='compressor-control-mark';mark.setAttribute('aria-hidden','true');
-      if(key==='threshold_db'){const rail=documentRef.createElement('span');rail.className='compressor-fader-rail';rail.setAttribute('aria-hidden','true');rail.append(mark);button.append(rail);}else button.append(mark);
+      if(key==='threshold_db'){
+        const rail=documentRef.createElement('span');rail.className='compressor-fader-rail';
+        const node=name=>documentRef.createElementNS?.('http://www.w3.org/2000/svg',name) ?? documentRef.createElement(name),svg=node('svg');svg.setAttribute('viewBox','0 0 18 100');svg.setAttribute('width','100%');svg.setAttribute('height','100%');svg.setAttribute('preserveAspectRatio','none');svg.setAttribute('role','img');svg.setAttribute('class','compressor-activity');
+        const bar=(x,color)=>{const rect=node('rect');rect.setAttribute('x',String(x));rect.setAttribute('y','0');rect.setAttribute('width','5');rect.setAttribute('height','0');rect.setAttribute('fill',color);svg.append(rect);return rect;};
+        const under=bar(6,'var(--success)'),over=bar(6,'var(--primary)'),reduction=bar(12,'var(--danger)');activityViews.push({svg,under,over,reduction,band});rail.append(svg,mark);button.append(rail);
+      }else button.append(mark);
       const output=documentRef.createElement('output');output.setAttribute('aria-hidden','true');cell.append(button,output);controls.push({button,output,band,key});
       button.setAttribute('role','slider');button.setAttribute('aria-label',`${label} ${heading.textContent} ${names[key].toLowerCase()}`);button.setAttribute('aria-valuemin',String(catalog[key][0]));button.setAttribute('aria-valuemax',String(catalog[key][1]));button.setAttribute('aria-orientation',key==='threshold_db'?'vertical':'horizontal');
       button.title='Drag up/right · Shift for precision · double-click or Enter resets';
@@ -99,5 +112,5 @@ export function createCompressorControls({root,label,getParameters,defaults,cata
     listen(reset,'click',()=>{if(!live() || !owned(reset) || !isValid())return;cancel();onStart();const before=structuredClone(getParameters()),next=structuredClone(before);next.bands[band]=structuredClone(defaults.bands[band]);onDraft(next);void commit(next,before,getContext(),reset);});
   }
   listen(windowRef,'blur',()=>cancel());listen(windowRef,'resize',()=>cancel());listen(windowRef,'scroll',()=>cancel(),true);listen(documentRef,'visibilitychange',()=>{if(documentRef.hidden)cancel();});
-  paint();return {sync,cancel:()=>cancel(),dispose(){cancel();disposed=true;for(const remove of listeners)remove();}};
+  paint();return {sync,cancel:()=>cancel(),setActivity(value){if(disposed)return;activity=value;activityContext=getContext();paint();},dispose(){cancel();disposed=true;activity=null;paint();for(const remove of listeners)remove();}};
 }

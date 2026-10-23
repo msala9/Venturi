@@ -30,10 +30,22 @@ function graphMetadata(value,kind){
   const range=value=>Array.isArray(value) && value.length===2 && value.every(Number.isFinite) && value[1]>value[0];
   return value && range(value.frequency_hz) && value.frequency_hz[0]>0 && range(value.display_db) && (kind==='Equalizer'?value.shape_has_gain && Number.isFinite(value.q_wheel_factor):value.min_crossover_ratio>1);
 }
-export function createAudioGraph({root,kind,label,getParameters,getEnabled=()=>null,defaults,catalog,canInteract,isCurrent=()=>true,isValid=()=>true,getContext=()=>null,onCommit,readResponse,notice=()=>{},windowRef=globalThis.window,documentRef=globalThis.document}){
+const compressorIdentity=value=>{
+  const keys=['threshold_db','ratio','attack_ms','release_ms','makeup_db'];
+  if(!Array.isArray(value?.crossovers_hz) || value.crossovers_hz.length!==2 || !value.crossovers_hz.every(Number.isFinite) || !Array.isArray(value.bands) || value.bands.length!==3 || !value.bands.every(band=>band && keys.every(key=>Number.isFinite(band[key]))))return null;
+  return JSON.stringify([value.crossovers_hz,value.bands.map(band=>keys.map(key=>band[key]))]);
+};
+export function compressorActivitySample(result,{channel,index,parameters}){
+  const insert=result?.insert,activity=insert?.sample_activity ?? insert,vector=value=>Array.isArray(value) && value.length===3 && value.every(Number.isFinite);
+  if(!compressorIdentity(parameters) || !result?.telemetry || result.sample_rate!==48000 || !Number.isSafeInteger(result.end_sample) || result.end_sample<0 || insert?.kind!=='MultibandCompressor' || insert.channel!==channel || insert.index!==index || !vector(activity?.band_level) || activity.band_level.some(value=>value<0) || !vector(activity.reduction_db) || activity.reduction_db.some(value=>value<0) || !Array.isArray(result.spectrum_hz) || result.spectrum_hz.length!==128 || result.spectrum_hz.some(value=>!Number.isFinite(value)) || ['before_db','after_db'].some(key=>!Array.isArray(insert[key]) || insert[key].length!==128 || insert[key].some(value=>!Number.isFinite(value))))return null;
+  const response=insert.response;
+  if(response && (response.sample_rate!==48000 || response.response_kind!=='native_activity' || compressorIdentity(response.parameters)!==compressorIdentity(parameters) || !Array.isArray(response.points) || response.points.length!==241 || response.points.some((point,i)=>!Array.isArray(point) || point.length!==3 || !point.every(Number.isFinite) || point[0]<20 || point[0]>20000 || i>0 && point[0]<=response.points[i-1][0])))return null;
+  return {parameters:structuredClone(parameters),response,band_level:[...activity.band_level],reduction_db:[...activity.reduction_db],spectrum_hz:result.spectrum_hz,before_db:insert.before_db,after_db:insert.after_db,end_sample:result.end_sample,frozen:result.frozen===true,inactive:insert.inactive===true,error:insert.response_error || ''};
+}
+export function createAudioGraph({root,kind,label,getParameters,getEnabled=()=>null,defaults,catalog,canInteract,isCurrent=()=>true,isValid=()=>true,getContext=()=>null,onCommit,onDraft=()=>{},readResponse,notice=()=>{},windowRef=globalThis.window,documentRef=globalThis.document}){
   const metadata=catalog.graph,host=documentRef.createElement('div');host.className='audio-graph';root.append(host);
   const status=documentRef.createElement('p');status.className='audio-graph-status';status.setAttribute('role','status');
-  if(!graphMetadata(metadata,kind)){status.textContent='Native graph metadata unavailable · use the numeric controls';host.append(status);return {sync(){},cancel(){},refresh(){},resetBand(){},dispose(){}};}
+  if(!graphMetadata(metadata,kind)){status.textContent='Native graph metadata unavailable · use the numeric controls';host.append(status);return {sync(){},cancel(){},refresh(){},resetBand(){},setActivity(){},dispose(){}};}
   const stage=documentRef.createElement('div');stage.className='audio-graph-stage';host.append(stage,status);
   const svgElement=name=>documentRef.createElementNS?.('http://www.w3.org/2000/svg',name) ?? documentRef.createElement(name);
   const svg=svgElement('svg');svg.setAttribute('viewBox','0 0 480 230');svg.setAttribute('preserveAspectRatio','none');svg.setAttribute('aria-hidden','true');stage.append(svg);
@@ -42,9 +54,10 @@ export function createAudioGraph({root,kind,label,getParameters,getEnabled=()=>n
   for(let db=Math.ceil(metadata.display_db[0]/6)*6;db<=metadata.display_db[1];db+=6){const y=(metadata.display_db[1]-db)/(metadata.display_db[1]-metadata.display_db[0])*230;gridPath+=`M0 ${y}H480 `;if(y>=12 && y<=220)axisText(`${db} dB`,476,y-2);}
   for(const hz of [100,1000,10000]){const x=audioFrequencyPosition(hz,metadata.frequency_hz)*480;gridPath+=`M${x} 0V230 `;axisText(hz>=1000?`${hz/1000}k`:String(hz),x-3,226);}
   grid.setAttribute('d',gridPath);svg.append(grid);const curve=svgElement('polyline');curve.classList?.add('audio-graph-response');svg.append(curve);
+  const activityLines=kind==='MultibandCompressor'?['pre','post','active'].map(name=>{const line=svgElement('polyline');line.setAttribute('class',`audio-graph-${name}`);line.setAttribute('fill','none');line.setAttribute('stroke',name==='pre'?'var(--violet)':name==='post'?'var(--success)':'var(--primary)');line.setAttribute('stroke-width',name==='active'?'2':'1');line.setAttribute('vector-effect','non-scaling-stroke');svg.append(line);return line;}):[];
   const toolbar=documentRef.createElement('div');toolbar.className='audio-graph-tools';const reset=documentRef.createElement('button');reset.type='button';reset.textContent='Reset all';reset.setAttribute('aria-label',`Reset ${label} parameters`);toolbar.append(reset);host.append(toolbar);
-  const help=documentRef.createElement('p');help.className='audio-graph-help';help.textContent=kind==='Equalizer'?'Drag a band for Hz/gain; wheel or Page Up/Down changes Q. Double-click or Enter toggles a band. Arrow keys adjust Hz/gain.':'Drag crossovers horizontally and makeup nodes vertically. Arrow keys adjust Hz or 0.1 dB. The response shows committed native makeup only.';host.append(help);
-  let parameters=structuredClone(getParameters()),committed=structuredClone(parameters),committedEnabled=getEnabled(),gesture=null,waiting=false,disposed=false,readSequence=0,response=null,responseParameters=null,responseError='';
+  const help=documentRef.createElement('p');help.className='audio-graph-help';help.textContent=kind==='Equalizer'?'Drag a band for Hz/gain; wheel or Page Up/Down changes Q. Double-click or Enter toggles a band. Arrow keys adjust Hz/gain.':'Drag crossovers and makeup nodes; arrows adjust Hz/0.1 dB. Amber: committed makeup. Prepared audio adds native active response and pre/post spectra.';host.append(help);
+  let parameters=structuredClone(getParameters()),committed=structuredClone(parameters),committedEnabled=getEnabled(),gesture=null,waiting=false,disposed=false,readSequence=0,response=null,responseParameters=null,responseError='',activity=null,activityError='',activityContext=null;
   const listeners=[],buttons=[];
   const listen=(target,type,callback,options)=>{target?.addEventListener?.(type,callback,options);listeners.push(()=>target?.removeEventListener?.(type,callback,options));};
   const live=()=>!disposed && !waiting && host.isConnected!==false && isCurrent() && canInteract();
@@ -55,7 +68,14 @@ export function createAudioGraph({root,kind,label,getParameters,getEnabled=()=>n
       const button=buttons[index];if(!button)continue;button.style?.setProperty('left',`${clamp(handle.x,0,1)*100}%`);button.style?.setProperty('top',`${clamp(handle.y,0,1)*100}%`);button.setAttribute('aria-label',`${label} ${handle.label}`);button.title=handle.label;button.disabled=!live() || Boolean(handle.blocked);button.setAttribute('aria-pressed',String(handle.enabled!==false));
     }
     reset.disabled=!live();const dirty=!same(parameters,committed) || getEnabled()!==committedEnabled;
-    status.textContent=`${dirty?'Local parameter draft · ':''}${response?(same(responseParameters,committed)?'Committed native response':'Previous committed response · refresh required'):'Native response unavailable'}${response?.enabled===false?' · insert bypassed':''}${kind==='MultibandCompressor'?' · makeup only, no activity curve':''}${waiting?' · applying…':''}${responseError?` · ${responseError}`:''}`;
+    if(activity && (disposed || !isCurrent() || activityContext!==getContext() || documentRef?.hidden || gesture || waiting || dirty || compressorIdentity(activity.parameters)!==compressorIdentity(getParameters())))activity=null;
+    if(activityLines.length){
+      const x=hz=>audioFrequencyPosition(hz,metadata.frequency_hz)*480;
+      for(const [i,key] of ['before_db','after_db'].entries())activityLines[i].setAttribute('points',activity?activity.spectrum_hz.map((hz,index)=>[hz,activity[key][index]]).filter(([hz])=>hz>=20 && hz<=20000).map(([hz,db])=>`${x(hz)},${-clamp(db,-96,0)/96*230}`).join(' '):'');
+      activityLines[2].setAttribute('points',activity?.response?activity.response.points.map(([hz,,db])=>`${x(hz)},${(metadata.display_db[1]-clamp(db,...metadata.display_db))/(metadata.display_db[1]-metadata.display_db[0])*230}`).join(' '):'');
+    }
+    const activityText=activity?`${activity.frozen?'Frozen prepared sample':'Prepared audio sample'} ${activity.end_sample}${activity.inactive?' · insert inactive':''} · native pre/post spectra${activity.response?' · native activity response':` · ${activity.error || 'Activity response unavailable'}`}`:`makeup only · ${activityError || 'no current activity sample'}`;
+    status.textContent=`${dirty?'Local parameter draft · ':''}${response?(same(responseParameters,committed)?'Committed native response':'Previous committed response · refresh required'):'Native response unavailable'}${response?.enabled===false?' · insert bypassed':''}${kind==='MultibandCompressor'?` · ${activityText}`:''}${waiting?' · applying…':''}${responseError?` · ${responseError}`:''}`;
   }
   function release(owner){try{if(owner.button.hasPointerCapture?.(owner.id))owner.button.releasePointerCapture(owner.id);}catch{}}
   function cancel(){if(!gesture)return;const owner=gesture;gesture=null;parameters=owner.before;release(owner);paint();}
@@ -73,7 +93,7 @@ export function createAudioGraph({root,kind,label,getParameters,getEnabled=()=>n
   async function commit(next,before,context){
     if(same(next,before)){parameters=before;paint();return;}
     if(!live() || context!==getContext() || !isValid()){sync();return;}
-    waiting=true;parameters=next;host.setAttribute('aria-busy','true');paint();
+    waiting=true;parameters=next;onDraft();host.setAttribute('aria-busy','true');paint();
     try{await onCommit(structuredClone(next));committed=structuredClone(next);committedEnabled=getEnabled();if(!disposed){parameters=structuredClone(getParameters());waiting=false;paint();await refresh();}}
     catch(error){notice(error.message);if(!disposed)parameters=structuredClone(getParameters());}
     finally{waiting=false;if(!disposed){host.setAttribute('aria-busy','false');paint();}}
@@ -83,7 +103,7 @@ export function createAudioGraph({root,kind,label,getParameters,getEnabled=()=>n
     const owner=gesture;if(!owner || event.pointerId!==owner.id)return;
     if(!valid(owner) || (!releaseEvent && event.buttons!==undefined && !(event.buttons&1))){cancel();return;}
     if(!owner.moved && event.clientX===owner.x && event.clientY===owner.y)return;
-    owner.moved=true;parameters=audioGraphDraft(kind,owner.before,owner.handle,point(event),metadata,catalog);paint();
+    owner.moved=true;parameters=audioGraphDraft(kind,owner.before,owner.handle,point(event),metadata,catalog);onDraft();paint();
   }
   const handles=audioGraphHandles(kind,parameters,metadata);
   for(const [index,handle] of handles.entries()){
@@ -124,5 +144,5 @@ export function createAudioGraph({root,kind,label,getParameters,getEnabled=()=>n
   listen(reset,'click',()=>{if(!live())return;cancel();void commit(structuredClone(defaults),structuredClone(getParameters()),getContext());});
   listen(windowRef,'blur',cancel);listen(windowRef,'resize',cancel);listen(windowRef,'scroll',cancel,true);listen(documentRef,'visibilitychange',()=>{if(documentRef.hidden)cancel();});
   paint();void refresh();
-  return {sync,cancel,refresh,resetBand,dispose(){cancel();disposed=true;readSequence++;for(const remove of listeners)remove();}};
+  return {sync,cancel,refresh,resetBand,setActivity(value,message=''){if(disposed)return;activity=value;activityContext=getContext();activityError=message;paint();},dispose(){cancel();disposed=true;activity=null;readSequence++;paint();for(const remove of listeners)remove();}};
 }

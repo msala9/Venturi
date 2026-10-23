@@ -27,6 +27,10 @@ const programQuery=value=>Object.fromEntries(['project_epoch','if_generation','t
 const sameProgramQuery=(a,b)=>JSON.stringify(programQuery(a || {}))===JSON.stringify(programQuery(b || {}));
 const playbackIdentity=target=>target?.playback && JSON.stringify([target.playback.job_id,programQuery(target.playback.query),target.insert]);
 const db=peak=>peak>0?20*Math.log10(peak):null;
+const insertKey=value=>value?JSON.stringify([value.channel,value.index]):null;
+function validCompressorResponse(response){
+  return response?.sample_rate===48000 && response.response_kind==='native_activity' && Array.isArray(response.points) && response.points.length===241 && response.points.every((point,index)=>Array.isArray(point) && point.length===3 && point.every(Number.isFinite) && point[0]>=20 && point[0]<=20000 && (!index || point[0]>response.points[index-1][0])) && Array.isArray(response.parameters?.crossovers_hz) && response.parameters.crossovers_hz.length===2 && response.parameters.crossovers_hz.every(Number.isFinite) && Array.isArray(response.parameters.bands) && response.parameters.bands.length===3 && response.parameters.bands.every(band=>band && ['threshold_db','ratio','attack_ms','release_ms','makeup_db'].every(key=>Number.isFinite(band[key])));
+}
 
 export function createPeakEnvelope({now=()=>performance.now()}={}) {
   const levels=new Map();let previous=now();
@@ -69,6 +73,7 @@ export function createPlaybackMeterReader({getTarget,onRead,onStatus,onClear=()=
       if(Array.isArray(target.channels) && (target.channels.length!==seen.size || target.channels.some(channel=>!seen.has(channel.id))))throw Error('Native audio telemetry channels changed');
       if(target.insert && value.inserts_available===true && !bin.insert)throw Error('The requested native insert telemetry is missing');
       if(bin.insert && (!target.insert || bin.insert.channel!==target.insert.channel || bin.insert.index!==target.insert.index || !['Equalizer','MultibandCompressor'].includes(bin.insert.kind) || ['before_db','after_db'].some(key=>!Array.isArray(bin.insert[key]) || bin.insert[key].length!==128 || bin.insert[key].some(db=>!Number.isFinite(db))) || ['band_level','reduction_db'].some(key=>!Array.isArray(bin.insert[key]) || bin.insert[key].length!==3 || bin.insert[key].some(value=>!Number.isFinite(value)))))throw Error('Invalid native insert telemetry');
+      if(bin.insert?.response!=null && (bin.insert.kind!=='MultibandCompressor' || !validCompressorResponse(bin.insert.response)))throw Error('Invalid native compressor activity response');
       end=bin.end_sample;
     }
     return {...value,next_bin:next};
@@ -84,9 +89,9 @@ export function createPlaybackMeterReader({getTarget,onRead,onStatus,onClear=()=
     const target=final?terminalTarget():getTarget(),playback=target?.playback;
     if(!playback || !finiteSample(playback.sample)){invalidate();onStatus('STALE · no verified prepared Program audio');return;}
     const identity=playbackIdentity(target);
-    if(binding!==identity || lastSample!==null && playback.sample<lastSample){invalidate();binding=identity;}
+    if(binding!==identity || lastSample!==null && (playback.sample<lastSample || !playback.playing && !final && playback.sample!==lastSample)){invalidate();binding=identity;}
     if(unavailable)return;
-    if(!playback.playing && !final){if(lastResult)onRead({...lastResult,channels:envelope.read()},target);return;}
+    if(!playback.playing && !final){if(lastResult)onRead({...lastResult,frozen:true,channels:envelope.read()},target);return;}
     if(pending)return;
     const seq=sequence;pending=true;controller=new AbortController();const signal=terminal?AbortSignal.any([controller.signal,terminal.controller.signal]):controller.signal;
     try{
@@ -115,8 +120,8 @@ export function createPlaybackMeterReader({getTarget,onRead,onStatus,onClear=()=
       if(seq!==sequence || !current(identity))return;
       lastSample=current(identity).playback.sample;
       const channels=envelope.read([...peaks].map(([channel,peak])=>({channel,peak})));
-      if(selected){lastResult={...selected,insert:selected.insert?{...selected.insert,...insertMax}:null,sample_rate:metadata.sample_rate,samples:metadata.bin_frames,spectrum_hz:metadata.spectrum_hz,channels,telemetry:true,inserts_available:metadata.inserts_available,inserts_error:metadata.inserts_error,tail_only:Boolean(terminal?.tailOnly)};onRead(lastResult,current(identity));}
-      else if(lastResult)onRead({...lastResult,channels},current(identity));
+      if(selected){lastResult={...selected,insert:selected.insert?{...selected.insert,...insertMax,sample_activity:{band_level:[...selected.insert.band_level],reduction_db:[...selected.insert.reduction_db]}}:null,sample_rate:metadata.sample_rate,samples:metadata.bin_frames,spectrum_hz:metadata.spectrum_hz,channels,telemetry:true,frozen:!current(identity).playback.playing,inserts_available:metadata.inserts_available,inserts_error:metadata.inserts_error,tail_only:Boolean(terminal?.tailOnly)};onRead(lastResult,current(identity));}
+      else if(lastResult)onRead({...lastResult,frozen:!current(identity).playback.playing,channels},current(identity));
       onStatus((metadata.inserts_available===false && target.insert?`Native prepared playback peaks · ${metadata.inserts_error || 'Insert telemetry unavailable; use Read for a static window'}`:lastResult?`Native prepared playback · audio sample ${lastResult.end_sample}`:'Native prepared audio · waiting for a completed bin')+(terminal?.tailOnly?' · Final tail only':''));
       return Boolean(selected || lastResult && lastResult.end_sample===metadata.end_sample);
     }catch(error){if(seq===sequence && current(identity) && error.name!=='AbortError'){unavailable=true;lastResult=null;envelope.clear();onClear();onStatus(`Telemetry unavailable · ${error.message}`);}}
@@ -149,14 +154,17 @@ export function createMeterSubscriptions({getTarget,onWake=()=>{}}){
   }
   return {
     active,
-    subscribe({query,visible,isCurrent=()=>true,onRead,onClear,onStatus=()=>{}}){
+    subscribe({query,insert=null,visible,isCurrent=()=>true,onRead,onClear,onStatus=()=>{}}){
       if(!query || keys.some(key=>typeof query[key]!=='string'))throw Error('Bind mixer meters to the native project and timeline revision');
-      const consumer={query:{...query},visible,isCurrent,onRead,onClear,onStatus,shown:false};consumers.add(consumer);onClear();onWake();
+      if(insert && (typeof insert.channel!=='string' || !insert.channel || !Number.isSafeInteger(insert.index) || insert.index<0 || insert.index>=32))throw Error('Bind insert meters to a native channel and slot');
+      const consumer={query:{...query},insert:insert?{...insert}:null,visible,isCurrent,onRead,onClear,onStatus,shown:false};consumers.add(consumer);onClear();onWake();
       return ()=>{if(consumers.delete(consumer)){onClear();onWake();}};
     },
-    publish(result,target){if(!result.telemetry || !active())return;for(const consumer of consumers)if(consumer.shown && keys.every(key=>target.query[key]===consumer.query[key]))consumer.onRead(result);},
+    inserts(){active();return [...new Map([...consumers].filter(consumer=>consumer.shown && consumer.insert).map(consumer=>[insertKey(consumer.insert),consumer.insert])).values()];},
+    publish(result,target,{insertOnly=false}={}){if(!result.telemetry || !active())return;for(const consumer of consumers)if(consumer.shown && keys.every(key=>target.query[key]===consumer.query[key]) && (consumer.insert?insertKey(consumer.insert)===insertKey(target.insert):!insertOnly))consumer.onRead(result);},
     clear(){for(const consumer of consumers)consumer.onClear();},
-    status(message){if(active())for(const consumer of consumers)if(consumer.shown)consumer.onStatus(message);},
+    clearInsert(insert){for(const consumer of consumers)if(insertKey(consumer.insert)===insertKey(insert))consumer.onClear();},
+    status(message,insert){if(active())for(const consumer of consumers)if(consumer.shown && (insert===undefined || insertKey(consumer.insert)===insertKey(insert)))consumer.onStatus(message);},
   };
 }
 
@@ -164,7 +172,7 @@ export function createAudioMeters({root,getTarget,isPlaying,onTransport,getPlayb
   const select=root.querySelector("select"),status=root.querySelector("[data-meter-status]"),rows=root.querySelector("[data-meter-rows]"),svg=root.querySelector("svg"),context=root.querySelector("[data-meter-context]");
   const live=root.querySelector("input[type=checkbox]");
   const ns="http://www.w3.org/2000/svg";
-  let optionsKey=null,timer=null,channelKey=null,channelViews=[],following=false,finishing=null;
+  let optionsKey=null,timer=null,channelKey=null,channelViews=[],following=false,finishing=null;const insertReaders=new Map();
   const subscribers=createMeterSubscriptions({getTarget,onWake:()=>sync()});
   function element(tag,attrs,text) { const node=document.createElementNS(ns,tag);for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);if(text)node.textContent=text;svg.append(node);return node; }
   for(const db of [0,-24,-48,-72,-96]) {const y=12-db/96*140;element("line",{x1:38,x2:595,y1:y,y2:y,stroke:"var(--border)"});element("text",{x:1,y:y+4,fill:"var(--muted)","font-size":10},`${db}`);}
@@ -183,6 +191,7 @@ export function createAudioMeters({root,getTarget,isPlaying,onTransport,getPlayb
     }
     return {...current,insert:root.open && select.value?JSON.parse(select.value):null};
   }
+  function playbackTarget(){const current=target();return current?{...current,insert:current.insert || subscribers.inserts()[0] || null}:null;}
   function draw(result,current) {
     root.dataset.stale="false";
     const key=JSON.stringify(current.channels.map(channel=>[channel.id,channel.label]));
@@ -207,19 +216,35 @@ export function createAudioMeters({root,getTarget,isPlaying,onTransport,getPlayb
   }
   function clearDisplay(){root.dataset.stale='true';for(const row of channelViews){for(const meter of row.meters)meter.value=-60;row.readout.textContent='';}before.setAttribute('points','');after.setAttribute('points','');}
   const reader=createMeterReader({getTarget:target,onRead:draw,onStatus:message=>{if(message!=="Reading native audio…" || !status.textContent.startsWith("Native"))status.textContent=message;if(!message.startsWith("Native") && message!=="Reading native audio…")root.dataset.stale="true";},fetcher});
-  const playbackReader=createPlaybackMeterReader({getTarget:target,onRead:(value,current)=>{subscribers.publish(value,current);if(root.open && live.checked)draw(value,current);},onClear:()=>{clearDisplay();subscribers.clear();},onStatus:message=>{subscribers.status(message);if(root.open && live.checked){status.textContent=message;if(!message.startsWith('Native prepared playback'))root.dataset.stale='true';}},fetcher});
-  function invalidate(){finishing=null;reader.invalidate();playbackReader.invalidate();clearDisplay();following=false;}
+  const playbackReader=createPlaybackMeterReader({getTarget:playbackTarget,onRead:(value,current)=>{subscribers.publish(value,current);if(root.open && live.checked)draw(select.value?value:{...value,insert:null},current);},onClear:()=>{clearDisplay();subscribers.clear();},onStatus:message=>{subscribers.status(message);if(root.open && live.checked){status.textContent=message;if(!message.startsWith('Native prepared playback'))root.dataset.stale='true';}},fetcher});
+  function syncInsertReaders(){
+    const selected=playbackTarget()?.insert,requested=subscribers.inserts(),admitted=new Set(selected?[insertKey(selected)]:[]),wanted=new Map();
+    for(const insert of requested){
+      const key=insertKey(insert);if(key===insertKey(selected))continue;
+      if(admitted.size>=4){subscribers.clearInsert(insert);subscribers.status('Native activity is limited to four visible inserts',insert);continue;}
+      admitted.add(key);wanted.set(key,insert);
+    }
+    for(const [key,entry] of insertReaders)if(!wanted.has(key)){entry.reader.invalidate();insertReaders.delete(key);}
+    for(const [key,insert] of wanted)if(!insertReaders.has(key)){
+      const readTarget=()=>{const current=target();return current && subscribers.inserts().some(value=>insertKey(value)===key)?{...current,insert}:null;};
+      const reader=createPlaybackMeterReader({getTarget:readTarget,onRead:(value,current)=>subscribers.publish(value,current,{insertOnly:true}),onClear:()=>subscribers.clearInsert(insert),onStatus:message=>subscribers.status(message,insert),fetcher});
+      insertReaders.set(key,{reader,insert});
+    }
+  }
+  function invalidate(){finishing=null;reader.invalidate();playbackReader.invalidate();for(const {reader} of insertReaders.values())reader.invalidate();insertReaders.clear();clearDisplay();following=false;}
   function readCurrent(){reader.invalidate();if(!subscribers.active())playbackReader.invalidate();reader.refresh();}
-  function followPlayback(){if(!playbackReader.active())reader.invalidate();playbackReader.refresh();}
+  function followPlayback(){if(!playbackReader.active())reader.invalidate();syncInsertReaders();playbackReader.refresh();for(const {reader} of insertReaders.values())reader.refresh();}
   const play=root.querySelector("[data-meter-play]"),playback=root.querySelector("[data-meter-playback]");
   function syncTransport(){const state=getPlayback();play.textContent=state.label;playback.textContent=state.status;}
   function tick(){
     if(finishing)return;
     const inline=subscribers.active();
-    if(document.hidden || !root.open && (!inline || !isPlaying())){if(timer!==null)timers.clearInterval(timer);timer=null;if(following || playbackReader.active())playbackReader.invalidate();following=false;return;}
+    syncInsertReaders();
+    if(document.hidden || !root.open && !inline){if(timer!==null)timers.clearInterval(timer);timer=null;if(following || playbackReader.active())playbackReader.invalidate();for(const {reader} of insertReaders.values())reader.invalidate();following=false;return;}
     if(root.open)syncTransport();
     if(!document.hidden && isPlaying() && (inline || root.open && live.checked)){following=true;followPlayback();}
-    else if(following){following=false;playbackReader.invalidate();}
+    else if(following || playbackReader.active() || insertReaders.size){following=false;playbackReader.refresh();for(const {reader} of insertReaders.values())reader.refresh();}
+    if(!root.open && !isPlaying() && timer!==null){timers.clearInterval(timer);timer=null;}
   }
   function sync(){
     const wanted=!document.hidden && (root.open || subscribers.active() && isPlaying());
@@ -238,7 +263,7 @@ export function createAudioMeters({root,getTarget,isPlaying,onTransport,getPlayb
     subscribe:options=>subscribers.subscribe(options),
     sync,
     invalidate,
-    finishPlayback(playback,isCurrent=()=>true){const wanted=()=>root.open && live.checked || subscribers.active();if(finishing || !wanted())return Promise.resolve(false);const owner={};finishing=owner;reader.invalidate();return playbackReader.finishPlayback(playback,()=>wanted() && isCurrent()).finally(()=>{if(finishing===owner)finishing=null;});},
+    finishPlayback(playback,isCurrent=()=>true){const wanted=()=>root.open && live.checked || subscribers.active();if(finishing || !wanted())return Promise.resolve(false);const owner={};finishing=owner;reader.invalidate();syncInsertReaders();return Promise.all([playbackReader.finishPlayback(playback,()=>wanted() && isCurrent()),...[...insertReaders.values()].map(({reader})=>reader.finishPlayback(playback,()=>wanted() && isCurrent()))]).then(values=>values[0]).finally(()=>{if(finishing===owner)finishing=null;});},
     refresh(){if(root.open){if(live.checked && isPlaying())followPlayback();else readCurrent();}},
   };
 }

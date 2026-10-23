@@ -20,6 +20,7 @@ use vv_core::{AudioEffectKind, MixerChannel, Timeline, TrackKind};
 pub const MAX_BYTES: u64 = 32 * 1024 * 1024;
 const META_BYTES: u64 = 64 * 1024;
 const MAX_PAGE: u32 = 64;
+const MAX_ACTIVITY_PAGE: u64 = 16;
 const MAX_JSON: usize = 2 * 1024 * 1024;
 const BANDS: usize = 128;
 const BIN: u64 = vv_session::audio_render::OBSERVER_FRAMES;
@@ -35,6 +36,8 @@ struct Insert {
     channel: String,
     index: usize,
     kind: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    compressor: Option<vv_core::MultibandCompressor>,
 }
 impl Insert {
     fn native(&self) -> MixerChannel {
@@ -231,6 +234,10 @@ impl Recorder {
                         channel: channel.clone(),
                         index,
                         kind: kind.into(),
+                        compressor: match &effect.kind {
+                            AudioEffectKind::MultibandCompressor(params) => Some(params.clone()),
+                            _ => None,
+                        },
                     });
                 }
             }
@@ -556,6 +563,13 @@ fn load(path: &Path) -> Result<(Manifest, File, Option<File>)> {
                 || !insert_ids.insert((&insert.channel, insert.index))
                 || insert.index >= 32
                 || !["Equalizer", "MultibandCompressor"].contains(&insert.kind.as_str())
+                || insert.compressor.as_ref().is_some_and(|params| {
+                    insert.kind != "MultibandCompressor"
+                        || crate::audio::validate(&[vv_core::AudioEffect::new(
+                            AudioEffectKind::MultibandCompressor(params.clone()),
+                        )])
+                        .is_err()
+                })
         })
     {
         return Err(unavailable());
@@ -625,7 +639,11 @@ pub fn read(
         None
     };
     let binary = binary.ok_or_else(unavailable)?;
-    let count = (meta.bin_count - from_bin).min(u64::from(limit));
+    let mut count = (meta.bin_count - from_bin).min(u64::from(limit));
+    if selected.is_some_and(|index| meta.inserts[index].compressor.is_some()) {
+        // Native 241-point curves share the existing bounded JSON page.
+        count = count.min(MAX_ACTIVITY_PAGE);
+    }
     let mut bytes = vec![0; meta.record_bytes as usize * count as usize];
     binary
         .read_exact_at(&mut bytes, from_bin * meta.record_bytes)
@@ -669,8 +687,27 @@ pub fn read(
             let after = (0..BANDS).map(|_| take()).collect::<Result<Vec<_>>>()?;
             let level = [take()?, take()?, take()?];
             let reduction = [take()?, take()?, take()?];
+            if level.iter().chain(&reduction).any(|value| *value < 0.0) {
+                return Err(unavailable());
+            }
             if selected == Some(index) {
                 effect = json!({"channel":entry.channel,"index":entry.index,"kind":entry.kind,"inactive":active==0.0,"before_db":before,"after_db":after,"band_level":level,"reduction_db":reduction});
+                let response = entry
+                    .compressor
+                    .as_ref()
+                    .map(|params| {
+                        crate::audio::compressor_activity_response(
+                            params,
+                            if active == 0.0 { [0.0; 3] } else { reduction },
+                        )
+                    })
+                    .transpose()?;
+                effect["response"] = json!(response);
+                effect["response_error"] = json!(
+                    (entry.kind == "MultibandCompressor" && entry.compressor.is_none()).then_some(
+                        "This prepared window predates native compressor response metadata"
+                    )
+                );
             }
         }
         bins.push(json!({"start_sample":start,"end_sample":end,"channels":channels,"master_spectrum_db":spectrum,"master_peak_hz":(peak_hz>=0.0).then_some(peak_hz),"insert":effect}));

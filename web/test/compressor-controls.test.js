@@ -110,23 +110,37 @@ test('pending and unknown dynamics outcomes fence further input while known refu
   }finally{refused.control.dispose();}
 });
 
+test('threshold activity uses native linear input and 24dB reduction meters without editing and clears stale or disposed samples',()=>{
+  const item=fixture(),sample={parameters:defaults(),band_level:[.5,.25,.125],reduction_db:[3,6,12],frozen:true,inactive:false},views=all(item.root).filter(node=>node.attributes.class==='compressor-activity');
+  try{
+    item.control.setActivity(sample);assert.match(views[0].attributes['aria-label'],/−?6\.0 dBFS.*3\.0 dB GR.*frozen/);assert.equal(Number(views[0].children[2].attributes.height),12.5);assert.equal(Number(views[2].children[2].attributes.height),50);assert.deepEqual(item.writes,[]);
+    sample.inactive=true;item.control.setActivity(sample);assert.equal(Number(views[0].children[2].attributes.height),0);assert.match(views[0].attributes['aria-label'],/inactive/);
+    item.setContext('new');item.control.sync();assert.equal(Number(views[0].children[0].attributes.height),0);assert.match(views[0].attributes['aria-label'],/no current native sample/);
+    item.control.setActivity({...sample,inactive:false});item.documentRef.hidden=true;item.control.sync();assert.match(views[0].attributes['aria-label'],/no current native sample/);item.control.dispose();item.control.setActivity(sample);assert.equal(Number(views[0].children[2].attributes.height),0);assert.deepEqual(item.writes,[]);
+  }finally{item.control.dispose();}
+});
+
 test('real mixer dynamics synchronize precise fields and emit one native chain while preserving bypass and other inserts',async()=>{
   const previousDocument=globalThis.document,previousFetch=globalThis.fetch,previousOption=globalThis.Option;const documentRef=new EventTarget();documentRef.createElement=tag=>new Element(tag);globalThis.document=documentRef;
   globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
   globalThis.fetch=async()=>({ok:true,json:async()=>({sample_rate:48000,enabled:false,response_kind:'makeup_only',activity:null,points:[[20,0],[20000,0]]})});
-  const original={enabled:false,kind:{MultibandCompressor:defaults()}},mono={enabled:true,kind:'Mono'},timeline={id:'1',tracks:[],master:{gain_db:0,pan:0,effects:[mono,original]}},writes=[];
+  const original={enabled:false,kind:{MultibandCompressor:defaults()}},mono={enabled:true,kind:'Mono'},timeline={id:'1',tracks:[],master:{gain_db:0,pan:0,effects:[mono,original]}},writes=[],consumers=[];let unsubscribed=0;
   try{
-    const section=renderMixer(new Element('div'),timeline,{writable:true,open:true,catalog:{defaults:{MultibandCompressor:original},compressor:{...catalog,graph:{frequency_hz:[20,20000],display_db:[-30,24],min_crossover_ratio:f(1.2)}}},query:new URLSearchParams({project_epoch:'epoch',if_generation:'3',timeline_id:'1',revision:'r'}),commit:async operation=>{writes.push(operation);},notice(){}});
+    const section=renderMixer(new Element('div'),timeline,{writable:true,open:true,catalog:{defaults:{MultibandCompressor:original},compressor:{...catalog,graph:{frequency_hz:[20,20000],display_db:[-30,24],min_crossover_ratio:f(1.2)}}},query:new URLSearchParams({project_epoch:'epoch',if_generation:'3',timeline_id:'1',revision:'r'}),commit:async operation=>{writes.push(operation);},notice(){},meters:{visible:()=>true,sync(){},subscribe:consumer=>{consumers.push(consumer);return ()=>{unsubscribed++;consumer.onClear();};}}});
     const effects=all(section).find(node=>node.dataset.mixerPath==='master:effects');effects.open=true;send(effects,'toggle');
     const card=all(section).find(node=>node.dataset.mixerPath==='master:effects:1');card.open=true;send(card,'toggle');await settle();
     const node=all(card).find(node=>node.dataset.compressorBand==='1' && node.dataset.compressorParam==='threshold_db');
     const exact=all(card).find(node=>node.tag==='label' && node.textContent==='Master compressor band 2 threshold_db').children[0];
+    const consumer=consumers.find(item=>item.insert);assert.deepEqual(consumer.insert,{channel:'master',index:1});assert.equal(consumer.visible(),true);
+    const reading={telemetry:true,sample_rate:48000,end_sample:4096,frozen:true,spectrum_hz:Array.from({length:128},(_,i)=>20*Math.pow(1000,i/127)),insert:{channel:'master',index:1,kind:'MultibandCompressor',inactive:true,band_level:[0,0,0],reduction_db:[0,0,0],before_db:Array(128).fill(-96),after_db:Array(128).fill(-96),response:{sample_rate:48000,response_kind:'native_activity',parameters:defaults(),points:Array.from({length:241},(_,i)=>[20*Math.pow(1000,i/240),0,0])}}};
+    consumer.onRead(reading);const active=all(card).find(node=>node.attributes.class==='audio-graph-active');assert.equal(active.attributes.points.split(' ').length,241);assert.ok(all(card).some(node=>node.attributes.role==='status' && /Frozen prepared sample.*inactive/.test(node.textContent)));assert.equal(writes.length,0);
+    card.open=false;consumer.onRead(reading);assert.equal(active.attributes.points,'');card.open=true;consumer.onRead(reading);assert.notEqual(active.attributes.points,'');
     send(node,'pointerdown');send(node,'pointermove',{clientY:50});assert.notEqual(Number(exact.value),-24);assert.equal(writes.length,0);
     send(node,'keydown',{key:'Escape'});assert.equal(Number(exact.value),-24);assert.equal(writes.length,0);
     send(node,'keydown',{key:'ArrowUp'});await settle();assert.equal(writes.length,1);assert.equal(writes[0].kind,'set_audio_effects');assert.equal(writes[0].channel,'master');
     assert.equal(writes[0].effects[1].enabled,false);assert.deepEqual(writes[0].effects[0],mono);assert.equal(writes[0].effects[1].kind.MultibandCompressor.bands[1].threshold_db,f(-24+f(.2)));assert.equal(Number(exact.value),f(-24+f(.2)));
     assert.deepEqual(timeline.master.effects,[mono,original]);
     send(node,'pointerdown');send(node,'pointermove',{clientY:50});exact.value='-17.25';send(exact,'input');send(node,'pointerup',{clientY:50});assert.equal(exact.value,'-17.25');assert.equal(writes.length,1);
-    section.disposeMeters();send(node,'keydown',{key:'ArrowUp'});assert.equal(writes.length,1);
+    section.disposeMeters();send(node,'keydown',{key:'ArrowUp'});consumer.onRead(reading);assert.equal(active.attributes.points,'');assert.equal(unsubscribed,2);assert.equal(writes.length,1);
   }finally{globalThis.document=previousDocument;globalThis.fetch=previousFetch;globalThis.Option=previousOption;}
 });

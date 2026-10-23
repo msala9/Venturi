@@ -625,7 +625,7 @@ label {
 .compressor-cell output { font-variant-numeric: tabular-nums; font-size: 9px; text-align: center; }
 #inspector .compressor-threshold { position: relative; width: 24px; height: 120px; min-height: 120px; padding: 0; touch-action: none; cursor: ns-resize; }
 .compressor-fader-rail { position: absolute; inset: 7px 3px; background: var(--bg); }
-.compressor-fader-rail .compressor-control-mark { position: absolute; left: 0; right: 0; height: 10px; top: var(--compressor-top,50%); transform: translateY(-50%); background: var(--primary); }
+.compressor-fader-rail .compressor-control-mark { position: absolute; left: 0; width: 5px; height: 10px; top: var(--compressor-top,50%); transform: translateY(-50%); background: var(--primary); }
 #inspector .compressor-knob { position: relative; width: min(34px,100%); height: auto; aspect-ratio: 1; min-height: 26px; padding: 0; margin: 0; border-radius: 50%; touch-action: none; cursor: ew-resize; }
 .compressor-knob .compressor-control-mark { position: absolute; inset: 5px; transform: rotate(var(--compressor-angle,0deg)); }
 .compressor-knob .compressor-control-mark::before { content: ''; position: absolute; left: calc(50% - 1px); top: 0; width: 2px; height: 9px; background: var(--primary); }

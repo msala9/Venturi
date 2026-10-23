@@ -89,6 +89,43 @@ pub fn compressor_response(timeline: &Timeline, value: &str, index: usize) -> Re
         "response_kind":"makeup_only","activity":null,
         "crossovers_hz":params.crossovers_hz,"bands":bands,"points":points}))
 }
+pub(crate) fn compressor_activity_response(
+    params: &core::MultibandCompressor,
+    reduction_db: [f32; 3],
+) -> Result<Value> {
+    validate(&[core::AudioEffect::new(
+        core::AudioEffectKind::MultibandCompressor(params.clone()),
+    )])?;
+    if reduction_db
+        .iter()
+        .any(|value| !value.is_finite() || *value < 0.0)
+    {
+        return Err(ApiError::invalid(
+            "Native compressor reduction must be finite and nonnegative",
+        ));
+    }
+    let rate = vv_audio::mixer::PROJECT_SAMPLE_RATE;
+    let response = vv_audio::dynamics::CrossoverResponse::new(params, rate);
+    let makeup = params.bands.map(|band| band.makeup_db);
+    let live = std::array::from_fn(|index| makeup[index] - reduction_db[index]);
+    let points: Vec<_> = (0..=240)
+        .map(|index| {
+            let frequency = 20.0_f32 * 1000.0_f32.powf(index as f32 / 240.0);
+            [
+                frequency,
+                response.gain_db(makeup, frequency),
+                response.gain_db(live, frequency),
+            ]
+        })
+        .collect();
+    if points.iter().flatten().any(|value| !value.is_finite()) {
+        return Err(ApiError::invalid(
+            "The compressor activity response is not finite",
+        ));
+    }
+    Ok(json!({"sample_rate":rate,"response_kind":"native_activity",
+        "parameters":params,"points":points}))
+}
 fn bounded(value: f32, range: (f32, f32)) -> Result<()> {
     if !value.is_finite() || !(range.0..=range.1).contains(&value) {
         return Err(ApiError::invalid(

@@ -858,7 +858,7 @@ impl MediaJobs {
                 && ((j.key == key && !matches!(j.state, "failed" | "canceled"))
                     || (task.export.is_none()
                         && j.state == "ready"
-                        && j.key.ends_with(":telemetry:v1")
+                        && j.key.ends_with(":telemetry:v2")
                         && j.program_query
                             .as_ref()
                             .is_some_and(|range| range.contains(&task.query))))

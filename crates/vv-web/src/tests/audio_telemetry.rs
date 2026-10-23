@@ -147,6 +147,18 @@ fn program_audio_telemetry_records_native_peaks_spectra_and_ordinal_pages_withou
         assert_eq!(bin["insert"]["kind"], "MultibandCompressor");
         assert_eq!(bin["insert"]["after_db"], json!(expected[index].1));
         assert_eq!(bin["insert"]["inactive"], false);
+        let reduction: [f32; 3] =
+            serde_json::from_value(bin["insert"]["reduction_db"].clone()).unwrap();
+        assert!(reduction.iter().any(|value| *value > 0.0));
+        assert_eq!(
+            bin["insert"]["response"],
+            crate::audio::compressor_activity_response(
+                &vv_core::MultibandCompressor::DEFAULT,
+                reduction,
+            )
+            .unwrap()
+        );
+        assert!(bin["insert"]["response_error"].is_null());
     }
     let last = read(&root.0, 2, 2, None).unwrap();
     assert!(last["next_bin"].is_null());
@@ -165,6 +177,70 @@ fn program_audio_telemetry_records_native_peaks_spectra_and_ordinal_pages_withou
         )
         .is_err()
     );
+}
+
+#[test]
+fn program_audio_telemetry_activity_pages_bind_captured_parameters_and_preserve_legacy_inactive_reads()
+ {
+    let root = Root::new();
+    let end = BIN * 17;
+    let (mut timeline, _) = fixture(end);
+    let snapshot = MixSnapshot::empty(PROJECT_SAMPLE_RATE, 2);
+    let expected = vv_core::MultibandCompressor::DEFAULT;
+    let mut recorder = Recorder::new(&root.0, &timeline, 0..end).unwrap();
+    let AudioEffectKind::MultibandCompressor(params) = &mut timeline.tracks[1].mix.effects[1].kind
+    else {
+        unreachable!()
+    };
+    params.crossovers_hz = [350.0, 4000.0];
+    params.bands[0].makeup_db = 6.0;
+    let silence = vec![0.0; BIN as usize * 2];
+    for start in (0..end).step_by(BIN as usize) {
+        recorder.observe(start..start + BIN, &silence, &snapshot);
+    }
+    recorder.finish().unwrap();
+    let insert = crate::audition::InsertQuery {
+        channel: "1".into(),
+        index: 1,
+    };
+    let first = read(&root.0, 0, 64, Some(&insert)).unwrap();
+    assert_eq!(first["bins"].as_array().unwrap().len(), 16);
+    assert_eq!(first["next_bin"], 16);
+    assert!(serde_json::to_vec(&first).unwrap().len() <= MAX_JSON);
+    for bin in first["bins"].as_array().unwrap() {
+        assert_eq!(bin["insert"]["inactive"], true);
+        assert_eq!(bin["insert"]["response"]["parameters"], json!(expected));
+        for point in bin["insert"]["response"]["points"].as_array().unwrap() {
+            assert_eq!(point[1], point[2]);
+        }
+    }
+    let last = read(&root.0, 16, 64, Some(&insert)).unwrap();
+    assert_eq!(last["bins"].as_array().unwrap().len(), 1);
+    assert_eq!(last["bins"][0]["start_sample"], BIN * 16);
+    assert_eq!(last["bins"][0]["end_sample"], end);
+    assert!(last["next_bin"].is_null());
+    let original_channels = first["bins"][0]["channels"].clone();
+    let mut meta: Value =
+        serde_json::from_slice(&std::fs::read(root.0.join(MANIFEST)).unwrap()).unwrap();
+    meta["inserts"][1]
+        .as_object_mut()
+        .unwrap()
+        .remove("compressor");
+    std::fs::write(root.0.join(MANIFEST), serde_json::to_vec(&meta).unwrap()).unwrap();
+    let legacy = read(&root.0, 0, 64, Some(&insert)).unwrap();
+    assert_eq!(legacy["bins"].as_array().unwrap().len(), 17);
+    assert_eq!(legacy["bins"][0]["channels"], original_channels);
+    assert!(legacy["bins"][0]["insert"]["response"].is_null());
+    assert!(
+        legacy["bins"][0]["insert"]["response_error"]
+            .as_str()
+            .unwrap()
+            .contains("predates")
+    );
+    meta["inserts"][1]["compressor"] =
+        json!({"crossovers_hz":[2000.0,200.0],"bands":expected.bands});
+    std::fs::write(root.0.join(MANIFEST), serde_json::to_vec(&meta).unwrap()).unwrap();
+    assert!(read(&root.0, 0, 1, Some(&insert)).is_err());
 }
 
 #[test]

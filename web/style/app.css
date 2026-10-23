@@ -580,6 +580,24 @@ label {
 .mixer-fader:disabled, .mixer-pan:disabled { opacity: .5; cursor: default; }
 .mixer-fader:focus-visible, .mixer-pan:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .mixer-meter-status { font-size: 10px; }
+.audio-graph { min-width: 0; margin: 6px 0; }
+.audio-graph-stage { position: relative; height: clamp(140px, 24dvh, 210px); margin: 16px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--border); }
+.audio-graph-stage svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: hidden; }
+.audio-graph-grid { fill: none; stroke: var(--border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.audio-graph-axis { fill: var(--muted); font-size: 10px; }
+.audio-graph-response { fill: none; stroke: var(--amber); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.audio-graph-handle { position: absolute; z-index: 1; width: 22px; height: 22px; min-height: 22px; padding: 0; border: 1px solid var(--text); border-radius: 50%; background: var(--raised); color: var(--text); font-size: 10px; line-height: 20px; transform: translate(-50%, -50%); touch-action: none; user-select: none; cursor: grab; }
+.audio-graph-handle[aria-pressed="false"] { color: var(--muted); border-style: dashed; }
+.audio-graph-handle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; z-index: 3; }
+.audio-graph-crossover { height: 100%; width: 12px; min-height: 0; border: 0; border-radius: 0; background: transparent; transform: translateX(-50%); cursor: ew-resize; z-index: 0; }
+.audio-graph-crossover::after { content: ''; position: absolute; top: 0; bottom: 0; left: 5px; border-left: 1px dashed var(--muted); }
+.audio-graph-makeup { cursor: ns-resize; }
+.audio-graph-tools { display: flex; justify-content: flex-end; gap: 4px; }
+.audio-graph-tools button, .audio-graph-parameters button { min-height: 24px; padding: 2px 6px; font-size: 10px; }
+.audio-graph-status, .audio-graph-help { margin: 4px 0; font-size: 10px; color: var(--muted); overflow-wrap: anywhere; }
+#inspector-content .audio-graph-parameters > summary { margin: 5px 0; font-size: 11px; }
+.audio-graph-parameters .field { grid-template-columns: minmax(0, 1fr) minmax(60px, 95px); gap: 4px; margin: 4px 0; font-size: 11px; }
+.audio-graph-parameters input, .audio-graph-parameters select { min-width: 0; width: 100%; min-height: 25px; padding: 2px 4px; }
 .curve-editor fieldset { min-width: 0; margin: 8px 0; padding: 8px; }
 .catalog-toolbar { display: grid; gap: 6px; margin-bottom: 6px; }
 #media-list select { min-width: 0; max-width: 100%; }

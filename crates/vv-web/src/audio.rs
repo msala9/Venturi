@@ -50,6 +50,45 @@ pub fn eq_response(timeline: &Timeline, value: &str, index: usize) -> Result<Val
         .collect();
     Ok(json!({"sample_rate":rate,"points":points,"enabled":effect.enabled}))
 }
+pub fn compressor_response(timeline: &Timeline, value: &str, index: usize) -> Result<Value> {
+    let strip = match locate(timeline, value)? {
+        core::MixerChannel::Master => &timeline.master,
+        core::MixerChannel::Track(index) => &timeline.tracks[index].mix,
+    };
+    let effect = strip.effects.get(index).ok_or_else(ApiError::missing)?;
+    let core::AudioEffectKind::MultibandCompressor(params) = &effect.kind else {
+        return Err(ApiError::invalid(
+            "This insert is not a multiband compressor",
+        ));
+    };
+    validate(std::slice::from_ref(effect))?;
+    let rate = vv_audio::mixer::PROJECT_SAMPLE_RATE;
+    let response = vv_audio::dynamics::CrossoverResponse::new(params, rate);
+    let makeup = params.bands.map(|band| band.makeup_db);
+    let points: Vec<_> = (0..=240)
+        .map(|i| {
+            let frequency = 20.0_f32 * 1000.0_f32.powf(i as f32 / 240.0);
+            [frequency, response.gain_db(makeup, frequency)]
+        })
+        .collect();
+    if points.iter().flatten().any(|value| !value.is_finite()) {
+        return Err(ApiError::invalid("The compressor response is not finite"));
+    }
+    let [low, high] = params.crossovers_hz;
+    let edges = [20.0_f32, low, high, 20_000.0];
+    let bands: Vec<_> = (0..3)
+        .map(|index| {
+            json!({
+                "low_hz":edges[index], "high_hz":edges[index + 1],
+                "center_hz":(edges[index] * edges[index + 1]).sqrt(),
+                "makeup_db":makeup[index],
+            })
+        })
+        .collect();
+    Ok(json!({"sample_rate":rate,"enabled":effect.enabled,
+        "response_kind":"makeup_only","activity":null,
+        "crossovers_hz":params.crossovers_hz,"bands":bands,"points":points}))
+}
 fn bounded(value: f32, range: (f32, f32)) -> Result<()> {
     if !value.is_finite() || !(range.0..=range.1).contains(&value) {
         return Err(ApiError::invalid(
@@ -132,6 +171,19 @@ pub fn set_effects(
 }
 pub fn catalog() -> Value {
     let mut defaults = serde_json::Map::new();
+    let shape_has_gain: serde_json::Map<_, _> = core::EqShape::ALL
+        .into_iter()
+        .map(|shape| {
+            (
+                serde_json::to_value(shape)
+                    .unwrap()
+                    .as_str()
+                    .unwrap()
+                    .to_owned(),
+                json!(shape.has_gain()),
+            )
+        })
+        .collect();
     for kind in core::AudioEffectKind::ALL {
         let key = match kind {
             core::AudioEffectKind::Mono => "Mono",
@@ -141,7 +193,7 @@ pub fn catalog() -> Value {
         };
         defaults.insert(key.into(), json!(core::AudioEffect::new(kind)));
     }
-    json!({"presets":{"Equalizer":core::presets::equalizer_presets().map(|(key,_)|key),"MultibandCompressor":core::presets::compressor_presets().map(|(key,_)|key)},"defaults":defaults,"eq":{"freq_hz":core::EqBand::FREQ_RANGE_HZ,"gain_db":core::EqBand::GAIN_RANGE_DB,"q":core::EqBand::Q_RANGE,"shapes":core::EqShape::ALL},"compressor":{"crossovers_hz":core::MultibandCompressor::CROSSOVER_RANGE_HZ,"threshold_db":core::CompressorBand::THRESHOLD_RANGE_DB,"ratio":core::CompressorBand::RATIO_RANGE,"attack_ms":core::CompressorBand::ATTACK_RANGE_MS,"release_ms":core::CompressorBand::RELEASE_RANGE_MS,"makeup_db":core::CompressorBand::MAKEUP_RANGE_DB},"normalization":core::NormalizeMode::ALL.map(|mode|{let range=mode.target_range();json!({"mode":mode,"range":[range.start(),range.end()],"default":mode.default_target()})})})
+    json!({"presets":{"Equalizer":core::presets::equalizer_presets().map(|(key,_)|key),"MultibandCompressor":core::presets::compressor_presets().map(|(key,_)|key)},"defaults":defaults,"eq":{"freq_hz":core::EqBand::FREQ_RANGE_HZ,"gain_db":core::EqBand::GAIN_RANGE_DB,"q":core::EqBand::Q_RANGE,"shapes":core::EqShape::ALL,"graph":{"frequency_hz":[20,20000],"gain_db":core::EqBand::GAIN_RANGE_DB,"display_db":[-27,27],"q_wheel_factor":1.15,"shape_has_gain":shape_has_gain}},"compressor":{"crossovers_hz":core::MultibandCompressor::CROSSOVER_RANGE_HZ,"threshold_db":core::CompressorBand::THRESHOLD_RANGE_DB,"ratio":core::CompressorBand::RATIO_RANGE,"attack_ms":core::CompressorBand::ATTACK_RANGE_MS,"release_ms":core::CompressorBand::RELEASE_RANGE_MS,"makeup_db":core::CompressorBand::MAKEUP_RANGE_DB,"graph":{"frequency_hz":[20,20000],"display_db":[-30,24],"min_crossover_ratio":1.2,"response_kind":"makeup_only"}},"normalization":core::NormalizeMode::ALL.map(|mode|{let range=mode.target_range();json!({"mode":mode,"range":[range.start(),range.end()],"default":mode.default_target()})})})
 }
 
 pub fn apply_saved_kind(

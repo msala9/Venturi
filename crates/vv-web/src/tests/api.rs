@@ -1784,6 +1784,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/compound-navigation.js", 200),
         ("/js/export.js", 200),
         ("/js/scopes.js", 200),
+        ("/js/audio-graphs.js", 200),
         ("/js/viewer-zoom.js", 200),
         ("/js/keyframe-lanes.js", 200),
         ("/js/balance.js", 200),
@@ -1809,6 +1810,19 @@ async fn health_assets_snapshot_and_host_boundary() {
             422,
         ),
         ("/api/v1/preview/balance/0", 422),
+        ("/api/v1/timelines/1/audio/master/compressor/0", 422),
+        (
+            "/api/v1/timelines/1/audio/master/compressor/bad?project_epoch=p&if_generation=0&timeline_id=1&revision=r&frame=0",
+            422,
+        ),
+        (
+            "/api/v1/timelines/1/audio/master/compressor/0?project_epoch=p&if_generation=0&timeline_id=other&revision=r&frame=0",
+            422,
+        ),
+        (
+            "/api/v1/timelines/1/audio/master/compressor/0?project_epoch=p&if_generation=0&timeline_id=1&revision=r&frame=0&unknown=true",
+            422,
+        ),
         ("/api/v1/preview/scopes/0/Invalid/Parade", 400),
         ("/api/v1/preview/scopes/0/Waveform/Parade", 422),
         ("/api/v1/exports/missing?project_epoch=p:1", 404),
@@ -1831,6 +1845,9 @@ async fn health_assets_snapshot_and_host_boundary() {
             .unwrap();
         assert_eq!(response.status().as_u16(), status, "{path}");
         assert_eq!(response.headers()["x-content-type-options"], "nosniff");
+        if path == "/js/audio-graphs.js" {
+            assert_eq!(response.headers()[header::CONTENT_TYPE], "text/javascript");
+        }
         let bytes = to_bytes(response.into_body(), 1024 * 1024).await.unwrap();
         assert!(!bytes.is_empty());
         if path == "/api/v1/presets/shortcuts" {

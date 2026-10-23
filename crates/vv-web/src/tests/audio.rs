@@ -1,5 +1,123 @@
 use super::*;
 
+#[test]
+fn compressor_graph_response_matches_native_makeup_filters_and_ignores_unobserved_activity() {
+    let (mut session, id) = saved_preset_session();
+    let mut params = core::MultibandCompressor::DEFAULT;
+    params.crossovers_hz = [320.0, 2800.0];
+    for (band, makeup) in params.bands.iter_mut().zip([-8.0, 4.0, 12.0]) {
+        band.makeup_db = makeup;
+    }
+    session.project.timelines[id].master.effects[3].kind =
+        core::AudioEffectKind::MultibandCompressor(params.clone());
+    let before = json!(session.project);
+    let position = session.history.position();
+    let generation = session.history.generation();
+    let actual = compressor_response(&session.project.timelines[id], "master", 3).unwrap();
+    assert_eq!(actual["response_kind"], "makeup_only");
+    assert!(actual["activity"].is_null());
+    assert_eq!(actual["crossovers_hz"], json!(params.crossovers_hz));
+    let points = actual["points"].as_array().unwrap();
+    assert_eq!(points.len(), 241);
+    let native = vv_audio::dynamics::CrossoverResponse::new(&params, 48_000);
+    for (index, point) in points.iter().enumerate() {
+        let hz = 20.0_f32 * 1000.0_f32.powf(index as f32 / 240.0);
+        assert_eq!(*point, json!([hz, native.gain_db([-8.0, 4.0, 12.0], hz)]));
+    }
+    let edges = [20.0_f32, 320.0, 2800.0, 20_000.0];
+    for (index, band) in actual["bands"].as_array().unwrap().iter().enumerate() {
+        assert_eq!(band["low_hz"], json!(edges[index]));
+        assert_eq!(band["high_hz"], json!(edges[index + 1]));
+        assert_eq!(
+            band["center_hz"],
+            json!((edges[index] * edges[index + 1]).sqrt())
+        );
+        assert_eq!(band["makeup_db"], json!(params.bands[index].makeup_db));
+    }
+    assert_eq!(json!(session.project), before);
+    assert_eq!(session.history.position(), position);
+    assert_eq!(session.history.generation(), generation);
+    params.bands[1].threshold_db = -50.0;
+    params.bands[1].ratio = 12.0;
+    session.project.timelines[id].master.effects[3].kind =
+        core::AudioEffectKind::MultibandCompressor(params);
+    session.project.timelines[id].master.effects[3].enabled = false;
+    let bypassed = compressor_response(&session.project.timelines[id], "master", 3).unwrap();
+    assert_eq!(bypassed["enabled"], false);
+    assert_eq!(bypassed["points"], actual["points"]);
+    assert!(bypassed["activity"].is_null());
+}
+
+#[test]
+fn compressor_graph_reads_locked_channels_and_refuses_wrong_insert_or_invalid_parameters() {
+    let (mut session, id) = saved_preset_session();
+    session.project.timelines[id].tracks[0].locked = true;
+    assert_eq!(
+        compressor_response(&session.project.timelines[id], "0", 3).unwrap()["enabled"],
+        true
+    );
+    for (channel, index, status) in [
+        ("master", 1, 422),
+        ("0", 99, 404),
+        ("1", 3, 422),
+        ("missing", 3, 404),
+    ] {
+        assert_eq!(
+            compressor_response(&session.project.timelines[id], channel, index)
+                .unwrap_err()
+                .0
+                .as_u16(),
+            status
+        );
+    }
+    let core::AudioEffectKind::MultibandCompressor(params) =
+        &mut session.project.timelines[id].tracks[0].mix.effects[3].kind
+    else {
+        unreachable!()
+    };
+    params.crossovers_hz = [1000.0, 1000.5];
+    assert!(
+        compressor_response(&session.project.timelines[id], "0", 3).is_ok(),
+        "The graph drag ratio does not restrict native numeric input"
+    );
+    let core::AudioEffectKind::MultibandCompressor(params) =
+        &mut session.project.timelines[id].tracks[0].mix.effects[3].kind
+    else {
+        unreachable!()
+    };
+    params.bands[0].makeup_db = f32::NAN;
+    assert!(compressor_response(&session.project.timelines[id], "0", 3).is_err());
+}
+
+#[test]
+fn audio_graph_catalog_exposes_native_coordinate_and_shape_rules_without_changing_ranges() {
+    let value = catalog();
+    assert_eq!(value["eq"]["graph"]["frequency_hz"], json!([20, 20000]));
+    assert_eq!(
+        value["eq"]["graph"]["gain_db"],
+        json!(core::EqBand::GAIN_RANGE_DB)
+    );
+    assert_eq!(value["eq"]["graph"]["display_db"], json!([-27, 27]));
+    assert_eq!(value["eq"]["graph"]["q_wheel_factor"], json!(1.15));
+    for shape in core::EqShape::ALL {
+        let name = serde_json::to_value(shape).unwrap();
+        assert_eq!(
+            value["eq"]["graph"]["shape_has_gain"][name.as_str().unwrap()],
+            json!(shape.has_gain())
+        );
+    }
+    assert_eq!(value["compressor"]["graph"]["display_db"], json!([-30, 24]));
+    assert_eq!(
+        value["compressor"]["graph"]["min_crossover_ratio"],
+        json!(1.2)
+    );
+    assert_eq!(
+        value["compressor"]["threshold_db"],
+        json!(core::CompressorBand::THRESHOLD_RANGE_DB)
+    );
+    assert_eq!(value["compressor"]["graph"]["response_kind"], "makeup_only");
+}
+
 fn saved_preset_session() -> (Session, TimelineId) {
     let mut session = Session::default();
     let id = session.create_timeline(Timeline {

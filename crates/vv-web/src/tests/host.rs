@@ -1,5 +1,80 @@
 use super::*;
 
+#[test]
+fn compressor_graph_query_is_revision_bound_lease_free_and_preserves_editor_state() {
+    use vv_core::Id;
+    let root = std::env::temp_dir().join(format!(
+        "vv-compressor-graph-{}",
+        crate::asset_jobs::nonce()
+    ));
+    let mut editor = Editor::new(&root).unwrap();
+    let id = editor.session.create_timeline(Timeline {
+        name: "Compressor graph".into(),
+        fps: Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![Track::new(TrackKind::Audio)],
+        markers: vec![],
+        master: Default::default(),
+    });
+    editor.session.project.timelines[id]
+        .master
+        .effects
+        .push(vv_core::AudioEffect::new(
+            vv_core::AudioEffectKind::MultibandCompressor(vv_core::MultibandCompressor::DEFAULT),
+        ));
+    editor.lease = Some(("foreign-writer".into(), Instant::now()));
+    let query = FrameQuery {
+        timeline_id: id.raw().to_string(),
+        project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+        if_generation: editor.session.history.generation().to_string(),
+        revision: editor.session.timeline_revision(id),
+        frame: 0,
+        width: 16,
+    };
+    let before = editor.snapshot();
+    let project = json!(editor.session.project);
+    let receipts = editor.completed.len();
+    let value = editor
+        .handle(Action::CompressorResponse(
+            "master".into(),
+            0,
+            query.clone(),
+        ))
+        .unwrap();
+    for (key, expected) in [
+        ("project_epoch", json!(query.project_epoch)),
+        ("generation", json!(query.if_generation)),
+        ("timeline_id", json!(query.timeline_id)),
+        ("revision", json!(query.revision)),
+        ("channel", json!("master")),
+        ("index", json!(0)),
+    ] {
+        assert_eq!(value[key], expected);
+    }
+    for field in ["epoch", "generation", "revision"] {
+        let mut stale = query.clone();
+        match field {
+            "epoch" => stale.project_epoch = "old".into(),
+            "generation" => stale.if_generation = "999999".into(),
+            _ => stale.revision = "old".into(),
+        }
+        assert_eq!(
+            editor
+                .handle(Action::CompressorResponse("master".into(), 0, stale))
+                .unwrap_err()
+                .0
+                .as_u16(),
+            409
+        );
+    }
+    assert_eq!(editor.snapshot(), before);
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.completed.len(), receipts);
+    assert_eq!(editor.lease.as_ref().unwrap().0, "foreign-writer");
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[tokio::test]
 async fn legacy_catalog_relink_prepares_outside_actor_preserves_original_receipt_and_replays_before_file_checks()
  {

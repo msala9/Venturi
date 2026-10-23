@@ -90,6 +90,7 @@ pub enum Action {
         oneshot::Sender<Result<crate::silence::Task>>,
     ),
     EqResponse(String, usize, FrameQuery),
+    CompressorResponse(String, usize, FrameQuery),
     SourceSnapshot(String, SourceQuery, oneshot::Sender<Result<SourceSpec>>),
     ProxySourceSnapshot(
         String,
@@ -2368,6 +2369,21 @@ impl Editor {
                 value["revision"] = json!(query.revision);
                 value["project_epoch"] = json!(query.project_epoch);
                 value["generation"] = json!(query.if_generation);
+                Ok(value)
+            }
+            Action::CompressorResponse(channel, index, query) => {
+                let (id, _) = self.validate_frame(&query)?;
+                let mut value = crate::audio::compressor_response(
+                    &self.session.project.timelines[id],
+                    &channel,
+                    index,
+                )?;
+                value["revision"] = json!(query.revision);
+                value["project_epoch"] = json!(query.project_epoch);
+                value["generation"] = json!(query.if_generation);
+                value["timeline_id"] = json!(query.timeline_id);
+                value["channel"] = json!(channel);
+                value["index"] = json!(index);
                 Ok(value)
             }
             Action::InspectorSelection(request) => {

@@ -162,6 +162,10 @@ pub fn router(state: AppState) -> Router {
             "/api/v1/timelines/{id}/audio/{channel}/eq/{index}",
             get(eq_response),
         )
+        .route(
+            "/api/v1/timelines/{id}/audio/{channel}/compressor/{index}",
+            get(compressor_response),
+        )
         .route("/api/v1/projects", get(projects))
         .route("/api/v1/recovery", get(recovery_status))
         .route("/api/v1/projects/commands", post(project_command))
@@ -2139,6 +2143,26 @@ async fn eq_response(
         .await
         .map(Json)
 }
+async fn compressor_response(
+    State(state): State<AppState>,
+    Path((id, channel, index)): Path<(String, String, String)>,
+    query: std::result::Result<Query<FrameQuery>, axum::extract::rejection::QueryRejection>,
+) -> Result<Response> {
+    let query = query
+        .map_err(|_| ApiError::invalid("Invalid compressor response query"))?
+        .0;
+    if query.timeline_id != id {
+        return Err(ApiError::invalid("Timeline ID does not match the query"));
+    }
+    let index = index
+        .parse()
+        .map_err(|_| ApiError::invalid("Invalid compressor index"))?;
+    state
+        .host
+        .call(Action::CompressorResponse(channel, index, query))
+        .await
+        .map(native_asset_json)
+}
 async fn project_command(
     State(state): State<AppState>,
     payload: std::result::Result<Json<Mutation>, axum::extract::rejection::JsonRejection>,
@@ -2331,6 +2355,7 @@ async fn assets(request: Request) -> Response {
         "/js/fast-transport.js" => asset!("/web/js/fast-transport.js", "text/javascript"),
         "/js/preview-cache.js" => asset!("/web/js/preview-cache.js", "text/javascript"),
         "/js/audio-meters.js" => asset!("/web/js/audio-meters.js", "text/javascript"),
+        "/js/audio-graphs.js" => asset!("/web/js/audio-graphs.js", "text/javascript"),
         "/js/capture.js" => asset!("/web/js/capture.js", "text/javascript"),
         "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
         "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),

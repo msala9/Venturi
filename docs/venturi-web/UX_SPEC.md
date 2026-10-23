@@ -13,6 +13,19 @@ browser widths use explicit drawers instead of horizontal overflow. Existing
 functional, accessibility and session-preservation requirements remain.
 
 
+Project import/recovery (`e41e9cc`, halo1/8828) uses compact modal choosers, adding
+no permanent row to the Viewer. File > Import media browses approved nested
+sources, selects files across folders/pages or imports an explicit child tree;
+the project destination defaults to Root and remains an explicit choice. Folder
+structure follows native import semantics and file errors do not hide successes.
+Media and folders exposes selected-media or recursive current-folder Relink.
+ByName leaves readable sources unchanged and reports missing/skipped/ambiguous
+results; collapsed explicit replacements accept renamed files. Apply creates one
+native Undo. Closing preparation cancels only its owned job, while committing
+blocks close/reopen and unknown outcomes cannot repeat automatically. Reopening
+clears prior result counts and folds details. See the actual Windows import,
+Relink and final workspace screenshots in `evidence/f2-project-media-workflow.json`.
+
 ## Core objective
 
 Port the **capability surface** of the native Venturi UI, not its exact pixel layout. Keep Edit, Color, Audio and Review workspaces; keep editing engine and undo authoritative in Rust. The browser must never pretend to have applied an edit that the server rejected. A user should know *where* a tool is even when its underlying server integration is not complete.

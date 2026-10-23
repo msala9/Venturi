@@ -24,6 +24,56 @@ directory read returns `SOURCE_BROWSER_BUSY`; a project switch before the
 response returns `REVISION_CONFLICT`. Listing does not acquire the writer lease
 or mutate history. Responses are `no-store`.
 
+## Prepared project file/tree import and Relink
+
+The original flat `/media/imports/prepare` and `import_prepared_media` contract
+remains available. The nested project chooser uses separate strict typed routes:
+
+- `POST /api/v1/media/project-imports/prepare` accepts
+  `{project_epoch,if_generation,path_tokens:[...],parent:null|folder_id}` or
+  `{project_epoch,if_generation,directory_token,parent:null|folder_id}` exclusively.
+- `POST /api/v1/media/relinks/prepare` accepts `{project_epoch,if_generation,action}`.
+  Chosen action is `{kind:"chosen",items:[{media_id,path_token}]}`. ByName is
+  `{kind:"by_name",directory_token,scope:{kind:"selected",media_ids:[...]}}` or
+  the scope `{kind:"folder",folder_id}` for native descendant membership.
+- `GET/DELETE /api/v1/media/jobs/{job}?project_epoch=...` reads/cancels only these
+  typed `project_import`/`project_relink` jobs. Legacy job routes refuse them.
+
+Preparation is read-only and uses the existing isolated serial probe worker.
+Jobs echo epoch/generation/kind, state, `{completed,total}` progress and a ready
+result. Import result contains `{mode,parent,directory_token,folders,items,errors}`:
+folders are `{name,parent_index:null|earlier_index}` and items include
+`{path_token,name,state:"ready",folder_index:null|index}`. Tree import uses sorted
+DFS, native scan-empty pruning and exact name/parent folder merge; folders are
+created before file probe outcomes, so a failed-media folder may remain. Source
+path reuse is global across existing noncompound project media. Sources stay in
+place; Library copy/content-hash dedup semantics do not apply here.
+
+Relink result contains `{mode,directory_token,items,errors,not_found,skipped,
+ambiguous_count}`; items add `media_id`. ByName scans approved regular files for
+exact basename matches, preferring shallow depth and then lexical tie order.
+Only missing sources are searched; readable sources and compounds are skipped.
+Chosen replacements can change online media. Stream/ordinal/range/freeze/locked
+track validation and native SetMediaPath retiming remain authoritative.
+
+Normal project mutations `import_prepared_project_media{job_id}` and
+`relink_prepared_media{job_id}` retain the standard command CAS, writer lease,
+original receipt replay and one Undo. Import receipts include `media_ids`,
+`folder_ids`, `errors`, `changed`, `new_count`, `reused_count`; successful IDs can
+refer to reused media. Relink receipts include `relinked_media_ids`, `not_found`,
+`skipped`, `errors`, `ambiguous_count`, `changed`. No-op reuse adds no history.
+The original `EditCatalog::Relink` HTTP mutation also prepares asynchronously
+while preserving its original request fingerprint; direct actor probing is refused.
+
+Project import supports256 media, tree128 directories/4096 raw entries/depth16;
+Relink supports64 targets. Library64 import admission is unchanged. Existing
+worker1/pending1/records8/retained-FD256 and probe/job budgets remain. Missing
+originals, candidate descriptors/entries/parent lineage and all scanned directories,
+including pruned branches, are revalidated before atomic acceptance. Cancellation,
+generation changes or source changes refuse the complete edit. All responses are
+`no-store`. See `evidence/f2-project-media-workflow.json` for actual native and
+Windows qualification scope.
+
 ## Explicit native library edit preparation
 
 `POST /api/v1/native-assets/commands/prepare` accepts the full ordinary

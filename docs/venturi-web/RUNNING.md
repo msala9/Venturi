@@ -2,6 +2,35 @@
 
 ## Current halo1 working instance
 
+Use **http://127.0.0.1:8828/** in the existing Windows browser. Source `e41e9cc`,
+binary `vv-web-3f777879477e`, runs as unprivileged `halo` in
+`venturi-web-halo1-project-media-r2.service`, with projects in
+`/home/halo/VenturiWeb-project-media-r2-20261023`. Saved
+`Venturi_Project_Media.vvproj` contains the recovered457-frame1920×1080/24fps
+video/still/two-stream audio montage on V1/A1/A2, at Program frame0. It is an
+isolated Saved copy with fresh history. The original recovery workflow and its
+four-command live Undo remain on8827 in `venturi-web-halo1-project-media.service`.
+Its export job1792725583089473242 is the Full HD H.264/AAC result verified to EOF.
+
+File > Import media now selects approved nested files or a folder subtree, with
+an explicit project destination. It retains native folders, path reuse and
+per-file errors, with one Undo. Media and folders > Relink selected media or
+Relink current project folder prepares missing-name search in an approved child
+folder; readable sources remain unchanged. Explicit replacements accept renamed
+files and may replace online sources. Fresh dialogs clear obsolete result counts.
+The final instance verifies online skips and existing-path reuse without changing
+the Saved project or adding history. See `evidence/f2-project-media-workflow.json`.
+
+The hidden same-port tunnel forwards8828 to halo1. NAS roots remain
+`/mnt/madrock-share/madrock-library` and its `presets/`; ds4 remains on8787. All
+heavy work stays on halo1 with eight-CPU/4-GiB/no-swap/low-priority limits and the
+nonblocking shared GPU lock. No Linux browser, driver or mount change is needed.
+No automatic restart/boot enablement/deadline applies to this editor. Thirteen
+prior halo1 Sessions, their Saved files/live Undo and ds4 remain intact; halo2 is
+untouched. Full F1-F7/M7 remains active: ledger48done/42partial/2excluded.
+
+### Preserved project-pool instance
+
 Use **http://127.0.0.1:8826/** in the existing Windows browser. Source `5d8d15d`,
 binary `vv-web-7420a371bfe9`, runs as unprivileged `halo` in
 `venturi-web-halo1-project-pool.service`, projects in

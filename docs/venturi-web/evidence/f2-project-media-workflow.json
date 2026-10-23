@@ -1,0 +1,313 @@
+{
+  "feature_block": "F2 approved nested project import and prepared project Relink",
+  "source_commit": "e41e9cc6b570e46c584d7fb31018e0cb3a65d7d9",
+  "delivery": {
+    "url": "http://127.0.0.1:8828/",
+    "host": "halo1",
+    "unit": "venturi-web-halo1-project-media-r2.service",
+    "binary_sha256": "3f777879477eb75ae54c66260465a2ebea70dd7a5dc3dd24ea20f71955517696",
+    "project_root": "/home/halo/VenturiWeb-project-media-r2-20261023",
+    "project": "Venturi_Project_Media.vvproj",
+    "saved_sha256": "fc4754ffd4a3b70f47d941d07f864ad3eaf13c66c3a7c77113b4c52c55703549",
+    "client_reload_preserves_saved_bytes_and_native_state": true,
+    "history": {
+      "labels": [],
+      "position": 0
+    }
+  },
+  "qualification": {
+    "native_cases": 83,
+    "native_total_cases": 559,
+    "native_filters": [
+      "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 555 filtered out; finished in 0.03s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 558 filtered out; finished in 0.03s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 558 filtered out; finished in 0.01s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 558 filtered out; finished in 0.08s",
+      "test result: ok. 47 passed; 0 failed; 0 ignored; 0 measured; 512 filtered out; finished in 0.65s",
+      "test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 543 filtered out; finished in 0.05s",
+      "test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 552 filtered out; finished in 0.02s",
+      "test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 555 filtered out; finished in 0.04s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 558 filtered out; finished in 0.00s",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 558 filtered out; finished in 0.00s"
+    ],
+    "format_clippy_all_targets_build": "passed",
+    "client_cases_initial_aggregate": 1291,
+    "initial_scope": "1283 cases passed; eight old flat-dialog fixtures adapted and passed in one focused continuation without production changes.",
+    "final_client_scope": "Two caption-reset fixes pass116 affected client cases; other existing client/native results reused.",
+    "final_client": [
+      "# tests 116",
+      "# pass 116",
+      "# fail 0",
+      "# cancelled 0",
+      "# duration_ms 417.743144"
+    ],
+    "qualified_source_sha256": {
+      "crates/vv-web/src/api.rs": "541219e0463898d5662424d9189c1bd2eacb024d269ae195fc26d5cd33b7be28",
+      "crates/vv-web/src/approved_sources.rs": "75efd42f0928e760977bcec36de3c63826d9dfbccefc71437af498589dd4142e",
+      "crates/vv-web/src/asset_jobs.rs": "49231982425522514814e44afbfc391ce83340c2f98cc5d6889c957c32cba758",
+      "crates/vv-web/src/catalog.rs": "ca3080add8f81c9a8db5a629b0259bafecac4d46f0f11ab4d3eb7f52e735bb11",
+      "crates/vv-web/src/commands.rs": "f38c2495b56e41b0832d9d3b19af59f517d5fad2edcf6681d75b5b52252af079",
+      "crates/vv-web/src/files.rs": "7f80df71d0e91df694fa87c82a5fefcb8e7990db6bfe58aa86c01e226bf5b7ce",
+      "crates/vv-web/src/host.rs": "e296adb137de40bd01cd3d7395edd81af4fe2cf12ad3f6e630673426f85cb17a",
+      "crates/vv-web/src/main.rs": "a96cf03f6206f90b7c744d387a9345b105787577f74cb1dc12d4c96726d8a590",
+      "crates/vv-web/src/tests/api.rs": "493fad62dabe5c97821d352becb03cf5853149bc0ce014bdf29d96d33738b070",
+      "crates/vv-web/src/tests/approved_sources.rs": "cb2b7370f3560bfad7f7ab26cdf81df1196a106244f8047b5f09fe0a5c3f82c5",
+      "crates/vv-web/src/tests/asset_jobs.rs": "bbd31d010d7b5cd512be266b978f7808aee8cb0555871592d1b503b707e7cdf7",
+      "crates/vv-web/src/tests/catalog.rs": "4345ddab653b74c2d7eb9ab44a458f878468b7625273bc174e4134ae77cad8ca",
+      "crates/vv-web/src/tests/host.rs": "06429c7c3f77d6239d5a002657b442023c097e1bc810aab74a188f970ae1fee6",
+      "web/index.html": "812b3b6200cfbe8710692f9a32d42319a2896df9b006568dc4ed3990da9a02c5",
+      "web/js/catalog.js": "2236f1aab5fbdb469460cb321c4d0dda47d1066c6c7fd4ab900e478de3bf8514",
+      "web/js/main.js": "550622f28272e90cd6a747f335a783f53ae0aff9c2aa8daa6e959f50a5924977",
+      "web/js/media-import.js": "a1087cb9832ea7af73c285e0592e5928770bc1e8ed1f6819d608bec38117c563",
+      "web/js/source-picker.js": "52b7f2abc3794fd80624390de4291fa70b62264dfce2496e347a438cec404043",
+      "web/style/native-browser.css": "62adf729386b8d8f92f5025d661b4bc2d63cc2f7c217369bde311d8befc524a0",
+      "web/test/catalog.test.js": "ca05223439a848067c313359350c10f6fbbd6001fdbe8d22a12651e83f4abdaf",
+      "web/test/media-import-panel.test.js": "34f2092284e67b78596c9e53b599bae70816197f9e25aa4f76127cc43abe28f6",
+      "web/test/media-import.test.js": "762f2afb4e8b79aca5bd2b60b18ed52e91bf40168d38d12609effaab107637f2",
+      "web/test/source-picker.test.js": "61e97547f2544648176a9d48062b0474978b79ba16937a3a71196fd1cfb5a2b3",
+      "crates/vv-web/src/project_media.rs": "59f66191faa02241b76db70597be13e6465653bbd27e0a9fff2ada5198efc9b2",
+      "crates/vv-web/src/project_media_worker.rs": "778cd7b89d0cee56d1855446939f4a3b24321d038347ffc7463c63c7ce3c9004",
+      "crates/vv-web/src/tests/project_media.rs": "c134df21dab1f201abc278a619dd310d2857fadbc9c5e67971ef5382c5db8832",
+      "crates/vv-web/src/tests/project_media_api.rs": "736ee59979502e98ab173bfd648eb0646a89ac472db1e8579fa46d84fb3c5ec2",
+      "web/js/media-relink.js": "d5707044ea40769974e7cd3494a4424ffdd52dea96323f2b3f7b5f5bd560bbb1",
+      "web/test/media-relink.test.js": "ce90b0b28bbfed588cddcd0e293f295a0a8e75b03e6b2872af1fcc0e0cc5d7c9"
+    }
+  },
+  "native_semantics": {
+    "tree": "Sorted DFS, prune scan-empty branches, merge exact name plus parent, global source-path dedup, create folders before per-file probe outcomes.",
+    "relink": "Selected IDs or recursive project folder; only missing files searched by exact basename, shallowest depth then lexical ties; chosen files may replace reachable sources.",
+    "witnesses": "Bounded descriptor/entry/parent metadata validation includes missing originals and all scanned/pruned directories. No probe in mutable Session.",
+    "undo": "One ImportMedia or RelinkMedia command; original legacy request/receipt replay preserved.",
+    "limits": {
+      "project_tree_media": 256,
+      "library_tree_media": 64,
+      "relink_targets": 64,
+      "scan_directories": 128,
+      "scan_entries": 4096,
+      "depth": 16,
+      "worker": 1,
+      "retained_descriptors": 256
+    }
+  },
+  "browser_workflow": {
+    "browser": "Existing Windows work tab only",
+    "tree_import": {
+      "files": 3,
+      "folders": [
+        {
+          "id": "5",
+          "name": "Footage",
+          "parent": null
+        },
+        {
+          "id": "6",
+          "name": "Bad",
+          "parent": "5"
+        },
+        {
+          "id": "7",
+          "name": "SceneA",
+          "parent": "5"
+        },
+        {
+          "id": "8",
+          "name": "SceneB",
+          "parent": "5"
+        }
+      ],
+      "errors": 1,
+      "bad_source": "Footage/Bad/invalid.wav",
+      "empty_branch_pruned": "Footage/Empty",
+      "one_undo_redo": true
+    },
+    "folder_by_name": {
+      "ready": 1,
+      "not_found": 1,
+      "skipped_online": 1,
+      "chosen_video": "Repair/River_AV_11s.mp4",
+      "deeper_duplicate_not_chosen": "Repair/Deep/River_AV_11s.mp4",
+      "one_undo_redo": true
+    },
+    "explicit_replacement": {
+      "media_id": "7",
+      "path": "Repair/Renamed_Still.png",
+      "name_changed_native": true,
+      "one_additional_native_undo_entry": true
+    },
+    "clip_identity_ranges_links_preserved": [
+      {
+        "id": "0",
+        "kind": "video",
+        "clips": [
+          {
+            "id": "1",
+            "media_id": "6",
+            "start_frame": 0,
+            "length_frames": 264,
+            "source_in_frames": 0,
+            "source_out_frames": 264,
+            "linked_group": "0",
+            "audio_stream_index": 0
+          },
+          {
+            "id": "2",
+            "media_id": "7",
+            "start_frame": 264,
+            "length_frames": 120,
+            "source_in_frames": 0,
+            "source_out_frames": 125,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "1",
+        "kind": "audio",
+        "clips": [
+          {
+            "id": "0",
+            "media_id": "6",
+            "start_frame": 0,
+            "length_frames": 264,
+            "source_in_frames": 0,
+            "source_out_frames": 264,
+            "linked_group": "0",
+            "audio_stream_index": 0
+          },
+          {
+            "id": "3",
+            "media_id": "8",
+            "start_frame": 384,
+            "length_frames": 73,
+            "source_in_frames": 0,
+            "source_out_frames": 91,
+            "linked_group": "1",
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "kind": "audio",
+        "clips": [
+          {
+            "id": "4",
+            "media_id": "8",
+            "start_frame": 384,
+            "length_frames": 73,
+            "source_in_frames": 0,
+            "source_out_frames": 91,
+            "linked_group": "1",
+            "audio_stream_index": 1
+          }
+        ]
+      }
+    ],
+    "program_eof": 456,
+    "export_preview": {
+      "ended": true,
+      "duration_seconds": 19.05,
+      "error": null
+    },
+    "final_dialog_reopen": {
+      "relink_caption": "Relink results",
+      "relink_details_open": false,
+      "import_caption": "Import file results",
+      "import_details_open": false
+    },
+    "final_noop_checks": {
+      "online_folder_relink_skips": 3,
+      "selected_nested_file_import_reuses_media_id": "6",
+      "no_extra_history_or_saved_byte_change": true
+    }
+  },
+  "qualified_export": {
+    "server": "http://127.0.0.1:8827/",
+    "binary_sha256": "bc46b42f16c33d4c67b13535386c6759a42e3ff26468f5b5ac5e073cfaa4a500",
+    "job_id": "1792725583089473242",
+    "file": {
+      "bytes": 3018680,
+      "sha256": "f2c54c544df7df29387b07ce6b06b1d3176763e219b75d2679967f0e60ce6543",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "24/1",
+            "duration": "19.041667",
+            "nb_frames": "457"
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0",
+            "duration": "19.050000",
+            "nb_frames": "894"
+          }
+        ],
+        "format": {
+          "duration": "19.050000",
+          "size": "3018680"
+        }
+      }
+    },
+    "scope": "Generated after actual missing-file recovery before caption-only client fixes; native source/render code unchanged. Exact output bytes equal prior whole-source montage export."
+  },
+  "preservation": {
+    "earlier_halo1_sessions": 13,
+    "live_undo_on_recovered_8827": {
+      "labels": [
+        "ImportMedia",
+        "InsertClips",
+        "RelinkMedia",
+        "RelinkMedia"
+      ],
+      "position": 4
+    },
+    "original_saved_sha256": "9a34f342757381b9f962f222f81afbcc9a6bbd491114fa2dfcecc996ba68ecda",
+    "cloned_saved_project_has_fresh_history": true,
+    "protected_pids": {
+      "venturi-web-halo1-nas.service": "84786",
+      "venturi-web-halo1-color-audio-r2.service": "99965",
+      "venturi-web-halo1-library-edit-r2.service": "105609",
+      "venturi-web-halo1-native-curves.service": "109843",
+      "venturi-web-halo1-curve-window-r2.service": "114229",
+      "venturi-web-halo1-program-lookahead.service": "116676",
+      "venturi-web-halo1-source-placement.service": "121987",
+      "venturi-web-halo1-source-placement-r5.service": "123540",
+      "venturi-web-halo1-source-waveform-r2.service": "126135",
+      "venturi-web-halo1-source-waveform-r4.service": "127416",
+      "venturi-web-halo1-source-lookahead.service": "129350",
+      "venturi-web-halo1-project-pool.service": "131552",
+      "venturi-web-halo1-project-media.service": "136307",
+      "ds4-console.service": "58396"
+    },
+    "halo2": "untouched",
+    "nas": "Existing canonical mount and roots retained; no writes, mount changes, archive transfers or large scans."
+  },
+  "resources": {
+    "host": "halo1",
+    "max_cpu": 8,
+    "memory_max_gib": 4,
+    "swap_max": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "shared_gpu_lock": "nonblocking",
+    "heavy_workloads": "one at a time",
+    "workflow_runtime_memory_peak_bytes": 523669504
+  },
+  "screenshots": [
+    "f2-project-media-import-halo1.png",
+    "f2-project-media-relink-halo1.png",
+    "f2-project-media-final-halo1.png"
+  ],
+  "remaining": "Full F1-F7/M7 is active. Pool Grid/List presentation, proxy/derivative fidelity, long4K/dense/DPI and physical audio/device acceptance remain separate open work."
+}

@@ -4,7 +4,24 @@
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8826/**, source `5d8d15d`,
+The current halo1 delivery is **http://127.0.0.1:8828/**, source `e41e9cc`,
+binary `3f777879477e`, in `venturi-web-halo1-project-media-r2.service`.
+Approved nested file/tree import preserves native folder merge/pruning, global
+path reuse, partial probe results and one Undo. Prepared selected/folder ByName
+and explicit Chosen Relink preserve IDs, clip ranges/links and native retiming;
+all metadata probes use the bounded worker, including the original legacy route.
+Source/scan/context revalidation and original receipt replay remain authoritative.
+Fresh dialogs reset counts and fold results. Actual Windows3-file4-folder1-error
+import/UndoRedo, two missing-file recoveries, five-clip Full HD montage, Program
+EOF456 and457-frame Full HD/AAC export EOF pass. Final Saved clone/client reload,
+online skips and nested-file path reuse preserve saved bytes and history. The
+83 affected native cases,1291 aggregate client cases, formatting/Clippy/build and
+final116 affected client cases/build pass; unchanged checks are reused. See
+`evidence/f2-project-media-workflow.json` and screenshots. Thirteen prior editors
+and ds4 remain preserved; halo2/NAS are untouched. Ledger48done/42partial/2excluded.
+Full F1-F7/M7 remains active; next pool presentation and proxy/derivative fidelity.
+
+The preserved project-pool delivery is **http://127.0.0.1:8826/**, source `5d8d15d`,
 binary `7420a371bfe9`, in `venturi-web-halo1-project-pool.service`.
 Project Media now drags its selected visible set in panel order. Name/Duration
 headers use native comparisons; search/folder/type filters prune hidden mutation

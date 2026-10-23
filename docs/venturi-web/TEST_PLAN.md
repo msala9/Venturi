@@ -10,6 +10,25 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F2 project import/recovery (`e41e9cc`, halo1/8828):83 affected native cases pass
+across new project jobs/HTTP/legacy coordination and existing jobs, catalog,
+approval and file guards;559 native cases exist in the compiled test binary.
+Formatting, all-target Clippy and build pass. The initial serial client gate
+passes1283/1291; eight obsolete flat-panel fixtures are adapted without production
+changes and pass separately. Two actual-browser caption-reset fixes then pass116
+affected client cases and the embedded build; other client/native results are
+reused. Do not describe these as a new full1291 run after the caption fixes.
+Windows verifies nested3-file4-folder1-error import, scan-empty pruning, one
+Undo/Redo, selected whole-source montage, two missing-file recoveries, exact
+ByName shallow match/online skip, explicit renamed still, stable clip ranges,
+Program EOF456 and457-frame1920×1080 H.264/AAC exported-file EOF. Final delivery
+opens an isolated Saved copy, verifies three online skips and path reuse without
+Undo or saved-byte changes, clears captions on reopening and survives client
+reload. The original8827 live four-command Undo chain remains intact; opening
+the isolated final copy intentionally starts fresh history. See
+`evidence/f2-project-media-workflow.json`. No new native renderer matrix is needed
+for the caption-only fix. Device/dense/DPI/long4K and full M7 remain open.
+
 F2 project pool (`5d8d15d`, halo1/8826):1270 JavaScript cases pass in one serial
 Node run, justified by adding a fourth shared timeline drag owner and changing
 catalog selection/keyboard order. Ten affected native cases cover new placement

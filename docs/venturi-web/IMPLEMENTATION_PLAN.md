@@ -4,7 +4,7 @@
 
 The owner accepted the usable workflow and resumed the full plan. Follow
 [COMPLETION_PLAN.md](COMPLETION_PLAN.md) for the active F1–F7 delivery blocks:
-complete the 43 remaining partial capabilities, preserve the 47 already accepted and finish
+complete the 42 remaining partial capabilities, preserve the 48 already accepted and finish
 M7 release qualification. The two explicitly NOT-PLANNED rows remain excluded.
 [DELIVERY_PLAN.md](DELIVERY_PLAN.md) is the completed regression baseline.
 Preserve the protected editor and any new work in the delivered candidate.
@@ -18,7 +18,20 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-Current delivery: halo1/8826, source `5d8d15d`, binary `7420a371bfe9`.
+Current delivery: halo1/8828, source `e41e9cc`, binary `3f777879477e`.
+Approved nested file/tree import and prepared project Relink now complete the
+ordinary native import/recovery workflow. Native folder merge/pruning, path
+deduplication, per-file errors, selected/folder missing-name search and explicit
+replacement remain native; probes run in the isolated serial worker. Each edit
+is one Undo, and original legacy receipts replay without probing again. Dialog
+reopen clears obsolete counts. The83 affected native cases,1291 aggregate client
+cases and final116 affected client cases/build pass. Actual Windows nested import,
+UndoRedo, two-file recovery, five-clip Full HD playback/export EOF and final Saved
+client reload pass. See `evidence/f2-project-media-workflow.json`. Thirteen older
+editors/Undo and ds4 remain preserved. Ledger48done/42partial/2excluded; continue
+pool Grid/List presentation, proxy/derivative fidelity and the full F1-F7/M7 plan.
+
+Preserved project-pool delivery: halo1/8826, source `5d8d15d`, binary `7420a371bfe9`.
 Project pool selection places whole sources sequentially in visible panel order
 by drag or Timeline > Insert selected media. Native destinations, all streams,
 per-source links, still5s, rational lengths and one Undo remain authoritative.

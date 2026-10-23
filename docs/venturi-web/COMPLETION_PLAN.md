@@ -14,7 +14,26 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8826/**, source `5d8d15d`,
+The current halo1 delivery is **http://127.0.0.1:8828/**, source `e41e9cc`,
+binary `3f777879477e`, in `venturi-web-halo1-project-media-r2.service`.
+Approved nested files and folder trees now import through the isolated worker,
+preserving native folder merge/pruning, path deduplication, per-file errors and
+one Undo. Selected/folder ByName and explicit Chosen Relink use prepared native
+SetMediaPath commands with source/scan/context witnesses and one Undo. The legacy
+Relink route also prepares asynchronously. Fresh dialogs clear old result counts.
+The83 affected native cases, formatting, all-target Clippy/build and1291 aggregate
+client cases pass; the final caption fixes pass116 affected client cases, with
+unchanged native results reused. Actual Windows import/UndoRedo, missing-file
+recovery, five-clip Full HD montage, Program EOF456,457-frame H.264/AAC export
+EOF and final Saved client reload pass. See `evidence/f2-project-media-workflow.json`
+and three screenshots. Thirteen earlier halo1 editors, their files/Undo and ds4
+are preserved; halo2/NAS are untouched. The ledger is now48done/42partial/2excluded:
+ordinary native video/audio import is accepted. Full F1-F7/M7 remains active.
+Next complete pool Grid/List presentation and proxy/derivative fidelity, then
+representative-media and remaining full-plan functionality/acceptance. Keep
+physical audio, dense/DPI and long4K qualification explicit.
+
+The preserved project-pool delivery is **http://127.0.0.1:8826/**, source `5d8d15d`,
 binary `7420a371bfe9`, in `venturi-web-halo1-project-pool.service`.
 Project Media now drags selected visible rows in panel order, or inserts them
 through Timeline > Insert selected media. The native whole-source builder

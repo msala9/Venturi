@@ -3,7 +3,7 @@
 ## Native proxy preferences and generation
 
 `GET /api/v1/media/proxies?project_epoch=E` validates the open project and returns
-`{project_epoch,settings:{enabled,quality,paused},jobs,suspended,capacity}`.
+`{project_epoch,settings:{enabled,quality,paused},jobs,suspended,cache,capacity}`.
 `quality` is `low|medium|high` (640/960/1920 maximum video width). Each current
 quality job reports `{id,media_id,state,progress,total,error,quality,source_version}`;
 states are `queued|generating|ready|failed|canceled`, and progress is source frames.
@@ -11,12 +11,26 @@ states are `queued|generating|ready|failed|canceled`, and progress is source fra
 Capacity reports32 jobs,512 MiB per artifact and2 GiB total, with active encode
 reservation and retained artifact leases charged. This read requires no writer.
 
+`cache` is `{available:true,error:null}` for a healthy census. A failed census
+returns200 with `{available:false,error:{code,message}}`, `capacity:null` and
+confirmed settings. Latest jobs are deduplicated before omitting Ready rows;
+failed/queued/generating/canceled rows remain. This is not an empty healthy cache
+or proof that stored bytes were erased. Strict unreadable/malformed preferences
+and unsafe root validation still return errors. Older v1 server catalogs omit cache;
+the browser accepts that legacy healthy catalog but validates any present health.
+
 `PUT /api/v1/media/proxies` accepts the strict complete body
 `{project_epoch,client_id,enabled,quality,paused}` and requires the current writer.
 It atomically persists v1 settings in `.venturi-proxy-settings.json` below the
 pinned private projects root, under a nonblocking lock and identity/CAS checks.
 Invalid existing settings are preserved and reported. These are host media
 preferences; no native Project, generation or Undo entry changes.
+
+After a successful preference write, failed cache census returns the degraded
+catalog with the actual persisted settings acknowledgment. It does not convert
+the completed write into an unconfirmed error. Writer/epoch rejection, malformed
+settings and unknown write outcomes retain their ordinary error semantics. The
+client disables generation and automatic queueing while cache health is unavailable.
 
 `POST /api/v1/media/proxies/prepare` accepts strict
 `{project_epoch,client_id,media_ids:[...]}` with1–32 distinct IDs. The actor captures
@@ -56,6 +70,13 @@ Background acquisition backs off with cancellation/foreground parking; status
 has a100ms read-retry budget for transient catalog contention. Rendering may use
 originals while an uncaptured proxy lookup is busy; captured-lease changes remain
 real errors. Current approved originals are rebound on every project lookup.
+Malformed/unavailable uncaptured cache lookup also falls back only after the
+current approved original path and strong version are revalidated. Acquired
+artifact/original leases retain hard validation failures. This lookup behavior
+does not close the separately tracked original requested-decoder FD gap or the
+frame-cache-hit validation gap. Foreign/malformed entries remain untouched.
+See `evidence/m7-proxy-cache-recovery-workflow.json` for the degraded census,
+acknowledged disable, original preview and exact sentinel-preservation workflow.
 See `evidence/f2-native-proxies-durable-workflow.json` for real process restart,
 unchanged proxy inode/version/bytes and original-media export preservation.
 

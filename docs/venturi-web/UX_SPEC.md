@@ -1,5 +1,18 @@
 # UX/UI specification — professional NLE with AI review
 
+## Unavailable proxy cache — 2026-10-23
+
+`b588603` on halo1/8835 keeps the cache warning inside Playback > Proxies while
+confirmed Use proxies, quality and Pause remain usable. Generate, polling and
+Ready badges stay unavailable. A real acknowledged disable switches to originals;
+the cache warning persists. A rejected, malformed or unknown preference write
+never displays successful disable, is not replayed and remains locked until a
+successful explicit reconciliation. An in-flight Refresh retains that guard.
+Status-only recovery preserves the Source window. Unknown cache files are never
+removed automatically. See `evidence/m7-proxy-cache-recovery-workflow.json` and
+`evidence/m7-proxy-cache-degraded.jpg`. The ordinary delivery retains the normal
+shared cache; only the separate qualification cache received the owned sentinel.
+
 ## Native Media interactions — 2026-10-23
 
 `9e00d2c` on halo1/8833 completes the compact pool interaction follow-up.

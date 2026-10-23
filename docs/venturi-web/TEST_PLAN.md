@@ -10,6 +10,25 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+M7 degraded proxy cache (`b588603`, halo1/8835): 14 affected client cases and
+21 native proxy cases pass, plus formatting/all-target Clippy/embedded build.
+The native HTTP regression covers readable degraded settings, writer/epoch
+rejection, acknowledged disable, exact sentinel preservation and no Project/Undo
+change. Manager regressions cover latest-ready masking, verified-original lookup
+fallback, captured-lease refusal, strict settings/root validation and recovery.
+Client regressions cover rejected/unknown/malformed writes, reconciliation locks,
+readonly/hidden policy and explicit recovery without optimistic disable/replay.
+Actual Windows qualification uses the same binary with a private cache: real
+foreign-file error, enable/disable ACK, original Program PNG with proxy-count0,
+Full HD original Source/window264, sentinel identity and explicit Refresh.
+Final delivery retains the normal shared-cache movie inode/timestamps/SHA256.
+All19 prior Sessions/20 PIDs/seven Saved hashes match. Only the disposable private
+qualification unit is stopped while Saved with empty Undo. Build peak1924452352
+bytes; delivery peak205860864 bytes. No halo2/NAS changes or local heavy tests.
+See `evidence/m7-proxy-cache-recovery-workflow.json`. Original requested-source
+pinning and validation before cached frame returns remain a separate pending
+production block; this gate does not claim broader M7 acceptance.
+
 F2 native Media interactions (`9e00d2c`, halo1/8833):111 affected JavaScript
 cases pass; final 30 catalog/menu cases cover the browser findings, including one
 new scroll regression. Reuse the 82 unchanged other cases: 112 distinct qualified

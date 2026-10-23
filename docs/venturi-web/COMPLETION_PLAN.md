@@ -14,7 +14,32 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8833/**, source `9e00d2c`,
+The current halo1 delivery is **http://127.0.0.1:8835/**, source `b588603`,
+binary `3619229952f1`, in `venturi-web-halo1-proxy-recovery.service`.
+An unavailable proxy cache now reports its error separately from confirmed
+preferences. Use proxies, quality and pause remain writable; disabling receives
+a real acknowledgment and uses originals. Generation, polling and Ready badges
+remain unavailable until a fresh healthy catalog. Rejected or unknown writes
+remain unconfirmed and are never replayed. Invalid preferences/root approval and
+already captured changed leases retain their hard errors; unknown files remain.
+
+The bounded halo1 gate passes 14 client cases and 21 native proxy cases, formatting,
+all-target Clippy and the embedded build. Actual Windows verification uses the
+same binary with a private qualification cache: a foreign sentinel causes the
+warning; enable/disable is acknowledged; Program reports zero selected proxies
+after disabling; original Source is 1920x1080 with its full 264-frame window and
+all audio streams. Only the unchanged owned sentinel is removed; explicit Refresh
+recovers status. The disposable Saved/empty-Undo qualification unit is then stopped.
+The delivery uses the normal shared cache, retaining its existing entry unchanged.
+All 19 prior Sessions, 20 service PIDs, seven Saved hashes and three originals match.
+The five-clip timeline DTO/revision is unchanged, Saved at timeline 1/frame 0 with
+empty Undo. Reuse existing playback/export evidence. See
+`evidence/m7-proxy-cache-recovery-workflow.json` and the degraded/workspace images.
+Ledger remains **49 done / 41 partial / 2 excluded**; full F1-F7/M7 remains active.
+Next implement requested original-source FD pinning and cache-hit validation,
+then representative/dense/DPI/physical and remaining release qualification.
+
+Preserved native Media interaction delivery: **http://127.0.0.1:8833/**, source `9e00d2c`,
 binary `899e9aacc94f`, in `venturi-web-halo1-media-interactions-r2.service`.
 The Media pool now follows the native background marquee, media/folder context
 menus, inline folder/compound rename and media/folder/breadcrumb drops. A folder
@@ -50,8 +75,8 @@ Halo2, AMD drivers, mounts and NAS content are untouched. Contextual Library
 publication uses the qualified pipeline but was not exercised against the NAS.
 The ledger remains **49 done / 41 partial / 2 excluded**: this completes the pool
 interaction follow-up, not a new coarse capability. Full F1-F7/M7 remains active.
-Next address degraded proxy-cache UX and actually-requested original frame-source
-FD pinning, then representative/dense/DPI/physical and remaining release work.
+The degraded-cache follow-up is delivered in b588603 above. Requested original
+frame-source FD pinning and broader release qualification remain active.
 
 Preserved durable proxy-cache delivery: **http://127.0.0.1:8831/**, source `6764b2d`,
 binary `4a11e6f7c63e`, in `venturi-web-halo1-proxy-durable.service`.
@@ -412,11 +437,11 @@ e204001; reuse their evidence above. Native proxy controls, real generation
 pause/resume and Program ready-proxy decoding are delivered in a95b4a6. Durable
 shared cache, source binding, leases and process-restart reuse are delivered in
 6764b2d; see `evidence/f2-native-proxies-durable-workflow.json`.
-`proxy_quality_settings` is accepted. Continue pool marquee/context menus/folder
-drag as one interaction block, then representative-media acceptance. All 41
-partial ledger rows and physical/M7 gates remain active. Pre-intent crash or
-foreign/malformed cache contents require explicit intervention; do not infer full
-M7 recoverability from the accepted normal-restart and valid-intent recovery.
+`proxy_quality_settings` is accepted. Pool interactions are delivered in9e00d2c;
+degraded-cache preference recovery is delivered in b588603. Continue requested
+original-source confinement and representative-media acceptance. All 41 partial
+ledger rows and physical/M7 gates remain active. Unknown cache contents are
+preserved; do not infer arbitrary crash cleanup or full M7 recoverability.
 
 ### F3 — advanced timeline and effects
 
@@ -645,14 +670,13 @@ project; no workstation soak, resource pressure/filling tests or foreign-process
 crash experiments. Preserve all dirty sessions. Deliver an accessible verified
 version, source commit, running instructions, saved project and output artifact.
 
-Degraded proxy-cache recovery remains an explicit M7 production task. A malformed
-or pre-intent entry currently makes status census fail; the client then disables
-its preference controls, so disabling proxies requires operator intervention.
-Separate readable preferences from failed cache census, report an unavailable
-cache honestly, permit an acknowledged switch to originals, and use originals
-for uncaptured unavailable cache lookups. Preserve hard errors for already
-captured changed leases and all unapproved original paths. Preserve unknown
-files; do not infer ownership or silently erase a cache after a crash.
+Degraded proxy-cache preference recovery is delivered in b588603/halo1/8835.
+Confirmed preferences remain writable during failed cache census; acknowledged
+disable uses originals. Uncaptured lookup errors can fall back only after current
+original approval/version checks; already captured changed leases remain errors.
+Unknown cache files are preserved and recovery requires a fresh healthy catalog.
+This does not provide arbitrary crash cleanup or close original frame-source
+confinement/cache-hit validation below.
 
 Original frame-source confinement remains a concrete M7 production task.
 Program/scopes/auto-balance must pin only actually requested source files through

@@ -4,7 +4,32 @@
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8833/**, source `9e00d2c`,
+The current halo1 delivery is **http://127.0.0.1:8835/**, source `b588603`,
+binary `3619229952f1`, in `venturi-web-halo1-proxy-recovery.service`.
+An unavailable proxy cache now reports its error separately from confirmed
+preferences. Use proxies, quality and pause remain writable; disabling receives
+a real acknowledgment and uses originals. Generation, polling and Ready badges
+remain unavailable until a fresh healthy catalog. Rejected or unknown writes
+remain unconfirmed and are never replayed. Invalid preferences/root approval and
+already captured changed leases retain their hard errors; unknown files remain.
+
+The bounded halo1 gate passes 14 client cases and 21 native proxy cases, formatting,
+all-target Clippy and the embedded build. Actual Windows verification uses the
+same binary with a private qualification cache: a foreign sentinel causes the
+warning; enable/disable is acknowledged; Program reports zero selected proxies
+after disabling; original Source is 1920x1080 with its full 264-frame window and
+all audio streams. Only the unchanged owned sentinel is removed; explicit Refresh
+recovers status. The disposable Saved/empty-Undo qualification unit is then stopped.
+The delivery uses the normal shared cache, retaining its existing entry unchanged.
+All 19 prior Sessions, 20 service PIDs, seven Saved hashes and three originals match.
+The five-clip timeline DTO/revision is unchanged, Saved at timeline 1/frame 0 with
+empty Undo. Reuse existing playback/export evidence. See
+`evidence/m7-proxy-cache-recovery-workflow.json` and the degraded/workspace images.
+Ledger remains **49 done / 41 partial / 2 excluded**; full F1-F7/M7 remains active.
+Next implement requested original-source FD pinning and cache-hit validation,
+then representative/dense/DPI/physical and remaining release qualification.
+
+Preserved native Media interaction delivery: **http://127.0.0.1:8833/**, source `9e00d2c`,
 binary `899e9aacc94f`, in `venturi-web-halo1-media-interactions-r2.service`.
 The Media pool now follows the native background marquee, media/folder context
 menus, inline folder/compound rename and media/folder/breadcrumb drops. A folder
@@ -40,8 +65,8 @@ Halo2, AMD drivers, mounts and NAS content are untouched. Contextual Library
 publication uses the qualified pipeline but was not exercised against the NAS.
 The ledger remains **49 done / 41 partial / 2 excluded**: this completes the pool
 interaction follow-up, not a new coarse capability. Full F1-F7/M7 remains active.
-Next address degraded proxy-cache UX and actually-requested original frame-source
-FD pinning, then representative/dense/DPI/physical and remaining release work.
+The degraded-cache follow-up is delivered in b588603 above. Requested original
+frame-source FD pinning and broader release qualification remain active.
 
 Preserved durable proxy-cache delivery: **http://127.0.0.1:8831/**, source `6764b2d`,
 binary `4a11e6f7c63e`, in `venturi-web-halo1-proxy-durable.service`.

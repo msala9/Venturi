@@ -1,0 +1,292 @@
+{
+  "date": "2026-10-23",
+  "source_commit": "b588603ae76f5caf3c98777795653da3f211d981",
+  "binary": {
+    "phase": "passed",
+    "started_unix": 1792736471.3611085,
+    "updated_unix": 1792736574.4618714,
+    "javascript": [
+      "test/proxies.test.js"
+    ],
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-3619229952f1",
+    "sha256": "3619229952f1c115b558148a86810f8dbf1bff2ced093d3c40769da92186aaab",
+    "bytes": 78657248
+  },
+  "delivery": {
+    "url": "http://127.0.0.1:8835/",
+    "host": "halo1",
+    "unit": "venturi-web-halo1-proxy-recovery.service",
+    "root": "/home/halo/VenturiWeb-proxy-recovery-20261023",
+    "saved_project_sha256": "ef61d02c9d5bfa0cd921d4a223414faea13d621add6ec2326aa819c759eefb2f",
+    "unit_observation": "ActiveState=active\nMainPID=163346\nResult=success\nMemoryCurrent=154525696\nMemoryPeak=205860864\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+    "preview": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    },
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 0
+      }
+    },
+    "unsaved": false,
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "proxy_catalog": {
+      "cache": {
+        "available": true,
+        "error": null
+      },
+      "capacity": {
+        "charged_bytes": 2206594,
+        "max_bytes": 2147483648,
+        "max_job_bytes": 536870912,
+        "max_jobs": 32,
+        "used_entries": 1,
+        "used_jobs": 0
+      },
+      "jobs": [],
+      "project_epoch": "1792737154773664472:1",
+      "settings": {
+        "enabled": false,
+        "paused": false,
+        "quality": "medium"
+      },
+      "suspended": false
+    },
+    "cache_root": "/home/halo/.cache/venturi/proxies/web-v1"
+  },
+  "qualification": {
+    "url": "http://127.0.0.1:8834/",
+    "same_binary_as_delivery": true,
+    "cache_isolation": "Private XDG_CACHE_HOME; no fault injection into the shared cache",
+    "foreign_sentinel": {
+      "path": "/home/halo/VenturiWeb-proxy-recovery-qualification-20261023/.cache/venturi/proxies/web-v1/qualification-foreign-preserved.txt",
+      "sha256": "1f7866a15e28f44b33728d68cf1882d100fca82fce95ebb6d2169e8d88a63648",
+      "inode": 4211312,
+      "mtime_ns": 1792736841318804068,
+      "ctime_ns": 1792736841318804068
+    },
+    "phases": {
+      "enabled-degraded": {
+        "proxy_catalog": {
+          "cache": {
+            "available": false,
+            "error": {
+              "code": "PROXY_CACHE_RECOVERY_REQUIRED",
+              "message": "Native proxy cache contains changed or unsupported files; they were preserved"
+            }
+          },
+          "capacity": null,
+          "jobs": [],
+          "project_epoch": "1792736809740781402:1",
+          "settings": {
+            "enabled": true,
+            "paused": false,
+            "quality": "medium"
+          },
+          "suspended": false
+        },
+        "native_session_unchanged": true,
+        "saved_bytes_unchanged": true
+      },
+      "disabled-degraded": {
+        "proxy_catalog": {
+          "cache": {
+            "available": false,
+            "error": {
+              "code": "PROXY_CACHE_RECOVERY_REQUIRED",
+              "message": "Native proxy cache contains changed or unsupported files; they were preserved"
+            }
+          },
+          "capacity": null,
+          "jobs": [],
+          "project_epoch": "1792736809740781402:1",
+          "settings": {
+            "enabled": false,
+            "paused": false,
+            "quality": "medium"
+          },
+          "suspended": false
+        },
+        "native_session_unchanged": true,
+        "saved_bytes_unchanged": true
+      },
+      "recovered": {
+        "proxy_catalog": {
+          "cache": {
+            "available": true,
+            "error": null
+          },
+          "capacity": {
+            "charged_bytes": 0,
+            "max_bytes": 2147483648,
+            "max_job_bytes": 536870912,
+            "max_jobs": 32,
+            "used_entries": 0,
+            "used_jobs": 0
+          },
+          "jobs": [],
+          "project_epoch": "1792736809740781402:1",
+          "settings": {
+            "enabled": false,
+            "paused": false,
+            "quality": "medium"
+          },
+          "suspended": false
+        },
+        "native_session_unchanged": true,
+        "saved_bytes_unchanged": true
+      }
+    },
+    "program_after_confirmed_disable": {
+      "sentinel_preserved": true,
+      "program_png_sha256": "185ea7292b3a68154252fcd7ea57370a5e5e7a0fbc18970538e851a9f7803675",
+      "program_png_bytes": 763583,
+      "program_size": [
+        960,
+        540
+      ],
+      "headers": {
+        "content-type": "image/png",
+        "x-venturi-proxy-count": "0",
+        "cache-control": "no-store",
+        "x-content-type-options": "nosniff",
+        "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'",
+        "referrer-policy": "no-referrer",
+        "content-length": "763583",
+        "connection": "close",
+        "date": "Fri, 23 Oct 2026 06:30:27 GMT"
+      }
+    },
+    "source_after_confirmed_disable": {
+      "video": {
+        "error": null,
+        "height": 1080,
+        "readyState": 4,
+        "src": "/api/v1/media/6/jobs/1792737038173099208/source.mp4?project_epoch=1792736809740781402%3A1",
+        "width": 1920
+      },
+      "status": "River_AV_11s.mp4 \u00b7 SOURCE WINDOW \u00b7 0\u2013264 / 264 frames \u00b7 original \u00b7 all audio streams"
+    },
+    "cleanup": {
+      "removed_only_owned_sentinel": true,
+      "unknown_files_removed": false,
+      "path": "/home/halo/VenturiWeb-proxy-recovery-qualification-20261023/.cache/venturi/proxies/web-v1/qualification-foreign-preserved.txt"
+    },
+    "notes": [
+      "Real checkbox enable then disable each received a native successful acknowledgment while cache census remained unavailable.",
+      "Generate and automatic queueing stayed disabled; no Ready badges were shown.",
+      "The sentinel retained its exact bytes, inode, mtime and ctime until only that owned fixture was removed.",
+      "Explicit Refresh recovered healthy status without reopening the original Source window.",
+      "No playback/EOF or export was rerun for this cache-control change; unchanged accepted evidence is reused."
+    ]
+  },
+  "checks": {
+    "javascript_cases": 14,
+    "native_proxy_cases": 21,
+    "formatting": "passed",
+    "all_target_clippy_deny_warnings": "passed",
+    "embedded_build": "passed",
+    "normalized_source_sha256": {
+      "crates/vv-web/src/api.rs": "2fda5d232991a553a7c01afcd817cf646981c402c6dfad9f35f3e9d04f049376",
+      "crates/vv-web/src/proxy.rs": "991b3f6e55d0ea0f8a1fd4ba2de5771d58ff88a472e0192827e284d43bf96569",
+      "crates/vv-web/src/tests/api.rs": "779abaeaf99d08f1f05d2dc84fb5ad4bf0b2716926e91b62ec6d23b7f203f0e9",
+      "crates/vv-web/src/tests/proxy.rs": "e30d75a68c61b7a481a959846a7a13f66a784388d63238ea8de69d40d1b87d8a",
+      "web/js/main.js": "906d764922e45d831b7cc9ca6fd92df5b9a4463949e00cd4411ea0485ef5765a",
+      "web/js/proxies.js": "750a3109e445358a70a24e76f3cc8a7dc6f408cfe047445ce0561a79a0d3102a",
+      "web/test/proxies.test.js": "bbb3b58948cee8a46caa28755528fc6664a947b2a7393fdf6e7702556e9110d5"
+    },
+    "resource_properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=800%",
+      "MemoryMax=4G",
+      "MemorySwapMax=0",
+      "OOMScoreAdjust=1000",
+      "Nice=19",
+      "IOWeight=10",
+      "TasksMax=128",
+      "RuntimeMaxSec=1500",
+      "TimeoutStopSec=20",
+      "KillMode=control-group",
+      "Restart=no",
+      "NoNewPrivileges=yes",
+      "StandardOutput=append:/home/halo/.cache/venturi-build/proxy-recovery-r1.log",
+      "StandardError=append:/home/halo/.cache/venturi-build/proxy-recovery-r1.log"
+    ],
+    "observed_worker_peak_bytes": 1924452352,
+    "qualification_editor_peak_bytes": 222773248,
+    "shared_cache_is_normal_in_delivery": true
+  },
+  "preservation": {
+    "sessions": 19,
+    "pids": 20,
+    "saved_projects": 7,
+    "copied_originals": 3,
+    "shared_cache_movie": {
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "inode": 4211051,
+      "mtime_ns": 1792732445778166236,
+      "ctime_ns": 1792732445778166236,
+      "bytes": 2206043
+    },
+    "qualification_unchanged": true,
+    "disposable_qualification_terminal": "ActiveState=inactive\nMainPID=0\nResult=success"
+  },
+  "original_copies": [
+    {
+      "name": "River_AV_11s.mp4",
+      "bytes": 2854042,
+      "sha256": "d00e254580a313111b499983e30746f0eccc464650617b51b250bcde730b363e",
+      "relocated_fingerprint": "16846032486856988846"
+    },
+    {
+      "name": "Renamed_Still.png",
+      "bytes": 1548680,
+      "sha256": "7d924f630cdb1b821fbbeb5a34f33f387a768394194c85272de9dedd9d76fbc7",
+      "relocated_fingerprint": "16671156815719589374"
+    },
+    {
+      "name": "River_Two_Streams_3s.mkv",
+      "bytes": 98711,
+      "sha256": "7921a5a86d483bc3c11d5c369ec2397f79b419792f31e13848fb9f2efe5b8b76",
+      "relocated_fingerprint": "17094825509510046218"
+    }
+  ],
+  "screenshots": [
+    "m7-proxy-cache-degraded.jpg",
+    "m7-proxy-cache-recovery-workspace.jpg"
+  ],
+  "scope": {
+    "ledger": {
+      "done": 49,
+      "partial": 41,
+      "excluded": 2
+    },
+    "full_goal": "active",
+    "next": "Requested original video/still FD pinning and touched-source validation before frame cache hits; native default APIs and audio metadata must remain unchanged.",
+    "remaining": [
+      "Original requested-source confinement, including scopes, balance, compounds and crossings",
+      "Representative/dense/DPI/physical acceptance and remaining F1-F7/M7 release work"
+    ],
+    "unaffected": [
+      "halo2 and H3/inference",
+      "AMD/kernel/ROCm",
+      "mounts and NAS content",
+      "Windows build/test workloads"
+    ]
+  }
+}

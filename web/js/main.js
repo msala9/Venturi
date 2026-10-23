@@ -403,7 +403,13 @@ let sourceAssets=null,derivativesTransportPending=false;
 const sourceRanges = new Map();
 let programMarkState=markRangeContext(null,null,null);
 const mediaAssets = new Map();
-const mediaState = {selected: [], anchor: null, folder: "*", kind: "all", open: false};
+const mediaState = {selected: [], anchor: null, folder: "*", kind: "all", open: false,layout:'details',expanded:[],gridFolder:null,selectedFolder:null};
+try {const layout=localStorage.getItem('venturi-media-pool-layout');if(['details','list','grid'].includes(layout))mediaState.layout=layout;} catch {}
+function revealProjectMedia(ids){
+  const visible=ids.filter(id=>documentState?.media.some(item=>item.id===id));
+  mediaState.selected=visible;mediaState.anchor=visible[0] || null;selectedMedia=visible.at(-1) || null;
+  mediaState.query='';$('search').value='';catalog?.reveal(visible);
+}
 function updatePlayAvailability() {
   const armed=timeline?.tracks.some((track)=>track.kind==="audio" && track.armed && !track.locked);
   const sourceMedia=viewerMode==="source"?documentState?.media.find(m=>m.id===sourceOpenId):null;
@@ -1109,7 +1115,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
     sourceOpenId = null; sourceRanges.clear();sourceWaveformBinding=null;
     resetTimelineViewport();
     selectedMedia = null;
-    mediaState.selected=[];mediaState.anchor=null;mediaState.folder="*";
+    mediaState.selected=[];mediaState.anchor=null;mediaState.folder="*";mediaState.expanded=[];mediaState.gridFolder=null;mediaState.selectedFolder=null;
     for (const asset of mediaAssets.values()) releaseMediaAsset(asset);
     mediaAssets.clear();
     viewerModeSet("program");
@@ -1170,7 +1176,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
   catalog?.dispose();
-  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDragStart:startProjectPoolDrag,onDragEnd:()=>canvasTimeline.projectPoolDnd.end(),onRelink:openMediaRelink,onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDragStart:startProjectPoolDrag,onDragEnd:()=>canvasTimeline.projectPoolDnd.end(),onRelink:openMediaRelink,onPresentationChange:({layout})=>{try{localStorage.setItem('venturi-media-pool-layout',layout);}catch{}},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
   nativeAssets?.invalidate();
   sourcePlacement?.refresh();
   refreshSourceWaveform();
@@ -1374,8 +1380,7 @@ $("insert-media").addEventListener("click",()=>{
 });
 mediaImport=createMediaImportPanel({dialog:$("imports"),root:$("import-list"),status:$("import-error"),getContext:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),onImported:ids=>{
   if(ids.some(id=>!documentState?.media.some(item=>item.id===id)))throw Error('The imported media are not yet visible in the refreshed project');
-  mediaState.selected=[...ids];mediaState.anchor=ids[0] || null;selectedMedia=ids.at(-1) || null;mediaState.folder='*';mediaState.kind='all';mediaState.query='';$('search').value='';
-  const folder=$('media-list').querySelector('[aria-label="Media folder"]'),kind=$('media-list').querySelector('[aria-label="Media type"]');if(folder)folder.value='*';if(kind)kind.value='all';catalog?.search('');if(selectedMedia)openSource();
+  revealProjectMedia(ids);if(selectedMedia)openSource();
 }});
 $("import-button").addEventListener("click",()=>void mediaImport.open());
 function openMediaRelink(scope){
@@ -1410,8 +1415,7 @@ function clipboardCommand(owner,action){setClipboardFocus(owner);void (action===
 clipboard=createClipboard({getContext:clipboardContext,canCommit:clipboardWritable,commit:(operation,project)=>mutate(operation,project),onChange:state=>{if(clipboardStatus)clipboardStatus.textContent=state.message;notice(state.message);syncClipboardControls();},onPasted:(receipt,target)=>{
   if(target.to_pool && receipt.media_ids.length){
     setClipboardFocus('pool');
-    mediaState.selected=receipt.media_ids.filter(id=>documentState.media.some(item=>item.id===id));mediaState.anchor=mediaState.selected[0] || null;selectedMedia=mediaState.selected.at(-1) || null;
-    const folder=$("media-list").querySelector('[aria-label="Media folder"]'),kind=$("media-list").querySelector('[aria-label="Media type"]');if(folder)folder.value='*';if(kind)kind.value='all';$("search").value='';catalog?.search('');
+    revealProjectMedia(receipt.media_ids);
   }else if(!target.to_pool && receipt.clip_ids.length){
     const clips=timeline.tracks.flatMap(track=>track.clips).filter(clip=>receipt.clip_ids.includes(clip.id));view.selection=clips.map(clip=>clip.id);view.selectionAnchor=firstSelectionAnchor(timeline,view.selection,documentState.project_epoch);view.transitionSelection=null;
     if(clips.length)view.playhead=Math.max(...clips.map(clip=>clip.start_frame+clip.length_frames));selected();updateTime();seek();
@@ -1419,8 +1423,7 @@ clipboard=createClipboard({getContext:clipboardContext,canCommit:clipboardWritab
 }});
 clipboardImages=createClipboardImagePanel({getContext:clipboardContext,canCommit:clipboardImageWritable,commit:operation=>mutate(operation,true),notice:message=>{notice(message);syncClipboardControls();},onSaveRequired:()=>{$("projects-button").click();$("save-as-project").scrollIntoView({block:'nearest'});$("save-as-project").elements.name.focus();notice('Save As preserves the current project. Paste the image again after saving.');},onImported:ids=>{
   if(ids.some(id=>!documentState.media.some(item=>item.id===id)))throw Error('The pasted image is not yet visible in the refreshed project');
-  setClipboardFocus('pool');mediaState.selected=[...ids];mediaState.anchor=ids[0];selectedMedia=ids.at(-1);
-  const item=documentState.media.find(media=>media.id===selectedMedia),folder=$("media-list").querySelector('[aria-label="Media folder"]'),kind=$("media-list").querySelector('[aria-label="Media type"]');if(folder)folder.value=item.folder || '*';if(kind)kind.value='all';$("search").value='';catalog?.search('');openSource();
+  setClipboardFocus('pool');revealProjectMedia(ids);openSource();
 }});
 function clipboardButton(parent,label,owner,action){const node=document.createElement('button');node.type='button';node.textContent=label;node.dataset.clipboardOwner=owner;if(action==='paste')node.title='Paste the retained Venturi copy; Ctrl+V uses the system clipboard';node.addEventListener('click',()=>clipboardCommand(owner,action));clipboardButtons.push({node,owner,action});parent.append(node);return node;}
 const timelineClipboard=document.createElement('details'),clipboardHeading=document.createElement('summary'),clipboardTools=document.createElement('div');clipboardHeading.textContent='Clipboard';clipboardTools.className='tools';clipboardTools.setAttribute('role','group');clipboardTools.setAttribute('aria-label','Timeline clipboard');timelineClipboard.dataset.clipboardOwner='timeline';timelineClipboard.append(clipboardHeading,clipboardTools);
@@ -1439,9 +1442,7 @@ syncClipboardControls();
 otioImport=createOtioImportPanel({root:$("otio-current-import"),isVisible:()=>$("projects").open,getContext:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),notice,onImported:receipt=>{
   const next=documentState?.timelines.find(item=>item.id===receipt.timeline_ids[0]);
   if(!next)throw Error('The imported timeline is not yet visible in the refreshed project');
-  mediaState.selected=receipt.media_ids.filter(id=>documentState.media.some(item=>item.id===id));mediaState.anchor=mediaState.selected[0] || null;selectedMedia=mediaState.selected.at(-1) || null;
-  const folder=$("media-list").querySelector('[aria-label="Media folder"]'),kind=$("media-list").querySelector('[aria-label="Media type"]');
-  if(folder)folder.value=receipt.folder_id || '*';if(kind)kind.value='all';$("search").value='';catalog?.search('');
+  revealProjectMedia(receipt.media_ids);
   openTimelineRoot(next);$("projects").close();
 }});
 $("projects").addEventListener('close',()=>otioImport.hide());
@@ -1915,7 +1916,7 @@ slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(o
   return {project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1),clip_id:clip};
 }});
 sharedLibrary=createLibraryPanel({root:sharedLibraryRoot,getState:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>mutate(operation,true),notice});
-function nativeImportedMedia(ids){mediaState.selected=ids.filter(id=>documentState.media.some(item=>item.id===id));selectedMedia=mediaState.selected.at(-1) || null;catalog?.search(mediaState.query || '');}
+function nativeImportedMedia(ids){revealProjectMedia(ids);}
 nativeAssets=createNativeAssetPanel({
   root:nativeAssetsRoot,getContext:()=>documentState?{...documentState,selected_ids:[...mediaState.selected]}:null,
   canCommit:()=>writable && !busy && !unresolved,

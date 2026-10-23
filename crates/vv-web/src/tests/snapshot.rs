@@ -159,6 +159,12 @@ fn media_stream_counts_use_native_metadata_without_mutating_legacy_projects() {
         .map(|item| item["audio_stream_count"].as_u64().unwrap())
         .collect();
     assert_eq!(counts, [2, 1, 0]);
+    for media in snapshot["media"].as_array().unwrap() {
+        assert_eq!(media["width"], 0);
+        assert_eq!(media["height"], 0);
+        assert_eq!(media["sample_rate"], 48000);
+        assert_eq!(media["channels"], 1);
+    }
     assert_eq!(serde_json::to_value(&editor.project).unwrap(), before);
     assert_eq!(editor.history.position(), 0);
 }

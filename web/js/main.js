@@ -26,6 +26,7 @@ import {effectDragItem,effectPlacementOperation} from './timeline/effect-drop.js
 import {createCurveWindow} from './curve-window.js';
 import {maskFocusAfterEdit} from './masks.js';
 import { renderMixer, mixerDraftContext } from "./mixer.js";
+import {createMixerEditorState,notifyMixerMutation} from './mixer-inserts.js';
 import {canRetainAudioPresetDraft} from './audio-presets.js';
 import { createExportPanel } from "./export.js";
 import { createScopes, scopeTarget } from "./scopes.js";
@@ -36,6 +37,7 @@ import { createSlipView } from "./slip.js";
 import { createSilencePanel } from "./silence.js";
 import { createLibraryPanel } from "./library.js";
 import {createNativeAssetPanel,nativeAssetMutation} from './native-assets.js';
+import {createLibraryCaptureDrop,stageLibraryCaptureDrag} from './library-capture-drop.js';
 import {createMediaImportPanel} from './media-import.js';
 import {createMediaRelinkPanel} from './media-relink.js';
 import {createOtioImportPanel} from './otio-import.js';
@@ -70,7 +72,7 @@ const proxyQueueAttempts=new Set();
 let proxyQueueOwner=null;
 let silencePanel = null;
 let sharedLibrary = null;
-let nativeAssets=null,mediaImport=null,mediaRelink=null,otioImport=null,libraryMode='shared';
+let nativeAssets=null,libraryCaptureDrop=null,mediaImport=null,mediaRelink=null,otioImport=null,libraryMode='shared';
 let timelineAction=null,newTimelineOwner=null;
 let nativePlacementIntent=0,nativePlacementCompletion=null;
 let clipboard=null,clipboardImages=null,clipboardFocus='timeline',clipboardFocusSequence=0;
@@ -126,6 +128,7 @@ document.addEventListener('keydown',event=>{
 },true);
 function revealBrowser(name){
   clipListDismissal.close();
+  for(const tab of document.querySelectorAll('.media-source-tabs [data-panel]'))tab.setAttribute('aria-selected',String(tab.dataset.panel===(name==='Library'?'Library':'Media')));
   $('browser').dataset.commandOwner=name==='Media'?'media':'library';
   const same=($('browser').dataset.browserPanel || 'Media')===name;
   if(innerWidth<=760){const open=!(same && editor.classList.contains('browser-drawer-open') && ['Media','Effects'].includes(name));editor.classList.toggle('browser-drawer-open',open);if(open)editor.classList.remove('inspector-drawer-open');}
@@ -261,6 +264,7 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
       .forEach((tab) => tab.setAttribute("aria-selected", tab === button));
     const name = button.dataset.panel;
     revealBrowser(name);$("browser").dataset.browserPanel=name;
+    if(button.closest('.media-source-tabs')){editor.classList.remove('browser-collapsed');if(innerWidth<=760){editor.classList.add('browser-drawer-open');editor.classList.remove('inspector-drawer-open');}updateBrowserToggle();updateInspectorToggle();}
     presetPanel?.hide();
     void sharedLibrary?.cancel();nativeAssets?.hide();
     $("media-list").hidden = !["Media","Effects"].includes(name);
@@ -637,6 +641,7 @@ let inspectorSequence = 0;
 let mixerDetail = null;
 let mixerMixDrafts = null;
 const mixerPaths = new Set();
+const mixerEditors=createMixerEditorState(mixerPaths);
 const visualState = new Map();
 inspectorViewport=createInspectorViewportKeeper($('inspector-content'),{getContext:()=>{
   if(!documentState || !timeline)return null;
@@ -713,9 +718,9 @@ function selected() {
   mixerMixDrafts=mixerDetail?.captureMixDrafts?.() ?? mixerMixDrafts;
   const mixContext=documentState && timeline?mixerDraftContext({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision}):null;
   if(!mixContext || mixerMixDrafts?.context!==mixContext)mixerMixDrafts=null;
-  for (const node of mixerDetail?.querySelectorAll("details[data-mixer-path]") || []) {
-    if (node.open) mixerPaths.add(node.dataset.mixerPath); else mixerPaths.delete(node.dataset.mixerPath);
-  }
+  mixerEditors.capture(documentState && timeline?{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision}:null,
+    mixerDetail?.querySelectorAll("details[data-mixer-path]") || [],
+    timeline?[...timeline.tracks.filter(track=>track.kind==='audio').map(track=>({channel:track.id,effects:track.mix.effects})),{channel:'master',effects:timeline.master.effects}]:[]);
   mixerDetail?.disposeMeters?.();mixerDetail=null;
   const getVideoSelection=()=>videoPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
   const getAudioSelection=()=>audioPropertySelection({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline,selection:view.selection});
@@ -944,7 +949,14 @@ function selected() {
     const markerTarget=`${documentState.project_epoch}:${timeline.id}`;
     renderMarkers($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,getFrame:()=>view.playhead,commit,notice,selectedId:view.markerTarget===markerTarget?view.markerId:null,onSelect:id=>{view.markerTarget=markerTarget;view.markerId=id;},openState:visualState,seek:(frame)=>{view.playhead=frame;syncPlayheadSelection(false);updateTime();seek();selected();void projectView?.update();}});
     const mixQuery = new URLSearchParams({project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:0});
-    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,notice,open:mixerOpen,mixDrafts:mixerMixDrafts,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open(),meters:{subscribe:options=>audioMeters?.subscribe(options),sync:()=>audioMeters?.sync(),visible:()=>!document.hidden && editor.dataset.workspace==='Audio' && $('inspector').dataset.inspectorTab==='audio' && viewerMode==='program'},audioPresets:{getContext:()=>({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline_id:timeline?.id,timeline_revision:timeline?.revision}),canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),libraryCommit:operation=>mutate(operation,true,'/audio/presets/commands')}});
+    const commitEffects=(operation,edit)=>{
+      const query=Object.fromEntries(mixQuery),channel=operation.channel==='master'?timeline?.master:timeline?.tracks.find(track=>track.id===operation.channel)?.mix;
+      if(!channel || query.project_epoch!==documentState?.project_epoch || query.if_generation!==documentState?.generation || query.timeline_id!==timeline?.id || query.revision!==timeline?.revision)throw Error('The native insert context changed');
+      const callbacks=mixerEditors.begin(query,operation.channel,channel.effects,edit);
+      if(!callbacks || JSON.stringify(callbacks.effects)!==JSON.stringify(operation.effects))throw Error('The native insert edit changed');
+      return mutate(operation,false,null,null,null,callbacks).catch(error=>{callbacks.onError(error);if(!error.code)selected();throw error;});
+    };
+    mixerDetail=renderMixer($("inspector-content"),timeline,{writable:writable && !busy && !unresolved,commit,commitEffects,notice,open:mixerOpen,mixDrafts:mixerMixDrafts,catalog:documentState.audio_effects,openPaths:mixerPaths,query:mixQuery,onMeters:()=>audioMeters?.open(),meters:{subscribe:options=>audioMeters?.subscribe(options),sync:()=>audioMeters?.sync(),visible:()=>!document.hidden && editor.dataset.workspace==='Audio' && $('inspector').dataset.inspectorTab==='audio' && viewerMode==='program'},audioPresets:{getContext:()=>({project_epoch:documentState?.project_epoch,generation:documentState?.generation,timeline_id:timeline?.id,timeline_revision:timeline?.revision}),canCommit:()=>writable && !busy && !unresolved && !document.querySelector('dialog[open]'),libraryCommit:operation=>mutate(operation,true,'/audio/presets/commands')}});
     inspectorGroup(mixerDetail,'audio');
   }
   for(const child of $('inspector-content').children)if(!child.dataset.inspectorGroup && !child.dataset.inspectorCommon)inspectorGroup(child,'selection');
@@ -1381,9 +1393,9 @@ async function refresh({preserveAudioDrafts=false}={}) {
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
   catalog?.dispose();
-  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:async(operation)=>{const receipt=await mutate(operation,true);if(catalog?.acceptReceipt(receipt))$('search').value=mediaState.query || '';return receipt;},getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();syncSelectionActions();},onOpen:(id)=>{selectedMedia=id;openSource();},onDragStart:startProjectPoolDrag,onDragEnd:()=>canvasTimeline.projectPoolDnd.end(),onRelink:openMediaRelink,onAction:action=>catalogAction(action,next),proxyStatus:id=>proxySettings?.enabled?proxyControls?.statusFor(id):null,onPresentationChange:({layout})=>{try{localStorage.setItem('venturi-media-pool-layout',layout);}catch{}},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:async(operation)=>{const receipt=await mutate(operation,true);if(catalog?.acceptReceipt(receipt))$('search').value=mediaState.query || '';return receipt;},getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();libraryCaptureDrop?.invalidate();syncClipboardControls();syncSelectionActions();},onOpen:(id)=>{selectedMedia=id;openSource();},onDragStart:startProjectPoolDrag,onDragEnd:()=>{canvasTimeline.projectPoolDnd.end();libraryCaptureDrop?.end();},onRelink:openMediaRelink,onAction:action=>catalogAction(action,next),proxyStatus:id=>proxySettings?.enabled?proxyControls?.statusFor(id):null,onPresentationChange:({layout})=>{try{localStorage.setItem('venturi-media-pool-layout',layout);}catch{}},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
   paintProxyBadges();void proxyControls?.refresh();
-  nativeAssets?.invalidate();
+  nativeAssets?.invalidate();libraryCaptureDrop?.invalidate();
   sourcePlacement?.refresh();
   refreshSourceWaveform();
   mediaImport?.invalidate();mediaRelink?.invalidate();otioImport?.invalidate();syncClipboardControls();
@@ -1405,7 +1417,7 @@ function commandNotice(receipt) {
       ? "Command applied. Save current edits before restarting the server."
       : "Command applied";
 }
-async function mutate(operation, project = false,route=null,preparedMutation=null,targetTimeline=null) {
+async function mutate(operation, project = false,route=null,preparedMutation=null,targetTimeline=null,mixerCallbacks=null) {
   const libraryOnly=operation.kind==='edit_audio_preset_library';
   const requestEpoch=documentState?.project_epoch;
   if(!libraryOnly){fastTransport?.stop();audioScrub?.stop();}
@@ -1432,7 +1444,7 @@ async function mutate(operation, project = false,route=null,preparedMutation=nul
   cancelInspectorDraft();
   timelineContextMenu?.invalidate();
   compoundNavigation?.invalidate();
-  nativeAssets?.invalidate();
+  nativeAssets?.invalidate();libraryCaptureDrop?.invalidate();
   mediaImport?.invalidate();mediaRelink?.invalidate();otioImport?.invalidate();syncClipboardControls();
   notice("Applying command…");
   try {
@@ -1442,9 +1454,11 @@ async function mutate(operation, project = false,route=null,preparedMutation=nul
         : `/timelines/${encodeURIComponent(targetTimeline?.timeline_id ?? timeline.id)}/commands`),
       body,
     );
+    if(!notifyMixerMutation(mixerCallbacks,'onReceipt',receipt,body))mixerEditors.reset();
     notice(commandNotice(receipt));
     return receipt;
   } catch (error) {
+    if(!notifyMixerMutation(mixerCallbacks,'onError',error,body))mixerEditors.reset();
     if (error.code === "OUTCOME_UNKNOWN") {
       unresolved = body.command_id;
       writable = false;
@@ -1651,14 +1665,16 @@ function startProjectPoolDrag(event,media,{catalogFallback=false}={}){
   canvasTimeline.projectPoolDnd.end();
   stopProjectPoolPlayback();
   const captured=projectPoolItems(projectPoolContext(),media),signature=JSON.stringify([captured,mediaState]);
-  if(!captured){if(!catalogFallback){event.preventDefault();notice('Select up to256 available project media with valid native duration and audio streams');}return;}
+  const librarySignature=JSON.stringify([media,mediaState]);
   const current=()=>writable && !busy && !unresolved && JSON.stringify([selectedProjectPoolItems(),mediaState])===signature;
-  const payload=canvasTimeline.projectPoolDnd.start(captured,current,async(draft,isCurrent)=>{
+  const payload=captured?canvasTimeline.projectPoolDnd.start(captured,current,async(draft,isCurrent)=>{
     if(!isCurrent())throw Error('The project media selection changed before insertion');
     await commitProjectPoolPlacement(projectPoolOperation(captured,draft.start_frame,draft.target,draft.overwrite));
-  });
-  if(!payload){if(!catalogFallback)event.preventDefault();return;}
-  event.dataTransfer.setData(PROJECT_POOL_DRAG_TYPE,payload);event.dataTransfer.effectAllowed=catalogFallback?'copyMove':'copy';
+  }):null;
+  if(payload)event.dataTransfer.setData(PROJECT_POOL_DRAG_TYPE,payload);
+  const libraryPayload=stageLibraryCaptureDrag({controller:libraryCaptureDrop,event,media,timelinePayload:payload,sourceCurrent:()=>JSON.stringify([catalog?.selectedItems() ?? [],mediaState])===librarySignature});
+  if(!payload && !libraryPayload){if(!catalogFallback){event.preventDefault();if(!captured)notice('Select up to256 available project media with valid native duration and audio streams');}return;}
+  event.dataTransfer.effectAllowed=catalogFallback?'copyMove':'copy';
 }
 $("insert-media").addEventListener("click",()=>{
   if(!writable || busy || unresolved || !canvasTimeline.navigationIdle())return;
@@ -1879,7 +1895,7 @@ setInterval(() => {
     request("/lease", { client_id: clientId }).catch(() => {
       writable = false;
       cancelInspectorDraft();
-      nativeAssets?.invalidate();
+      nativeAssets?.invalidate();libraryCaptureDrop?.invalidate();
       mediaImport?.invalidate();mediaRelink?.invalidate();otioImport?.invalidate();syncClipboardControls();
       $("connection").textContent = "Disconnected · read only";
     });
@@ -2246,6 +2262,19 @@ nativeAssets=createNativeAssetPanel({
     view.selectionAnchor=firstSelectionAnchor(timeline,view.selection,documentState.project_epoch);view.transitionSelection=null;view.selectedGap=null;
     selected();canvasTimeline.invalidate();void projectView?.update();
   },notice,
+});
+libraryCaptureDrop=createLibraryCaptureDrop({
+  getContext:()=>{const context=projectPoolContext();return context && documentState?{...context,command_epoch:documentState.command_epoch,project_name:documentState.project_name,media:documentState.media}:null;},
+  canCommit:()=>writable && !busy && !unresolved,
+  openLibrary:async(current,signal)=>{if(signal.aborted || !current())return;canvasTimeline.projectPoolDnd.end();contextBrowser('Library');await openLibraryPanel('native');},
+  captureSelection:(ids,options)=>nativeAssets.captureSelection(ids,options),notice,
+});
+for(const target of [...document.querySelectorAll('[data-panel="Library"]'),nativeAssetsRoot])libraryCaptureDrop.bind(target);
+const mediaSourceTabs=[...document.querySelectorAll('.media-source-tabs [data-panel]')];
+for(const tab of mediaSourceTabs)tab.addEventListener('keydown',event=>{
+  if(event.ctrlKey || event.metaKey || event.altKey || event.isComposing || !['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+  event.preventDefault();event.stopPropagation();const index=mediaSourceTabs.indexOf(tab),next=event.key==='Home'?0:event.key==='End'?mediaSourceTabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+mediaSourceTabs.length)%mediaSourceTabs.length;
+  mediaSourceTabs[next].focus();mediaSourceTabs[next].click();
 });
 const reviewContext=()=>{
   if(!documentState?.project_name || !timeline || timeline.id==="fixture")return null;

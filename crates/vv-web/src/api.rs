@@ -2713,6 +2713,10 @@ async fn assets(request: Request) -> Response {
         "/js/mixer-controls.js" => asset!("/web/js/mixer-controls.js", "text/javascript"),
         "/js/compressor-controls.js" => asset!("/web/js/compressor-controls.js", "text/javascript"),
         "/js/eq-controls.js" => asset!("/web/js/eq-controls.js", "text/javascript"),
+        "/js/mixer-inserts.js" => asset!("/web/js/mixer-inserts.js", "text/javascript"),
+        "/js/library-capture-drop.js" => {
+            asset!("/web/js/library-capture-drop.js", "text/javascript")
+        }
         "/js/visual.js" => asset!("/web/js/visual.js", "text/javascript"),
         "/js/masks.js" => asset!("/web/js/masks.js", "text/javascript"),
         "/js/timeline/index.js" => asset!("/web/js/timeline/index.js", "text/javascript"),

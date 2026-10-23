@@ -50,29 +50,52 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   controls.hidden=controls.disabled=true;form.append(controls);
   const interpolate=document.createElement("button");interpolate.type="button";interpolate.textContent="Set selected keys interpolation";form.append(interpolate);
   const remove=document.createElement("button");remove.type="button";remove.textContent="Delete keys across parameters";form.append(remove);section.append(form);root.append(section);
-  let waiting=false,disposed=false;
-  const owner=createKeyEditorGuard({root,section,disabled,canInteract,commit});
+  const toolbar=document.createElement('div');toolbar.className='key-interpolation-presets';toolbar.setAttribute('role','group');toolbar.setAttribute('aria-label','Selected key interpolation');
+  const presetButtons=[];
+  for(const [value,label] of [['Hold','Hold'],['Linear','Linear'],['EaseInOut','Ease in/out'],['EaseIn','Ease in'],['EaseOut','Ease out']]){
+    const button=document.createElement('button');button.type='button';button.className='key-interpolation-preset';button.textContent=label;button.setAttribute('aria-label',`Set selected keys ${value}`);button.title=`${label}: outgoing interpolation for all selected native keys`;
+    listen(button,'click',event=>{if(event.isComposing || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)return;send({kind:'interpolation',interpolation:value},{preserveSelection:true});});
+    listen(button,'keydown',event=>{if([' ','Enter'].includes(event.key)){event.stopPropagation();if(event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)event.preventDefault();}});
+    toolbar.append(button);presetButtons.push(button);
+  }
+  const toolbarSlot=root.querySelector?.('[data-key-interpolation-toolbar]');
+  if(toolbarSlot)toolbarSlot.append(toolbar);else if(root.insertBefore)root.insertBefore(toolbar,section);else root.append(toolbar);
+  let waiting=false,disposed=false,outcomeUnknown=false,expectedInterpolationSelection=null;
+  const owner=createKeyEditorGuard({root,section,disabled,canInteract,commit:operation=>{
+    if(expectedInterpolationSelection!==null && expectedInterpolationSelection!==JSON.stringify(selected()))throw Object.assign(Error('Key editor draft canceled'),{code:'KEY_EDIT_CANCELED'});
+    return commit(operation);
+  }});
   if(stored?.focus && !disabled && section.open){
     remember({ids:selectedIds,focus:false});
     queueMicrotask(()=>{if(!disposed && list.isConnected && document.activeElement===document.body)list.focus({preventScroll:true});});
   }
   const selected=()=>selectedIds.map(id=>{const [target,source_frame]=JSON.parse(id);return {target,source_frame};});
-  function update(){const ids=new Set(selectedIds),hidden=selectedIds.length-picks.filter(pick=>ids.has(identity(pick))).length;status.textContent=`${selectedIds.length} selected · ${hidden} selected outside this list · ${shown.length} shown of ${total} native keys${shown.length===2048?" · choose a parameter row to access more keys on this page":""}`;move.disabled=remove.disabled=interpolate.disabled=disabled || disposed || waiting || !selectedIds.length;clear.disabled=disposed || waiting || !selectedIds.length;}
+  function update(){const ids=new Set(selectedIds),hidden=selectedIds.length-picks.filter(pick=>ids.has(identity(pick))).length;status.textContent=`${selectedIds.length} selected · ${hidden} selected outside this list · ${shown.length} shown of ${total} native keys${shown.length===2048?" · choose a parameter row to access more keys on this page":""}`;move.disabled=remove.disabled=interpolate.disabled=disabled || disposed || waiting || !selectedIds.length;clear.disabled=disposed || waiting || !selectedIds.length;for(const button of presetButtons)button.disabled=disabled || disposed || outcomeUnknown || waiting || !selectedIds.length;}
   function show(){
     shown=[];for(const row of filter.value===""?rows:[rows[Number(filter.value)]].filter(Boolean))for(const key of row.keys.slice(0,2048-shown.length))shown.push({target:row.target,source_frame:key.source_frame,name:row.name,timeline:key.timeline_frame});
     picks=shown.map(({target,source_frame})=>({target,source_frame}));const ids=new Set(selectedIds);list.replaceChildren(...shown.map((key,index)=>{const option=new Option(`${key.name} · source ${key.source_frame} · timeline ${key.timeline}`,String(index));option.selected=ids.has(identity(picks[index]));return option;}));update();
   }
-  async function send(action){
+  function interpolationUnchanged(before,interpolation){
+    const required=[...before];
+    if(linked.checked)for(const pick of before)if(pick.target.kind==='transform' && ['ZoomX','ZoomY'].includes(pick.target.param))required.push({target:{...pick.target,param:pick.target.param==='ZoomX'?'ZoomY':'ZoomX'},source_frame:pick.source_frame});
+    return required.every(pick=>{
+      const row=rows.find(row=>JSON.stringify(row.target)===JSON.stringify(pick.target)),key=row?.keys?.find(key=>key.source_frame===pick.source_frame);
+      return key && JSON.stringify(key.interpolation)===JSON.stringify(interpolation);
+    });
+  }
+  async function send(action,{preserveSelection=false}={}){
     if(!owner.current() || waiting || !selectedIds.length || action.kind==="move" && !delta.reportValidity())return;
     const before=selected();let after=null;
+    if(preserveSelection && interpolationUnchanged(before,action.interpolation))return;
     try{
       const operation=keySelectionOperation(detail.clip_id,before,action,linked.checked);
+      expectedInterpolationSelection=preserveSelection?JSON.stringify(before):null;
       waiting=true;form.inert=true;update();
       after=action.kind==="delete"?[]:before.map(pick=>({...pick,source_frame:pick.source_frame+(action.kind==="move"?action.delta_source_frames:0)}));
-      selectedIds=after.map(identity);if(keySelection)keySelection.set(after,{focus:true});else remember({ids:selectedIds,focus:true});
+      if(!preserveSelection){selectedIds=after.map(identity);if(keySelection)keySelection.set(after,{focus:true});else remember({ids:selectedIds,focus:true});}
       await owner.commit(operation);
-    }catch(error){if(error.code!=='OUTCOME_UNKNOWN' && JSON.stringify(selected())===JSON.stringify(after)){selectedIds=before.map(identity);if(keySelection)keySelection.set(before,{focus:error.code!=='KEY_EDIT_CANCELED'});else remember({ids:selectedIds,focus:error.code!=='KEY_EDIT_CANCELED'});}if(error.code!=='KEY_EDIT_CANCELED'){notice(error.message);if(disposed)reload?.();else if(error.code!=='OUTCOME_UNKNOWN' && document.hasFocus?.()!==false && list.isConnected)list.focus({preventScroll:true});}}
-    finally{waiting=false;form.inert=false;if(!disposed)show();}
+    }catch(error){if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;if(!preserveSelection && error.code!=='OUTCOME_UNKNOWN' && JSON.stringify(selected())===JSON.stringify(after)){selectedIds=before.map(identity);if(keySelection)keySelection.set(before,{focus:error.code!=='KEY_EDIT_CANCELED'});else remember({ids:selectedIds,focus:error.code!=='KEY_EDIT_CANCELED'});}if(error.code!=='KEY_EDIT_CANCELED'){notice(error.message);if(disposed)reload?.();else if(!preserveSelection && error.code!=='OUTCOME_UNKNOWN' && document.hasFocus?.()!==false && list.isConnected)list.focus({preventScroll:true});}}
+    finally{expectedInterpolationSelection=null;waiting=false;form.inert=false;if(!disposed)show();}
   }
   listen(list,"change",()=>{try{selectedIds=mergeCrossSelection(selectedIds,picks,[...list.selectedOptions].map(option=>picks[Number(option.value)]));if(keySelection)keySelection.set(selected());else remember({ids:selectedIds});update();}catch(error){notice(error.message);show();}});
   listen(filter,"change",()=>{openState?.set("all-keys-row",filter.value);show();});
@@ -86,6 +109,6 @@ export function renderKeySelection(root,detail,{disabled,commit,notice,openState
   listen(remove,"click",()=>send({kind:"delete"}));show();
   return {hasSelectedKeys:()=>selectedIds.length>0,removeSelected:()=>send({kind:'delete'}),cancel(){if(!disposed)owner.cancel();},dispose(){if(disposed)return;
     if(document.activeElement===list)remember({ids:selectedIds,focus:true});
-    unsubscribe?.();owner.dispose();disposed=true;section.inert=true;for(const remove of listeners)remove();list.disabled=true;update();
+    unsubscribe?.();owner.dispose();disposed=true;section.inert=true;toolbar.remove?.();for(const remove of listeners)remove();list.disabled=true;update();
   }};
 }

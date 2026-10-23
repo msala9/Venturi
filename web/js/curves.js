@@ -186,6 +186,7 @@ export function renderCurves(root, detail, {disabled, commit, notice, openState,
   section.className = "curve-editor";
   section.dataset.visualPath = "curves"; section.open = presentation==='window' || openState?.get("curves") || false;
   summary.textContent = "Curves and keyframe editor"; section.append(summary);
+  const interpolationToolbar=document.createElement('div');interpolationToolbar.dataset.keyInterpolationToolbar='';section.append(interpolationToolbar);
   const note = document.createElement("p"); note.className = "muted";
   note.textContent = `Source frames ${range.source_start}–${range.source_end}. Native sampled curves; interpolation belongs to the outgoing key. Shift/Ctrl-click or box-select keys, then drag or edit group deltas. Alt/middle-drag pans; wheel zooms time, Shift-wheel zooms values. Each edit is one Undo. Escape cancels a draft.`;
   section.append(note);

@@ -331,17 +331,19 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     }catch(error){const text=applied?`Command applied · ${error.message}. Refresh before doing anything else; do not repeat it.`:error.message;message(text);notice(text);}
     finally{busy=false;settled();}
   }
-  async function captureSelection(requestedIds=null){
+  async function captureSelection(requestedIds=null,{isCurrent=()=>true,signal}={}){
     if(!active || transferring() || reading || !canCommit())return;
+    if(signal?.aborted || !isCurrent())return;
     const context=getContext();
     if(requestedIds!==null && (!Array.isArray(requestedIds) || !requestedIds.length || requestedIds.length>64 || new Set(requestedIds).size!==requestedIds.length || requestedIds.some(id=>!context?.media.some(item=>item.id===id))))throw Error('Choose 1 to 64 distinct current project media for native asset capture');
     if(requestedIds!==null)requestedIds=[...requestedIds];
     const currentSelection=()=>requestedIds===null?selection():requestedIds.map(id=>getContext()?.media.find(item=>item.id===id)).filter(Boolean);
     const items=currentSelection().map(item=>({...item})),identity=nativeAssetIdentity(context),ids=JSON.stringify(items.map(item=>item.id)),session=panelSession;if(!items.length || items.length>64)return;
     batch=true;stopped=false;transferSession=session;transferRefreshFailed=false;update();let saved=0;
-    try{for(const item of items){if(stopped || !active || session!==panelSession)break;const sourceCurrent=()=>active && session===panelSession && !stopped && nativeAssetIdentity(getContext())===identity && JSON.stringify(currentSelection().map(item=>item.id))===ids;const receipt=await transfer.run({kind:'capture',media_id:item.id,name:item.name},sourceCurrent);if(!receipt)break;saved++;if(transferRefreshFailed)break;}if(session===panelSession && !transferRefreshFailed)message(`${saved} native asset${saved===1?'':'s'} saved · timeline unchanged`);}
+    const abort=()=>{stopped=true;transfer.cancel();};signal?.addEventListener('abort',abort,{once:true});
+    try{for(const item of items){if(stopped || !active || session!==panelSession || signal?.aborted || !isCurrent())break;const sourceCurrent=()=>active && session===panelSession && !stopped && !signal?.aborted && isCurrent() && nativeAssetIdentity(getContext())===identity && JSON.stringify(currentSelection().map(item=>item.id))===ids;const receipt=await transfer.run({kind:'capture',media_id:item.id,name:item.name},sourceCurrent);if(!receipt)break;saved++;if(transferRefreshFailed)break;}if(session===panelSession && !transferRefreshFailed)message(`${saved} native asset${saved===1?'':'s'} saved · timeline unchanged`);}
     catch(error){message(`${saved} assets saved · ${error.message}`);notice(error.message);}
-    finally{batch=false;settled();}
+    finally{signal?.removeEventListener('abort',abort);batch=false;settled();}
   }
   return {
     captureSelection,canDelete,deleteSelection,

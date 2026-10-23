@@ -40,6 +40,12 @@ button[aria-selected="true"],button[aria-pressed="true"] { background: #673a21; 
 .panel-heading { min-height: 26px; padding: 2px 6px; }
 .panel-body { padding: 5px; min-height: 0; }
 #browser > .panel-body { display: flex; flex-direction: column; gap: 4px; }
+.media-source-tabs { display: flex; flex: 0 0 auto; gap: 2px; border-bottom: 1px solid var(--border); }
+.media-source-tabs > button { flex: 1; min-width: 0; min-height: 23px; border: 0; border-radius: 0; background: transparent; }
+.media-source-tabs > button[aria-selected="true"] { background: transparent; border-bottom: 2px solid var(--primary); }
+#browser:is([data-browser-panel="Presets"],[data-browser-panel="History"]) .media-source-tabs { display: none; }
+[data-library-capture-drop="ready"] { outline: 2px solid var(--primary); outline-offset: -2px; }
+[data-library-capture-drop="blocked"] { outline: 2px solid var(--danger); outline-offset: -2px; }
 #browser .search-label { font-size: 0; }
 #browser input[type="search"] { margin: 0; min-height: 24px; font-size: 11px; }
 #media-note { display: none; }

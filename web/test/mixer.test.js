@@ -100,7 +100,7 @@ test('normalization forms retain drafts through peak-mode changes and show clip-
     const effect=set_level=>({enabled:true,kind:{Normalize:{mode:'SamplePeak',target_db:-7.25,set_level}}});
     const timeline={id:'9007199254740993',tracks:[{id:'0',label:'A1',kind:'audio',locked:false,mix:{gain_db:0,pan:0,effects:[effect('Relative')]}}],master:{gain_db:0,pan:0,effects:[effect('Independent')]}};
     const snapshot=structuredClone(timeline),writes=[],root=new Element('div');
-    renderMixer(root,timeline,{writable:true,commit:operation=>{writes.push(operation);return Promise.resolve();},notice:()=>{},catalog:{normalization,defaults:{Normalize:effect('Relative')}}});
+    renderMixer(root,timeline,{writable:true,open:true,commit:operation=>{writes.push(operation);return Promise.resolve();},notice:()=>{},catalog:{normalization,defaults:{Normalize:effect('Relative')}}});
     const all=node=>[node,...node.children.flatMap(all)];
     for(const details of all(root).filter(node=>node.tag==='details' && node.dataset.mixerPath?.endsWith(':effects'))){details.open=true;details.dispatchEvent(new Event('toggle'));}
     for(const details of all(root).filter(node=>node.tag==='details' && node.dataset.mixerPath?.endsWith(':effects:0'))){details.open=true;details.dispatchEvent(new Event('toggle'));}

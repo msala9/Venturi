@@ -177,6 +177,10 @@
     <main id="editor" data-workspace="Edit">
       <aside id="browser" class="panel" data-browser-panel="Media" data-command-owner="media"><button id="close-browser" class="drawer-close" aria-label="Close media browser">×</button>
         <div class="panel-body">
+          <div class="media-source-tabs" role="tablist" aria-label="Media source">
+            <button type="button" role="tab" data-panel="Media" aria-selected="true">Project</button>
+            <button type="button" role="tab" data-panel="Library" aria-selected="false">Library</button>
+          </div>
           <label class="search-label"
             >Search media<input
               id="search"

@@ -2254,6 +2254,8 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/audio-graphs.js", 200),
         ("/js/compressor-controls.js", 200),
         ("/js/eq-controls.js", 200),
+        ("/js/mixer-inserts.js", 200),
+        ("/js/library-capture-drop.js", 200),
         ("/js/viewer-zoom.js", 200),
         ("/js/keyframe-lanes.js", 200),
         ("/js/balance.js", 200),
@@ -2316,7 +2318,11 @@ async fn health_assets_snapshot_and_host_boundary() {
         assert_eq!(response.headers()["x-content-type-options"], "nosniff");
         if matches!(
             path,
-            "/js/audio-graphs.js" | "/js/compressor-controls.js" | "/js/eq-controls.js"
+            "/js/audio-graphs.js"
+                | "/js/compressor-controls.js"
+                | "/js/eq-controls.js"
+                | "/js/mixer-inserts.js"
+                | "/js/library-capture-drop.js"
         ) {
             assert_eq!(response.headers()[header::CONTENT_TYPE], "text/javascript");
         }

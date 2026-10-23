@@ -182,6 +182,30 @@ test('a batch stops after an acknowledged publication whose refresh fails and pr
   }finally{h.destroy();}
 });
 
+test('Library drag capture uses explicit ordered media without changing pool selection and honors external stale or abort guards',async()=>{
+  const h=harness();try{
+    await h.open();const selected=[...h.context().selected_ids],controller=new AbortController();let current=false;
+    await h.panel.captureSelection(['media-b','media-a'],{isCurrent:()=>current,signal:controller.signal});assert.equal(h.prepares.length,0);
+    current=true;const capturing=h.panel.captureSelection(['media-b','media-a'],{isCurrent:()=>current,signal:controller.signal});assert.deepEqual(h.prepares[0].body.action,{kind:'capture',media_id:'media-b',name:'Shot B'});assert.deepEqual(h.context().selected_ids,selected);
+    controller.abort();h.prepares[0].resolve(h.job());await capturing;await settle();assert.equal(h.deletes.length,1);assert.equal(h.libraryWrites.length,0);assert.equal(h.prepares.length,1);assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.timelineWrites,[]);assert.deepEqual(h.context().selected_ids,selected);
+    const alreadyAborted=new AbortController();alreadyAborted.abort();await h.panel.captureSelection(['media-a'],{signal:alreadyAborted.signal});assert.equal(h.prepares.length,1);
+  }finally{h.destroy();}
+});
+
+test('Library drag capture preserves acknowledged publication on cancellation and never starts the remaining batch',async()=>{
+  const committing=deferred(),h=harness({libraryCommit:()=>committing.promise});try{
+    await h.open();const controller=new AbortController(),capturing=h.panel.captureSelection(['media-b','media-a'],{isCurrent:()=>!controller.signal.aborted,signal:controller.signal});h.prepares[0].resolve(h.job());await settle();assert.equal(h.libraryWrites.length,1);
+    controller.abort();assert.equal(h.deletes.length,0,'An already committing publication is not canceled or replayed');committing.resolve({command_id:'published',project_epoch:'epoch'});await capturing;assert.equal(h.prepares.length,1);assert.equal(h.libraryWrites.length,1);assert.match(h.status(),/1 native asset saved/);assert.deepEqual(h.context().selected_ids,['media-a']);assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.timelineWrites,[]);
+  }finally{committing.resolve({command_id:'published',project_epoch:'epoch'});h.destroy();}
+});
+
+test('Library drag capture publishes the complete explicit order through existing independent asset jobs',async()=>{
+  const h=harness();try{
+    await h.open();const captured=h.panel.captureSelection(['media-b','media-a'],{isCurrent:()=>true,signal:new AbortController().signal});assert.equal(h.prepares.length,1);h.prepares[0].resolve(h.job());await settle();assert.equal(h.prepares.length,2);assert.equal(h.libraryWrites.length,1);
+    assert.deepEqual(h.prepares.map(item=>item.body.action.media_id),['media-b','media-a']);h.prepares[1].resolve(h.job(1));await captured;assert.deepEqual(h.libraryWrites,[{kind:'publish_native_asset',job_id:'job-1'},{kind:'publish_native_asset',job_id:'job-2'}]);assert.match(h.status(),/2 native assets saved/);assert.deepEqual(h.context().selected_ids,['media-a']);assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.timelineWrites,[]);
+  }finally{h.destroy();}
+});
+
 test('an old import commit cannot select media or refresh into a reopened project panel',async()=>{
   const committing=deferred(),h=harness({projectCommit:()=>committing.promise});try{
     await h.open();h.button('Import native asset into project').click();h.prepares[0].resolve(h.job());await settle();assert.equal(h.projectWrites.length,1);

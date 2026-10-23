@@ -695,7 +695,9 @@ changed preset before editing. `POST /presets/commands` accepts only
 `edit_preset_library{edit}` with an 8 MiB envelope budget for escaped native JSON.
 Edits are import `{action:"import",json:<raw string>}`, update
 `{action:"update",id,revision,options}`, or archive/restore/restore_previous
-`{action,id,revision}`. Import parses in Rust; no browser number conversion occurs.
+`{action,id,revision}`, and permanent removal
+`{action:"delete",id,revision,archived:<bool>}`. Import parses in Rust; no browser
+number conversion occurs.
 Update retains source clips and, when the shortcut option is omitted, its
 existing shortcut metadata exactly. Clear removes it; Set replaces it with a
 validated canonical string. Existing unknown imported strings can be kept but
@@ -705,6 +707,23 @@ Saving/editing disables its old browser binding and never enables a new one.
 Browser activation remains a separate session-local Enable action with the
 existing conflict-filtered Ctrl+Alt+Shift+letter subset. Update creates a previous copy;
 restore_previous atomically swaps active/previous files. Archive is recoverable.
+Delete removes only the exact active or archived record captured by the
+confirmation. Its opposite state and previous copy remain untouched; applied
+clip effects, built-ins and timeline Undo are unchanged. A successful receipt
+includes `preset_library_durable:true` and
+`deleted_preset:{id,revision,archived}`. The client validates that identity before
+discarding its selection or shortcut binding. A failed post-ACK catalog refresh
+does not authorize another deletion.
+
+Deletion uses the native cooperative preset lock and a strictly owned v2 intent
+in `.venturi-native-presets-pending.json`. Older readers preserve and refuse that
+intent. This Web version recovers only its own recognized deletion intent;
+native v1, malformed and foreign transactions require their original recovery
+path. Recovery rechecks the captured file identity and SHA-256, preserves any
+replacement and records a project-root-bound completion before clearing intent.
+The existing command lookup/retry route recovers that completion after a lost
+response or process restart. Unacknowledged completions have finite count and
+byte budgets; pending recovery is retained rather than replayed blindly.
 Library mutations preserve native timeline history and share ordinary lease,
 epoch, generation and durable receipt semantics. A changed response after a
 successful ACK requires a read refresh, not a new save/import command.
@@ -719,7 +738,7 @@ revision checks, attribute targeting/conversion and one-Undo semantics are
 unchanged. An open palette refreshes its catalog once on each project epoch
 change, preserving the selected preset ID and discarding older read responses.
 A failed read stays disabled until an explicit Refresh; selection updates do not
-retry it. This does not introduce permanent preset removal.
+retry it. Permanent removal remains a separate confirmed action.
 
 Native pool assets use the original desktop v1 `AssetFile` JSON wrapper and
 `ClipboardPayload` RON text. They are separate from the ds4 media catalog.

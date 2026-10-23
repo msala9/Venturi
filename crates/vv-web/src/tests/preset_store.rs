@@ -42,6 +42,334 @@ fn revision(store: &Store, id: &str, archived: bool) -> String {
         .into()
 }
 
+fn deletion_completion(store: &Store, command: &str) -> Completion {
+    Completion {
+        version: 1,
+        command_id: command.into(),
+        fingerprint: [7; 32],
+        project_root_binding: crate::asset_journal::project_binding(&store.dir).unwrap(),
+        receipt: json!({"command_id":command,"status":"applied","project_epoch":"epoch:1","generation":"7","command_epoch":"0","library_durable":true,"preset_library_durable":true,"durability":{"state":"volatile","recovery_revision":null}}),
+    }
+}
+
+#[test]
+fn permanent_delete_preserves_opposite_state_backups_and_recreated_files_during_bound_retry() {
+    let (root, store, preset) = fixture();
+    store.create("saved", &preset).unwrap();
+    let archived_revision = revision(&store, "saved", false);
+    store
+        .edit(
+            "archive",
+            &Edit::Archive {
+                id: "saved".into(),
+                revision: archived_revision.clone(),
+            },
+        )
+        .unwrap();
+    let archived_bytes = std::fs::read(root.join("saved.json.deleted")).unwrap();
+    let mut active = preset.clone();
+    active.name = "Active saved look".into();
+    store.create("saved", &active).unwrap();
+    let options = Options {
+        name: "Updated saved look".into(),
+        attributes: active.attributes.clone(),
+        anchor: active.anchor,
+        append_filters: active.append_filters,
+        shortcut: None,
+    };
+    store
+        .edit(
+            "update",
+            &Edit::Update {
+                id: "saved".into(),
+                revision: revision(&store, "saved", false),
+                options,
+            },
+        )
+        .unwrap();
+    let backup = std::fs::read(root.join("saved.json.bak")).unwrap();
+    let active_revision = revision(&store, "saved", false);
+    let edit = Edit::Delete {
+        id: "saved".into(),
+        revision: active_revision.clone(),
+        archived: false,
+    };
+    let completion = deletion_completion(&store, "delete-active");
+    let binding = completion.project_root_binding.clone();
+    store.delete(&edit, completion.clone()).unwrap();
+    assert!(!root.join("saved.json").exists());
+    assert_eq!(
+        std::fs::read(root.join("saved.json.deleted")).unwrap(),
+        archived_bytes
+    );
+    assert_eq!(std::fs::read(root.join("saved.json.bak")).unwrap(), backup);
+    let recorded = store
+        .completion("delete-active", &binding)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        recorded.1["deleted_preset"],
+        json!({"id":"saved","revision":active_revision,"archived":false})
+    );
+    assert!(
+        store
+            .completion("delete-active", "other-project")
+            .unwrap()
+            .is_none()
+    );
+    store.create("saved", &preset).unwrap();
+    let replacement = store.export("saved").unwrap();
+    store.delete(&edit, completion.clone()).unwrap();
+    assert_eq!(store.export("saved").unwrap(), replacement);
+    let mut reused = completion.clone();
+    reused.fingerprint = [8; 32];
+    assert_eq!(
+        store.delete(&edit, reused).unwrap_err().1,
+        "COMMAND_ID_REUSED"
+    );
+    assert_eq!(
+        store
+            .acknowledge("delete-active", [8; 32], &binding)
+            .unwrap_err()
+            .1,
+        "PRESET_JOURNAL_CONFLICT"
+    );
+    assert_eq!(store.completions(&binding).unwrap().len(), 1);
+    drop(store);
+    let store = Store::new(&root).unwrap();
+    assert_eq!(
+        store
+            .completion("delete-active", &binding)
+            .unwrap()
+            .unwrap(),
+        recorded
+    );
+    let archived = Edit::Delete {
+        id: "saved".into(),
+        revision: archived_revision,
+        archived: true,
+    };
+    store
+        .delete(&archived, deletion_completion(&store, "delete-archive"))
+        .unwrap();
+    assert!(!root.join("saved.json.deleted").exists());
+    assert_eq!(store.export("saved").unwrap(), replacement);
+    assert_eq!(std::fs::read(root.join("saved.json.bak")).unwrap(), backup);
+    store
+        .acknowledge("delete-active", completion.fingerprint, &binding)
+        .unwrap();
+    assert!(
+        store
+            .completion("delete-active", &binding)
+            .unwrap()
+            .is_none()
+    );
+    assert_eq!(
+        store.delete(&edit, completion).unwrap_err().1,
+        "PRESET_CHANGED"
+    );
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn permanent_delete_recovers_durable_intent_before_or_after_unlink_and_refuses_foreign_replacements()
+ {
+    let (root, store, preset) = fixture();
+    for partial in [false, true] {
+        let id = if partial { "partial" } else { "before" };
+        let command = format!("delete-{id}");
+        store.create(id, &preset).unwrap();
+        let edit = Edit::Delete {
+            id: id.into(),
+            revision: revision(&store, id, false),
+            archived: false,
+        };
+        let completion = deletion_completion(&store, &command);
+        store.fail_after_intent_for_test();
+        assert_eq!(
+            store.delete(&edit, completion.clone()).unwrap_err().1,
+            "PRESET_TEST_INTERRUPTED"
+        );
+        assert!(root.join(format!("{id}.json")).exists());
+        let pending: Value =
+            serde_json::from_slice(&std::fs::read(root.join(DELETE_PENDING)).unwrap()).unwrap();
+        assert_eq!(pending["version"], 2);
+        assert_eq!(pending["owner"], DELETE_OWNER);
+        if partial {
+            std::fs::remove_file(root.join(format!("{id}.json"))).unwrap();
+            std::fs::write(
+                root.join(COMPLETIONS)
+                    .join(".preset-delete-interrupted.tmp"),
+                b"partial owned receipt stage",
+            )
+            .unwrap();
+        }
+        let reopened = Store::new(&root).unwrap();
+        let recorded = reopened
+            .completion(&command, &completion.project_root_binding)
+            .unwrap()
+            .unwrap();
+        assert_eq!(recorded.1["deleted_preset"]["id"], id);
+        assert!(!root.join(format!("{id}.json")).exists());
+        assert!(!root.join(DELETE_PENDING).exists());
+        if partial {
+            assert_eq!(
+                std::fs::read(
+                    root.join(COMPLETIONS)
+                        .join(".preset-delete-interrupted.tmp")
+                )
+                .unwrap(),
+                b"partial owned receipt stage"
+            );
+        }
+    }
+    store.create("foreign", &preset).unwrap();
+    let edit = Edit::Delete {
+        id: "foreign".into(),
+        revision: revision(&store, "foreign", false),
+        archived: false,
+    };
+    let completion = deletion_completion(&store, "delete-foreign");
+    store.fail_after_intent_for_test();
+    assert!(store.delete(&edit, completion.clone()).is_err());
+    let pending = std::fs::read(root.join(DELETE_PENDING)).unwrap();
+    let original = std::fs::read(root.join("foreign.json")).unwrap();
+    std::fs::rename(
+        root.join("foreign.json"),
+        root.join("owned-original.json.bak"),
+    )
+    .unwrap();
+    std::fs::write(root.join("foreign.json"), &original).unwrap();
+    assert_eq!(
+        store
+            .completion("delete-foreign", &completion.project_root_binding)
+            .unwrap_err()
+            .1,
+        "PRESET_JOURNAL_CONFLICT"
+    );
+    assert_eq!(std::fs::read(root.join(DELETE_PENDING)).unwrap(), pending);
+    assert_eq!(std::fs::read(root.join("foreign.json")).unwrap(), original);
+    std::fs::remove_file(root.join("foreign.json")).unwrap();
+    assert!(
+        store
+            .completion("delete-foreign", &completion.project_root_binding)
+            .unwrap()
+            .is_some()
+    );
+    assert_eq!(
+        std::fs::read(root.join("owned-original.json.bak")).unwrap(),
+        original
+    );
+    assert!(!root.join(DELETE_PENDING).exists());
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn permanent_delete_preflight_is_strict_locked_bounded_and_preserves_foreign_pending_data() {
+    let (root, store, preset) = fixture();
+    store.create("saved", &preset).unwrap();
+    let bytes = store.export("saved").unwrap();
+    let edit = Edit::Delete {
+        id: "saved".into(),
+        revision: revision(&store, "saved", false),
+        archived: false,
+    };
+    assert_eq!(
+        store.edit("unbound", &edit).unwrap_err().1,
+        "PRESET_PREPARATION_REQUIRED"
+    );
+    let stale = Edit::Delete {
+        id: "saved".into(),
+        revision: "0".repeat(64),
+        archived: false,
+    };
+    assert_eq!(
+        store
+            .delete(&stale, deletion_completion(&store, "stale"))
+            .unwrap_err()
+            .1,
+        "PRESET_CHANGED"
+    );
+    for exclusive in [false, true] {
+        let guard = store.catalog_lock(exclusive).unwrap();
+        assert_eq!(
+            store
+                .delete(&edit, deletion_completion(&store, "busy"))
+                .unwrap_err()
+                .1,
+            "LIBRARY_BUSY"
+        );
+        drop(guard);
+        assert_eq!(store.export("saved").unwrap(), bytes);
+    }
+    let mut oversized = deletion_completion(&store, "oversized");
+    oversized.receipt["oversized"] = json!("x".repeat(4096));
+    assert!(store.delete(&edit, oversized).is_err());
+    assert!(!root.join(DELETE_PENDING).exists());
+    assert!(
+        serde_json::from_value::<Edit>(
+            json!({"action":"delete","id":"saved","revision":"0".repeat(64)})
+        )
+        .is_err()
+    );
+    assert!(serde_json::from_value::<Edit>(json!({"action":"delete","id":"saved","revision":"0".repeat(64),"archived":false,"extra":true})).is_err());
+    for pending in [
+        json!({"version":1,"targets":[]}),
+        json!({"version":2,"owner":"foreign","targets":[]}),
+    ] {
+        let pending = serde_json::to_vec(&pending).unwrap();
+        std::fs::write(root.join(DELETE_PENDING), &pending).unwrap();
+        assert_eq!(
+            store
+                .delete(&edit, deletion_completion(&store, "foreign-pending"))
+                .unwrap_err()
+                .1,
+            "LIBRARY_RECOVERY_REQUIRED"
+        );
+        assert_eq!(std::fs::read(root.join(DELETE_PENDING)).unwrap(), pending);
+        assert_eq!(std::fs::read(root.join("saved.json")).unwrap(), bytes);
+        std::fs::remove_file(root.join(DELETE_PENDING)).unwrap();
+    }
+    std::fs::write(root.join("broken.json"), b"not a preset").unwrap();
+    let broken = Edit::Delete {
+        id: "broken".into(),
+        revision: format!("{:x}", Sha256::digest(b"not a preset")),
+        archived: false,
+    };
+    assert!(
+        store
+            .delete(&broken, deletion_completion(&store, "broken"))
+            .is_err()
+    );
+    assert_eq!(
+        std::fs::read(root.join("broken.json")).unwrap(),
+        b"not a preset"
+    );
+    assert!(!root.join(DELETE_PENDING).exists());
+    let receipt_dir = crate::asset_store::directory(&store.dir, COMPLETIONS).unwrap();
+    std::fs::write(
+        root.join(COMPLETIONS).join("foreign.json"),
+        b"foreign receipt",
+    )
+    .unwrap();
+    assert!(
+        store
+            .delete(&edit, deletion_completion(&store, "bad-receipt"))
+            .is_err()
+    );
+    assert!(!root.join(DELETE_PENDING).exists());
+    assert_eq!(store.export("saved").unwrap(), bytes);
+    assert_eq!(
+        std::fs::read(root.join(COMPLETIONS).join("foreign.json")).unwrap(),
+        b"foreign receipt"
+    );
+    drop(receipt_dir);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn native_library_create_export_update_backup_archive_and_restore_preserve_source_data() {
     let (root, store, preset) = fixture();

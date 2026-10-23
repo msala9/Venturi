@@ -37,7 +37,7 @@ const nativeShortcuts={version:1,keys:['B','Plus','Slash','F35','Down','Space','
 const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};};
 async function settle(){for(let n=0;n<4;n++)await new Promise(resolve=>setImmediate(resolve));}
 function panelHarness(shortcut='Ctrl+Alt+Shift+B',options={}){
-  const original={document:globalThis.document,Option:globalThis.Option},reads=[],catalogReads=[],writes=[],deactivated=[],notices=[],drags=[];let enabled=true,activated=0,writable=true,dragEnds=0;
+  const original={document:globalThis.document,Option:globalThis.Option},reads=[],catalogReads=[],writes=[],deactivated=[],notices=[],drags=[];let enabled=true,activated=0,writable=true,dragEnds=0,itemExists=true;
   class Element extends EventTarget{
     constructor(tag=''){super();this.tag=tag;this.children=[];this.attributes=new Map();this.value='';this.checked=false;this.disabled=false;this.open=false;this.textContent='';this.parent=null;}
     get isConnected(){return this===body || Boolean(this.parent?.isConnected);}
@@ -51,16 +51,19 @@ function panelHarness(shortcut='Ctrl+Alt+Shift+B',options={}){
   const body=new Element('body'),root=new Element('root');body.append(root);globalThis.document={body,createElement:tag=>new Element(tag),querySelector:selector=>selector==='dialog[open]'?dialog():null};globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
   const context={epoch:'epoch',generation:'1',timeline:'timeline',revision:'revision',clip_ids:['clip'],roles:{video:true,audio:true},name:'Selected clips'};
   let item={id:'preset',revision:'r1',name:'Saved look',attributes:['zoom'],anchor:'start',append_filters:false,shortcut,video:true,audio:false,archived:false,...options.item};
-  const mutate=async operation=>{writes.push(operation);if(operation.kind==='apply_saved_preset')return options.apply?options.apply(operation):{command_id:'applied'};const edits=operation.options || operation.edit.options,old=operation.kind==='save_attribute_preset'?null:item.shortcut;item={...item,...edits,id:operation.kind==='save_attribute_preset'?'created':item.id,revision:'r2',shortcut:edits.shortcut?.action==='set'?edits.shortcut.value:edits.shortcut?.action==='clear'?null:old};return {command_id:operation.kind==='save_attribute_preset'?'created':'updated'};};
+  const deletionReceipt=edit=>({command_id:'deleted',status:'applied',project_epoch:context.epoch,library_durable:true,preset_library_durable:true,deleted_preset:{id:edit.id,revision:edit.revision,archived:edit.archived}});
+  const mutate=async operation=>{writes.push(operation);if(operation.kind==='apply_saved_preset')return options.apply?options.apply(operation):{command_id:'applied'};if(operation.edit?.action==='delete'){const receipt=options.remove?await options.remove(operation):deletionReceipt(operation.edit);if(receipt?.status==='applied' && receipt.deleted_preset?.id===item.id)itemExists=false;return receipt;}const edits=operation.options || operation.edit.options,old=operation.kind==='save_attribute_preset'?null:item.shortcut;item={...item,...edits,id:operation.kind==='save_attribute_preset'?'created':item.id,revision:'r2',shortcut:edits.shortcut?.action==='set'?edits.shortcut.value:edits.shortcut?.action==='clear'?null:old};return {command_id:operation.kind==='save_attribute_preset'?'created':'updated'};};
   const presetDnd={type:'application/x-venturi-preset',start(snapshot,current){drags.push({snapshot,current});return options.start?options.start(snapshot,current):'opaque-native-drag';},end(){dragEnds++;}};
-  const panel=createPresetPanel({root,getContext:()=>context,canCommit:()=>writable,commit:mutate,libraryCommit:mutate,presetDnd,notice:message=>notices.push(message),shortcuts:{state:()=>({enabled,label:'Ctrl+Alt+Shift+B'}),activate(){activated++;enabled=true;},deactivate(id){deactivated.push(id);enabled=false;},sync(){}},api:async(path,body,requestOptions)=>{reads.push({path,body,options:requestOptions});if(path==='/presets/shortcuts'){const pending=deferred();catalogReads.push({...pending,options:requestOptions});return pending.promise;}if(path.startsWith('/presets/pages/')){const result={page:0,pages:1,total:1,items:[structuredClone(item)]};return options.pageReader?options.pageReader(result):result;}if(path.startsWith('/presets/items/'))return structuredClone(item);throw Error(`Unexpected route ${path}`);}});
+  const panel=createPresetPanel({root,getContext:()=>context,canCommit:()=>writable,commit:mutate,libraryCommit:mutate,presetDnd,notice:message=>notices.push(message),shortcuts:{state:()=>({enabled,label:'Ctrl+Alt+Shift+B'}),activate(){activated++;enabled=true;},deactivate(id){deactivated.push(id);enabled=false;},sync(){}},api:async(path,body,requestOptions)=>{reads.push({path,body,options:requestOptions});if(path==='/presets/shortcuts'){const pending=deferred();catalogReads.push({...pending,options:requestOptions});return pending.promise;}if(path.startsWith('/presets/pages/')){const result={page:0,pages:1,total:itemExists?1:0,items:itemExists?[structuredClone(item)]:[]};return options.pageReader?options.pageReader(result):result;}if(path.startsWith('/presets/items/')){if(!itemExists)throw Error('Deleted preset must not be fetched');return structuredClone(item);}throw Error(`Unexpected route ${path}`);}});
   const walk=node=>[node,...(node.children || []).filter(child=>child instanceof Element).flatMap(walk)];
   const dialog=()=>walk(body).find(node=>node.tag==='dialog' && node.open);
   const button=(text,parent=root)=>{const found=walk(parent).find(node=>node.tag==='button' && node.textContent===text);assert(found,`Expected button ${text}`);return found;};
   const field=(attribute,parent=dialog())=>{const found=walk(parent).find(node=>node.attributes?.has(attribute));assert(found,`Expected ${attribute}`);return found;};
-  return {panel,root,context,reads,catalogReads,writes,deactivated,notices,drags,dragEnds:()=>dragEnds,setWritable:value=>{writable=value;},item:()=>item,enabled:()=>enabled,activated:()=>activated,button,dialog,field,
+  return {panel,root,context,reads,catalogReads,writes,deactivated,notices,drags,dragEnds:()=>dragEnds,setWritable:value=>{writable=value;},item:()=>item,enabled:()=>enabled,activated:()=>activated,button,dialog,field,deletionReceipt,
     list:()=>walk(root).find(node=>node.getAttribute('aria-label')==='Saved presets'),
     activate(type='keydown',patch={},node=walk(root).find(node=>node.getAttribute('aria-label')==='Saved presets')){const event=new Event(type,{cancelable:true});for(const [key,value] of Object.entries({key:'Enter',...patch}))Object.defineProperty(event,key,{value});node.dispatchEvent(event);return event;},
+    deleteKey(patch={}){const section=root.children.find(node=>node.tag==='section'),event=new Event('keydown',{cancelable:true});for(const [key,value] of Object.entries({key:'Delete',target:walk(root).find(node=>node.getAttribute('aria-label')==='Saved presets'),...patch}))Object.defineProperty(event,key,{value});section.dispatchEvent(event);return event;},
+    archived(value){const input=walk(root).find(node=>node.tag==='input' && node.type==='checkbox');input.checked=value;input.dispatchEvent(new Event('change'));},
     drag(transfer={effectAllowed:'none',entries:[],setData(type,value){this.entries.push([type,value]);}},node=field('data-preset-drag',root)){const event=new Event('dragstart',{cancelable:true});Object.defineProperty(event,'dataTransfer',{value:transfer});node.dispatchEvent(event);return {event,transfer,node};},
     async open(){root.replaceChildren();await panel.open();},edit(){button('Edit preset settings').click();return dialog();},capture(){button('Save selection as preset').click();return dialog();},
     changeMode(value){const select=field('data-preset-shortcut-mode');select.value=value;select.dispatchEvent(new Event('change'));},
@@ -213,5 +216,46 @@ test('project epoch refresh replaces an old pending catalog read and ignores its
     await h.open();h.button('Refresh presets').click();const oldRequest=h.reads.at(-1);h.context.epoch='new-project';h.panel.invalidate();h.panel.invalidate();assert.equal(reads,3);assert.equal(oldRequest.options.signal.aborted,true);
     fresh.resolve({page:0,pages:1,total:1,items:[{...structuredClone(h.item()),revision:'fresh-revision'}]});await settle();assert.equal(h.button('Apply preset to selected clips').disabled,false);
     old.resolve({page:0,pages:1,total:1,items:[{...structuredClone(h.item()),id:'obsolete-preset',revision:'obsolete-revision'}]});await settle();h.panel.invalidate();assert.equal(reads,3);h.activate();await settle();assert.deepEqual(h.writes,[{kind:'apply_saved_preset',clip_ids:['clip'],preset_id:'preset',revision:'fresh-revision'}]);
+  }finally{h.destroy();}
+});
+
+test('preset Delete is collapsed, confirms the captured name and cancels without reads, writes or shortcut changes',async()=>{
+  const h=panelHarness();try{
+    await h.open();const remove=h.button('Permanently delete saved preset…');assert.equal(remove.parent.tag,'details');assert.equal(remove.parent.open,false);assert.equal(remove.parent.children[0].textContent,'Preset actions');const reads=h.reads.length;
+    remove.click();const dialog=h.dialog();assert.equal(dialog.getAttribute('aria-label'),'Confirm permanent preset deletion');assert(dialog.children[0].children.some(node=>node.textContent==='Saved look'));assert.match(h.field('role',dialog).textContent,/permanently.*Undo cannot restore/);assert.equal(h.reads.length,reads);assert.deepEqual(h.writes,[]);assert.deepEqual(h.deactivated,[]);
+    for(const patch of [{repeat:true},{isComposing:true},{ctrlKey:true},{shiftKey:true}]){const event=new Event('keydown',{cancelable:true});for(const [key,value] of Object.entries({key:'Enter',...patch}))Object.defineProperty(event,key,{value});dialog.dispatchEvent(event);assert.equal(event.defaultPrevented,true);}assert.deepEqual(h.writes,[]);
+    h.button('Cancel preset deletion',dialog).click();assert.equal(h.dialog(),undefined);h.deleteKey({key:'Backspace'});const cancel=new Event('cancel',{cancelable:true});h.dialog().dispatchEvent(cancel);assert.equal(cancel.defaultPrevented,true);assert.equal(h.dialog(),undefined);assert.deepEqual(h.writes,[]);
+    for(const patch of [{repeat:true},{isComposing:true},{keyCode:229},{ctrlKey:true},{metaKey:true},{altKey:true},{shiftKey:true},{getModifierState:key=>key==='AltGraph'},{target:{tag:'input'}}]){assert.equal(h.deleteKey(patch).defaultPrevented,false);assert.equal(h.dialog(),undefined);}
+  }finally{h.destroy();}
+});
+
+test('confirmed active or archived preset Delete sends once, validates the ACK, then removes its shortcut and reloads without fetching the deleted item',async()=>{
+  for(const archived of [false,true]){
+    const gate=deferred(),h=panelHarness(undefined,{item:{archived},remove:()=>gate.promise});try{
+      await h.open();if(archived){h.archived(true);await settle();}h.deleteKey();const dialog=h.dialog(),form=dialog.children[0],before=h.reads.length;h.submit(dialog);form.dispatchEvent(new Event('submit',{cancelable:true}));h.deleteKey();
+      assert.deepEqual(h.writes,[{kind:'edit_preset_library',edit:{action:'delete',id:'preset',revision:'r1',archived}}]);assert.deepEqual(h.deactivated,[]);assert.equal(h.dialog(),undefined);assert.equal(h.reads.length,before);
+      gate.resolve(h.deletionReceipt(h.writes[0].edit));await settle();assert.deepEqual(h.deactivated,['preset']);assert.equal(h.list().children.length,0);assert.equal(h.reads.length,before+1);assert(h.reads.at(-1).path.startsWith('/presets/pages/'));assert(!h.reads.some(read=>read.path.startsWith('/presets/items/')));assert.match(h.field('role',h.root).textContent,/permanently deleted.*effects unchanged.*no project Undo/);
+    }finally{h.destroy();}
+  }
+});
+
+test('a changed preset, session, readonly writer, pending read or hidden panel cannot confirm preset Delete',async()=>{
+  for(const change of [h=>{h.context.generation='2';h.panel.invalidate();},h=>{h.context.epoch='new';h.panel.invalidate();},h=>{h.context.command_epoch='new-writer';h.panel.invalidate();},h=>{h.setWritable(false);h.panel.invalidate();},h=>h.button('Refresh presets').click(),h=>{h.savedRevision('changed');h.button('Refresh presets').click();}]){
+    const h=panelHarness();try{await h.open();h.deleteKey();const dialog=h.dialog();change(h);assert.equal(h.button('Permanently delete preset',dialog).disabled,true);h.submit(dialog);await settle();assert.deepEqual(h.writes,[]);assert.deepEqual(h.deactivated,[]);}finally{h.destroy();}
+  }
+  const h=panelHarness();try{await h.open();h.deleteKey();const dialog=h.dialog();h.panel.hide();h.submit(dialog);assert.equal(h.dialog(),undefined);assert.deepEqual(h.writes,[]);await h.open();assert.equal(h.dialog(),undefined);}finally{h.destroy();}
+});
+
+test('preset Delete refuses an unverified or failed ACK without deactivating a shortcut, clearing the row or replaying',async()=>{
+  for(const change of [receipt=>({...receipt,project_epoch:'other'}),receipt=>({...receipt,status:'unknown'}),receipt=>({...receipt,command_id:''}),receipt=>({...receipt,preset_library_durable:false}),receipt=>({...receipt,deleted_preset:{...receipt.deleted_preset,revision:'changed'}}),()=>{throw Object.assign(Error('Outcome unknown'),{code:'OUTCOME_UNKNOWN'});}]){
+    const h=panelHarness(undefined,{remove:operation=>change(h.deletionReceipt(operation.edit))});try{
+      await h.open();h.deleteKey();h.submit();await settle();assert.equal(h.writes.length,1);assert.deepEqual(h.deactivated,[]);assert.equal(h.list().children.length,1);assert.equal(h.button('Permanently delete saved preset…').disabled,true);assert.match(h.field('role',h.root).textContent,/check command status/);h.panel.invalidate();await settle();assert.equal(h.writes.length,1);assert.equal(h.reads.length,1);
+    }finally{h.destroy();}
+  }
+});
+
+test('acknowledged preset Delete remains successful when refresh fails and never repeats the deletion',async()=>{
+  let reads=0;const h=panelHarness(undefined,{pageReader:result=>{if(++reads>1)throw Error('NAS refresh failed');return result;}});try{
+    await h.open();h.deleteKey();h.submit();await settle();assert.equal(h.writes.length,1);assert.deepEqual(h.deactivated,['preset']);assert.match(h.field('role',h.root).textContent,/Command applied successfully.*refresh failed.*do not submit it again/);assert.equal(h.button('Apply preset to selected clips').disabled,true);assert.equal(h.button('Permanently delete saved preset…').disabled,true);h.panel.invalidate();await settle();assert.equal(reads,2);assert.equal(h.writes.length,1);assert(!h.reads.some(read=>read.path.startsWith('/presets/items/')));
   }finally{h.destroy();}
 });

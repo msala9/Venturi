@@ -1435,6 +1435,162 @@ fn public_slip_manifest_uses_the_same_pinned_file_version_as_source_windows_with
 }
 
 #[test]
+fn saved_preset_delete_preserves_project_history_and_recovers_a_lost_receipt_without_redeleting() {
+    use crate::preset_store::Edit;
+    use vv_core::{
+        Clip, ClipId, ClipSource, Rational,
+        attributes::{Attribute, KeyframeAnchor},
+    };
+    for dirty in [false, true] {
+        let root = std::env::temp_dir().join(format!(
+            "vv-preset-delete-host-{}",
+            crate::asset_jobs::nonce()
+        ));
+        let mut editor = Editor::new(&root).unwrap();
+        let create = request(
+            &editor,
+            Operation::NewProject {
+                name: "Preset_delete".into(),
+            },
+            "preset-delete-project",
+            None,
+        );
+        editor.mutation(None, create).unwrap();
+        let timeline = editor.session.project.timelines.keys().next().unwrap();
+        let timeline_media = editor
+            .session
+            .project
+            .media_pool
+            .iter()
+            .find(|(_, item)| item.compound == Some(timeline))
+            .unwrap()
+            .0;
+        editor.session.apply(Box::new(vv_core::RenameTimeline::new(
+            timeline_media,
+            "Saved history".into(),
+        )));
+        let save = request(&editor, Operation::Save, "preset-delete-save", None);
+        editor.mutation(None, save).unwrap();
+        if dirty {
+            editor.session.apply(Box::new(vv_core::RenameTimeline::new(
+                timeline_media,
+                "Unsaved history".into(),
+            )));
+        }
+        let preset = crate::presets::Preset {
+            version: 1,
+            name: "To remove".into(),
+            attributes: vec![Attribute::Zoom],
+            anchor: KeyframeAnchor::Start,
+            append_filters: false,
+            shortcut: None,
+            fps: Rational::new(24, 1),
+            resolution: (640, 360),
+            audio: None,
+            video: Some(Box::new(Clip::from_source_range(
+                ClipId(1),
+                ClipSource::SolidColor,
+                0,
+                48,
+                0,
+                Rational::one(),
+            ))),
+        };
+        editor.presets.create("personal", &preset).unwrap();
+        let revision = editor.presets.item("personal", false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let command = request(
+            &editor,
+            Operation::EditPresetLibrary {
+                edit: Edit::Delete {
+                    id: "personal".into(),
+                    revision: revision.clone(),
+                    archived: false,
+                },
+            },
+            "remove-personal-preset",
+            None,
+        );
+        let path = editor.session.path().unwrap().to_path_buf();
+        let saved = std::fs::read(&path).unwrap();
+        let model = ron::to_string(&editor.session.project).unwrap();
+        let generation = editor.session.history.generation();
+        let position = editor.session.history.position();
+        let labels: Vec<_> = editor.session.history.labels().collect();
+        let mut stale = command.clone();
+        stale.command_id = "stale-preset-delete".into();
+        stale.project_epoch = "obsolete-project".into();
+        assert_eq!(
+            editor.mutation(None, stale).unwrap_err().1,
+            "REVISION_CONFLICT"
+        );
+        editor.lease = Some(("other-browser".into(), Instant::now()));
+        assert_eq!(
+            editor.mutation(None, command.clone()).unwrap_err().1,
+            "READ_ONLY"
+        );
+        editor.lease = None;
+        assert!(editor.presets.item("personal", false).is_ok());
+        editor.receipts = None;
+        let receipt = editor.mutation(None, command.clone()).unwrap();
+        assert_eq!(
+            receipt["deleted_preset"],
+            json!({"id":"personal","revision":revision,"archived":false})
+        );
+        assert_eq!(receipt["preset_library_durable"], true);
+        assert_eq!(receipt["receipt_persisted"], false);
+        assert!(editor.presets.item("personal", false).is_err());
+        assert_eq!(ron::to_string(&editor.session.project).unwrap(), model);
+        assert_eq!(editor.session.history.generation(), generation);
+        assert_eq!(editor.session.history.position(), position);
+        assert_eq!(editor.session.history.labels().collect::<Vec<_>>(), labels);
+        assert_eq!(editor.session.has_unsaved_changes(), dirty);
+        assert_eq!(std::fs::read(&path).unwrap(), saved);
+        let mut replacement = preset.clone();
+        replacement.name = "Replacement must survive".into();
+        editor.presets.create("personal", &replacement).unwrap();
+        let replacement_bytes = editor.presets.export("personal").unwrap();
+        assert_eq!(editor.mutation(None, command.clone()).unwrap(), receipt);
+        assert_eq!(
+            editor.lookup("remove-personal-preset").unwrap()["deleted_preset"],
+            receipt["deleted_preset"]
+        );
+        assert_eq!(
+            editor.presets.export("personal").unwrap(),
+            replacement_bytes
+        );
+        drop(editor);
+        let mut reopened = Editor::new(&root).unwrap();
+        let recovered = reopened.lookup("remove-personal-preset").unwrap();
+        assert_eq!(recovered["server_restarted"], true);
+        assert_eq!(recovered["receipt_persisted"], true);
+        assert_eq!(recovered["deleted_preset"], receipt["deleted_preset"]);
+        assert_eq!(reopened.mutation(None, command.clone()).unwrap(), recovered);
+        let mut conflicting = command;
+        conflicting.operation = Operation::EditPresetLibrary {
+            edit: Edit::Delete {
+                id: "another".into(),
+                revision,
+                archived: false,
+            },
+        };
+        assert_eq!(
+            reopened.mutation(None, conflicting).unwrap_err().1,
+            "COMMAND_ID_REUSED"
+        );
+        assert_eq!(
+            reopened.presets.export("personal").unwrap(),
+            replacement_bytes
+        );
+        assert_eq!(std::fs::read(path).unwrap(), saved);
+        drop(reopened);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+}
+
+#[test]
 fn saved_audio_presets_are_library_only_retry_safe_and_apply_with_one_native_undo() {
     use crate::audio_presets::{Edit, Kind};
     use vv_core::{AudioEffect, AudioEffectKind, Equalizer, Id};

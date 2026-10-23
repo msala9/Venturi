@@ -2212,7 +2212,7 @@ pasteAttributes=createPasteAttributes({root:$("paste-attributes-dialog"),getCont
 function presetContext(){
   if(!documentState)return null;
   const ids=timeline?linkedSelection(timeline,view.selection):[],clips=timeline?.tracks.flatMap(track=>track.clips.filter(clip=>ids.includes(clip.id)).map(clip=>({clip,kind:track.kind}))) || [];
-  return {epoch:documentState.project_epoch,generation:documentState.generation,timeline:timeline?.id,revision:timeline?.revision,clip_ids:ids,name:clips[0]?.clip.name,roles:{video:clips.some(item=>item.kind==='video'),audio:clips.some(item=>item.kind==='audio')}};
+  return {epoch:documentState.project_epoch,generation:documentState.generation,command_epoch:documentState.command_epoch,timeline:timeline?.id,revision:timeline?.revision,clip_ids:ids,name:clips[0]?.clip.name,roles:{video:clips.some(item=>item.kind==='video'),audio:clips.some(item=>item.kind==='audio')}};
 }
 const presetShortcuts=createPresetShortcuts({getContext:presetContext,canCommit:()=>writable && !busy && !unresolved,commit,notice});
 presetPanel=createPresetPanel({root:$("panel-content"),getContext:presetContext,shortcuts:presetShortcuts,presetDnd:canvasTimeline.presetDnd,canCommit:()=>writable && !busy && !unresolved,commit,libraryCommit:operation=>mutate(operation,true,'/presets/commands'),notice});

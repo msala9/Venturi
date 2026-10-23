@@ -1,4 +1,5 @@
 use crate::{
+    asset_journal::Completion,
     error::{ApiError, Result},
     presets::{Options, Preset},
 };
@@ -9,18 +10,40 @@ use sha2::{Digest, Sha256};
 use std::{
     fs::File,
     io::{Read, Write},
-    os::fd::AsRawFd,
+    os::{fd::AsRawFd, unix::fs::MetadataExt},
     path::Path,
 };
 
 const MAX_BYTES: u64 = 4 * 1024 * 1024;
+const DELETE_PENDING: &str = ".venturi-native-presets-pending.json";
+const DELETE_OWNER: &str = "vv-web-preset-delete";
+const COMPLETIONS: &str = ".venturi-preset-completions";
+const MAX_INTENT: u64 = 16 * 1024;
 pub struct Store {
     dir: File,
+    #[cfg(test)]
+    fail_after_intent: std::sync::atomic::AtomicBool,
 }
 struct Raw {
     bytes: Vec<u8>,
     revision: String,
     identity: String,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct DeleteIntent {
+    version: u32,
+    owner: String,
+    id: String,
+    revision: String,
+    archived: bool,
+    before_identity: String,
+    completion: Completion,
+}
+struct CompletionCatalog {
+    records: Vec<Completion>,
+    entries: usize,
+    bytes: u64,
 }
 #[derive(Clone, Default, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -54,6 +77,168 @@ pub enum Edit {
         id: String,
         revision: String,
     },
+    Delete {
+        id: String,
+        revision: String,
+        archived: bool,
+    },
+}
+fn recovery_required() -> ApiError {
+    ApiError::conflict(
+        "LIBRARY_RECOVERY_REQUIRED",
+        "A desktop or unrecognized preset transaction is pending; reopen its library to recover it",
+    )
+}
+fn journal_changed() -> ApiError {
+    ApiError::conflict(
+        "PRESET_JOURNAL_CONFLICT",
+        "Preset library changed outside its transaction; existing data and recovery intent were preserved",
+    )
+}
+fn strong_raw(directory: &File, name: &str, limit: u64) -> Result<Option<Raw>> {
+    let file = match openat(
+        directory,
+        name,
+        OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+        Mode::empty(),
+    ) {
+        Ok(file) => File::from(file),
+        Err(rustix::io::Errno::NOENT) => return Ok(None),
+        Err(_) => return Err(journal_changed()),
+    };
+    let metadata = file.metadata().map_err(|_| ApiError::io())?;
+    if !metadata.is_file() || metadata.len() > limit {
+        return Err(journal_changed());
+    }
+    let identity = crate::asset_store::stable_identity(&file)?;
+    let mut bytes = Vec::new();
+    (&file)
+        .take(limit + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|_| ApiError::io())?;
+    if bytes.len() as u64 > limit
+        || crate::asset_store::stable_identity(&file)? != identity
+        || crate::asset_store::stable_identity(&crate::asset_store::regular(directory, name)?)?
+            != identity
+    {
+        return Err(journal_changed());
+    }
+    Ok(Some(Raw {
+        revision: format!("{:x}", Sha256::digest(&bytes)),
+        bytes,
+        identity,
+    }))
+}
+fn atomic_record(directory: &File, name: &str, bytes: &[u8]) -> Result<()> {
+    if bytes.len() as u64 > MAX_INTENT {
+        return Err(journal_changed());
+    }
+    let temp = format!(".preset-delete-{}.tmp", crate::asset_jobs::nonce());
+    let mut owned = None;
+    let result = (|| {
+        let mut file = File::from(
+            openat(
+                directory,
+                temp.as_str(),
+                OFlags::WRONLY | OFlags::CREATE | OFlags::EXCL | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                Mode::RUSR | Mode::WUSR,
+            )
+            .map_err(|_| ApiError::io())?,
+        );
+        let metadata = file.metadata().map_err(|_| ApiError::io())?;
+        owned = Some((metadata.dev(), metadata.ino()));
+        file.write_all(bytes).map_err(|_| ApiError::io())?;
+        file.sync_all().map_err(|_| ApiError::io())?;
+        drop(file);
+        let metadata = crate::asset_store::regular(directory, &temp)?
+            .metadata()
+            .map_err(|_| ApiError::io())?;
+        if Some((metadata.dev(), metadata.ino())) != owned {
+            return Err(journal_changed());
+        }
+        if strong_raw(directory, &temp, MAX_INTENT)?
+            .ok_or_else(journal_changed)?
+            .bytes
+            != bytes
+        {
+            return Err(journal_changed());
+        }
+        renameat_with(
+            directory,
+            temp.as_str(),
+            directory,
+            name,
+            RenameFlags::NOREPLACE,
+        )
+        .map_err(|_| journal_changed())?;
+        directory.sync_all().map_err(|_| ApiError::io())?;
+        if strong_raw(directory, name, MAX_INTENT)?
+            .ok_or_else(journal_changed)?
+            .bytes
+            != bytes
+        {
+            return Err(journal_changed());
+        }
+        Ok(())
+    })();
+    if let Ok(file) = crate::asset_store::regular(directory, &temp)
+        && let Ok(metadata) = file.metadata()
+        && Some((metadata.dev(), metadata.ino())) == owned
+    {
+        let _ = unlinkat(directory, temp.as_str(), AtFlags::empty());
+    }
+    result
+}
+fn validate_completion(completion: &Completion) -> Result<()> {
+    let deleted = &completion.receipt["deleted_preset"];
+    if completion.version != 1
+        || !crate::asset_journal::safe_id(&completion.command_id)
+        || completion.project_root_binding.is_empty()
+        || completion.project_root_binding.len() > 128
+        || completion.receipt["command_id"] != completion.command_id
+        || completion.receipt["status"] != "applied"
+        || completion.receipt["library_durable"] != true
+        || completion.receipt["preset_library_durable"] != true
+        || deleted.as_object().is_none_or(|object| object.len() != 3)
+        || deleted["id"]
+            .as_str()
+            .is_none_or(|id| !crate::asset_journal::safe_id(id))
+        || deleted["revision"].as_str().is_none_or(|revision| {
+            revision.len() != 64
+                || !revision
+                    .bytes()
+                    .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        })
+        || deleted["archived"].as_bool().is_none()
+        || serde_json::to_vec(completion)
+            .map_err(|_| journal_changed())?
+            .len()
+            > 4096
+    {
+        return Err(ApiError::invalid(
+            "Invalid durable native preset command receipt",
+        ));
+    }
+    Ok(())
+}
+fn validate_intent(intent: &DeleteIntent) -> Result<()> {
+    validate_completion(&intent.completion)?;
+    name(&intent.id, intent.archived)?;
+    if intent.version != 2
+        || intent.owner != DELETE_OWNER
+        || intent.before_identity.is_empty()
+        || intent.before_identity.len() > 256
+        || intent.revision.len() != 64
+        || !intent
+            .revision
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        || intent.completion.receipt["deleted_preset"]
+            != json!({"id":intent.id,"revision":intent.revision,"archived":intent.archived})
+    {
+        return Err(journal_changed());
+    }
+    Ok(())
 }
 fn name(id: &str, archived: bool) -> Result<String> {
     if id.is_empty()
@@ -88,6 +273,8 @@ impl Store {
         )?;
         Ok(Self {
             dir: File::from(fd),
+            #[cfg(test)]
+            fail_after_intent: std::sync::atomic::AtomicBool::new(false),
         })
     }
     fn lock(&self) -> Result<File> {
@@ -119,21 +306,251 @@ impl Store {
                 "Preset library is busy; retain the draft and retry",
             )
         })?;
-        match rustix::fs::statat(
-            &self.dir,
-            ".venturi-native-presets-pending.json",
-            AtFlags::SYMLINK_NOFOLLOW,
-        ) {
+        match rustix::fs::statat(&self.dir, DELETE_PENDING, AtFlags::SYMLINK_NOFOLLOW) {
             Err(rustix::io::Errno::NOENT) => (),
             Ok(_) => {
-                return Err(ApiError::conflict(
-                    "LIBRARY_RECOVERY_REQUIRED",
-                    "A desktop preset transaction is pending; reopen the desktop library to recover it",
-                ));
+                if !exclusive {
+                    drop(file);
+                    return self.catalog_lock(true);
+                }
+                self.recover_delete()?;
             }
             Err(_) => return Err(ApiError::io()),
         }
         Ok(file)
+    }
+    fn completion_catalog(&self) -> Result<CompletionCatalog> {
+        let directory = crate::asset_store::directory(&self.dir, COMPLETIONS)?;
+        let mut records = Vec::new();
+        let mut bytes = 0u64;
+        let mut entries = 0;
+        for (index, entry) in std::fs::read_dir(format!("/proc/self/fd/{}", directory.as_raw_fd()))
+            .map_err(|_| ApiError::io())?
+            .enumerate()
+        {
+            if index >= 4096 {
+                return Err(ApiError::invalid(
+                    "Unconfirmed preset receipts exceed 4096 entries",
+                ));
+            }
+            entries += 1;
+            let filename = entry
+                .map_err(|_| ApiError::io())?
+                .file_name()
+                .into_string()
+                .map_err(|_| journal_changed())?;
+            let raw = strong_raw(&directory, &filename, 4096)?.ok_or_else(journal_changed)?;
+            bytes = bytes.saturating_add(raw.bytes.len() as u64);
+            if bytes > 8 * 1024 * 1024 {
+                return Err(ApiError::invalid(
+                    "Unconfirmed preset receipts exceed 8 MiB",
+                ));
+            }
+            if filename.starts_with(".preset-delete-") && filename.ends_with(".tmp") {
+                continue;
+            }
+            let id = filename
+                .strip_suffix(".json")
+                .filter(|id| crate::asset_journal::safe_id(id))
+                .ok_or_else(journal_changed)?;
+            let completion: Completion =
+                serde_json::from_slice(&raw.bytes).map_err(|_| journal_changed())?;
+            validate_completion(&completion)?;
+            if completion.command_id != id {
+                return Err(journal_changed());
+            }
+            records.push(completion);
+        }
+        Ok(CompletionCatalog {
+            records,
+            entries,
+            bytes,
+        })
+    }
+    fn completion_records(&self) -> Result<Vec<Completion>> {
+        Ok(self.completion_catalog()?.records)
+    }
+    fn receipt_capacity(&self, completion: &Completion) -> Result<()> {
+        validate_completion(completion)?;
+        let catalog = self.completion_catalog()?;
+        if let Some(existing) = catalog
+            .records
+            .iter()
+            .find(|record| record.command_id == completion.command_id)
+        {
+            if existing.fingerprint != completion.fingerprint
+                || existing.project_root_binding != completion.project_root_binding
+                || existing.receipt != completion.receipt
+            {
+                return Err(journal_changed());
+            }
+            return Ok(());
+        }
+        if catalog.entries >= 4096 || catalog.bytes.saturating_add(4096) > 8 * 1024 * 1024 {
+            return Err(ApiError::invalid(
+                "Unconfirmed preset receipts exceed their 4096-entry or 8 MiB budget",
+            ));
+        }
+        Ok(())
+    }
+    fn persist_completion(&self, completion: &Completion) -> Result<()> {
+        self.receipt_capacity(completion)?;
+        let directory = crate::asset_store::directory(&self.dir, COMPLETIONS)?;
+        let filename = format!("{}.json", completion.command_id);
+        if strong_raw(&directory, &filename, 4096)?.is_none() {
+            atomic_record(
+                &directory,
+                &filename,
+                &serde_json::to_vec(completion).map_err(|_| ApiError::io())?,
+            )?;
+        }
+        Ok(())
+    }
+    fn recover_delete(&self) -> Result<()> {
+        let raw = strong_raw(&self.dir, DELETE_PENDING, MAX_INTENT)
+            .map_err(|_| recovery_required())?
+            .ok_or_else(recovery_required)?;
+        let intent: DeleteIntent =
+            serde_json::from_slice(&raw.bytes).map_err(|_| recovery_required())?;
+        if intent.version != 2 || intent.owner != DELETE_OWNER {
+            return Err(recovery_required());
+        }
+        validate_intent(&intent)?;
+        self.receipt_capacity(&intent.completion)?;
+        let filename = name(&intent.id, intent.archived)?;
+        if let Some(current) = strong_raw(&self.dir, &filename, MAX_BYTES)? {
+            if current.identity != intent.before_identity || current.revision != intent.revision {
+                return Err(journal_changed());
+            }
+            let pending =
+                strong_raw(&self.dir, DELETE_PENDING, MAX_INTENT)?.ok_or_else(journal_changed)?;
+            if pending.identity != raw.identity || pending.bytes != raw.bytes {
+                return Err(journal_changed());
+            }
+            unlinkat(&self.dir, filename.as_str(), AtFlags::empty()).map_err(|_| ApiError::io())?;
+            self.dir.sync_all().map_err(|_| ApiError::io())?;
+        }
+        self.persist_completion(&intent.completion)?;
+        let pending =
+            strong_raw(&self.dir, DELETE_PENDING, MAX_INTENT)?.ok_or_else(journal_changed)?;
+        if pending.identity != raw.identity || pending.bytes != raw.bytes {
+            return Err(journal_changed());
+        }
+        unlinkat(&self.dir, DELETE_PENDING, AtFlags::empty()).map_err(|_| ApiError::io())?;
+        self.dir.sync_all().map_err(|_| ApiError::io())
+    }
+    pub fn delete(&self, edit: &Edit, mut completion: Completion) -> Result<()> {
+        let Edit::Delete {
+            id,
+            revision,
+            archived,
+        } = edit
+        else {
+            return Err(ApiError::invalid("Choose one saved preset to delete"));
+        };
+        name(id, *archived)?;
+        completion.receipt["deleted_preset"] =
+            json!({"id":id,"revision":revision,"archived":archived});
+        validate_completion(&completion)?;
+        let _guard = self.lock()?;
+        if let Some(existing) = self
+            .completion_records()?
+            .into_iter()
+            .find(|record| record.command_id == completion.command_id)
+        {
+            return if existing.fingerprint == completion.fingerprint
+                && existing.project_root_binding == completion.project_root_binding
+                && existing.receipt["deleted_preset"] == completion.receipt["deleted_preset"]
+            {
+                Ok(())
+            } else {
+                Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Native preset command ID was reused",
+                ))
+            };
+        }
+        self.receipt_capacity(&completion)?;
+        let raw = strong_raw(&self.dir, &name(id, *archived)?, MAX_BYTES)?
+            .ok_or_else(ApiError::missing)?;
+        if raw.revision != *revision {
+            return Err(ApiError::conflict(
+                "PRESET_CHANGED",
+                "Preset changed; retain the draft and refresh the library",
+            ));
+        }
+        parse(&raw.bytes)?;
+        let intent = DeleteIntent {
+            version: 2,
+            owner: DELETE_OWNER.into(),
+            id: id.clone(),
+            revision: revision.clone(),
+            archived: *archived,
+            before_identity: raw.identity,
+            completion,
+        };
+        validate_intent(&intent)?;
+        atomic_record(
+            &self.dir,
+            DELETE_PENDING,
+            &serde_json::to_vec(&intent).map_err(|_| ApiError::io())?,
+        )?;
+        #[cfg(test)]
+        if self
+            .fail_after_intent
+            .swap(false, std::sync::atomic::Ordering::AcqRel)
+        {
+            return Err(ApiError::conflict(
+                "PRESET_TEST_INTERRUPTED",
+                "Interrupted after the durable preset deletion intent (test)",
+            ));
+        }
+        self.recover_delete()
+    }
+    pub fn completion(&self, id: &str, binding: &str) -> Result<Option<([u8; 32], Value)>> {
+        if !crate::asset_journal::safe_id(id) {
+            return Err(ApiError::invalid("Invalid native preset command ID"));
+        }
+        let _guard = self.catalog_lock(false)?;
+        Ok(self
+            .completion_records()?
+            .into_iter()
+            .find(|record| record.command_id == id && record.project_root_binding == binding)
+            .map(|record| (record.fingerprint, record.receipt)))
+    }
+    pub fn completions(&self, binding: &str) -> Result<Vec<(String, [u8; 32], Value)>> {
+        let _guard = self.catalog_lock(false)?;
+        Ok(self
+            .completion_records()?
+            .into_iter()
+            .filter(|record| record.project_root_binding == binding)
+            .map(|record| (record.command_id, record.fingerprint, record.receipt))
+            .collect())
+    }
+    pub fn acknowledge(&self, id: &str, fingerprint: [u8; 32], binding: &str) -> Result<()> {
+        if !crate::asset_journal::safe_id(id) {
+            return Err(ApiError::invalid("Invalid native preset command ID"));
+        }
+        let _guard = self.lock()?;
+        if let Some(record) = self
+            .completion_records()?
+            .into_iter()
+            .find(|record| record.command_id == id && record.project_root_binding == binding)
+        {
+            if record.fingerprint != fingerprint {
+                return Err(journal_changed());
+            }
+            let directory = crate::asset_store::directory(&self.dir, COMPLETIONS)?;
+            unlinkat(&directory, format!("{id}.json").as_str(), AtFlags::empty())
+                .map_err(|_| ApiError::io())?;
+            directory.sync_all().map_err(|_| ApiError::io())?;
+        }
+        Ok(())
+    }
+    #[cfg(test)]
+    pub(crate) fn fail_after_intent_for_test(&self) {
+        self.fail_after_intent
+            .store(true, std::sync::atomic::Ordering::Release);
     }
     fn raw(&self, file_name: &str) -> Result<Option<Raw>> {
         let fd = match openat(
@@ -362,6 +779,12 @@ impl Store {
         if let Edit::Import { json } = edit {
             return self.create(command_id, &parse(json.as_bytes())?);
         }
+        if matches!(edit, Edit::Delete { .. }) {
+            return Err(ApiError::conflict(
+                "PRESET_PREPARATION_REQUIRED",
+                "Use the bound durable command to permanently delete a saved preset",
+            ));
+        }
         let _lock = self.lock()?;
         match edit {
             Edit::Update {
@@ -439,7 +862,7 @@ impl Store {
                 .map_err(|_| ApiError::io())?;
                 self.dir.sync_all().map_err(|_| ApiError::io())
             }
-            Edit::Import { .. } => unreachable!(),
+            Edit::Import { .. } | Edit::Delete { .. } => unreachable!(),
         }
     }
 }

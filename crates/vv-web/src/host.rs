@@ -470,6 +470,30 @@ impl Editor {
             ));
         }
         let prepared_edit = matches!(&request.operation,Operation::EditNativeAssetLibrary {edit} if edit.requires_preparation());
+        let preset_delete = matches!(
+            &request.operation,
+            Operation::EditPresetLibrary {
+                edit: crate::preset_store::Edit::Delete { .. }
+            }
+        );
+        if preset_delete
+            && let Some((original, value)) = self
+                .harvest_preset_completion(&request.command_id, false)
+                .map_err(|_| {
+                    ApiError::conflict(
+                        "OUTCOME_UNKNOWN",
+                        "Preset deletion requires recovery; resolve its command before retrying",
+                    )
+                })?
+        {
+            if original != fingerprint {
+                return Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Command ID was already used with another request",
+                ));
+            }
+            return Ok(value);
+        }
         if prepared_edit && let Some((original,value))=self.harvest_native_completion(&request.command_id,false).map_err(|_|ApiError::conflict("OUTCOME_UNKNOWN","Native library commit requires recovery; resolve its command before retrying"))? {
             if original!=fingerprint {return Err(ApiError::conflict("COMMAND_ID_REUSED","Command ID was already used with another request"));}return Ok(value);
         }
@@ -524,6 +548,20 @@ impl Editor {
                 )),
             };
         }
+        if preset_delete && let Err(error) = &outcome {
+            return match self.harvest_preset_completion(&request.command_id, false) {
+                Ok(Some((original, value))) if original == fingerprint => Ok(value),
+                Ok(Some(_)) => Err(ApiError::conflict(
+                    "COMMAND_ID_REUSED",
+                    "Command ID was already used with another request",
+                )),
+                Ok(None) => Err(error.clone()),
+                Err(_) => Err(ApiError::conflict(
+                    "OUTCOME_UNKNOWN",
+                    "Preset deletion requires recovery; resolve its command before retrying",
+                )),
+            };
+        }
         if self.completed.len() >= MAX_RECEIPTS
             || ((media_import_receipt.is_some()
                 || otio_import_receipt.is_some()
@@ -545,6 +583,11 @@ impl Editor {
             }
             let mut value=json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()});
             if prepared_edit {value["library_durable"]=json!(true);}
+            if let Operation::EditPresetLibrary { edit: crate::preset_store::Edit::Delete { id, revision, archived } } = &request.operation {
+                value["library_durable"] = json!(true);
+                value["preset_library_durable"] = json!(true);
+                value["deleted_preset"] = json!({"id":id,"revision":revision,"archived":archived});
+            }
             if let Some(report)=native_asset_receipt {
                 for field in ["missing_count","relinked_files","imported_assets","skipped_files","error_count","root_folder_id","folders_revision","created_folders","deleted_assets","deleted_ids"] {
                     if let Some(count)=report.get(field) {value[field]=count.clone();}
@@ -577,7 +620,7 @@ impl Editor {
             value
         });
         if let Ok(value) = &mut result {
-            if prepared_edit {
+            if prepared_edit || preset_delete {
                 value["durability"] = json!({"state":"volatile","recovery_revision":null});
             } else {
                 if !self.session.has_unsaved_changes() {
@@ -627,6 +670,15 @@ impl Editor {
             {
                 self.persistence_notice.get_or_insert(
                     "Native library command applied durably; completion cleanup will be retried.",
+                );
+            } else if preset_delete
+                && self
+                    .presets
+                    .acknowledge(&request.command_id, fingerprint, &self.asset_binding)
+                    .is_err()
+            {
+                self.persistence_notice.get_or_insert(
+                    "Preset deletion applied durably; completion cleanup will be retried.",
                 );
             }
         }
@@ -946,7 +998,27 @@ impl Editor {
                 &request.if_generation,
             )?,
             Operation::EditPresetLibrary { edit } => {
-                self.presets.edit(&request.command_id, edit)?
+                if let crate::preset_store::Edit::Delete {
+                    id,
+                    revision,
+                    archived,
+                } = edit
+                {
+                    let fingerprint = Sha256::digest(
+                        serde_json::to_vec(&(Option::<String>::None, request))
+                            .map_err(|_| ApiError::invalid("Invalid command"))?,
+                    )
+                    .into();
+                    self.presets.delete(edit, crate::asset_journal::Completion {
+                        version: 1,
+                        command_id: request.command_id.clone(),
+                        fingerprint,
+                        project_root_binding: self.asset_binding.clone(),
+                        receipt: json!({"command_id":request.command_id,"status":"applied","project_epoch":request.project_epoch,"generation":request.if_generation,"command_epoch":self.command_epoch.to_string(),"library_durable":true,"preset_library_durable":true,"deleted_preset":{"id":id,"revision":revision,"archived":archived},"durability":{"state":"volatile","recovery_revision":null}}),
+                    })?;
+                } else {
+                    self.presets.edit(&request.command_id, edit)?;
+                }
             }
             Operation::EditAudioPresetLibrary { edit } => self.audio_presets.edit(edit)?,
             Operation::RecoverAutosave {
@@ -1609,7 +1681,27 @@ impl Editor {
         id: &str,
         restarted: bool,
     ) -> Result<Option<([u8; 32], Value)>> {
-        let Some((fingerprint, seed)) = self.assets.completion(id, &self.asset_binding)? else {
+        self.harvest_library_completion(id, restarted, false)
+    }
+    fn harvest_preset_completion(
+        &mut self,
+        id: &str,
+        restarted: bool,
+    ) -> Result<Option<([u8; 32], Value)>> {
+        self.harvest_library_completion(id, restarted, true)
+    }
+    fn harvest_library_completion(
+        &mut self,
+        id: &str,
+        restarted: bool,
+        preset: bool,
+    ) -> Result<Option<([u8; 32], Value)>> {
+        let completion = if preset {
+            self.presets.completion(id, &self.asset_binding)?
+        } else {
+            self.assets.completion(id, &self.asset_binding)?
+        };
+        let Some((fingerprint, seed)) = completion else {
             return Ok(None);
         };
         if !valid_key(id) || seed["status"] != "applied" || seed["command_id"] != id {
@@ -1649,22 +1741,33 @@ impl Editor {
                 .as_mut()
                 .is_some_and(|store| store.append(&self.files, id, fingerprint, &value).is_ok());
         if persisted {
-            let _ = self
-                .assets
-                .acknowledge_completion(id, fingerprint, &self.asset_binding);
+            if preset {
+                let _ = self
+                    .presets
+                    .acknowledge(id, fingerprint, &self.asset_binding);
+            } else {
+                let _ = self
+                    .assets
+                    .acknowledge_completion(id, fingerprint, &self.asset_binding);
+            }
         } else {
             value["receipt_persisted"] = json!(false);
             self.persistence_notice.get_or_insert("Native library changes are durable, but their command receipt still needs recovery. Resolve the command before retrying.");
         }
         self.completed
             .insert(id.to_owned(), (fingerprint, Ok(value.clone())));
-        self.native_edits.remove(id);
+        if !preset {
+            self.native_edits.remove(id);
+        }
         Ok(Some((fingerprint, value)))
     }
     fn harvest_native_completions(&mut self, restarted: bool) -> Result<()> {
         let completions = self.assets.completions(&self.asset_binding)?;
         for (id, _, _) in completions {
             self.harvest_native_completion(&id, restarted)?;
+        }
+        for (id, _, _) in self.presets.completions(&self.asset_binding)? {
+            self.harvest_preset_completion(&id, restarted)?;
         }
         Ok(())
     }
@@ -1845,9 +1948,18 @@ impl Editor {
         if let Some((_, result)) = self.completed.get(id).cloned() {
             if result.as_ref().is_ok_and(|value| {
                 value["library_durable"] == true && value["receipt_persisted"] == false
-            }) && let Ok(Some((_, value))) = self.harvest_native_completion(id, false)
-            {
-                return Ok(value);
+            }) {
+                let recovered = if result
+                    .as_ref()
+                    .is_ok_and(|value| value["preset_library_durable"] == true)
+                {
+                    self.harvest_preset_completion(id, false)
+                } else {
+                    self.harvest_native_completion(id, false)
+                };
+                if let Ok(Some((_, value))) = recovered {
+                    return Ok(value);
+                }
             }
             return result;
         }
@@ -1877,6 +1989,10 @@ impl Editor {
             self.legacy_media_imports.remove(id);
             return Err(error);
         }
+        let preset_completion = self.harvest_preset_completion(id, false);
+        if let Ok(Some((_, value))) = &preset_completion {
+            return Ok(value.clone());
+        }
         match self.harvest_native_completion(id, false) {
             Ok(Some((_, value))) => return Ok(value),
             Err(_) => {
@@ -1885,6 +2001,9 @@ impl Editor {
                 );
             }
             Ok(None) => {}
+        }
+        if preset_completion.is_err() {
+            return Ok(json!({"command_id":id,"status":"pending","recovery_pending":true}));
         }
         if let Some(pending) = self.native_edits.get(id) {
             let value = match self.asset_jobs.status(&pending.job, &pending.epoch, false) {

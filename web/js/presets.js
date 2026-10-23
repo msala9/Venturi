@@ -39,7 +39,31 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
   let active=false,sequence=0,controller=null,page=0,pages=1,search='',archived=false,busy=false,loading=false,loadedEpoch=null,readEpochAttempt=null,selected=null,section=null,list=null,status=null,previous=null,next=null,caption=null,apply=null,edit=null,archive=null,download=null,restorePrevious=null,saveSelection=null,importFile=null,dialog=null,bound=null,dialogControls=null,navigation=[],shortcutToggle=null,shortcutStatus=null,settingsSequence=0,shortcutController=null;
   const button=(text,action)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',action);return node;};
   const message=text=>{if(status?.isConnected)status.textContent=text;};
-  let dragButton=null,dragTicket=null;
+  let dragButton=null,dragTicket=null,deleteButton=null,deletion=null;
+  const deletionIdentity=()=>{const context=getContext();return context?JSON.stringify([context.epoch,context.generation,context.command_epoch]):null;};
+  function deleteAvailable(ownedList=list,ownedDialog=null){
+    const context=getContext(),modal=document.querySelector?.('dialog[open]');
+    return Boolean(active && section?.isConnected && ownedList===list && ownedList?.isConnected && !busy && !loading && canCommit() && (!modal || modal===ownedDialog) && typeof context?.epoch==='string' && context.epoch && typeof context.generation==='string' && context.generation && loadedEpoch===context.epoch && selected && !selected.error && ['id','revision','name'].every(key=>typeof selected[key]==='string' && selected[key]) && Boolean(selected.archived)===archived);
+  }
+  const deletionCurrent=draft=>deletion===draft && draft.dialog.open && draft.sequence===sequence && draft.identity===deletionIdentity() && deleteAvailable(draft.list,draft.dialog) && selected.id===draft.item.id && selected.revision===draft.item.revision && selected.name===draft.item.name && Boolean(selected.archived)===draft.item.archived;
+  function closeDeletion(restore=true){
+    const draft=deletion;if(!draft)return;deletion=null;draft.dialog.close();draft.dialog.remove();
+    if(restore && active && draft.list===list && draft.list.isConnected && draft.identity===deletionIdentity())draft.list.focus();
+  }
+  function syncDeletion(){
+    if(!deletion)return;const current=deletionCurrent(deletion);deletion.confirm.disabled=!current;deletion.status.textContent=current?'Delete removes this shared preset permanently; project Undo cannot restore it.':'The preset, panel or session changed, or editing is unavailable. Cancel and reopen Delete.';
+  }
+  function openDeletion(ownedList=list){
+    if(!deleteAvailable(ownedList))return false;endDrag();
+    const ownedDialog=document.createElement('dialog'),form=document.createElement('form'),heading=document.createElement('h2'),name=document.createElement('p'),note=document.createElement('p'),detail=document.createElement('p');ownedDialog.className='preset-settings';ownedDialog.setAttribute('aria-label','Confirm permanent preset deletion');heading.textContent='Permanently delete shared preset?';name.id=`preset-delete-name-${sequence}`;note.id=`preset-delete-note-${sequence}`;ownedDialog.setAttribute('aria-describedby',`${name.id} ${note.id}`);name.textContent=selected.name;note.textContent='This affects every project using this preset library. Effects already applied to clips are unchanged. Use Archive to keep the preset recoverable.';detail.setAttribute('role','status');
+    const cancel=button('Cancel preset deletion',()=>closeDeletion()),confirm=document.createElement('button');confirm.type='submit';confirm.textContent='Permanently delete preset';cancel.autofocus=true;
+    const draft={dialog:ownedDialog,list:ownedList,item:{id:selected.id,revision:selected.revision,name:selected.name,archived:Boolean(selected.archived)},epoch:getContext().epoch,identity:deletionIdentity(),sequence,confirm,status:detail};deletion=draft;
+    form.append(heading,name,note,detail,cancel,confirm);ownedDialog.append(form);document.body.append(ownedDialog);
+    form.addEventListener('submit',event=>{event.preventDefault();syncDeletion();if(!deletionCurrent(draft))return;closeDeletion(false);void write({kind:'edit_preset_library',edit:{action:'delete',id:draft.item.id,revision:draft.item.revision,archived:draft.item.archived}}).catch(()=>{});});
+    confirm.addEventListener('click',event=>{if(event.repeat || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || event.getModifierState?.('AltGraph'))event.preventDefault();});
+    ownedDialog.addEventListener('keydown',event=>{event.stopPropagation();if(event.repeat || event.isComposing || event.keyCode===229 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || event.getModifierState?.('AltGraph')){if(['Enter','Delete','Backspace'].includes(event.key))event.preventDefault();}});
+    ownedDialog.addEventListener('cancel',event=>{event.preventDefault();closeDeletion();});ownedDialog.addEventListener('close',()=>{if(deletion===draft)closeDeletion(false);});ownedDialog.showModal();syncDeletion();cancel.focus();return true;
+  }
   function applyAvailable(ownedList=list){
     const context=getContext();
     return Boolean(active && section?.isConnected && ownedList===list && ownedList?.isConnected && !busy && !loading && canCommit() && !dialog?.open && !document.querySelector?.('dialog[open]') && selected && !selected.error && !selected.archived && ['id','revision'].every(key=>typeof selected[key]==='string' && selected[key]) && context?.epoch===loadedEpoch && ['epoch','generation','timeline','revision'].every(key=>typeof context?.[key]==='string' && context[key]) && context.timeline!=='fixture' && Array.isArray(context.clip_ids) && context.clip_ids.length>0 && context.clip_ids.length<=4096 && new Set(context.clip_ids).size===context.clip_ids.length && context.clip_ids.every(id=>typeof id==='string' && id));
@@ -96,6 +120,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
       shortcutStatus.textContent=`Desktop shortcut: ${native} · ${binding.reason || (binding.enabled?`${binding.label} enabled for this browser session`:'Enable to use this shortcut in the current project and browser session')}`;
     }
     dialogControls?.();
+    if(deleteButton)deleteButton.disabled=!deleteAvailable();syncDeletion();
   }
   async function reload(wanted=page,preferred=selected?.id,direction=1,afterWrite=false){
     endDrag();if(!active || busy && !afterWrite)return false;const live=getContext();if(!live){message('Connect to a native session to read saved presets');return false;}const context={...live};
@@ -116,20 +141,25 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
     finally{if(token===sequence){loading=false;controls();}}
   }
   async function write(operation,project=true){
-    if(busy || !canCommit())return;endDrag();busy=true;sequence++;loading=false;controller?.abort();controller=null;controls();message('Updating preset library…');
+    if(busy || !canCommit())return;const deleting=operation.kind==='edit_preset_library' && operation.edit.action==='delete',epoch=getContext()?.epoch;endDrag();busy=true;sequence++;loading=false;controller?.abort();controller=null;controls();message(deleting?'Permanently deleting shared preset…':'Updating preset library…');
     try{
-      const {receipt,refreshError}=await presetMutationResult(()=>project?libraryCommit(operation):commit(operation),async receipt=>{
+      const {receipt,refreshError}=await presetMutationResult(async()=>{
+        const receipt=await (project?libraryCommit(operation):commit(operation));
+        if(deleting && (typeof receipt?.command_id!=='string' || !receipt.command_id || receipt.status!=='applied' || receipt.project_epoch!==epoch || receipt.library_durable!==true || receipt.preset_library_durable!==true || receipt.deleted_preset?.id!==operation.edit.id || receipt.deleted_preset.revision!==operation.edit.revision || receipt.deleted_preset.archived!==operation.edit.archived))throw Error('The permanent deletion acknowledgment could not be verified');
+        return receipt;
+      },async receipt=>{
         if(operation.kind==='edit_preset_library' && operation.edit.id)shortcuts?.deactivate(operation.edit.id);
-        if(!active)return;
+        if(!active || deleting && getContext()?.epoch!==epoch)return;
         const created=operation.kind==='save_attribute_preset' || operation.kind==='edit_preset_library' && operation.edit.action==='import',id=created?receipt?.command_id:operation.preset_id || operation.edit?.id || selected?.id;
         selected=null;
-        if(id && !(operation.kind==='edit_preset_library' && operation.edit.action==='archive'))selected=await api(`/presets/items/${encodeURIComponent(id)}?${new URLSearchParams({project_epoch:getContext().epoch})}`);
+        if(id && !deleting && !(operation.kind==='edit_preset_library' && operation.edit.action==='archive'))selected=await api(`/presets/items/${encodeURIComponent(id)}?${new URLSearchParams({project_epoch:getContext().epoch})}`);
         if(!await reload(page,id,1,true))throw Error('The preset list could not be refreshed');
       });
       if(refreshError){selected=null;const text=`Command applied successfully · library refresh failed: ${refreshError.message}. Refresh presets to see the saved result; do not submit it again.`;message(text);notice(text);}
+      else if(deleting)message('Shared preset permanently deleted · applied clip effects unchanged · no project Undo');
       return receipt;
     }
-    catch(error){message(`${error.message} · refresh the library before retrying`);notice(error.message);throw error;}
+    catch(error){if(deleting)loadedEpoch=null;const text=deleting?`${error.message} · check command status and refresh the library before repeating deletion`:`${error.message} · refresh the library before retrying`;message(text);notice(deleting?text:error.message);throw error;}
     finally{busy=false;controls();}
   }
   function openSettings(item=null,captured=null){
@@ -185,7 +215,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
       caption=document.createElement('p');caption.className='muted';section.append(caption);
       apply=button('Apply preset to selected clips',()=>void applySelected(ownedList));
       dragButton=button('Drag selected preset',()=>{});dragButton.setAttribute('data-preset-drag','');dragButton.addEventListener('dragstart',startDrag);dragButton.addEventListener('dragend',event=>{if(dragTicket?.button===event.currentTarget)endDrag();});const dragNote=document.createElement('p');dragNote.className='muted';dragNote.textContent='Drop on a selected clip to apply to the selection; otherwise apply to the target clip. Linked clips follow native preset rules. You can also select clips and use Apply.';section.append(dragButton,dragNote);
-      edit=button('Edit preset settings',()=>openSettings(selected));archive=button('Archive preset',changeArchive);restorePrevious=button('Restore previous preset settings',async()=>{try{await write({kind:'edit_preset_library',edit:{action:'restore_previous',id:selected.id,revision:selected.revision}});}catch{}});section.append(apply,edit,archive,restorePrevious);
+      edit=button('Edit preset settings',()=>openSettings(selected));archive=button('Archive preset',changeArchive);restorePrevious=button('Restore previous preset settings',async()=>{try{await write({kind:'edit_preset_library',edit:{action:'restore_previous',id:selected.id,revision:selected.revision}});}catch{}});deleteButton=button('Permanently delete saved preset…',()=>openDeletion(ownedList));const actions=document.createElement('details'),actionsHeading=document.createElement('summary');actionsHeading.textContent='Preset actions';actions.append(actionsHeading,edit,archive,restorePrevious,deleteButton);section.append(apply,actions);
       if(shortcuts){
         shortcutToggle=button('Enable preset shortcut',()=>{
           if(busy || !selected)return;
@@ -194,12 +224,16 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
         });
         shortcutStatus=document.createElement('p');shortcutStatus.className='muted';shortcutStatus.setAttribute('role','status');section.append(shortcutToggle,shortcutStatus);
       }
-      download=document.createElement('a');download.textContent='Download desktop preset JSON';saveSelection=button('Save selection as preset',()=>openSettings());section.append(download,saveSelection);
+      download=document.createElement('a');download.textContent='Download desktop preset JSON';saveSelection=button('Save selection as preset',()=>openSettings());actions.append(download);section.append(saveSelection);
       const importLabel=document.createElement('label'),file=document.createElement('input');importFile=file;importLabel.className='field';importLabel.textContent='Import desktop preset JSON';file.type='file';file.accept='.json,application/json';importLabel.append(file);section.append(importLabel);file.addEventListener('change',async()=>{const chosen=file.files?.[0];if(!chosen)return;try{if(chosen.size>4*1024*1024)throw Error('Choose a native preset within 4 MiB');const text=await chosen.text();if(!active)return;await write(presetImportOperation(text));file.value='';}catch(error){message(error.message);}});
-      section.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});root.append(section);controls();await reload(page);
+      section.addEventListener('keydown',event=>{
+        if(!['Delete','Backspace'].includes(event.key))return;event.stopPropagation();
+        if(event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || event.getModifierState?.('AltGraph') || event.target!==ownedList && !Array.from(ownedList.children).includes(event.target))return;
+        event.preventDefault();openDeletion(ownedList);
+      });root.append(section);controls();await reload(page);
     },
     saveSelection(captured){if(!active || busy || !canCommit())return false;openSettings(null,presetCaptureContext(getContext(),captured));return true;},
     invalidate(){shortcuts?.sync();const epoch=getContext()?.epoch;if(active && section?.isConnected && !busy && typeof epoch==='string' && epoch && epoch!==readEpochAttempt)void reload(page,selected?.id);controls();},
-    hide(){endDrag();active=false;loading=false;loadedEpoch=null;readEpochAttempt=null;sequence++;controller?.abort();controller=null;settingsSequence++;shortcutController?.abort();shortcutController=null;if(!busy){dialog?.remove();dialog=null;dialogControls=null;bound=null;}},
+    hide(){closeDeletion(false);endDrag();active=false;loading=false;loadedEpoch=null;readEpochAttempt=null;sequence++;controller?.abort();controller=null;settingsSequence++;shortcutController?.abort();shortcutController=null;if(!busy){dialog?.remove();dialog=null;dialogControls=null;bound=null;}},
   };
 }

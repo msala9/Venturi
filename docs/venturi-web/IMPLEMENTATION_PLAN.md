@@ -18,7 +18,19 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-Current delivery: halo1/8825, source `4f94773`, binary `318f29163b8b`.
+Current delivery: halo1/8826, source `5d8d15d`, binary `7420a371bfe9`.
+Project pool selection places whole sources sequentially in visible panel order
+by drag or Timeline > Insert selected media. Native destinations, all streams,
+per-source links, still5s, rational lengths and one Undo remain authoritative.
+Name/Duration sorting and hidden-selection/Relink-draft safety close related
+ordinary Media workflow gaps. The1270-case client/10-case affected native gates,
+formatting, all-target Clippy and build pass. Actual Windows drag, Undo/Redo,
+keyboard insertion, Save/client reload, Program EOF and457-frame Full HD/AAC
+export EOF pass; see `evidence/f2-project-pool-workflow.json`. Eleven prior
+editors are preserved. Continue approved nested-source/tree import, prepared
+project Relink, remaining pool presentation and representative/full F1-F7/M7.
+
+Preserved Source-lookahead delivery: halo1/8825, source `4f94773`, binary `318f29163b8b`.
 Normal Source playback prepares one next native window with separate local
 ownership, version/audio/range verification and ready heartbeat. The current
 movie and placement identity stay active. EOF adopts the existing job only

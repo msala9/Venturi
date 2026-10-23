@@ -14,7 +14,24 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8825/**, source `4f94773`,
+The current halo1 delivery is **http://127.0.0.1:8826/**, source `5d8d15d`,
+binary `7420a371bfe9`, in `venturi-web-halo1-project-pool.service`.
+Project Media now drags selected visible rows in panel order, or inserts them
+through Timeline > Insert selected media. The native whole-source builder
+resolves tracks once, conforms endpoints, links all streams and makes one Undo.
+Source marks/jobs are independent. Name/Duration headers use native comparisons;
+search/folder/type filters clear hidden mutation targets and stale Relink drafts.
+Current-session/file/lock/overlap/cycle guards and256-root/4096-clip admission
+apply. The1270-case client gate,10 affected native cases, formatting, all-target
+Clippy and build pass. Actual Windows Full HD video/still/two-stream audio
+placement creates five clips and A2, with one Undo/Redo, keyboard insertion,
+Save/client reload, Program EOF456 and457-frame Full HD/AAC exported-file EOF.
+See `evidence/f2-project-pool-workflow.json` and screenshot. Eleven prior halo1
+editors and ds4 are preserved; halo2/NAS are untouched. Ledger47/43/2 and full
+F1-F7/M7 remain active. Next implement approved nested-source/tree import and
+prepared project Relink, then remaining pool presentation and broader acceptance.
+
+The preserved Source-lookahead delivery is **http://127.0.0.1:8825/**, source `4f94773`,
 binary `318f29163b8b`, in `venturi-web-halo1-source-lookahead.service`.
 Normal Source playback prepares one adjacent native window without replacing
 the current movie, absolute clock, waveform or placement identity. A separate
@@ -292,6 +309,10 @@ Speculative Source preparation is delivered in4f94773; see
 `evidence/f2-source-lookahead-workflow.json` for the189-case focused gate and
 actual67s automatic boundary/EOF. Continue remaining import/proxy/derivative
 fidelity, representative-media and full F2 acceptance.
+Project pool batch placement and native sorting are delivered in5d8d15d;
+see `evidence/f2-project-pool-workflow.json`. Next implement approved nested
+source/tree import and isolated prepared project Relink; pool Grid/List
+presentation and representative-media acceptance also remain open.
 All 43 partial ledger rows and broader physical/M7 gates
 remain active; do not promote them from this scoped result.
 

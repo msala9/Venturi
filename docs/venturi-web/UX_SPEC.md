@@ -41,6 +41,15 @@ Panel registry (single instance each): Media, Effects, Shared Library, Presets, 
 
 Tabs: All / Scenes / Audio / Titles; view modes Grid/List/Scenes/Favorites. Single click selects, double click opens Source Viewer, drag starts an Insert preview, keyboard moves focus by item. Thumbnail hover scrub opt-in for performance, not automatically seeking large files on every pointer move. Search by file/shot label and, if available, indexed prompt/model tags. Render Offline placeholder with Relink; preserve metadata. No UI operation deletes source files without a separate explicit confirmation and safe path policy.
 
+Name/Duration Media headers use native ascending/descending comparisons. Shift
+ranges and batch drag order follow visible sorted rows. A selected row drags
+the whole selection; an unselected row first selects only itself. Project pool
+placement uses whole sources/all audio streams, independently of Source marks.
+Timeline > Insert selected media is the accessible alternative; Enter on a row
+keeps Open. The batch shows destination/new-track/safe-overlap feedback and makes
+one Undo. Filters remove hidden mutation targets and invalidate stale Relink
+drafts. Cosmetic sorting preserves selection/anchor and does not reopen Source.
+
 ## 4. Source and Program Viewer
 
 Viewer control strip: switch Source/Program; Play/Pause; frame stepping; In/Out, current timecode with tabular numbers; Fit/100%; optional safe guides and overlay handles. Source I/O is a selection of a source media, not a timeline edit; Program I/O is the export range and not necessarily saved in `.vvproj` (match upstream). Fullscreen viewer via keyboard.

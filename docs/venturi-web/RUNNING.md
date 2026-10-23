@@ -2,6 +2,34 @@
 
 ## Current halo1 working instance
 
+Use **http://127.0.0.1:8826/** in the existing Windows browser. Source `5d8d15d`,
+binary `vv-web-7420a371bfe9`, runs as unprivileged `halo` in
+`venturi-web-halo1-project-pool.service`, projects in
+`/home/halo/VenturiWeb-project-pool-20261023`. Open Saved
+`Venturi_Project_Pool.vvproj`: a457-frame1920×1080/24fps video/still/audio montage
+on V1/A1/A2. Export job1792719804669953582 retains the Full HD H.264/AAC result,
+verified through EOF. Project generation12 retains `[ImportMedia, InsertClips]`
+at position2, with Program frame0.
+
+Select Media rows with Ctrl/Shift, sort Name/Duration, then drag a selected row
+into an existing/new native lane. Whole sources insert in visible panel order,
+including all audio streams; Source marks are independent. Timeline > Insert
+selected media provides keyboard access at the playhead. Each batch is one Undo.
+Default overlap is refused; existing explicit overwrite policy applies. Search,
+type and folder filters remove hidden mutation targets. Native Library and
+marked Source placement remain separate workflows.
+
+The hidden same-port tunnel forwards8826 to halo1. Canonical NAS/ds4 roots,
+eight-CPU/4-GiB/no-swap/low-priority limits and nonblocking shared GPU lock remain.
+No automatic restart, boot enablement or qualification deadline applies to this
+live editor. Save before deliberately stopping; live Undo requires the running
+server. Eleven prior halo1 editors and their files/history remain intact; halo2
+is untouched. See `evidence/f2-project-pool-workflow.json` and screenshot. Full
+F1-F7/M7 remains active, including nested-source/tree import, prepared project
+Relink and representative/physical acceptance.
+
+### Preserved Source-lookahead instance
+
 Use **http://127.0.0.1:8825/** in the existing Windows browser. Source `4f94773`,
 binary `vv-web-318f29163b8b`, runs as unprivileged `halo` in
 `venturi-web-halo1-source-lookahead.service`, with projects in

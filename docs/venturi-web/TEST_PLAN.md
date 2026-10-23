@@ -10,6 +10,18 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F2 project pool (`5d8d15d`, halo1/8826):1270 JavaScript cases pass in one serial
+Node run, justified by adding a fourth shared timeline drag owner and changing
+catalog selection/keyboard order. Ten affected native cases cover new placement
+and Host receipt replay, existing Library/marked Source and embedded assets.
+Formatting, all-target Clippy and build pass. The existing Windows tab imports
+moving Full HD video, a Full HD still and two-stream audio, verifies safe search
+pruning/sort selection, drags them in panel order, exercises one Undo/Redo and
+keyboard insertion, then Save/client reload, Program EOF456 and457-frame Full
+HD/AAC file EOF. See `evidence/f2-project-pool-workflow.json`. Unit admission
+cases do not qualify256-file hardware pressure. No unchanged full renderer
+matrix was repeated; physical/dense/DPI/long4K acceptance remains open.
+
 F2 Source lookahead (`4f94773`, halo1/8825):189 focused Source/window/audio/waveform/assets
 and fast-transport client cases pass, including ready adoption, pending EOF
 wait, selected/all audio identity, exact version/range/TTL revalidation,

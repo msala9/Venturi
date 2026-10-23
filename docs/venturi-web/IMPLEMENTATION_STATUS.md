@@ -4,7 +4,37 @@
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8825/**, source `4f94773`,
+The current halo1 delivery is **http://127.0.0.1:8826/**, source `5d8d15d`,
+binary `7420a371bfe9`, in `venturi-web-halo1-project-pool.service`.
+Project Media now drags its selected visible set in panel order. Name/Duration
+headers use native comparisons; search/folder/type filters prune hidden mutation
+targets and clear stale/pending Relink drafts. An unselected drag selects only
+that row. Timeline > Insert selected media provides accessible insertion while
+pool Enter retains Open. Whole sources are independent of Source marks/jobs.
+
+Strict `place_project_media` uses current Session metadata and approved-file
+witnesses without probes. The shared native Library whole-placement builder
+retains Library32 admission and allows256 project roots/4096 conservative clips.
+Native still5s, rational endpoints, all stream ordinals, per-source links, new
+tracks, locks, overlap/overwrite and compound cycles remain authoritative. The
+ACK selects new clips with late-intent protection and one InsertClips Undo.
+
+All1270 client cases and10 affected native cases pass, including receipt replay
+and unchanged Library/marked Source behavior; formatting, all-target Clippy and
+build pass. Actual Windows Full HD video/still/two-stream audio drag creates five
+clips on V1/A1/A2 in visible rather than click order. One Undo removes all clips
+and A2; Redo restores the exact model. The focused menu action recreates the same
+semantic montage. Save/client reload retains native model/history; Program
+reaches EOF456 and its457-frame H.264/AAC export reaches19.05s without error.
+Eleven earlier halo1 editors and ds4 remain unchanged; halo2/NAS are untouched.
+See `evidence/f2-project-pool-workflow.json`. Ledger47/43/2 and full F1-F7/M7 stay
+active. Next implement approved nested-source/tree import and prepared project
+Relink. Pool layouts, representative long4K/dense/DPI and physical output remain
+open. This proof uses a19-second montage and client reload, not server restart.
+
+### Preserved Source-lookahead delivery
+
+The preserved halo1 delivery is **http://127.0.0.1:8825/**, source `4f94773`,
 binary `318f29163b8b`, in `venturi-web-halo1-source-lookahead.service`.
 Source prepares at most one adjacent native window during normal playback.
 Its separate observer never changes the current movie, clock, waveform or

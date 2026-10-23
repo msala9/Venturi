@@ -1309,6 +1309,20 @@ control with text, modal and composition guards.
   integer timeline frame into a source frame. Null value removes that keyframe;
   a number inserts/replaces. Track kind, locks, clip bounds, numeric ranges and
   interpolation control points are checked before mutation.
+- `place_project_media` accepts ordered unique `media_ids` (1–256 canonical
+  unsigned decimal IDs), `start_frame`, `target:{kind:"track",track_id}` or
+  `target:{kind:"new_video_track"}` / `target:{kind:"new_audio_track"}`, and
+  optional `overwrite` (default false). It uses the current Session's whole
+  sourcesAll, native still5s and rational target endpoints; Source marks/jobs are
+  not inputs. Conservative admission caps video plus audio-stream clips at4096.
+  Regular source paths must remain approved/readable and retain their pinned
+  FD identities through trial planning; no probe or decoder is launched.
+  The shared native whole-placement builder resolves tracks once and validates
+  locks, overlaps/explicit overwrite, cycles and native frame/track limits
+  before one InsertClips Undo group. ACK/replay retain `timeline_id` and exact
+  new `clip_ids`. Generic unverified command application refuses this operation.
+  Client drag ownership separately pins visible ordered selection, context,
+  filters, viewport and permissions; only the release coordinate commits.
 - `insert_media` additionally accepts source_in/source_out, in integer source
   frames with exclusive out. Omission preserves full-source/default still
   insertion. Native rate conversion and safe overlap checks remain authoritative.

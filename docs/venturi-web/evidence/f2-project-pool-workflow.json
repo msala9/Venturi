@@ -1,0 +1,1390 @@
+{
+  "date": "2026-10-23",
+  "status": "qualified_project_media_pool_batch_placement_full_F2_and_goal_remain_partial",
+  "source_commit": "5d8d15d00f4408368b00e5b9f683d8ae3bef1dc7",
+  "url": "http://127.0.0.1:8826/",
+  "runtime_unit": "venturi-web-halo1-project-pool.service",
+  "binary_sha256": "7420a371bfe92321f19fe7841937cc096c719206c71b36f8c86aecac0067e056",
+  "runtime_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "Nice=19",
+    "IOWeight=10",
+    "OOMScoreAdjust=1000",
+    "TasksMax=128",
+    "Restart=no",
+    "TimeoutStopSec=30",
+    "KillMode=control-group",
+    "UMask=0077",
+    "NoNewPrivileges=yes",
+    "WorkingDirectory=/home/halo/VenturiWeb-project-pool-20261023",
+    "Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-project-pool-20261023/.xdg",
+    "Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json",
+    "Environment=WGPU_BACKEND=vulkan",
+    "Environment=TOKIO_WORKER_THREADS=4",
+    "StandardOutput=append:/home/halo/VenturiWeb-project-pool-20261023/.server.log",
+    "StandardError=append:/home/halo/VenturiWeb-project-pool-20261023/.server.log"
+  ],
+  "build_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "OOMScoreAdjust=1000",
+    "Nice=19",
+    "IOWeight=10",
+    "TasksMax=128",
+    "RuntimeMaxSec=700",
+    "TimeoutStopSec=20",
+    "KillMode=control-group",
+    "Restart=no",
+    "NoNewPrivileges=yes",
+    "StandardOutput=append:/home/halo/.cache/venturi-build/project-pool.log",
+    "StandardError=append:/home/halo/.cache/venturi-build/project-pool.log"
+  ],
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "0f539bbc52f42c82adece36c4a41ef669875b1b8e1a8866951130186bb728785",
+    "crates/vv-web/src/commands.rs": "0f55cbb5d2b7dd7406c615d80bb6062bb63ec4043fea84c9f5764cad067e2624",
+    "crates/vv-web/src/host.rs": "ce2558648b68754880511134c3bd0ea229dd81a8f9dc50949d8dd7fa2ffbc924",
+    "crates/vv-web/src/main.rs": "2f6047cc3c2827c3a5d544fea88fb3a8a925a50b3297b03db1cd7627088250bd",
+    "crates/vv-web/src/tests/api.rs": "9c577fc25c1d0e1015943b527a616ee2aca470ab5f1ed48026fc57bb9fdbd384",
+    "crates/vv-web/src/tests/host.rs": "469b237a791ac06b3b6958b43f30a04dfc2baeb1b82c7ecaf5957ab1efd4967a",
+    "web/index.html": "330cd514ce199422ae17524b6c78028ae93e3aad270728cdfe85cbed61ff9890",
+    "web/js/catalog.js": "0dd81b1314cfd5ed3f3b509dcb4127d66fb31a1c7554b3b71142c35f21459cf5",
+    "web/js/main.js": "da1859b701cfeaca08218e38fc1cf5b689f84a5ba4ac3bf1ba4c78a4c7f992db",
+    "web/js/timeline/asset-drop.js": "eb90380546a7af5549c88c896a1a7020e0db791bd8b73914c98e05b2a1edd4f3",
+    "web/js/timeline/draw.js": "ffa6f93a25d08369e02b096445d51ef10276edfe987c7072f5a7d28e1a032477",
+    "web/js/timeline/index.js": "7219c0eec3dc641f6de9729625cbf19912841a7cb464c6d6b9475756a62cbcd3",
+    "web/js/timeline/input.js": "5d9ef66cf185c03324305037b6b05c36d19f205e5afb54bb62c685f03c757338",
+    "web/style/native-browser.css": "b95a9490e85111211a5e83dc290592599e678e6ddabe15f29dc07cf225836928",
+    "web/test/catalog.test.js": "f4a4cf6cdae53978989a253c959c0e893387acb596649b38bd9ba2e370e0c3cf",
+    "crates/vv-web/src/project_media_placement.rs": "ef322c1e1873b08990dc5e86a7203f956f6097c514ec36d41b2dfbd7babae15a",
+    "crates/vv-web/src/tests/project_media_placement.rs": "08bd62158f86a0ce97c0e2a469b2705dbbb2f23595729847e7df9051df16c0ce",
+    "web/js/project-pool-placement.js": "cfec8d6584c57cd50303245c060cf2135248d2c2357e08da6872fc94b9f0a008",
+    "web/test/project-pool-placement.test.js": "36f26597b6d3076bde9ed1c6a8086b7f74d18cd05e5b267f98db3242eb8fe5cd"
+  },
+  "checks": {
+    "javascript": [
+      "# tests 1270",
+      "# pass 1270",
+      "# fail 0",
+      "# cancelled 0",
+      "# duration_ms 4543.519027"
+    ],
+    "native_affected": "10/10 pass: three project-placement cases, one Host receipt/replay case, two existing native Library whole-placement cases, two existing marked Source cases and two embedded/Host API cases. Remaining unchanged native coverage reused.",
+    "formatting": "pass, cargo fmt --all -- --check",
+    "clippy": "pass, vv-web all-targets -D warnings",
+    "embedded_build": "pass,36.17s",
+    "changed_files_match_qualified_remote_hashes": true
+  },
+  "fixtures": [
+    {
+      "name": "River_AV_11s.mp4",
+      "bytes": 2854042,
+      "sha256": "d00e254580a313111b499983e30746f0eccc464650617b51b250bcde730b363e",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "24/1"
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0"
+          }
+        ],
+        "format": {
+          "duration": "11.008000",
+          "size": "2854042"
+        }
+      }
+    },
+    {
+      "name": "River_Still.png",
+      "bytes": 1548680,
+      "sha256": "7d924f630cdb1b821fbbeb5a34f33f387a768394194c85272de9dedd9d76fbc7",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "png",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "25/1"
+          }
+        ],
+        "format": {
+          "size": "1548680"
+        }
+      }
+    },
+    {
+      "name": "River_Two_Streams_3s.mkv",
+      "bytes": 98711,
+      "sha256": "7921a5a86d483bc3c11d5c369ec2397f79b419792f31e13848fb9f2efe5b8b76",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0"
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0"
+          }
+        ],
+        "format": {
+          "duration": "3.028000",
+          "size": "98711"
+        }
+      }
+    }
+  ],
+  "fixture_scope": "Existing real moving Full HD11s export copied within halo1; Full HD PNG extracted from its first frame; existing two-AAC-stream file trimmed by stream copy to3.028s. No NAS changes or Windows media build/copy.",
+  "native_semantics": {
+    "order": "Selected visible panel order; drag outside selection replaces it first. Name/Duration sort matches native lowercase Unicode lexical/original-case tie, with name tie-break for duration.",
+    "ranges": "Whole sourcesAll, independent of Source marks/job readiness; still5s using native source FPS and rational target endpoints.",
+    "targets": "Native whole-placement builder resolves tracks once, creates new lanes only as needed, preserves All audio ordinals, per-source linked groups and single InsertClips Undo.",
+    "guards": "Current Session/CAS, strict unique canonical IDs,256 selected roots/4096 conservative clips, approved regular-file FD witnesses rechecked serially, native locks/overlap/explicit overwrite/cycles/frame/track ceilings. No probe/decoder before placement.",
+    "drag_ownership": "Opaque local token; release coordinates; context/selection/order/filter/viewport/modal/visibility/read-only checks; one callback; accepted preparation survives dragend.",
+    "keyboard": "Timeline > Insert selected media is an accessible alternative; Enter activates this focused action and still opens a focused pool item normally.",
+    "selection_safety": "Search/folder/type filters prune hidden mutation targets, clear pending Relink drafts and reject late file-list completion. Cosmetic sort preserves selection/anchor and Source intent."
+  },
+  "browser": {
+    "environment": "One existing Windows work tab. All native build/render work on resource-limited halo1.",
+    "import": {
+      "generation": "1",
+      "history": {
+        "labels": [
+          "ImportMedia"
+        ],
+        "position": 1
+      },
+      "media": [
+        {
+          "audio_stream_count": 0,
+          "compound_timeline_id": null,
+          "content_hash": "13204343871831749312",
+          "duration_frames": 1000000000,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 25
+          },
+          "has_audio": false,
+          "has_video": true,
+          "id": "2",
+          "is_image": true,
+          "name": "River_Still.png",
+          "offline": false
+        },
+        {
+          "audio_stream_count": 1,
+          "compound_timeline_id": null,
+          "content_hash": "6817767543648096476",
+          "duration_frames": 264,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "has_audio": true,
+          "has_video": true,
+          "id": "3",
+          "is_image": false,
+          "name": "River_AV_11s.mp4",
+          "offline": false
+        },
+        {
+          "audio_stream_count": 2,
+          "compound_timeline_id": null,
+          "content_hash": "1881016164850007901",
+          "duration_frames": 91,
+          "folder": null,
+          "fps": {
+            "den": 1,
+            "num": 30
+          },
+          "has_audio": true,
+          "has_video": false,
+          "id": "4",
+          "is_image": false,
+          "name": "River_Two_Streams_3s.mkv",
+          "offline": false
+        }
+      ]
+    },
+    "search_pruning": {
+      "count": "1 shown · 1 selected",
+      "rows": [
+        {
+          "name": "▻River_AV_11s.mp4Video · Audio · 24 fps0:11",
+          "selected": "true"
+        }
+      ]
+    },
+    "duration_sort_preserves_selection": {
+      "count": "4 shown · 3 selected",
+      "rows": [
+        {
+          "id": "1",
+          "name": "▤Timeline 1Timeline0:00",
+          "selected": "false"
+        },
+        {
+          "id": "4",
+          "name": "♪River_Two_Streams_3s.mkvAudio0:03",
+          "selected": "true"
+        },
+        {
+          "id": "3",
+          "name": "▻River_AV_11s.mp4Video · Audio · 24 fps0:11",
+          "selected": "true"
+        },
+        {
+          "id": "2",
+          "name": "▣River_Still.pngStill imageStill",
+          "selected": "true"
+        }
+      ],
+      "sort": "ascending"
+    },
+    "drag": "Click audio, Ctrl-click video, Ctrl-click still; restore Name ascending and drag selected video into V1 at0. Actual order is video, still, audio, independent of click order.",
+    "drop": {
+      "generation": "5",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips"
+        ],
+        "position": 2
+      },
+      "timelines": [
+        {
+          "id": "1",
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "audio_stream_index": 0,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "1",
+                  "kind": "media",
+                  "length_frames": 264,
+                  "linked_group": "0",
+                  "media_id": "3",
+                  "name": "River_AV_11s.mp4",
+                  "retime": {
+                    "max_length": 26400,
+                    "min_length": 3,
+                    "pitch_correction": true,
+                    "source_span": 264,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 264,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      1,
+                      264
+                    ],
+                    "start": [
+                      0,
+                      263
+                    ]
+                  }
+                },
+                {
+                  "audio_stream_index": 0,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "2",
+                  "kind": "media",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "River_Still.png",
+                  "retime": {
+                    "max_length": 12000,
+                    "min_length": 2,
+                    "pitch_correction": true,
+                    "source_span": 120,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    959999880
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 125,
+                  "speed_percent": 100.0,
+                  "start_frame": 264,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      265,
+                      960000264
+                    ],
+                    "start": [
+                      264,
+                      383
+                    ]
+                  }
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "audio_stream_index": 0,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "0",
+                  "kind": "media",
+                  "length_frames": 264,
+                  "linked_group": "0",
+                  "media_id": "3",
+                  "name": "River_AV_11s.mp4",
+                  "retime": {
+                    "max_length": 26400,
+                    "min_length": 3,
+                    "pitch_correction": true,
+                    "source_span": 264,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 264,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      1,
+                      264
+                    ],
+                    "start": [
+                      0,
+                      263
+                    ]
+                  }
+                },
+                {
+                  "audio_stream_index": 0,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "3",
+                  "kind": "media",
+                  "length_frames": 73,
+                  "linked_group": "1",
+                  "media_id": "4",
+                  "name": "River_Two_Streams_3s.mkv",
+                  "retime": {
+                    "max_length": 7300,
+                    "min_length": 1,
+                    "pitch_correction": true,
+                    "source_span": 73,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 91,
+                  "speed_percent": 100.0,
+                  "start_frame": 384,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      385,
+                      457
+                    ],
+                    "start": [
+                      384,
+                      456
+                    ]
+                  }
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "audio_stream_index": 1,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "4",
+                  "kind": "media",
+                  "length_frames": 73,
+                  "linked_group": "1",
+                  "media_id": "4",
+                  "name": "River_Two_Streams_3s.mkv",
+                  "retime": {
+                    "max_length": 7300,
+                    "min_length": 1,
+                    "pitch_correction": true,
+                    "source_span": 73,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 91,
+                  "speed_percent": 100.0,
+                  "start_frame": 384,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      385,
+                      457
+                    ],
+                    "start": [
+                      384,
+                      456
+                    ]
+                  }
+                }
+              ],
+              "crossings": [],
+              "id": "2",
+              "kind": "audio",
+              "label": "A2",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "markers": []
+        }
+      ]
+    },
+    "undo": {
+      "generation": "6",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips"
+        ],
+        "position": 1
+      },
+      "restores_two_empty_tracks": true
+    },
+    "redo": {
+      "generation": "7",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips"
+        ],
+        "position": 2
+      },
+      "restores_exact_drop_model": true
+    },
+    "keyboard_insert": {
+      "generation": "12",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips"
+        ],
+        "position": 2
+      },
+      "timelines": [
+        {
+          "id": "1",
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "resolution": {
+            "height": 1080,
+            "width": 1920
+          },
+          "tracks": [
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "audio_stream_index": 0,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "6",
+                  "kind": "media",
+                  "length_frames": 264,
+                  "linked_group": "2",
+                  "media_id": "3",
+                  "name": "River_AV_11s.mp4",
+                  "retime": {
+                    "max_length": 26400,
+                    "min_length": 3,
+                    "pitch_correction": true,
+                    "source_span": 264,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 264,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      1,
+                      264
+                    ],
+                    "start": [
+                      0,
+                      263
+                    ]
+                  }
+                },
+                {
+                  "audio_stream_index": 0,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "7",
+                  "kind": "media",
+                  "length_frames": 120,
+                  "linked_group": null,
+                  "media_id": "2",
+                  "name": "River_Still.png",
+                  "retime": {
+                    "max_length": 12000,
+                    "min_length": 2,
+                    "pitch_correction": true,
+                    "source_span": 120,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    959999880
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 125,
+                  "speed_percent": 100.0,
+                  "start_frame": 264,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      265,
+                      960000264
+                    ],
+                    "start": [
+                      264,
+                      383
+                    ]
+                  }
+                }
+              ],
+              "crossings": [],
+              "id": "0",
+              "kind": "video",
+              "label": "V1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "audio_stream_index": 0,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "5",
+                  "kind": "media",
+                  "length_frames": 264,
+                  "linked_group": "2",
+                  "media_id": "3",
+                  "name": "River_AV_11s.mp4",
+                  "retime": {
+                    "max_length": 26400,
+                    "min_length": 3,
+                    "pitch_correction": true,
+                    "source_span": 264,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 264,
+                  "speed_percent": 100.0,
+                  "start_frame": 0,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      1,
+                      264
+                    ],
+                    "start": [
+                      0,
+                      263
+                    ]
+                  }
+                },
+                {
+                  "audio_stream_index": 0,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "8",
+                  "kind": "media",
+                  "length_frames": 73,
+                  "linked_group": "3",
+                  "media_id": "4",
+                  "name": "River_Two_Streams_3s.mkv",
+                  "retime": {
+                    "max_length": 7300,
+                    "min_length": 1,
+                    "pitch_correction": true,
+                    "source_span": 73,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 91,
+                  "speed_percent": 100.0,
+                  "start_frame": 384,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      385,
+                      457
+                    ],
+                    "start": [
+                      384,
+                      456
+                    ]
+                  }
+                }
+              ],
+              "crossings": [],
+              "id": "1",
+              "kind": "audio",
+              "label": "A1",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            },
+            {
+              "armed": false,
+              "clips": [
+                {
+                  "audio_stream_index": 1,
+                  "disabled": false,
+                  "display_color": null,
+                  "display_rgb": null,
+                  "fade_in": 0,
+                  "fade_out": 0,
+                  "freeze_source_frame": null,
+                  "gain_bounds": [
+                    -100.0,
+                    30.0
+                  ],
+                  "gain_constant": true,
+                  "gain_db": 0.0,
+                  "id": "9",
+                  "kind": "media",
+                  "length_frames": 73,
+                  "linked_group": "3",
+                  "media_id": "4",
+                  "name": "River_Two_Streams_3s.mkv",
+                  "retime": {
+                    "max_length": 7300,
+                    "min_length": 1,
+                    "pitch_correction": true,
+                    "source_span": 73,
+                    "speed_percent": 100.0
+                  },
+                  "slip_range": [
+                    0,
+                    0
+                  ],
+                  "source_in_frames": 0,
+                  "source_out_frames": 91,
+                  "speed_percent": 100.0,
+                  "start_frame": 384,
+                  "transition_in": null,
+                  "transition_out": null,
+                  "trim_limits": {
+                    "end": [
+                      385,
+                      457
+                    ],
+                    "start": [
+                      384,
+                      456
+                    ]
+                  }
+                }
+              ],
+              "crossings": [],
+              "id": "2",
+              "kind": "audio",
+              "label": "A2",
+              "locked": false,
+              "mix": {
+                "effects": [],
+                "gain_db": 0.0,
+                "pan": 0.0
+              },
+              "muted": false,
+              "solo": false
+            }
+          ],
+          "master": {
+            "effects": [],
+            "gain_db": 0.0,
+            "pan": 0.0
+          },
+          "markers": []
+        }
+      ],
+      "note": "After a second Undo, the focused menu command creates the same semantic montage with fresh native IDs/groups; the undone branch is replaced normally."
+    },
+    "playback": "Program prepared0-457, reached End of timeline naturally and persisted456. No mid-run Program movie sample was captured; no physical acoustic continuity claim.",
+    "program_eof_ui": {
+      "at": 1792719740220,
+      "status": "End of timeline",
+      "timecode": "00:00:19:00",
+      "video": {
+        "currentTime": 0,
+        "duration": null,
+        "ended": false,
+        "error": null,
+        "paused": true,
+        "src": null
+      }
+    },
+    "saved_client_reload": {
+      "generation": "12",
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips"
+        ],
+        "position": 2
+      },
+      "unsaved": false,
+      "view": {
+        "active_timeline": "1",
+        "playheads": {
+          "1": 456
+        }
+      },
+      "same_native_model_history_and_view": true,
+      "scope": "Client reload retains the live native Session. The EOF Program-view write completes asynchronously; final Saved bytes are hashed separately after the final frame0 Save. No server restart/live-Undo persistence claim."
+    },
+    "screenshot": "f2-project-pool-halo1.png"
+  },
+  "project": {
+    "name": "Venturi_Project_Pool.vvproj",
+    "root": "/home/halo/VenturiWeb-project-pool-20261023",
+    "sha256": "ed0ab640fb6ee35dd5f9f9efe611c6df5c17e60bbf9580407eb1d384ccb26bf2",
+    "generation": "12",
+    "history": {
+      "labels": [
+        "ImportMedia",
+        "InsertClips"
+      ],
+      "position": 2
+    },
+    "unsaved": false,
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 0
+      }
+    }
+  },
+  "export": {
+    "job": {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": true,
+      "error": null,
+      "export_revision": "8485b92e4563edacf94f06689ddb45d33d8de251b4be23ac2e48e76b515e5f1d",
+      "frames": 0,
+      "id": "1792719804669953582",
+      "previous_state": null,
+      "program": {
+        "audio_present": true,
+        "end_frame": 457,
+        "export_settings": {
+          "audio": true,
+          "audio_bitrate_kbps": 128,
+          "audio_codec": "aac",
+          "audio_fast_coder": false,
+          "preset": "veryfast",
+          "quality": 18,
+          "scale_percent": 100
+        },
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "12",
+        "height": 1080,
+        "project_epoch": "1792719514436512278:1",
+        "revision": "dfb728fa6b8a4bac",
+        "start_frame": 0,
+        "width": 1920
+      },
+      "progress": {
+        "compose_fps": 434.11706440655763,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 457,
+        "decode_fps": 406.19603900607945,
+        "decoder_fallback": false,
+        "decoders": [
+          {
+            "id": "software",
+            "label": "Software (CPU)"
+          }
+        ],
+        "elapsed_ms": 2007.3025559999999,
+        "encode_fps": 253.89047288333913,
+        "encoder": "X264",
+        "fps": 227.66871821788286,
+        "startup_ms": 106.779641,
+        "total_frames": 457
+      },
+      "project_epoch": "1792719514436512278:1",
+      "source_asset": null,
+      "source_assets": null,
+      "source_version": null,
+      "source_window": null,
+      "state": "ready"
+    },
+    "file": {
+      "bytes": 3018680,
+      "sha256": "f2c54c544df7df29387b07ce6b06b1d3176763e219b75d2679967f0e60ce6543",
+      "probe": {
+        "programs": [],
+        "stream_groups": [],
+        "streams": [
+          {
+            "codec_name": "h264",
+            "codec_type": "video",
+            "width": 1920,
+            "height": 1080,
+            "r_frame_rate": "24/1",
+            "duration": "19.041667",
+            "nb_frames": "457"
+          },
+          {
+            "codec_name": "aac",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 2,
+            "r_frame_rate": "0/0",
+            "duration": "19.050000",
+            "nb_frames": "894"
+          }
+        ],
+        "format": {
+          "duration": "19.050000",
+          "size": "3018680"
+        }
+      }
+    },
+    "browser_eof": {
+      "currentTime": 19.05,
+      "duration": 19.05,
+      "ended": true,
+      "error": null,
+      "height": 1080,
+      "muted": false,
+      "paused": true,
+      "width": 1920
+    },
+    "interpretation": "457frames at24fps, Full HD H.264/AAC48k stereo. The last audio-only span intentionally has black video; file playback reaches19.05s without error. Physical output/device sync is not claimed."
+  },
+  "resource_observation": "ActiveState=active\nMainPID=131552\nResult=success\nMemoryCurrent=210857984\nMemoryPeak=502538240\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+  "gpu_diagnostics": {
+    "active_programs": 0,
+    "available": true,
+    "backend": "Vulkan",
+    "device_id": "0x7551",
+    "driver": "radv",
+    "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+    "exact_context_resident": false,
+    "frame_rendered": true,
+    "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+    "resident": false,
+    "software": false,
+    "vendor_id": "0x1002"
+  },
+  "preservation": {
+    "prior_sessions": {
+      "8813": {
+        "project_name": "Venturi_Halo1.vvproj",
+        "generation": "1",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 0
+          }
+        },
+        "view_revision": "2ce25917142554e771d758d4f82e8244a3dca3f9f9360e328a512cd5e4e9a8f7"
+      },
+      "8816": {
+        "project_name": "Venturi_Color_Audio.vvproj",
+        "generation": "7",
+        "history": {
+          "labels": [
+            "MixerGain",
+            "SoloTrack",
+            "MuteTrack"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 123
+          }
+        },
+        "view_revision": "01edb170d97c41ee4939951a3f87204a53c942159996aa914d53cb81f8305ad3"
+      },
+      "8817": {
+        "project_name": "Venturi_Library_Edit.vvproj",
+        "generation": "3",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 391
+          }
+        },
+        "view_revision": "f8320c7305ce4f4ba16eb04d2d5ceafb15bfd64ae7f73d7870050f151eb492da"
+      },
+      "8818": {
+        "project_name": "Venturi_Native_Curves.vvproj",
+        "generation": "8",
+        "history": {
+          "labels": [
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetKeyframe",
+            "SetInterpolation"
+          ],
+          "position": 6
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 315
+          }
+        },
+        "view_revision": "03f19391054ad3797e89c511ff882c82650fde28126cc3a3910009184b5fe8da"
+      },
+      "8819": {
+        "project_name": "Venturi_Curve_Window.vvproj",
+        "generation": "5",
+        "history": {
+          "labels": [
+            "SetKeyframe"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 315
+          }
+        },
+        "view_revision": "03f19391054ad3797e89c511ff882c82650fde28126cc3a3910009184b5fe8da"
+      },
+      "8820": {
+        "project_name": "Venturi_Long_Playback.vvproj",
+        "generation": "2",
+        "history": {
+          "labels": [
+            "ImportMedia",
+            "InsertClips"
+          ],
+          "position": 2
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 7199
+          }
+        },
+        "view_revision": "42f33edf76e5d4d1431ab12a7ad0018a168d42b9a09ffedf3ea79e717c598115"
+      },
+      "8821": {
+        "project_name": "Venturi_Source_Workflow.vvproj",
+        "generation": "9",
+        "history": {
+          "labels": [
+            "ImportMedia",
+            "InsertClips",
+            "InsertClips",
+            "InsertClips",
+            "InsertClips"
+          ],
+          "position": 5
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 263
+          }
+        },
+        "view_revision": "c19712f8787e9451a99c70e7e6d90701d0ace6efaaca8be92155f41611e44dca"
+      },
+      "8822": {
+        "project_name": "Venturi_Source_Workflow.vvproj",
+        "generation": "2",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 0
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 263
+          }
+        },
+        "view_revision": "c19712f8787e9451a99c70e7e6d90701d0ace6efaaca8be92155f41611e44dca"
+      },
+      "8823": {
+        "project_name": "Venturi_Audio_Source_Workflow.vvproj",
+        "generation": "1",
+        "history": {
+          "labels": [
+            "ImportMedia"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 0
+          }
+        },
+        "view_revision": "2ce25917142554e771d758d4f82e8244a3dca3f9f9360e328a512cd5e4e9a8f7"
+      },
+      "8824": {
+        "project_name": "Venturi_Audio_Source_Workflow.vvproj",
+        "generation": "4",
+        "history": {
+          "labels": [
+            "InsertClips"
+          ],
+          "position": 1
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 71
+          }
+        },
+        "view_revision": "b6c90c1fb97a7500cdd5a7f48c8f2c1fdbcbb4cdeca2f206185b6b8d16cf244d"
+      },
+      "8825": {
+        "project_name": "Venturi_Audio_Source_Workflow.vvproj",
+        "generation": "0",
+        "history": {
+          "labels": [],
+          "position": 0
+        },
+        "unsaved": false,
+        "view": {
+          "active_timeline": "1",
+          "playheads": {
+            "1": 71
+          }
+        },
+        "view_revision": "b6c90c1fb97a7500cdd5a7f48c8f2c1fdbcbb4cdeca2f206185b6b8d16cf244d"
+      }
+    },
+    "prior_project_hashes": {
+      "8813": {
+        "/home/halo/VenturiWeb-halo1-20261022/Venturi_Halo1.vvproj": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2"
+      },
+      "8816": {
+        "/home/halo/VenturiWeb-color-audio-20261022/Venturi_Color_Audio.vvproj": "7c62ae054ca9867f4e40ab777a76a706f43b70dbd6656bae343107f7a9f61ea2"
+      },
+      "8817": {
+        "/home/halo/VenturiWeb-library-edit-20261023/Venturi_Library_Edit.vvproj": "0b5e97f66e11ed968879a42c1a644125405c9bb3688407b94d537304789ab2e2"
+      },
+      "8818": {
+        "/home/halo/VenturiWeb-native-curves-20261023/Venturi_Native_Curves.vvproj": "84d8d4248c848ae6307cd3480af62afb3209ef16513accad2b6dc957f4e86dab"
+      },
+      "8819": {
+        "/home/halo/VenturiWeb-curve-window-20261023/Venturi_Curve_Window.vvproj": "7353500237ac3d1432d62dbacaf1cc8909afeafed01b2a91685918160b590518"
+      },
+      "8820": {
+        "/home/halo/VenturiWeb-program-lookahead-20261023/Venturi_Long_Playback.vvproj": "5cb04e90bb346ea7c8a23791b3b7b43959a6f21b290b1ce03d1524916ef39a6f",
+        "/home/halo/VenturiWeb-program-lookahead-20261023/Venturi_Program_Lookahead.vvproj": "96b2b0060d567444971b0bebf66a87606a9b2ced9c663134af1b5b524620383b"
+      },
+      "8821": {
+        "/home/halo/VenturiWeb-source-placement-20261023/Venturi_Source_Workflow.vvproj": "2fceb30a5f83ec6d5345f8f329ab86f0d0fa427fa4694fd67759af2ff7e0d3c2"
+      },
+      "8822": {
+        "/home/halo/VenturiWeb-source-placement-r5-20261023/Venturi_Source_Workflow.vvproj": "50d0545fc3fafff1d4560f79ba87f0bfcf59398d670f3d183c5990665b47c06f"
+      },
+      "8823": {
+        "/home/halo/VenturiWeb-source-waveform-20261023/Venturi_Audio_Source_Workflow.vvproj": "f4a7755d8e716d8ec2131e669f24acc503c018eacdc3373645c4e6d6ae0ae960"
+      },
+      "8824": {
+        "/home/halo/VenturiWeb-source-waveform-r4-20261023/Venturi_Audio_Source_Workflow.vvproj": "365af1e0f357374ea616c196461f8c6463c19fd9815165db9031933512a7df1f"
+      },
+      "8825": {
+        "/home/halo/VenturiWeb-source-lookahead-20261023/Venturi_Audio_Source_Workflow.vvproj": "42140829fdfe1685d8c7cf82c5b7a5839c062146b6d47c2d18af56871d44888a"
+      }
+    },
+    "prior_pids": {
+      "venturi-web-halo1-nas.service": "84786",
+      "venturi-web-halo1-color-audio-r2.service": "99965",
+      "venturi-web-halo1-library-edit-r2.service": "105609",
+      "venturi-web-halo1-native-curves.service": "109843",
+      "venturi-web-halo1-curve-window-r2.service": "114229",
+      "venturi-web-halo1-program-lookahead.service": "116676",
+      "venturi-web-halo1-source-placement.service": "121987",
+      "venturi-web-halo1-source-placement-r5.service": "123540",
+      "venturi-web-halo1-source-waveform-r2.service": "126135",
+      "venturi-web-halo1-source-waveform-r4.service": "127416",
+      "venturi-web-halo1-source-lookahead.service": "129350",
+      "ds4-console.service": "58396"
+    },
+    "comparison": "Eleven protected halo1 Sessions, eleven project sets and twelve PIDs match predeployment baselines. Halo2 untouched; NAS files/mounts unchanged."
+  },
+  "remaining": [
+    "Approved nested-source/tree import and prepared project Relink workflows.",
+    "Native pool Grid/List presentation and remaining F2/full F1-F7/M7 acceptance.",
+    "Representative long4K/dense/DPI and physical output/recording acceptance."
+  ],
+  "ledger": {
+    "done": 47,
+    "partial": 43,
+    "excluded": 2,
+    "excluded_csv_status": "not-started",
+    "full_goal": "active"
+  }
+}

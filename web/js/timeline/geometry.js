@@ -469,7 +469,7 @@ export function hitTest(x, y, timeline, view, width=Infinity) {
     const button=Math.abs(y-top-rowHeight/2)<=13?trackHeaderButtons(timeline.tracks[track]).find(button=>x>=button.left && x<=button.right):null;
     return button?{kind:'header_flag',track,flag:button.flag}:{kind:'header',track};
   }
-  const speedStrips=y>=top+7 && y<=top+21?retimeStrips(timeline.tracks[track],view,timeline.fps,width):[];
+  const speedStrips=retimeStrips(timeline.tracks[track],view,timeline.fps,width);
   if(y>=top+7 && y<=top+21){
     const retime=speedStrips.find(handle=>handle.interactive && x>=handle.left && x<=handle.right && handle.right-x<8);
     if(retime)return {...retime,track};
@@ -498,6 +498,10 @@ export function hitTest(x, y, timeline, view, width=Infinity) {
       const width=right-left;
       for(const [distance,edge] of [[x-left,'start'],[right-x,'end']]){
         const neighbor=timeline.tracks[track].clips.find(other=>other.id!==clip.id && (edge==='start'?other.start_frame+other.length_frames===clip.start_frame:other.start_frame===clip.start_frame+clip.length_frames));
+        if(edge==='end' && distance<Math.min(8,width/3)+(neighbor?Math.min(4,width/6):0)){
+          const speed=speedStrips.find(strip=>strip.interactive && strip.clip_id===clip.id);
+          if(speed)return {...speed,track};
+        }
         if(neighbor && distance<Math.min(4,width/6))return {kind:edge==='start'?'trim_start':'trim_end',track,clip,roll_neighbor_id:neighbor.id};
         if(distance<Math.min(8,width/3)+(neighbor?Math.min(4,width/6):0))return {kind:edge==='start'?'trim_start':'trim_end',track,clip};
       }

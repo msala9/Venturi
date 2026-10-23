@@ -523,6 +523,13 @@ label {
 .source-toolbar { display: flex; gap: 12px; align-items: center; padding: 8px; font-size: 11px; flex-wrap: wrap; }
 .source-toolbar label { display: flex; gap: 6px; align-items: center; }
 .source-toolbar input { width: 82px; }
+#source-view > .source-options[open] { width: min(440px,calc(100% - 10px)); max-height: calc(100% - 8px); min-width: 0; overflow: auto; overscroll-behavior: contain; }
+#source-view > .source-options[open] > summary { position: sticky; top: 0; z-index: 1; }
+#source-view > .source-options > .source-toolbar { position: static; width: 100%; max-height: none; min-height: 0; overflow: visible; }
+#source-view > .source-options .source-toolbar > *, #source-view > .source-options #source-placement > * { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+#source-view > .source-options .source-toolbar label { flex-wrap: wrap; }
+#source-view > .source-options .source-toolbar :is(input,select,button) { min-width: 0; max-width: 100%; }
+#source-view > .source-options .source-toolbar button { white-space: normal; }
 #screen[data-viewer-mode="source"] > #preview,
 #screen[data-viewer-mode="source"] > #viewer-empty,
 #screen[data-viewer-mode="source"] > #preview-state { display: none; }

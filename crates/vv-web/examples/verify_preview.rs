@@ -28,9 +28,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("native_audio timeline={raw} start={start} frames={count} samples={samples} sample_rate=48000 channels=2 format=f32le");
         }
         Some("fixture_parity") if args.len()==3=>fixture_parity(std::path::Path::new(&args[2]))?,
-        Some("export") if args.len()==4=>{
+        Some("export") if (4..=5).contains(&args.len())=>{
             let project=vv_core::load_project(std::path::Path::new(&args[2]))?;
-            let id=project.timelines.keys().next().ok_or("No timeline")?;
+            let id=if let Some(raw)=args.get(4){
+                let raw:u64=raw.parse()?;
+                project.timelines.keys().find(|id|id.raw()==raw).ok_or("Timeline not found")?
+            }else{project.timelines.keys().next().ok_or("No timeline")?};
             let output=PathBuf::from(&args[3]);if output.exists(){return Err("Output already exists".into());}
             let lock=OpenOptions::new().create(true).truncate(false).read(true).write(true).open("/tmp/HALO_BENCHMARK.lock")?;
             rustix::fs::flock(&lock,rustix::fs::FlockOperation::NonBlockingLockExclusive)?;
@@ -40,7 +43,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 ||Ok(vv_render::Compositor::new_headless_with_precision(project.precision)), |_|Ok(()),2)
                 .map_err(|error|std::io::Error::other(error.to_string()))?;
             let p=progress.lock().unwrap();
-            println!("{}",serde_json::json!({"frames":p.current_frame,"elapsed_seconds":p.elapsed.as_secs_f64(),"compositor":p.compositor,"encoder":format!("{:?}",p.encoder),"decode_fps":p.decode.fps(),"compose_fps":p.compose.fps(),"encode_fps":p.encode.fps()}));
+            println!("{}",serde_json::json!({"timeline_id":id.raw(),"frames":p.current_frame,"elapsed_seconds":p.elapsed.as_secs_f64(),"compositor":p.compositor,"encoder":format!("{:?}",p.encoder),"decode_fps":p.decode.fps(),"compose_fps":p.compose.fps(),"encode_fps":p.encode.fps()}));
         }
         Some("fixture_sync") if args.len()==4=>{
             let source=PathBuf::from(&args[2]).canonicalize()?;
@@ -105,7 +108,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             OpenOptions::new().create_new(true).write(true).open(&args[5])?.write_all(&rgba)?;
             println!("native_adapter={} frame={frame} size={width}x{height} bytes={}",compositor.adapter_name(),rgba.len());
         }
-        _=>return Err("Usage: verify_preview fixture_parity NEW_OUTPUT_DIR | fixture|fixture_av|fixture_sync SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba [TIMELINE_ID] | audio PROJECT TIMELINE START_SAMPLE SAMPLE_COUNT OUTPUT.f32le | export PROJECT OUTPUT.mp4".into()),
+        _=>return Err("Usage: verify_preview fixture_parity NEW_OUTPUT_DIR | fixture|fixture_av|fixture_sync SOURCE OUTPUT.vvproj | render PROJECT FRAME WIDTH OUTPUT.rgba [TIMELINE_ID] | audio PROJECT TIMELINE START_SAMPLE SAMPLE_COUNT OUTPUT.f32le | export PROJECT OUTPUT.mp4 [TIMELINE_ID]".into()),
     }
     Ok(())
 }

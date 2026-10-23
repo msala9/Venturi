@@ -160,6 +160,93 @@ fn short_media(session: &mut Session, id: TimelineId, track: usize, clip: ClipId
 }
 
 #[test]
+fn minimum_handle_duration_matches_native_rounding_at_odd_and_half_frame_bounds() {
+    for span in [1, 49, 50, 99, 100, 149, 150, 151, 249, 250, 401, 450, 451] {
+        let (session, id, clip) = fixture(
+            core::Rational::new(24, 1),
+            core::Rational::new(24, 1),
+            7,
+            7 + span,
+            11,
+        );
+        let bounds = metadata(
+            &session.project,
+            &session.project.timelines[id],
+            session.project.timelines[id].clip(0, clip).unwrap(),
+        )
+        .unwrap();
+        let native_length =
+            |percent: f64| (span as f64 * 100.0 / percent).round().max(1.0) as FrameIdx;
+        assert_eq!(bounds.source_span, span);
+        assert_eq!(bounds.min_length, native_length(10_000.0), "span {span}");
+        assert_eq!(bounds.max_length, native_length(1.0), "span {span}");
+        if span == 401 {
+            assert_eq!(bounds.min_length, 4);
+        }
+    }
+}
+
+#[test]
+fn minimum_linked_handle_matches_native_above_dialog_limit_with_fractional_conform_and_undo() {
+    for (fps, first, last) in [
+        (core::Rational::new(24, 1), 7, 408),
+        (core::Rational::new(30000, 1001), 8, 329),
+    ] {
+        let (mut session, id, clip) = fixture(fps, core::Rational::new(24, 1), first, last, 11);
+        let audio_id = session.project.alloc_clip_id();
+        let mut audio = session.project.timelines[id].clip(0, clip).unwrap().clone();
+        audio.id = audio_id;
+        audio.linked_group = Some(core::LinkGroupId(10));
+        session.project.timelines[id].tracks[1].insert_sorted(audio);
+        let primary = session.project.timelines[id].clip_mut(0, clip).unwrap();
+        primary.linked_group = Some(core::LinkGroupId(10));
+        primary.pitch_correction = true;
+        let from = primary.timeline_end();
+        let bounds = metadata(
+            &session.project,
+            &session.project.timelines[id],
+            session.project.timelines[id].clip(0, clip).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(bounds.source_span, 401);
+        assert_eq!(bounds.min_length, 4);
+        let before = timeline(&session, id);
+        let position = session.history.position();
+        let mut native = session.project.clone();
+        core::SetClipSpeed::new(
+            id,
+            vec![(0, clip), (1, audio_id)],
+            core::Rational::new(401, 4),
+            true,
+            core::SpeedFit::ResizeTo { from, to: 15 },
+        )
+        .apply(&mut native);
+        edit(&mut session, id, clip, 15, false).unwrap();
+        assert_eq!(session.history.position(), position + 1);
+        assert_eq!(
+            timeline(&session, id),
+            serde_json::to_value(&native.timelines[id]).unwrap()
+        );
+        for (track, target) in [(0, clip), (1, audio_id)] {
+            let result = session.project.timelines[id].clip(track, target).unwrap();
+            assert_eq!(result.timeline_len, 4);
+            assert_eq!(result.speed().as_percent(), 10_025.0);
+            assert!(result.pitch_correction);
+        }
+        let after = timeline(&session, id);
+        commands::apply(&mut session, id, &Operation::Undo).unwrap();
+        assert_eq!(timeline(&session, id), before);
+        let generation = session.history.generation();
+        assert!(edit(&mut session, id, clip, 14, false).is_err());
+        assert_eq!(timeline(&session, id), before);
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.history.generation(), generation);
+        commands::apply(&mut session, id, &Operation::Redo).unwrap();
+        assert_eq!(timeline(&session, id), after);
+    }
+}
+
+#[test]
 fn fractional_conform_and_offset_retime_reaches_exact_odd_end_with_native_ratio_and_undo() {
     let (mut session, id, clip) = fixture(
         core::Rational::new(30000, 1001),

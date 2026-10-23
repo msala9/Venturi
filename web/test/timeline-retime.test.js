@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {retimeHandles,retimeDraft,hitTest,frameToX,RULER,TRACK,MAX_FRAME} from '../js/timeline/geometry.js';
+import {retimeHandles,retimeStrips,retimeDraft,hitTest,frameToX,RULER,TRACK,MAX_FRAME} from '../js/timeline/geometry.js';
 
 const fps={num:24,den:1},view={scale:240,origin:0,scrollY:0,playhead:0,tool:'select',retimeVisible:new Set(['9007199254740993']),snap:false};
 function fixture(){
@@ -68,12 +68,41 @@ test('linked resizing retains known primary collisions while unknown follower ge
   timeline.tracks[1].locked=true;draft=retimeDraft(handle,600,timeline,{...view,retimeOverwrite:true});assert.match(draft.error,/locked/);
 });
 
-test('speed right-edge hits take the upper band while fade, transition and trim controls retain their modes',()=>{
+test('visible speed strips route the right edge to retime while fades and transitions retain priority',()=>{
   const {clip,timeline}=fixture();const endX=frameToX(60,view,fps);
-  assert.equal(hitTest(endX-2,RULER+14,timeline,view).kind,'retime');assert.equal(hitTest(endX-2,RULER+30,timeline,view).kind,'trim_end');
+  for(const y of [RULER+14,RULER+30,RULER+TRACK-3]){
+    const hit=hitTest(endX-2,y,timeline,view);assert.equal(hit.kind,'retime');assert.equal(hit.clip_id,clip.id);assert.deepEqual(hit.metadata,clip.retime);
+    assert.deepEqual(retimeDraft(hit,20,timeline,view).operation,{kind:'retime_clip',clip_id:clip.id,end_frame:62,overwrite:false});
+  }
+  assert.equal(hitTest(frameToX(20,view,fps)+2,RULER+30,timeline,view).kind,'trim_start');
   const fadeX=frameToX(22,view,fps);assert.equal(hitTest(fadeX,RULER+14,timeline,{...view,retimeVisible:new Set()}).kind,'fade');assert.equal(hitTest(fadeX,RULER+14,timeline,view).kind,'move');
-  assert.notEqual(hitTest(endX-2,RULER+14,timeline,{...view,tool:'slip'}).kind,'retime');
+  assert.equal(hitTest(frameToX(58,view,fps),RULER+14,timeline,{...view,retimeVisible:new Set()}).kind,'fade');
   clip.transition_out={kind:'Push',duration:4,direction:'Left',ease:'InOut',curve:0.25};assert.equal(hitTest(frameToX(56,view,fps),RULER+TRACK-14,timeline,view).kind,'transition');
+  assert.equal(hitTest(endX-2,RULER+TRACK-14,timeline,view).kind,'transition_body');
+  clip.transition_out.duration=1;assert.equal(hitTest(endX-2,RULER+TRACK-14,timeline,view).kind,'transition');
+});
+
+test('a touching neighbor end roll zone becomes retime without changing the left roll zone',()=>{
+  const {clip,neighbor,track,timeline}=fixture();neighbor.start_frame=60;
+  for(const distance of [1,6,10]){
+    const hit=hitTest(frameToX(60,view,fps)-distance,RULER+30,timeline,view);
+    assert.equal(hit.kind,'retime');assert.equal(hit.clip_id,clip.id);assert.equal(hit.roll_neighbor_id,undefined);
+  }
+  const hidden=hitTest(frameToX(60,view,fps)-1,RULER+30,timeline,{...view,retimeVisible:new Set()});
+  assert.equal(hidden.kind,'trim_end');assert.equal(hidden.roll_neighbor_id,neighbor.id);
+  neighbor.start_frame=0;neighbor.length_frames=20;track.clips=[clip,neighbor];
+  const left=hitTest(frameToX(20,view,fps)+1,RULER+30,timeline,view);
+  assert.equal(left.kind,'trim_start');assert.equal(left.roll_neighbor_id,neighbor.id);
+});
+
+test('speed edge routing preserves strip menu and close targets and refuses decorative or unavailable strips',()=>{
+  const {clip,track,timeline}=fixture(),strip=retimeStrips(track,view,fps)[0],endX=frameToX(60,view,fps);
+  assert.equal(hitTest((strip.menu.left+strip.menu.right)/2,RULER+14,timeline,view).kind,'retime_menu');
+  assert.equal(hitTest((strip.close.left+strip.close.right)/2,RULER+14,timeline,view).kind,'retime_close');
+  for(const changed of [{tool:'slip'},{retimeVisible:new Set()}])for(const y of [RULER+14,RULER+30,RULER+TRACK-3])assert.notEqual(hitTest(endX-2,y,timeline,{...view,...changed}).kind,'retime');
+  track.locked=true;assert.equal(retimeStrips(track,view,fps)[0].interactive,false);
+  for(const y of [RULER+14,RULER+30,RULER+TRACK-3])assert.notEqual(hitTest(endX-2,y,timeline,view).kind,'retime');
+  track.locked=false;clip.retime=null;assert.equal(hitTest(endX-2,RULER+30,timeline,view).kind,'trim_end');
 });
 
 test('ineligible clips keep their fade handles even when speed mode is enabled',()=>{

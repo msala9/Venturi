@@ -105,6 +105,22 @@ test('speed pointer drafts stay local and owner release submits exact native end
   }finally{h.destroy();}
 });
 
+test('central and lower visible End zones commit one native speed edit without trimming source bounds',async()=>{
+  for(const [rowY,target,expected] of [[30,130,130],[58,-100,22]]){
+    const h=harness();
+    try{
+      Object.assign(h.clip,{source_in_frames:100,source_out_frames:300,freeze_source_frame:7});
+      const original=structuredClone(h.clip),clientY=h.event(120).clientY+rowY-14;
+      h.send('pointerdown',120,{clientY});assert.equal(h.captured(1),true);assert.equal(h.selections(),0);
+      h.send('pointermove',125,{clientY});assert.equal(h.view.draft.kind,'retime');assert.deepEqual(h.commands,[]);assert.deepEqual(h.clip,original);
+      await h.send('pointerup',180,{clientY,pointerId:2,buttons:0});assert.equal(h.captured(1),true);assert.deepEqual(h.commands,[]);
+      await h.send('pointerup',target,{clientY,buttons:0});await h.send('pointerup',target,{clientY,buttons:0});
+      assert.deepEqual(h.commands,[{kind:'retime_clip',clip_id:h.clip.id,end_frame:expected,overwrite:false}]);
+      assert.deepEqual(h.clip,original);assert.equal(h.captured(1),false);assert.equal(h.view.draft,null);
+    }finally{h.destroy();}
+  }
+});
+
 test('open dialogs block speed endpoint capture and cancel captured drafts without preventing the next edit',async()=>{
   for(const phase of ['before_begin','before_move','before_release']){
     const h=harness();try{
@@ -179,7 +195,7 @@ test('unchanged, returned and read-only speed handles create no command; other t
     h.send('pointerdown',120);await h.send('pointerup',120,{buttons:0});
     h.send('pointerdown',120);h.send('pointermove',130);await h.send('pointerup',120,{buttons:0});assert.deepEqual(h.commands,[]);
     h.setWritable(false);h.send('pointerdown',120);await h.send('pointerup',130,{buttons:0});assert.deepEqual(h.commands,[]);h.setWritable(true);
-    const x=frameToX(120,h.view,h.timeline().fps);assert.equal(hitTest(x,timelineLayout(h.timeline(),h.view).trackTop(0)+14,h.timeline(),h.view).kind,'retime');assert.equal(hitTest(x,timelineLayout(h.timeline(),h.view).trackTop(0)+40,h.timeline(),h.view).kind,'trim_end');
+    const x=frameToX(120,h.view,h.timeline().fps);assert.equal(hitTest(x,timelineLayout(h.timeline(),h.view).trackTop(0)+14,h.timeline(),h.view).kind,'retime');assert.equal(hitTest(x,timelineLayout(h.timeline(),h.view).trackTop(0)+40,h.timeline(),h.view).kind,'retime');
     h.view.retimeVisible.clear();assert.equal(retimeHandles(h.tracks[0],h.view,h.timeline().fps).length,0);assert.equal(hitTest(frameToX(30,h.view,h.timeline().fps),timelineLayout(h.timeline(),h.view).trackTop(0)+14,h.timeline(),h.view).kind,'fade');
     h.view.retimeVisible.add(h.clip.id);h.view.tool='slip';assert.equal(retimeHandles(h.tracks[0],h.view,h.timeline().fps).length,0);
   }finally{h.destroy();}

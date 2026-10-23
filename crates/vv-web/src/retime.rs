@@ -61,7 +61,7 @@ pub fn metadata(
     if source_span <= 0 || i32::try_from(source_span).is_err() {
         return None;
     }
-    let min_length = ((source_span + 99) / 100).max(1);
+    let min_length = (source_span as f64 * 100.0 / 10_000.0).round().max(1.0) as FrameIdx;
     let max_length = source_span
         .checked_mul(100)?
         .min(MAX_FRAME - clip.timeline_start)

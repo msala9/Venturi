@@ -1,0 +1,161 @@
+{
+  "source_commit": "6c24b7376df88478b5e0097484232d19745eacef",
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "459a78f9d67b7c9771608090f83fe0dc28ebafa8a2be0d10e142c50195181bc3",
+    "crates/vv-web/src/source.rs": "dc733937664ae492b2cb2aca594a6a661a7b2cd2c3b5d6fedc84f9fcd351be47",
+    "crates/vv-web/src/tests/api.rs": "45c9cf1e6a47502cfac077bbcb46ad5872c08c27bc2ea5391d352720dab785b1",
+    "crates/vv-web/src/tests/source.rs": "a35e0c2f841cb11cad9e6372e9ef3f641d529a042b379676e5d994b6ee8bf635",
+    "web/js/main.js": "6a130e701ca8f8fe09d68818073ab4296bf7a39892597bdf03bd3f1bdb62f609",
+    "web/js/native-asset-pool.js": "896b8fc3318a61d9201bea2c1fb52321008f0e6071e8fc88662aca6fd25fc0bd",
+    "web/js/native-assets.js": "2d04d19154ac0db650ae6e6b997301528eaf7d2f329a12bb151cbe8519ae9b3c",
+    "web/js/source-assets.js": "d4f1905eaee23a2b141f6dba15e358517a67b3916841afa88f47ca7066edfee3",
+    "web/test/native-asset-pool.test.js": "4a05cd196017629338188d74f35fbd88a4ca897c5ee4d58974ab842fbd468e15",
+    "web/test/native-assets-panel.test.js": "b79365d576de64e010aeeb926201d0252469375552a03a2c44baa73655e075a0",
+    "web/test/source-assets.test.js": "e33a8cf28538e8b53028c905d17dac5f85e37b1390388dd436b581f4b789c9b8"
+  },
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-native-library-thumbnails.service",
+    "pid": "334704",
+    "binary_sha256": "7d58e468c79ce7d27796b118d98a5e5977167950965fe962dc2d0066845bc73a",
+    "project": "Venturi_Library_Replacement_V1.vvproj",
+    "project_epoch": "1792797840603028675:1",
+    "saved": true,
+    "empty_undo": true
+  },
+  "implemented": [
+    "Native 96-width thumbnails for visible ordinary online video/still roots in Library Grid/Details; List, compound, offline and audio-only rows retain glyphs.",
+    "Existing single derivative queue and bounded cache reused with separate Library profile, complete read-only Source identity and no project import, movie, waveform or Source-pane opening.",
+    "Native CPU thumbnail sampler, no upscale, real pre/post metadata probe, strong file identity and native legacy audio-count normalization restricted to Library thumbnails.",
+    "Only matching thumbnail nodes update; hidden/dialog/page/layout/stale ownership withdraws demand and explicit Refresh retries failures.",
+    "Closing a dialog or restoring a visible document resynchronizes layout controls rather than leaving Grid/List/Details disabled."
+  ],
+  "gate": {
+    "host": "halo1",
+    "client_cases": 330,
+    "native_cases": 14,
+    "native_passed_names": [
+      "api::tests::native_library_thumbnail_http_uses_read_only_source_authority_and_only_serves_png",
+      "source::tests::native_library_thumbnail_accepts_legacy_audio_count_without_changing_project_profile_or_metadata",
+      "source::tests::native_library_thumbnail_rejects_audio_and_canceled_work_before_decoding",
+      "source::tests::native_library_thumbnail_rejects_real_media_metadata_mismatch_before_output",
+      "source::tests::native_library_thumbnail_stills_use_first_image_without_upscaling_or_source_copy",
+      "source::tests::native_library_thumbnail_video_is_96_pixel_only_deduplicated_and_source_bound",
+      "source::tests::native_full_source_assets_publish_only_thumbnail_and_streamed_waveform_and_reuse_scoped_jobs",
+      "source::tests::still_source_assets_use_isolated_opaque_thumbnails_without_reencoding_the_original",
+      "api::tests::native_asset_source_browser_http_is_lease_free_epoch_bound_strict_and_embeds_picker",
+      "source::tests::native_asset_source_cache_authority_cannot_be_reused_as_project_media_or_after_library_path_swap",
+      "source::tests::native_asset_source_refuses_compound_composition_and_unmanaged_raw_paths",
+      "source::tests::native_asset_source_snapshot_is_raw_read_only_and_bound_to_catalog_and_current_file",
+      "api::tests::native_library_source_http_is_read_only_strict_and_requires_pinned_identity_after_resolve",
+      "api::tests::embedded_editor_module_imports_are_served_with_javascript_mime"
+    ],
+    "clippy_seconds": 8.55,
+    "build_seconds": 41.68,
+    "memory_peak_bytes": 2083192832,
+    "cpu_limit": 8,
+    "memory_limit_gib": 4,
+    "swap": false,
+    "serial": true,
+    "native_audio_source_hashes": {
+      "crates/vv-audio/src/loudness.rs": "62ad4d4dacd6b511430c37e3bf1b4be58d9e8b901d5593aa00c8a46f4836cf8c",
+      "crates/vv-audio/src/mixer.rs": "3f4b214e42fbb73bfb287cffe74fa6d6dd4ba2df345d3fc994ef34d7911334a0",
+      "crates/vv-audio/src/tests/loudness.rs": "e639da23898c4c29b7ecadd542e7dc6e689f1f1b85acb02f4d0e80d774275804",
+      "crates/vv-audio/src/tests/mixer.rs": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce"
+    },
+    "initial_failure": "R1:329/330 client cases; real disabled layout controls after modal close. Fixed production resume synchronization and strengthened regression; R2:330/330."
+  },
+  "live_readonly": {
+    "project_epoch": "1792797840603028675:1",
+    "generation": "0",
+    "asset_id": "b8246f41-75f9-4373-8b14-3fcfbe044952",
+    "asset_revision": "dfc1833f1d7e2e0146cec5a76b7ab70c558e4192a7cf832d8cb4f77b91467801",
+    "resolved_item": {
+      "audio_stream_count": 0,
+      "channels": 0,
+      "compound_timeline_id": null,
+      "content_hash": "12515990618221222951",
+      "duration_frames": 1000000000,
+      "folder": null,
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "has_audio": false,
+      "has_video": true,
+      "height": 36,
+      "id": "native-asset:b8246f41-75f9-4373-8b14-3fcfbe044952:dfc1833f1d7e2e0146cec5a76b7ab70c558e4192a7cf832d8cb4f77b91467801:0",
+      "is_image": true,
+      "name": "Venturi_Relink_Demo_20261023.png",
+      "native_asset": {
+        "id": "b8246f41-75f9-4373-8b14-3fcfbe044952",
+        "if_generation": "0",
+        "revision": "dfc1833f1d7e2e0146cec5a76b7ab70c558e4192a7cf832d8cb4f77b91467801",
+        "source_version": "56:89915482:140:1792792571:245548900:1792792571:296550400"
+      },
+      "offline": false,
+      "sample_rate": 0,
+      "width": 64
+    },
+    "job_id": "1792797844902578864",
+    "descriptor": {
+      "audio_stream_index": 0,
+      "fps": {
+        "den": 1,
+        "num": 25
+      },
+      "has_audio": false,
+      "has_video": true,
+      "include_waveform": false,
+      "source_version": "56:89915482:140:1792792571:245548900:1792792571:296550400",
+      "thumbnail_width": 96,
+      "total_frames": 1000000000
+    },
+    "png": {
+      "sha256": "d1d6c78ad6e8706d2545d0338eac0e9541f964c5ad93dc78ba83d237ff802bf6",
+      "bytes": 133,
+      "width": 64,
+      "height": 36
+    },
+    "deduplicated": true,
+    "session_unchanged": true,
+    "asset_unchanged": true,
+    "saved": true,
+    "empty_undo": true
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 11,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "saved_project_hashes": {
+    "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+    "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+    "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+    "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+    "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+    "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+    "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+    "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+    "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+    "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+    "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+  },
+  "limits": [
+    "Existing Windows editor remains connected. Its default viewport was0x0; a temporary1920x1080 override restores layout reads but Input.dispatchMouseEvent still times out and keyboard activation does not switch the panel. The override is reset. No new physical interaction, screenshot or visual acceptance is claimed.",
+    "Project-to-Library physical capture, broader shared-library/preset offline/large-media lifecycle and global F1-F7/M7 acceptance remain open.",
+    "Native Library has no media-type filter; none is added as a parity requirement. Existing unchanged DSP/renderer/export evidence is reused."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "full_goal": "active"
+  }
+}

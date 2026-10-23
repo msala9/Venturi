@@ -1,5 +1,37 @@
 # Implementation status
 
+## Native Library visible thumbnails — 2026-10-24
+
+Source `6c24b73`, runtime `7d58e468c79c`, owns halo1/8855.
+Library Grid/Details now request native96-width thumbnails only for intersecting
+ordinary online video/still roots. List, compound, offline and audio-only rows
+retain glyphs. The existing derivative producer, single queue and bounded cache
+are reused with a separate profile and complete Source identity. No project
+import, Source-pane opening, movie or waveform is introduced. Native sampling,
+no-upscale behavior and real pre/post metadata/file checks remain authoritative.
+
+Ready results replace only thumbnail nodes, preserving selection and drag state.
+Hidden/dialog/page/layout changes withdraw demand; explicit Refresh retries.
+R1 found a real resume defect: modal-close left layout buttons disabled. The
+production fix resynchronizes controls on close and visibility restoration;
+R2 passes330 client and14 native cases, Clippy8.55s/build41.68s,
+peak2,083,192,832B within4GiB/no swap. No local workload.
+
+Live read-only preparation of the actual64x36 shared asset returns a64x36 PNG
+without upscaling, deduplicates its job and leaves Session/history/catalog exact.
+All39 protected Sessions/40 PIDs,11 Saved files,5 local media,4 fixed NAS files
+and shared proxy remain unchanged. See `evidence/f5-native-library-thumbnails.json`.
+
+The existing Windows editor remains connected. A temporary1920x1080 viewport
+restores layout reads, but clicks still time out and keyboard activation does
+not switch the panel; the override is reset. No new screenshot or physical pool
+acceptance is claimed. Physical capture and broader F5/device/
+dense/DPI/M7 requirements remain open. Native Library has no media-type filter.
+Ledger stays **61 done /29 partial /2 excluded**; full F1-F7/M7 remains active.
+Next fix native Timeline ruler scrubbing: Web currently omits cut-edge snapping
+and the final pointer-up coordinate. Preserve native tie/threshold semantics and
+guard obsolete gestures. Reuse unchanged DSP/renderer/export checks.
+
 ## Native preset catalog/shortcuts and Pivot/Flip reconciliation — 2026-10-24
 
 Source `8aeab66`, runtime `f9b6a50578fc`, owns halo1/8855. Saved presets now

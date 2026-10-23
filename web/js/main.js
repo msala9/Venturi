@@ -281,7 +281,7 @@ document.querySelectorAll("[data-panel]").forEach((button) =>
       const monochrome=document.createElement('button');monochrome.textContent='☼ Black and white';
       bindPaletteDrag(monochrome,{kind:'filter',filter:'ColorCorrection',preset:'BlackAndWhite'});
       monochrome.addEventListener('click',()=>{
-        if(!writable || busy || unresolved || !canEditInspector())return;
+        if(!writable || busy || unresolved || viewerMode!=='program' || programPlayer?.state()!=='stopped' || document.querySelector('dialog[open]'))return;
         const clip=timeline?.tracks.filter(track=>track.kind==='video' && !track.locked).flatMap(track=>track.clips).find(clip=>view.selection.includes(clip.id));
         if(!clip)return notice('Select an unlocked video clip, or drag Black and white onto one');
         run({kind:'apply_palette_filter',clip_id:clip.id,filter:'ColorCorrection',preset:'BlackAndWhite'});

@@ -251,7 +251,7 @@ impl Editor {
         let audio_presets = crate::audio_presets::Store::new(preset_root)?;
         let assets = crate::asset_store::Store::new(asset_root)?;
         if shared {
-            files.set_shared_root(asset_root)?;
+            files.set_shared_root(assets.root())?;
         }
         let asset_jobs = crate::asset_jobs::Jobs::new_with_roots(
             assets.clone(),

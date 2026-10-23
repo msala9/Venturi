@@ -1,0 +1,119 @@
+{
+  "date": "2026-10-23",
+  "status": "partial_full_plan_functional_block",
+  "source_commit": "8594968",
+  "main_feature_commit": "ac4d974",
+  "url": "http://127.0.0.1:8844/",
+  "unit": "venturi-web-halo1-color-picker-r2.service",
+  "binary_sha256": "6fb00d49a1819f544fe57925e966ad1f1ee7f48c24934327e31bde702d43d054",
+  "project": "Venturi_Colors_V1.vvproj",
+  "project_sha256": "72e9d5022346f1f292ca883c276e03377264c6a92e7f4ef9d419d93a35b7c83a",
+  "implemented": [
+    "Compact visual swatches and popup controls for selected Title, background, outline, Solid and DropShadow colors. Precise linear RGBA fields are collapsed inside the popup.",
+    "Native picker semantics: hue/saturation from linear RGB, gamma only on value; linear alpha, gamma-byte display and optional sRGB hex. Unchanged input preserves original float precision.",
+    "Pointer motion remains local; owned release or keyboard confirmation sends one existing guarded native selection edit. Cancel, stale owner, capture loss, hidden or external scroll sends no draft.",
+    "Explicit alpha-zero edits normalize native premultiplied output to zero; bounded f32-keyed confirmed visual history retains latent hue/RGB for later alpha increases.",
+    "Lazy bounded 128x128 SV and 256x1 hue canvases; no paint loop. Expanding initially closed Inspector groups enables the chooser; disposal releases observers/listeners."
+  ],
+  "gate": {
+    "native_cases": 2,
+    "client_cases": 83,
+    "formatting": true,
+    "clippy_all_targets_deny_warnings": true,
+    "embedded_build": true,
+    "gate_peak_bytes": 1956110336,
+    "ui_defect_corrected": "Actual numeric Apply exposed captured internal popup scroll closing its own editor. Corrected listener ignores popup descendants while retaining external-scroll cancellation.",
+    "followup": "83 client cases and embedded rebuild pass; unchanged native, formatting and Clippy results reused.",
+    "followup_peak_bytes": 1477304320
+  },
+  "actual_windows": [
+    "One existing Windows work tab. Open/cancel leaves Saved and empty history; title hex confirmation adds exactly one Title entry; Undo shows #FFFFFFFF and Redo restores the new color.",
+    "Title alpha keyboard edit changes only alpha, preserving all RGB floats exactly. Background and outline hex colors, enabled background and selected DropShadow color use existing native commands.",
+    "Solid hue Shift+ArrowRight uses fine keyboard adjustment. Corrected precision popup scrolls to Apply and changes only R to native f32 0.12345679104328156, preserving G/B/A exactly.",
+    "Native R9700 composed preview is received at frame700 for the Solid and frame0 for the Title. The Adjustment above the Title keeps its existing BlackAndWhite filter.",
+    "Save As and actual reopen preserve every inspected native title/solid/filter value; final Saved at frame0 with empty Undo. Seven original media clips, second timeline tracks and Adjustment filter compare unchanged.",
+    "Popup stays within 1280x720 viewport (284x403.6 at x970.8/y232); actual 128x128/256x1 canvases. Default viewport restored."
+  ],
+  "native_values": {
+    "title_color": {
+      "a": 0.9900000095367432,
+      "b": 0.13286831974983215,
+      "g": 0.637596845626831,
+      "r": 1.0
+    },
+    "background": {
+      "center": [
+        0.0,
+        0.0
+      ],
+      "color": {
+        "a": 0.800000011920929,
+        "b": 0.07818741351366043,
+        "g": 0.03189602866768837,
+        "r": 0.008023192174732685
+      },
+      "corner_radius": 0.10000000149011612,
+      "enabled": true,
+      "height": 0.0,
+      "opacity": 100.0,
+      "outline_color": {
+        "a": 1.0,
+        "b": 0.9734452962875366,
+        "g": 0.9559733867645264,
+        "r": 0.9386857748031616
+      },
+      "outline_width": 3.0,
+      "width": 0.0
+    },
+    "shadow_color": {
+      "a": 1.0,
+      "b": 0.01032982300966978,
+      "g": 0.005605390761047602,
+      "r": 0.0024282156955450773
+    },
+    "solid_color": {
+      "a": 1.0,
+      "b": 0.46000000834465027,
+      "g": 0.2277199625968933,
+      "r": 0.12345679104328156
+    }
+  },
+  "protection": {
+    "prior_sessions": 28,
+    "prior_pids": 29,
+    "prior_saved_files": 23,
+    "candidate_saved_files": 2,
+    "local_original_files_unchanged": 15,
+    "nas_original_identity_and_bytes_unchanged": true,
+    "shared_proxy_movie": {
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "inode": 4211051,
+      "mtime_ns": 1792732445778166236,
+      "ctime_ns": 1792732445778166236,
+      "bytes": 2206043
+    },
+    "final_candidate_saved_empty_history": true,
+    "candidate_session_unchanged": true,
+    "inputs": {
+      "halo1-color-picker-r2-deployed.json": "62f87a2dd9baef85b61ebe30967856d164b4d334bc686e39b9a10f11d90336e2",
+      "halo1-color-picker-r2-final.json": "0d4361e23ffabe9f08e9b915c94c4a29435a7fce10a94f6618fe4b971009cd31",
+      "halo1-color-picker-saved-r1.json": "ce03f870ad0f7eac6ada6263f15dc4f115d636c09b9f82ad2def136f84d95605"
+    },
+    "prior_color_editor_saved_eight_undo_entries_preserved": true
+  },
+  "runtime_peak_bytes": 214487040,
+  "reused_evidence": [
+    "f3-palette-fonts-workflow.json: unchanged native export/transport pipeline; earlier 701-frame FullHD H264/AAC export and actual browser EOF29.226s. No new export of the changed-color montage is claimed.",
+    "m4-r9700-visual-parity.json: unchanged native renderer/effect matrix."
+  ],
+  "not_claimed": [
+    "Physical pointer/Shift/capture/DPI qualification: deterministic tests do not constitute hardware pointer coverage.",
+    "Actual alpha-zero cache rebuild is covered deterministically, not claimed as a Windows pointer exercise.",
+    "Continuous native hover preview or a fresh color-montage export.",
+    "Full F1-F7/M7 acceptance; ledger remains49done/41partial/2excluded."
+  ],
+  "screenshots": [
+    "f3-color-picker-workspace.jpg",
+    "f3-color-picker-solid.jpg"
+  ]
+}

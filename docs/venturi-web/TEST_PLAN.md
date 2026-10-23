@@ -22,6 +22,17 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F3 visual color (`8594968`, halo1/8844): see
+`evidence/f3-color-picker-workflow.json`. Two native asset/import cases, 83 client
+cases, formatting, all-target Clippy and embedded build pass. The actual internal
+popup-scroll defect is corrected with focused 83-case/rebuild evidence; unchanged
+native checks are reused. Actual Windows all-five-row edits, title Undo/Redo,
+alpha-only and precise one-channel retention, Save As/reopen and bounded native
+preview pass. Default and 1280x720 popup accessibility are exercised. Physical
+pointer/capture/DPI and native continuous hover preview stay explicit; alpha-zero
+latent-color reconstruction is deterministic coverage. No fresh export of this
+changed-color project is claimed; reuse the unchanged native pipeline evidence.
+
 F3 Effects/Title (`4ad4ad1`, halo1/8842): see
 `evidence/f3-palette-fonts-workflow.json`. 40 native / 111 client cases, formatting,
 all-target Clippy and build pass. The JS-only monochrome click correction passes
@@ -87,7 +98,7 @@ within the 8 CPU/4 GiB/no-swap bound.
 
 Actual Windows verification at 1280x720 confirms 84 px aligned strips and
 130 px faders, keyboard Master Gain 0 to -0.2 dB and Pan 0 to 0.01, double-click
-resets, Undo/Redo and Save As/reopen. Final state is Saved/frame0 with empty Undo
+resets, Undo/Redo and Save As/reopen. Final state is Saved/frame 0 with empty Undo
 in `Venturi_Mixer_V1.vvproj`; all 22 previous Sessions/23 PIDs/11 Saved files/
 three originals/shared proxy movie are preserved. Actual OS pointer drag,
 Shift and cancellation qualification is not claimed from deterministic tests.
@@ -218,7 +229,7 @@ Medium Ready recovery while generation remains paused, identical proxy inode/
 timestamps/SHA256, original model/metadata/view/Saved bytes and Program EOF456.
 The457-frame Full HD/AAC export matches earlier original exports byte for byte
 and plays to19.05-second file EOF. Final preferences enabled/medium/unpaused,
-frame0 and empty history remain. All16 earlier Sessions and17 PIDs including ds4
+frame 0 and empty history remain. All16 earlier Sessions and17 PIDs including ds4
 are equal; four earlier Saved project hashes are unchanged. See
 `evidence/f2-native-proxies-durable-workflow.json`. This accepts
 `proxy_quality_settings`/TS-018; broader Source/physical/dense/long4K/M7 work stays

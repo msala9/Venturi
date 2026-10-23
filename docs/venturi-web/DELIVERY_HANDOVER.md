@@ -1,8 +1,36 @@
 # Usable editing workflow — handover
 
-## Current halo1 Effects and Title delivery — 2026-10-23
+## Current halo1 visual-color delivery — 2026-10-23
 
-Current Effects/Title delivery: **http://127.0.0.1:8842/**, source `4ad4ad1`
+Current visual-color delivery: **http://127.0.0.1:8844/**, source `8594968`
+(main feature `ac4d974`), binary `6fb00d49a181`, service
+`venturi-web-halo1-color-picker-r2.service`. Selected Title, background, outline,
+Solid and DropShadow colors now use compact swatches and a visual popup with
+precise RGBA fields collapsed inside it. Native linear hue/saturation, gamma
+value and linear alpha are retained; optional hex entry converts sRGB bytes.
+Opening/canceling/no-op does not quantize Saved floats. Existing native selected
+edits, keys, reset, Undo and persistence remain authoritative.
+
+The bounded gate passes two native asset/import checks, 83 client cases,
+formatting, all-target Clippy and embedded build. Actual Windows found an internal
+popup scroll closing numeric Apply; `8594968` corrects it and passes the focused
+83-case gate/rebuild, reusing unchanged native/Clippy results. Actual editing
+covers all five rows, title Undo/Redo, alpha-only RGB preservation, fine hue
+keyboard edit and precise one-channel Solid editing after internal scrolling.
+Save As/reopen retains exact native values in `Venturi_Colors_V1.vvproj`, Saved
+at frame 0 with empty Undo. Seven original media clips, second timeline and
+Adjustment grade remain unchanged. Popup accessibility is checked at 1280x720;
+the default viewport is restored. Runtime peak is 214,487,040 bytes.
+
+All 28 prior Sessions, 29 PIDs, 23 prior Saved files, 15 fixed local originals,
+the NAS original and shared proxy are unchanged, including the previous color
+editor's eight Undo entries. See `evidence/f3-color-picker-workflow.json` and
+workspace/Solid images. Reuse the unchanged renderer matrix and previous
+701-frame native export/browser EOF evidence; no new changed-color export is
+claimed. Physical pointer/DPI, continuous hover preview and full F1-F7/M7 remain
+open. Ledger remains **49 done / 41 partial / 2 excluded**.
+
+Preserved Effects/Title delivery: **http://127.0.0.1:8842/**, source `4ad4ad1`
 (main feature `086ad60`), binary `dfb6b7081bbd`, service
 `venturi-web-halo1-effects-placement-r2.service`. The Effects palette now places
 native Title/Solid/Adjustment generators on chosen timeline targets and applies

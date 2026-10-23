@@ -22,7 +22,35 @@ video lease APIs or a second audio-routing architecture for this deferred detail
 
 ## Active completion objective
 
-Current Effects/Title delivery: **http://127.0.0.1:8842/**, source `4ad4ad1`
+Current visual-color delivery: **http://127.0.0.1:8844/**, source `8594968`
+(main feature `ac4d974`), binary `6fb00d49a181`, service
+`venturi-web-halo1-color-picker-r2.service`. Selected Title, background, outline,
+Solid and DropShadow colors now use compact swatches and a visual popup with
+precise RGBA fields collapsed inside it. Native linear hue/saturation, gamma
+value and linear alpha are retained; optional hex entry converts sRGB bytes.
+Opening/canceling/no-op does not quantize Saved floats. Existing native selected
+edits, keys, reset, Undo and persistence remain authoritative.
+
+The bounded gate passes two native asset/import checks, 83 client cases,
+formatting, all-target Clippy and embedded build. Actual Windows found an internal
+popup scroll closing numeric Apply; `8594968` corrects it and passes the focused
+83-case gate/rebuild, reusing unchanged native/Clippy results. Actual editing
+covers all five rows, title Undo/Redo, alpha-only RGB preservation, fine hue
+keyboard edit and precise one-channel Solid editing after internal scrolling.
+Save As/reopen retains exact native values in `Venturi_Colors_V1.vvproj`, Saved
+at frame 0 with empty Undo. Seven original media clips, second timeline and
+Adjustment grade remain unchanged. Popup accessibility is checked at 1280x720;
+the default viewport is restored. Runtime peak is 214,487,040 bytes.
+
+All 28 prior Sessions, 29 PIDs, 23 prior Saved files, 15 fixed local originals,
+the NAS original and shared proxy are unchanged, including the previous color
+editor's eight Undo entries. See `evidence/f3-color-picker-workflow.json` and
+workspace/Solid images. Reuse the unchanged renderer matrix and previous
+701-frame native export/browser EOF evidence; no new changed-color export is
+claimed. Physical pointer/DPI, continuous hover preview and full F1-F7/M7 remain
+open. Ledger remains **49 done / 41 partial / 2 excluded**.
+
+Preserved Effects/Title delivery: **http://127.0.0.1:8842/**, source `4ad4ad1`
 (main feature `086ad60`), binary `dfb6b7081bbd`, service
 `venturi-web-halo1-effects-placement-r2.service`. The Effects palette now places
 native Title/Solid/Adjustment generators on chosen timeline targets and applies
@@ -127,7 +155,7 @@ Master strip; its passing build reuses those unchanged 40 cases.
 Actual Windows verification at 1280x720 confirms aligned native-sized controls,
 keyboard master Gain 0 to -0.2 dB and Pan 0 to 0.01, double-click resets,
 Undo/Redo and Save As/reopen. Final state is Saved in
-`Venturi_Mixer_V1.vvproj`, master Gain/Pan 0, timeline1/frame0 and empty Undo.
+`Venturi_Mixer_V1.vvproj`, master Gain/Pan 0, timeline1/frame 0 and empty Undo.
 OS pointer drags/Shift/cancellation were not physically qualified here; their
 behavior is covered by deterministic client cases. All 22 prior Sessions,
 23 PIDs, 11 Saved files, three originals and the shared proxy movie are unchanged.
@@ -188,7 +216,7 @@ copies. Restoring originals returns identical PNGs/balance values. A prepared
 movie's status/asset return SOURCE_CHANGED after its still changes; restoring
 bytes does not forge its old ctime witness. The real457-frame montage reaches
 native Ready and browser EOF456. The temporary filter is undone, then Saved and
-reopened at timeline1/frame0 with empty Undo. Timeline DTOs/file media/folders/view
+reopened at timeline1/frame 0 with empty Undo. Timeline DTOs/file media/folders/view
 are unchanged; native compound invalidation counters advance normally during
 edit/Undo. The candidate's three Saved counter-line changes are recorded.
 All20 earlier Sessions,21 PIDs,eight Saved hashes and the shared proxy movie are
@@ -284,7 +312,7 @@ The Medium proxy returns Ready while generation remains paused, with identical
 inode, timestamps and SHA256: no recoding. Program uses the recovered proxy and
 reaches EOF456. The 457-frame Full HD H.264/AAC export is byte-identical to prior
 original-media exports and plays to file EOF. Native model, metadata, Saved bytes,
-history and final frame0 are unchanged. See
+history and final frame 0 are unchanged. See
 `evidence/f2-native-proxies-durable-workflow.json` and recovered/workspace screenshots.
 All 16 earlier Sessions/live Undo, 17 service PIDs including ds4 and four earlier
 Saved projects are preserved. Halo2 and NAS are untouched.

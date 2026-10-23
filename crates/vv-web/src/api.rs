@@ -2067,6 +2067,9 @@ async fn assets(request: Request) -> Response {
         "/js/curve-viewport.js" => asset!("/web/js/curve-viewport.js", "text/javascript"),
         "/js/curve-window.js" => asset!("/web/js/curve-window.js", "text/javascript"),
         "/js/source-placement.js" => asset!("/web/js/source-placement.js", "text/javascript"),
+        "/js/project-pool-placement.js" => {
+            asset!("/web/js/project-pool-placement.js", "text/javascript")
+        }
         "/js/source-waveform.js" => asset!("/web/js/source-waveform.js", "text/javascript"),
         "/js/eventkeys.js" => asset!("/web/js/eventkeys.js", "text/javascript"),
         "/js/keyselection.js" => asset!("/web/js/keyselection.js", "text/javascript"),

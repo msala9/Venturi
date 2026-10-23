@@ -24,7 +24,7 @@ export function nativeAssetPlacement(timeline,view,[x,y],width,height,items){
 }
 
 export function mediaRangePlacement(timeline,view,[x,y],width,height,items){
-  if(!Array.isArray(items) || !items.length || items.length>32 || items.some(item=>!fps(item?.fps) || !Number.isSafeInteger(item.source_in) || item.source_in<0 || !Number.isSafeInteger(item.source_out) || item.source_out<=item.source_in || item.source_out>MAX_FRAME || typeof item.has_video!=='boolean' || typeof item.has_audio!=='boolean' || !(item.has_video || item.has_audio) || !Number.isSafeInteger(item.audio_streams) || item.audio_streams<0 || item.audio_streams>128 || item.has_audio && item.audio_streams<1))return null;
+  if(!Array.isArray(items) || !items.length || items.length>256 || items.some(item=>!fps(item?.fps) || !Number.isSafeInteger(item.source_in) || item.source_in<0 || !Number.isSafeInteger(item.source_out) || item.source_out<=item.source_in || item.source_out>MAX_FRAME || typeof item.has_video!=='boolean' || typeof item.has_audio!=='boolean' || !(item.has_video || item.has_audio) || !Number.isSafeInteger(item.audio_streams) || item.audio_streams<0 || item.audio_streams>128 || item.has_audio && item.audio_streams<1))return null;
   if(!fps(timeline?.fps) || !Array.isArray(timeline.tracks) || ![x,y,width,height,view.scale,view.origin].every(Number.isFinite) || view.scale<=0 || x<HEADER || x>=width || y<RULER || y>=height)return null;
   const layout=timelineLayout(timeline,view,height),hover=layout.trackAtY(y),hovered=timeline.tracks[hover],pane=layout.paneAtY(y);
   let target;

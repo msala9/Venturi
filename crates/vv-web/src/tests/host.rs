@@ -1,6 +1,57 @@
 use super::*;
 
 #[test]
+fn project_pool_placement_uses_current_session_media_without_source_jobs_and_replays_exact_selection()
+ {
+    use vv_core::Id;
+    let (root, mut editor, media) = native_asset_fixture("project-pool-place");
+    let timeline = editor.session.project.timelines.iter().next().unwrap().0;
+    let operation = Operation::PlaceProjectMedia {
+        media_ids: vec![media.raw().to_string()],
+        start_frame: 96,
+        target: commands::AssetDropTarget::NewAudioTrack {},
+        overwrite: false,
+    };
+    let mutation = request(&editor, operation.clone(), "pool-placement", Some(timeline));
+    let position = editor.session.history.position();
+    let ack = editor
+        .mutation(Some(timeline.raw().to_string()), mutation.clone())
+        .unwrap();
+    assert_eq!(ack["timeline_id"], timeline.raw().to_string());
+    let clips = ack["clip_ids"].as_array().unwrap();
+    assert_eq!(clips.len(), 1);
+    assert_eq!(editor.session.history.position(), position + 1);
+    let placed = editor.session.project.timelines[timeline]
+        .tracks
+        .iter()
+        .flat_map(|track| &track.clips)
+        .find(|clip| clip.id.0.to_string() == clips[0].as_str().unwrap())
+        .unwrap();
+    assert!(matches!(placed.source, vv_core::ClipSource::Media(id) if id == media));
+    assert_eq!(placed.timeline_start, 96);
+    let after = json!(editor.session.project);
+    std::fs::remove_file(&editor.session.project.media_pool[media].path).unwrap();
+    assert_eq!(
+        editor
+            .mutation(Some(timeline.raw().to_string()), mutation)
+            .unwrap(),
+        ack
+    );
+    let offline = request(&editor, operation, "pool-placement-offline", Some(timeline));
+    assert_eq!(
+        editor
+            .mutation(Some(timeline.raw().to_string()), offline)
+            .unwrap_err()
+            .1,
+        "SOURCE_OFFLINE"
+    );
+    assert_eq!(json!(editor.session.project), after);
+    assert_eq!(editor.session.history.position(), position + 1);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn marked_source_placement_uses_a_ready_file_bound_job_and_replays_receipts_before_revalidation() {
     use vv_core::Id;
     let (root, mut editor, media) = native_asset_fixture("source-placement");

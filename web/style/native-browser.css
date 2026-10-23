@@ -2,6 +2,9 @@
 #browser .catalog-toolbar { display: flex; gap: 4px; padding: 3px 0; }
 #browser .catalog-toolbar select { flex: 1 1 0; width: 0; min-width: 0; }
 #browser .catalog-count { margin: 2px 0 4px; font-size: 10px; }
+#browser .catalog-sort-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px; border-bottom: 1px solid var(--border); }
+#browser .catalog-sort-header button { min-height: 21px; padding: 2px 5px; border: 0; border-radius: 0; background: var(--raised); font-size: 10px; text-align: left; }
+#browser .catalog-sort-duration { min-width: 53px; text-align: right !important; }
 #browser .catalog-rows { display: flex; flex-direction: column; gap: 0; min-width: 0; }
 #browser .media-item {
   display: grid; grid-template-columns: 48px minmax(0, 1fr) auto;

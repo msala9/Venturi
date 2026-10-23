@@ -25,6 +25,7 @@ import { createExportPanel } from "./export.js";
 import { createScopes, scopeTarget } from "./scopes.js";
 import { balanceSelected, balanceTarget } from "./balance.js";
 import { renderCatalog,mediaRowInfo } from "./catalog.js";
+import {PROJECT_POOL_DRAG_TYPE,projectPoolItems,projectPoolOperation,projectPoolTarget} from './project-pool-placement.js';
 import { createSlipView } from "./slip.js";
 import { createSilencePanel } from "./silence.js";
 import { createLibraryPanel } from "./library.js";
@@ -1168,7 +1169,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
   catalog?.dispose();
-  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDragStart:startProjectPoolDrag,onDragEnd:()=>canvasTimeline.projectPoolDnd.end(),onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
   nativeAssets?.invalidate();
   sourcePlacement?.refresh();
   refreshSourceWaveform();
@@ -1339,21 +1340,36 @@ $("add-solid").addEventListener("click", () => {
 $("split").addEventListener("click", () =>
   run({ kind: "split", clip_ids: view.selection, frame: view.playhead }),
 );
-$("insert-media").addEventListener("click", () => {
-  if (selectedMedia) {
-    if (sourceOpenId === selectedMedia) rememberSourceRange();
-    const range = sourceRanges.get(selectedMedia);
-    let selection = {};
-    try { if (range) selection = sourceSelection(range.source_in,range.source_out,documentState.media.find((m)=>m.id===selectedMedia).duration_frames); }
-    catch (error) { notice(error.message); return; }
-    run({
-      kind: "insert_media",
-      media_id: selectedMedia,
-      start_frame: view.playhead,
-      ...selection,
-    });
-  }
-  else notice("Select an imported media first");
+function projectPoolContext(){
+  return documentState && timeline && timeline.id!=='fixture'?{project_epoch:documentState.project_epoch,generation:documentState.generation,timeline_id:timeline.id,timeline_revision:timeline.revision}:null;
+}
+function selectedProjectPoolItems(){return projectPoolItems(projectPoolContext(),catalog?.selectedItems() ?? []);}
+function stopProjectPoolPlayback(){fastTransport?.stop();audioScrub?.stop();programPlayer?.stop();sourcePlayer?.pause();}
+async function commitProjectPoolPlacement(operation){
+  const owner={intent:nativePlacementIntent,navigation:timelineOpenSequence,frame:view.playhead},receipt=await commit(operation);
+  if(owner.intent!==nativePlacementIntent || owner.navigation!==timelineOpenSequence || owner.frame!==view.playhead || receipt.project_epoch!==documentState?.project_epoch || receipt.generation!==documentState?.generation || receipt.timeline_id!==timeline?.id || !Array.isArray(receipt.clip_ids))return receipt;
+  const ids=new Set(receipt.clip_ids);view.selection=timeline.tracks.flatMap(track=>track.clips).filter(clip=>ids.has(clip.id)).map(clip=>clip.id);
+  view.selectionAnchor=firstSelectionAnchor(timeline,view.selection,documentState.project_epoch);view.transitionSelection=null;view.selectedGap=null;
+  selected();canvasTimeline.invalidate();return receipt;
+}
+function startProjectPoolDrag(event,media){
+  if(!event.dataTransfer || !writable || busy || unresolved){event.preventDefault();return;}
+  stopProjectPoolPlayback();
+  const captured=projectPoolItems(projectPoolContext(),media),signature=JSON.stringify([captured,mediaState]);
+  if(!captured){event.preventDefault();notice('Select up to256 available project media with valid native duration and audio streams');return;}
+  const current=()=>writable && !busy && !unresolved && JSON.stringify([selectedProjectPoolItems(),mediaState])===signature;
+  const payload=canvasTimeline.projectPoolDnd.start(captured,current,async(draft,isCurrent)=>{
+    if(!isCurrent())throw Error('The project media selection changed before insertion');
+    await commitProjectPoolPlacement(projectPoolOperation(captured,draft.start_frame,draft.target,draft.overwrite));
+  });
+  if(!payload){event.preventDefault();return;}
+  event.dataTransfer.setData(PROJECT_POOL_DRAG_TYPE,payload);event.dataTransfer.effectAllowed='copy';
+}
+$("insert-media").addEventListener("click",()=>{
+  if(!writable || busy || unresolved || !canvasTimeline.navigationIdle())return;
+  stopProjectPoolPlayback();const items=selectedProjectPoolItems();
+  if(!items){notice('Select available project media first');return;}
+  void commitProjectPoolPlacement(projectPoolOperation(items,view.playhead,projectPoolTarget(timeline,items),view.retimeOverwrite)).catch(error=>notice(error.message));
 });
 mediaImport=createMediaImportPanel({dialog:$("imports"),root:$("import-list"),status:$("import-error"),getContext:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:operation=>mutate(operation,true),onImported:ids=>{
   if(ids.some(id=>!documentState?.media.some(item=>item.id===id)))throw Error('The imported media are not yet visible in the refreshed project');

@@ -167,6 +167,13 @@ pub enum Operation {
         #[serde(default, skip_serializing_if = "is_false")]
         overwrite: bool,
     },
+    PlaceProjectMedia {
+        media_ids: Vec<String>,
+        start_frame: FrameIdx,
+        target: AssetDropTarget,
+        #[serde(default, skip_serializing_if = "is_false")]
+        overwrite: bool,
+    },
     SafeMove {
         moves: Vec<Move>,
     },
@@ -593,6 +600,12 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     }
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::PlaceProjectMedia { .. } => {
+            return Err(ApiError::conflict(
+                "PROJECT_MEDIA_PLACEMENT_REQUIRED",
+                "Verify the selected project sources before placing them",
+            ));
+        }
         Operation::PlaceSource { .. } => {
             return Err(ApiError::conflict(
                 "SOURCE_PREPARATION_REQUIRED",
@@ -1812,14 +1825,24 @@ pub(crate) fn prepare_native_asset_placement(
     else {
         return Err(ApiError::invalid("Choose a native asset placement"));
     };
-    let timeline = project.timelines.get(id).ok_or_else(ApiError::missing)?;
     if selected.is_empty() || selected.len() > 32 {
         return Err(ApiError::invalid("Place 1 to 32 native asset roots"));
     }
+    prepare_whole_media_placement(project, id, selected, *start_frame, target, *overwrite)
+}
+pub(crate) fn prepare_whole_media_placement(
+    project: &core::Project,
+    id: TimelineId,
+    selected: &[core::MediaId],
+    start_frame: FrameIdx,
+    target: &AssetDropTarget,
+    overwrite: bool,
+) -> Result<NativeAssetPlacement> {
+    let timeline = project.timelines.get(id).ok_or_else(ApiError::missing)?;
     if let AssetDropTarget::Track { track_id } = target {
         track_index(timeline, track_id)?;
     }
-    let mut cursor = *start_frame;
+    let mut cursor = start_frame;
     let mut inserts = Vec::new();
     for media in selected {
         let meta = &project
@@ -1849,9 +1872,9 @@ pub(crate) fn prepare_native_asset_placement(
         timeline: id,
         inserts,
         target: target.clone(),
-        start: *start_frame,
+        start: start_frame,
     };
-    validate_native_placement(project, &plan, *overwrite)?;
+    validate_native_placement(project, &plan, overwrite)?;
     Ok(plan)
 }
 pub(crate) fn prepare_source_placement(

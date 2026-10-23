@@ -313,10 +313,10 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       const draft=view.draft,label=draft.error?`Transition blocked · ${draft.error}`:draft.noop?'Transition already identical · no edit':`${draft.transition.kind} · ${draft.duration}f · ${draft.slot==='cut_after'?'crossing':'single edge'}${draft.replacement?' · REPLACE enabled · Undo restores':''} · release to apply`;
       const x=HEADER+8,y=Math.max(RULER+16,height-16);ctx.fillStyle=color('--raised');ctx.fillRect(x-4,y-8,Math.max(1,width-x),17);ctx.fillStyle=draft.error?color('--danger'):color('--text');ctx.fillText(label,x,y,Math.max(1,width-x-4));
     }
-    if(['native_asset_placement','source_media_placement'].includes(view.draft?.kind)){
+    if(['native_asset_placement','source_media_placement','project_media_placement'].includes(view.draft?.kind)){
       const draft=view.draft;ctx.save();ctx.fillStyle=draft.error?color('--danger'):color('--primary');ctx.strokeStyle=ctx.fillStyle;ctx.setLineDash([4,3]);
       for(const rect of draft.outlines){ctx.globalAlpha=.25;ctx.fillRect(rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top);ctx.globalAlpha=1;ctx.strokeRect(rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top);ctx.fillText(rect.name,rect.left+4,rect.top+14,Math.max(1,rect.right-rect.left-8));}
-      ctx.setLineDash([]);const source=draft.kind==='source_media_placement',label=draft.error?`${source?'Source':'Asset'} drop blocked · ${draft.error}`:`${source?'Marked Source range':`${draft.assets.length} native asset(s)`} · ${draft.length_frames}f${draft.overwrite?' · OVERWRITE':''} · release to insert with one Undo`;
+      ctx.setLineDash([]);const source=draft.kind==='source_media_placement',pool=draft.kind==='project_media_placement',label=draft.error?`${source?'Source':pool?'Media':'Asset'} drop blocked · ${draft.error}`:`${source?'Marked Source range':pool?`${draft.media_ids.length} project media`:`${draft.assets.length} native asset(s)`} · ${draft.length_frames}f${draft.overwrite?' · OVERWRITE':''} · release to insert with one Undo`;
       ctx.fillStyle=color('--raised');ctx.fillRect(HEADER+4,height-24,Math.max(1,width-HEADER-8),20);ctx.fillStyle=draft.error?color('--danger'):color('--text');ctx.fillText(label,HEADER+8,height-10,Math.max(1,width-HEADER-16));ctx.restore();
     }
     if(view.draft?.kind==='preset_application'){

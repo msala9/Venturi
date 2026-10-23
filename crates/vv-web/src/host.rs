@@ -535,7 +535,7 @@ impl Editor {
                 for field in ["media_ids","clip_ids","changed"] {value[field]=report[field].clone();}
             }
             if let Some(ids)=timeline_edit_selection {value["clip_ids"]=json!(ids);}
-            if matches!(request.operation,Operation::PlaceSource{..}) {value["timeline_id"]=json!(timeline);}
+            if matches!(request.operation,Operation::PlaceSource{..}|Operation::PlaceProjectMedia{..}) {value["timeline_id"]=json!(timeline);}
             if matches!(request.operation,Operation::CopyClips{..}|Operation::CopyMedia{..}|Operation::CutClips{..}) {
                 value["clipboard_revision"]=json!(self.clipboard.as_ref().and_then(|clipboard|clipboard.revision(&self.session)));
             }
@@ -634,6 +634,17 @@ impl Editor {
                 ));
             }
             return match &request.operation {
+                Operation::PlaceProjectMedia { .. } => {
+                    let clips = crate::project_media_placement::place(
+                        &mut self.session,
+                        &self.files,
+                        id,
+                        &request.operation,
+                    )?;
+                    self.session.sync_timeline_media(id);
+                    self.timeline_edit_selection = Some(clips);
+                    Ok(())
+                }
                 Operation::PlaceSource {
                     media_id,
                     job_id,

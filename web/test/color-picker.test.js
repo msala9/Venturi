@@ -94,3 +94,14 @@ test('collapsed Inspector groups re-enable their chooser only when opened and cl
     f.open();const alpha=f.field('Test color alpha');f.send(alpha,'pointerdown');f.group.open=false;f.group.dispatchEvent(new Event('toggle'));f.send(alpha,'pointerup');await settle();assert.deepEqual(f.writes,[]);assert.equal(f.popup().hidden,true);assert.equal(f.frames.size,0);
   }finally{f.dispose();}
 });
+
+test('precision popup internal scroll retains its local draft while Inspector or window scroll cancels',()=>{
+  const f=fixture();try{
+    const r=f.field('Test color R');
+    for(const outside of [f.group,f.win]){
+      f.open();r.value='.123456789';f.send(r,'input');
+      for(const target of [f.popup(),r.parentElement.parentElement]){const event=new Event('scroll');Object.defineProperty(event,'target',{value:target});f.win.dispatchEvent(event);assert.equal(f.popup().hidden,false);assert.equal(r.value,'.123456789');assert.deepEqual(f.writes,[]);}
+      const event=new Event('scroll');Object.defineProperty(event,'target',{value:outside});f.win.dispatchEvent(event);assert.equal(f.popup().hidden,true);assert.equal(r.value,String(value.r));assert.deepEqual(f.writes,[]);
+    }
+  }finally{f.dispose();}
+});

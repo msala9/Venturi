@@ -106,7 +106,7 @@ export function renderColorPicker(root,{label,value,controls,apply,openState}){
   listen(precision,'toggle',()=>openState?.set?.(`color-linear:${label}`,precision.open));
   listen(doc,'pointerdown',event=>{if(opened && event.target!==swatch && section.contains?.(event.target)===false)cancel();},true);
   listen(doc,'focusin',event=>{if(opened && section.contains?.(event.target)===false)cancel();});
-  listen(doc,'visibilitychange',()=>{if(doc.hidden)cancel();});listen(win,'blur',()=>cancel());listen(win,'resize',()=>cancel());listen(win,'scroll',()=>{if(opened)cancel();},true);
+  listen(doc,'visibilitychange',()=>{if(doc.hidden)cancel();});listen(win,'blur',()=>cancel());listen(win,'resize',()=>cancel());listen(win,'scroll',event=>{if(opened && popup.contains?.(event.target)!==true)cancel();},true);
   const visibilityChanged=()=>{if(opened && !current())cancel();else controls.sync();};
   const observer=typeof MutationObserver==='function'?new MutationObserver(visibilityChanged):null;
   for(let ancestor=root;ancestor;ancestor=ancestor.parentElement){observer?.observe(ancestor,{attributes:true,attributeFilter:['hidden','inert','open']});if(ancestor.tagName?.toLowerCase()==='details')listen(ancestor,'toggle',visibilityChanged);}

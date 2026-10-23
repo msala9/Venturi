@@ -1,5 +1,6 @@
 import { request } from "./api.js";
 import {renderAudioPresets} from './audio-presets.js';
+import {bindMixerControl,mixerGainPosition} from './mixer-controls.js';
 
 export function mixerDraftContext(query) {
   const params=new URLSearchParams(query),keys=['project_epoch','if_generation','timeline_id','revision'];
@@ -8,9 +9,10 @@ export function mixerDraftContext(query) {
 export function renderMixer(root, timeline, { writable, commit, notice, open = false, catalog, openPaths = new Set(), query, onMeters, audioPresets, meters, mixDrafts }) {
   const customPresets=audioPresets?{...audioPresets,expectedContext:{...audioPresets.getContext()}}:null;
   const section=document.createElement("details"),summary=document.createElement("summary");summary.textContent="Audio mixer";section.open=open;section.append(summary);
+  const console=document.createElement('div');console.className='mixer-console';section.append(console);
   const tracks=timeline.tracks.filter((track)=>track.kind === "audio").map((track)=>({channel:track.id,label:track.label || track.id,locked:track.locked,solo:track.solo,muted:track.muted,...track.mix}));
   tracks.push({channel:"master",label:"Master",locked:false,...timeline.master});
-  const meterViews=[],mixInputs=[],context=mixerDraftContext(query);
+  const meterViews=[],mixInputs=[],directControls=[],context=mixerDraftContext(query);
   const restored=context && mixDrafts?.context===context?mixDrafts.channels:[];
   let disposed=false;
   for(const track of tracks) {
@@ -22,7 +24,7 @@ export function renderMixer(root, timeline, { writable, commit, notice, open = f
         button.addEventListener('click',async()=>{if(button.disabled || section.isConnected===false)return;button.disabled=true;try{await commit({kind:'set_track',track:track.channel,[field]:!track[field]});}catch(error){notice(error.message);}finally{button.disabled=!writable || track.locked;}});flags.append(button);
       }
       form.append(flags);
-    }
+    }else{const spacer=document.createElement('div');spacer.className='mixer-strip-flags';spacer.setAttribute('aria-hidden','true');form.append(spacer);}
     const peak=document.createElement('div'),readout=document.createElement('output');peak.className='mixer-strip-peaks';
     const bars=['L','R'].map(side=>{const bar=document.createElement('meter');bar.min=-60;bar.max=6;bar.low=-18;bar.high=0;bar.optimum=-12;bar.value=-60;bar.setAttribute('aria-label',`${track.label} ${side} dBFS`);peak.append(bar);return bar;});
     readout.textContent='—';peak.append(readout);form.append(peak);meterViews.push({id:track.channel,bars,readout});
@@ -32,11 +34,25 @@ export function renderMixer(root, timeline, { writable, commit, notice, open = f
       const input=document.createElement("input");input.type="number";input.step="any";input.min=min;input.max=max;input.value=restored?.find(row=>row.channel===track.channel)?.[key] ?? track[key];input.disabled=!writable || track.locked;input.required=true;inputs[key]=input;
       row.append(input);form.append(row);
     }
+    const direct=document.createElement('div');direct.className='mixer-direct';
+    const pan=document.createElement('button');pan.type='button';pan.className='mixer-pan';pan.disabled=!writable || track.locked;pan.setAttribute('aria-label',`${track.label} balance`);pan.title='Drag up/right to pan right · Shift for precision · double-click or Enter to center';
+    const needle=document.createElement('span');needle.className='mixer-pan-needle';needle.setAttribute('aria-hidden','true');pan.append(needle);direct.append(pan);
+    const fader=document.createElement('button');fader.type='button';fader.className='mixer-fader';fader.disabled=!writable || track.locked;fader.setAttribute('aria-label',`${track.label} gain fader`);fader.title='Drag vertically to adjust gain · Shift for precision · double-click or Enter for 0 dB';
+    const rail=document.createElement('span');rail.className='mixer-fader-rail';rail.setAttribute('aria-hidden','true');
+    for(const db of [12,6,0,-6,-12,-20,-30,-40,-60]){const tick=document.createElement('span');tick.className='mixer-fader-tick';tick.style?.setProperty('bottom',`${mixerGainPosition(db)*100}%`);tick.textContent=db>0?`+${db}`:String(db);rail.append(tick);}
+    const cap=document.createElement('span');cap.className='mixer-fader-cap';rail.append(cap);fader.append(rail);direct.append(fader);form.append(direct);
     const button=document.createElement("button");button.textContent=`Apply ${track.label} mix`;button.disabled=!writable || track.locked;form.append(button);
     let waiting=false;
+    const nativeState=()=>{const channel=track.channel==='master'?timeline.master:timeline.tracks.find(item=>item.id===track.channel);return JSON.stringify([audioPresets?.getContext?.() ?? context,channel?.locked,channel?.mix?.gain_db ?? channel?.gain_db,channel?.mix?.pan ?? channel?.pan]);};
+    const expected=nativeState(),available=()=>!disposed && !waiting && writable && !track.locked && section.isConnected!==false && section.open && (section.getClientRects?.().length ?? 1)>0 && !document.querySelector?.('dialog[open]') && nativeState()===expected;
+    for(const [kind,element] of [['gain_db',fader],['pan',pan]]){
+      let previous;
+      const control=bindMixerControl(element,{kind,value:track[kind],canInteract:available,getContext:nativeState,onStart:()=>{previous=String(inputs[kind].value);},onDraft:value=>{inputs[kind].value=String(value);},onCancel:()=>{if(previous!==undefined)inputs[kind].value=previous;},onCommit:async value=>{waiting=true;button.disabled=true;try{await commit({kind:'set_mixer',channel:track.channel,[kind]:value});}finally{waiting=false;button.disabled=!writable || track.locked;}},notice});
+      directControls.push(control);inputs[kind].addEventListener('input',()=>{const value=inputs[kind].value;control.cancel();inputs[kind].value=value;});
+    }
     form.addEventListener("submit",async(event)=>{event.preventDefault();if(disposed || waiting || button.disabled || !writable || track.locked || section.isConnected===false || !form.reportValidity())return;waiting=true;button.disabled=true;try{await commit({kind:"set_mixer",channel:track.channel,gain_db:Number(inputs.gain_db.value),pan:Number(inputs.pan.value)});}catch(error){notice(error.message);}finally{waiting=false;button.disabled=!writable || track.locked;}});
     mixInputs.push({channel:track.channel,inputs});
-    section.append(form);
+    console.append(form);
     if(catalog) renderEffects(section,track,catalog,!writable || track.locked,commit,notice,openPaths,timeline.id,query,customPresets);
   }
   if(onMeters){const meters=document.createElement("button");meters.textContent="Open native meters / spectrum";meters.addEventListener("click",onMeters);section.append(meters);}
@@ -50,9 +66,9 @@ export function renderMixer(root, timeline, { writable, commit, notice, open = f
     for(const row of meterViews){const channel=result.channels.find(channel=>channel.channel===row.id);if(!channel)continue;channel.db.forEach((db,index)=>row.bars[index].value=db===null?-60:db);const db=value=>value===null?'−∞':value.toFixed(1);row.readout.textContent=`${db(channel.db[0])} / ${db(channel.db[1])} dBFS${channel.clipped.some(Boolean)?' · CLIP':''}`;}
     meterStatus.textContent=`LIVE · native prepared audio · sample ${result.end_sample}`;
   }});
-  const syncMeters=()=>meters?.sync();section.addEventListener('toggle',syncMeters);
-  section.captureMixDrafts=()=>context?{context,channels:mixInputs.map(({channel,inputs})=>({channel,gain_db:String(inputs.gain_db.value),pan:String(inputs.pan.value)}))}:null;
-  section.disposeMeters=()=>{disposed=true;unsubscribe?.();section.removeEventListener('toggle',syncMeters);};
+  const syncMeters=()=>{if(!section.open)for(const control of directControls)control.cancel();meters?.sync();};section.addEventListener('toggle',syncMeters);
+  section.captureMixDrafts=()=>{for(const control of directControls)control.cancel();return context?{context,channels:mixInputs.map(({channel,inputs})=>({channel,gain_db:String(inputs.gain_db.value),pan:String(inputs.pan.value)}))}:null;};
+  section.disposeMeters=()=>{for(const control of directControls)control.dispose();disposed=true;unsubscribe?.();section.removeEventListener('toggle',syncMeters);};
   return section;
 }
 export function effectName(effect) {return typeof effect.kind === "string" ? effect.kind : Object.keys(effect.kind)[0];}

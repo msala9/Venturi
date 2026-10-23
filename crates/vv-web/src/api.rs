@@ -2335,6 +2335,7 @@ async fn assets(request: Request) -> Response {
         "/js/capture-worklet.js" => asset!("/web/js/capture-worklet.js", "text/javascript"),
         "/js/capture-buffer.js" => asset!("/web/js/capture-buffer.js", "text/javascript"),
         "/js/mixer.js" => asset!("/web/js/mixer.js", "text/javascript"),
+        "/js/mixer-controls.js" => asset!("/web/js/mixer-controls.js", "text/javascript"),
         "/js/visual.js" => asset!("/web/js/visual.js", "text/javascript"),
         "/js/masks.js" => asset!("/web/js/masks.js", "text/javascript"),
         "/js/timeline/index.js" => asset!("/web/js/timeline/index.js", "text/javascript"),

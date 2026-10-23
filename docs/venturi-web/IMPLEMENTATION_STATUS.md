@@ -4,7 +4,35 @@
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8819/**, source `4e983c2`,
+The current halo1 delivery is **http://127.0.0.1:8822/**, source `9ecf29d`,
+binary `2f3f3cdc11d1`, in `venturi-web-halo1-source-placement-r5.service`.
+Marked Source video/image and compact video/audio handles place verified
+original-media ranges in existing/new native tracks, with a collapsed keyboard
+alternative. Stream roles match native insertion independently of preview
+audition. File identity, endpoint rounding, overlap/linked-lock policy and
+durable mutation receipts remain authoritative; each insertion is one Undo.
+Source Replay at EOF returns to absolute frame zero. Successful view-write
+acknowledgements retain their CAS revision across playback and delayed local
+snapshots, fixing the earlier position-persistence warning.
+
+The bounded gate covers all547 vv-web cases using the546 initial passes and
+three corrected affected cases; formatting, all-target Clippy and build pass.
+Client coverage reuses1234 initial passes plus44 corrected event-harness cases
+and14 final Source/shared-asset cases. A final14-case client/build gate covers
+the two browser-found UI availability/default corrections. Actual Windows
+qualification imports moving A/V, marks24–96, drags all/video/audio roles,
+inserts on a new audio track, performs one Undo/Redo, saves/reopens, replays
+Source from7274 to0, plays the264-frame montage to natural EOF and remembers263
+without a CAS warning, and plays its Full HD/AAC export to natural EOF.
+See `evidence/f2-source-placement-workflow.json` and screenshots. Earlier
+halo1 Sessions, files, PIDs and live Undo, ds4 and NAS remain preserved; halo2
+is untouched. The ledger stays47done/43partial/2excluded. Next complete the
+audio-only Source waveform surface and remaining F2 behavior; full F1-F7/M7,
+physical audio, long4K and dense/DPI acceptance remain open.
+
+### Preserved floating Curves delivery
+
+The preserved halo1 delivery is **http://127.0.0.1:8819/**, source `4e983c2`,
 binary `16e283f83538`, in `venturi-web-halo1-curve-window-r2.service`.
 Its independent Saved `Venturi_Curve_Window.vvproj` retains the animated Library
 montage and changes the final Opacity key from30 to35. Curves now opens a single

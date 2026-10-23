@@ -49,6 +49,15 @@ Viewer must expose statuses: CURRENT, SEEKING, STALE_REVISION, MEDIA_OFFLINE, FR
 
 Special **Slip viewer**: when using Slip tool, split viewer into clip's new In and Out frames; show available handles before/after. This is a native Venturi UX feature, not optional future AI nice-to-have.
 
+Drag the received Source video/image to insert its verified marked range with
+all available streams. Two compact hover/focus handles select video only or all
+audio streams; preview audition selection does not restrict insertion streams.
+The timeline shows native target/new-track outlines and safe overlap feedback.
+Source options > Insert marked range provides streams, destination and Insert
+at playhead for keyboard users. These controls stay collapsed during ordinary
+editing and regain availability after a drop. Source Play at the full file's
+final frame returns to absolute zero, preserving quality/audio preview choices.
+
 ## 5. Timeline spec
 
 Implemented Canvas geometry in CSS pixels: track header 150; ruler 48 high

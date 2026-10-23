@@ -2,6 +2,34 @@
 
 ## Current halo1 working instance
 
+Use **http://127.0.0.1:8822/** in the existing Windows browser. Source `9ecf29d`,
+binary `vv-web-2f3f3cdc11d1`, runs as unprivileged `halo` in
+`venturi-web-halo1-source-placement-r5.service`, with projects in
+`/home/halo/VenturiWeb-source-placement-r5-20261023`. Open Saved
+`Venturi_Source_Workflow.vvproj`: a1920×1080/24fps,264-frame montage with linked
+A/V, independent video on V2 and independent audio on A1/A2. Export retains
+job1792715078822361761, all264frames, Full HD H.264/AAC.
+
+Double-click the media row to open Source. Set Source options > In/Out, then
+drag the video for all streams or its compact video/audio handle for one role.
+Drop on a track or a new-track zone. Source options > Insert marked range is
+the keyboard alternative. Preview audition choices do not limit inserted audio
+streams. Overlap is refused unless the existing explicit overwrite policy is
+enabled; locked linked peers remain protected. Each edit uses one native Undo.
+Source Replay at EOF returns to absolute zero. Position persistence after
+Program EOF now retains the native CAS revision without the earlier warning.
+
+The same-port hidden tunnel forwards8822 to halo1. Canonical NAS/ds4 arguments,
+eight-CPU/4-GiB/no-swap/low-priority limits and the nonblocking shared GPU lock
+remain. No automatic restart, boot enablement or qualification deadline. Save
+before deliberate stop; live Undo requires the running server. Earlier
+ports8813/8816/8817/8818/8819/8820/8821 remain untouched, including their Undo.
+The initial Source workflow on8821 retains its five-entry edit history;8822
+retains the saved montage and an undone verification insertion. See
+`evidence/f2-source-placement-workflow.json`. Full F2-F7/M7 remains partial.
+
+### Preserved Program-lookahead instance
+
 Use **http://127.0.0.1:8820/** in the existing Windows browser. Source `672b495`,
 binary `vv-web-7260ae71ec09`, runs as unprivileged `halo` in
 `venturi-web-halo1-program-lookahead.service`, with projects in
@@ -18,8 +46,8 @@ remain. There is no automatic restart, boot enablement or qualification deadline
 The Saved export panel retains job 1792712418165697838: frames 7200–7275,
 1920×1080 H.264/AAC, verified through browser EOF. Save before deliberate stop;
 live Undo requires the running server. Ports8813/8816/8817/8818/8819 retain their
-previous Sessions, project bytes and Undo. The project-view CAS warning after
-natural EOF is an explicit remaining position-persistence defect; native Saved
+previous Sessions, project bytes and Undo. Its historical project-view CAS warning after
+natural EOF is fixed in the current9ecf29d delivery; this instance's native Saved
 project bytes and editing history stay unchanged. See
 `evidence/f2-program-lookahead-workflow.json` for exact scope and remaining gates.
 

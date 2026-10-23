@@ -1,0 +1,1204 @@
+{
+  "date": "2026-10-23",
+  "status": "qualified_Source_placement_block_full_F2_remains_partial",
+  "source_commit": "9ecf29dbc59e624035c403926810b9c124556c18",
+  "url": "http://127.0.0.1:8822/",
+  "runtime_unit": "venturi-web-halo1-source-placement-r5.service",
+  "binary_sha256": "2f3f3cdc11d13017054c04cc2e97b354358badb0f3263a976d72806026a69149",
+  "project": "Venturi_Source_Workflow.vvproj",
+  "project_sha256": "f07335a3bba744e2405b0c179933611bc290398fb1c016a1e76437f8769fd6a3",
+  "runtime_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "Nice=19",
+    "IOWeight=10",
+    "OOMScoreAdjust=1000",
+    "TasksMax=128",
+    "Restart=no",
+    "TimeoutStopSec=30",
+    "KillMode=control-group",
+    "UMask=0077",
+    "NoNewPrivileges=yes",
+    "WorkingDirectory=/home/halo/VenturiWeb-source-placement-r5-20261023",
+    "Environment=XDG_RUNTIME_DIR=/home/halo/VenturiWeb-source-placement-r5-20261023/.xdg",
+    "Environment=VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/radeon_icd.json",
+    "Environment=WGPU_BACKEND=vulkan",
+    "Environment=TOKIO_WORKER_THREADS=4",
+    "StandardOutput=append:/home/halo/VenturiWeb-source-placement-r5-20261023/.server.log",
+    "StandardError=append:/home/halo/VenturiWeb-source-placement-r5-20261023/.server.log"
+  ],
+  "build_properties": [
+    "User=halo",
+    "Group=halo",
+    "CPUQuota=800%",
+    "MemoryMax=4G",
+    "MemorySwapMax=0",
+    "OOMScoreAdjust=1000",
+    "Nice=19",
+    "IOWeight=10",
+    "TasksMax=128",
+    "RuntimeMaxSec=180",
+    "TimeoutStopSec=20",
+    "KillMode=control-group",
+    "Restart=no",
+    "NoNewPrivileges=yes",
+    "StandardOutput=append:/home/halo/.cache/venturi-build/source-placement-r5.log",
+    "StandardError=append:/home/halo/.cache/venturi-build/source-placement-r5.log"
+  ],
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "7b15b823404d27a0617100d362f450689bd1870f9c2326ca4e94ce4b166255d4",
+    "crates/vv-web/src/commands.rs": "b6a33801e0e3e79d2369bf4a678896a4b88d246661b915334a1413af89d1e1d7",
+    "crates/vv-web/src/host.rs": "fbd1a1d89dd824f936c934296c6aa629b81d9d5b3e93cb4481279b2164975210",
+    "crates/vv-web/src/source.rs": "4582ce9a39db3162205cd281d268392b2445c115aca2c5e2d4038f635fff263f",
+    "crates/vv-web/src/tests/api.rs": "cb39b0d169a6f16dd291c0bc9447d444a3bd75e2a15afce180cf6c1e9d9ea619",
+    "crates/vv-web/src/tests/commands.rs": "425641a491e96d0b2a6948720ef04757645f7f2274b4c15ccd9bcc505e20b659",
+    "crates/vv-web/src/tests/host.rs": "67383d67e5babc9a4c7af91ecbd5b4d10991ded1dfbf11f8b32b0356463a94b9",
+    "crates/vv-web/src/tests/source.rs": "f1b35aa0812d7a6b534c2228e2e95be89e8d175b7497d2921db9f2930c866c0d",
+    "web/index.html": "2d6bc02c2fef70781733a3990fa0cec8a7bfb2208424fafa89096d58b9f317d6",
+    "web/js/main.js": "790e8aefd0ad5ab9bf62b2cd2184bd38133f345db9dfa532d4b214ecc4442c45",
+    "web/js/project-view.js": "6bf4eeedf064f19e88df81bd889eb060fa08743d2eab8c2da4f6835e25f0337a",
+    "web/js/source.js": "0b719244798507e5f7551dd1b853113d9eb934f24af051c8c34d65da14ab7523",
+    "web/js/timeline/asset-drop.js": "727260c747d3a2d11564d0b0ae110bcf5659c877b22563ab2a7acc2614de7a89",
+    "web/js/timeline/draw.js": "f5f512906a6094f6d0a0fe113dc69c3a47485edbf41c3d6efc6983fd3a9a6fa8",
+    "web/js/timeline/index.js": "d12d5036dca54619c1cd2d2aa2f2d05ddd4a7139b6c378a1226fb5150e5d5a1f",
+    "web/js/timeline/input.js": "5d562071fe578b461df3c74ac3ee7125788da6d619f1132779b5b81aa2da0778",
+    "web/style/native-shell.css": "de11847de0f600af8535665609da38f7c7f3898d23b3dcc98c0ea51ff6f36d79",
+    "web/test/project-view.test.js": "99ff5611ee4c87ba16a89341dd50b99874fe4c7ac4460c245226fbc005a39b23",
+    "web/test/source.test.js": "66dff35ed0bf8074937f4126c5b4e63936c14922a0bca01a19883d673506a1fb",
+    "web/js/source-placement.js": "7df1b6176ba968d60d8bdc07c8f20c33da850e4bd0330cac593f26bdcc8224a5",
+    "web/test/source-placement.test.js": "318ae5271fc7ef2bae05019530f00204ac16bff16b1c532bc7f42cb722bcc6d4",
+    "web/test/timeline-layout.test.js": "239c038dab97df29bb0219e2f2e8318066b42eb1919890b636ebeacfef1742c1"
+  },
+  "source_fixture": {
+    "name": "River_303s_AV.mp4",
+    "bytes": 38193748,
+    "sha256": "144a542d6aa92269f8d61585832838e30f6adbfc54344f2ea5b787faffffd1d8"
+  },
+  "checks": {
+    "javascript_initial": "1234/1235 passed; baseline fake-window handler map discarded capture listener",
+    "javascript_event_harness": "44/44 pass after retaining multiple listeners faithfully",
+    "javascript_final": "14/14 Source/shared-asset cases pass, including the new BigInt endpoint regression",
+    "native_initial": "546/547 pass; new zero-span oracle confused Clip construction with set_speed minimum",
+    "native_corrected": "3/3 marked Source command/host cases pass; all547 covered with unchanged initial passes",
+    "formatting": "pass",
+    "clippy_all_targets": "pass, -D warnings",
+    "embedded_build": "pass",
+    "final_ui_gate": "14/14 client cases and embedded rebuild; unchanged native gate reused"
+  },
+  "native_ui_snapshots": {
+    "imported": {
+      "project": "Venturi_Source_Workflow.vvproj",
+      "generation": "1",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "ImportMedia"
+        ],
+        "position": 1
+      },
+      "view": {
+        "active_timeline": null,
+        "playheads": {}
+      },
+      "view_revision": "092daa6c57bdfa9caa85251cda3fc3f71a0be5e3e73db08383596bd0c10d7ae2",
+      "tracks": [
+        {
+          "id": "0",
+          "label": "V1",
+          "kind": "video",
+          "clips": []
+        },
+        {
+          "id": "1",
+          "label": "A1",
+          "kind": "audio",
+          "clips": []
+        }
+      ]
+    },
+    "all-drop": {
+      "project": "Venturi_Source_Workflow.vvproj",
+      "generation": "2",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips"
+        ],
+        "position": 2
+      },
+      "view": {
+        "active_timeline": null,
+        "playheads": {}
+      },
+      "view_revision": "092daa6c57bdfa9caa85251cda3fc3f71a0be5e3e73db08383596bd0c10d7ae2",
+      "tracks": [
+        {
+          "id": "0",
+          "label": "V1",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "1",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "1",
+          "label": "A1",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "0",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        }
+      ]
+    },
+    "all-undo": {
+      "project": "Venturi_Source_Workflow.vvproj",
+      "generation": "3",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips"
+        ],
+        "position": 1
+      },
+      "view": {
+        "active_timeline": null,
+        "playheads": {}
+      },
+      "view_revision": "092daa6c57bdfa9caa85251cda3fc3f71a0be5e3e73db08383596bd0c10d7ae2",
+      "tracks": [
+        {
+          "id": "0",
+          "label": "V1",
+          "kind": "video",
+          "clips": []
+        },
+        {
+          "id": "1",
+          "label": "A1",
+          "kind": "audio",
+          "clips": []
+        }
+      ]
+    },
+    "all-redo": {
+      "project": "Venturi_Source_Workflow.vvproj",
+      "generation": "4",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips"
+        ],
+        "position": 2
+      },
+      "view": {
+        "active_timeline": null,
+        "playheads": {}
+      },
+      "view_revision": "092daa6c57bdfa9caa85251cda3fc3f71a0be5e3e73db08383596bd0c10d7ae2",
+      "tracks": [
+        {
+          "id": "0",
+          "label": "V1",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "1",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "1",
+          "label": "A1",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "0",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        }
+      ]
+    },
+    "video-drop": {
+      "project": "Venturi_Source_Workflow.vvproj",
+      "generation": "6",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips"
+        ],
+        "position": 3
+      },
+      "view": {
+        "active_timeline": null,
+        "playheads": {}
+      },
+      "view_revision": "092daa6c57bdfa9caa85251cda3fc3f71a0be5e3e73db08383596bd0c10d7ae2",
+      "tracks": [
+        {
+          "id": "0",
+          "label": "V1",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "1",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "1",
+          "label": "A1",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "0",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "label": "V2",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "2",
+              "media_id": "2",
+              "start_frame": 96,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        }
+      ]
+    },
+    "audio-drop": {
+      "project": "Venturi_Source_Workflow.vvproj",
+      "generation": "7",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips",
+          "InsertClips"
+        ],
+        "position": 4
+      },
+      "view": {
+        "active_timeline": null,
+        "playheads": {}
+      },
+      "view_revision": "092daa6c57bdfa9caa85251cda3fc3f71a0be5e3e73db08383596bd0c10d7ae2",
+      "tracks": [
+        {
+          "id": "0",
+          "label": "V1",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "1",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "1",
+          "label": "A1",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "0",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            },
+            {
+              "id": "3",
+              "media_id": "2",
+              "start_frame": 192,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "label": "V2",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "2",
+              "media_id": "2",
+              "start_frame": 96,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        }
+      ]
+    },
+    "accessible-audio": {
+      "project": "Venturi_Source_Workflow.vvproj",
+      "generation": "9",
+      "unsaved": true,
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips",
+          "InsertClips",
+          "InsertClips"
+        ],
+        "position": 5
+      },
+      "view": {
+        "active_timeline": null,
+        "playheads": {}
+      },
+      "view_revision": "092daa6c57bdfa9caa85251cda3fc3f71a0be5e3e73db08383596bd0c10d7ae2",
+      "tracks": [
+        {
+          "id": "0",
+          "label": "V1",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "1",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "1",
+          "label": "A1",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "0",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            },
+            {
+              "id": "3",
+              "media_id": "2",
+              "start_frame": 192,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "label": "V2",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "2",
+              "media_id": "2",
+              "start_frame": 96,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "3",
+          "label": "A2",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "4",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        }
+      ]
+    },
+    "saved": {
+      "project": "Venturi_Source_Workflow.vvproj",
+      "generation": "9",
+      "unsaved": false,
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips",
+          "InsertClips",
+          "InsertClips"
+        ],
+        "position": 5
+      },
+      "view": {
+        "active_timeline": "1",
+        "playheads": {
+          "1": 0
+        }
+      },
+      "view_revision": "2ce25917142554e771d758d4f82e8244a3dca3f9f9360e328a512cd5e4e9a8f7",
+      "tracks": [
+        {
+          "id": "0",
+          "label": "V1",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "1",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "1",
+          "label": "A1",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "0",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            },
+            {
+              "id": "3",
+              "media_id": "2",
+              "start_frame": 192,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "label": "V2",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "2",
+              "media_id": "2",
+              "start_frame": 96,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "3",
+          "label": "A2",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "4",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        }
+      ]
+    },
+    "natural-eof": {
+      "project": "Venturi_Source_Workflow.vvproj",
+      "generation": "9",
+      "unsaved": false,
+      "history": {
+        "labels": [
+          "ImportMedia",
+          "InsertClips",
+          "InsertClips",
+          "InsertClips",
+          "InsertClips"
+        ],
+        "position": 5
+      },
+      "view": {
+        "active_timeline": "1",
+        "playheads": {
+          "1": 263
+        }
+      },
+      "view_revision": "c19712f8787e9451a99c70e7e6d90701d0ace6efaaca8be92155f41611e44dca",
+      "tracks": [
+        {
+          "id": "0",
+          "label": "V1",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "1",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "1",
+          "label": "A1",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "0",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": "0",
+              "audio_stream_index": 0
+            },
+            {
+              "id": "3",
+              "media_id": "2",
+              "start_frame": 192,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "2",
+          "label": "V2",
+          "kind": "video",
+          "clips": [
+            {
+              "id": "2",
+              "media_id": "2",
+              "start_frame": 96,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        },
+        {
+          "id": "3",
+          "label": "A2",
+          "kind": "audio",
+          "clips": [
+            {
+              "id": "4",
+              "media_id": "2",
+              "start_frame": 0,
+              "length_frames": 72,
+              "source_in_frames": 24,
+              "source_out_frames": 96,
+              "linked_group": null,
+              "audio_stream_index": 0
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "final_reopen": {
+    "project": "Venturi_Source_Workflow.vvproj",
+    "generation": "0",
+    "unsaved": false,
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 0
+      }
+    },
+    "view_revision": "2ce25917142554e771d758d4f82e8244a3dca3f9f9360e328a512cd5e4e9a8f7",
+    "tracks": [
+      {
+        "id": "0",
+        "label": "V1",
+        "kind": "video",
+        "clips": [
+          {
+            "id": "1",
+            "media_id": "2",
+            "start_frame": 0,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": "0",
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "1",
+        "label": "A1",
+        "kind": "audio",
+        "clips": [
+          {
+            "id": "0",
+            "media_id": "2",
+            "start_frame": 0,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": "0",
+            "audio_stream_index": 0
+          },
+          {
+            "id": "3",
+            "media_id": "2",
+            "start_frame": 192,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "label": "V2",
+        "kind": "video",
+        "clips": [
+          {
+            "id": "2",
+            "media_id": "2",
+            "start_frame": 96,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "label": "A2",
+        "kind": "audio",
+        "clips": [
+          {
+            "id": "4",
+            "media_id": "2",
+            "start_frame": 0,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      }
+    ]
+  },
+  "final_undone_verification": {
+    "project": "Venturi_Source_Workflow.vvproj",
+    "generation": "2",
+    "unsaved": true,
+    "history": {
+      "labels": [
+        "InsertClips"
+      ],
+      "position": 0
+    },
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 0
+      }
+    },
+    "view_revision": "2ce25917142554e771d758d4f82e8244a3dca3f9f9360e328a512cd5e4e9a8f7",
+    "tracks": [
+      {
+        "id": "0",
+        "label": "V1",
+        "kind": "video",
+        "clips": [
+          {
+            "id": "1",
+            "media_id": "2",
+            "start_frame": 0,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": "0",
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "1",
+        "label": "A1",
+        "kind": "audio",
+        "clips": [
+          {
+            "id": "0",
+            "media_id": "2",
+            "start_frame": 0,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": "0",
+            "audio_stream_index": 0
+          },
+          {
+            "id": "3",
+            "media_id": "2",
+            "start_frame": 192,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "label": "V2",
+        "kind": "video",
+        "clips": [
+          {
+            "id": "2",
+            "media_id": "2",
+            "start_frame": 96,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "label": "A2",
+        "kind": "audio",
+        "clips": [
+          {
+            "id": "4",
+            "media_id": "2",
+            "start_frame": 0,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      }
+    ]
+  },
+  "final_session": {
+    "project": "Venturi_Source_Workflow.vvproj",
+    "generation": "2",
+    "unsaved": false,
+    "history": {
+      "labels": [
+        "InsertClips"
+      ],
+      "position": 0
+    },
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 263
+      }
+    },
+    "view_revision": "c19712f8787e9451a99c70e7e6d90701d0ace6efaaca8be92155f41611e44dca",
+    "tracks": [
+      {
+        "id": "0",
+        "label": "V1",
+        "kind": "video",
+        "clips": [
+          {
+            "id": "1",
+            "media_id": "2",
+            "start_frame": 0,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": "0",
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "1",
+        "label": "A1",
+        "kind": "audio",
+        "clips": [
+          {
+            "id": "0",
+            "media_id": "2",
+            "start_frame": 0,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": "0",
+            "audio_stream_index": 0
+          },
+          {
+            "id": "3",
+            "media_id": "2",
+            "start_frame": 192,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "label": "V2",
+        "kind": "video",
+        "clips": [
+          {
+            "id": "2",
+            "media_id": "2",
+            "start_frame": 96,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "label": "A2",
+        "kind": "audio",
+        "clips": [
+          {
+            "id": "4",
+            "media_id": "2",
+            "start_frame": 0,
+            "length_frames": 72,
+            "source_in_frames": 24,
+            "source_out_frames": 96,
+            "linked_group": null,
+            "audio_stream_index": 0
+          }
+        ]
+      }
+    ]
+  },
+  "final_controls": {
+    "insertEnabledAfterDrop": true,
+    "defaultDestination": "track:0",
+    "footer": "Connected \u00b7 writer\nReconnect\nCommand applied"
+  },
+  "source_EOF_replay": {
+    "before_window": [
+      7274,
+      7275
+    ],
+    "full_file_frames": 7275,
+    "after_window": [
+      0,
+      1440
+    ],
+    "initial_absolute_frame": 0,
+    "later_absolute_frame": 144,
+    "later_local_time": 6.148276,
+    "later_duration": 60.01,
+    "later_paused": false,
+    "quality": "medium",
+    "audio": "all available streams",
+    "history_mutation": false
+  },
+  "export_job": {
+    "cancel_requested": false,
+    "durability_error": false,
+    "durable": true,
+    "error": null,
+    "export_revision": "af55de8d66545f301ae10c45bba5c5ec58a79032b4c1e50b5c97476ffa02af84",
+    "frames": 0,
+    "id": "1792715078822361761",
+    "previous_state": null,
+    "program": {
+      "audio_present": true,
+      "end_frame": 264,
+      "export_settings": {
+        "audio": true,
+        "audio_bitrate_kbps": 128,
+        "audio_codec": "aac",
+        "audio_fast_coder": false,
+        "preset": "veryfast",
+        "quality": 18,
+        "scale_percent": 100
+      },
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "2",
+      "height": 1080,
+      "project_epoch": "1792714907850898764:1",
+      "revision": "5fe7dbc4122d3d20",
+      "start_frame": 0,
+      "width": 1920
+    },
+    "progress": {
+      "compose_fps": 629.1862918867994,
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "current_frame": 264,
+      "decode_fps": 587.938420585878,
+      "decoder_fallback": false,
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)"
+        }
+      ],
+      "elapsed_ms": 1468.826254,
+      "encode_fps": 192.52323264082642,
+      "encoder": "X264",
+      "fps": 179.73534942002743,
+      "startup_ms": 71.406848,
+      "total_frames": 264
+    },
+    "project_epoch": "1792714907850898764:1",
+    "source_asset": null,
+    "source_assets": null,
+    "source_version": null,
+    "source_window": null,
+    "state": "ready"
+  },
+  "export_file": {
+    "bytes": 2854042,
+    "sha256": "d00e254580a313111b499983e30746f0eccc464650617b51b250bcde730b363e",
+    "probe": {
+      "programs": [],
+      "stream_groups": [],
+      "streams": [
+        {
+          "codec_name": "h264",
+          "codec_type": "video",
+          "width": 1920,
+          "height": 1080,
+          "r_frame_rate": "24/1",
+          "duration": "11.000000",
+          "nb_frames": "264"
+        },
+        {
+          "codec_name": "aac",
+          "codec_type": "audio",
+          "sample_rate": "48000",
+          "channels": 2,
+          "r_frame_rate": "0/0",
+          "duration": "11.008000",
+          "nb_frames": "517"
+        }
+      ],
+      "format": {
+        "duration": "11.008000",
+        "size": "2854042"
+      }
+    }
+  },
+  "export_browser": {
+    "currentTime": 11.008,
+    "duration": 11.008,
+    "ended": true,
+    "error": null,
+    "height": 1080,
+    "muted": false,
+    "paused": true,
+    "playbackRate": 1,
+    "width": 1920
+  },
+  "final_export_byte_identical_to_pre_UI_fix": true,
+  "protected_sessions_and_undo_unchanged": true,
+  "protected_project_hashes": {
+    "8813": {
+      "/home/halo/VenturiWeb-halo1-20261022/Venturi_Halo1.vvproj": "c7a2a0e1ca24133fe5035b2cda2a20fa1bbc7740e7039f14a6768d37c43f69b2"
+    },
+    "8816": {
+      "/home/halo/VenturiWeb-color-audio-20261022/Venturi_Color_Audio.vvproj": "7c62ae054ca9867f4e40ab777a76a706f43b70dbd6656bae343107f7a9f61ea2"
+    },
+    "8817": {
+      "/home/halo/VenturiWeb-library-edit-20261023/Venturi_Library_Edit.vvproj": "0b5e97f66e11ed968879a42c1a644125405c9bb3688407b94d537304789ab2e2"
+    },
+    "8818": {
+      "/home/halo/VenturiWeb-native-curves-20261023/Venturi_Native_Curves.vvproj": "84d8d4248c848ae6307cd3480af62afb3209ef16513accad2b6dc957f4e86dab"
+    },
+    "8819": {
+      "/home/halo/VenturiWeb-curve-window-20261023/Venturi_Curve_Window.vvproj": "7353500237ac3d1432d62dbacaf1cc8909afeafed01b2a91685918160b590518"
+    },
+    "8820": {
+      "/home/halo/VenturiWeb-program-lookahead-20261023/Venturi_Long_Playback.vvproj": "5cb04e90bb346ea7c8a23791b3b7b43959a6f21b290b1ce03d1524916ef39a6f",
+      "/home/halo/VenturiWeb-program-lookahead-20261023/Venturi_Program_Lookahead.vvproj": "96b2b0060d567444971b0bebf66a87606a9b2ced9c663134af1b5b524620383b"
+    },
+    "8821": {
+      "/home/halo/VenturiWeb-source-placement-20261023/Venturi_Source_Workflow.vvproj": "2fceb30a5f83ec6d5345f8f329ab86f0d0fa427fa4694fd67759af2ff7e0d3c2"
+    }
+  },
+  "protected_pids": {
+    "venturi-web-halo1-nas.service": "84786",
+    "venturi-web-halo1-color-audio-r2.service": "99965",
+    "venturi-web-halo1-library-edit-r2.service": "105609",
+    "venturi-web-halo1-native-curves.service": "109843",
+    "venturi-web-halo1-curve-window-r2.service": "114229",
+    "venturi-web-halo1-program-lookahead.service": "116676",
+    "venturi-web-halo1-source-placement.service": "121987",
+    "ds4-console.service": "58396"
+  },
+  "halo2_untouched": true,
+  "nas_mount_catalog_assets_and_presets_not_modified": true,
+  "final_unit": "ActiveState=active\nMainPID=123540\nResult=success\nMemoryCurrent=257515520\nMemoryPeak=449732608\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+  "preview": {
+    "active_programs": 0,
+    "available": true,
+    "backend": "Vulkan",
+    "device_id": "0x7551",
+    "driver": "radv",
+    "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+    "exact_context_resident": false,
+    "frame_rendered": true,
+    "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+    "resident": false,
+    "software": false,
+    "vendor_id": "0x1002"
+  },
+  "behavior": [
+    "Source drag owns verified ordinary Source job, epoch, file descriptor version, marks, stream role and native timeline revision",
+    "All, video-only and all-audio insertion matches native target resolution, rational endpoint rounding and one InsertClips Undo",
+    "Native trial validates overlap, linked locks, bounds, track limit and original file identity immediately before apply; durable receipt replay precedes revalidation",
+    "Zero conformed spans refuse atomically; BigInt endpoint subtraction preserves precise nonzero-source durations",
+    "Opaque local Source drag token remains separate from native Library and preset payloads; hover does not mutate",
+    "Collapsed keyboard streams/destination/Insert-at-playhead alternative; compact handles do not reserve a toolbar row",
+    "Source EOF Replay seeks verified absolute0; canceled/replaced seeks cannot autoplay late",
+    "Project-view CAS retains successful same-project acknowledgements across playback/gen changes and refuses stale local snapshot regressions; external conflicts still require a fresh read"
+  ],
+  "limitations": [
+    "Audio-only Source waveform viewer surface and speculative Source continuity remain open",
+    "No gapless/physical audio, device recording/latency, long4K, dense/DPI or full M7 claim",
+    "Qualification uses a repeated864x480 moving A/V source in a1920x1080/24fps timeline,960x540 Program preview and264-frame Full HD export",
+    "Earlier source8821 retains five native edit entries; final8822 reopens its saved montage and retains one undone verification insertion",
+    "Full F1-F7/M7 goal remains active; ledger47done/43partial/2excluded unchanged"
+  ]
+}

@@ -14,7 +14,23 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8820/**, source `672b495`,
+The current halo1 delivery is **http://127.0.0.1:8822/**, source `9ecf29d`,
+binary `2f3f3cdc11d1`, in `venturi-web-halo1-source-placement-r5.service`.
+Source now drags its verified marked range with all streams, video only or all
+audio streams into existing/new native tracks. A collapsed keyboard alternative
+inserts at the Program playhead. Native file identity, rational endpoint
+conforming, overlap/linked-lock policy, durable receipts and one Undo remain
+authoritative. Source Replay at file EOF returns to absolute frame zero.
+Project-view acknowledgements retain their CAS revision across playback and
+late local snapshots; the earlier EOF position-persistence defect is fixed.
+See `evidence/f2-source-placement-workflow.json` for the integrated import,
+three-role placement, Undo/Redo, Save/reopen, natural playback and Full HD export.
+All earlier editors, including8820/8821, retain their Sessions and Undo.
+The ledger remains47 done /43 partial /2 excluded. Next complete the native
+audio-only Source waveform surface and remaining Source/F2 behavior; physical
+audio, long4K, dense/DPI and M7 requirements remain open.
+
+The preserved Program-lookahead delivery is **http://127.0.0.1:8820/**, source `672b495`,
 binary `7260ae71ec09`, in `venturi-web-halo1-program-lookahead.service`.
 It prepares one adjacent Program window while the current movie plays, reuses
 the existing bounded worker and preserves native DSP origin. A ready future is
@@ -27,8 +43,8 @@ The actual Windows scenario imports moving A/V, inserts linked clips into a
 1920×1080/24fps timeline, saves, plays 0–7275 naturally at 1× with 960×540 preview,
 and plays a 75-frame Full HD/AAC export to EOF. Both windows retain audio origin 0.
 See `evidence/f2-program-lookahead-workflow.json` for measured preparation,
-scope and limitations. A project-view CAS warning at EOF remains to fix;
-Saved native project bytes and Undo are unchanged. This closes the speculative
+scope and limitations. Its historical project-view CAS warning is fixed in
+the current9ecf29d delivery; its Saved project bytes and Undo are unchanged. This closes the speculative
 preparation gap, without claiming gapless playback or physical audio acceptance.
 
 The preserved floating-Curves delivery is **http://127.0.0.1:8819/**, source `4e983c2`,
@@ -232,9 +248,11 @@ with native lineage retained; these measurements use the documented repeated
 864×480 source, not a 4K workload. The brief tail attachment was not directly
 sampled; the uninterrupted run reaches natural EOF at 7274 after the ready future
 remains stable through 7019. Eight focused cases cover ownership, TTL, pending
-adoption, failure, cancellation and fast-audio/recording holds. Next fix the
-project-view CAS warning after EOF, then continue remaining Source/navigation
-and full F2 acceptance. All 43 partial ledger rows and broader physical/M7 gates
+adoption, failure, cancellation and fast-audio/recording holds. Source placement,
+EOF Replay and the project-view CAS fix are delivered in9ecf29d/8822; see
+`evidence/f2-source-placement-workflow.json`. Continue the audio-only Source
+waveform surface, remaining Source/navigation and full F2 acceptance.
+All 43 partial ledger rows and broader physical/M7 gates
 remain active; do not promote them from this scoped result.
 
 ### F3 — advanced timeline and effects

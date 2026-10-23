@@ -1,3 +1,22 @@
+export const RECORDING_PEAKS_PER_SECOND=100;
+
+export class CapturePeaks {
+  constructor(sampleRate,channels) {
+    if(!Number.isSafeInteger(sampleRate) || sampleRate<=0 || !Number.isSafeInteger(channels) || channels<1 || channels>2)throw Error('Choose a valid capture format');
+    this.channels=channels;this.blockFrames=Math.max(1,Math.floor(sampleRate/RECORDING_PEAKS_PER_SECOND));
+    this.peaks=new Float32Array(30000);this.count=0;this.partialFrames=0;this.partialPeak=0;
+  }
+  append(samples) {
+    for(let frame=0;frame+this.channels<=samples.length && this.count<this.peaks.length;frame+=this.channels){
+      for(let channel=0;channel<this.channels;channel++){
+        const value=Math.abs(samples[frame+channel]);if(value>this.partialPeak)this.partialPeak=value;
+      }
+      if(++this.partialFrames===this.blockFrames){this.peaks[this.count++]=this.partialPeak;this.partialPeak=0;this.partialFrames=0;}
+    }
+  }
+  values(){return this.peaks.subarray(0,this.count);}
+}
+
 export class CaptureBuffer {
   constructor({channels,maxFrames,onChunk,onDone,onHold,chunkFrames=4096}) {
     this.channels=channels;this.maxFrames=maxFrames;this.onChunk=onChunk;this.onDone=onDone;this.onHold=onHold;this.chunkFrames=chunkFrames;this.frames=0;this.position=0;this.peak=0;this.finished=false;this.held=false;this.untilFrames=maxFrames;this.buffer=new Float32Array(chunkFrames*channels);

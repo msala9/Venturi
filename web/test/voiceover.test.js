@@ -33,6 +33,37 @@ function harness(options={}) {
 }
 async function settle(){for(let n=0;n<5;n++)await new Promise(resolve=>setImmediate(resolve));}
 
+test('live recording progress binds complete stereo peaks to its captured context while stop keeps every PCM sample',async()=>{
+  let callbacks;const progress=[],uploads=[],chunks=[new Float32Array(500),new Float32Array(1464),new Float32Array([.7,-.9])];
+  chunks[0][13]=-.8;chunks[1][100]=.3;chunks[1][1000]=-.6;
+  const h=harness({onProgress:value=>progress.push(value),captureFactory:async options=>{
+    callbacks=options;return {sampleRate:48000,channels:2,start(){},async stop(){options.onChunk({buffer:chunks[2].buffer,frames:983,peak:.9});options.onDone();},async close(){}};
+  },fetcher:async(url,request)=>{uploads.push(request.body);return {ok:true,json:async()=>({id:url.split('/recordings/')[1].split('?')[0],frames:983,sample_rate:48000,channels:2,format:'wav',path_token:'saved.wav'})};}});
+  await h.voice.open();assert.deepEqual(progress,[]);h.button('start').click();await settle();assert.deepEqual(progress,[]);
+  callbacks.onChunk({buffer:chunks[0].buffer,frames:250,peak:.8});assert.equal(progress[0].peaks.length,0);
+  callbacks.onChunk({buffer:chunks[1].buffer,frames:982,peak:.6});const current=progress.at(-1);
+  assert.deepEqual(Array.from(current.peaks),Array.from(new Float32Array([.8,.6])));
+  assert.deepEqual([current.project_epoch,current.generation,current.timeline_id,current.revision,current.tracks,current.start_frame],['epoch','1','1','rev',['1'],12]);
+  assert.equal(current.seconds,982/48000);assert.equal(current.withoutPlayback,true);
+  h.button('stop').click();await settle();assert.equal(progress.at(-1),null);assert.equal(uploads.length,1);
+  assert.deepEqual(Array.from(new Float32Array(await uploads[0].arrayBuffer())),chunks.flatMap(chunk=>Array.from(chunk)));
+  callbacks.onChunk({buffer:new Float32Array([1,1]).buffer,frames:984,peak:1});assert.equal(progress.at(-1),null);assert.equal(uploads[0].size,983*2*4);
+});
+
+test('recording waveform clears on document change, cancellation and input failure without accepting late progress',async()=>{
+  for(const reason of ['context','cancel','failure']){
+    let callbacks;const progress=[],samples=new Float32Array(480).fill(-.5);
+    const h=harness({onProgress:value=>progress.push(value),captureFactory:async options=>{
+      callbacks=options;return {sampleRate:48000,channels:1,start(){},async stop(){options.onDone();},async close(){}};
+    },fetcher:async(url,request)=>({ok:true,json:async()=>({id:url.split('/recordings/')[1].split('?')[0],frames:request.body.size/4,sample_rate:48000,channels:1,format:'wav',path_token:'saved.wav'})})});
+    await h.voice.open();h.button('start').click();await settle();callbacks.onChunk({buffer:samples.buffer,frames:480,peak:.5});assert.deepEqual(Array.from(progress.at(-1).peaks),[.5]);
+    if(reason==='context'){h.target.generation='2';callbacks.onChunk({buffer:new Float32Array(1).buffer,frames:481,peak:0});assert.equal(progress.length,1);h.voice.invalidate();}
+    else if(reason==='cancel')h.root.dispatchEvent(new Event('cancel',{cancelable:true}));else callbacks.onError('Input disconnected');
+    await settle();assert.equal(progress.at(-1),null);const count=progress.length;
+    callbacks.onChunk({buffer:samples.buffer,frames:960,peak:.5});assert.equal(progress.length,count);
+  }
+});
+
 test("voiceover retains the final chunk across an interrupted upload and clears stale preview after placement",async()=>{
   let failed=true;const uploads=[];
   const retryHarness=harness({api:async()=>{throw Error("Recording not found");},fetcher:async(url,request)=>{uploads.push({url,request});if(failed){failed=false;throw new TypeError("Connection lost");}return{ok:true,json:async()=>({id:url.split('/recordings/')[1].split('?')[0],frames:5,sample_rate:48000,channels:1,format:"wav",path_token:"saved.wav"})};}});

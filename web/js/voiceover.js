@@ -1,5 +1,6 @@
 import {ApiFailure,request} from "./api.js";
 import {captureWav,createCapture,microphoneInput} from "./capture.js";
+import {CapturePeaks} from './capture-buffer.js';
 
 export function voiceoverIdentity(target) {
   return target?JSON.stringify([target.project_epoch,target.generation,target.timeline_id,target.revision,[...target.tracks].sort()]):null;
@@ -56,7 +57,7 @@ export function createVoiceover({root,getTarget,getClientId,canCommit,commit,pla
     finally {
       await captured.capture?.close();controller?.abort();controller=null;onProgress(null);stopping=false;
       captured.blob=captured.chunks.length?new Blob(captured.chunks,{type:"application/octet-stream"}):null;
-      captured.chunks=[];
+      captured.chunks=[];captured.peaks=null;
       if(captured.blob){captured.backup=URL.createObjectURL(captureWav(captured.blob,captured.sampleRate,captured.channels,captured.frames));backup.href=captured.backup;backup.download=`Voiceover-${captured.id}.wav`;backup.hidden=false;}
       phase=captured.blob?"ready":"idle";controls();status.textContent=message;
     }
@@ -95,7 +96,7 @@ export function createVoiceover({root,getTarget,getClientId,canCommit,commit,pla
   }
   async function record() {
     if(phase==="waiting"){const captured=take,seq=sequence;await playback.start();if(seq===sequence && take===captured && phase==='waiting' && !playback.video.paused)begin(captured);return;}
-    const target=getTarget();if(!canCommit() || !target?.tracks.length)return;
+    const currentTarget=getTarget(),target=currentTarget?{...currentTarget,tracks:[...currentTarget.tracks]}:null;if(!canCommit() || !target?.tracks.length)return;
     if(take?.blob && !take.receipt)return;
     if(take?.backup)URL.revokeObjectURL(take.backup);
     const seq=++sequence;controller=new AbortController();const signal=controller.signal;
@@ -104,12 +105,12 @@ export function createVoiceover({root,getTarget,getClientId,canCommit,commit,pla
     phase="opening";controls();status.textContent="Waiting for browser audio input permission…";
     try {
       const capture=await captureFactory({signal,getInput,deviceId:form.elements.device.value,channels:captured.channels,monitor:form.elements.monitor.checked,onChunk:(value)=>{
-        if(take!==captured || signal.aborted)return;captured.chunks.push(value.buffer);captured.frames=value.frames;if(!['recording','holding'].includes(phase) || !current())return;const peak=Number.isFinite(value.peak)?value.peak:0;meter.value=phase==='holding'?0:Math.min(1,peak);
+        if(take!==captured || signal.aborted)return;captured.chunks.push(value.buffer);captured.frames=value.frames;captured.peaks.append(new Float32Array(value.buffer));if(!['recording','holding'].includes(phase) || !current())return;const peak=Number.isFinite(value.peak)?value.peak:0;meter.value=phase==='holding'?0:Math.min(1,peak);
         if(phase==='recording')status.textContent=`Recording ${(value.frames/captured.sampleRate).toFixed(1)} s · input ${value.peak>0?(20*Math.log10(value.peak)).toFixed(1):"−∞"} dBFS`;
-        onProgress({tracks:captured.target.tracks,start_frame:captured.target.start_frame,seconds:value.frames/captured.sampleRate,withoutPlayback:!form.elements.playback.checked || !captured.target.canPlayback});
+        onProgress({project_epoch:captured.target.project_epoch,generation:captured.target.generation,timeline_id:captured.target.timeline_id,revision:captured.target.revision,tracks:captured.target.tracks,start_frame:captured.target.start_frame,seconds:value.frames/captured.sampleRate,peaks:captured.peaks.values(),withoutPlayback:!captured.followsPlayback});
       },onHold:()=>{if(take===captured && !signal.aborted)hold(captured,true);},onDone:()=>{if(['recording','holding'].includes(phase) && !stopping)finish("Recording limit reached");},onError:(message)=>{notice(message);finish(message);}});
       if(seq!==sequence || signal.aborted){await capture.close();return;}
-      captured.capture=capture;captured.sampleRate=capture.sampleRate;captured.channels=capture.channels;
+      captured.capture=capture;captured.sampleRate=capture.sampleRate;captured.channels=capture.channels;captured.peaks=new CapturePeaks(capture.sampleRate,capture.channels);
       if(!current())throw new Error("Project changed while opening the input; start again on the intended timeline");
       if(captured.followsPlayback) {
         phase="preparing";controls();status.textContent="Preparing composed playback before recording begins…";

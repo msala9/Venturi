@@ -1,7 +1,34 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {CaptureBuffer} from "../js/capture-buffer.js";
+import {CaptureBuffer,CapturePeaks} from "../js/capture-buffer.js";
 import {captureWav,createCapture} from "../js/capture.js";
+
+test('recording peaks match native complete 100 Hz blocks across stereo chunk boundaries at the actual sample rate',()=>{
+  for(const sampleRate of [44100,48000]){
+    const block=sampleRate/100,samples=new Float32Array((block*3+17)*2);
+    samples[9]=-.2;samples[(block-1)*2+1]=-.8;samples[block*2]=.4;samples[(block*2-1)*2+1]=-.6;
+    samples[block*4+3]=1.25;samples[block*6+1]=-9;
+    const expected=[];
+    for(let frame=0;frame+block<=samples.length/2;frame+=block){
+      let peak=0;for(const sample of samples.subarray(frame*2,(frame+block)*2))if(Math.abs(sample)>peak)peak=Math.abs(sample);
+      expected.push(peak);
+    }
+    const peaks=new CapturePeaks(sampleRate,2),split=(block-7)*2;
+    peaks.append(samples.subarray(0,split));assert.equal(peaks.values().length,0);
+    peaks.append(samples.subarray(split,block*2+6));assert.deepEqual(Array.from(peaks.values()),expected.slice(0,1));
+    peaks.append(samples.subarray(block*2+6));assert.deepEqual(Array.from(peaks.values()),expected);
+    assert.equal(peaks.values()[2],1.25);assert.equal(peaks.partialFrames,17);
+    peaks.append(new Float32Array((block-17)*2));assert.equal(peaks.values()[3],9);
+    assert.equal(samples[block*6+1],-9);
+  }
+});
+
+test('recording peak storage stays bounded to five minutes and native NaN handling does not poison later bins',()=>{
+  const peaks=new CapturePeaks(100,1);peaks.append(new Float32Array([NaN,-.5,Infinity]));
+  assert.deepEqual(Array.from(peaks.values()),[0,.5,Infinity]);
+  peaks.append(new Float32Array(30000).fill(.25));assert.equal(peaks.values().length,30000);
+  const view=peaks.values();peaks.append(new Float32Array([1]));assert.equal(peaks.values().buffer,view.buffer);assert.equal(peaks.values()[29999],.25);
+});
 
 test("capture packetization preserves stereo samples and a short final tail without padding",()=>{
   const chunks=[],done=[];const capture=new CaptureBuffer({channels:2,maxFrames:100,onChunk:(value)=>chunks.push(value),onDone:(value)=>done.push(value),chunkFrames:4});

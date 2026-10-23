@@ -1,5 +1,18 @@
 import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,gainLine,slipMediaExtents,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons,paneScrollbars } from "./geometry.js";
 import {sourceAssetKey,mediaThumbnail} from '../source-assets.js';
+import {RECORDING_PEAKS_PER_SECOND} from '../capture-buffer.js';
+export function recordingWaveformColumns(peaks,origin,end,pixelsPerSecond,left,right){
+  const columns=[];
+  if(!peaks?.length || ![origin,end,pixelsPerSecond,left,right].every(Number.isFinite) || pixelsPerSecond<=0 || right<=left || end<=origin)return columns;
+  const binsPerPixel=RECORDING_PEAKS_PER_SECOND/pixelsPerSecond;
+  for(let column=Math.max(0,Math.ceil(left-origin));column<Math.min(end,right)-origin;column++){
+    const from=Math.floor(column*binsPerPixel);if(from>=peaks.length)break;
+    const to=Math.min(peaks.length,Math.max(from+1,Math.floor((column+1)*binsPerPixel)));
+    let peak=0;for(let bin=from;bin<to;bin++)if(peaks[bin]>peak)peak=peaks[bin];
+    columns.push([origin+column,Math.min(1,peak)]);
+  }
+  return columns;
+}
 export function timelineTimecode(frame,fps){
   const nominal=Math.max(1,Math.round(fps.num/fps.den)),value=Math.max(0,Math.round(frame));
   return [Math.floor(value/(nominal*3600)),Math.floor(value/(nominal*60))%60,Math.floor(value/nominal)%60,value%nominal].map(part=>String(part).padStart(2,'0')).join(':');
@@ -226,9 +239,15 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         ctx.fillStyle=color("--danger");ctx.globalAlpha=0.28;ctx.fillRect(x,top,right-x,rowHeight-1);ctx.globalAlpha=1;
         ctx.strokeStyle=color("--danger");ctx.strokeRect(x,top+1,right-x,rowHeight-3);
       }
-      if(view.recording?.tracks.includes(track.id)) {
+      if(view.recording?.timeline_id===timeline.id && view.recording.revision===timeline.revision && track.kind==='audio' && view.recording.tracks.includes(track.id) && view.recording.seconds>0) {
         const x=frameToX(view.recording.start_frame,view,timeline.fps),end=frameToX(view.recording.start_frame+view.recording.length_frames,view,timeline.fps);
-        ctx.fillStyle=color("--danger");ctx.globalAlpha=0.4;ctx.fillRect(x,top+5,Math.max(2,end-x),rowHeight-10);ctx.globalAlpha=1;ctx.fillStyle=color("--text");ctx.fillText("REC",x+6,top+22);
+        ctx.fillStyle=color("--danger");ctx.globalAlpha=0.4;ctx.fillRect(x,top+5,Math.max(2,end-x),rowHeight-10);ctx.globalAlpha=1;
+        ctx.strokeStyle=color('--text');ctx.lineWidth=1;ctx.beginPath();
+        const mid=top+rowHeight/2,half=Math.max(0,rowHeight-16)/2;
+        for(const [column,peak] of recordingWaveformColumns(view.recording.peaks,x,end,view.scale,HEADER,width)){
+          const amplitude=Math.max(.5,peak*half);ctx.moveTo(column,mid-amplitude);ctx.lineTo(column,mid+amplitude);
+        }
+        ctx.stroke();ctx.fillStyle=color("--text");ctx.fillText("REC",x+6,top+22);
       }
       ctx.restore();
       ctx.fillStyle = color("--surface");

@@ -409,7 +409,7 @@ export function renderProperties(root, detail, { writable, getFrame, commit, rel
     const keySelection=renderKeySelection(keyEditorRoot,detail,{disabled,commit,notice,openState:visualState,scope,zoomLink,reload,canInteract,keySelection:selectedKeys});if(keySelection)controls.push(keySelection);
     if(keyEditorRoot!==root && keySelection)controls.push(bindKeyEditorDelete(keyEditorRoot.closest?.('[data-key-editor-window]') || keyEditorRoot,{selection:selectedKeys,remove:keySelection.removeSelected,canInteract:()=>!disabled && keyEditorRoot.isConnected!==false && canInteract()}));
   }
-  if(detail.video){const masks=renderMasks(root,detail,{disabled,getFrame,commit:maskCommit || commit,notice,openState:visualState,seek,canInteract,drawPath:drawMaskPath});if(masks)controls.push(masks);}
+  if(detail.video){const masks=renderMasks(root,detail,{disabled,getFrame,commit:maskCommit || commit,notice,openState:visualState,seek,canInteract,drawPath:drawMaskPath,bindNumber:bindInspectorNumber});if(masks)controls.push(masks);}
   if (titleControls && detail.title) renderTitle(root,detail,disabled,report);
   if (detail.video) renderTransitions(root,detail,disabled,report,transitionDefaults,notice);
   return controls;

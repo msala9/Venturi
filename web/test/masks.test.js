@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {maskFocusAfterEdit,maskPathKeyDestination,maskPathKeyOperation,renderMasks} from '../js/masks.js';
+import {bindInspectorNumber} from '../js/inspector.js';
 
 function fixture(onKey=false){
   const path={points:[[0,0],[100,0],[0,100]].map(point=>({point,in_handle:[0,0],out_handle:[0,0]}))};
@@ -31,25 +32,26 @@ test('Inspector mask edits retain valid focus except reset-all, and invalid stru
 function harness(t,{detail=fixture(),disabled=false,seekEnabled=true,openState=new Map([['masks',true]]),commit,drawPath}={}){
   const priorDocument=globalThis.document,priorOption=globalThis.Option,commands=[],frames=[],notices=[];
   let frame=detail.timeline_frame,allowed=true,dialog=false;
-  const document={activeElement:null,querySelector:()=>dialog?{}:null};
+  const view=new EventTarget(),document={activeElement:null,querySelector:()=>dialog?{}:null,defaultView:view};
   class Element extends EventTarget{
-    constructor(tag){super();this.tagName=tag.toUpperCase();this.dataset={};this.children=[];this.attributes=new Map();this.disabled=false;this.textContent='';this.value='';this.open=false;}
+    constructor(tag){super();this.tagName=tag.toUpperCase();this.dataset={};this.children=[];this.attributes=new Map();this.disabled=false;this.textContent='';this.value='';this.open=false;this.ownerDocument=document;this.captured=new Set();}
     append(...children){for(const child of children){if(typeof child==='string')continue;child.parent=this;this.children.push(child);}}
     replaceChildren(...children){for(const child of this.children)child.parent=null;this.children=[];this.append(...children);}
     setAttribute(name,value){this.attributes.set(name,String(value));}getAttribute(name){return this.attributes.get(name)??null;}
     get isConnected(){return this===document.body || Boolean(this.parent?.isConnected);}
     reportValidity(){return true;}focus(){document.activeElement=this;}
+    setPointerCapture(id){this.captured.add(id);}hasPointerCapture(id){return this.captured.has(id);}releasePointerCapture(id){this.captured.delete(id);emit(this,'lostpointercapture',{pointerId:id});}
   }
   document.createElement=tag=>new Element(tag);document.body=new Element('body');document.activeElement=document.body;
   globalThis.document=document;globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
   t.after(()=>{globalThis.document=priorDocument;globalThis.Option=priorOption;});
   const root=new Element('div');document.body.append(root);
-  const options={disabled,getFrame:()=>frame,canInteract:()=>allowed,seek:seekEnabled?value=>{frames.push(value);frame=value;}:undefined,drawPath,commit:async operation=>{commands.push(operation);return commit?.(operation);},notice:value=>notices.push(value),openState};
+  const options={disabled,getFrame:()=>frame,canInteract:()=>allowed,seek:seekEnabled?value=>{frames.push(value);frame=value;}:undefined,drawPath,commit:async operation=>{commands.push(operation);return commit?.(operation);},notice:value=>notices.push(value),openState,bindNumber:bindInspectorNumber};
   const control=renderMasks(root,detail,options);
   const all=(node=root)=>[node,...node.children.flatMap(child=>all(child))];
   const button=action=>all().find(element=>element.dataset.pathKeyAction===action);
   const named=label=>all().find(element=>element.getAttribute('aria-label')===label);
-  return {detail,root,document,commands,frames,notices,openState,options,control,all,button,named,setFrame:value=>frame=value,setAllowed:value=>allowed=value,setDialog:value=>dialog=value,click:action=>emit(button(action),'click'),clickNamed:label=>emit(named(label),'click')};
+  return {detail,root,document,view,commands,frames,notices,openState,options,control,all,button,named,setFrame:value=>frame=value,setAllowed:value=>allowed=value,setDialog:value=>dialog=value,click:action=>emit(button(action),'click'),clickNamed:label=>emit(named(label),'click'),send:(node,type,properties={})=>emit(node,type,{button:0,buttons:1,pointerId:1,clientX:0,...properties})};
 }
 
 test('path navigation uses native full-track timeline destinations and strict source neighbours',()=>{
@@ -166,8 +168,8 @@ test('queued mask writes refuse changed frame, native identity, modal, permissio
   for(const mode of ['frame','epoch','generation','revision','source','modal','permission','detached','disposed'])await t.test(mode,async child=>{
     const h=harness(child,{detail:scalarFixture()});h.clickNamed('Reset mask 1 Opacity');
     if(mode==='frame')h.setFrame(46);if(mode==='epoch')h.detail.project_epoch='other';if(mode==='generation')h.detail.generation='8';if(mode==='revision')h.detail.revision='10';if(mode==='source')h.detail.source_frame=198;
-    if(mode==='modal')h.setDialog(true);if(mode==='permission')h.setAllowed(false);if(mode==='detached')h.root.replaceChildren();if(mode==='disposed')h.control.cancel();
-    await settle();assert.deepEqual(h.commands,[]);if(mode!=='detached')assert.equal(h.named('Reset mask 1 Opacity').disabled,true);
+    if(mode==='modal')h.setDialog(true);if(mode==='permission')h.setAllowed(false);if(mode==='detached')h.root.replaceChildren();if(mode==='disposed')h.control.dispose();
+    await settle();assert.deepEqual(h.commands,[]);if(mode!=='detached')assert.equal(h.named('Reset mask 1 Opacity').disabled,!['modal','permission'].includes(mode));
   });
 });
 
@@ -180,7 +182,7 @@ test('unknown mask outcomes remain blocked with their useful message and late di
 
 test('a late mask failure after disposal cannot notify, replay or re-enable the detached owner',async t=>{
   let reject;const h=harness(t,{commit:()=>new Promise((resolve,failure)=>{reject=failure;})}),button=h.button('toggle');
-  h.click('toggle');await settle();assert.equal(h.commands.length,1);h.control.cancel();h.root.replaceChildren();
+  h.click('toggle');await settle();assert.equal(h.commands.length,1);h.control.dispose();h.root.replaceChildren();
   reject(Error('Late native failure'));await settle();emit(button,'click');await settle();
   assert.equal(h.commands.length,1);assert.deepEqual(h.notices,[]);assert.equal(button.disabled,true);assert.equal(button.isConnected,false);
 });
@@ -202,9 +204,56 @@ test('Add Path starts the existing viewer pen without inserting a default shape 
 test('Path drawing stays unavailable without a pen callback and rejects stale, modal and unknown owners',async t=>{
   for(const mode of ['absent','stale','modal','permission','disposed','unknown'])await t.test(mode,async child=>{
     let drawings=0;const h=harness(child,{drawPath:mode==='absent'?undefined:()=>drawings++,commit:()=>{throw Object.assign(Error('Mask outcome unknown'),{code:'OUTCOME_UNKNOWN'});}});
-    if(mode==='stale')h.setFrame(46);if(mode==='modal')h.setDialog(true);if(mode==='permission')h.setAllowed(false);if(mode==='disposed')h.control.cancel();
+    if(mode==='stale')h.setFrame(46);if(mode==='modal')h.setDialog(true);if(mode==='permission')h.setAllowed(false);if(mode==='disposed')h.control.dispose();
     if(mode==='unknown'){h.click('toggle');await settle();}
     h.clickNamed('Add mask');await settle();assert.equal(drawings,0);assert.equal(h.commands.length,mode==='unknown'?1:0);
     if(mode==='absent')assert.equal(h.named('Add mask').disabled,true);if(mode==='unknown')assert.deepEqual(h.notices,['Mask outcome unknown']);
   });
+});
+
+function scalarControlsFixture(){
+  const detail=scalarFixture();detail.masks.items[0].parameters.unshift({param:'CenterX',value:Math.fround(12.345678),default:0,min:-100000,max:100000,keyframe_info:{on_keyframe:false,previous_frame:null,next_frame:null}});return detail;
+}
+
+test('mask native pixel and range scrubs use native speeds, Shift precision and one owner release',async t=>{
+  for(const [label,shiftKey,travel,expected] of [['CenterX',false,10,22.345678],['Opacity',true,10,75.5],['CenterX',false,200000,100000]])await t.test(`${label} ${shiftKey} ${travel}`,async child=>{
+    const h=harness(child,{detail:scalarControlsFixture()}),input=h.named(`Mask 1 ${label}`);
+    h.send(input,'pointerdown');h.send(input,'pointermove',{clientX:travel,shiftKey});assert.deepEqual(h.commands,[]);
+    h.send(input,'pointerup',{pointerId:2,clientX:travel,shiftKey});assert.deepEqual(h.commands,[]);assert.equal(input.hasPointerCapture(1),true);
+    h.send(input,'pointerup',{clientX:travel,shiftKey});emit(input,'change');await settle();
+    assert.deepEqual(h.commands,[inspectorOperation(h.detail,{kind:'set',index:0,param:label,value:Math.fround(expected)})]);assert.equal(input.captured.size,0);
+    assert.equal(h.named('Mask 1 CenterX slider'),undefined);
+  });
+});
+
+test('mask sliders keep drafts local, cancel on Escape or stale context and preserve fresh editing',async t=>{
+  const h=harness(t,{detail:scalarControlsFixture()}),input=h.named('Mask 1 Opacity'),slider=h.named('Mask 1 Opacity slider');
+  assert.equal(Number(slider.min),0);assert.equal(Number(slider.max),100);assert.equal(slider.step,'any');
+  for(const cancel of [()=>h.send(slider,'keydown',{key:'Escape'}),()=>h.send(slider,'pointercancel'),()=>h.view.dispatchEvent(new Event('blur')),()=>h.setFrame(46)]){
+    h.setFrame(45);h.send(slider,'pointerdown');slider.value='42.125';h.send(slider,'input');assert.deepEqual(h.commands,[]);cancel();h.send(slider,'pointerup');h.send(slider,'change');await settle();assert.deepEqual(h.commands,[]);assert.equal(Number(input.value),75);assert.equal(slider.captured.size,0);
+  }
+  h.setFrame(45);h.control.cancel();h.send(slider,'keydown',{key:'ArrowRight'});slider.value='75.125';h.send(slider,'input');h.send(slider,'change');h.send(slider,'change');await settle();
+  assert.deepEqual(h.commands,[inspectorOperation(h.detail,{kind:'set',index:0,param:'Opacity',value:75.125})]);
+});
+
+test('mask reusable cancellation drops queued writes and path drafts, then permits a fresh same-context edit',async t=>{
+  const h=harness(t,{detail:scalarControlsFixture()}),input=h.named('Mask 1 Opacity');
+  h.named('Mask 1 vertex 1 point X').value='999';input.value='42';emit(input,'change');h.control.cancel();
+  assert.equal(Number(input.value),75);assert.equal(Number(h.named('Mask 1 vertex 1 point X').value),0);assert.equal(input.disabled,false);
+  input.value='43';emit(input,'change');await settle();assert.deepEqual(h.commands,[inspectorOperation(h.detail,{kind:'set',index:0,param:'Opacity',value:43})]);
+});
+
+test('transient permission or modal refusal recovers without rebuilding; final disposal remains inert',async t=>{
+  const h=harness(t,{detail:scalarControlsFixture()}),input=h.named('Mask 1 Opacity'),slider=h.named('Mask 1 Opacity slider');
+  h.setAllowed(false);h.control.cancel();input.value='42';emit(input,'change');h.clickNamed('Reset mask 1 Opacity');await settle();assert.deepEqual(h.commands,[]);assert.equal(input.disabled,false);
+  h.setAllowed(true);h.setDialog(true);input.value='43';emit(input,'change');await settle();assert.deepEqual(h.commands,[]);
+  h.setDialog(false);h.send(slider,'pointerdown');slider.value='50';h.send(slider,'input');h.control.dispose();assert.equal(Number(input.value),75);assert.equal(slider.captured.size,0);
+  h.send(slider,'pointerup');h.send(slider,'change');input.value='44';emit(input,'change');h.clickNamed('Reset mask 1 Opacity');await settle();assert.deepEqual(h.commands,[]);assert.equal(input.disabled,true);
+});
+
+test('mask numeric precision is untouched on open or cancel and native f32 no-ops do not create edits',async t=>{
+  const h=harness(t,{detail:scalarControlsFixture()}),input=h.named('Mask 1 CenterX'),original=h.detail.masks.items[0].parameters[0].value;
+  assert.equal(Number(input.value),original);h.control.cancel();assert.equal(Number(input.value),original);
+  input.value=String(original+1e-9);emit(input,'change');await settle();assert.deepEqual(h.commands,[]);
+  input.value='12.123456789123';emit(input,'change');await settle();assert.deepEqual(h.commands,[inspectorOperation(h.detail,{kind:'set',index:0,param:'CenterX',value:Math.fround(12.123456789123)})]);
 });

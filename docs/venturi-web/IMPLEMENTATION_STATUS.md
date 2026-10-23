@@ -1,5 +1,41 @@
 # Implementation status
 
+## Native Timeline waveform feedback — 2026-10-23
+
+Source `5a2904a`, runtime `94abc1c3d922`, owns halo1/port8855. Timeline
+waveforms now use the native fractional source clock and native evaluated gain,
+including animated gain, minimum pixel height and red clipping. Frozen and
+compound audio do not draw a false waveform. Trim/Roll/Slip drafts resample the
+same source clock locally; move/copy and linked retime retain their source spans.
+There is no browser keyframe evaluator, DSP or pointermove HTTP request.
+
+The additive read-only adapter binds epoch/generation/timeline/revision and
+ordered audio clips. Constant gain stays O(1); animated lookup work, response
+bytes and client cache are explicitly bounded. Excessive animation hides its
+waveform with a status rather than drawing inaccurate data or blocking editing.
+The final controller prevents budget eviction/refetch loops and accepts finite
+native Bezier overshoot. Existing raw source cache/analysis is reused.
+
+Actual Windows changes clip23 at200% speed from0to12dB: the native multiplier
+changes1to3.981071949 and its waveform shows red clipping. One Undo restores the
+original waveform/models; Redo restores gain. Saved reopen retains exact models
+and bytes with empty Undo. Only that clip's gain changes. See
+`evidence/f2-native-waveform-workflow.json` and before/clipping/final screenshots.
+
+R1 passes183 client cases,9 targeted native cases, Clippy8.25s and build41.60s;
+R2 passes16 overlapping affected cases and build40.71s, reusing unchanged native
+and Clippy results. Peak is2,064,330,752B inR1 and1,648,029,696B inR2. All heavy
+work is serial and bounded on halo1; no new decode, renderer, export or physical
+speaker/device claim. All39 prior Sessions/40 PIDs,9 candidate Saved files,
+5 local media files,4 fixed NAS files and shared proxy remain protected.
+
+Ledger remains **60 done /30 partial /2 excluded**. Broader waveform dense,
+physical/DPI and release acceptance remains open. Full F1-F7/M7 stays active.
+Next close remaining native interaction and shared-library/preset lifecycle
+requirements; do not repeat unchanged renderer/DSP/export matrices. The
+Project-to-Library pointer gesture remains unverified; explicit AddToLibrary
+is available and a focused source review found no further concrete defect.
+
 ## Native key presets and insert workflows — 2026-10-23
 
 Source `ccc49a5`, runtime `78153fde00f0`, owns halo1/port8855 only. Compact

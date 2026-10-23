@@ -1,0 +1,126 @@
+{
+  "source_commit": "5a2904ab54500d8670865b83bccd357af2c0a59e",
+  "status": "native waveform behavior delivered; broader waveform/release acceptance remains partial",
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-waveform-native.service",
+    "pid": "299190",
+    "binary_sha256": "94abc1c3d922d35f7a488751f9f614d97cd5a6a26805bf236f7953c7e9ea3d48"
+  },
+  "native_authority": [
+    "vv-app/src/timeline_ui.rs::draw_clip_waveform",
+    "vv-core/src/model.rs::Clip::media_secs_at",
+    "vv-core/src/model.rs::Keyframed::value_at",
+    "vv-audio/src/mixer.rs::db_to_linear"
+  ],
+  "implementation": {
+    "reader": "POST /api/v1/timelines/{id}/waveform-presentation; read-only exact epoch/generation/timeline/revision and ordered native audio media IDs",
+    "native_gain": "Constant multiplier or native source-frame gain runs; no browser interpolation or DSP",
+    "display": "One source bin per CSS pixel, native fractional clock, f32 amplitude, minimum half pixel and red clipping above unity; frozen and compound audio hidden",
+    "drafts": "Trim/Roll/Slip sample the native source clock locally; move/copy/linked retime preserve source spans and update draft rows; local constant gain reflects the draft",
+    "limits": {
+      "clips": 64,
+      "native_scanned_frames": 262144,
+      "native_and_client_gain_runs": 65536,
+      "native_response_bytes": 4194304
+    },
+    "overflow": "Explicit unavailable waveform for excessive animated gain; editing stays available; no repeated fetch/eviction loop",
+    "idle": "New reads stop during gestures, playback, hidden document and open modal; unchanged source caches and preparation pipeline are reused"
+  },
+  "actual_windows": {
+    "viewport": "775x964, DPR1.25; existing tab55; no viewport change",
+    "project": "Venturi_Waveform_V1.vvproj",
+    "timeline_id": "2",
+    "clip_id": "23",
+    "clip_context": {
+      "start_frame": 128,
+      "length_frames": 24,
+      "speed_percent": 200,
+      "audio_stream_index": 0
+    },
+    "gain_db": [
+      0,
+      12
+    ],
+    "native_linear": [
+      1.0,
+      3.981071949005127
+    ],
+    "observation": "Actual selected-gain input shows the larger clipped red waveform; Undo returns to white original amplitude; Redo restores clipping",
+    "one_undo_redo_exact_models": true,
+    "only_selected_clip_gain_changes": true,
+    "save_reopen_exact_models_and_bytes": true,
+    "final_empty_undo": true,
+    "media_identity": "All real media metadata/content hashes exact; native compound runtime generation hashes refresh on reopen (vv-core/model.rs::refresh_compound)",
+    "clock": {
+      "media_fps": {
+        "den": 1,
+        "num": 24
+      },
+      "source_offset_frames": 0,
+      "speed": {
+        "den": 1,
+        "num": 2
+      },
+      "timeline_fps": {
+        "den": 1,
+        "num": 24
+      }
+    },
+    "saved_sha256": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+  },
+  "gates": {
+    "r1": {
+      "native_cases": 9,
+      "client_cases": 183,
+      "clippy_seconds": 8.25,
+      "embedded_build_seconds": 41.6,
+      "memory_peak_bytes": 2064330752
+    },
+    "r2": {
+      "affected_client_cases": 16,
+      "embedded_build_seconds": 40.71,
+      "memory_peak_bytes": 1648029696,
+      "unchanged_native_clippy_reused": true
+    },
+    "note": "Overlapping client cases are not summed; all heavy work ran serially on halo1 with8CPU/4GiB/no swap, low priority, admission and nonblocking shared lock",
+    "final_source_hashes": {
+      "crates/vv-web/src/api.rs": "90ec5720337e257ff5a8f985096950b5c9ddaf21f609ba54419823faf700c518",
+      "crates/vv-web/src/host.rs": "890808a7e0c691244f16a3f6b9910be3faf0d375f8b274931ea170695afb0e00",
+      "crates/vv-web/src/main.rs": "d086abf68b1d649cf4e167ae9e0fa849c799c548d16c26f1425d45177dc4dd29",
+      "crates/vv-web/src/tests/api.rs": "1be0ed5d133f0a6ac873d034730dd583c67571a048bf76c14a2cb1967254e46c",
+      "crates/vv-web/src/tests/host.rs": "d409cb21af6b85e5733f36c38b77732c5b07720015e3d3bfec544f6ae27b8210",
+      "crates/vv-web/src/tests/timeline_waveform.rs": "82092d74d064e5ecb0f0b5996535f8068f492afa7b8d3f5ef62d894ff32f4f63",
+      "crates/vv-web/src/timeline_waveform.rs": "52aa78fe8eb15a7e7636c1e2384dd3038309ad89a08bd2b6d3658165a818b96d",
+      "web/js/main.js": "4088f47f643e625b67417de92682e6ebc557b34e5369550905cffb8de08e6d61",
+      "web/js/timeline-waveforms.js": "6e889e5cf750ec73d49b73ab1e04922a7f7690c5b6ea6c230eeddb693626c411",
+      "web/js/timeline/draw.js": "6e61f49cf41cae4f2571e0e3f24d9ef0f4cdba841c5e86f3d1daca631a3bd440",
+      "web/js/timeline/index.js": "0acf92386baa0b1fba84cf0fd3b5d6cbd36cc666dd33efbb2032f44dfa869c69",
+      "web/js/timeline/waveform.js": "c43b39eda0b319c2d7d1f1d30ae36c60dfe6b3b6103a058a38390a5a062075d3",
+      "web/test/timeline-waveform.test.js": "09a38947d26cccc7dcffddcbc85d4d5808f96e5d32bc7a3afd502c16eeedeeb8",
+      "web/test/timeline-waveforms.test.js": "6e3c9905e232feeae440d02b5a063f707d67103b41b41649ddf6f315bc31913b"
+    }
+  },
+  "protection": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 9,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "remaining": [
+    "No new physical held-draft/modifier/DPI/dense500clip acceptance",
+    "No new decode, DSP, rendered export or speaker/device claim",
+    "Very long animated gain can exceed the explicit bounded lookup budget",
+    "Project-to-Library pointer gesture remains unverified; fullF1-F7/M7 active"
+  ],
+  "screenshots": {
+    "f2-waveform-before.png": "f4bd700b28f785763339079d68d0008345190fe049e8f96295b9f44bd17d8e58",
+    "f2-waveform-clipping.png": "e2789d5a6ae3902ac7556af250a41b57909179c745219dca12a549cacde90e9c",
+    "f2-native-waveform-workflow.png": "4406101e5b1e206f69f8743672e8f744f16fa5b594d2aa1f823268a3d9186084"
+  }
+}

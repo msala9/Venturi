@@ -1,5 +1,36 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Native Timeline waveform presentation
+
+`POST /api/v1/timelines/{id}/waveform-presentation` accepts
+`{query:FrameQuery,clip_ids:[string]}` for one to64 ordered unique Audio-track
+media clips. It is a read-only, no-store actor snapshot: exact project epoch,
+generation, timeline and revision are required; no writer lease/history change,
+media probe, decoder or GPU work is involved. Unknown request fields, stale
+identity and missing/non-audio targets are rejected before gain compilation.
+
+The response binds `project_epoch`, `generation`, `timeline_id`, `revision` and
+ordered `clips`. Each row carries clip/media/stream/content-hash identity,
+`clock:{source_offset_frames,speed,timeline_fps,media_fps}` and source-frame
+`coverage:[0,duration_frames+2]`. Ready gain is either
+`{kind:"constant",linear}` or `{kind:"runs",runs:[[start,end,linear],...]}` with
+contiguous half-open integer source-frame intervals. Values come from native
+`Keyframed::value_at` and `db_to_linear`; Bezier overshoot is not clamped.
+
+Frozen/compound/invalid media rows are `state:"hidden"` with their reason.
+Animated work is bounded to262144 scanned/key frames,65536 runs and4MiB response;
+excessive rows return `state:"unavailable",reason:"gain_lookup_budget",gain:null`.
+Constant clips remain available when the animated run budget is exhausted.
+
+The browser reuses existing full-source waveform peaks, native fractional clock
+order and f32 amplitude at one bin per CSS pixel, with half-pixel minimum and red
+clipping above unity. It never evaluates keys. Visible demand is capped at64
+clips/65536 retained gain runs, stops during gestures/playback/hidden page/modal,
+and does not track the playhead. Drafts resample locally without pointermove
+HTTP. An over-budget retained row stays explicitly unavailable until visible
+selection changes or retry, preventing eviction/refetch loops. Edits remain
+available. Fades and mixer/insert gain do not alter the native clip waveform.
+
 ## Native title fonts
 
 `GET /api/v1/fonts` returns

@@ -1,5 +1,36 @@
 # Active completion plan — full Venturi Web scope
 
+## Native key editor selection and dense picking — 2026-10-24
+
+Source `fa410ee`, runtime `75f7fa6aa77e`, owns halo1/8855.
+Plain animated-lane click now selects the key under the release pointer;
+additive click preserves pre-press picks and adds that release key. A selected
+group still drags together. Read-only selection, no-hit/label release, cancel,
+stale context and disposal issue no edit. Curve/tangent hits choose the nearest
+point within native11px/10px radii, with tangent priority and first-distance ties.
+This prevents Delete/interpolation retaining an unintended lane selection.
+
+R1 passes51 cases; native static review then finds a dense release-hit mismatch.
+R2 adds that regression and passes52 affected client cases, embedded build
+41.78s, peak1,536,401,408B on halo1. No Rust/DSP/render change;
+valid native checks are reused. Both served module hashes match the tested
+source. Saved/history, all39 protected Sessions/40 PIDs,11 Saved files,5 local
+media,4 NAS files and shared proxy remain unchanged. See
+`evidence/f1-native-key-editor-picking.json`. Windows reload reconnects without
+console errors at1536x864. No new physical gesture or screenshot is claimed.
+
+The release checklist is reconciled to61 done/29 partial/2 excluded, the V1
+stopped-audio decision and the actual halo1 deployment. Offline license inventory
+now resolves272 Linux normal packages/265 third-party declarations; the old
+workspace metadata blocker is bypassed by selecting the actual package graph.
+This is technical inventory, not final distribution approval; system libraries,
+notices/assets and packaging remain open. See `evidence/f7-linux-normal-dependencies.json`.
+
+Next complete native AdvancedSpeed percent scrubbing and local50/100/200 draft
+presets with explicit Apply and full controller cleanup. Broader physical,
+representative-media, dense/DPI and integrated M7 requirements stay in scope.
+Ledger remains **61 done /29 partial /2 excluded**; full F1-F7/M7 stays active.
+
 ## Native Timeline ruler scrubbing — 2026-10-24
 
 Source `9cb8439`, runtime `2dc4cc86af23`, owns halo1/8855.

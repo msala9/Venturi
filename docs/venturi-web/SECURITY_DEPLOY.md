@@ -70,10 +70,10 @@ should still be closed while saving the same project from the web.
 The full editing soak and release review remain open. The failed/interrupted
 earlier backend soaks are retained as failure evidence, not release acceptance.
 The owner's current development checkpoint uses the unprivileged, resource-limited
-`venturi-web-halo1-timeline-ruler.service` on halo1, bound to loopback port8855
+`venturi-web-halo1-key-editor-picking.service` on halo1, bound to loopback port8855
 and reached through the existing Windows SSH tunnel. It is a transient systemd
-unit running as `halo`, not a newly enabled boot service. Source `9cb8439` and
-runtime `2dc4cc86af23` are bound in `evidence/f1-native-ruler-scrubbing.json`.
+unit running as `halo`, not a newly enabled boot service. Source `fa410ee` and
+runtime `75f7fa6aa77e` are bound in `evidence/f1-native-key-editor-picking.json`.
 Earlier protected halo1/halo2 editor services remain live. No public listener
 is enabled. See `RELEASE_CHECKLIST.md`; deployment must preserve dirty sessions,
 client drafts and Undo chains. A saved project alone does not authorize restarting
@@ -113,7 +113,7 @@ Linux `vv-web` normal dependency graph with `cargo tree --frozen`, matching the
 qualified build's default features. It records272 unique packages,265 third-party
 license declarations, lockfile checksums and current cached-manifest hashes.
 The earlier missing `tokio-stream` workspace dependency does not block this
-selected graph. Collection takes172ms and78.4MiB with zero swap; no download,
+selected graph. Collection takes172ms andreported78.4M memory with zero swap; no download,
 build or lockfile change occurs. Six workspace crates omit their own Cargo
 license field; repository LICENSE is recorded separately rather than inventing
 package declarations. Build/dev edges, exact linked system libraries, notices,

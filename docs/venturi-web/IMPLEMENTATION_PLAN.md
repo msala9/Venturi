@@ -36,7 +36,15 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8840/**, source `dc42d2a`,
+The current halo1 delivery is **http://127.0.0.1:8849/**, portable native Library
+copies and preset Enter/double-click activation (feature `5a856e4`, epoch refresh `efd5f59`). See the
+current [implementation status](IMPLEMENTATION_STATUS.md) and
+`evidence/f5-library-copies-workflow.json` for qualification and runtime identity.
+The ledger remains **49 done / 41 partial / 2 excluded**; both F5 rows remain
+partial. Continue with saved-preset permanent Delete, then the remaining F1-F7/M7
+functional and release work.
+
+Preserved shared-originals delivery: **http://127.0.0.1:8840/**, source `dc42d2a`,
 binary `afa9c0ebffc6`, in `venturi-web-halo1-shared-originals.service`.
 Library now offers an explicit archived-original Reference through the configured
 read-only shared root, alongside the existing project copy. Qualified tokens bind

@@ -22,7 +22,39 @@ video lease APIs or a second audio-routing architecture for this deferred detail
 
 ## Active completion objective
 
-Current Library removal delivery: **http://127.0.0.1:8848/**, source
+Current portable Library copies and preset activation delivery:
+**http://127.0.0.1:8849/**, source `efd5f59` (feature `5a856e4`), binary
+`80c54dbc8eb2`, service `venturi-web-halo1-library-copies-r2.service`, PID 209284.
+Native Add to Project uses readable `library/<originalname>` copies, native
+legacy-name handling and collision suffixes, with full-byte verification,
+confined publication and pinned destination witnesses. Existing flat copies and
+saved projects are unchanged. Saved presets apply through Enter or double-click
+using the existing native command and current selection; project reopen refreshes
+the epoch-bound panel instead of leaving Apply stale.
+
+Actual Windows imports two native NAS assets as readable media 13 and compound
+media 14/child timeline 4, verifies cached no-op and Undo/Redo, and plays Source
+to EOF at 5.184 seconds. The shared preset applies DropShadow to Solid 14 through
+Enter/double-click, with Undo/Redo and Save As/reopen. Apply remains enabled after
+the project epoch changes, without manual Refresh. The bounded gate covers
+**58 native cases** (54 reused and four affected cases) and **114 client cases**;
+syntax, formatting, all-target Clippy and embedded build pass. The final JS-only
+gate reuses unchanged native/Clippy results, builds in 40.13 seconds and peaks at
+1,526,898,688 bytes. No new export or physical drag/DPI qualification is claimed;
+unchanged render/audio/export evidence is reused.
+
+Final `Venturi_Library_Copies_V1.vvproj` is Saved/frame 0/empty Undo, SHA
+`2fa1646d5cc282abf5f7d1437c57745edc1f804b6312f7b3a4217e0dba3b7b6c`.
+All 33 prior Sessions, 34 PIDs, 33 prior Saved files, 33 local originals, the old
+proxy, four NAS assets/preset files and nested copied dependencies are preserved;
+the original candidate Saved bytes are unchanged. The ordinary viewport is
+restored. See `evidence/f5-library-copies-workflow.json`,
+`evidence/f5-library-copies-workspace.png` and
+`evidence/f5-library-preset-workspace.png`. Both F5 rows remain partial; the ledger
+stays **49 done / 41 partial / 2 excluded** and the full goal remains active.
+Next implement saved-preset permanent Delete.
+
+Preserved Library removal delivery: **http://127.0.0.1:8848/**, source
 `139418d`, binary `749e97fa8c20`, service
 `venturi-web-halo1-library-delete.service`. Native Library selections now have
 confirmed permanent removal from Delete/Backspace, Edit Delete and collapsed
@@ -102,8 +134,8 @@ All 30 prior Sessions, 31 PIDs, 27 prior Saved files, 21 fixed local originals,
 the NAS original and shared proxy remain unchanged. Runtime peak is 214,544,384
 bytes. See `evidence/f1-command-ownership-workflow.json` and Selection images.
 No new export/physical DPI/full release qualification was claimed at that checkpoint.
-Library pool import and pre-import Source preview are subsequently delivered above;
-native shared-file removal remains open.
+Library pool import, pre-import Source and permanent asset removal are
+subsequently delivered above.
 Ledger remains **49 done / 41 partial / 2 excluded**.
 
 Preserved context-menu delivery: **http://127.0.0.1:8845/**, source `b23e87d`

@@ -1,0 +1,168 @@
+{
+  "date": "2026-10-23",
+  "status": "partial_full_plan_functional_block",
+  "source_commit": "efd5f59",
+  "feature_commit": "5a856e4",
+  "url": "http://127.0.0.1:8849/",
+  "unit": "venturi-web-halo1-library-copies-r2.service",
+  "main_pid": 209284,
+  "binary_sha256": "80c54dbc8eb2528537b9691966c863edff90af1a4ea18504176579a2d74e8c0e",
+  "project": "Venturi_Library_Copies_V1.vvproj",
+  "project_sha256": "2fa1646d5cc282abf5f7d1437c57745edc1f804b6312f7b3a4217e0dba3b7b6c",
+  "implemented": [
+    "Native Library imports retain readable original leaf filenames in the portable project library directory; legacy generated copies remain compatible.",
+    "Saved presets support native double-click and unmodified Enter through the existing single-flight ApplyPreset command, with selection, modal, writer and stale-owner guards.",
+    "An open preset palette reads once after a project epoch transition, preserving the selected preset ID; failed reads require explicit Refresh and old replies cannot replace the current catalog."
+  ],
+  "gate": {
+    "native_cases": 58,
+    "native_cases_reused": 54,
+    "native_cases_rerun": 4,
+    "current_client_cases": 114,
+    "historical_r3_client_cases": 112,
+    "javascript_syntax": true,
+    "formatting": true,
+    "embedded_build": true,
+    "clippy_all_targets_deny_warnings": "Reused unchanged Rust gate",
+    "r3_peak_bytes": 1993125888,
+    "r4_peak_bytes": 1526898688
+  },
+  "actual_windows": [
+    "Import two selected native NAS assets into the Media pool without timeline placement. One ImportMedia Undo adds roots13/14 and independent child timeline4; all three existing timelines remain exact.",
+    "Repeat the same pool import: media, timelines, folders, generation and one-entry history remain exact. Undo removes both imported roots/child; Redo restores them.",
+    "Open imported ordinary media13 in Source and reach natural EOF5.184s, paused/ended at5.184s.",
+    "Select Solid14 in a project different from the NAS preset source. Enter applies the existing Title12 filters-only preset as one ApplyPreset; Undo restores the empty filter stack. Double-click applies the same payload, followed by Undo and Redo.",
+    "Solid14 receives exactly the original Title12 DropShadow stack; its color, transform, source timing, masks, transitions and other inspected properties stay exact. Original Title12/Adjustment13 and other timelines remain unchanged.",
+    "Save As and actual reopen retain the exact saved media/timeline/folder model, Saved status, frame0 and empty Undo. After the guarded R4 candidate refresh, reopen with the preset palette already open enables Apply without manual Refresh."
+  ],
+  "native_model": {
+    "before_import_media_count": 8,
+    "after_import_media_count": 10,
+    "before_import_timelines": 3,
+    "after_import_timelines": 4,
+    "imported_media_ids": [
+      "13",
+      "14"
+    ],
+    "independent_child_timeline": "4",
+    "existing_timeline_ids": [
+      "1",
+      "2",
+      "3"
+    ],
+    "existing_timelines_exact_after_import": true,
+    "cached_import_exact_noop": true,
+    "undo_redo_timelines_and_folders_exact": true,
+    "undo_redo_media_descriptors_equal_excluding_content_hash": true,
+    "content_hash_note": "Native compound-media memoization counters change across Undo/Redo; their byte equality is not claimed.",
+    "final_media_timelines_folders_equal_saved_r1": true
+  },
+  "shared_preset": {
+    "id": "ab83b9ee-0ac8-4198-b801-fe7279369130",
+    "name": "Venturi Context Shadow 20261023",
+    "attributes": [
+      "filters"
+    ],
+    "anchor": "start",
+    "append_filters": false,
+    "source_title_clip_id": "12",
+    "destination_solid_clip_id": "14",
+    "before_destination_filter_count": 0,
+    "after_destination_filter_count": 1,
+    "destination_filters_equal_original_title": true,
+    "other_inspected_properties_unchanged": true,
+    "nas_bytes": 6273,
+    "nas_sha256": "5b782edb99f584ebbee43e8f1b9b98964ec2a46a6380f7f14290d3fb4dd56da4",
+    "nas_file_identity_and_bytes_unchanged": true
+  },
+  "history": {
+    "import_labels": [
+      "ImportMedia"
+    ],
+    "cached_import_position": 1,
+    "undo_import_position": 0,
+    "redo_import_position": 1,
+    "after_enter_labels": [
+      "ImportMedia",
+      "ApplyPreset"
+    ],
+    "after_enter_position": 2,
+    "undo_enter_position": 1,
+    "after_doubleclick_position": 2,
+    "undo_doubleclick_position": 1,
+    "redo_preset_position": 2,
+    "final_labels": [],
+    "final_position": 0
+  },
+  "final_reopen": {
+    "project_epoch": "1792763030335409310:2",
+    "generation": "0",
+    "unsaved": false,
+    "frame": 0,
+    "apply_enabled_with_palette_open_without_manual_refresh": true,
+    "saved_sha256_equal_saved_r1": true
+  },
+  "runtime": {
+    "cpu_quota_percent": 800,
+    "memory_max_bytes": 4294967296,
+    "swap_max_bytes": 0,
+    "oom_score_adjust": 1000,
+    "nice": 19,
+    "io_weight": 10,
+    "final_memory_peak_bytes": 220065792,
+    "candidate_refresh": "Exact owned Session, Saved SHA and PID guards; earlier editors preserved."
+  },
+  "protection": {
+    "prior_sessions": 33,
+    "prior_pids": 34,
+    "prior_saved_files": 33,
+    "local_original_files_unchanged": 33,
+    "nas_original_identity_and_bytes_unchanged": true,
+    "shared_proxy_movie": {
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "inode": 4211051,
+      "mtime_ns": 1792732445778166236,
+      "ctime_ns": 1792732445778166236,
+      "bytes": 2206043
+    },
+    "native_library_and_preset_files_unchanged": 4,
+    "project_copy_unchanged": true,
+    "project_copy_leaf": "ds4-f3923115fe638051-53f3bea1ec1589a0.mp4",
+    "project_copy_bytes": 657278,
+    "project_copy_inode": 4211747,
+    "project_copy_sha256": "53f3bea1ec1589a0eb8c3b0ecce43efbd90b5e45aac50bec26982cf7e2329f4b"
+  },
+  "screenshots": [
+    "f5-library-copies-workspace.png",
+    "f5-library-preset-workspace.png"
+  ],
+  "limits": [
+    "No new changed-montage export or physical preset drag is qualified by this workflow.",
+    "Native preset permanent Delete, broader desktop/shared-library lifecycle, physical device/DPI/dense-media and release acceptance remain open.",
+    "F5 remains partial; this workflow does not complete the full plan."
+  ],
+  "private_inputs_sha256": {
+    "halo1-library-copies-opened.json": "1498bc3c0dfb5aa99808b32107d4d1667f3941e35669b0cb6ca62db8f1faf567",
+    "halo1-library-copies-imported.json": "71a9a12ffcbca20f9edaf13b76f6fb7dfa2a4e15a952c5f93a626a63a2817907",
+    "halo1-library-copies-cached-import.json": "614515c970cdad81c16e932686772e13c2ea4f817d7a57931cf75d18cbac25e9",
+    "halo1-library-copies-undo-import.json": "c733bfcab8f8fe710226adb8b19956bf5895f3cead9a6d049f30418d22c334ae",
+    "halo1-library-copies-redo-import.json": "b723f26b2e961cb439982869ce1157a47874eb752140b3135dc015d91fe953cb",
+    "halo1-library-copies-before-preset.json": "177087320ea105012687840c1fa70fa2ef44dd0e59e8ede36c099a11ba3cb4d4",
+    "halo1-library-copies-enter-preset.json": "54b63116256a4ce652cb06c151f18743ed613fcdd5e671f927a7e36f1e2f9e09",
+    "halo1-library-copies-undo-enter-preset.json": "01f5900abec4670ab73c2a55349dfe79d2f247b481a0bd2aa693fd85f4d575ca",
+    "halo1-library-copies-doubleclick-preset.json": "4bdd6b4a357afe5e18cabc2ad96ab524004e5d534dc496a075da15a0b8a2279a",
+    "halo1-library-copies-undo-doubleclick-preset.json": "2b118c13380b872252289517a4eb30db8db1337e3216a7fdd8368b743e515bad",
+    "halo1-library-copies-redo-preset.json": "f278d8695a1fb2f0ac8cbc94db112843108167c667a57969d2ca1c8a17bb3a21",
+    "halo1-library-copies-saved-r1.json": "22b92580e610fda715e7e3593aadb1ea207af99676cf0d5e2ddaa80f64e0d456",
+    "halo1-library-copies-final.json": "67392e68fa6b50e652b3a6434c0175605f437a8c64449d72681c4a010efde97d",
+    "halo1-library-copies-source-eof.json": "418f6818d46b2548f12e6d79bb35609d9e81eb95e80cc31a74b1e0c7870514f7",
+    "halo1-library-copies-preset-before.json": "5eed394526aa5f3c1ec73ecea262bf84662bf2c51fd22a348e5b7146638e7d44",
+    "halo1-library-copies-preset-epoch-refresh.json": "f09eb28574615cea03f2553ad1967763bc88891d6f69bdbc6093b8a43d848d7e",
+    "halo1-library-copies-r3-observed.json": "94ba6247a8a232a13db7f7203b191c3d061e75528c1d19ad27286c72971a14f9",
+    "halo1-library-copies-r4-observed.json": "6b2ee3a02ef7ce1358f0806e5287f7de5c0f1261aeac0ef1a038c4b9acb3e652",
+    "halo1-library-copies-gate-counts.json": "a277c19740b417eb706db9141de023ad63f9d37865d9c30f3eb15f8d6e3e27fd",
+    "halo1-library-copies-protected.json": "c55baf4dc4f64765f2a5148bfafac2d05c2922c125bcae2106404c4be28d784b",
+    "halo1-library-copies-native-and-copy-after-import.json": "00a41128bbcc1b8e7fe0e70986b033e6f0834ad0baf96701eba8105b27f75bfc",
+    "halo1-library-copies-native-final-check.json": "607693fc6c1c4c5c64fb27319e53ec3b62dece3fbecdb691e44caac3c647f2ff"
+  }
+}

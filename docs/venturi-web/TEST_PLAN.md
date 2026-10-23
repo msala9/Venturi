@@ -22,6 +22,21 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F5 portable Library copies and preset activation (`5a856e4` plus `efd5f59`, halo1/8849): see
+`evidence/f5-library-copies-workflow.json` and Library/preset workspace images.
+The bounded gate validates 58 native cases (54 reused plus four affected cases)
+and 114 client cases, syntax, formatting, all-target Clippy and embedded build.
+The final JS-only epoch-refresh correction reuses unchanged native/Clippy results;
+its build takes 40.13 seconds, with peak 1,526,898,688 bytes. Native cases cover
+readable project copies, legacy names, Unicode collision bounds, full-byte reuse,
+foreign collisions, destination replacement/symlink/cancel and untouched old flat
+copies. Client cases cover guarded preset Enter/double-click and project-reopen
+epoch rebinding without late selection writes. Actual Windows two-asset NAS import,
+cached no-op, native Undo/Redo, Source EOF5.184, preset application to Solid 14,
+Undo/Redo and Saved reopen pass. Reuse unchanged renderer/audio/export evidence;
+no fresh export or physical HTML drag/DPI claim is added. Both F5 rows stay partial;
+the next production block is saved-preset permanent Delete.
+
 F5 native Library removal (`139418d`, halo1/8848): see
 `evidence/f5-library-delete-workflow.json`. 78 native /75client cases, syntax,
 formatting, all-target Clippy and embedded build pass in one bounded halo1 gate.

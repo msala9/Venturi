@@ -287,7 +287,7 @@ test('late font reads cannot republish controls for a different playhead or disp
   for(const action of ['frame','selection','dispose'])await t.test(action,async t=>{
     let resolve,signal;const h=harness(t,{effects:true,editDetail:titleDetail,readFonts:options=>{signal=options.signal;return new Promise(done=>{resolve=done;});}}),group=h.all().find(node=>node.dataset.visualPath==='selected-effects:Selected title typography');
     group.open=true;group.dispatchEvent(new Event('toggle'));
-    if(action==='frame')h.setFrame(21);else if(action==='selection')h.state.selection=['9'];else h.control.at(-1).cancel();
+    if(action==='frame')h.setFrame(21);else if(action==='selection')h.state.selection=['9'];else h.control.at(-1).dispose();
     resolve(fontCatalog());await settle();assert.equal(h.field('Server font family').value,'Server font');h.click('Server font family');await settle();assert(!h.all().some(node=>node.role==='listbox'));assert.deepEqual(h.commands,[]);if(action==='dispose')assert.equal(signal.aborted,true);
   });
 });

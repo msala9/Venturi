@@ -965,7 +965,11 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
             path.as_ref(),
         )?,
         Operation::SetAudioEffects { channel, effects } => {
-            crate::audio::set_effects(session, id, channel, effects)?
+            let generation = session.history.generation();
+            crate::audio::set_effects(session, id, channel, effects)?;
+            if session.history.generation() == generation {
+                return Ok(());
+            }
         }
         Operation::SetMixer {
             channel,

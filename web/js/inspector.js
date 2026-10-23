@@ -27,18 +27,19 @@ export function renderInspectorSelection(root,rows){
   table.append(head,body);root.className='inspector-selection-summary';root.replaceChildren(table);
 }
 export function bindInspectorNumber(input,{canInteract,apply,speed=1,windowRef=input.ownerDocument?.defaultView ?? globalThis.window}){
-  let gesture=null;
-  const live=()=>input.isConnected!==false && !input.disabled && canInteract();
+  let gesture=null,disposed=false;const listeners=[];
+  const listen=(target,key,handler)=>{target?.addEventListener?.(key,handler);listeners.push(()=>target?.removeEventListener?.(key,handler));};
+  const live=()=>!disposed && input.isConnected!==false && !input.disabled && canInteract();
   const release=id=>{try{if(input.hasPointerCapture?.(id))input.releasePointerCapture(id);}catch{}};
   const cancel=()=>{if(!gesture)return;const before=gesture;gesture=null;input.value=before.text;release(before.id);};
   const draft=event=>{const distance=event.clientX-gesture.x;if(!gesture.moved && Math.abs(distance)<3)return;event.preventDefault?.();gesture.moved=true;const bound=(value,fallback)=>String(value ?? '').trim() && Number.isFinite(Number(value))?Number(value):fallback,min=bound(input.min,-Infinity),max=bound(input.max,Infinity);const value=gesture.value+distance*speed*(event.shiftKey ? 0.1 : 1);input.value=String(Number(Math.max(min,Math.min(max,value)).toFixed(6)));};
-  input.addEventListener('pointerdown',event=>{if(gesture || !live() || event.button!==0 || event.isPrimary===false || event.ctrlKey || event.metaKey || event.altKey || !String(input.value).trim() || !Number.isFinite(Number(input.value)))return;gesture={id:event.pointerId,x:event.clientX,text:input.value,value:Number(input.value),moved:false};input.setPointerCapture?.(event.pointerId);});
-  input.addEventListener('pointermove',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live() || event.buttons!==undefined && !(event.buttons&1)){cancel();return;}draft(event);});
-  input.addEventListener('pointerup',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live()){cancel();return;}if(gesture.moved || Math.abs(event.clientX-gesture.x)>=3)draft(event);const before=gesture;gesture=null;release(before.id);if(before.moved && Number(input.value)!==before.value)apply();});
-  input.addEventListener('pointercancel',cancel);input.addEventListener('lostpointercapture',cancel);input.addEventListener('blur',cancel);
-  input.addEventListener('keydown',event=>{if(event.key==='Escape' && gesture){event.preventDefault();event.stopPropagation();cancel();}});
-  windowRef?.addEventListener?.('blur',cancel);
-  return {cancel,dispose(){cancel();windowRef?.removeEventListener?.('blur',cancel);}};
+  listen(input,'pointerdown',event=>{if(gesture || !live() || event.button!==0 || event.isPrimary===false || event.ctrlKey || event.metaKey || event.altKey || !String(input.value).trim() || !Number.isFinite(Number(input.value)))return;gesture={id:event.pointerId,x:event.clientX,text:input.value,value:Number(input.value),moved:false};input.setPointerCapture?.(event.pointerId);});
+  listen(input,'pointermove',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live() || event.buttons!==undefined && !(event.buttons&1)){cancel();return;}draft(event);});
+  listen(input,'pointerup',event=>{if(!gesture || event.pointerId!==gesture.id)return;if(!live()){cancel();return;}if(gesture.moved || Math.abs(event.clientX-gesture.x)>=3)draft(event);const before=gesture;gesture=null;release(before.id);if(before.moved && Number(input.value)!==before.value)apply();});
+  listen(input,'pointercancel',cancel);listen(input,'lostpointercapture',cancel);listen(input,'blur',cancel);
+  listen(input,'keydown',event=>{if(event.key==='Escape' && gesture){event.preventDefault();event.stopPropagation();cancel();}});
+  listen(windowRef,'blur',cancel);
+  return {cancel,dispose(){if(disposed)return;cancel();disposed=true;for(const remove of listeners)remove();}};
 }
 function inspectorHelp(parent,note,label='Editing this selection'){
   const help=document.createElement('details'),summary=document.createElement('summary');help.className='inspector-help';summary.textContent=label;help.append(summary,note);parent.append(help);
@@ -98,7 +99,7 @@ function selectedPropertyControls(root,detail,{selection,getSelection,frame,getF
   if(!selection?.clip_ids?.length || detail.clip_id!==selection.clip_ids[0] || detail.video!==video || detail.locked || !Number.isSafeInteger(frame) || frame<0)return null;
   const captured=structuredClone(selection),identity=JSON.stringify(captured),controls=[],section=inspectorGroup(document.createElement('details'),video?'video':'audio');section.open=true;section.className='inspector-selected';
   if(getFrame()!==frame || JSON.stringify(getSelection())!==identity)return null;
-  let waiting=false,outcomeUnknown=false,disposed=false;const gestures=[];
+  let waiting=false,outcomeUnknown=false,disposed=false,commandSequence=0;const gestures=[];
   const owns=()=>!disposed && root.isConnected!==false && section.isConnected!==false && getFrame()===frame && JSON.stringify(getSelection())===identity;
   const current=()=>owns() && canInteract(),navigationCurrent=()=>owns() && canNavigate();
   const sync=()=>{for(const [control,available,navigation] of controls)control.disabled=waiting || outcomeUnknown || !(navigation?navigationCurrent():current()) || !available();};
@@ -108,8 +109,8 @@ function selectedPropertyControls(root,detail,{selection,getSelection,frame,getF
     if(waiting || outcomeUnknown)return;
     if(!current()){notice('Inspector selection changed; read its current properties before editing');return;}
     const operation={kind:'edit_inspector_selection',clip_ids:[...captured.clip_ids],timeline_frame:frame,edit};
-    waiting=true;sync();
-    return Promise.resolve().then(()=>{if(!current())throw Error('Inspector selection changed; read its current properties before editing');return commit(operation);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;notice(error.message);}).finally(()=>{waiting=false;sync();});
+    const sequence=++commandSequence;waiting=true;sync();
+    return Promise.resolve().then(()=>{if(sequence!==commandSequence)return;if(!current())throw Error('Inspector selection changed; read its current properties before editing');return commit(operation);}).catch(error=>{if(error.code==='OUTCOME_UNKNOWN')outcomeUnknown=true;notice(error.message);}).finally(()=>{waiting=false;sync();});
   };
   const button=(label,edit,parent,available=()=>true)=>{const node=register(document.createElement('button'),available);node.type='button';node.textContent=label;node.setAttribute('aria-label',label);node.addEventListener('click',()=>{if(available())submit(typeof edit==='function'?edit():edit);});parent.append(node);if(label.startsWith('Reset '))compactReset(node);return node;};
   const localButton=(label,frame,parent)=>{
@@ -118,7 +119,7 @@ function selectedPropertyControls(root,detail,{selection,getSelection,frame,getF
   };
   const heading=document.createElement('summary');heading.textContent=video?'Selected video properties':'Selected audio gain';section.append(heading);
   root.append(section);
-  return {section,register,button,localButton,submit,current,sync,own:gesture=>gestures.push(gesture),available:()=>!waiting && !outcomeUnknown && current(),cancel(){disposed=true;for(const gesture of gestures)gesture.dispose?.();}};
+  return {section,register,button,localButton,submit,current,sync,own:gesture=>gestures.push(gesture),available:()=>!waiting && !outcomeUnknown && current(),cancel(){if(disposed)return;commandSequence++;for(const gesture of gestures)gesture.cancel?.();sync();},dispose(){if(disposed)return;disposed=true;commandSequence++;for(const gesture of gestures){if(typeof gesture.dispose==='function')gesture.dispose();else gesture.cancel?.();}gestures.length=0;sync();}};
 }
 function selectedNumber(parent,label,parameter,controls,apply,displayLabel){
   const form=document.createElement('form'),field=document.createElement('label'),input=controls.register(document.createElement('input'));
@@ -126,16 +127,16 @@ function selectedNumber(parent,label,parameter,controls,apply,displayLabel){
   input.type='number';input.step=parameter.step ?? 'any';input.required=true;input.value=parameter.value;input.min=parameter.min;input.max=parameter.max;input.setAttribute('aria-label',label);field.append(input);
   const button=controls.register(document.createElement('button'));button.className='inspector-number-apply';button.textContent='Apply';button.setAttribute('aria-label',`Apply ${label}`);form.append(field,button);
   const complete=()=>{const value=Number(input.value);if(String(input.value).trim() && Number.isFinite(value) && form.reportValidity())apply(value);};
-  form.addEventListener('submit',event=>{event.preventDefault();complete();});input.addEventListener('change',complete);
+  const submit=event=>{event.preventDefault();complete();};form.addEventListener('submit',submit);input.addEventListener('change',complete);controls.own({dispose(){form.removeEventListener?.('submit',submit);input.removeEventListener?.('change',complete);}});
   input.title='Drag to adjust; Shift for fine control. Click to type. Escape cancels a drag.';controls.own(bindInspectorNumber(input,{canInteract:()=>controls.available(),apply:complete,speed:/Zoom/.test(label) ? 0.01 : /Rotation|Opacity/.test(label) ? 0.5 : 1}));
   if(/^(Rotation|Opacity|CropLeft|CropRight|CropTop|CropBottom|CropSoftness)$/.test(label)){
     const slider=controls.register(document.createElement('input'));slider.type='range';slider.min=label==='Rotation'?-180:parameter.min;slider.max=label==='Rotation'?180:parameter.max;slider.step=label==='Rotation' || label==='Opacity'?0.5:1;slider.value=parameter.value;slider.className='inspector-inline-slider';slider.setAttribute('aria-label',`${label} slider`);field.className+=' inspector-slider-field';field.append(slider);
-    let before=null,canceled=false;
-    slider.addEventListener('pointerdown',()=>{if(controls.available()){canceled=false;before=input.value;}});slider.addEventListener('input',()=>{if(!canceled && controls.available())input.value=slider.value;});
-    slider.addEventListener('change',()=>{if(!canceled && controls.available()){input.value=slider.value;complete();}before=null;});
-    const cancel=()=>{if(before!==null){input.value=before;slider.value=before;before=null;canceled=true;}};slider.addEventListener('pointercancel',cancel);slider.addEventListener('blur',cancel);slider.addEventListener('keydown',event=>{if(event.key==='Escape' && before!==null){event.preventDefault();event.stopPropagation();cancel();}else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key)){canceled=false;before=input.value;}});
-    const windowRef=input.ownerDocument?.defaultView ?? globalThis.window;windowRef?.addEventListener?.('blur',cancel);controls.own({dispose(){cancel();windowRef?.removeEventListener?.('blur',cancel);}});
-    input.addEventListener('change',()=>{slider.value=input.value;});
+    let before=null,canceled=false;const listeners=[],listen=(target,key,handler)=>{target?.addEventListener?.(key,handler);listeners.push(()=>target?.removeEventListener?.(key,handler));};
+    listen(slider,'pointerdown',()=>{if(controls.available()){canceled=false;before=input.value;}});listen(slider,'input',()=>{if(!canceled && controls.available())input.value=slider.value;});
+    listen(slider,'change',()=>{if(!canceled && controls.available()){input.value=slider.value;complete();}before=null;});
+    const cancel=()=>{if(before!==null){input.value=before;slider.value=before;before=null;canceled=true;}};listen(slider,'pointercancel',cancel);listen(slider,'blur',cancel);listen(slider,'keydown',event=>{if(event.key==='Escape' && before!==null){event.preventDefault();event.stopPropagation();cancel();}else if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End','PageUp','PageDown'].includes(event.key)){canceled=false;before=input.value;}});
+    const windowRef=input.ownerDocument?.defaultView ?? globalThis.window;listen(windowRef,'blur',cancel);controls.own({cancel,dispose(){cancel();for(const remove of listeners)remove();}});
+    listen(input,'change',()=>{slider.value=input.value;});
   }
   parent.append(form);
   return input;

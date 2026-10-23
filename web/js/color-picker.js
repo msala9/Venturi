@@ -32,7 +32,7 @@ function remember(color,picker,rgb){const key=colorKey(color);latentColors.delet
 export function renderColorPicker(root,{label,value,controls,apply,openState}){
   const doc=root.ownerDocument ?? globalThis.document,win=doc.defaultView ?? globalThis.window,original={...value};
   let draft={...original},picker={...colorToPicker(original),...(latentColors.get(colorKey(original))?.picker ?? {})},latent=latentColors.get(colorKey(original))?.rgb ?? {r:original.r,g:original.g,b:original.b};
-  let opened=false,disposed=false,waiting=false,gesture=null,popover=false,paintFrame=null,paintedHue=null,huePainted=false;
+  let opened=false,disposed=false,waiting=false,gesture=null,popover=false,paintFrame=null,paintedHue=null,huePainted=false,commitSequence=0;
   const listeners=[],listen=(node,type,handler,options)=>{node?.addEventListener?.(type,handler,options);listeners.push(()=>node?.removeEventListener?.(type,handler,options));};
   const node=(tag,className)=>{const element=doc.createElement(tag);if(className)element.className=className;return element;};
   const visible=()=>!root.closest?.('details:not([open]),[hidden],[inert]');
@@ -71,13 +71,13 @@ export function renderColorPicker(root,{label,value,controls,apply,openState}){
   }
   function release(){const previous=gesture;gesture=null;if(previous)try{if(previous.element.hasPointerCapture?.(previous.id))previous.element.releasePointerCapture(previous.id);}catch{}}
   function reset(){draft={...original};const cached=latentColors.get(colorKey(original));picker=cached?{...cached.picker}:colorToPicker(original);latent=cached?.rgb ?? {r:original.r,g:original.g,b:original.b};paint();}
-  function cancel({focus=false}={}){release();opened=false;if(paintFrame!==null){win?.cancelAnimationFrame?.(paintFrame);paintFrame=null;}swatch.setAttribute('aria-expanded','false');if(popover){try{popup.hidePopover?.();}catch{}}popup.hidden=true;popover=false;reset();if(focus && current())swatch.focus?.();}
+  function cancel({focus=false}={}){commitSequence++;release();opened=false;if(paintFrame!==null){win?.cancelAnimationFrame?.(paintFrame);paintFrame=null;}swatch.setAttribute('aria-expanded','false');if(popover){try{popup.hidePopover?.();}catch{}}popup.hidden=true;popover=false;reset();if(focus && current())swatch.focus?.();}
   function position(){const rect=swatch.getBoundingClientRect?.();if(!rect)return;const width=Math.min(284,Math.max(180,(win?.innerWidth ?? 1024)-16)),height=Math.min(480,(win?.innerHeight ?? 768)-16);property(popup,'width',`${width}px`);property(popup,'max-height',`${height}px`);property(popup,'left',`${Math.max(8,Math.min(rect.left,(win?.innerWidth ?? 1024)-width-8))}px`);property(popup,'top',`${Math.max(8,Math.min(rect.bottom+4,(win?.innerHeight ?? 768)-height-8))}px`);}
   function open(){if(!available())return;if(opened){cancel({focus:true});return;}reset();opened=true;popup.hidden=false;position();try{if(popup.showPopover){popup.setAttribute('popover','manual');popup.showPopover();popover=true;}}catch{popup.removeAttribute?.('popover');}swatch.setAttribute('aria-expanded','true');paint();square.focus?.();}
   async function commit(kind){
     if(!available())return;let next;try{next=colorEdit(original,draft);}catch(error){status.textContent=error.message;return;}if(!next)return;
-    const selectedPicker={...picker},selectedRgb=draft.a===0?{...latent}:{...draft};waiting=true;cancel();status.textContent='Submitting color · waiting for native properties';controls.sync();
-    try{await Promise.resolve();if(current() && controls.available()){const receipt=await apply(next);if(kind==='visual' && receipt!==undefined && receipt!==false)remember(next,selectedPicker,selectedRgb);}}
+    const selectedPicker={...picker},selectedRgb=draft.a===0?{...latent}:{...draft};waiting=true;cancel();const sequence=commitSequence;status.textContent='Submitting color · waiting for native properties';controls.sync();
+    try{await Promise.resolve();if(sequence===commitSequence && current() && controls.available()){const receipt=await apply(next);if(kind==='visual' && receipt!==undefined && receipt!==false)remember(next,selectedPicker,selectedRgb);}}
     catch(error){if(!disposed)status.textContent=error.message;}
     finally{waiting=false;if(!disposed){reset();controls.sync();}}
   }

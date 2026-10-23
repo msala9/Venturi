@@ -69,6 +69,21 @@ test('native precision fallback validates all axes and only quantizes the explic
   }finally{f.dispose();}
 });
 
+test('canceling a queued color confirmation prevents dispatch while a fresh edit remains usable',async()=>{
+  for(const kind of ['numeric','visual']){
+    const f=fixture();try{
+      f.open();const r=f.field('Test color R'),alpha=f.field('Test color alpha');
+      if(kind==='numeric'){r.value='.123456789';f.send(r.parentElement.parentElement,'submit');}
+      else{f.send(alpha,'pointerdown',{clientX:200});f.send(alpha,'pointerup',{clientX:200});}
+      f.widget.cancel();await settle();assert.deepEqual(f.writes,[],kind);assert.equal(f.popup().hidden,true);assert.equal(f.frames.size,0);assert.equal(r.value,String(value.r));
+      f.open();assert.equal(f.popup().hidden,false);
+      if(kind==='numeric'){r.value='.3';f.send(r.parentElement.parentElement,'submit');}
+      else{f.send(alpha,'pointerdown',{clientX:200});f.send(alpha,'pointerup',{clientX:200});}
+      await settle();assert.deepEqual(f.writes,[kind==='numeric'?{...value,r:Math.fround(.3)}:{...value,a:.5}],kind);
+    }finally{f.dispose();}
+  }
+});
+
 test('pending and unknown native outcome block repeats and disposal cannot reopen or steal focus',async()=>{
   let reject;const f=fixture(value,{apply:()=>new Promise((resolve,fail)=>{reject=fail;})});try{
     f.open();const alpha=f.field('Test color alpha');f.send(alpha,'keydown',{key:'ArrowLeft'});await settle();assert.equal(f.writes.length,1);f.open();f.send(alpha,'keydown',{key:'ArrowLeft'});await settle();assert.equal(f.writes.length,1);

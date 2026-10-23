@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { detailIdentity, propertyOperation, keyframeOperation,transformPatch,keyPageIndex,transitionSelectionOperation,editingShortcutAllowed,selectionInspectorRows,bindInspectorNumber,bindKeyEditorDelete } from "../js/inspector.js";
+import { detailIdentity, propertyOperation, keyframeOperation,transformPatch,keyPageIndex,transitionSelectionOperation,editingShortcutAllowed,selectionInspectorRows,bindInspectorNumber,bindKeyEditorDelete,renderSelectedAudioGain } from "../js/inspector.js";
 
 test('nonmodal key editor owns one mixed-key Delete without deleting timeline clips or consuming text edits',()=>{
   const events=new Map(),root={addEventListener:(key,fn)=>events.set(key,fn),removeEventListener:(key,fn)=>{if(events.get(key)===fn)events.delete(key);}};
@@ -29,12 +29,57 @@ test('selection summary accepts native own-clock rows only for the complete capt
 
 test('Inspector numeric scrubs stay local until final release and restore typed state on Escape, stale ownership or blur',()=>{
   const events={},windowEvents={},commits=[];let allowed=true,captured=false;
-  const input={value:'10',min:'-100',max:'100',isConnected:true,disabled:false,addEventListener:(name,handler)=>events[name]=handler,setPointerCapture(){captured=true;},hasPointerCapture:()=>captured,releasePointerCapture(){captured=false;events.lostpointercapture();}},windowRef={addEventListener:(name,handler)=>windowEvents[name]=handler,removeEventListener:name=>delete windowEvents[name]};
+  const input={value:'10',min:'-100',max:'100',isConnected:true,disabled:false,addEventListener:(name,handler)=>events[name]=handler,removeEventListener:(name,handler)=>{if(events[name]===handler)delete events[name];},setPointerCapture(){captured=true;},hasPointerCapture:()=>captured,releasePointerCapture(){captured=false;events.lostpointercapture();}},windowRef={addEventListener:(name,handler)=>windowEvents[name]=handler,removeEventListener:name=>delete windowEvents[name]};
   const control=bindInspectorNumber(input,{canInteract:()=>allowed,apply:()=>commits.push(Number(input.value)),windowRef});const point=(x,extra={})=>({button:0,pointerId:1,buttons:1,clientX:x,preventDefault(){},stopPropagation(){},...extra});
   events.pointerdown(point(0));events.pointermove(point(10));assert.equal(input.value,'20');assert.deepEqual(commits,[]);events.pointerup(point(15));assert.deepEqual(commits,[25]);
   for(const cancel of [()=>events.keydown({...point(0),key:'Escape'}),()=>{allowed=false;},()=>windowEvents.blur()]){allowed=true;input.value='12.5';events.pointerdown(point(0));events.pointermove(point(10));cancel();events.pointerup(point(15));assert.equal(input.value,'12.5');}
   assert.deepEqual(commits,[25]);allowed=true;events.pointerdown(point(0));events.pointerup(point(0));assert.deepEqual(commits,[25]);
-  events.pointerdown(point(0));events.pointermove(point(10,{shiftKey:true}));events.pointerup(point(10,{shiftKey:true}));assert.equal(commits.at(-1),13.5);control.dispose();assert.equal(windowEvents.blur,undefined);
+  events.pointerdown(point(0));events.pointermove(point(10,{shiftKey:true}));events.pointerup(point(10,{shiftKey:true}));assert.equal(commits.at(-1),13.5);control.dispose();assert.equal(windowEvents.blur,undefined);assert.deepEqual(Object.keys(events),[]);
+});
+
+const settleInspector=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
+function selectedLifecycleHarness(t,{commit}={}){
+  const oldDocument=globalThis.document,commands=[],notices=[];
+  class Surface extends EventTarget{
+    constructor(){super();this.listeners=new Map();}
+    addEventListener(key,handler){super.addEventListener(key,handler);if(!this.listeners.has(key))this.listeners.set(key,new Set());this.listeners.get(key).add(handler);}
+    removeEventListener(key,handler){super.removeEventListener(key,handler);this.listeners.get(key)?.delete(handler);}
+    count(){return [...this.listeners.values()].reduce((sum,handlers)=>sum+handlers.size,0);}
+  }
+  const view=new Surface(),doc={defaultView:view,createElement:tag=>new Element(tag)};
+  class Element extends Surface{
+    constructor(tag){super();this.tagName=tag;this.children=[];this.ownerDocument=doc;this.isConnected=true;this.disabled=false;this.value='';this.captures=new Set();}
+    get value(){return this.textValue ?? '';}set value(value){this.textValue=String(value);}
+    append(...nodes){for(const node of nodes){this.children.push(node);if(typeof node==='object')node.parent=this;}}
+    setAttribute(name,value){this[name]=String(value);}getAttribute(name){return this[name] ?? null;}reportValidity(){return true;}
+    setPointerCapture(id){this.captures.add(id);}hasPointerCapture(id){return this.captures.has(id);}releasePointerCapture(id){this.captures.delete(id);fire(this,'lostpointercapture',{pointerId:id});}
+  }
+  function fire(node,key,properties={}){const event=new Event(key,{cancelable:true});for(const [name,value] of Object.entries(properties))Object.defineProperty(event,name,{value});node.dispatchEvent(event);}
+  globalThis.document=doc;const root=new Element('div'),selection={clip_ids:['audio'],project_epoch:'epoch',generation:'4',timeline_id:'timeline',revision:'revision'},detail={clip_id:'audio',video:false,locked:false,gain:{value:-3,keyframe_info:{on_keyframe:false,previous_frame:null,next_frame:null}}};
+  const controls=renderSelectedAudioGain(root,detail,{selection,getSelection:()=>selection,frame:20,getFrame:()=>20,canInteract:()=>true,commit:operation=>{commands.push(operation);return commit?.(operation);},notice:message=>notices.push(message)});
+  t.after(()=>{controls.dispose();globalThis.document=oldDocument;});
+  const all=node=>[node,...node.children.filter(child=>typeof child==='object').flatMap(all)],input=all(root).find(node=>node['aria-label']==='Selected gain dB');
+  return {controls,input,view,commands,notices,fire,apply(value){input.value=String(value);fire(input.parent.parent,'submit');},point(key,x,extra={}){fire(input,key,{button:0,pointerId:1,buttons:1,clientX:x,...extra});}};
+}
+
+test('selected Inspector blur cancellation restores owned drafts and permits a later edit on the same mounted selection',async t=>{
+  const h=selectedLifecycleHarness(t);let canceled=0,disposed=0;h.controls.own({cancel(){canceled++;},dispose(){disposed++;}});
+  h.point('pointerdown',0);h.point('pointermove',10);assert.equal(h.input.value,'7');assert.deepEqual(h.commands,[]);
+  h.controls.cancel();h.fire(h.view,'blur');h.point('pointerup',15,{buttons:0});await settleInspector();
+  assert.equal(h.input.value,'-3');assert.equal(h.input.captures.size,0);assert.equal(h.controls.available(),true);assert.equal(canceled,1);assert.equal(disposed,0);assert.deepEqual(h.commands,[]);
+  h.point('pointerdown',0);h.point('pointerup',5,{buttons:0});await settleInspector();assert.deepEqual(h.commands.map(command=>command.edit),[{action:'gain',value:2}]);
+  h.controls.dispose();h.controls.dispose();assert.equal(disposed,1);assert.equal(h.controls.available(),false);assert.equal(h.view.count(),0);assert.equal(h.input.disabled,true);
+  h.apply(9);h.point('pointerdown',0);h.point('pointerup',10,{buttons:0});await settleInspector();assert.equal(h.commands.length,1);
+});
+
+test('canceling before dispatch abandons only that queued edit and does not leave the mounted Inspector waiting',async t=>{
+  const h=selectedLifecycleHarness(t);h.apply(4);h.controls.cancel();await settleInspector();assert.deepEqual(h.commands,[]);assert.equal(h.controls.available(),true);assert.deepEqual(h.notices,[]);
+  h.apply(5);await settleInspector();assert.deepEqual(h.commands.map(command=>command.edit),[{action:'gain',value:5}]);assert.equal(h.controls.available(),true);
+});
+
+test('canceling an already dispatched edit retains its pending and unknown-outcome safeguards',async t=>{
+  let reject;const h=selectedLifecycleHarness(t,{commit:()=>new Promise((_,fail)=>{reject=fail;})});h.apply(4);await settleInspector();assert.equal(h.commands.length,1);h.controls.cancel();h.apply(5);assert.equal(h.controls.available(),false);assert.equal(h.commands.length,1);
+  reject(Object.assign(Error('Confirm the native write outcome before editing'),{code:'OUTCOME_UNKNOWN'}));await settleInspector();h.controls.cancel();h.apply(6);await settleInspector();assert.equal(h.commands.length,1);assert.equal(h.controls.available(),false);assert.match(h.notices.at(-1),/outcome/);
 });
 
 test('selected transition edits preserve native fields and canonical cut anchor without mutating the snapshot',()=>{

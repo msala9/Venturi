@@ -1065,10 +1065,10 @@ async function timelineContextAction(action,owner){
 timelineContextMenu=createTimelineContextMenu({getContext:target=>document.querySelector('dialog[open]')?null:timelineContext(target),getItems:timelineContextItems,onAction:timelineContextAction,notice});
 function renderTransitionPresets(){
   const root=$("transition-presets");if(!root)return;root.replaceChildren();
-  const note=document.createElement('p');note.className='muted';note.textContent='Drag a transition near a video clip edge. A touching neighbour creates a crossing. For keyboard editing, select a clip and open Inspector Transitions.';root.append(note);
+  const heading=document.createElement('h3');heading.textContent='Transitions';heading.title='Drag onto a video clip edge. Touching clips create a crossing. Click to open Inspector Transitions for keyboard editing.';root.append(heading);
   const defaults=Array.isArray(timeline?.transition_defaults)?timeline.transition_defaults:[];
   for(const preset of defaults){
-    const button=document.createElement('button');button.type='button';button.textContent=`Drag ${preset.kind} · ${preset.duration}f`;button.draggable=true;button.disabled=!writable || busy || Boolean(unresolved);button.title='Drag onto an eligible video edge, or use the Inspector Transitions controls';
+    const button=document.createElement('button');button.type='button';button.textContent=`${preset.kind.replace(/([a-z])([A-Z])/g,'$1 $2')} · ${preset.duration}f`;button.setAttribute('aria-label',`Drag ${preset.kind} · ${preset.duration}f`);button.draggable=true;button.disabled=!writable || busy || Boolean(unresolved);button.title='Drag onto an eligible video edge, or click for Inspector Transitions';
     button.addEventListener('dragstart',event=>{if(!event.dataTransfer || !canvasTimeline.transitionDnd?.start(preset.kind)){event.preventDefault();return;}event.dataTransfer.setData(canvasTimeline.transitionDnd.type,preset.kind);event.dataTransfer.effectAllowed='copy';});
     button.addEventListener('dragend',()=>canvasTimeline.transitionDnd?.end());
     button.addEventListener('click',()=>{revealInspector();const section=document.querySelector('[data-visual-path="transitions"]');if(section){section.open=true;section.scrollIntoView({block:'nearest'});}else notice('Select a video clip to create a transition with the Inspector');});root.append(button);

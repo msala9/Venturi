@@ -150,19 +150,19 @@ pub fn set_effects(
     let channel = channel(lane, raw)?;
     validate(effects)?;
     let old = match channel {
-        core::MixerChannel::Track(index) => lane.tracks[index].mix.effects.len(),
-        core::MixerChannel::Master => lane.master.effects.len(),
+        core::MixerChannel::Track(index) => &lane.tracks[index].mix.effects,
+        core::MixerChannel::Master => &lane.master.effects,
     };
-    let mut commands: Vec<Box<dyn Command>> = (0..old)
+    if old.as_slice() == effects {
+        return Ok(());
+    }
+    let mut commands: Vec<Box<dyn Command>> = (0..old.len())
         .rev()
         .map(|index| Box::new(core::RemoveAudioEffect::new(id, channel, index)) as Box<dyn Command>)
         .collect();
     commands.extend(effects.iter().map(|effect| {
         Box::new(core::AddAudioEffect::new(id, channel, effect.clone())) as Box<dyn Command>
     }));
-    if commands.is_empty() {
-        return Err(ApiError::invalid("Audio chain is already empty"));
-    }
     session.apply(Box::new(core::CompositeCommand::new(
         core::CommandLabel::EditAudioEffect,
         commands,

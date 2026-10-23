@@ -352,6 +352,118 @@ fn every_native_audio_default_is_valid_and_nonfinite_or_unordered_values_are_ref
 }
 
 #[test]
+fn unchanged_audio_chain_after_undo_preserves_redo_compound_cache_generation_and_saved_state() {
+    for raw in ["0", "master"] {
+        for empty in [false, true] {
+            let (mut session, id) = saved_preset_session();
+            let apply = |session: &mut Session, effects: Vec<core::AudioEffect>| {
+                crate::commands::apply(
+                    session,
+                    id,
+                    &crate::commands::Operation::SetAudioEffects {
+                        channel: raw.into(),
+                        effects,
+                    },
+                )
+            };
+            if empty {
+                apply(&mut session, vec![]).unwrap();
+            }
+            session.sync_timeline_media(id);
+            session.mark_saved();
+            let original = if raw == "master" {
+                session.project.timelines[id].master.effects.clone()
+            } else {
+                session.project.timelines[id].tracks[0].mix.effects.clone()
+            };
+            let mut changed = original.clone();
+            if empty {
+                changed.push(core::AudioEffect::new(core::AudioEffectKind::Mono));
+            } else {
+                changed.rotate_left(1);
+            }
+            let position = session.history.position();
+            apply(&mut session, changed.clone()).unwrap();
+            assert_eq!(session.history.position(), position + 1);
+            assert_eq!(
+                session.history.labels().last(),
+                Some(core::CommandLabel::EditAudioEffect)
+            );
+            assert!(session.has_unsaved_changes());
+            let actual = if raw == "master" {
+                &session.project.timelines[id].master.effects
+            } else {
+                &session.project.timelines[id].tracks[0].mix.effects
+            };
+            assert_eq!(*actual, changed);
+            crate::commands::apply(&mut session, id, &crate::commands::Operation::Undo).unwrap();
+            session.mark_saved();
+            let before = json!(session.project);
+            let generation = session.history.generation();
+            let revision = session.timeline_revision(id);
+            let labels: Vec<_> = session.history.labels().collect();
+            apply(&mut session, original).unwrap();
+            assert_eq!(json!(session.project), before, "{raw}, empty={empty}");
+            assert_eq!(session.history.generation(), generation);
+            assert_eq!(session.history.position(), position);
+            assert_eq!(session.history.labels().collect::<Vec<_>>(), labels);
+            assert_eq!(session.timeline_revision(id), revision);
+            assert!(!session.has_unsaved_changes());
+            crate::commands::apply(&mut session, id, &crate::commands::Operation::Redo).unwrap();
+            let actual = if raw == "master" {
+                &session.project.timelines[id].master.effects
+            } else {
+                &session.project.timelines[id].tracks[0].mix.effects
+            };
+            assert_eq!(*actual, changed);
+            assert_eq!(session.history.position(), position + 1);
+        }
+    }
+}
+
+#[test]
+fn unchanged_audio_chain_validates_locked_wrong_kind_and_all_native_parameters_before_noop() {
+    for scenario in 0..5 {
+        let (mut session, id) = saved_preset_session();
+        let mut raw = "0";
+        match scenario {
+            0 => session.project.timelines[id].tracks[0].locked = true,
+            1 => raw = "1",
+            2 => raw = "missing",
+            3 => {
+                let effects = &mut session.project.timelines[id].tracks[0].mix.effects;
+                effects[1].enabled = false;
+                let core::AudioEffectKind::Equalizer(eq) = &mut effects[1].kind else {
+                    unreachable!()
+                };
+                eq.bands[5].freq_hz = 0.0;
+            }
+            _ => {
+                session.project.timelines[id].tracks[0].mix.effects =
+                    vec![core::AudioEffect::new(core::AudioEffectKind::Mono); 33]
+            }
+        }
+        let effects = if matches!(scenario, 1 | 2) {
+            vec![]
+        } else {
+            session.project.timelines[id].tracks[0].mix.effects.clone()
+        };
+        let before = json!(session.project);
+        let generation = session.history.generation();
+        let position = session.history.position();
+        let dirty = session.has_unsaved_changes();
+        assert!(
+            set_effects(&mut session, id, raw, &effects).is_err(),
+            "scenario {scenario}"
+        );
+        assert_eq!(json!(session.project), before);
+        assert_eq!(session.history.generation(), generation);
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.has_unsaved_changes(), dirty);
+    }
+}
+
+#[test]
 fn whole_audio_chain_replacement_is_atomic_ordered_and_reversible() {
     let mut s = Session::default();
     let id = s.create_timeline(Timeline {

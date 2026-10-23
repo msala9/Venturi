@@ -1751,6 +1751,11 @@ fastTransport=createFastTransport({videos:[$("program-video"),$("source-video")]
 sourcePlayer = createSourcePlayer({
   video: $("source-video"), image: $("source-image"), status: $("source-status"), cancel: $("source-cancel"),
   windowed:true,
+  canPrefetch:()=>writable && !busy && !unresolved && !document.hidden && viewerMode==='source' && !view.recording && !fastTransport?.active() && !document.querySelector('dialog[open]'),
+  onPrefetch:value=>{
+    $('source-status').dataset.sourceNextWindow=JSON.stringify(value);
+    $('source-status').title=value.state==='ready'?'Next Source section ready':['preparing','queued','running'].includes(value.state)?'Preparing next Source section':value.state==='failed'?'Next Source section unavailable; current playback continues':'';
+  },
   beforeWindowChange: async () => {
     if(fastTransport && !await fastTransport.finishWindow($("source-video")))throw new Error("Fast audio did not finish its Source window · press Play to retry");
   },
@@ -1826,7 +1831,7 @@ sourceWaveform=createSourceWaveform({root:$('source-waveform'),canvas:$('source-
   onDemand:(entries,epoch)=>{sourceWaveformDemand={entries,epoch};sourceAssets.demand('source_waveform',entries,epoch);},
   onSeek:async frame=>{fastTransport?.stop();audioScrub?.stop();await sourcePlayer.seekFrame(frame);syncSourcePosition();audioScrub?.request();},onError:error=>notice(error.message || String(error))});
 for(const event of ['play','pause','ended'])$('export-preview-video').addEventListener(event,()=>sourceAssets.refresh());
-document.addEventListener('visibilitychange',()=>{sourceAssets.refresh();audioMeters?.sync();if(document.hidden){programPlayer?.invalidatePrefetch();audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>sourceAssets.refresh(),true);
+document.addEventListener('visibilitychange',()=>{sourceAssets.refresh();sourcePlayer?.invalidatePrefetch();audioMeters?.sync();if(document.hidden){programPlayer?.invalidatePrefetch();audioMeters?.invalidate();scopes?.invalidate();void projectView?.flush({persist:true});}else scopes?.refresh();});document.addEventListener('toggle',()=>{sourceAssets.refresh();sourcePlayer?.invalidatePrefetch();},true);
 window.addEventListener('pagehide',()=>{fastTransport?.stop();programPlayer?.pauseLocal();void projectView?.flush({persist:true});});
 $("source-assets-refresh").addEventListener("click",()=>{
   const position=sourcePosition(),item=documentState?.media.find(media=>media.id===sourceOpenId);

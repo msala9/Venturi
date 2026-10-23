@@ -1,5 +1,37 @@
 # Implementation status
 
+## Native Timeline ruler scrubbing — 2026-10-24
+
+Source `9cb8439`, runtime `2dc4cc86af23`, owns halo1/8855.
+Ruler scrubbing now matches native clip-edge snapping, including locked lanes,
+native first-candidate ties, f32 conversion and rounded10px threshold. It excludes
+playhead/marker targets just like the native ruler. Release samples its actual
+primary-pointer coordinate even without a final move. Motion stays local and
+release makes one final seek without a history edit.
+
+Foreign pointer/document/timeline/revision/FPS/mapping, hidden/modal/detached and
+navigation changes cancel obsolete gestures. Own native view ACKs and equivalent
+snapshots stay valid. Five new regressions and the11 affected Timeline suites
+pass173 cases; embedded build42.01s, peak1,642,283,008B on halo1.
+Unchanged native/DSP/renderer checks are reused after source-hash validation.
+Live embedded module hash matches the tested source. All39 protected Sessions/
+40 PIDs,11 Saved files,5 local media,4 fixed NAS files and shared proxy remain
+exact. See `evidence/f1-native-ruler-scrubbing.json`.
+
+Windows reload reconnects without console errors and now reports its normal
+1536x864 viewport. Clicks still time out; earlier screenshot capture also timed
+out. No physical ruler/pool acceptance or new screenshot is claimed. Fade100%/
+150%, held uncached Slip, dense/DPI and global M7 remain explicit. Ledger stays
+**61 done /29 partial /2 excluded**; full F1-F7/M7 remains active.
+
+The focused F2/F4 audit finds Source and Program lookahead already delivered;
+old CSV speculative-continuation notes are superseded by the existing workflow
+evidence. Remaining acceptance includes representative long moving A/V at
+ordinary source/output resolution and physical microphone/output lifecycle.
+Do not reopen explicitly deferred uninterrupted audio-effect editing for V1.
+Continue those connected workflows and remaining native interactions; avoid
+repeating unchanged codec/render matrices or expanding the Library increment.
+
 ## Native Library visible thumbnails — 2026-10-24
 
 Source `6c24b73`, runtime `7d58e468c79c`, owns halo1/8855.

@@ -1,0 +1,103 @@
+{
+  "source_commit": "9cb8439dc7a87904e9a5f5d48bb294d1ecfb7529",
+  "source_hashes": {
+    "web/js/timeline/input.js": "fbe57f7758381faf47598c2727f63af92c1f91eac57abb9dc01c71ed67188649",
+    "web/test/timeline-layout.test.js": "96cf98ae7ef97d085ab6d762cb822c19daf5c60726a241baa85c3b871dd1e422"
+  },
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-timeline-ruler.service",
+    "pid": "336118",
+    "binary_sha256": "2dc4cc86af2326af5ddfe2f9662ba4784ed12931858739389ed0611952f45e78",
+    "project": "Venturi_Library_Replacement_V1.vvproj",
+    "project_epoch": "1792798250535990630:1",
+    "saved": true,
+    "empty_undo": true
+  },
+  "implemented": [
+    "Ruler uses native f32 coordinates, rounded ten-pixel snap threshold, native track/clip start/end order including locked tracks and first-candidate ties, with no playhead/marker targets.",
+    "Actual primary-pointer release determines the final frame even without a final move event. Motion stays local and release makes exactly one final seek, without history edits.",
+    "Pointer/project/timeline/revision/FPS/mapping ownership and modal/hidden/detached/navigation guards cancel obsolete gestures. Own view ACKs and equivalent immutable snapshots remain valid."
+  ],
+  "upstream": {
+    "path": "crates/vv-app/src/timeline_ui.rs",
+    "ruler_lines": [
+      5347,
+      5375
+    ],
+    "snap_lines": [
+      6863,
+      6902
+    ]
+  },
+  "gate": {
+    "host": "halo1",
+    "client_cases": 173,
+    "new_regressions": [
+      "\u2714 native ruler snaps every native-order clip edge including locked lanes, with first ties and no playhead or marker targets (0.248641ms)",
+      "\u2714 native ruler uses f32 fractional-rate coordinates, rounded pixel threshold and nonnegative bounded frames (0.125406ms)",
+      "\u2714 ruler scrubbing owns its pointer, samples the final release and makes one final seek without any edit (3.188241ms)",
+      "\u2714 ruler scrubbing survives its own native view acknowledgement but cancels foreign document/timeline or coordinate ownership (1.878193ms)",
+      "\u2714 ruler Escape and capture cancellation never finalize a preview and cannot be triggered by another pointer (0.517723ms)"
+    ],
+    "build_seconds": 42.01,
+    "memory_peak_bytes": 1642283008,
+    "cpu_limit": 8,
+    "memory_limit_gib": 4,
+    "swap": false,
+    "serial": true,
+    "reused_native_evidence": "evidence/f5-native-library-thumbnails.json",
+    "reuse_reason": "No Rust/DSP/renderer change; accepted source hashes checked before transfer and embedded build."
+  },
+  "live_module": {
+    "project_epoch": "1792798250535990630:1",
+    "module_sha256": "fbe57f7758381faf47598c2727f63af92c1f91eac57abb9dc01c71ed67188649",
+    "bytes": 70737,
+    "session_unchanged": true,
+    "saved": true,
+    "empty_undo": true
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 11,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "saved_project_hashes": {
+    "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+    "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+    "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+    "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+    "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+    "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+    "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+    "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+    "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+    "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+    "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+  },
+  "browser": {
+    "connected_writer": true,
+    "viewport_after_reload": [
+      1536,
+      864
+    ],
+    "console_warnings_errors": [],
+    "input": "Library click still times out in Input.dispatchMouseEvent despite normal dimensions; earlier screenshot attempt also timed out. No physical ruler/pool or screenshot claim."
+  },
+  "limits": [
+    "Physical ruler gestures, DPI/dense Timeline acceptance, prolonged uncached held Slip and fade100%/150% mapping remain open.",
+    "This closes the native ruler implementation gap, not the complete snapping capability or full F1-F7/M7 objective."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "full_goal": "active"
+  }
+}

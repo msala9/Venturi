@@ -1,6 +1,7 @@
 import { HEADER, RULER, MARKER_TOP, MARKER_BOTTOM, frameToX, visibleRange,fadeHandles,gainLine,slipMediaExtents,transitionHandles,transitionBodies,retimeStrips,retimeSpeedLabel,selectedGap,timelineLayout,trackHeaderButtons,paneScrollbars } from "./geometry.js";
 import {sourceAssetKey,mediaThumbnail} from '../source-assets.js';
 import {RECORDING_PEAKS_PER_SECOND} from '../capture-buffer.js';
+import {waveformVisual,waveformDraftChanges,waveformColumns} from './waveform.js';
 export function recordingWaveformColumns(peaks,origin,end,pixelsPerSecond,left,right){
   const columns=[];
   if(!peaks?.length || ![origin,end,pixelsPerSecond,left,right].every(Number.isFinite) || pixelsPerSecond<=0 || right<=left || end<=origin)return columns;
@@ -25,6 +26,7 @@ export function visibleAssetDemand(timeline,view,width,height){
     if(top+layout.rowHeight<=pane.top || top>=pane.bottom)continue;
     for(const clip of track.clips){
       if(!clip.media_id || clip.start_frame+clip.length_frames<first || clip.start_frame>last)continue;
+      if(track.kind==='audio' && clip.freeze_source_frame!=null)continue;
       const left=frameToX(clip.start_frame,view,timeline.fps),right=Math.max(left+2,frameToX(clip.start_frame+clip.length_frames,view,timeline.fps));
       if(right<=HEADER || left>=width)continue;
       const audio=track.kind==='audio',stream=audio?(clip.audio_stream_index ?? 0):0;
@@ -36,7 +38,23 @@ export function visibleAssetDemand(timeline,view,width,height){
   }
   return [...entries.values()];
 }
-export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null) {
+export function visibleWaveformDemand(timeline,view,width,height){
+  if(!timeline || width<=HEADER || height<=RULER)return [];
+  const layout=timelineLayout(timeline,view,height),changes=waveformDraftChanges(timeline,view.draft),ids=new Set();
+  for(const track of timeline.tracks)if(track.kind==='audio')for(const clip of track.clips){
+    if(!clip.media_id || clip.freeze_source_frame!=null)continue;
+    const visual=waveformVisual(clip,track.id,timeline,view.draft,changes),visuals=view.draft?.duplicate?[waveformVisual(clip,track.id,timeline),visual]:[visual];
+    for(const shown of visuals){
+      if(!shown)continue;
+      const index=timeline.tracks.findIndex(track=>track.id===shown.track_id),target=shown.to_new_track,pane=target?target.kind==='audio'?layout.audioPane:layout.videoPane:layout.pane(index),top=target?layout.newTrackTop(target.kind,target.depth):layout.trackTop(index);
+      const left=frameToX(shown.start_frame,view,timeline.fps),right=Math.max(left+2,frameToX(shown.start_frame+shown.length_frames,view,timeline.fps));
+      if(!Number.isFinite(top) || !pane || top+layout.rowHeight<=pane.top || top>=pane.bottom || right<=HEADER || left>=width)continue;
+      ids.add(clip.id);if(ids.size===64)return [...ids];
+    }
+  }
+  return [...ids];
+}
+export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(), onPaint, getCache = () => null, getWaveforms = () => new Map()) {
   const ctx = canvas.getContext("2d");
   let queued = false;
   const colors = getComputedStyle(document.documentElement);
@@ -61,6 +79,21 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
     if (!timeline) return;
     view.viewportHeight=height;
     const layout=timelineLayout(timeline,view,height),rowHeight=layout.rowHeight;
+    const presentations=getWaveforms(),draftChanges=waveformDraftChanges(timeline,view.draft),clips=new Map(timeline.tracks.flatMap(track=>track.clips.map(clip=>[clip.id,{clip,track}])));
+    function paintWaveform(visual,rect,pane){
+      if(!visual)return;
+      const asset=getAssets().get(sourceAssetKey(visual.clip.media_id,visual.clip.audio_stream_index ?? 0)),presentation=presentations?.get(visual.clip_id);
+      const columns=waveformColumns(visual,asset,presentation,timeline.fps,rect,{left:HEADER,right:width,top:pane.top,bottom:pane.bottom});
+      if(!columns.length)return;
+      const middle=Math.fround(Math.fround(Math.fround(rect.top)+Math.fround(rect.bottom))/2);
+      ctx.save();ctx.beginPath();ctx.rect(rect.left,rect.top,rect.right-rect.left,rect.bottom-rect.top);ctx.clip();ctx.lineWidth=1;
+      for(const clipped of [false,true]){
+        ctx.strokeStyle=clipped?'rgba(255,90,90,0.7843137254901961)':'rgba(255,255,255,0.5490196078431373)';ctx.beginPath();
+        for(const column of columns)if(column.clipped===clipped){ctx.moveTo(column.x,Math.fround(middle-column.half_height));ctx.lineTo(column.x,Math.fround(middle+column.half_height));}
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
     view.videoScroll=layout.videoScroll;view.audioScroll=layout.audioScroll;
     const gap=selectedGap(timeline,view);
     const slipExtents=slipMediaExtents(timeline,view);
@@ -108,6 +141,10 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         if (clip.transition_in) ctx.fillRect(x+2,top+8,Math.min(Math.max(0,right-x-4),clip.transition_in.duration*view.scale*timeline.fps.den/timeline.fps.num),3);
         if (clip.transition_out) {const span=Math.min(Math.max(0,right-x-4),clip.transition_out.duration*view.scale*timeline.fps.den/timeline.fps.num);ctx.fillRect(right-span-2,top+8,span,3);}
         if (clip.disabled) {ctx.fillStyle="#00000088";ctx.fillRect(x+2,top+8,Math.max(0,right-x-4),rowHeight-16);}
+        if(track.kind==='audio'){
+          const visual=waveformVisual(clip,track.id,timeline,view.draft,draftChanges);
+          if(visual && (!visual.drafted || view.draft?.duplicate))paintWaveform(view.draft?.duplicate?waveformVisual(clip,track.id,timeline):visual,{left:x,right,top:top+2,bottom:top+rowHeight-2},pane);
+        }
         ctx.save();
         ctx.beginPath();
         ctx.rect(x + 5, top + 7, Math.max(0, right - x - 10), rowHeight - 14);
@@ -117,20 +154,6 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
           ctx.globalAlpha = 0.35;
           ctx.drawImage(asset.thumbnail, x + 2, top + 8, Math.min(right - x - 4, 80), rowHeight - 16);
           ctx.globalAlpha = 1;
-        }
-        if (asset?.waveform && track.kind === "audio") {
-          const { peaks, duration_seconds: duration } = asset.waveform;
-          const fps = asset.fps.num / asset.fps.den;
-          ctx.strokeStyle = "#dcf4e7";
-          ctx.beginPath();
-          for (let px = Math.max(x, HEADER); px < Math.min(right, width); px += 2) {
-            const fraction = (px - x) / (right - x);
-            const seconds = (clip.source_in_frames + fraction * (clip.source_out_frames - clip.source_in_frames)) / fps;
-            const peak = peaks[Math.floor(seconds / duration * peaks.length)] || 0;
-            ctx.moveTo(px, top + rowHeight*.58 - peak * Math.min(12,(rowHeight-18)/2));
-            ctx.lineTo(px, top + rowHeight*.58 + peak * Math.min(12,(rowHeight-18)/2));
-          }
-          ctx.stroke();
         }
         const darkLabel=clip.display_rgb && clip.display_rgb[0]*.299+clip.display_rgb[1]*.587+clip.display_rgb[2]*.114<110;
         ctx.fillStyle = darkLabel?"#eeeeee":"#121212";
@@ -207,7 +230,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
         for(const outline of view.draft.outlines)if(outline.track_id===track.id)ctx.strokeRect(outline.left+1.5,outline.top+1.5,Math.max(0,outline.right-outline.left-3),Math.max(0,outline.bottom-outline.top-3));
         ctx.restore();
       }
-      for (const draft of view.draft?.changes || [])
+      for (const draft of draftChanges)
         if (draft.to_track === track.id) {
           const x = frameToX(draft.to_start_frame, view, timeline.fps),
             end = frameToX(
@@ -221,6 +244,8 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
             ? color("--danger")
             : color("--primary");
           ctx.strokeRect(x, top + 5, end - x, rowHeight - 10);
+          const entry=clips.get(draft.clip_id);
+          if(entry?.track.kind==='audio')paintWaveform(waveformVisual(entry.clip,entry.track.id,timeline,view.draft,draftChanges),{left:x,right:Math.max(x+2,end),top:top+2,bottom:top+rowHeight-2},pane);
           if(view.draft.kind === "slip"){ctx.fillStyle=color("--text");ctx.fillText(`Slip ${view.draft.target>=0?"+":""}${view.draft.target}f`,x+6,top+rowHeight-15);}
           if(view.draft.kind==='trim_group' || view.draft.duplicate){ctx.fillStyle=color('--text');ctx.fillText(`${view.draft.duplicate?'Duplicate':view.draft.operation?.roll_neighbor_id?'Roll':'Trim'}${view.draft.operation?.overwrite || (view.draft.duplicate && view.retimeOverwrite)?' · OVERWRITE':''}`,Math.max(HEADER+5,x+6),top+rowHeight-15);}
           if(view.draft.kind==='retime'){
@@ -261,13 +286,15 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       }
       ctx.restore();
     }
-    for(const draft of view.draft?.changes || [])if(draft.to_new_track){
+    for(const draft of draftChanges)if(draft.to_new_track){
       const target=draft.to_new_track,pane=target.kind==='video'?layout.videoPane:layout.audioPane,top=layout.newTrackTop(target.kind,target.depth);
       if(top>=pane.bottom || top+rowHeight<=pane.top)continue;
       const left=frameToX(draft.to_start_frame,view,timeline.fps),right=Math.max(left+2,frameToX(draft.to_start_frame+draft.length_frames,view,timeline.fps));
       ctx.save();ctx.beginPath();ctx.rect(HEADER,pane.top,width-HEADER,pane.bottom-pane.top);ctx.clip();
       ctx.fillStyle=view.draft.error?color('--danger'):color('--primary');ctx.globalAlpha=0.35;ctx.fillRect(left,top+2,right-left,rowHeight-4);ctx.globalAlpha=1;
       ctx.strokeStyle=ctx.fillStyle;ctx.strokeRect(left+0.5,top+2.5,right-left-1,rowHeight-5);
+      const entry=clips.get(draft.clip_id);
+      if(entry?.track.kind==='audio')paintWaveform(waveformVisual(entry.clip,entry.track.id,timeline,view.draft,draftChanges),{left,right,top:top+2,bottom:top+rowHeight-2},pane);
       ctx.fillStyle=color('--text');ctx.fillText(`New ${target.kind} track ${target.depth}${view.draft.error?` · ${view.draft.error}`:''}`,Math.max(HEADER+5,left+5),top+rowHeight/2);
       ctx.restore();
     }
@@ -346,7 +373,7 @@ export function createDraw(canvas, getTimeline, view, getAssets = () => new Map(
       ctx.fillStyle='#0000005a';ctx.fillRect(bar.left,bar.top,bar.right-bar.left,bar.bottom-bar.top);
       ctx.fillStyle='#aaa';ctx.fillRect(bar.left+1,bar.thumbTop+1,bar.right-bar.left-2,Math.max(0,bar.thumbHeight-2));
     }
-    onPaint?.(performance.now() - started,{timeline_id:timeline.id,revision:timeline.revision,items:visibleAssetDemand(timeline,view,width,height)});
+    onPaint?.(performance.now() - started,{timeline_id:timeline.id,revision:timeline.revision,items:visibleAssetDemand(timeline,view,width,height),waveform_clip_ids:visibleWaveformDemand(timeline,view,width,height)});
   };
   const invalidate = () => {
     if (!queued) {

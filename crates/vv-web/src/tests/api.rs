@@ -6,6 +6,126 @@ use axum::{
 use tower::ServiceExt;
 
 #[tokio::test]
+async fn timeline_waveform_http_is_strict_read_only_and_revision_bound() {
+    use vv_core::{Clip, ClipId, ClipSource, Rational, Timeline, Track, TrackKind};
+    let root =
+        std::env::temp_dir().join(format!("vv-waveform-http-{}", crate::asset_jobs::nonce()));
+    let files = crate::files::Files::new(&root).unwrap();
+    let mut session = vv_session::Session::default();
+    let media = session.add_media(
+        root.join("offline.wav"),
+        vv_core::MediaMeta {
+            duration_frames: 120,
+            fps: Rational::new(24, 1),
+            width: 0,
+            height: 0,
+            has_video: false,
+            has_audio: true,
+            sample_rate: 48_000,
+            channels: 2,
+            audio_streams: 1,
+            file: Default::default(),
+        },
+    );
+    let mut track = Track::new(TrackKind::Audio);
+    track.locked = true;
+    track.clips.push(Clip::from_source_range(
+        ClipId(5),
+        ClipSource::Media(media),
+        0,
+        120,
+        0,
+        Rational::one(),
+    ));
+    session.create_timeline(Timeline {
+        name: "Waveform HTTP".into(),
+        fps: Rational::new(24, 1),
+        resolution: (64, 64),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    files.save(&session.project, "wave.vvproj", true).unwrap();
+    crate::resume::remember(&files, "wave.vvproj").unwrap();
+    drop(files);
+    let host = Host::start(&root).unwrap();
+    host.call(Action::Lease("another-client".into()))
+        .await
+        .unwrap();
+    let before = host.call(Action::Session).await.unwrap();
+    let timeline = before["timelines"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|item| item["name"] == "Waveform HTTP")
+        .unwrap();
+    let id = timeline["id"].as_str().unwrap();
+    let query = json!({"project_epoch":before["project_epoch"],"if_generation":before["generation"],"timeline_id":id,"revision":timeline["revision"],"frame":9999,"width":64});
+    let app = router(AppState {
+        host: host.clone(),
+        port: 8787,
+        preview: Preview::disabled(),
+        codecs: crate::codecs::Codecs::new(Preview::disabled()),
+        source: MediaJobs::start().unwrap(),
+        silence: crate::silence::Jobs::start(),
+        library: crate::library::Library::default(),
+        recordings: crate::recording::Store::new(std::fs::File::open(&root).unwrap()),
+    });
+    let body = json!({"query":query,"clip_ids":["5"]});
+    let mut cases = vec![(body.clone(), id.to_owned(), StatusCode::OK)];
+    let mut extra = body.clone();
+    extra["extra"] = json!(true);
+    cases.push((extra, id.into(), StatusCode::UNPROCESSABLE_ENTITY));
+    let mut nested = body.clone();
+    nested["query"]["extra"] = json!(true);
+    cases.push((nested, id.into(), StatusCode::UNPROCESSABLE_ENTITY));
+    let mut stale = body.clone();
+    stale["query"]["if_generation"] = json!("999");
+    cases.push((stale, id.into(), StatusCode::CONFLICT));
+    let mut epoch = body.clone();
+    epoch["query"]["project_epoch"] = json!("old:0");
+    cases.push((epoch, id.into(), StatusCode::CONFLICT));
+    let mut duplicate = body.clone();
+    duplicate["clip_ids"] = json!(["5", "5"]);
+    cases.push((duplicate, id.into(), StatusCode::UNPROCESSABLE_ENTITY));
+    let mut too_many = body.clone();
+    too_many["clip_ids"] = json!(vec!["5"; 65]);
+    cases.push((too_many, id.into(), StatusCode::UNPROCESSABLE_ENTITY));
+    cases.push((body, "different".into(), StatusCode::UNPROCESSABLE_ENTITY));
+    for (body, path_id, status) in cases {
+        let response = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri(format!("/api/v1/timelines/{path_id}/waveform-presentation"))
+                    .header("host", "127.0.0.1:8787")
+                    .header("origin", "http://127.0.0.1:8787")
+                    .header("content-type", "application/json")
+                    .body(Body::from(body.to_string()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), status, "{body}");
+        if status == StatusCode::OK {
+            assert_eq!(response.headers()[header::CACHE_CONTROL], "no-store");
+            let value: Value = serde_json::from_slice(
+                &to_bytes(response.into_body(), 4 * 1024 * 1024)
+                    .await
+                    .unwrap(),
+            )
+            .unwrap();
+            assert_eq!(value["clips"][0]["state"], "ready");
+            assert_eq!(value["clips"][0]["gain"]["linear"], 1.0);
+        }
+    }
+    assert_eq!(host.call(Action::Session).await.unwrap(), before);
+    assert!(!root.join("offline.wav").exists());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[tokio::test]
 async fn native_library_source_http_is_read_only_strict_and_requires_pinned_identity_after_resolve()
 {
     let root = std::env::temp_dir().join(format!(
@@ -2232,6 +2352,8 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/api/v1/presets/shortcuts", 200),
         ("/", 200),
         ("/js/timeline/input.js", 200),
+        ("/js/timeline/waveform.js", 200),
+        ("/js/timeline-waveforms.js", 200),
         ("/js/timeline/preset-drop.js", 200),
         ("/js/timeline/asset-drop.js", 200),
         ("/js/timeline/effect-drop.js", 200),
@@ -2322,6 +2444,8 @@ async fn health_assets_snapshot_and_host_boundary() {
                 | "/js/compressor-controls.js"
                 | "/js/eq-controls.js"
                 | "/js/mixer-inserts.js"
+                | "/js/timeline/waveform.js"
+                | "/js/timeline-waveforms.js"
                 | "/js/library-capture-drop.js"
         ) {
             assert_eq!(response.headers()[header::CONTENT_TYPE], "text/javascript");

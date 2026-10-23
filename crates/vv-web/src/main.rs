@@ -54,6 +54,7 @@ mod snapshot;
 mod source;
 mod source_audio;
 mod take;
+mod timeline_waveform;
 mod title_preview;
 mod transition_preview;
 mod visual;

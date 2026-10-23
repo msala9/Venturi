@@ -150,6 +150,10 @@ pub fn router(state: AppState) -> Router {
         )
         .route("/api/v1/timelines/{id}", get(timeline))
         .route(
+            "/api/v1/timelines/{id}/waveform-presentation",
+            post(timeline_waveform),
+        )
+        .route(
             "/api/v1/timelines/{id}/compound-navigation",
             post(compound_navigation),
         )
@@ -2362,6 +2366,24 @@ async fn curve_viewport(
         .map(Json)
 }
 
+async fn timeline_waveform(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    payload: std::result::Result<
+        Json<crate::timeline_waveform::Request>,
+        axum::extract::rejection::JsonRejection,
+    >,
+) -> Result<Response> {
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid timeline waveform request"))?
+        .0;
+    if request.query.timeline_id != id {
+        return Err(ApiError::invalid("Timeline ID does not match the query"));
+    }
+    let value = state.host.call(Action::TimelineWaveform(request)).await?;
+    Ok(([(header::CACHE_CONTROL, "no-store")], Json(value)).into_response())
+}
+
 async fn keyframe_navigation(
     State(state): State<AppState>,
     Path((id, clip)): Path<(String, String)>,
@@ -2654,6 +2676,8 @@ async fn assets(request: Request) -> Response {
         "/js/transition-controls.js" => asset!("/web/js/transition-controls.js", "text/javascript"),
         "/js/color-picker.js" => asset!("/web/js/color-picker.js", "text/javascript"),
         "/js/keyframe-navigation.js" => asset!("/web/js/keyframe-navigation.js", "text/javascript"),
+        "/js/timeline/waveform.js" => asset!("/web/js/timeline/waveform.js", "text/javascript"),
+        "/js/timeline-waveforms.js" => asset!("/web/js/timeline-waveforms.js", "text/javascript"),
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
         "/js/curve-viewport.js" => asset!("/web/js/curve-viewport.js", "text/javascript"),
         "/js/curve-window.js" => asset!("/web/js/curve-window.js", "text/javascript"),

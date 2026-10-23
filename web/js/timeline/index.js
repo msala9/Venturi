@@ -1,7 +1,7 @@
 import { createDraw } from "./draw.js";
 import { createInput } from "./input.js";
 export function createTimeline(options) {
-  const draw = createDraw(options.canvas, options.getTimeline, options.view, options.getAssets, options.onPaint, options.getCache);
+  const draw = createDraw(options.canvas, options.getTimeline, options.view, options.getAssets, options.onPaint, options.getCache,options.getWaveforms);
   const changed=()=>{options.onNavigationStateChange?.();draw.invalidate();};
   const input = createInput({ ...options, invalidate: changed });
   return {

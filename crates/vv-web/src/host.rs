@@ -49,6 +49,7 @@ pub enum Action {
     InspectorSelection(crate::selection::Request),
     KeyframeNavigation(String, KeyframeNavigationRequest),
     CurveViewport(String, crate::curves::ViewportRequest),
+    TimelineWaveform(crate::timeline_waveform::Request),
     ProjectView(crate::project_view::Request),
     SlipDetail(String, i64, FrameQuery),
     PrepareTakePlan(
@@ -2661,6 +2662,10 @@ impl Editor {
                 detail["revision"] = json!(query.revision);
                 detail["timeline_id"] = json!(query.timeline_id);
                 Ok(detail)
+            }
+            Action::TimelineWaveform(request) => {
+                let (id, _) = self.validate_view_frame(&request.query)?;
+                crate::timeline_waveform::presentation(&self.session, id, &request)
             }
             Action::CurveViewport(clip, request) => {
                 let query = &request.query;

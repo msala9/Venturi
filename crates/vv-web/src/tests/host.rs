@@ -1,6 +1,103 @@
 use super::*;
 
 #[test]
+fn timeline_waveform_reader_is_lease_free_exact_context_and_never_changes_history() {
+    use vv_core::{Clip, ClipId, ClipSource, Id, MediaItem, MediaMeta};
+    let root =
+        std::env::temp_dir().join(format!("vv-waveform-reader-{}", crate::asset_jobs::nonce()));
+    let mut editor = Editor::new(&root).unwrap();
+    let media = editor.session.project.media_pool.insert(MediaItem {
+        path: root.join("offline.wav"),
+        meta: MediaMeta {
+            duration_frames: 240,
+            fps: Rational::new(24, 1),
+            width: 0,
+            height: 0,
+            has_video: false,
+            has_audio: true,
+            sample_rate: 48_000,
+            channels: 2,
+            audio_streams: 1,
+            file: Default::default(),
+        },
+        content_hash: 42,
+        compound: None,
+        folder: None,
+    });
+    let mut track = Track::new(TrackKind::Audio);
+    track.locked = true;
+    track.clips.push(Clip::from_source_range(
+        ClipId(55),
+        ClipSource::Media(media),
+        0,
+        120,
+        0,
+        Rational::one(),
+    ));
+    let id = editor.session.create_timeline(Timeline {
+        name: "Waveform reader".into(),
+        fps: Rational::new(24, 1),
+        resolution: (64, 64),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let query = FrameQuery {
+        timeline_id: id.raw().to_string(),
+        project_epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+        if_generation: editor.session.history.generation().to_string(),
+        revision: editor.session.timeline_revision(id),
+        frame: 9999,
+        width: 64,
+    };
+    editor.lease = Some(("foreign-writer".into(), Instant::now()));
+    let before = editor.snapshot();
+    let project = json!(editor.session.project);
+    let receipts = editor.completed.len();
+    let read = |query| {
+        Action::TimelineWaveform(crate::timeline_waveform::Request {
+            query,
+            clip_ids: vec!["55".into()],
+        })
+    };
+    let value = editor.handle(read(query.clone())).unwrap();
+    assert_eq!(
+        value["clips"][0]["gain"],
+        json!({"kind":"constant","linear":1.0})
+    );
+    assert_eq!(value["project_epoch"], query.project_epoch);
+    for field in [
+        "epoch",
+        "generation",
+        "revision",
+        "timeline",
+        "width",
+        "frame",
+    ] {
+        let mut stale = query.clone();
+        match field {
+            "epoch" => stale.project_epoch.push('x'),
+            "generation" => stale.if_generation = "999".into(),
+            "revision" => stale.revision.push('x'),
+            "timeline" => stale.timeline_id = "999".into(),
+            "width" => stale.width = 0,
+            _ => stale.frame = -1,
+        }
+        assert!(editor.handle(read(stale)).is_err(), "{field}");
+    }
+    assert_eq!(editor.snapshot(), before);
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.completed.len(), receipts);
+    assert_eq!(editor.lease.as_ref().unwrap().0, "foreign-writer");
+    assert!(
+        !root.join("offline.wav").exists(),
+        "presentation never opens or probes originals"
+    );
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn native_library_source_snapshot_is_lease_free_read_only_and_survives_unrelated_project_edits() {
     let (root, mut editor, media) = native_asset_fixture("source-preview");
     let directory = root.join(".assets/media/0123456789abcdef");

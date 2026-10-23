@@ -6,7 +6,7 @@ const snapshot=()=>({media:[{id:'a',folder:null},{id:'b',folder:'f'},{id:'old',f
 const context=()=>({project_epoch:'epoch',generation:'7',snapshot:snapshot(),selected:['old'],anchor:'old',selectedFolder:null,presentation:{layout:'details',expanded:['f']},backgroundFolder:null});
 const settle=async()=>{for(let index=0;index<12;index++)await Promise.resolve();};
 
-function harness({canWrite=true,onDrop}={}){
+function harness({canWrite=true,onDrop,dragType=CATALOG_DRAG_TYPE}={}){
   class Element{
     constructor(tag='div'){this.tagName=tag.toUpperCase();this.children=[];this.parentElement=null;this.dataset={};this.attributes={};this.style={};this.listeners=new Map();this.captured=new Set();this.bounds={left:10,top:20,right:210,bottom:220};}
     append(...children){for(const node of children){node.parentElement=this;node.ownerDocument=this.ownerDocument;this.children.push(node);}}
@@ -27,8 +27,8 @@ function harness({canWrite=true,onDrop}={}){
   const a=new Element('button'),b=new Element('button'),folder=new Element(),folderButton=new Element('button');a.dataset.mediaId='a';b.dataset.mediaId='b';folder.dataset.folderId='f';folder.append(folderButton);list.append(a,b,folder);a.bounds={left:30,top:40,right:100,bottom:60};b.bounds={left:110,top:70,right:180,bottom:100};folder.bounds={left:20,top:110,right:190,bottom:130};
   let value={...context(),rows:[{kind:'media',id:'a',element:a},{kind:'media',id:'b',element:b},{kind:'folder',id:'f',element:folder}]};
   const marquees=[],menus=[],drops=[],notices=[];
-  const controller=createCatalogInteractions({root,list,getContext:()=>value,canWrite:()=>writable,onMarquee:result=>marquees.push(result),onContextMenu:result=>menus.push(result),onDrop:result=>{drops.push(result);return onDrop?.(result);},notice:message=>notices.push(message)});
-  const transfer=(raw=makeCatalogDrag('media',['b'],value),types=[CATALOG_DRAG_TYPE])=>({types,reads:0,getData(type){this.reads++;assert.equal(type,CATALOG_DRAG_TYPE);return raw;}});
+  const controller=createCatalogInteractions({root,list,getContext:()=>value,canWrite:()=>writable,onMarquee:result=>marquees.push(result),onContextMenu:result=>menus.push(result),onDrop:result=>{drops.push(result);return onDrop?.(result);},notice:message=>notices.push(message),dragType});
+  const transfer=(raw=makeCatalogDrag('media',['b'],value),types=[dragType])=>({types,reads:0,getData(type){this.reads++;assert.equal(type,dragType);return raw;}});
   return {doc,window,body,root,list,a,b,folder,folderButton,controller,marquees,menus,drops,notices,transfer,overlay:root.children.at(-1),context:()=>value,setContext:next=>value=next,setModal:next=>modal=next,setWritable:next=>writable=next,down:extra=>list.fire('pointerdown',extra),move:extra=>doc.fire('pointermove',{target:list,...extra}),up:extra=>doc.fire('pointerup',{target:list,...extra})};
 }
 
@@ -38,6 +38,13 @@ test('catalog drag v1 binds ordered distinct media or a folder to native epoch, 
   assert.equal(makeCatalogDrag('media',['a','a'],owner),null);assert.equal(makeCatalogDrag('media',['foreign'],owner),null);assert.equal(makeCatalogDrag('folder','foreign',owner),null);assert.equal(makeCatalogDrag('media',Array.from({length:257},(_,index)=>String(index)),owner),null);
   for(const invalid of ['not JSON',JSON.stringify({...JSON.parse(raw),version:2}),JSON.stringify({...JSON.parse(raw),extra:true}),JSON.stringify({...JSON.parse(raw),generation:'8'}),JSON.stringify({...JSON.parse(raw),project_epoch:'foreign'})])assert.equal(parseCatalogDrag(invalid,owner),null);
   const moved={...owner,snapshot:{...owner.snapshot,media:owner.snapshot.media.map(item=>item.id==='b'?{...item,folder:'g'}:item)}};assert.equal(parseCatalogDrag(raw,moved),null);
+});
+
+test('a library interaction adapter accepts only its isolated internal MIME and leaves project catalog drops untouched',async()=>{
+  const h=harness({dragType:'application/x-native-library-move'});try{
+    const foreign=h.transfer(undefined,[CATALOG_DRAG_TYPE]);assert.notEqual(h.root.fire('dragover',{target:h.folderButton,dataTransfer:foreign}).defaultPrevented,true);assert.notEqual(h.root.fire('drop',{target:h.folderButton,dataTransfer:foreign}).defaultPrevented,true);await settle();assert.equal(foreign.reads,0);assert.deepEqual(h.drops,[]);
+    const own=h.transfer();assert.equal(h.root.fire('dragover',{target:h.folderButton,dataTransfer:own}).defaultPrevented,true);assert.equal(h.root.fire('drop',{target:h.folderButton,dataTransfer:own}).defaultPrevented,true);await settle();assert.equal(own.reads,1);assert.equal(h.drops.length,1);assert.equal(h.drops[0].target.folder_id,'f');
+  }finally{h.controller.dispose();}
 });
 
 test('native background marquee replaces only on release, ignores Ctrl/Shift and includes touching media rectangles in visible order',()=>{

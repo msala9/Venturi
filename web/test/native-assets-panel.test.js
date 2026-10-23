@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createNativeAssetPanel,nativeAssetMutation} from '../js/native-assets.js';
+import {NATIVE_POOL_DRAG_TYPE} from '../js/native-asset-pool.js';
+import {CATALOG_DRAG_TYPE} from '../js/catalog-interactions.js';
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function settle(){for(let index=0;index<4;index++)await new Promise(resolve=>setImmediate(resolve));}
@@ -11,12 +13,15 @@ function dragEvent(){const values=new Map(),event=new Event('dragstart',{cancela
 function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview,onRemoved,onRelinked}={}){
   const original={document:globalThis.document,Option:globalThis.Option};
   class Element extends EventTarget{
-    constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.dataset={};this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
+    constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.dataset={};this.style={setProperty(){}};this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
+    get tagName(){return this.tag.toUpperCase();}get parentElement(){return this.parent;}
+    getBoundingClientRect(){return {left:0,top:0,right:220,bottom:240,width:220,height:240};}
     get value(){return this.tag==='select'?this.selectedOptions[0]?.value??this._value:this._value;}
     set value(value){this._value=String(value);if(this.tag==='select')for(const child of this.children)child.selected=child.value===this._value;}
     get selectedOptions(){return this.children.filter(child=>child.tag==='option' && child.selected);}
     get isConnected(){return this===body || Boolean(this.parent?.isConnected);}
     append(...children){for(const child of children){this.children.push(child);if(child instanceof Element)child.parent=this;}}
+    insertBefore(child,before){const index=this.children.indexOf(before);if(index<0)return this.append(child);this.children.splice(index,0,child);child.parent=this;}
     replaceChildren(...children){for(const child of this.children)if(child instanceof Element)child.parent=null;this.children=[];this.append(...children);}
     setAttribute(name,value){this.attributes.set(name,String(value));if(name.startsWith('data-'))this.dataset[name.slice(5).replace(/-([a-z])/g,(_,letter)=>letter.toUpperCase())]=String(value);}getAttribute(name){return this.attributes.get(name)??null;}
     closest(selector){for(let node=this;node;node=node.parent)if(selector.split(',').some(part=>part.trim()==='[contenteditable]'?node.attributes.has('contenteditable'):node.tag===part.trim()))return node;return null;}
@@ -65,7 +70,7 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
   const field=label=>find(node=>node.getAttribute('aria-label')===label,label);
   const status=()=>find(node=>node.getAttribute('role')==='status','panel status').textContent;
   const job=(index=0,patch={})=>{const {project_epoch,if_generation,action,operation}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:operation?'library_edit':action.kind,bytes:0,total_bytes:32,result:operation?.edit.action==='delete_assets'?{deleted_assets:operation.edit.items.length,deleted_ids:operation.edit.items.map(item=>item.id)}:operation?.edit.action==='import_tree'?{imported_assets:1,skipped_files:1,error_count:1,created_folders:1,root_folder_id:'import-root',folders_revision:foldersRevision,errors:[{path_token:'Takes/bad.mov',code:'BAD_MEDIA',message:'Native probe failed'}]}:operation?{asset_id:operation.edit.id,revision:operation.edit.revision,missing_count:0,relinked_files:1}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
-  return {panel,root,document:globalThis.document,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,previews,removed,relinked,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),setModal:value=>{modal=value;},
+  return {panel,root,document:globalThis.document,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,previews,removed,relinked,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),menuField:label=>{const node=walk(body).find(node=>node.getAttribute('aria-label')===label);assert(node,`Expected menu control ${label}`);return node;},setModal:value=>{modal=value;},
     confirmation:()=>walk(root).find(node=>node.tag==='dialog' && node.open),confirmDelete:()=>button('Permanently delete native assets').parent.dispatchEvent(new Event('submit',{cancelable:true})),
     context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setItems:value=>{items=value;},setFolders:value=>{folders=value;},delayDelete:()=>{delayDelete=true;},
     change(label,value){const node=field(label);node.value=value;node.dispatchEvent(new Event('change'));},
@@ -87,6 +92,53 @@ test('cold native asset panel selects the first result and enables only valid wr
     h.context().selected_ids=[];h.panel.invalidate();assert.equal(h.capture().disabled,true);assert.equal(h.button('Import native asset into project').disabled,false);
     h.setWritable(false);h.panel.invalidate();for(const text of ['Import native asset into project','Rename native asset','Archive native asset','Restore previous native asset settings'])assert.equal(h.button(text).disabled,true,text);
     assert.equal(h.prepares.length,0);assert.equal(h.libraryWrites.length+h.projectWrites.length,0);
+  }finally{h.destroy();}
+});
+
+function poolEvent(h,type,target,patch={}){const event=new Event(type,{cancelable:true});for(const [name,value]of Object.entries({target,...patch}))Object.defineProperty(event,name,{value});h.field('Native library pool').dispatchEvent(event);return event;}
+function poolContext(h,target){const event=new Event('contextmenu',{cancelable:true});for(const [name,value]of Object.entries({target,clientX:30,clientY:30}))Object.defineProperty(event,name,{value});h.field('Native library pool').parent.dispatchEvent(event);return event;}
+
+test('native pool switches all three layouts and sends global duration sort and Grid folder/search queries without local resorting',async()=>{
+  const a={...draggableAsset('a','Alpha'),presentation:{kind:'video',width:640,height:360,fps:{num:24,den:1},duration_frames:240,has_video:true,has_audio:false,is_image:false}},b={...draggableAsset('b','Beta'),effective_folder:'inner',presentation:{kind:'audio',fps:{num:48000,den:1},duration_frames:48000,has_video:false,has_audio:true,sample_rate:48000,channels:2,is_image:false}},h=harness({pageReader:(_index,path)=>{const query=new URL(path,'http://fixture').searchParams;let items=query.get('sort')==='duration'?[b,a]:[a,b];if(query.get('folder')==='')items=items.filter(item=>!item.effective_folder);if(query.get('search'))items=items.filter(item=>item.name.includes(query.get('search')));return Promise.resolve({page:0,pages:1,total:items.length,catalog_total:2,page_size:32,items});}});try{
+    await h.open();assert.equal(h.field('Native library pool').dataset.layout,'details');h.field('Sort native assets by duration').click();await settle();let query=new URL(h.pages.at(-1).path,'http://fixture').searchParams;assert.equal(query.get('sort'),'duration');assert.equal(query.get('descending'),'false');assert.deepEqual(h.field('Native library pool').children.filter(node=>node.dataset.mediaId).map(node=>node.dataset.mediaId),['b','a'],'Tree rows remain grouped under their native folders');
+    h.field('Show native assets list view').click();await settle();assert.equal(h.field('Native library pool').dataset.layout,'list');h.field('Sort native assets by duration').click();await settle();assert.equal(new URL(h.pages.at(-1).path,'http://fixture').searchParams.get('descending'),'true');
+    h.field('Show native assets grid view').click();await settle();query=new URL(h.pages.at(-1).path,'http://fixture').searchParams;assert.equal(query.get('folder'),'');assert.equal(query.get('folders_revision'),foldersRevision);assert.deepEqual(h.field('Native library pool').children.filter(node=>node.dataset.mediaId).map(node=>node.dataset.mediaId),['a']);
+    h.field('Search native assets').value='Beta';h.button('Search native assets').parent.dispatchEvent(new Event('submit',{cancelable:true}));await settle();query=new URL(h.pages.at(-1).path,'http://fixture').searchParams;assert.equal(query.has('folder'),false);assert.equal(query.get('search'),'Beta');assert.deepEqual(h.field('Native library pool').children.filter(node=>node.dataset.mediaId).map(node=>node.dataset.mediaId),['b']);assert.equal(h.prepares.length+h.libraryWrites.length+h.projectWrites.length,0);
+  }finally{h.destroy();}
+});
+
+test('native pool F2 rename is local until Enter, Escape cancels, and confirmed asset/folder edits use native library operations only',async()=>{
+  const item={...draggableAsset('asset-a','Original'),revision:assetRevision},h=harness({libraryCommit:async operation=>{if(operation.edit.action==='update')h.setItems([{...item,name:operation.edit.name,revision:'b'.repeat(64)}]);if(operation.edit.action==='rename_folder')h.setFolders([{id:'outer',name:operation.edit.name,parent:null}]);return {command_id:'renamed',project_epoch:'epoch'};}});try{
+    h.setItems([item]);await h.open();poolEvent(h,'keydown',h.button('Original'),{key:'F2'});let input=h.field('Rename native asset');assert.notEqual(input.parent.tag,'button');input.value='Canceled';input.dispatchEvent(Object.assign(new Event('keydown',{cancelable:true}),{key:'Escape'}));assert.equal(h.libraryWrites.length,0);
+    poolEvent(h,'keydown',h.button('Original'),{key:'F2'});input=h.field('Rename native asset');input.value='Renamed';input.dispatchEvent(Object.assign(new Event('keydown',{cancelable:true}),{key:'Enter'}));await settle();assert.deepEqual(h.libraryWrites[0],{kind:'edit_native_asset_library',edit:{action:'update',id:'asset-a',revision:assetRevision,name:'Renamed'}});assert.equal(h.field('Native asset name').value,'Renamed');
+    h.field('Native folder Shots').click();poolEvent(h,'keydown',h.field('Native folder Shots'),{key:'F2'});input=h.field('Rename native folder');input.value='New Shots';input.dispatchEvent(Object.assign(new Event('keydown',{cancelable:true}),{key:'Enter'}));await settle();assert.deepEqual(h.libraryWrites[1].edit,{action:'rename_folder',folders_revision:foldersRevision,id:'outer',name:'New Shots'});assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.timelineWrites,[]);assert.equal(h.prepares.length,0);
+  }finally{h.destroy();}
+});
+
+test('native pool preserves an explicitly collapsed folder after refreshing its catalog',async()=>{
+  const h=harness();try{h.setItems([{...draggableAsset('nested','Nested asset'),effective_folder:'inner'}]);await h.open();assert.ok(h.button('Nested asset'));h.field('Expand native folder Shots').click();assert.equal(h.field('Expand native folder Shots').getAttribute('aria-expanded'),'false');assert.throws(()=>h.button('Nested asset'),/Expected/);h.button('Refresh native assets').click();await settle();assert.equal(h.field('Expand native folder Shots').getAttribute('aria-expanded'),'false');assert.throws(()=>h.button('Nested asset'),/Expected/);assert.equal(h.libraryWrites.length,0);}finally{h.destroy();}
+});
+
+test('native pool context menus preserve asset/folder focus ownership and stale menu activation cannot dispatch',async()=>{
+  const h=harness();try{
+    await h.open();h.field('Native folder Shots').click();assert.equal(poolContext(h,h.button('Reusable shot')).defaultPrevented,true);h.menuField('Rename').click();const input=h.field('Rename native asset');input.dispatchEvent(Object.assign(new Event('keydown',{cancelable:true}),{key:'Escape'}));assert.equal(h.libraryWrites.length,0);
+    poolContext(h,h.field('Native folder Shots'));assert.equal(h.field('Native assets').selectedOptions.length,0);const rename=h.menuField('Rename folder');h.context().project_epoch='new';h.panel.invalidate();rename.click();await settle();assert.equal(h.libraryWrites.length,0);assert.equal(h.prepares.length,0);
+    poolContext(h,h.button('Reusable shot'));h.menuField('Permanently delete selected assets…').click();assert.ok(h.confirmation());assert.equal(h.libraryWrites.length,0);h.button('Cancel permanent deletion').click();
+  }finally{h.destroy();}
+});
+
+test('native pool internal drag uses an isolated MIME and one revision-bound asset folder move, not a project import',async()=>{
+  const item={...draggableAsset('asset-a','Move me'),revision:assetRevision},h=harness();try{
+    h.setItems([item]);await h.open();const drag=dragEvent();h.button('Move me').dispatchEvent(drag.event);assert.equal(drag.values.has(NATIVE_POOL_DRAG_TYPE),true);assert.equal(drag.values.has(CATALOG_DRAG_TYPE),false);
+    const drop=new Event('drop',{cancelable:true});Object.defineProperties(drop,{target:{value:h.field('Native folder Shots')},dataTransfer:{value:{types:[NATIVE_POOL_DRAG_TYPE],getData:type=>drag.values.get(type)}}});h.field('Native library pool').parent.dispatchEvent(drop);h.button('Move me').dispatchEvent(new Event('dragend'));await settle();assert.equal(drop.defaultPrevented,true);assert.deepEqual(h.libraryWrites[0],{kind:'edit_native_asset_library',edit:{action:'move_assets',folders_revision:foldersRevision,items:[{id:'asset-a',revision:assetRevision}],folder:'outer'}});assert.equal(h.libraryWrites.length,1);assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.timelineWrites,[]);assert.equal(h.prepares.length,0);
+  }finally{h.destroy();}
+});
+
+test('native pool marquee publishes visible selection only on owned release, including read-only presentation',async()=>{
+  const h=harness();try{
+    h.setItems([draggableAsset('a'),draggableAsset('b')]);h.setFolders([]);await h.open();h.setWritable(false);h.panel.invalidate();const list=h.field('Native library pool'),fire=(node,type,values)=>{const event=new Event(type,{cancelable:true});for(const [key,value]of Object.entries({target:list,pointerId:1,button:0,clientX:10,clientY:10,...values}))Object.defineProperty(event,key,{value});node.dispatchEvent(event);};
+    fire(list,'pointerdown');fire(h.document,'pointermove',{clientX:100,clientY:100});assert.equal(h.field('Native assets').selectedOptions.length,1);fire(h.document,'pointerup',{clientX:100,clientY:100});assert.equal(h.field('Native assets').selectedOptions.length,2);assert.equal(h.button('Import native asset into project').disabled,true);assert.equal(h.prepares.length+h.libraryWrites.length+h.projectWrites.length,0);
+    fire(list,'pointerdown');fire(h.document,'pointermove',{clientX:100,clientY:100});fire(h.document,'keydown',{key:'Escape'});fire(h.document,'pointerup',{clientX:100,clientY:100});assert.equal(h.field('Native assets').selectedOptions.length,2);assert.equal(h.prepares.length,0);
   }finally{h.destroy();}
 });
 
@@ -125,7 +177,7 @@ test('Library rows own native Shift range, Ctrl toggle and focused Ctrl+A withou
     h.setItems([draggableAsset('c'),draggableAsset('a'),draggableAsset('b')]);await h.open();
     h.button('c').click();h.button('b').dispatchEvent(Object.assign(new Event('click'),{shiftKey:true}));assert.equal(h.field('Native assets').selectedOptions.length,3);
     h.button('a').dispatchEvent(Object.assign(new Event('click'),{shiftKey:true,ctrlKey:true}));assert.deepEqual(h.field('Native assets').selectedOptions.map(item=>item.value),['0','1']);
-    h.button('b').dispatchEvent(Object.assign(new Event('click'),{ctrlKey:true}));const dragging=dragEvent();h.button('a').dispatchEvent(dragging.event);assert.deepEqual(starts[0].items.map(item=>item.id),['c','a','b']);assert.equal(dragging.values.get(dnd.type),'trusted-token');assert.equal(dragging.event.dataTransfer.effectAllowed,'copy');assert.equal(h.prepares.length,0);
+    h.button('b').dispatchEvent(Object.assign(new Event('click'),{ctrlKey:true}));const dragging=dragEvent();h.button('a').dispatchEvent(dragging.event);assert.deepEqual(starts[0].items.map(item=>item.id),['c','a','b']);assert.equal(dragging.values.get(dnd.type),'trusted-token');assert.equal(dragging.event.dataTransfer.effectAllowed,'copyMove');assert.equal(h.prepares.length,0);
     h.button('a').click();const key=new Event('keydown',{cancelable:true});Object.defineProperties(key,{key:{value:'a'},ctrlKey:{value:true},target:{value:h.button('a')}});h.root.dispatchEvent(key);assert.equal(key.defaultPrevented,true);assert.equal(h.field('Native assets').selectedOptions.length,3);
     const nameKey=new Event('keydown',{cancelable:true});Object.defineProperties(nameKey,{key:{value:'a'},ctrlKey:{value:true},target:{value:h.field('Native asset name')}});h.root.dispatchEvent(nameKey);assert.equal(nameKey.defaultPrevented,false);assert.equal(h.projectWrites.length+h.timelineWrites.length+h.libraryWrites.length,0);
   }finally{h.destroy();}
@@ -151,7 +203,7 @@ test('cached compound placement refreshes once per generation, retains Library s
     const refreshed=[draggableAsset('a'),draggableAsset('b')];for(const item of refreshed){item.placement.generation='8';item.placement.items[0].source_out=96;}
     read.resolve({page:0,pages:1,total:2,items:refreshed});await settle();assert.equal(h.field('Native assets').selectedOptions.length,2);assert.equal(h.pages.length,2);
     e=dragEvent();h.button('a').dispatchEvent(e.event);assert.equal(e.event.defaultPrevented,false);assert.deepEqual(starts[0].map(item=>item.placement.items[0].source_out),[96,96]);
-    h.context().generation='9';h.panel.invalidate();await settle();assert.equal(h.pages.length,3);for(let index=0;index<3;index++)h.panel.invalidate();await settle();assert.equal(h.pages.length,3);e=dragEvent();h.button('a').dispatchEvent(e.event);assert.equal(e.event.defaultPrevented,true);assert.equal(starts.length,1);assert.equal(h.prepares.length,0);
+    h.context().generation='9';h.panel.invalidate();await settle();assert.equal(h.pages.length,3);for(let index=0;index<3;index++)h.panel.invalidate();await settle();assert.equal(h.pages.length,3);e=dragEvent();h.button('a').dispatchEvent(e.event);assert.equal(e.event.defaultPrevented,false);assert.equal(e.values.has(dnd.type),false,'Stale placement cannot start a timeline drag, while library-only folder movement remains available');assert.equal(starts.length,1);assert.equal(h.prepares.length,0);
   }finally{h.destroy();}
 });
 

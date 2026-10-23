@@ -38,7 +38,7 @@ const rectangle=value=>value && [value.left,value.top,value.right,value.bottom].
 const intersects=(a,b)=>a.left<=b.right && a.right>=b.left && a.top<=b.bottom && a.bottom>=b.top;
 const inside=(node,parent)=>{while(node){if(node===parent)return true;node=node.parentElement;}return false;};
 
-export function createCatalogInteractions({root,list,getContext,onMarquee=()=>{},onContextMenu,onDrop,notice=()=>{},canWrite=()=>false}){
+export function createCatalogInteractions({root,list,getContext,onMarquee=()=>{},onContextMenu,onDrop,notice=()=>{},canWrite=()=>false,dragType=CATALOG_DRAG_TYPE}){
   const doc=root.ownerDocument || document,window=doc.defaultView || globalThis,overlay=doc.createElement('div');overlay.className='catalog-marquee';overlay.hidden=true;overlay.setAttribute('aria-hidden','true');overlay.style.position='fixed';overlay.style.pointerEvents='none';root.append(overlay);
   let disposed=false,gesture=null,suppressClick=false,dropping=false;
   const available=()=>!disposed && root.isConnected!==false && list.isConnected!==false && !doc.hidden && !doc.querySelector?.('dialog[open]');
@@ -90,11 +90,11 @@ export function createCatalogInteractions({root,list,getContext,onMarquee=()=>{}
     if(event.key==='Escape' && gesture){event.preventDefault();event.stopPropagation();cancel();return;}
     if(inside(event.target,root) && !event.ctrlKey && !event.metaKey && !event.altKey && (event.key==='ContextMenu' || event.key==='F10' && event.shiftKey))menu(event,true);
   }
-  const carries=event=>[...(event.dataTransfer?.types || [])].includes(CATALOG_DRAG_TYPE);
+  const carries=event=>[...(event.dataTransfer?.types || [])].includes(dragType);
   function over(event){if(event.defaultPrevented || !carries(event) || !canWrite())return;const owner=stamp();if(owner && target(event.target,owner.context)){event.preventDefault();event.stopPropagation();event.dataTransfer.dropEffect='move';}}
   function drop(event){
     if(event.defaultPrevented || !carries(event) || typeof onDrop!=='function')return;const owner=stamp();if(!owner)return;const hit=target(event.target,owner.context);if(!hit)return;event.preventDefault();event.stopPropagation();if(dropping || !canWrite())return;
-    let payload;try{payload=parseCatalogDrag(event.dataTransfer.getData(CATALOG_DRAG_TYPE),owner.context);}catch{}
+    let payload;try{payload=parseCatalogDrag(event.dataTransfer.getData(dragType),owner.context);}catch{}
     if(!payload){notice('The project media or source folder changed; start the drag again');return;}
     cancel();dropping=true;Promise.resolve().then(()=>{if(!current(owner) || !canWrite())return;return onDrop({payload,target:hit,event,isCurrent:()=>Boolean(current(owner)) && canWrite()});}).catch(error=>{if(available() && getContext()?.project_epoch===owner.context.project_epoch)notice(error.message);}).finally(()=>{dropping=false;});
   }

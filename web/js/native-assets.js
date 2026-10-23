@@ -1,6 +1,7 @@
 import {request} from './api.js';
 import {nativeFolderCatalog,nativeFolderChoices,nativeFolderFilter,nativeFolderOperation} from './native-asset-folders.js';
 import {createSourcePicker,approvedSourceToken} from './source-picker.js';
+import {createNativeAssetPool,nativePoolQuery} from './native-asset-pool.js';
 
 const apiRequest=(path,body,{signal,method}={})=>request(path,body,(url,init)=>fetch(url,{...init,method:method || init.method,signal:signal?AbortSignal.any([init.signal,signal]):init.signal}));
 export const nativeAssetIdentity=context=>context?.project_name?JSON.stringify([context.project_epoch,context.generation]):null;
@@ -129,6 +130,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   let sourcePicker=null,sourceDraft=null,sourceArea,sourceReport,sourceDestination,importTree,relinkFolder;
   let relinkReview=null;
   let observedEpoch=null,epochRefresh=null,disposed=false;
+  let poolView=null;const poolState={layout:'details',sort:'name',descending:false,folder:null,query:'',expanded:[],autoExpand:true};
   let dragRows=null,dragButtons=[],rowAnchor=null,readGeneration=null,placementAttempt=null,previewButton=null,previewSequence=0,deleteButton=null,deletion=null;
   const button=(text,action)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',action);return node;};
   const compact=(node,text)=>{node.setAttribute('aria-label',node.textContent);node.title=node.textContent;node.setAttribute('data-compact-label',text);return node;};
@@ -136,7 +138,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   const selection=()=>{const context=getContext();return (context?.media || []).filter(item=>(context.selected_ids || []).includes(item.id));};
   const transferring=()=>busy || batch || transfer.busy();
   const dragSelection=()=>rows.filter(item=>chosen.some(chosen=>chosen.id===item.id));
-  const poolSelection=()=>chosen.length===1 && selected?.id===chosen[0].id && !rows.some(item=>item.id===selected.id)?[selected]:rows.filter(item=>chosen.some(chosen=>chosen.id===item.id));
+  const poolSelection=()=>[...chosen];
   const importable=items=>Boolean(items.length && items.length<=32 && items.every(item=>token(item.id) && typeof item.revision==='string' && item.revision && !item.archived && !item.error));
   const poolIdentity=()=>JSON.stringify([panelSession,nativeAssetIdentity(getContext()),getContext()?.command_epoch,poolSelection().map(item=>[item.id,item.revision,Boolean(item.archived),Boolean(item.error)])]);
   const modalNode=()=>(root.ownerDocument ?? globalThis.document)?.querySelector?.('dialog[open]');
@@ -171,10 +173,13 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   }
   const dragIdentity=()=>JSON.stringify([panelSession,nativeAssetIdentity(getContext()),getContext()?.command_epoch,folder,search,archived,dragSelection()]);
   const draggable=items=>Boolean(assetDnd && typeof timelineCommit==='function' && items.length && items.length<=32 && items.every(item=>!item.archived && !item.error && item.placement?.error==null && item.placement?.project_epoch===getContext()?.project_epoch && item.placement?.generation===getContext()?.generation && item.placement?.items?.length===1));
+  function choosePool(ids,anchor=ids[0] ?? null){
+    if(!active || root.isConnected===false || transferring() || reading || modal())return;assetDnd?.end();chosen=ids.map(id=>rows.find(item=>item.id===id)).filter(Boolean);rowAnchor=anchor;selected=chosen.length===1?chosen[0]:null;for(const option of list.children)option.selected=chosen.some(item=>item.id===rows[Number(option.value)]?.id);name.value=selected?.name || '';update();
+  }
   function chooseRow(item,event={}){
     if(!active || root.isConnected===false || !rows.includes(item) || transferring() || reading)return;
     assetDnd?.end();
-    if(event.shiftKey){const from=rows.findIndex(row=>row.id===rowAnchor),to=rows.indexOf(item);chosen=from<0?[item]:rows.slice(Math.min(from,to),Math.max(from,to)+1);rowAnchor??=item.id;}
+    if(event.shiftKey){const visible=poolView?.visible() || rows,from=visible.findIndex(row=>row.id===rowAnchor),to=visible.indexOf(item);chosen=from<0?[item]:visible.slice(Math.min(from,to),Math.max(from,to)+1);rowAnchor??=item.id;}
     else{if(event.ctrlKey || event.metaKey)chosen=rows.filter(row=>row.id===item.id?!chosen.some(value=>value.id===row.id):chosen.some(value=>value.id===row.id));else chosen=[item];rowAnchor=item.id;}
     selected=chosen.length===1?chosen[0]:null;
     for(const option of list.children)option.selected=chosen.some(row=>row.id===rows[Number(option.value)]?.id);
@@ -195,16 +200,17 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
           try{return await transfer.run({kind:'import_set',assets:draft.assets},()=>!signal.aborted && targetCurrent() && sourceCurrent(items.map(value=>({id:value.id,revision:value.revision,name:value.name,placement:value.placement}))),{start_frame:draft.start_frame,target:draft.target,overwrite:draft.overwrite});}
           finally{signal.removeEventListener('abort',cancel);settled();}
         }):null;
-        if(!payload || !event.dataTransfer){event.preventDefault();assetDnd?.end();return;}
+        if(!payload){assetDnd?.end();return;}if(!event.dataTransfer){event.preventDefault();assetDnd?.end();return;}
         try{event.dataTransfer.setData(assetDnd.type,payload);event.dataTransfer.effectAllowed='copy';}
         catch(error){event.preventDefault();assetDnd.end();notice(error.message);}
       });
       row.addEventListener('dblclick',event=>{event.preventDefault();event.stopPropagation();void previewAsset(item);});row.addEventListener('dragend',()=>assetDnd?.end());dragButtons.push({row,item});dragRows.append(row);
     }
+    poolState.folder=folder;poolState.query=search;poolView?.render(dragButtons);
   }
   root.addEventListener('keydown',event=>{
     if(!active || root.isConnected===false || !dragButtons.some(({row})=>event.target===row) || event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229 || event.getModifierState?.('AltGraph') || event.altKey || event.shiftKey || Boolean(event.ctrlKey)===Boolean(event.metaKey) || event.key?.toLowerCase()!=='a')return;
-    event.preventDefault();event.stopPropagation();if(transferring() || reading)return;assetDnd?.end();chosen=[...rows];rowAnchor=rows[0]?.id??null;selected=chosen.length===1?chosen[0]:null;for(const option of list.children)option.selected=true;name.value=selected?.name || '';update();
+    event.preventDefault();event.stopPropagation();if(transferring() || reading)return;choosePool((poolView?.visible() || rows).map(item=>item.id));
   });
   root.addEventListener('keydown',event=>{
     if(!active || root.isConnected===false || event.key!=='Enter' || event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229 || event.getModifierState?.('AltGraph') || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || modal() || !(event.target===list || dragButtons.some(({row})=>event.target===row)))return;
@@ -263,13 +269,13 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     options(folderCreateParent,choices,current?.id || '');options(folderParent,current?nativeFolderChoices(catalog,current.id):choices,current?.parent || '');options(assetDestination,choices,assetDestination.value);
     folderName.value=current?.name || '';
   }
-  function clearSelection(){assetDnd?.end();clearRelink();clearSourceChoice();selected=null;chosen=[];rows=[];rowAnchor=null;list.replaceChildren();dragRows?.replaceChildren();dragButtons=[];name.value='';}
+  function clearSelection(){assetDnd?.end();clearRelink();clearSourceChoice();selected=null;chosen=[];rows=[];rowAnchor=null;list.replaceChildren();dragRows?.replaceChildren();dragButtons=[];name.value='';poolView?.render([]);}
   function settled(){update();if(active && pendingReload && !transferring() && !reading){pendingReload=false;void reload(page);}}
   function update(){
     if(active){const epoch=nativeAssetIdentity(getContext())?getContext().project_epoch:null;if(epoch!==observedEpoch){observedEpoch=epoch;epochRefresh=epoch;sequence++;previewSequence++;readController?.abort();readController=null;reading=false;placementAttempt=null;}}
     if(relinkReview && !relinkReview.current())closeRelinkReview();
     if(!active)return;if(deletion && !deletionCurrent(deletion))closeDeletion(false);if(relinkDraft && !relinkCurrent(relinkDraft))clearRelink();if(sourceDraft && !sourceCurrent(sourceDraft))clearSourceChoice();transfer.invalidate();const working=transferring() || reading || relinkReading,writable=canCommit() && !working,fresh=readEpoch===getContext()?.project_epoch,valid=fresh && selected && !selected.error && !selected.archived;
-    for(const {row,item} of dragButtons){row.disabled=working;row.draggable=Boolean(writable && fresh && draggable([item]));row.setAttribute('aria-pressed',String(chosen.some(value=>value.id===item.id)));}
+    for(const {row,item} of dragButtons){row.disabled=working;row.draggable=Boolean(writable && fresh && !item.archived && !item.error && item.revision);row.setAttribute('aria-pressed',String(chosen.some(value=>value.id===item.id)));}
     for(const control of controls)control.disabled=working;list.disabled=working;previous.disabled=working || page===0;next.disabled=working || page+1>=pages;
     stop.disabled=!transfer.busy() || transfer.phase()==='committing';stop.hidden=!transfer.busy();
     capture.disabled=!writable || !nativeAssetIdentity(getContext()) || !selection().length || selection().length>64;capture.textContent=`Save ${selection().length || ''} selected media as native assets`.replace('  ',' ');
@@ -292,6 +298,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     if(sourceDestination)sourceDestination.disabled=!writable;sourcePicker?.refresh();
     for(const draft of [relinkDraft,sourceDraft])if(draft?.replacement)draft.replacement.disabled=!writable;
     if(relinkReview)relinkReview.confirm.disabled=!relinkReview.current();
+    poolView?.sync();
     const context=getContext(),attempt=JSON.stringify([context?.project_epoch,context?.generation]);
     if(epochRefresh && !working && !modal() && !ownerDocument?.hidden && root.isConnected!==false && !root.hidden && (root.getClientRects?.().length ?? 1)>0){epochRefresh=null;pendingReload=false;void reload(page,selected?.id,false,1,readEpoch!==null);return;}
     if(assetDnd && readEpoch===context?.project_epoch && readGeneration!==null && readGeneration!==context?.generation && placementAttempt!==attempt && !working){placementAttempt=attempt;pendingReload=false;void reload(page,selected?.id,false,1,true);}
@@ -307,9 +314,9 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
       catalog=nativeFolderCatalog(folders,context.project_epoch);if(folder!==null && folder!=='' && !catalog.folders.some(item=>item.id===folder))folder='';folderFields();
       let result,scan=wanted;
       while(true){
-        result=await api(`/native-assets/pages/${scan}?${new URLSearchParams({project_epoch:context.project_epoch,search,archived:String(archived),...nativeFolderFilter(catalog,folder)})}`,undefined,{signal:readController.signal});
+        const browse=nativePoolQuery({...poolState,folder,query:search});result=await api(`/native-assets/pages/${scan}?${new URLSearchParams({project_epoch:context.project_epoch,search,archived:String(archived),...nativeFolderFilter(catalog,Object.hasOwn(browse,'folder')?browse.folder:null),...browse})}`,undefined,{signal:readController.signal});
         if(!active || id!==sequence || context.project_epoch!==getContext()?.project_epoch || assetDnd && context.generation!==getContext()?.generation)return false;
-        const following=scan+direction;if(!search && folder===null || result.items.length || following<0 || following>=result.pages)break;
+        const following=scan+direction;if(result.catalog_total!==undefined || !search && folder===null || result.items.length || following<0 || following>=result.pages)break;
         message(`Searching native asset page ${scan+1} of ${result.pages}…`);scan=following;
       }
       page=result.page;pages=result.pages;list.replaceChildren(...result.items.map((item,index)=>new Option(`${item.name}${item.error?' · invalid':''}`,String(index))));
@@ -387,14 +394,14 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     catch(error){const text=applied?`Command applied · ${error.message}. Refresh before doing anything else; do not repeat it.`:error.message;message(text);notice(text);}
     finally{busy=false;settled();}
   }
-  async function editFolders(action){
+  async function editFolders(action,overrides={}){
     if(transferring() || reading || !canCommit() || !currentCatalog())return;
-    let edit;try{edit=nativeFolderOperation(action,catalog,{id:folder,name:folderName.value,parent:action==='create_folder'?folderCreateParent.value:folderParent.value,folder:assetDestination.value,items:chosen});}catch(error){message(error.message);return;}
-    const session=panelSession,epoch=getContext()?.project_epoch,parent=catalog.folders.find(item=>item.id===folder)?.parent || '';busy=true;update();let applied=false;
+    let edit;try{edit=nativeFolderOperation(action,catalog,{id:folder,name:folderName.value,parent:action==='create_folder'?folderCreateParent.value:folderParent.value,folder:assetDestination.value,items:chosen,...overrides});}catch(error){message(error.message);return;}
+    const session=panelSession,epoch=getContext()?.project_epoch,parent=catalog.folders.find(item=>item.id===edit.id)?.parent || '';busy=true;update();let applied=false;
     try{
       const receipt=await libraryCommit({kind:'edit_native_asset_library',edit});applied=true;
       if(!active || session!==panelSession || epoch!==getContext()?.project_epoch)return;
-      if(action==='create_folder')folder=receipt.command_id;else if(action==='remove_folder')folder=parent;
+      if(action==='create_folder')folder=receipt.command_id;else if(action==='remove_folder' && folder===edit.id)folder=parent;
       clearSelection();if(!await reload(0,undefined,true))throw Error('The native folder catalog could not be refreshed');message('Native library folders updated · timeline unchanged');
     }catch(error){const text=applied?`Command applied · ${error.message}. Refresh before doing anything else; do not repeat it.`:error.message;message(text);notice(text);}
     finally{busy=false;settled();}
@@ -438,11 +445,18 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
       const assetActions=document.createElement('details'),assetSummary=document.createElement('summary');assetActions.className='native-asset-actions';assetSummary.textContent='Asset actions';previewButton=button('Preview native asset',()=>void previewAsset(selected));deleteButton=button('Permanently delete selected native assets…',deleteSelection);assetActions.append(assetSummary,previewButton,nameLabel,rename,archive,restore,download,relinkMenu,deleteButton);
       const paging=document.createElement('div'),primary=document.createElement('div');paging.className='native-asset-paging';paging.append(previous,next,refresh);primary.className='native-asset-primary';primary.append(importButton,stop);
       let assetList=list;
-      if(assetDnd){const selectionMenu=document.createElement('details'),selectionSummary=document.createElement('summary'),listGroup=document.createElement('div');selectionSummary.textContent='Multiple selection';selectionMenu.append(selectionSummary,list);listGroup.append(dragRows,selectionMenu);assetList=listGroup;}
+      const selectionMenu=document.createElement('details'),selectionSummary=document.createElement('summary'),listGroup=document.createElement('div'),poolRoot=document.createElement('div');selectionSummary.textContent='Multiple selection';selectionMenu.append(selectionSummary,list);listGroup.append(poolRoot,selectionMenu);assetList=listGroup;
+      poolView=createNativeAssetPool({root:poolRoot,list:dragRows,state:poolState,getAssets:()=>rows,getFolders:()=>catalog?.folders || [],getSelection:poolSelection,notice,
+        getContext:()=>active && root.isConnected!==false && readEpoch===getContext()?.project_epoch?{project_epoch:getContext().project_epoch,generation:getContext().generation,available:!transferring() && !reading,anchor:rowAnchor,identity:JSON.stringify([panelSession,nativeAssetIdentity(getContext()),getContext()?.command_epoch,catalog?.folders_revision,rows.map(item=>[item.id,item.revision]),page,folder,search,archived])}:null,
+        canWrite:()=>canCommit(),onSelection:choosePool,onNavigate:id=>{if(transferring() || reading)return;folder=id;poolState.autoExpand=true;clearSelection();void reload(0);},onPresentation:()=>{if(transferring() || reading)return;void reload(0);},
+        onRename:async(kind,id,value)=>{if(kind==='folder')return editFolders('rename_folder',{id,name:value});const item=rows.find(item=>item.id===id);if(!item)return;chooseRow(item);name.value=value;await edit('update');},
+        onAction:async(action,owner)=>{if(action==='import')return importSelected();if(action==='preview')return previewAsset(owner.asset);if(action==='delete')return deleteSelection();if(action==='relink'){const item=rows.find(item=>item.id===owner.id);if(!item)return;chooseRow(item);return openRelink();}if(action==='delete_folder')return editFolders('remove_folder',{id:owner.id});if(action==='new_folder'){const parent=owner.kind==='folder'?owner.id:folder,taken=new Set(catalog.folders.map(item=>item.name));let name='New folder',suffix=2;while(taken.has(name))name=`New folder ${suffix++}`;return editFolders('create_folder',{parent,name});}},
+        onMove:async(payload,destination,isCurrent)=>{if(!isCurrent() || !canCommit())return;if(payload.kind==='folder')return editFolders('move_folder',{id:payload.folder_id,parent:destination});const items=rows.filter(item=>payload.media_ids.includes(item.id));if(items.length!==payload.media_ids.length || items.every(item=>(item.effective_folder ?? item.folder ?? null)===destination))return;return editFolders('move_assets',{items,folder:destination});},
+      });
       controls=[query,submit,toggle,refresh];folderControls=[folderName,folderCreateParent,folderParent,assetDestination];root.append(heading,field('Native asset folder',folderFilter),form,assetList,paging,caption,primary,libraryActions,assetActions,sourceArea,sourceReport,status);folderFields();update();await reload(page);
     },
     invalidate(){update();},
-    hide(){closeDeletion(false);assetDnd?.end();active=false;stopped=true;pendingReload=false;epochRefresh=null;sequence++;previewSequence++;panelSession++;readController?.abort();readController=null;reading=false;clearRelink();clearSourceChoice();transfer.cancel();},
+    hide(){closeDeletion(false);assetDnd?.end();poolView?.dispose();poolView=null;active=false;stopped=true;pendingReload=false;epochRefresh=null;sequence++;previewSequence++;panelSession++;readController?.abort();readController=null;reading=false;clearRelink();clearSourceChoice();transfer.cancel();},
     dispose(){this.hide();disposed=true;ownerDocument?.removeEventListener?.('close',resumeEpoch,true);ownerDocument?.removeEventListener?.('visibilitychange',resumeEpoch);},
   };
 }

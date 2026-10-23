@@ -4,6 +4,302 @@ use vv_core::{
 };
 
 #[test]
+fn native_pool_browse_filters_sparse_catalog_before_paging_and_preserves_legacy_queries() {
+    let (root, store, mut asset) = fixture();
+    apply_folder(
+        &store,
+        "wanted",
+        &Edit::CreateFolder {
+            folders_revision: folders_revision(&store),
+            name: "Wanted".into(),
+            parent: None,
+        },
+    );
+    for index in 0..40 {
+        asset.name = format!("Shot {:02}", 39 - index);
+        asset.folder = if index >= 34 {
+            Some("wanted".into())
+        } else {
+            None
+        };
+        store.create(&format!("asset-{index:02}"), &asset).unwrap();
+    }
+    let query = Query {
+        sort: Some(SortKey::Name),
+        folder: Some("wanted".into()),
+        folders_revision: Some(folders_revision(&store)),
+        ..Default::default()
+    };
+    let rows = store.list(0, &query).unwrap();
+    assert_eq!(rows["total"], 6);
+    assert_eq!(rows["catalog_total"], 40);
+    assert_eq!(rows["pages"], 1);
+    assert_eq!(
+        rows["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| row["id"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec![
+            "asset-39", "asset-38", "asset-37", "asset-36", "asset-35", "asset-34"
+        ]
+    );
+    assert!(store.list(1, &query).is_err());
+    let search = Query {
+        search: " Shot 00 ".into(),
+        ..query.clone()
+    };
+    assert_eq!(
+        store.list(0, &search).unwrap()["items"][0]["id"],
+        "asset-39"
+    );
+    assert_eq!(store.list(0, &search).unwrap()["total"], 1);
+    let all = Query {
+        sort: Some(SortKey::Name),
+        ..Default::default()
+    };
+    let first = store.list(0, &all).unwrap();
+    let last = store.list(1, &all).unwrap();
+    assert_eq!(first["items"].as_array().unwrap().len(), 32);
+    assert_eq!(last["items"].as_array().unwrap().len(), 8);
+    assert_eq!(first["items"][0]["id"], "asset-39");
+    assert_eq!(last["items"][7]["id"], "asset-00");
+    let legacy = store
+        .list(
+            0,
+            &Query {
+                folder: Some("wanted".into()),
+                folders_revision: Some(folders_revision(&store)),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    assert_eq!(legacy["total"], 40);
+    assert_eq!(legacy["pages"], 2);
+    assert_eq!(legacy["items"], json!([]));
+    let stale = Query {
+        folders_revision: Some("stale".into()),
+        ..query
+    };
+    assert_eq!(store.list(0, &stale).unwrap_err().1, "FOLDERS_CHANGED");
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+fn native_pool_file_asset(
+    store: &Store,
+    name: &str,
+    frames: i64,
+    fps: Rational,
+    video: bool,
+    audio: bool,
+) -> AssetFile {
+    let mut session = vv_session::Session::default();
+    let media = session.add_media(
+        store.root().join("media/0123456789abcdef/offline.mov"),
+        vv_core::MediaMeta {
+            duration_frames: frames,
+            fps,
+            width: if video { 1920 } else { 0 },
+            height: if video { 1080 } else { 0 },
+            has_video: video,
+            has_audio: audio,
+            sample_rate: if audio { 48000 } else { 0 },
+            channels: if audio { 2 } else { 0 },
+            audio_streams: 0,
+            file: Default::default(),
+        },
+    );
+    asset_payload::capture(
+        &session,
+        media,
+        name,
+        ClipboardOrigin {
+            instance: 1,
+            epoch: 1,
+        },
+    )
+    .unwrap()
+}
+
+#[test]
+fn native_pool_browse_native_duration_name_ties_root_metadata_invalid_and_archived_rows() {
+    let (root, store, timeline) = fixture();
+    for (id, name, frames, fps) in [
+        ("a", "Beta", 48, 24),
+        ("b", "alpha", 60, 30),
+        ("c", "Alpha", 25, 25),
+        ("d", "alpha", 48, 24),
+    ] {
+        store
+            .create(
+                id,
+                &native_pool_file_asset(&store, name, frames, Rational::new(fps, 1), true, true),
+            )
+            .unwrap();
+    }
+    let query = Query {
+        sort: Some(SortKey::Duration),
+        ..Default::default()
+    };
+    let rows = store.list(0, &query).unwrap();
+    assert_eq!(
+        rows["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| row["id"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["c", "b", "d", "a"]
+    );
+    let descending = store
+        .list(
+            0,
+            &Query {
+                descending: true,
+                ..query.clone()
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        descending["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|row| row["id"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        vec!["a", "b", "d", "c"]
+    );
+    let first = &rows["items"][0];
+    assert_eq!(first["missing_count"], 1);
+    assert_eq!(
+        first["presentation"],
+        json!({"kind":"video","width":1920,"height":1080,"fps":{"num":25,"den":1},"duration_frames":25,
+        "is_image":false,"has_video":true,"has_audio":true,"sample_rate":48000,"channels":2,"audio_streams":1})
+    );
+    assert!(
+        !serde_json::to_string(&rows)
+            .unwrap()
+            .contains(root.to_str().unwrap())
+    );
+    let mut orphan = timeline;
+    orphan.folder = Some("removed-folder".into());
+    store.create("orphan", &orphan).unwrap();
+    store
+        .create(
+            "audio",
+            &native_pool_file_asset(&store, "Audio", 48, Rational::new(24, 1), false, true),
+        )
+        .unwrap();
+    store
+        .create(
+            "image",
+            &native_pool_file_asset(
+                &store,
+                "Image",
+                vv_core::IMAGE_DURATION_FRAMES,
+                Rational::new(24, 1),
+                true,
+                false,
+            ),
+        )
+        .unwrap();
+    std::fs::write(root.join("assets/broken.json"), b"{}").unwrap();
+    let roots = store
+        .list(
+            0,
+            &Query {
+                sort: Some(SortKey::Name),
+                folder: Some(String::new()),
+                folders_revision: Some(folders_revision(&store)),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let rows = roots["items"].as_array().unwrap();
+    for (id, kind) in [
+        ("orphan", "timeline"),
+        ("audio", "audio"),
+        ("image", "image"),
+    ] {
+        let row = rows.iter().find(|row| row["id"] == id).unwrap();
+        assert_eq!(row["presentation"]["kind"], kind);
+    }
+    let orphan = rows.iter().find(|row| row["id"] == "orphan").unwrap();
+    assert_eq!(orphan["folder"], "removed-folder");
+    assert!(orphan["effective_folder"].is_null());
+    assert!(
+        rows.iter()
+            .any(|row| row["id"] == "broken" && row["error"].is_string())
+    );
+    store
+        .edit(
+            "archive",
+            &Edit::Archive {
+                id: "b".into(),
+                revision: revision(&store, "b", false),
+            },
+        )
+        .unwrap();
+    let archived = store
+        .list(
+            0,
+            &Query {
+                archived: true,
+                ..query
+            },
+        )
+        .unwrap();
+    assert_eq!(archived["total"], 1);
+    assert_eq!(archived["items"][0]["id"], "b");
+    assert_eq!(archived["items"][0]["presentation"]["kind"], "video");
+    assert!(archived["items"][0]["placement"]["error"].is_string());
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn native_pool_browse_strict_query_and_metadata_budget_refuse_partial_catalog_results() {
+    let (root, store, asset) = fixture();
+    store.create("good", &asset).unwrap();
+    for value in [
+        json!({"sort":"size"}),
+        json!({"sort":"name","descending":"yes"}),
+        json!({"sort":"name","unknown":true}),
+    ] {
+        assert!(serde_json::from_value::<Query>(value).is_err());
+    }
+    let query = Query {
+        sort: Some(SortKey::Name),
+        ..Default::default()
+    };
+    assert!(store.list(usize::MAX, &query).is_err());
+    assert!(
+        store
+            .list(
+                0,
+                &Query {
+                    search: "x".repeat(129),
+                    ..query.clone()
+                }
+            )
+            .is_err()
+    );
+    for index in 0..4 {
+        File::create(root.join(format!("assets/budget-{index}.json")))
+            .unwrap()
+            .set_len(MAX_JSON)
+            .unwrap();
+    }
+    let before = store.export("good").unwrap();
+    assert_eq!(store.list(0, &query).unwrap_err().1, "ASSET_CATALOG_BUDGET");
+    assert_eq!(store.export("good").unwrap(), before);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn deliberate_relink_default_serialization_preserves_legacy_mutation_identity() {
     for value in [
         json!({"action":"relink","id":"asset","revision":"revision","path_tokens":["take.mp4"]}),

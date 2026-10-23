@@ -46,6 +46,16 @@ pub struct Query {
     pub folder: Option<String>,
     #[serde(default)]
     pub folders_revision: Option<String>,
+    #[serde(default)]
+    pub sort: Option<SortKey>,
+    #[serde(default)]
+    pub descending: bool,
+}
+#[derive(Clone, Copy, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SortKey {
+    Name,
+    Duration,
 }
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -161,6 +171,63 @@ pub(crate) struct RelinkedFile {
     pub content_hash: u64,
     pub meta: vv_core::MediaMeta,
     pub source_token: String,
+}
+fn browse_budget() -> ApiError {
+    ApiError::conflict(
+        "ASSET_CATALOG_BUDGET",
+        "Native library browsing exceeds its 16 MiB metadata budget",
+    )
+}
+fn presentation(payload: &vv_core::clipboard::ClipboardPayload) -> Value {
+    let Some(item) = payload.media_items().next() else {
+        return Value::Null;
+    };
+    let meta = &item.meta;
+    let kind = if item.compound.is_some() {
+        "timeline"
+    } else if meta.is_image() {
+        "image"
+    } else if meta.has_video {
+        "video"
+    } else if meta.has_audio {
+        "audio"
+    } else {
+        "media"
+    };
+    json!({"kind":kind,"width":meta.width,"height":meta.height,"fps":meta.fps,"duration_frames":meta.duration_frames,
+        "is_image":meta.is_image(),"has_video":meta.has_video,"has_audio":meta.has_audio,"sample_rate":meta.sample_rate,
+        "channels":meta.channels,"audio_streams":meta.audio_stream_count()})
+}
+fn presentation_seconds(value: &Value) -> f64 {
+    let frames = value["duration_frames"].as_i64().unwrap_or(0);
+    let num = value["fps"]["num"].as_i64().unwrap_or(0);
+    let den = value["fps"]["den"].as_i64().unwrap_or(0);
+    if num > 0 && den > 0 {
+        frames as f64 / (num as f64 / den as f64).max(1e-9)
+    } else {
+        0.0
+    }
+}
+fn browse_matches(row: &Value, query: &Query, search: &str) -> bool {
+    let folder_matches = query.folder.as_ref().is_none_or(|folder| {
+        if folder.is_empty() {
+            row["effective_folder"].is_null()
+        } else {
+            row["effective_folder"].as_str() == Some(folder.as_str())
+        }
+    });
+    folder_matches
+        && (search.is_empty()
+            || row["id"]
+                .as_str()
+                .unwrap_or("")
+                .to_lowercase()
+                .contains(search)
+            || row["name"]
+                .as_str()
+                .unwrap_or("")
+                .to_lowercase()
+                .contains(search))
 }
 fn name(id: &str, archived: bool) -> Result<String> {
     if id.is_empty()
@@ -490,6 +557,14 @@ impl Store {
         self.raw_limit(file_name, MAX_JSON)
     }
     fn raw_limit(&self, file_name: &str, limit: u64) -> Result<Option<Raw>> {
+        self.raw_budgeted(file_name, limit, None)
+    }
+    fn raw_budgeted(
+        &self,
+        file_name: &str,
+        limit: u64,
+        mut budget: Option<&mut u64>,
+    ) -> Result<Option<Raw>> {
         self.validate_root()?;
         let fd = match openat(
             &self.0.assets,
@@ -512,12 +587,26 @@ impl Store {
                 "Native assets must be regular files within 4 MiB",
             ));
         }
+        let read_limit = if let Some(remaining) = budget.as_deref() {
+            if meta.len() > *remaining {
+                return Err(browse_budget());
+            }
+            limit.min(*remaining)
+        } else {
+            limit
+        };
         let identity = stable_identity(&file)?;
         let mut bytes = Vec::new();
         (&file)
-            .take(limit + 1)
+            .take(read_limit + 1)
             .read_to_end(&mut bytes)
             .map_err(|_| ApiError::io())?;
+        if let Some(remaining) = budget.as_mut() {
+            if bytes.len() as u64 > **remaining {
+                return Err(browse_budget());
+            }
+            **remaining -= bytes.len() as u64;
+        }
         if bytes.len() as u64 > limit || stable_identity(&file)? != identity {
             return Err(changed());
         }
@@ -640,6 +729,7 @@ impl Store {
                 };
                 let effective = asset.folder.as_deref().filter(|id| tree.contains(id));
                 let mut value = json!({"id":id,"revision":raw.revision,"name":asset.name,"folder":asset.folder,"effective_folder":effective,"media_count":payload.media_items().count(),"file_count":payload.files().map(|m|&m.path).collect::<std::collections::HashSet<_>>().len(),"archived":archived,"can_restore_previous":previous});
+                value["presentation"] = presentation(&payload);
                 let placement = payload.media_ids().iter().map(|id| {
                     let meta = &payload.fragment().media_pool[*id].meta;
                     let out = crate::commands::whole_media_out(meta)?;
@@ -717,6 +807,9 @@ impl Store {
             }
         }
         names.sort();
+        if let Some(sort) = query.sort {
+            return self.sorted_list(page, query, &tree, &folders_revision, names, sort);
+        }
         let total = names.len();
         let pages = total.div_ceil(32).max(1);
         if page >= pages {
@@ -752,6 +845,96 @@ impl Store {
         }
         Ok(
             json!({"project_epoch":query.project_epoch,"page":page,"pages":pages,"page_size":32,"total":total,"archived":query.archived,"folder":query.folder,"folders_revision":folders_revision,"items":items}),
+        )
+    }
+    fn sorted_list(
+        &self,
+        page: usize,
+        query: &Query,
+        tree: &Tree,
+        folders_revision: &str,
+        names: Vec<String>,
+        sort: SortKey,
+    ) -> Result<Value> {
+        let catalog_total = names.len();
+        let search = query.search.trim().to_lowercase();
+        let mut budget = asset_journal::MAX_METADATA;
+        let mut rows = Vec::new();
+        for id in names {
+            let raw = match self.raw_budgeted(
+                &name(&id, query.archived)?,
+                MAX_JSON,
+                Some(&mut budget),
+            ) {
+                Ok(Some(raw)) => raw,
+                Ok(None) => continue,
+                Err(error) if error.1 == "ASSET_CATALOG_BUDGET" => return Err(error),
+                Err(error) => {
+                    let row = json!({"id":id,"name":id,"error":error.2,"archived":query.archived,"presentation":null});
+                    if browse_matches(&row, query, &search) {
+                        rows.push(row);
+                    }
+                    continue;
+                }
+            };
+            let row = match asset_payload::parse(&raw.bytes).and_then(|asset| {
+                let payload = asset_payload::decode(&asset)?;
+                let effective = asset.folder.as_deref().filter(|id|tree.contains(id));
+                Ok(json!({"id":id,"revision":raw.revision,"name":asset.name,"folder":asset.folder,"effective_folder":effective,"presentation":presentation(&payload),"archived":query.archived}))
+            }) {
+                Ok(row) => row,
+                Err(error) => json!({"id":id,"revision":raw.revision,"name":id,"error":error.2,"archived":query.archived,"presentation":null}),
+            };
+            if browse_matches(&row, query, &search) {
+                rows.push(row);
+            }
+        }
+        rows.sort_by(|a, b| {
+            let left = a["name"].as_str().unwrap_or("");
+            let right = b["name"].as_str().unwrap_or("");
+            let by_name = left
+                .to_lowercase()
+                .cmp(&right.to_lowercase())
+                .then_with(|| left.cmp(right));
+            let order = match sort {
+                SortKey::Name => by_name,
+                SortKey::Duration => presentation_seconds(&a["presentation"])
+                    .partial_cmp(&presentation_seconds(&b["presentation"]))
+                    .unwrap_or(std::cmp::Ordering::Equal)
+                    .then(by_name),
+            };
+            let order = if query.descending {
+                order.reverse()
+            } else {
+                order
+            };
+            order.then_with(|| {
+                a["id"]
+                    .as_str()
+                    .unwrap_or("")
+                    .cmp(b["id"].as_str().unwrap_or(""))
+            })
+        });
+        let total = rows.len();
+        let pages = total.div_ceil(32).max(1);
+        if page >= pages {
+            return Err(ApiError::invalid("Asset page is beyond the last page"));
+        }
+        let mut items = Vec::new();
+        for row in rows.into_iter().skip(page * 32).take(32) {
+            if row.get("error").is_some() {
+                items.push(row);
+                continue;
+            }
+            let id = row["id"].as_str().ok_or_else(ApiError::missing)?;
+            let item = self.item(id, query.archived)?;
+            if item["revision"] != row["revision"] {
+                return Err(changed());
+            }
+            items.push(item);
+        }
+        Ok(
+            json!({"project_epoch":query.project_epoch,"page":page,"pages":pages,"page_size":32,"total":total,"catalog_total":catalog_total,"archived":query.archived,"folder":query.folder,"folders_revision":folders_revision,"sort":sort,"descending":query.descending,"items":items}),
         )
     }
     pub fn edit(&self, _command_id: &str, edit: &Edit) -> Result<()> {

@@ -920,6 +920,23 @@ files, and clients advance through empty filtered pages. Rows preserve the raw
 native `folder` and expose `effective_folder`: unknown native memberships appear
 at root without rewriting their JSON.
 
+An explicit `sort=name|duration` selects global filtered paging: folder/search
+filtering and the native name/duration order precede pages of32. `descending`
+defaults tofalse. `total`/`pages` describe matching rows; additive `catalog_total`
+counts all active or archived candidates. Omitting `sort` preserves legacy
+candidate-ID paging and source totals. Names compare lowercase, then original
+case; duration compares native first-item frames/FPS, then name. Exact ties keep
+ascending IDs in either direction. Search is limited to128 UTF-8 bytes.
+
+The globally sorted scan accepts at most10000 entries,4MiB per JSON and16MiB
+aggregate metadata; excess returns `ASSET_CATALOG_BUDGET` rather than a partial
+catalog. File/offline witnesses are inspected only for the selected32 rows.
+Rows and individual item reads add `presentation` from the first native payload
+media item: `{kind,width,height,fps,duration_frames,is_image,has_video,has_audio,
+sample_rate,channels,audio_streams}`. Kind is timeline/image/video/audio/media;
+malformed or empty assets have null presentation. This exposes no file paths
+and performs no new probe, decode or thumbnail generation.
+
 `edit_native_asset_library` also accepts these explicit edits:
 
 - `create_folder {folders_revision,name,parent}`; folder ID is the command ID.

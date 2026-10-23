@@ -2710,6 +2710,7 @@ async fn assets(request: Request) -> Response {
         "/js/silence.js" => asset!("/web/js/silence.js", "text/javascript"),
         "/js/library.js" => asset!("/web/js/library.js", "text/javascript"),
         "/js/native-assets.js" => asset!("/web/js/native-assets.js", "text/javascript"),
+        "/js/native-asset-pool.js" => asset!("/web/js/native-asset-pool.js", "text/javascript"),
         "/js/source-picker.js" => asset!("/web/js/source-picker.js", "text/javascript"),
         "/js/native-asset-folders.js" => {
             asset!("/web/js/native-asset-folders.js", "text/javascript")

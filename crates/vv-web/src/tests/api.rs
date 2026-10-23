@@ -2384,6 +2384,7 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/silence.js", 200),
         ("/js/library.js", 200),
         ("/js/native-assets.js", 200),
+        ("/js/native-asset-pool.js", 200),
         ("/js/native-asset-folders.js", 200),
         ("/js/media-import.js", 200),
         ("/js/media-relink.js", 200),

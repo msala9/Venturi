@@ -28,6 +28,7 @@ import {
   groupMoveStart,
   MIN_TIMELINE_SCALE,
   MAX_TIMELINE_SCALE,
+  MAX_FRAME,
   timelineScrollBounds,
   kineticScrollStep,
   trimGroupDraft,
@@ -48,6 +49,18 @@ export function isTimelineContextShortcut(event){
   return !event.defaultPrevented && !event.repeat && !event.isComposing && event.keyCode!==229 && !event.getModifierState?.('AltGraph') && !event.ctrlKey && !event.metaKey && !event.altKey && !isTextTarget(event.target) && ((event.key==='F10' && event.shiftKey) || (event.key==='ContextMenu' && !event.shiftKey));
 }
 export const TRANSITION_DRAG_TYPE='application/x-venturi-transition';
+export function nativeRulerFrame(timeline,view,x){
+  const fps=timeline.fps,ppf=Math.fround(Math.fround(view.scale)/Math.fround(Math.max(1,fps.num/fps.den)));
+  if(!(ppf>0) || !Number.isFinite(ppf) || !Number.isFinite(x))throw new RangeError('Invalid ruler coordinates');
+  const origin=Math.fround(HEADER-Math.fround((view.origin ?? 0)*ppf));
+  const raw=Math.fround(Math.fround(Math.fround(x)-origin)/ppf);
+  const frame=Math.max(0,Math.min(MAX_FRAME,Math.round(raw)));
+  if(!view.snap)return frame;
+  const limit=Math.round(Math.fround(10/ppf));
+  if(limit<=0)return frame;
+  const targets=timeline.tracks.flatMap(track=>track.clips.flatMap(clip=>[clip.start_frame,clip.start_frame+clip.length_frames]));
+  return Math.min(MAX_FRAME,snapFrame(frame,targets,view,fps,limit*((view.scale*fps.den)/fps.num)));
+}
 export function isCloseGapShortcut(event,{dialogOpen=false}={}){
   return event.code==='IntlBackslash' && !event.defaultPrevented && !event.repeat && !event.isComposing && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.getModifierState?.('AltGraph') && !dialogOpen && !isTextTarget(event.target);
 }
@@ -120,6 +133,8 @@ export function createInput({
     return JSON.stringify([timeline?.id,timeline?.revision,timeline?.fps.num,timeline?.fps.den,view.scale,view.origin,view.scrollY,timelineLayoutStamp(view),view.tool,view.snap,view.retimeOverwrite,[...(view.retimeVisible || [])].sort(),Boolean(view.transitionReplace),view.transitionSelection,view.selectedGap,view.playhead,[...view.selection].sort(),view.selectionAnchor,rect.left,rect.top,rect.width,rect.height]);
   };
   const modal=()=>Boolean(canvas.ownerDocument?.querySelector?.('dialog[open]'));
+  const scrubContext=timeline=>JSON.stringify([getGapContext()?.project_epoch,timeline?.id,timeline?.revision,timeline?.fps,view.scale,view.origin,canvasMapping()]);
+  const scrubCurrent=g=>scrubContext(getTimeline())===g.context && canvas.isConnected!==false && !canvas.ownerDocument?.hidden && !modal() && canNavigate();
   const gapContext=timeline=>JSON.stringify([timeline?.id,timeline?.revision,getGapContext()]);
   const scrollOffsets=()=>JSON.stringify([view.origin,view.videoScroll,view.audioScroll]);
   const scrollContext=timeline=>JSON.stringify([gapContext(timeline),view.scale,view.rowHeight,view.videoPaneHeight,view.tool,view.playhead,view.selection,view.selectionAnchor,canvasMapping()]);
@@ -413,8 +428,9 @@ export function createInput({
     } else if (hit.clip) {
       if(!beginClipGesture(hit,event,x,y,timeline))return;
     } else if (hit.kind === "scrub") {
-      gesture = { kind: "scrub" };
-      view.playhead = xToFrame(x, view, timeline.fps);
+      if(event.isPrimary===false || canvas.isConnected===false || canvas.ownerDocument?.hidden)return;
+      gesture = {kind:"scrub",pointerId:event.pointerId,context:scrubContext(timeline)};
+      view.playhead = nativeRulerFrame(timeline,view,x);
       onSeek(false);
     } else if (hit.kind === "blank") {
       const frame=xToFrame(x,view,timeline.fps),gap=nativeGapAt(timeline,timeline.tracks[hit.track]?.id,frame);
@@ -442,6 +458,12 @@ export function createInput({
     const timeline = getTimeline(),
       [x, y] = point(event),
       g = gesture;
+    if(g.kind==='scrub'){
+      if(event.pointerId!==g.pointerId)return;
+      if(!scrubCurrent(g) || (!allowRelease && event.buttons!==undefined && !(event.buttons&1))){cancel();return;}
+      view.playhead=nativeRulerFrame(timeline,view,x);
+      onSeek(false);invalidate();return;
+    }
     if(g.kind==='pane_scrollbar'){
       if(event.pointerId!==g.pointerId)return;
       if(!scrollbarOwned(g) || modal() || !canNavigate() || (!allowRelease && event.buttons!==undefined && !(event.buttons&1))){cancel();return;}
@@ -515,9 +537,6 @@ export function createInput({
       const dx=(view.origin-beforeOrigin)*bounds.pixelsPerFrame,dy=(g.pane==='video'?view.videoScroll:g.pane==='audio'?view.audioScroll:0)-beforeVertical;
       if(dx || dy){g.vx=elapsed>0 && elapsed<=.1?dx/elapsed:0;g.vy=elapsed>0 && elapsed<=.1?dy/elapsed:0;g.lastMove=time;}
       g.sampleAt=time;g.offsets=scrollOffsets();
-    } else if (g.kind === "scrub") {
-      view.playhead = xToFrame(x, view, timeline.fps);
-      onSeek(false);
     } else if (g.kind === "marker") {
       if (!g.editable || (Math.hypot(x-g.x,y-g.y)<4 && !g.moved)) return;
       g.moved = true;
@@ -614,6 +633,15 @@ export function createInput({
     if (!gesture) return;
     const g = gesture,
       timeline = getTimeline();
+    if(g.kind==='scrub'){
+      if(event.pointerId!==g.pointerId || event.button!==0)return;
+      const [x]=point(event);
+      if(!scrubCurrent(g)){cancel();return;}
+      view.playhead=nativeRulerFrame(timeline,view,x);
+      gesture=null;
+      if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+      onSeek(true);invalidate();return;
+    }
     if(g.kind==='pan'){
       if(event.pointerId!==g.pointerId || event.button!==g.button)return;
       move(event,true);if(gesture!==g)return;
@@ -716,7 +744,6 @@ export function createInput({
     if (canvas.hasPointerCapture(event.pointerId))
       canvas.releasePointerCapture(event.pointerId);
     if(g.selectionBefore)onSelect();
-    if (g.kind === "scrub") onSeek(true);
     if (g.kind === "marker" && !g.moved) { view.playhead=g.marker.start_frame;onSeek(true); }
     const markerChanged = g.kind !== "marker" || (draft && (draft.marker.start_frame!==g.marker.start_frame || draft.marker.duration_frames!==g.marker.duration_frames));
     const bodyChanged=!g.fromTransitionBody || draft?.changes?.some(change=>timeline.tracks.some(track=>track.clips.some(clip=>clip.id===change.clip_id && (track.id!==change.to_track || clip.start_frame!==change.to_start_frame || clip.length_frames!==change.length_frames))));

@@ -30,6 +30,15 @@ Use integer frame indices for editing; `pxPerSecond` is a drawing scale only. Va
 
 Snapping candidates (if visible and enabled): playhead, marker, edit in/out edges, in/out timeline range, transition handles. Clip lock state and audio/video track legality override snapping. Ghost alignment must use the same candidate chosen for actual commit.
 
+Native ruler scrubbing uses its own verified upstream target set: clip start/end
+edges in native track/clip order, including locked tracks, with no playhead or
+marker target. Preserve native f32 coordinate conversion, the rounded ten-pixel
+threshold and first-candidate ties. Sample the actual primary-pointer release
+coordinate even when no final move event arrived. Motion updates only local
+view state; release makes one final seek without a history edit. Pointer,
+project/timeline/revision and coordinate ownership changes cancel obsolete
+gestures; the scrub's own native view acknowledgement remains valid.
+
 ## Pointer state transition table
 
 | Current state | Input | New state / behavior |

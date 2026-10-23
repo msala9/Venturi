@@ -2,7 +2,7 @@ import {timelineTimecode} from '../js/timeline/draw.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {timelineLayout,paneScrollbars,clipsInTimelineRect,clickTimelineSelection,clipSelectionAnchor,moveTrackTargets,dragRangeAt,groupDragBounds,groupMoveStart,validateDraft,hitTest,frameToX,snapFrame,timelineScrollBounds,timelineOriginForFrame,kineticScrollStep,MIN_TIMELINE_SCALE,MAX_TIMELINE_SCALE,HEADER,RULER,TRACK,MAX_FRAME} from '../js/timeline/geometry.js';
-import {createInput} from '../js/timeline/input.js';
+import {createInput,nativeRulerFrame} from '../js/timeline/input.js';
 import {presetApplication} from '../js/timeline/preset-drop.js';
 import {trimGroupDraft,gainLine,gainDraft} from '../js/timeline/geometry.js';
 
@@ -83,6 +83,34 @@ test('native move snapping checks both endpoints at ten pixels with first-candid
   assert.equal(snapFrame(100,[101],{scale:2400},fps),100);
 });
 
+test('native ruler snaps every native-order clip edge including locked lanes, with first ties and no playhead or marker targets',()=>{
+  const timeline=fixture(),view={...viewport(),scale:24,snap:true,playhead:104};
+  timeline.tracks=[
+    {kind:'video',locked:true,clips:[{...clip('first'),start_frame:95,length_frames:20}]},
+    {kind:'video',clips:[{...clip('second'),start_frame:105,length_frames:20}]},
+  ];
+  timeline.markers=[{start_frame:100}];
+  assert.equal(nativeRulerFrame(timeline,view,HEADER+100),95);
+  timeline.tracks.reverse();assert.equal(nativeRulerFrame(timeline,view,HEADER+100),105);
+  timeline.tracks[0].clips=[{...clip('end'),start_frame:80,length_frames:18}];
+  timeline.tracks.length=1;assert.equal(nativeRulerFrame(timeline,view,HEADER+100),98);
+  timeline.tracks[0].clips=[{...clip('far'),start_frame:111,length_frames:10}];
+  assert.equal(nativeRulerFrame(timeline,view,HEADER+100),100);
+  view.snap=false;timeline.tracks[0].clips[0].start_frame=99;
+  assert.equal(nativeRulerFrame(timeline,view,HEADER+100),100);
+});
+
+test('native ruler uses f32 fractional-rate coordinates, rounded pixel threshold and nonnegative bounded frames',()=>{
+  const timeline={fps:{num:30000,den:1001},tracks:[]},view={scale:60000/1001,origin:.25,snap:false};
+  assert.equal(nativeRulerFrame(timeline,view,HEADER+200.5),101);
+  assert.equal(nativeRulerFrame(timeline,view,-500),0);
+  assert.equal(nativeRulerFrame(timeline,view,1e13),MAX_FRAME);
+  timeline.fps={num:24,den:1};timeline.tracks=[{clips:[{...clip('edge'),start_frame:101}]}];
+  Object.assign(view,{origin:0,scale:480,snap:true});
+  assert.equal(nativeRulerFrame(timeline,view,HEADER+2000),101);
+  view.scale=2400;assert.equal(nativeRulerFrame(timeline,view,HEADER+10000),100);
+});
+
 test('native new-track zones preserve group spacing and opposite role direction with one-based depths',()=>{
   const timeline=fixture(),view={...viewport(),viewportHeight:500},layout=timelineLayout(timeline,view);
   const video=moveTrackTargets(timeline,view,0,RULER+5,['10','11','30']);
@@ -131,7 +159,7 @@ test('group move clamps the raw candidate before snapping and clamps again to fo
 
 function harness(){
   const previous=globalThis.window,handlers=new Map(),windowHandlers=new Map(),captures=new Set(),commands=[],notices=[],seeks=[],timeline=fixture(),view=viewport();
-  let writable=true,navigable=true,modal=false,selectionChanged=()=>{},rectOverrides={},clock=0,frameId=0,currentTimeline=timeline,commit=null;
+  let writable=true,navigable=true,modal=false,selectionChanged=()=>{},rectOverrides={},clock=0,frameId=0,currentTimeline=timeline,commit=null,gapContext={project_epoch:'epoch',generation:'0'};
   const frames=new Map();
   const document={querySelector:()=>modal?{}:null,addEventListener(){},removeEventListener(){}};
   const windowListeners=new Map();
@@ -140,11 +168,71 @@ function harness(){
     removeEventListener(name,handler){const listeners=windowListeners.get(name);listeners?.delete(handler);if(!listeners?.size){windowListeners.delete(name);windowHandlers.delete(name);}},
   };
   const canvas={ownerDocument:document,clientWidth:1200,clientHeight:view.viewportHeight,style:{},getBoundingClientRect:()=>({left:0,top:0,width:1200,height:canvas.clientHeight,...rectOverrides}),addEventListener:(name,handler)=>handlers.set(name,handler),removeEventListener:name=>handlers.delete(name),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
-  const input=createInput({canvas,getTimeline:()=>currentTimeline,getGapContext:()=>({project_epoch:'epoch',generation:'0'}),view,invalidate(){},onSelect(){selectionChanged();},onSeek(...args){seeks.push(args);},onCommand:async operation=>{commands.push(operation);return commit?.(operation);},onNotice:message=>notices.push(message),canEdit:()=>writable,canNavigate:()=>navigable,now:()=>clock,requestFrame:fn=>{const id=++frameId;frames.set(id,fn);return id;},cancelFrame:id=>frames.delete(id)});
+  const input=createInput({canvas,getTimeline:()=>currentTimeline,getGapContext:()=>gapContext,view,invalidate(){},onSelect(){selectionChanged();},onSeek(...args){seeks.push(args);},onCommand:async operation=>{commands.push(operation);return commit?.(operation);},onNotice:message=>notices.push(message),canEdit:()=>writable,canNavigate:()=>navigable,now:()=>clock,requestFrame:fn=>{const id=++frameId;frames.set(id,fn);return id;},cancelFrame:id=>frames.delete(id)});
   const send=(type,x,y,extra={})=>handlers.get(type)({clientX:x,clientY:y,pointerId:1,button:0,buttons:1,preventDefault(){},...extra});
   const advance=ms=>clock+=ms,tick=ms=>{clock+=ms;const pending=[...frames];frames.clear();for(const [,fn] of pending)fn(clock);};
-  return {timeline,view,canvas,commands,notices,seeks,captures,handlers,windowHandlers,input,send,frames,advance,tick,setCommit:value=>commit=value,setTimeline:value=>currentTimeline=value,setWritable:value=>writable=value,setNavigable:value=>navigable=value,setModal:value=>modal=value,setRect:value=>rectOverrides=value,setOnSelect:value=>selectionChanged=value,destroy(){input.destroy();globalThis.window=previous;}};
+  return {timeline,view,canvas,commands,notices,seeks,captures,handlers,windowHandlers,input,send,frames,advance,tick,setCommit:value=>commit=value,setTimeline:value=>currentTimeline=value,setGapContext:value=>gapContext=value,setWritable:value=>writable=value,setNavigable:value=>navigable=value,setModal:value=>modal=value,setRect:value=>rectOverrides=value,setOnSelect:value=>selectionChanged=value,destroy(){input.destroy();globalThis.window=previous;}};
 }
+
+test('ruler scrubbing owns its pointer, samples the final release and makes one final seek without any edit',async()=>{
+  const h=harness();try{
+    h.setWritable(false);h.view.snap=true;h.view.selection=['10'];const before=structuredClone(h.timeline);
+    h.send('pointerdown',frameToX(5,h.view,h.timeline.fps),20);
+    assert.equal(h.view.playhead,5);assert.deepEqual(h.seeks,[[false]]);
+    h.send('pointermove',frameToX(8,h.view,h.timeline.fps),20,{pointerId:2});
+    await h.send('pointerup',frameToX(9,h.view,h.timeline.fps),20,{pointerId:2,buttons:0});
+    assert.equal(h.view.playhead,5);assert.equal(h.captures.size,1);
+    h.send('pointermove',frameToX(8,h.view,h.timeline.fps),20);
+    assert.equal(h.view.playhead,8);assert.deepEqual(h.seeks,[[false],[false]]);
+    await h.send('pointerup',frameToX(9.25,h.view,h.timeline.fps),20,{buttons:0});
+    assert.equal(h.view.playhead,10);assert.deepEqual(h.seeks,[[false],[false],[true]]);
+    assert.equal(h.captures.size,0);assert.deepEqual(h.commands,[]);assert.deepEqual(h.view.selection,['10']);assert.deepEqual(h.timeline,before);
+    h.view.snap=false;h.send('pointerdown',frameToX(2,h.view,h.timeline.fps),20);
+    await h.send('pointerup',frameToX(7.8,h.view,h.timeline.fps),20,{buttons:0});
+    assert.equal(h.view.playhead,8);assert.deepEqual(h.seeks.slice(-2),[[false],[true]]);
+  }finally{h.destroy();}
+});
+
+test('ruler scrubbing survives its own native view acknowledgement but cancels foreign document/timeline or coordinate ownership',async()=>{
+  const h=harness();try{
+    h.send('pointerdown',frameToX(2,h.view,h.timeline.fps),20);
+    h.setGapContext({project_epoch:'epoch',generation:'0',view_revision:'own-view-ack'});
+    h.setTimeline(structuredClone(h.timeline));
+    await h.send('pointerup',frameToX(7,h.view,h.timeline.fps),20,{buttons:0});
+    assert.equal(h.view.playhead,7);assert.deepEqual(h.seeks,[[false],[true]]);
+  }finally{h.destroy();}
+  const changes=[
+    h=>h.setGapContext({project_epoch:'new-project',generation:'0'}),
+    h=>h.setTimeline({...h.timeline,id:'other-timeline'}),
+    h=>h.timeline.revision='new-revision',
+    h=>h.timeline.fps={num:25,den:1},
+    h=>h.view.scale++,h=>h.view.origin++,h=>h.setRect({left:1}),
+    h=>h.canvas.clientWidth--,h=>h.setModal(true),
+    h=>h.canvas.ownerDocument.hidden=true,h=>h.setNavigable(false),h=>h.canvas.isConnected=false,
+  ];
+  for(const change of changes){
+    const h=harness();try{
+      const x=frameToX(2,h.view,h.timeline.fps);
+      h.send('pointerdown',x,20);change(h);
+      h.send('pointermove',x+20,20);await h.send('pointerup',x+30,20,{buttons:0});
+      assert.deepEqual(h.seeks,[[false]]);assert.equal(h.captures.size,0);assert.deepEqual(h.commands,[]);
+    }finally{h.destroy();}
+  }
+});
+
+test('ruler Escape and capture cancellation never finalize a preview and cannot be triggered by another pointer',async()=>{
+  for(const kind of ['Escape','pointercancel','lostpointercapture','blur']){
+    const h=harness();try{
+      const x=frameToX(2,h.view,h.timeline.fps);
+      h.send('pointerdown',x,20);h.handlers.get('pointercancel')({pointerId:2});assert.equal(h.captures.size,1);
+      if(kind==='Escape')h.handlers.get('keydown')({key:'Escape'});
+      else if(kind==='blur')h.windowHandlers.get('blur')({});
+      else h.handlers.get(kind)({pointerId:1});
+      await h.send('pointerup',x+40,20,{buttons:0});
+      assert.equal(h.captures.size,0);assert.deepEqual(h.seeks,[[false]]);assert.deepEqual(h.commands,[]);
+    }finally{h.destroy();}
+  }
+});
 
 test('Inspector scroll queued by selection preserves a clip drag when fractional Canvas mapping is unchanged',async()=>{
   const h=harness();try{

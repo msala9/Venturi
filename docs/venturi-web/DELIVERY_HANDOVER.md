@@ -1,6 +1,28 @@
 # Usable editing workflow — handover
 
-## Current halo1 retime/transitions delivery — 2026-10-23
+## Current halo1 native transition controls — 2026-10-23
+
+Open **http://127.0.0.1:8853/**, source `1e6d910`, binary `9d4623b93873`, service
+`venturi-web-halo1-transition-controls.service` (PID230298). Saved project
+`Venturi_Transitions_UI_V1.vvproj` opens Timeline2/frame30 with empty Undo.
+Its first Push is Left/duration10/curve0.78601694; other timeline contents are
+preserved. Selected transitions have paired seconds/frames scrubbing, an inline
+curve slider, direction/ease preview menus and closed-wheel changes. Cancel
+restores the exact confirmed Viewer image without changing the project/history.
+
+Actual Windows verifies preview/cancel/one-confirmed-Undo, direct duration/curve
+pointer edits, Undo/Redo, panel close/reopen and exact Saved reopen.3native/47client,
+formatting, all-target Clippy and bounded halo1 build pass. Earlier37 editors/
+38 PIDs, NAS assets, media copies and proxy remain unchanged;8852 is preserved.
+See `evidence/f3-transition-controls-workflow.json`,
+`f3-transition-direction-preview.png` and `f3-transition-controls-workspace.png`.
+
+The ledger remains **52 done /38 partial /2 excluded**. Native transition control
+implementation is delivered; shared physical drag/copy/replace, closed-wheel/
+blur and100%/150% qualification remain explicit. Prior native fullHD export proof
+is reused for the unchanged pipeline; this edited UI project was not re-exported.
+
+## Preserved halo1 retime/transitions delivery — 2026-10-23
 
 Open **http://127.0.0.1:8852/**, source `0bc344c`, binary `a4b48324385d`, service
 `venturi-web-halo1-retime-transition-ui.service` (PID223042). Saved project
@@ -17,8 +39,8 @@ audible PCM samples also match; moving SmoothCut differs from native Dissolve.
 See `evidence/f3-retime-transitions-workflow.json` and its two workspace images.
 
 The ledger is **52 done /38 partial /2 excluded**. Pitch processing is accepted;
-native transition hover/wheel previews, seconds/frame scrubbing, curve slider,
-remaining physical transition actions and100%/150% mapping still need closure.
+native transition controls were still pending at this checkpoint and are now
+delivered above. Physical transition actions and100%/150% mapping remain open.
 Earlier36 editors/37 PIDs, NAS assets and proxy are preserved. Only this owned,
 Saved/empty-Undo qualification process was replaced during the guarded upgrade.
 

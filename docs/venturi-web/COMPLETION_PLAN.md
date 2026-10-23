@@ -32,7 +32,38 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-Current native retime/transitions delivery: **http://127.0.0.1:8852/**,
+Current native transition-controls delivery: **http://127.0.0.1:8853/**,
+source `1e6d910`, binary `9d4623b93873`, service
+`venturi-web-halo1-transition-controls.service`, PID230298.
+Selected transitions now have paired seconds/frame scrubbing, an inline curve
+slider/precise number, native direction/ease popup preview and closed-wheel
+support. Existing Apply/Remove remain available. The read-only strict256KiB
+transition route applies the existing native command only to an owned snapshot,
+uses the existing bounded draft renderer/source resolver and rechecks composition.
+The Viewer shares font/transition draft lifetime and exact base restoration.
+
+The first bounded gate passes3 grouped native cases/47 client cases, formatting,
+all-target Clippy (8.14s) and build (40.74s), peak2,098,667,520 bytes. Actual
+Windows775x964/DPR1.25 verifies Left preview without any Session/history/Saved
+change, Escape exact-image restoration, one confirmed native Undo, Ease preview
+and outside cancellation, seconds drag8to10 and curve drag0.78601694 each with
+one native command, exact curve Undo/Redo and panel collapse/reopen usability.
+Save/reopen retains exact model/Saved bytes; native synthetic compound-media
+hash tokens refresh on reopen, while raw media and all three other timelines
+remain unchanged. Saved `Venturi_Transitions_UI_V1.vvproj` is frame30/empty Undo,
+SHA `1dbacc43eebb97053fea2e48b8173eb3c783007b9b4a9486a99a0c9b336d5625`.
+Earlier37 Sessions/38 PIDs, five candidate copies, four fixed NAS files, prior
+Library copy and shared proxy are preserved. See
+`evidence/f3-transition-controls-workflow.json` and its two workspace images.
+
+The native control production gap is closed. Actual closed-wheel/window-blur
+checks remain deterministic coverage; shared duration-handle/Effects drag/drop,
+Alt-copy/replacement and100%/150% mapping remain named acceptance work. Reuse
+the prior moving retime/SmoothCut/fullHD export proof for the unchanged native
+pipeline; no new export of this edited UI project is claimed. The ledger remains
+**52 done /38 partial /2 excluded** and the full F1–F7/M7 goal remains active.
+
+Preserved native retime/transitions delivery: **http://127.0.0.1:8852/**,
 source `0bc344c`, binary `a4b48324385d`, service
 `venturi-web-halo1-retime-transition-ui.service`, PID223042.
 The owned candidate was Saved/reopened with empty Undo before its guarded binary
@@ -64,10 +95,10 @@ shared proxy retain bytes/identity. See `evidence/f3-retime-transitions-workflow
 `f3-retime-transitions-workspace.png` and `f3-source-options-fit.png`.
 
 `speed_pitch_preserve` advances to done: **52 done /38 partial /2 excluded**.
-Native transition direction/ease hover-preview, Escape restoration, closed-wheel
-changes, seconds/frame scrubbing and a curve slider remain a production
-interaction difference, not an unexecuted check. Finish these together with
-actual duration-handle/Effects drag/drop/Alt-copy/replacement and100%/150% mapping.
+This checkpoint left native transition preview/wheel and direct controls as a
+production interaction difference; the8853 block above closes that difference.
+Actual duration-handle/Effects drag/drop/Alt-copy/replacement and100%/150% mapping
+remain named acceptance work.
 The lower-End125% mapping and moving-video render/export gap are now closed;
 do not hold pitch processing open for unrelated Canvas/DPI/globalM7 work.
 The full F1–F7/M7 goal remains active.

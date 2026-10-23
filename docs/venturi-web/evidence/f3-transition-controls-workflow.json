@@ -1,0 +1,133 @@
+{
+  "source_commit": "1e6d910",
+  "url": "http://127.0.0.1:8853/",
+  "binary_sha256": "9d4623b93873ef454905ca8902113e5a444d4f2e433f310e0cae562926a3ab36",
+  "project": "Venturi_Transitions_UI_V1.vvproj",
+  "project_sha256": "1dbacc43eebb97053fea2e48b8173eb3c783007b9b4a9486a99a0c9b336d5625",
+  "implementation": [
+    "Read-only native transition snapshot preview for existing same-kind In/Out/Crossing slots; strict nested DTO and256KiB body, unchanged native command/lock/bounds/source resolver, domain-separated draft cache and post-render composition check.",
+    "Fixed Viewer kind allowlist shares font/transition lifetime, base restoration, stale response/decode and PNG bounds; existing font default unchanged.",
+    "Compact paired seconds/frames scrubbing (.02s/.25f), curve slider plus precise number, native direction/ease popup preview and closed-wheel coalescing; local pointer drafts and one native command per confirmation.",
+    "Transient unavailability does not latch disabled controls; ordinary blur cancels drafts and selection teardown disposes bindings and popup listeners."
+  ],
+  "gate": {
+    "native_cases": 3,
+    "native_filters": [
+      "transition_preview::tests::",
+      "transition_draft_http"
+    ],
+    "native_scope": "Grouped direct native edge/crossing command equality, unchanged authority, stale/slot/kind/lock/parameter bounds and strict lease-free origin-bound HTTP refusal.",
+    "client_cases": 47,
+    "client_files": [
+      "transition-controls.test.js",
+      "transition-selection.test.js",
+      "inspector.test.js",
+      "viewer.test.js",
+      "fonts.test.js"
+    ],
+    "formatting": true,
+    "clippy_all_targets": true,
+    "build": true,
+    "clippy_seconds": 8.14,
+    "build_seconds": 40.74,
+    "memory_peak_bytes": 2098667520,
+    "resources": "halo1 only; one heavy worker; <=8CPU,4GiB,noSwap,Nice19,IOWeight10,OOMScore1000; nonblocking GPU lock",
+    "source_files_match_gate": 12,
+    "first_pass": true
+  },
+  "browser": {
+    "viewport": {
+      "devicePixelRatio": 1.25,
+      "height": 964,
+      "width": 775
+    },
+    "directionDraftChangedImage": true,
+    "escapeRestoredExactBase": true,
+    "easeDraftChangedImage": true,
+    "outsideRestoredExactBase": true,
+    "confirmedDirectionSingleUndo": true,
+    "secondsPointerDuration": 10,
+    "curvePointerValue": 0.7860169410705566,
+    "panelCollapseReopenEditable": true,
+    "windowBlurCoveredByDeterministicTestOnly": true
+  },
+  "acceptance": {
+    "direction_draft_full_session_timelines_history_saved_unchanged": true,
+    "direction_confirm_exactly_one_native_undo": true,
+    "ease_draft_full_session_timelines_history_saved_unchanged": true,
+    "seconds_drag_exactly_one_native_undo": true,
+    "curve_drag_exactly_one_native_undo": true,
+    "curve_undo_redo_exact": true,
+    "panel_close_reopen_keeps_controls_editable": true,
+    "save_reopen_model_and_saved_bytes_exact": true,
+    "other_three_timelines_and_project_media_preserved": true,
+    "final_saved_frame": 30,
+    "final_saved_empty_undo": true
+  },
+  "final_transition": {
+    "end_frame": 37,
+    "kind": "Push",
+    "left_clip": "20",
+    "right_clip": "22",
+    "start_frame": 27,
+    "transition": {
+      "curve": 0.7860169410705566,
+      "direction": "Left",
+      "duration": 10,
+      "ease": "InOut",
+      "kind": "Push"
+    }
+  },
+  "native_reopen_virtual_compound_hash_refresh": [
+    {
+      "id": "1",
+      "timeline_id": "1",
+      "before": "163",
+      "after": "174"
+    },
+    {
+      "id": "9",
+      "timeline_id": "2",
+      "before": "164",
+      "after": "175"
+    },
+    {
+      "id": "12",
+      "timeline_id": "3",
+      "before": "165",
+      "after": "176"
+    },
+    {
+      "id": "14",
+      "timeline_id": "4",
+      "before": "166",
+      "after": "177"
+    }
+  ],
+  "protection": {
+    "prior_sessions": 37,
+    "prior_pids": 38,
+    "candidate_saved_files": 2,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "reused_output_evidence": {
+    "path": "f3-retime-transitions-workflow.json",
+    "native_web_fullhd_mp4_sha256": "85d113a2c72217c20af0b50fa7572c7b2430859e41be106ec55ef91a5480b57f",
+    "scope": "Previously qualified moving retime/Push/Dissolve/SmoothCut montage and export pipeline. No new export of this edited UI project is claimed."
+  },
+  "remaining": [
+    "Actual closed-wheel and window-blur qualification remain deterministic coverage; actual keyboard preview/cancel/confirm, seconds/curve pointer and panel close/reopen are qualified here.",
+    "Shared transition duration-handle/Effects drag/drop/Alt-copy/replacement and100%/150% mapping remain open; ordinary actualDPR is1.25.",
+    "Other F1-F7 and applicable M7 criteria remain active."
+  ],
+  "ledger": {
+    "done": 52,
+    "partial": 38,
+    "excluded": 2
+  }
+}

@@ -190,6 +190,34 @@ fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_th
         markers: vec![],
         master: Default::default(),
     });
+    let unused = project.media_pool.insert(MediaItem {
+        path: root.join("unused-offline.mp4"),
+        meta: vv_core::MediaMeta {
+            width: 16,
+            height: 16,
+            fps: Rational::new(24, 1),
+            duration_frames: 48,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 2,
+        compound: None,
+        folder: None,
+    });
+    let mut video = Track::new(TrackKind::Video);
+    video.insert_sorted(Clip::from_source_range(
+        project.alloc_clip_id(),
+        ClipSource::Media(unused),
+        0,
+        48,
+        0,
+        Rational::one(),
+    ));
+    project.timelines[timeline].tracks.push(video);
     let snapshot = |project| FrameSnapshot {
         originals: None,
         video: Default::default(),
@@ -206,12 +234,30 @@ fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_th
         size: (640, 360),
     };
     let before = serde_json::to_value(&project).unwrap();
+    assert!(crate::program::inputs(&snapshot(project.clone())).is_err());
     let task = pin(snapshot(project.clone()), &files).unwrap();
+    let original = File::open(&path).unwrap();
     assert_eq!(
         task.inputs[0].1,
-        crate::asset_store::stable_identity(&task.files[0].0).unwrap()
+        crate::asset_store::stable_identity(&original).unwrap()
     );
-    assert_eq!(task.files[0].1, file_identity(&task.files[0].0).unwrap());
+    assert!(
+        task.files.is_empty(),
+        "Timeline sources are leased only when native audio requests them"
+    );
+    assert_eq!(
+        serde_json::to_value(&task.snapshot.project).unwrap(),
+        before
+    );
+    assert_eq!(
+        task.snapshot
+            .originals
+            .as_ref()
+            .unwrap()
+            .manifest()
+            .unwrap(),
+        crate::frame_sources::Manifest::default()
+    );
     let bytes = task.run(Arc::new(AtomicBool::new(false))).unwrap();
     assert_eq!(bytes.len(), 44 + FRAMES * 4);
     std::fs::write(root.join("audition.wav"), bytes).unwrap();
@@ -435,13 +481,13 @@ fn audition_uses_native_mute_gain_and_detects_changed_sources_without_editing_th
     assert!(task.run(Arc::new(AtomicBool::new(true))).is_err());
     let modified = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
     let metadata = modified.metadata().unwrap();
-    let legacy_identity = file_identity(&task.files[0].0).unwrap();
+    let legacy_identity = file_identity(&modified).unwrap();
     std::thread::sleep(std::time::Duration::from_millis(2));
     std::os::unix::fs::FileExt::write_all_at(&modified, &[1], metadata.len() - 1).unwrap();
     modified
         .set_times(std::fs::FileTimes::new().set_modified(metadata.modified().unwrap()))
         .unwrap();
-    assert_eq!(file_identity(&task.files[0].0).unwrap(), legacy_identity);
+    assert_eq!(file_identity(&modified).unwrap(), legacy_identity);
     assert_eq!(task.check_inputs().unwrap_err().1, "SOURCE_CHANGED");
     std::fs::write(&path, b"changed").unwrap();
     assert_eq!(

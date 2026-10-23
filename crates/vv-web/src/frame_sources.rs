@@ -11,6 +11,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 use vv_core::{MediaId, MediaItem};
+use vv_session::audio_render::{AudioSourceResolver, ResolvedAudioSource};
 use vv_session::export::{
     ExportError, PreviewVideoSources, ResolvedVideoSource, VideoSourceResolver,
 };
@@ -37,6 +38,7 @@ struct Resolver {
     sources: Arc<FrameSources>,
     proxies: PreviewVideoSources,
 }
+struct AudioResolver(Arc<FrameSources>);
 
 struct Lease {
     _original: File,
@@ -71,6 +73,10 @@ impl FrameSources {
             sources: self.clone(),
             proxies: proxies.clone(),
         })
+    }
+
+    pub fn audio_resolver(self: &Arc<Self>) -> Arc<dyn AudioSourceResolver> {
+        Arc::new(AudioResolver(self.clone()))
     }
 
     pub fn manifest(&self) -> Result<Manifest> {
@@ -115,7 +121,11 @@ impl FrameSources {
     }
 
     fn original(&self, item: &MediaItem) -> Result<File> {
-        let token = root_media_token(&self.root, &item.path)?;
+        self.original_path(&item.path)
+    }
+
+    fn original_path(&self, path: &Path) -> Result<File> {
+        let token = root_media_token(&self.root, path)?;
         let (file, witness) = self.open(&token)?;
         let mut touched = self.touched.lock().map_err(|_| ApiError::io())?;
         match touched.sources.get(&token) {
@@ -126,6 +136,16 @@ impl FrameSources {
             }
         }
         Ok(file)
+    }
+}
+
+impl AudioSourceResolver for AudioResolver {
+    fn resolve(&self, original: &Path) -> std::result::Result<ResolvedAudioSource, ExportError> {
+        let file = self.0.original_path(original).map_err(native_error)?;
+        Ok(ResolvedAudioSource {
+            path: PathBuf::from(format!("/proc/self/fd/{}", file.as_raw_fd())),
+            lease: Arc::new(file),
+        })
     }
 }
 

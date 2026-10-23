@@ -3,6 +3,7 @@
 //! length of the timeline (plans/AUDIO_LIVE_MIX.md §3.2). The levels of
 //! the normalizations are rendered the same way, by segment (§3.3).
 
+use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::io::{Read, Write};
 use std::ops::{ControlFlow, Range};
@@ -40,6 +41,21 @@ pub const OBSERVER_FRAMES: u64 = 4096;
 pub const MAX_OBSERVER_INSERTS: usize = 4;
 /// Insert spectra retain cross-snapshot history up to `MAX_OBSERVER_INSERTS`.
 pub type AudioObserver<'a> = dyn FnMut(Range<u64>, &[f32], &MixSnapshot) + Send + 'a;
+
+#[derive(Clone)]
+pub struct ResolvedAudioSource {
+    pub path: PathBuf,
+    pub lease: Arc<dyn Send + Sync>,
+}
+
+pub trait AudioSourceResolver: Send + Sync {
+    fn resolve(&self, original: &Path) -> Result<ResolvedAudioSource, ExportError>;
+}
+
+struct SourceContext {
+    resolver: Arc<dyn AudioSourceResolver>,
+    error: std::sync::Mutex<Option<ExportError>>,
+}
 
 /// Hands `sink` the mix of the timeline audio frames `range`, in order, at
 /// `PROJECT_SAMPLE_RATE`/`PROJECT_CHANNELS`; `Break` stops the render.
@@ -314,7 +330,11 @@ fn measure_run(
     let read = std::mem::replace(&mut levels.reads, outer_reads);
     levels.reads.extend(read.iter().cloned());
     rendered?;
-    let sources = stamps(&read);
+    let sources = if levels.sources.is_some() {
+        None
+    } else {
+        stamps(&read)
+    };
     for m in meters {
         let part = m.meter.into_parts(&m.after);
         levels.put(m.segment.key, &part, sources.as_deref());
@@ -553,6 +573,7 @@ pub struct LevelCache {
     streams: HashMap<PathBuf, usize>,
     /// The files read by the renders through it, for `Stamp`.
     reads: HashSet<PathBuf>,
+    sources: Option<Arc<SourceContext>>,
     /// For the segments of one measure.
     pub threads: usize,
     /// A measure this render is nested in holds claimed segments.
@@ -584,6 +605,7 @@ impl Default for LevelCache {
             dir: None,
             streams: HashMap::new(),
             reads: HashSet::new(),
+            sources: None,
             threads: std::thread::available_parallelism().map_or(1, usize::from),
             holding: false,
             cancel: None,
@@ -593,6 +615,52 @@ impl Default for LevelCache {
 }
 
 impl LevelCache {
+    pub fn set_source_resolver(&mut self, resolver: Option<Arc<dyn AudioSourceResolver>>) {
+        self.sources = resolver.map(|resolver| {
+            Arc::new(SourceContext {
+                resolver,
+                error: std::sync::Mutex::new(None),
+            })
+        });
+        self.shared = Arc::default();
+        self.streams.clear();
+        self.reads.clear();
+        self.holding = false;
+    }
+
+    fn check_sources(&self) -> Result<(), ExportError> {
+        if let Some(sources) = &self.sources
+            && let Some(error) = &*sources
+                .error
+                .lock()
+                .map_err(|_| ExportError::failed("Audio source state is unavailable"))?
+        {
+            return Err(error.clone());
+        }
+        if self.cancelled() {
+            return Err(ExportError::Cancelled);
+        }
+        Ok(())
+    }
+
+    fn resolve_source(&self, path: &Path) -> Result<Option<ResolvedAudioSource>, ExportError> {
+        self.check_sources()?;
+        let Some(sources) = &self.sources else {
+            return Ok(None);
+        };
+        match sources.resolver.resolve(path) {
+            Ok(source) => Ok(Some(source)),
+            Err(error) => {
+                let mut failed = sources
+                    .error
+                    .lock()
+                    .map_err(|_| ExportError::failed("Audio source state is unavailable"))?;
+                let first = failed.get_or_insert(error);
+                Err(first.clone())
+            }
+        }
+    }
+
     /// In memory in this crate's tests: they would fill the user's cache.
     pub fn on_disk() -> Self {
         Self {
@@ -608,6 +676,7 @@ impl LevelCache {
             dir: self.dir.clone(),
             streams: self.streams.clone(),
             reads: HashSet::new(),
+            sources: self.sources.clone(),
             threads: 1,
             holding: self.holding,
             cancel: self.cancel.clone(),
@@ -628,6 +697,9 @@ impl LevelCache {
     }
 
     fn path(&self, key: u64) -> Option<PathBuf> {
+        if self.sources.is_some() {
+            return None;
+        }
         Some(self.dir.as_ref()?.join(format!("{key:016x}.level")))
     }
 
@@ -845,6 +917,7 @@ impl<'c> StreamingAudio<'c> {
         range: Range<u64>,
         last: bool,
     ) -> Result<MixSnapshot, ExportError> {
+        self.cache.check_sources()?;
         let mut wanted = Wanted {
             windows: HashSet::new(),
         };
@@ -862,6 +935,7 @@ impl<'c> StreamingAudio<'c> {
             levels_used,
             ..
         } = provider;
+        self.cache.check_sources()?;
         self.stretched.retain(|key, _| stretched_used.contains(key));
         self.levels.retain(|key, _| levels_used.contains(key));
         Ok(snapshot)
@@ -889,12 +963,18 @@ impl<'c> StreamingAudio<'c> {
         for reader in &mut self.readers {
             reader.used = false;
         }
+        let mut resolved = HashMap::new();
         for (i, (path, stream, frames)) in to_read.iter().enumerate() {
             if last && i > 0 && to_read[i - 1].0 != *path {
                 self.readers.retain(|r| r.path != to_read[i - 1].0);
             }
             // A stream the file does not have is `Missing`.
-            if *stream >= self.stream_count(path)? {
+            let source = match resolved.entry(path.clone()) {
+                Entry::Occupied(entry) => entry.into_mut(),
+                Entry::Vacant(entry) => entry.insert(self.cache.resolve_source(path)?),
+            }
+            .as_ref();
+            if *stream >= self.stream_count(path, source)? {
                 continue;
             }
             let reader = match self
@@ -914,8 +994,12 @@ impl<'c> StreamingAudio<'c> {
                         .collect();
                     streams.sort_unstable();
                     streams.dedup();
-                    self.readers
-                        .push(Reader::open(path.clone(), streams, frames.start));
+                    self.readers.push(Reader::open(
+                        path.clone(),
+                        streams,
+                        frames.start,
+                        source.cloned(),
+                    ));
                     self.readers.len() - 1
                 }
             };
@@ -930,13 +1014,18 @@ impl<'c> StreamingAudio<'c> {
         Ok(())
     }
 
-    fn stream_count(&mut self, path: &Path) -> Result<usize, ExportError> {
+    fn stream_count(
+        &mut self,
+        path: &Path,
+        source: Option<&ResolvedAudioSource>,
+    ) -> Result<usize, ExportError> {
         if let Some(count) = self.cache.streams.get(path) {
             return Ok(*count);
         }
-        let count = vv_media::probe::audio_streams(path)
-            .map_err(ExportError::failed)?
-            .len();
+        let count =
+            vv_media::probe::audio_streams(source.map_or(path, |source| source.path.as_path()))
+                .map_err(ExportError::failed)?
+                .len();
         self.cache.streams.insert(path.to_path_buf(), count);
         Ok(count)
     }
@@ -1121,12 +1210,23 @@ impl KeptStream {
 impl Reader {
     /// From the start of the block `from` is in: the blocks of every reader
     /// of the file are on the same grid.
-    fn open(path: PathBuf, streams: Vec<usize>, from: u64) -> Self {
+    fn open(
+        path: PathBuf,
+        streams: Vec<usize>,
+        from: u64,
+        source: Option<ResolvedAudioSource>,
+    ) -> Self {
         let first = from / BLOCK_FRAMES;
         let (tx, decoded) = sync_channel(READER_QUEUE);
-        let (thread_path, thread_streams) = (path.clone(), streams.clone());
+        let (thread_path, thread_streams) = (
+            source
+                .as_ref()
+                .map_or_else(|| path.clone(), |source| source.path.clone()),
+            streams.clone(),
+        );
         std::thread::spawn(move || {
-            decode_into(&thread_path, &thread_streams, first * BLOCK_FRAMES, &tx)
+            decode_into(&thread_path, &thread_streams, first * BLOCK_FRAMES, &tx);
+            drop(source);
         });
         let n = streams.len();
         Self {

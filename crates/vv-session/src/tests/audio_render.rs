@@ -1103,3 +1103,212 @@ fn a_decode_thread_gone_without_an_end_fails_the_render() {
         Err(ExportError::Failed(_))
     ));
 }
+
+#[cfg(target_os = "linux")]
+struct PinnedAudioResolver {
+    paths: HashMap<PathBuf, PathBuf>,
+    reads: std::sync::Mutex<Vec<PathBuf>>,
+}
+
+#[cfg(target_os = "linux")]
+impl AudioSourceResolver for PinnedAudioResolver {
+    fn resolve(&self, original: &Path) -> Result<ResolvedAudioSource, ExportError> {
+        use std::os::fd::AsRawFd;
+        self.reads.lock().unwrap().push(original.to_path_buf());
+        let path = self
+            .paths
+            .get(original)
+            .ok_or_else(|| ExportError::Failed("AUDIO_SOURCE_REFUSED".into()))?;
+        let lease = Arc::new(std::fs::File::open(path).map_err(ExportError::failed)?);
+        Ok(ResolvedAudioSource {
+            path: PathBuf::from(format!("/proc/self/fd/{}", lease.as_raw_fd())),
+            lease,
+        })
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn web_audio_resolver_requested_files_match_native_nested_normalized_and_stretched_pcm() {
+    let file = origin_audio_file();
+    let approved = PathBuf::from("/approved/virtual-audio.wav");
+    let unused = PathBuf::from("/denied/unused.wav");
+    for variant in 0..3 {
+        let mut project = Project::default();
+        let id = media(&mut project, file.0.clone(), PROJECT_SAMPLE_RATE, 1);
+        project.media_pool[id].meta.duration_frames = 25;
+        media(&mut project, unused.clone(), PROJECT_SAMPLE_RATE, 1);
+        let input = if variant == 1 {
+            let mut child = audio_track(vec![clip(1, id, 0, 25, 0)]);
+            child.mix.effects = vec![effect(AudioEffectKind::Equalizer(boosting_eq()))];
+            let mut child = timeline(vec![child]);
+            child.master.effects = vec![normalize(NormalizeMode::SamplePeak)];
+            let nested = project.timelines.insert(child);
+            project.media_pool.insert(MediaItem {
+                compound: Some(nested),
+                ..project.media_pool[id].clone()
+            })
+        } else {
+            id
+        };
+        let mut input_clip = clip(2, input, 0, 25, 0);
+        if variant == 2 {
+            input_clip.set_speed(Rational::new(5, 4), Rational::one());
+            input_clip.pitch_correction = true;
+        }
+        let tl = timeline(vec![audio_track(vec![input_clip])]);
+        let expected = rendered(&project, &tl, samples(0..18));
+        assert!(expected.iter().any(|sample| sample.abs() > 0.1));
+        project.media_pool[id].path = approved.clone();
+        let before = serde_json::to_value(&project).unwrap();
+        let resolver = Arc::new(PinnedAudioResolver {
+            paths: HashMap::from([(approved.clone(), file.0.clone())]),
+            reads: Default::default(),
+        });
+        let mut cache = LevelCache {
+            threads: 2,
+            ..Default::default()
+        };
+        cache.set_source_resolver(Some(resolver.clone()));
+        let mut actual = Vec::new();
+        render_offline(&project, &tl, samples(0..18), &mut cache, |chunk| {
+            actual.extend_from_slice(chunk);
+            ControlFlow::Continue(())
+        })
+        .unwrap();
+        assert_eq!(actual.len(), expected.len());
+        let error = actual
+            .iter()
+            .zip(&expected)
+            .map(|(actual, expected)| (actual - expected).abs())
+            .fold(0.0, f32::max);
+        assert!(error <= 1e-6, "variant {variant}: {error}");
+        let reads = resolver.reads.lock().unwrap();
+        assert!(!reads.is_empty());
+        assert!(reads.iter().all(|path| path == &approved));
+        assert_eq!(serde_json::to_value(&project).unwrap(), before);
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn web_audio_resolver_refusal_is_fatal_in_normalize_and_pitch_fallbacks_before_pcm() {
+    let file = origin_audio_file();
+    let approved = PathBuf::from("/approved/current.wav");
+    let denied = PathBuf::from("/denied/later.wav");
+    for pitch in [false, true] {
+        let mut project = Project::default();
+        let first = media(&mut project, approved.clone(), PROJECT_SAMPLE_RATE, 1);
+        let later = media(&mut project, denied.clone(), PROJECT_SAMPLE_RATE, 1);
+        let mut tl = if pitch {
+            let mut input = clip(1, later, 0, 20, 0);
+            input.set_speed(Rational::new(5, 4), Rational::one());
+            input.pitch_correction = true;
+            timeline(vec![audio_track(vec![input])])
+        } else {
+            let mut tl = timeline(vec![audio_track(vec![
+                clip(1, first, 0, 10, 0),
+                clip(2, later, 15, 10, 15),
+            ])]);
+            tl.master.effects = vec![normalize(NormalizeMode::SamplePeak)];
+            tl
+        };
+        tl.name = format!("resolver refusal pitch={pitch}");
+        let resolver = Arc::new(PinnedAudioResolver {
+            paths: HashMap::from([(approved.clone(), file.0.clone())]),
+            reads: Default::default(),
+        });
+        let mut cache = LevelCache {
+            threads: 2,
+            ..Default::default()
+        };
+        cache.set_source_resolver(Some(resolver.clone()));
+        let mut published = 0;
+        let result = render_offline(&project, &tl, samples(0..8), &mut cache, |chunk| {
+            published += chunk.len();
+            ControlFlow::Continue(())
+        });
+        assert_eq!(
+            result,
+            Err(ExportError::Failed("AUDIO_SOURCE_REFUSED".into()))
+        );
+        assert_eq!(published, 0, "pitch={pitch}");
+        assert!(resolver.reads.lock().unwrap().contains(&denied));
+    }
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn web_audio_resolver_discards_weak_level_cache_and_shares_failures_with_measure_threads() {
+    let file = origin_audio_file();
+    let directory = file.0.with_extension("levels");
+    std::fs::create_dir(&directory).unwrap();
+    let mut cache = LevelCache {
+        dir: Some(directory.clone()),
+        ..Default::default()
+    };
+    let weak = cache.path(7).unwrap();
+    let bytes = encode_parts(&[], &LevelParts::Peak(0.25));
+    std::fs::write(&weak, &bytes).unwrap();
+    assert!(matches!(cache.get(7), Some(LevelParts::Peak(0.25))));
+    let resolver = Arc::new(PinnedAudioResolver {
+        paths: HashMap::new(),
+        reads: Default::default(),
+    });
+    cache.set_source_resolver(Some(resolver));
+    assert!(cache.get(7).is_none());
+    assert!(cache.path(7).is_none());
+    cache.put(9, &LevelParts::Peak(0.5), Some(&[]));
+    assert!(matches!(cache.get(9), Some(LevelParts::Peak(0.5))));
+    assert_eq!(std::fs::read_dir(&directory).unwrap().count(), 1);
+    assert_eq!(std::fs::read(&weak).unwrap(), bytes);
+    let worker = cache.for_thread();
+    let result = worker.resolve_source(Path::new("/denied/measure.wav"));
+    assert!(
+        matches!(result, Err(ExportError::Failed(ref error)) if error == "AUDIO_SOURCE_REFUSED")
+    );
+    assert_eq!(
+        cache.check_sources(),
+        Err(ExportError::Failed("AUDIO_SOURCE_REFUSED".into()))
+    );
+    std::fs::remove_file(weak).unwrap();
+    std::fs::remove_dir(directory).unwrap();
+}
+
+#[cfg(target_os = "linux")]
+#[test]
+fn web_audio_resolver_lease_is_released_by_decoder_thread_after_its_file_use() {
+    use std::os::fd::AsRawFd;
+    struct Lease {
+        file: std::fs::File,
+        dropped: std::sync::mpsc::Sender<std::thread::ThreadId>,
+    }
+    impl Drop for Lease {
+        fn drop(&mut self) {
+            let _ = self.dropped.send(std::thread::current().id());
+        }
+    }
+    let file = origin_audio_file();
+    let (dropped, receiver) = std::sync::mpsc::channel();
+    let lease = Arc::new(Lease {
+        file: std::fs::File::open(&file.0).unwrap(),
+        dropped,
+    });
+    let source = ResolvedAudioSource {
+        path: PathBuf::from(format!("/proc/self/fd/{}", lease.file.as_raw_fd())),
+        lease,
+    };
+    let mut reader = Reader::open(
+        PathBuf::from("/virtual/thread.wav"),
+        vec![0],
+        0,
+        Some(source),
+    );
+    let decoded = reader.read(0, 0..4096).unwrap();
+    assert_eq!((decoded.start(), decoded.end()), (0, 4096));
+    drop(reader);
+    let thread = receiver
+        .recv_timeout(std::time::Duration::from_secs(2))
+        .unwrap();
+    assert_ne!(thread, std::thread::current().id());
+}

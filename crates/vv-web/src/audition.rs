@@ -77,28 +77,16 @@ pub struct Task {
     source_selection: Option<(crate::source_audio::AudioMode, u32, bool)>,
 }
 pub fn pin(mut snapshot: FrameSnapshot, files: &Files) -> Result<Task> {
-    let inputs = crate::program::inputs(&snapshot)?;
-    let mut pinned = Vec::new();
-    for (path, expected) in &inputs {
-        let file = files.media_file(path)?;
-        let identity = file_identity(&file)?;
-        if crate::asset_store::stable_identity(&file)? != *expected {
-            return Err(changed());
-        }
-        let fd_path = format!("/proc/self/fd/{}", file.as_raw_fd());
-        for (_, media) in snapshot.project.media_pool.iter_mut() {
-            if media.compound.is_none() && media.path == *path {
-                media.path = fd_path.clone().into();
-            }
-        }
-        pinned.push((file, identity));
-    }
+    snapshot.originals = Some(Arc::new(crate::frame_sources::FrameSources::capture(
+        files,
+    )?));
+    let inputs = crate::program::preview_inputs(&snapshot)?;
     if !crate::program::unchanged(&inputs) {
         return Err(changed());
     }
     Ok(Task {
         snapshot,
-        files: pinned,
+        files: vec![],
         inputs,
         source_streams: None,
         source_selection: None,
@@ -148,6 +136,12 @@ impl Task {
         let mut levels = LevelCache::on_disk();
         levels.threads = 1;
         levels.cancel = Some(cancel.clone());
+        levels.set_source_resolver(
+            self.snapshot
+                .originals
+                .as_ref()
+                .map(|sources| sources.audio_resolver()),
+        );
         let mut result = None;
         vv_session::audio_render::render_offline_metered(
             &self.snapshot.project, timeline, start..start + SPECTRUM_SIZE as u64, &mut levels,
@@ -371,6 +365,9 @@ impl Task {
         })
     }
     fn check_inputs(&self) -> Result<()> {
+        if let Some(originals) = &self.snapshot.originals {
+            originals.validate()?;
+        }
         if self.files.iter().all(|(file, before)| {
             let identity = if self.source_streams.is_some() {
                 crate::source::source_version(file)
@@ -391,6 +388,12 @@ impl Task {
         let mut levels = LevelCache::on_disk();
         levels.threads = 1;
         levels.cancel = Some(cancel.clone());
+        levels.set_source_resolver(
+            self.snapshot
+                .originals
+                .as_ref()
+                .map(|sources| sources.audio_resolver()),
+        );
         let mut samples = Vec::with_capacity(frames * 2);
         if let Some(streams) = &self.source_streams {
             let path = format!("/proc/self/fd/{}", self.files[0].0.as_raw_fd());

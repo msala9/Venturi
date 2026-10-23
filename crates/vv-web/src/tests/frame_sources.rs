@@ -243,3 +243,79 @@ fn links_special_files_and_unapproved_paths_fail_without_blocking() {
     assert!(sources.validate().is_err());
     std::fs::remove_dir_all(moved).unwrap();
 }
+
+#[test]
+fn audio_resolver_shares_requested_witnesses_without_retaining_idle_decode_leases() {
+    let f = Fixture::new();
+    std::fs::create_dir_all(f.root.join("nested")).unwrap();
+    let path = f.root.join("nested/audio.wav");
+    std::fs::write(&path, b"original audio").unwrap();
+    let sources = f.sources();
+    let resolver = sources.audio_resolver();
+    assert_eq!(sources.manifest().unwrap(), Manifest::default());
+    let resolved = resolver.resolve(&path).unwrap();
+    assert_eq!(bytes(&resolved.path), b"original audio");
+    assert_eq!(sources.manifest().unwrap().sources.len(), 1);
+    let released = Arc::downgrade(&resolved.lease);
+    drop(resolved);
+    assert!(
+        released.upgrade().is_none(),
+        "Only the native decoder owns its resolved file lease"
+    );
+    sources.validate().unwrap();
+    let item = f.item("nested/audio.wav");
+    let video = sources.resolver(&PreviewVideoSources::new());
+    let resolved = video
+        .resolve(MediaId::from_raw(1), &item, &item.path)
+        .unwrap();
+    let manifest = sources.manifest().unwrap();
+    assert_eq!(
+        manifest.sources.len(),
+        1,
+        "Video/audio requests share the same original witness"
+    );
+    std::fs::rename(&path, f.root.join("old.wav")).unwrap();
+    std::fs::write(&path, b"replaced audio").unwrap();
+    assert_eq!(bytes(&resolved.path), b"original audio");
+    assert!(resolver.resolve(&path).is_err());
+    assert!(sources.validate_manifest(&manifest).is_err());
+}
+
+#[test]
+fn audio_resolver_rejects_links_fifos_and_changed_bytes_with_restored_mtime() {
+    let f = Fixture::new();
+    let sources = f.sources();
+    let resolver = sources.audio_resolver();
+    let path = f.root.join("audio.wav");
+    std::fs::write(&path, b"original").unwrap();
+    std::os::unix::fs::symlink(&path, f.root.join("link.wav")).unwrap();
+    std::os::unix::fs::symlink(&f.root, f.root.join("linked")).unwrap();
+    rustix::fs::mknodat(
+        rustix::fs::CWD,
+        f.root.join("fifo.wav"),
+        rustix::fs::FileType::Fifo,
+        rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+        0,
+    )
+    .unwrap();
+    for token in [
+        "link.wav",
+        "linked/audio.wav",
+        "fifo.wav",
+        "../audio.wav",
+        "missing.wav",
+    ] {
+        assert!(resolver.resolve(&f.root.join(token)).is_err(), "{token}");
+    }
+    assert_eq!(sources.manifest().unwrap(), Manifest::default());
+    let resolved = resolver.resolve(&path).unwrap();
+    let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
+    let mut writer = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
+    writer.write_all(b"modified").unwrap();
+    writer
+        .set_times(std::fs::FileTimes::new().set_modified(modified))
+        .unwrap();
+    assert_eq!(bytes(&resolved.path), b"modified");
+    assert!(sources.validate().is_err());
+    assert!(resolver.resolve(&path).is_err());
+}

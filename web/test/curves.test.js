@@ -32,6 +32,22 @@ test('native curve drag samples final release with relative time and absolute cu
   events.pointerdown(point(10,80));events.pointermove(point(20,70));left=1;events.pointerup(point(25,60));assert.equal(commands.length,1);assert.ok(resets.length>=3);
 });
 
+test('dense graph key picking chooses the nearest native hit and keeps the first iterator item on equal distances',()=>{
+  const events={},selected=[],a={source_frame:10,value:20},b={source_frame:18,value:20};let keys=[a,b];
+  const canvas={addEventListener:(name,handler)=>events[name]=handler,removeEventListener(){},focus(){},setPointerCapture(){},releasePointerCapture(){events.lostpointercapture();},getBoundingClientRect:()=>({left:0,top:0,width:100,height:100})};
+  const control=bindCurveGesture(canvas,{getCurve:()=>({keys}),getGeometry:()=>({x:x=>x,y:y=>y,frame:Math.round,value:y=>y}),isBusy:()=>false,canEdit:()=>true,select:key=>selected.push(key),draft(){},finish(){assert.fail('A click cannot edit a native key');},reset(){}});
+  const click=x=>{const event={button:0,pointerId:1,clientX:x,clientY:20};events.pointerdown(event);events.pointerup(event);};
+  try{click(17);assert.equal(selected.at(-1),b);click(14);assert.equal(selected.at(-1),a);keys=[b,a];click(14);assert.equal(selected.at(-1),b);click(29);assert.equal(selected.at(-1),b,'Native key hit radius includes eleven logical pixels');const count=selected.length;click(29.01);assert.equal(selected.length,count);}finally{control.dispose();}
+});
+
+test('dense graph handle picking chooses the nearest tangent before a closer key and preserves native tie order',()=>{
+  const events={},drafts=[],commits=[],a={index:0,frame:10,value:20,point:[.2,.3]},b={index:1,frame:18,value:20,point:[.8,.7]};
+  const canvas={addEventListener:(name,handler)=>events[name]=handler,removeEventListener(){},focus(){},setPointerCapture(){},releasePointerCapture(){events.lostpointercapture();},getBoundingClientRect:()=>({left:0,top:0,width:100,height:100})};
+  const control=bindCurveGesture(canvas,{getCurve:()=>({keys:[{source_frame:17,value:20}]}),getHandles:()=>[a,b],getGeometry:()=>({x:x=>x,y:y=>y,frame:Math.round,value:y=>y,control:(_handle,x,y)=>[x/100,y/100]}),isBusy:()=>false,canEdit:()=>true,select(){assert.fail('A native tangent owns the hit before keys');},draft(){assert.fail('A tangent cannot move key values');},draftHandle:(_index,_point,handle)=>drafts.push(handle),finish:(_point,_members,handle)=>commits.push(handle),reset(){}});
+  const drag=x=>{events.pointerdown({button:0,pointerId:1,clientX:x,clientY:20});events.pointermove({pointerId:1,clientX:x+4,clientY:24});assert.equal(commits.length,drafts.length-1);events.pointerup({pointerId:1,clientX:x+4,clientY:24});};
+  try{drag(17);assert.equal(drafts.at(-1),b);assert.equal(commits.at(-1),b);drag(14);assert.equal(commits.at(-1),a);drag(28);assert.equal(commits.at(-1),b,'Native tangent hit radius includes ten logical pixels');assert.equal(commits.length,3);}finally{control.dispose();}
+});
+
 test("zoom link synchronizes all visible toggles without a native mutation and leaves other parameters independent",()=>{
   const state=new Map(),link=createZoomLink(state);
   const input=()=>({checked:false,addEventListener(name,fn){this.change=fn;}}),a=input(),b=input();link.register(a);link.register(b);

@@ -136,12 +136,13 @@ export function bindCurveGesture(canvas, {getCurve, getGeometry, getHandles = ()
     beforeBegin();
     const box = canvas.getBoundingClientRect(), x = event.clientX - box.left, y = event.clientY - box.top;
     if(event.button===1 || event.altKey){canvas.focus();canvas.setPointerCapture(event.pointerId);gesture={id:event.pointerId,pan:true,g,x,y,viewport:viewport(),selectionIdentity:getSelectionIdentity(),moved:false,point:{x,y}};return;}
-    const handle = getHandles().find((h) => Math.hypot(g.x(h.frame) - x, g.y(h.value) - y) <= 9);
+    const nearest=(items,radius,position)=>{let chosen=null,distance=Infinity;for(const item of items){const point=position(item),next=Math.hypot(point[0]-x,point[1]-y);if(next<=radius && next<distance){chosen=item;distance=next;}}return chosen;};
+    const handle = nearest(getHandles(),10,h=>[g.x(h.frame),g.y(h.value)]);
     if (handle && canEdit()) {
       canvas.focus(); canvas.setPointerCapture(event.pointerId);
       gesture = {id: event.pointerId, handle, g, x, y,viewport:viewport(),selectionIdentity:getSelectionIdentity(), moved: false, point: handle.point}; return;
     }
-    const key = getCurve().keys.find((k) => Math.hypot(g.x(k.source_frame) - x, g.y(k.value) - y) <= 10);
+    const key = nearest(getCurve().keys,11,k=>[g.x(k.source_frame),g.y(k.value)]);
     if(!key){canvas.focus();canvas.setPointerCapture(event.pointerId);gesture={id:event.pointerId,box:true,append:event.ctrlKey || event.metaKey || event.shiftKey,g,x,y,viewport:viewport(),selectionIdentity:getSelectionIdentity(),moved:false,point:{x,y}};return;}
     canvas.focus(); select(key,{toggle:event.ctrlKey || event.metaKey || event.shiftKey});
     const members=getSelection();if(members && !members.includes(key.source_frame))return;

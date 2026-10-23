@@ -77,6 +77,17 @@ One slider interaction emits a **single** `set` command at release. For local vi
 
 ## Inspector contracts
 
+In animated parameter lanes, an unmodified click selects only the key under
+the pointer at release; additive click retains the pre-click picks and adds
+that release key. A drag starting on a selected key preserves the selected
+group. Read-only lane selection remains available without an edit command.
+Canceled or obsolete gestures never send a final edit command.
+
+Curve graph picking chooses the nearest point within the native11px key or
+10px tangent radius, retaining handle priority and first-candidate distance ties.
+Dense keys must not be chosen solely by their array order. Key selection remains
+the shared authority for Delete and interpolation commands.
+
 Each row has label, numeric control, reset, optional keyframe diamond and prev/next marker; keyboard path must be equivalent to drag. Control constraints come from source Rust, not hardcoded JS assumptions. Number input uses local edit buffer until commit; invalid intermediate text doesn't immediately reset to default.
 
 ## Viewer contracts

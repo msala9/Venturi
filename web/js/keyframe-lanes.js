@@ -102,7 +102,7 @@ export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRan
     if(!owner.moved && Math.hypot(position.x-owner.x,position.y-owner.y)<3)return;
     owner.moved=true;
     if(owner.kind==='time')owner.delta=laneDragDelta(owner.picks,detail.curves,owner.axis,owner.x,position.x);
-    else owner.box={x0:owner.x,y0:owner.y,x1:position.x,y1:position.y};
+    else if(owner.kind==='box')owner.box={x0:owner.x,y0:owner.y,x1:position.x,y1:position.y};
     draw();
   }
   async function apply(picks,delta,deleting=false){
@@ -118,9 +118,8 @@ export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRan
     if(found && position.x<axis.left){activate(found.row.target);return;}
     const append=Boolean(event.shiftKey || event.ctrlKey || event.metaKey);
     if(found?.key){
-      const pick={target:found.row.target,source_frame:found.key.source_frame};keySelection.select(pick,append);activate(found.row.target);draw();
-      if(!canEdit())return;
-      gesture={kind:'time',id:event.pointerId,...position,axis:{...axis},picks:selection(),delta:0,moved:false,edit:true};
+      const pick={target:found.row.target,source_frame:found.key.source_frame},before=selection();keySelection.select(pick,append);activate(found.row.target);draw();
+      const edit=canEdit();gesture={kind:edit?'time':'pick',id:event.pointerId,...position,axis:{...axis},picks:selection(),before,delta:0,moved:false,edit};
     }else{
       if(!append)keySelection.set([]);
       gesture={kind:'box',id:event.pointerId,...position,axis:{...axis},picks:selection(),append,moved:false,edit:false};
@@ -130,11 +129,17 @@ export function renderKeyframeLanes(root,detail,{keySelection,getGeometry,getRan
   listen(canvas,'pointermove',event=>{const owner=gesture;if(!owner || owner.id!==event.pointerId)return;if(!current(owner)){cancel();return;}update(owner,point(event));});
   listen(canvas,'pointerup',event=>{
     const owner=gesture;if(!owner || owner.id!==event.pointerId || event.button!==0)return;
-    if(!current(owner)){cancel();return;}update(owner,point(event));gesture=null;release(owner.id);event.preventDefault();
+    if(!current(owner)){cancel();return;}const position=point(event);update(owner,position);gesture=null;release(owner.id);event.preventDefault();
     if(owner.kind==='box'){
       const picks=owner.moved?laneBoxPicks(rows,owner.axis,owner.box,viewport.scrollTop || 0):[];
       try{keySelection.set([...new Map([...(owner.append?owner.picks:[]),...picks].map(pick=>[pickId(pick),pick])).values()],{focus:true});}catch(error){notice(error.message);}
-    }else if(owner.moved)void apply(owner.picks,owner.delta);
+    }else if(!owner.moved){
+      const found=hit(position),pick=position.x>=axis.left && found?.key?{target:found.row.target,source_frame:found.key.source_frame}:null;
+      const before=event.shiftKey || event.ctrlKey || event.metaKey?owner.before:[];
+      try{keySelection.set(pick?[...new Map([...before,pick].map(value=>[pickId(value),value])).values()]:owner.before,{focus:true});}catch(error){keySelection.set(owner.before,{focus:true});notice(error.message);}
+      if(found && (position.x<axis.left || pick))activate(found.row.target);
+    }
+    else if(owner.kind==='time' && owner.moved)void apply(owner.picks,owner.delta);
     draw();
   });
   const abort=event=>{if(gesture?.id===event.pointerId)cancel();};

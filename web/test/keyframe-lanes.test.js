@@ -80,6 +80,44 @@ test('actual mixed-row marquee followed by time drag sends one complete native o
   assert.deepEqual(h.value,initial);h.control.dispose();
 });
 
+test('plain lane click collapses a mixed selection only on owned unmoved release before Delete',async()=>{
+  const a={target:transform,source_frame:30},b={target:text,source_frame:30},h=harness();try{
+    h.selection.set([a,b]);h.canvas.emit('pointerdown',{clientX:199,clientY:11});assert.deepEqual(h.selection.get(),[a,b],'A possible group drag retains peers');
+    h.canvas.emit('pointerup',{pointerId:2,clientX:199,clientY:11});assert.deepEqual(h.selection.get(),[a,b]);h.canvas.emit('pointerup',{clientX:199,clientY:11});assert.deepEqual(h.selection.get(),[a]);assert.equal(h.commands.length,0);
+    h.canvas.emit('pointerup',{clientX:199,clientY:11});h.canvas.emit('keydown',{key:'Delete'});await settle();assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0].edit.picks,[a]);assert.deepEqual(h.commands[0].edit.action,{kind:'delete'});
+  }finally{h.control.dispose();}
+});
+
+test('dense lane clicks resolve the key at release and never retain a different press hit in additive or readonly selection',()=>{
+  for(const editable of [true,false]){
+    const value=detail();value.curves.tracks=[row('Position X',transform,[30,31])];const h=harness({editable,value,range:{source_start:20,source_end:220}}),previous={target:text,source_frame:30},released={target:transform,source_frame:31};
+    try{
+      h.selection.set([previous]);h.canvas.emit('pointerdown',{clientX:118.9,clientY:11});assert.deepEqual(h.selection.get(),[{target:transform,source_frame:30}]);h.canvas.emit('pointerup',{clientX:119.79,clientY:11});assert.deepEqual(h.selection.get(),[released]);assert.equal(h.commands.length,0);assert.equal(h.canvas.captures.size,0);
+      h.selection.set([previous]);h.canvas.emit('pointerdown',{clientX:118.9,clientY:11,shiftKey:true});h.canvas.emit('pointerup',{clientX:119.79,clientY:11,shiftKey:true});assert.deepEqual(h.selection.get(),[previous,released]);assert.equal(h.commands.length,0);
+      h.selection.set([previous]);h.canvas.emit('pointerdown',{clientX:110,clientY:11});h.canvas.emit('pointerup',{clientX:109,clientY:11});assert.deepEqual(h.selection.get(),[previous],'A release on the row label activates its row without replacing key selection');
+    }finally{h.control.dispose();}
+  }
+});
+
+test('lane click uses release modifiers while additive selection and selected-group drag retain every peer',async()=>{
+  const a={target:transform,source_frame:30},b={target:text,source_frame:30},h=harness();try{
+    for(const modifier of ['shiftKey','ctrlKey','metaKey']){h.selection.set([a,b]);h.canvas.emit('pointerdown',{clientX:199,clientY:11,[modifier]:true});h.canvas.emit('pointerup',{clientX:199,clientY:11,[modifier]:true});assert.deepEqual(h.selection.get(),[a,b]);}
+    h.canvas.emit('pointerdown',{clientX:199,clientY:11,shiftKey:true});h.canvas.emit('pointerup',{clientX:199,clientY:11});assert.deepEqual(h.selection.get(),[a],'Native click modifiers are read on release');
+    h.selection.set([a,b]);h.canvas.emit('pointerdown',{clientX:199,clientY:11});h.canvas.emit('pointerup',{clientX:199,clientY:11,shiftKey:true});assert.deepEqual(h.selection.get(),[a,b]);
+    h.canvas.emit('pointerdown',{clientX:199,clientY:11});h.canvas.emit('pointerup',{clientX:217,clientY:11});await settle();assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0].edit.picks,[a,b]);assert.equal(h.commands[0].edit.action.delta_source_frames,2);
+  }finally{h.control.dispose();}
+});
+
+test('readonly lane clicks can isolate one pick but canceled or stale clicks never collapse the group',()=>{
+  const a={target:transform,source_frame:30},b={target:text,source_frame:30},h=harness({editable:false});try{
+    h.selection.set([a,b]);h.canvas.emit('pointerdown',{clientX:199,clientY:11});h.canvas.emit('pointermove',{clientX:217,clientY:11});h.canvas.emit('pointerup',{clientX:217,clientY:11});assert.deepEqual(h.selection.get(),[a,b]);assert.equal(h.commands.length,0);
+    h.canvas.emit('pointerdown',{clientX:199,clientY:11});h.canvas.emit('pointerup',{clientX:199,clientY:11});assert.deepEqual(h.selection.get(),[a]);assert.equal(h.commands.length,0);
+  }finally{h.control.dispose();}
+  for(const cancel of [value=>value.canvas.emit('keydown',{key:'Escape'}),value=>value.canvas.emit('pointercancel'),value=>value.canvas.emit('lostpointercapture'),value=>value.window.emit('blur'),value=>value.setCurrent(false),value=>value.document.modal=true,value=>value.setEditable(false),value=>value.control.dispose()]){
+    const active=harness();try{active.selection.set([a,b]);active.canvas.emit('pointerdown',{clientX:199,clientY:11});cancel(active);active.canvas.emit('pointerup',{clientX:199,clientY:11});assert.deepEqual(active.selection.get(),[a,b]);assert.equal(active.commands.length,0);assert.equal(active.canvas.captures.size,0);}finally{active.control.dispose();}
+  }
+});
+
 test('additive lane marquee retains off-page mixed picks and moves them with the displayed group',async()=>{
   const selection=createKeyPickSelection();selection.set([{target:text,source_frame:25}]);const h=harness({selection});
   h.canvas.emit('pointerdown',{clientX:185,clientY:1,shiftKey:true});h.canvas.emit('pointerup',{clientX:205,clientY:21});

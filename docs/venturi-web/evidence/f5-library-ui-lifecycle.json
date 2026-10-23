@@ -1,0 +1,88 @@
+{
+  "source_commit": "3b334fe428260eee1ee73786fc67d3df05bd0486",
+  "source_hashes": {
+    "web/js/catalog.js": "3ae1a34a220b2b6bcc394c4379a48328afd6d5c466ebc8843985a29159c2117d",
+    "web/js/library-capture-drop.js": "0ccabd591b4df84b7a77aecb1121c9b44ee5125df0dee0994d07f62fa41242cf",
+    "web/js/main.js": "479554edb9af8b5069b4ce87dd839e34efe73b5afd69fb5fb8e3d1cba5ae2753",
+    "web/js/native-assets.js": "94a6e0a36f59ec416839edb4a3979ea80a4ed3d82a568783245cae055cf7174e",
+    "web/style/native-browser.css": "665e8826f9b7f41fcd532fcd6ec367a073d3c33501692c4df33128c06e3dd42a",
+    "web/test/native-assets-panel.test.js": "62f0f78797a9fac391db4249c98055944fa57464e21c576899dbc0cabe83690b"
+  },
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-library-ui-final.service",
+    "pid": "320588",
+    "binary_sha256": "9ba94a68b99519c4bbf7e4954cc7a77309fe84a321e4a5da16a7dcec3d7bdcfb",
+    "project": "Venturi_Library_Replacement_V1.vvproj",
+    "saved": true,
+    "empty_undo": true
+  },
+  "implemented": [
+    "Project epoch changes invalidate old Library reads and request one fresh catalog/selection after project dialogs close; ordinary generations retain placement refresh semantics.",
+    "Hidden/modal/preparing/reviewing/committing ownership defers the fresh read; failures require explicit Retry and cannot create refresh loops.",
+    "Old acknowledgments retain required Source removal/relink safety without selecting old items in a reopened project.",
+    "Replacement review presents compact native dimensions/FPS/audio and bounded expandable per-file details, without internal IDs, content hashes or still-duration sentinels."
+  ],
+  "gate": {
+    "host": "halo1",
+    "client_cases": 192,
+    "final_build_seconds": 40.77,
+    "memory_peak_bytes": 1645346816,
+    "cpu_limit": 8,
+    "memory_limit_gib": 4,
+    "swap": false,
+    "serial": true,
+    "native_audio_source_hashes": {
+      "crates/vv-audio/src/loudness.rs": "62ad4d4dacd6b511430c37e3bf1b4be58d9e8b901d5593aa00c8a46f4836cf8c",
+      "crates/vv-audio/src/mixer.rs": "3f4b214e42fbb73bfb287cffe74fa6d6dd4ba2df345d3fc994ef34d7911334a0",
+      "crates/vv-audio/src/tests/loudness.rs": "e639da23898c4c29b7ecadd542e7dc6e689f1f1b85acb02f4d0e80d774275804",
+      "crates/vv-audio/src/tests/mixer.rs": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce"
+    },
+    "rust_clippy_reuse": "Exact accepted replacement R5 and native audio hashes checked before build; no native logic changes in this UI increment."
+  },
+  "connected": {
+    "source_bound_runtime": "8cd16dfbe106",
+    "same_three_ui_hashes_as_final": true,
+    "before_epoch": "1792793537730584723:1",
+    "after_epoch": "1792793537730584723:2",
+    "action": "Open the same Saved project through File/Open with Library active, without pressing Refresh.",
+    "observed": "Selected asset retained, Import enabled, missing0; double-click opens the updated64x36 Library Source.",
+    "saved_project_hashes": {
+      "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+      "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+      "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+      "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+      "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+      "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+      "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+      "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+      "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+      "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+      "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+    }
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 11,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "limits": [
+    "Actual Project-to-Library drag remains unverified: source/staging/capture all received dragstart, but the existing browser automation delivered neither dragover nor drop to the Library tab. Explicit AddToLibrary remains available.",
+    "Temporary drag tracing is removed from the final binary.",
+    "Final-build browser repeat and compact review visual acceptance are open: the existing tab became0x0 and subsequently timed out on Input.dispatchMouseEvent and Page.captureScreenshot. Temporary viewport override was reset. No screenshot is claimed.",
+    "Native pool presentation/global sorting/folder interaction development is separate, unaccepted work.",
+    "Shared preset/offline/large-media, physical-device, dense/DPI and integrated F1-F7/M7 requirements remain open."
+  ],
+  "ledger": {
+    "done": 60,
+    "partial": 30,
+    "excluded": 2,
+    "full_goal": "active"
+  }
+}

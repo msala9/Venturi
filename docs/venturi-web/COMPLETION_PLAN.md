@@ -1,5 +1,34 @@
 # Active completion plan — full Venturi Web scope
 
+## Native Library reopen lifecycle and compact replacement review — 2026-10-24
+
+Source `3b334fe`, runtime `9ba94a68b995`, owns halo1/8855. Library now refreshes
+once after an actual project reopen, deferring until project dialogs close and
+old preparation/review/commit ownership settles. Old reads and acknowledgments
+cannot repaint the reopened selection; ordinary generations do not force catalog
+reloads. Failed reads require explicit Retry. Replacement review uses compact
+native dimensions/FPS/audio and bounded expandable file details.
+
+Actual Windows File/Open of the same Saved project, with Library active and no
+manual Refresh, retains its asset and enables Import. Double-click opens the new
+64x36 Source. This R2 interaction uses the same three UI source hashes as final
+R4. Final R4 passes192 affected client cases/build40.77s, peak1,645,346,816B;
+unchanged native/DSP/Clippy evidence is reused after exact source checks.
+All39 protected Sessions/40 PIDs,11 Saved files,5 local media,4 fixed NAS files
+and shared proxy remain unchanged. See `evidence/f5-library-ui-lifecycle.json`.
+
+Project-to-Library pointer capture remains unverified: source drag staging is
+valid, but no target dragover/drop reached the tab in the actual automated
+gesture. Explicit AddToLibrary remains available. The existing Windows browser
+subsequently stopped responding to input/screenshots; its temporary viewport
+override was reset. Final-build visual repeat and compact-review visual
+acceptance remain open; no new screenshot is claimed.
+
+Next integrate the native Library pool presentation, global Name/Duration sort,
+folder navigation and contextual interactions as one functional block. That
+source is in development and is not accepted by this evidence. Ledger remains
+**60 done /30 partial /2 excluded**; full F1-F7/M7 stays active.
+
 ## Native Library reviewed content replacement — 2026-10-24
 
 Source `719e8ee`, runtime `b4a885f44be3`, owns halo1/port8855. Selected-file

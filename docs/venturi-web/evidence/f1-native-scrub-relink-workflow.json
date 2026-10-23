@@ -1,0 +1,92 @@
+{
+  "source_commit": "886e4db567f20461d5ad72987a6109837c48d94f",
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-native-scrub-relink.service",
+    "pid": "303751",
+    "sha256": "d4b95aaa73cef36ac8169e8308dd3813a120d8953d8fd16cf4151254c214858f"
+  },
+  "inspector": {
+    "native_authority": "vv-app/src/properties_panel.rs::drag_field integrates current motion/current Shift speed and clamps each event",
+    "fixed": "Press20px then Shift1px now retains20.1 rather than retroactively changing the entire gesture to2.1; modifier-only release has no motion and changes no value",
+    "bounds": "Reversal from either clamp responds immediately; returning to the original value commits nothing",
+    "scope": "Shared Transform/Title/Mask binder; preserve ownership, pointer capture, input focus, Escape/blur/dispose cancel, precise original restore and one final commit",
+    "deterministic_cases": [
+      "mixed Shift speed and modifier-only release",
+      "upper/lower bound reversal",
+      "no-op after return to start",
+      "precise Escape restore"
+    ]
+  },
+  "legacy_library_relink": {
+    "native_authority": "vv-app/src/library.rs::original_name and relink_item",
+    "fixed": "Missing historical16hex-Camera take.png is matched against Camera take.png for both explicit selected sources and recursive folder search",
+    "compatibility": "Prefer the original basename; fall back to exact stored basename if preferred is absent",
+    "native_job_cases": [
+      "explicit original name",
+      "recursive original name",
+      "explicit literal uppercase16hex-prefixed name"
+    ],
+    "proof": "Real prepared jobs and commit in owned temporary fixtures restore exact original bytes; reopen shows missing0; asset IDs, metadata, hashes, compound references and preparation no-publication checks stay exact",
+    "unchanged": "Revision/epoch/generation/source FD/CAS/meta/SHA/path confinement/ambiguous file guards and existing mismatch refusal",
+    "not_claimed": "No real NAS relink/destruction or acceptance of a re-encoded different replacement file"
+  },
+  "actual_windows": {
+    "project": "Venturi_Scrub_Relink_V1.vvproj",
+    "timeline_id": "2",
+    "clip_id": "22",
+    "property": "PositionX",
+    "drag_pixels": 20,
+    "before": 0,
+    "after": 20,
+    "single_undo_redo": true,
+    "only_selected_parameter_changes": true,
+    "saved_reopen_exact_models_bytes": true,
+    "final_empty_undo": true,
+    "saved_sha256": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+    "note": "Actual plain pointer drag; mixed-modifier transitions remain deterministic coverage, not physical held-Shift qualification"
+  },
+  "gate": {
+    "native_cases": [
+      "test asset_jobs::tests::native_asset_relink_cancel_stale_revision_and_unsafe_tokens_never_commit_metadata ... ok",
+      "test asset_jobs::tests::native_asset_relink_last_cas_rejects_restored_mtime_source_and_destination_replacement ... ok",
+      "test asset_jobs::tests::native_asset_relink_mismatched_replacement_is_refused_before_publishing_any_media_cache_file ... ok",
+      "test asset_jobs::tests::native_asset_relink_normalizes_legacy_uppercase_hash_names_for_selected_and_recursive_sources ... ok",
+      "test asset_jobs::tests::native_asset_relink_preserves_compound_ids_metadata_hashes_and_durable_counts_across_reopen ... ok",
+      "test asset_jobs::tests::native_asset_relink_repairs_original_sha_path_without_treating_its_own_verified_copy_as_stale ... ok",
+      "test asset_jobs::tests::native_asset_relink_unmatched_selection_reports_remaining_missing_without_rewriting_asset ... ok",
+      "test asset_jobs::tests::native_recursive_relink_uses_approved_nested_files_preserves_payload_and_guards_tree_changes ... ok",
+      "test asset_jobs::tests::native_project_copy_collisions_compare_full_bytes_reuse_identical_files_and_keep_old_flat_copies ... ok",
+      "test asset_jobs::tests::native_project_copy_preserves_legacy_names_unicode_bounds_and_rejects_canceled_or_replaced_directories ... ok"
+    ],
+    "client_cases": 207,
+    "clippy_seconds": 8.29,
+    "embedded_build_seconds": 41.07,
+    "memory_peak_bytes": 2082119680,
+    "source_hashes": {
+      "crates/vv-web/src/asset_jobs.rs": "401f1a4d83b39ada0aa901ca4c4f7b5fcdbc58e86484ed449c16f98eeb050894",
+      "crates/vv-web/src/tests/asset_jobs.rs": "31e4ddf7183e5cf19aa9965c1f7cd9c1b1df95e11504e590b1d875b8edf90080",
+      "web/js/inspector.js": "fc73012489fa76f1cf4de131f0696864d938ed1c434750ab2b3a798832e1f82d",
+      "web/test/inspector.test.js": "62b1b08647b1b7b3dc37ec091f37c8216cbf2e65ea755bd920bc37e2dce99b45"
+    },
+    "resources": "One finite halo1 unit,8CPU/4GiB/no swap/Nice19/IOWeight10/OOM1000, admission and nonblocking shared lock; no Windows build or new browser"
+  },
+  "protection": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 10,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "screenshot_sha256": "a715244c898c89ff957c88b920d8e3fb53814fb21a23bc77246160904115ab25",
+  "remaining": [
+    "Native different-content replacement policy remains distinct from repairing the exact missing original",
+    "Project-to-Library pointer capture remains unverified",
+    "Physical modifier/DPI/dense/release requirements remain open",
+    "FullF1-F7/M7 and ledger60done/30partial/2excluded unchanged"
+  ]
+}

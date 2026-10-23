@@ -1,5 +1,40 @@
 # Active completion plan — full Venturi Web scope
 
+## Native scrub motion and legacy Library Relink — 2026-10-23
+
+Source `886e4db`, runtime `d4b95aaa73ce`, owns halo1/port8855. The shared
+Inspector numeric binder now integrates each pointer motion at its current
+native speed, including Shift/10, and clamps each event. Press20px then Shift1px
+retains20.1 instead of retroactively jumping to2.1. Releasing Shift without
+motion does not change the value; reversing from a bound responds immediately.
+Ownership, precise cancel, no-op and one-command release semantics remain intact.
+
+Library Relink reuses native legacy16hex-prefix normalization for both chosen
+files and recursive folder lookup. Original basenames take precedence; literal
+stored names remain a fallback. Three actual prepared-job/commit fixture paths
+restore exact original bytes and reopen missing0 without changing IDs, metadata,
+hashes or compound references. Source/meta/SHA/CAS/path guards remain unchanged.
+No NAS asset was removed/relinked for qualification.
+
+Actual Windows20px PositionX scrub changes0to20 with one Transform, one
+Undo/Redo and exact Saved reopen/emptyUndo. Other native parameters, timelines,
+prior audio gain and all prior Saved files stay exact. Mixed held-Shift and
+bound-reversal cases have deterministic coverage; no new physical modifier/DPI
+claim. See `evidence/f1-native-scrub-relink-workflow.json` and screenshot.
+
+The single bounded halo1 gate passes207 affected client and10 native cases,
+Clippy8.29s/build41.07s, peak2,082,119,680B. Unchanged renderer/DSP/export evidence
+is reused. All39 prior Sessions/40 PIDs,10 candidate Saved files,5 local media,
+4 fixed NAS files and shared proxy remain protected. No local build/browser install.
+
+Ledger stays **60 done /30 partial /2 excluded**; full F1-F7/M7 remains active.
+Next functional Library gap: native Relink accepts a same-basename replacement
+whose bytes differ, while the current Web repair contract requires matching
+original metadata/content. Complete deliberate replacement with truthful source
+identity/cache/payload handling rather than weakening exact-original repair.
+Project-to-Library pointer capture and broader lifecycle/physical/release gates
+remain open. Do not repeat unchanged renderer/audio/export matrices.
+
 ## Native Timeline waveform feedback — 2026-10-23
 
 Source `5a2904a`, runtime `94abc1c3d922`, owns halo1/port8855. Timeline

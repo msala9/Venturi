@@ -2494,3 +2494,12 @@ local drafts and schedule the coalesced work. Numeric input remains local until
 change; Apply still commits one guarded native Slip command. Cancel/disposal
 releases local media/URLs and prevents late publication; it never deletes a
 shared preparation job. Each downloaded Slip movie remains limited to 32 MiB.
+
+### Legacy native Library original-name Relink
+
+Prepared selected-file and recursive-folder Library Relink prefer the original
+basename after removing the native historical16hex-prefix, with exact stored
+basename fallback. Prefix matching accepts uppercase hex as native does. This
+changes only candidate lookup: approval, metadata/content matching, source FD,
+final CAS, publication and payload identity remain unchanged. Repairing an exact
+original does not yet authorize a different re-encoded replacement file.

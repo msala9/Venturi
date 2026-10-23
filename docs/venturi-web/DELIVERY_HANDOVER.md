@@ -1,8 +1,31 @@
 # Usable editing workflow — handover
 
-## Current halo1 portable Library/preset delivery — 2026-10-23
+## Current halo1 saved-preset Delete delivery — 2026-10-23
 
-Current portable Library copies and preset activation delivery:
+Current saved-preset permanent Delete delivery: **http://127.0.0.1:8850/**,
+source `ebbafda`, binary `78c6f86a346b`, service
+`venturi-web-halo1-preset-delete.service`, PID 211545.
+Confirmed active/archived removal binds the captured revision, shared lock and
+strict owner/version-2 intent; durable receipts recover retries/restarts without
+re-deleting a replacement or changing project dirty/Undo state.
+**41 native / 63 client cases pass**; after the sole R1 Clippy style failure,
+R2 passes Clippy (8.07 s) and build (41.00 s), reusing unchanged tests; peak
+1,524,707,328 bytes. Destructive/recovery checks use owned Linux fixtures.
+Actual Windows verifies compact actions, captured-name confirmation, Cancel,
+list Delete and Escape; no NAS preset is deleted. Saved reopen leaves
+`Venturi_Preset_Delete_V1.vvproj` at frame 0/empty Undo, SHA
+`cc94bfc1b772598bacaa73de29421d045c3cb050b247da877c41e0b3082a5aff`.
+All 34 prior Sessions/35 PIDs/35 Saved files/34 originals, five new local copies,
+four fixed NAS files and the old proxy are unchanged; runtime peak 219,017,216
+bytes. See `evidence/f5-preset-delete-workflow.json` and
+`f5-preset-delete-confirm.png` / `f5-preset-delete-workspace.png`.
+No new export or full M7 acceptance is claimed. Both F5 rows remain partial;
+the ledger stays **49 done / 41 partial / 2 excluded** and the full goal is active.
+Next complete connected effects/font/background, moving Exposure/Blur/Shadow,
+Adjustment interval and audio-fade output behavior, including native font preview;
+reuse already-qualified default-font and three-transform-frame proof.
+
+Preserved portable Library copies and preset activation delivery:
 **http://127.0.0.1:8849/**, source `efd5f59` (feature `5a856e4`), binary
 `80c54dbc8eb2`, service `venturi-web-halo1-library-copies-r2.service`, PID 209284.
 Native Add to Project uses readable `library/<originalname>` copies, native
@@ -32,7 +55,7 @@ restored. See `evidence/f5-library-copies-workflow.json`,
 `evidence/f5-library-copies-workspace.png` and
 `evidence/f5-library-preset-workspace.png`. Both F5 rows remain partial; the ledger
 stays **49 done / 41 partial / 2 excluded** and the full goal remains active.
-Next implement saved-preset permanent Delete.
+Saved-preset permanent Delete is subsequently delivered above.
 
 Preserved Library removal delivery: **http://127.0.0.1:8848/**, source
 `139418d`, binary `749e97fa8c20`, service

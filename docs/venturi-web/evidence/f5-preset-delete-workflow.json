@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-23",
+  "status": "partial_full_plan_functional_block",
+  "source_commit": "ebbafda",
+  "url": "http://127.0.0.1:8850/",
+  "unit": "venturi-web-halo1-preset-delete.service",
+  "main_pid": 211545,
+  "binary_sha256": "78c6f86a346b766684220649183068d3ce540fcf46ce2dda6cc58d0f83a42885",
+  "project": "Venturi_Preset_Delete_V1.vvproj",
+  "project_sha256": "cc94bfc1b772598bacaa73de29421d045c3cb050b247da877c41e0b3082a5aff",
+  "implemented": [
+    "Collapsed Preset actions includes confirmed permanent Delete of one captured active or archived shared preset. Opening and canceling do not mutate the library or project.",
+    "Saved-list Delete/Backspace opens the same confirmation. Text/settings handling, Apply Enter/double-click and native one-Undo application remain separate.",
+    "Confirmation binds preset name/id/revision/state, project and writer epochs. Only a verified durable acknowledgment revokes its browser shortcut, clears the row and refreshes; the deleted item is never fetched afterward. Unknown outcomes and refresh failures do not replay deletion.",
+    "Deletion uses native cooperative locks and bounded durable metadata recovery. Existing clip effects and project Undo/history are unchanged."
+  ],
+  "gate": {
+    "r1_native_cases_passed": 41,
+    "r1_client_cases_passed": 63,
+    "r1_followup": "Tests passed; Clippy then rejected one collapsible_if in host.rs.",
+    "r2_correction": "Style-only collapse of that if; all other source hashes unchanged. R1 tests reused.",
+    "r2_clippy_all_targets_deny_warnings": true,
+    "r2_clippy_seconds": 8.07,
+    "r2_embedded_build": true,
+    "r2_build_seconds": 41.0,
+    "r2_peak_bytes": 1524707328,
+    "native_destructive_scope": "Owned temporary Linux fixtures qualify durable deletion, recovery, replacement/CAS and capacity behavior."
+  },
+  "actual_windows": [
+    "Open Preset actions and the named-preset confirmation. Cancel retains exact Session, timelines and Saved bytes.",
+    "With the saved-preset list focused, Delete opens the modal; Escape cancels without a write or timeline fallback.",
+    "Save As and actual reopen retain the model and exact Saved bytes. Final candidate and default project share the recorded SHA; final state is Saved, empty Undo, frame0."
+  ],
+  "verified": {
+    "confirm_cancel_session_timelines_and_saved_exact": true,
+    "saved_reopen_model_exact": true,
+    "final_candidate_saved": true,
+    "final_history_labels": [],
+    "final_history_position": 0,
+    "final_frame": 0,
+    "candidate_and_default_project_sha256_equal": true,
+    "native_nas_preset_and_asset_files_unchanged": 4,
+    "shared_proxy_unchanged": true
+  },
+  "runtime": {
+    "cpu_quota_percent": 800,
+    "memory_max_bytes": 4294967296,
+    "swap_max_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "peak_bytes": 219017216
+  },
+  "protection": {
+    "prior_sessions": 34,
+    "prior_pids": 35,
+    "prior_saved_files": 35,
+    "prior_local_original_files": 34,
+    "new_candidate_local_copies": 5,
+    "new_candidate_saved_files": 2,
+    "candidate_session_unchanged": true,
+    "previous_protection_sha256": "c55baf4dc4f64765f2a5148bfafac2d05c2922c125bcae2106404c4be28d784b",
+    "native_files_protection_sha256": "607693fc6c1c4c5c64fb27319e53ec3b62dece3fbecdb691e44caac3c647f2ff"
+  },
+  "screenshots": [
+    "f5-preset-delete-confirm.png",
+    "f5-preset-delete-workspace.png"
+  ],
+  "limits": [
+    "No actual browser final destructive confirmation or permanent NAS/CIFS deletion was performed. Post-confirmation client behavior is covered by deterministic controller cases, not claimed as physical browser/CIFS acceptance.",
+    "No new montage export, physical drag or full release qualification. Broader desktop/shared lifecycle and device/DPI/dense-media acceptance remain open.",
+    "F5 remains partial and the full-plan goal remains active."
+  ],
+  "private_inputs_sha256": {
+    "halo1-preset-delete-before-confirm.json": "6dddb556f8bec4aa9a2b93c7a059f68ccaec91de7f272723af1590d1bbb25e8d",
+    "halo1-preset-delete-after-cancel.json": "2f454c07548ce33045a46a64976b964ba88309bac457b001a622efcd09b934cf",
+    "halo1-preset-delete-final.json": "140c2fe5652da4e2025aa08d82f78e0a2cb83b8040fbebff1caae831837f3543",
+    "halo1-preset-delete-deployed.json": "6ac64ebd01dfb1fecb9cb93d2faef1279a3b1f031e05c90e9cba694daa5f2c63",
+    "halo1-preset-delete-protected.json": "33ffb2b1ea32b359bf152a26480448cc9a5dc9d42af4ce89efe609c853733f1d",
+    "halo1-preset-delete-r1-inspected.json": "ff6e27e35ab37fd330f29076376793b13d0ee09210ea8ada34a0668867a72d28",
+    "halo1-preset-delete-r2-observed.json": "aaadfe639de8c3908dddb88c0ac340a948cf9c3486355bafa6afe66390be29de"
+  }
+}

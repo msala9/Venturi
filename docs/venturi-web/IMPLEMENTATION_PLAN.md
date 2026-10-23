@@ -36,13 +36,15 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8849/**, portable native Library
-copies and preset Enter/double-click activation (feature `5a856e4`, epoch refresh `efd5f59`). See the
+The current halo1 delivery is **http://127.0.0.1:8850/**, confirmed permanent
+saved-preset Delete (`ebbafda`), preserving the portable Library/preset editor on
+8849. See the
 current [implementation status](IMPLEMENTATION_STATUS.md) and
-`evidence/f5-library-copies-workflow.json` for qualification and runtime identity.
+`evidence/f5-preset-delete-workflow.json` for qualification and runtime identity.
 The ledger remains **49 done / 41 partial / 2 excluded**; both F5 rows remain
-partial. Continue with saved-preset permanent Delete, then the remaining F1-F7/M7
-functional and release work.
+partial. Continue connected effects/font/background, moving filter/Adjustment
+and audio-fade output work, then the remaining F1-F7/M7 criteria; reuse already
+qualified default-font and transform references.
 
 Preserved shared-originals delivery: **http://127.0.0.1:8840/**, source `dc42d2a`,
 binary `afa9c0ebffc6`, in `venturi-web-halo1-shared-originals.service`.

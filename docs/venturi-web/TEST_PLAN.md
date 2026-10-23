@@ -22,6 +22,21 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F5 saved-preset permanent Delete (`ebbafda`, halo1/8850): see
+`evidence/f5-preset-delete-workflow.json` and confirmation/workspace images.
+41 native cases (14 store, 17 presets, five receipts and five Host/API cases)
+and 63 client cases pass. The sole R1 Clippy collapsible-if failure is corrected;
+R2 passes Clippy/build with unchanged tests reused, peak 1,524,707,328 bytes.
+Temporary native fixtures cover active/archive removal, exact revision/lock,
+foreign/recreated files, strict owner/version-2 intent, interruption/recovery,
+lost receipt/restart and preservation of project dirty/Undo/Saved bytes.
+Client coverage binds confirmation/ACK ownership, shortcut cleanup and uncertain
+outcomes without replay. Actual Windows checks captured-name confirmation,
+Cancel/list Delete/Escape and Saved reopen at frame 0/empty Undo; no NAS preset
+is permanently deleted. Prior Sessions/files/originals/proxy remain unchanged.
+Reuse renderer/audio/export proof; no new export, destructive CIFS or full M7
+qualification is claimed. Ledger stays 49 done / 41 partial / 2 excluded.
+
 F5 portable Library copies and preset activation (`5a856e4` plus `efd5f59`, halo1/8849): see
 `evidence/f5-library-copies-workflow.json` and Library/preset workspace images.
 The bounded gate validates 58 native cases (54 reused plus four affected cases)
@@ -35,7 +50,7 @@ epoch rebinding without late selection writes. Actual Windows two-asset NAS impo
 cached no-op, native Undo/Redo, Source EOF5.184, preset application to Solid 14,
 Undo/Redo and Saved reopen pass. Reuse unchanged renderer/audio/export evidence;
 no fresh export or physical HTML drag/DPI claim is added. Both F5 rows stay partial;
-the next production block is saved-preset permanent Delete.
+saved-preset permanent Delete is subsequently qualified above.
 
 F5 native Library removal (`139418d`, halo1/8848): see
 `evidence/f5-library-delete-workflow.json`. 78 native /75client cases, syntax,

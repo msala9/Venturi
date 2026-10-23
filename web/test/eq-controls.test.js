@@ -69,6 +69,17 @@ test('EQ keyboard, exact defaults and known or unknown outcomes retain complete 
   }finally{item.control.dispose();}
 });
 
+test('EQ relative knob draft survives status wrapping that translates the control without resizing',async()=>{
+  const item=fixture();try{
+    const node=item.button(1,'gain_db'),before=structuredClone(item.parameters());
+    send(node,'pointerdown');send(node,'pointermove',{clientX:70});
+    node.rect.top+=14;node.rect.left+=2;
+    send(node,'pointerup',{clientX:70});await settle();
+    const expected=structuredClone(before);expected.bands[1].gain_db=eqKnobDelta(0,catalog.gain_db,false,20,0);
+    assert.deepEqual(item.parameters(),expected);assert.equal(item.writes.length,1);assert.equal(node.captured.size,0);
+  }finally{item.control.dispose();}
+});
+
 test('EQ detached controls and in-flight writes fence keyboard, pointer, toggle, shape and reset entry points',async()=>{
   const parameters=defaults();parameters.bands[1].gain_db=5;const item=fixture(parameters);try{
     for(const node of [item.button(1,'gain_db'),item.named('Master insert 1 EQ band 2 on'),item.named('Master insert 1 EQ band 2 shape'),item.named('Reset Master insert 1 EQ band 2')]){

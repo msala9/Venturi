@@ -18,7 +18,7 @@ export function createEqControls({root,label,getParameters,defaults,catalog,canI
   const live=()=>!disposed && !waiting && !unknown && root.isConnected!==false && host.isConnected!==false && !documentRef.hidden && isCurrent() && canInteract();
   const owned=node=>node.isConnected!==false && !node.disabled;
   const valid=next=>Array.isArray(next?.bands) && next.bands.length===6 && next.bands.every(band=>typeof band.enabled==='boolean' && catalog.shapes.includes(band.shape) && keys.every(key=>Number.isFinite(band[key]) && band[key]>=catalog[key][0] && band[key]<=catalog[key][1]));
-  const rectKey=node=>{const rect=node.getBoundingClientRect();return JSON.stringify([rect.left,rect.top,rect.width,rect.height]);};
+  const sizeKey=node=>{const rect=node.getBoundingClientRect();return JSON.stringify([rect.width,rect.height]);};
   function paint(){
     for(const {button,output,band,key} of controls){
       const data=values.bands[band],position=knobPosition(data[key],catalog[key],key!=='gain_db');button.disabled=!live() || button.isConnected===false || !data.enabled || key==='gain_db' && !catalog.graph.shape_has_gain[data.shape];
@@ -31,7 +31,7 @@ export function createEqControls({root,label,getParameters,defaults,catalog,canI
   function release(owner){try{if(owner.button.hasPointerCapture?.(owner.id))owner.button.releasePointerCapture(owner.id);}catch{}}
   function cancel(restore=true){if(!gesture)return;const owner=gesture;gesture=null;values=structuredClone(owner.before);release(owner);if(restore)onCancel();paint();}
   function sync(){cancel(false);if(!disposed){values=structuredClone(getParameters());paint();}}
-  const current=owner=>live() && owned(owner.button) && owner.context===getContext() && same(owner.before,getParameters()) && owner.rect===rectKey(owner.button) && isValid();
+  const current=owner=>live() && owned(owner.button) && owner.context===getContext() && same(owner.before,getParameters()) && owner.size===sizeKey(owner.button) && isValid();
   async function commit(next,before,context,node){
     if(same(next,before)){onCancel();sync();return;}
     if(!live() || !owned(node) || context!==getContext() || !same(before,getParameters()) || !isValid() || !valid(next)){onCancel();sync();return;}
@@ -61,7 +61,7 @@ export function createEqControls({root,label,getParameters,defaults,catalog,canI
       const mark=documentRef.createElement('span');mark.className='eq-knob-mark';mark.setAttribute('aria-hidden','true');button.append(mark);const output=documentRef.createElement('output');cell.append(button,output);controls.push({button,output,band,key});
       listen(button,'pointerdown',event=>{
         if(event.button!==0 || event.isPrimary===false || gesture || !live() || !owned(button) || !isValid())return;
-        event.preventDefault();button.focus();onStart();values=structuredClone(getParameters());gesture={id:event.pointerId,button,band,key,before:structuredClone(values),context:getContext(),rect:rectKey(button),x:event.clientX,y:event.clientY};
+        event.preventDefault();button.focus();onStart();values=structuredClone(getParameters());gesture={id:event.pointerId,button,band,key,before:structuredClone(values),context:getContext(),size:sizeKey(button),x:event.clientX,y:event.clientY};
         try{button.setPointerCapture(event.pointerId);}catch{cancel();}
       });
       listen(button,'pointermove',move);listen(button,'pointerup',event=>{if(!gesture || gesture.button!==button || gesture.id!==event.pointerId || event.button!==0)return;move(event,true);if(!gesture)return;const owner=gesture;gesture=null;release(owner);void commit(values,owner.before,owner.context,button);});

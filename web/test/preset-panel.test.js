@@ -196,3 +196,22 @@ test('preset activation refuses pending or failed reads, a changed project and o
   }finally{h.destroy();}
   let fail=false;const broken=panelHarness(undefined,{pageReader:result=>{if(fail)throw Error('Preset NAS unavailable');return result;}});try{await broken.open();fail=true;broken.button('Refresh presets').click();await settle();broken.activate();broken.activate('dblclick');broken.button('Apply preset to selected clips').click();assert.equal(broken.writes.length,0);assert.equal(broken.button('Apply preset to selected clips').disabled,true);}finally{broken.destroy();}
 });
+
+test('a live preset palette refreshes once per project epoch, preserves the selected preset and latches failed reads until Refresh',async()=>{
+  let reads=0;const next=deferred(),h=panelHarness(undefined,{pageReader:result=>{reads++;if(reads===2)return next.promise;if(reads===3)throw Error('NAS disconnected');return result;}});try{
+    await h.open();h.context.epoch='project-two';h.context.clip_ids=['solid-14'];h.panel.invalidate();h.panel.invalidate();assert.equal(reads,2);assert.equal(h.button('Apply preset to selected clips').disabled,true);
+    next.resolve({page:0,pages:1,total:2,items:[{...structuredClone(h.item()),id:'different-preset',name:'Another preset'},structuredClone(h.item())]});await settle();assert.equal(h.list().value,'1','selected native preset ID survives reordered catalog');assert.equal(h.button('Apply preset to selected clips').disabled,false);h.panel.invalidate();assert.equal(reads,2);
+    h.context.epoch='project-three';h.panel.invalidate();await settle();assert.equal(reads,3);assert.equal(h.button('Apply preset to selected clips').disabled,true);assert.match(h.field('role',h.root).textContent,/NAS disconnected.*Refresh presets/);
+    for(let n=0;n<5;n++)h.panel.invalidate();await settle();assert.equal(reads,3,'failed epoch read is not retried by selection refresh');
+    h.button('Refresh presets').click();await settle();assert.equal(reads,4);assert.equal(h.button('Apply preset to selected clips').disabled,false);assert.deepEqual(h.writes,[]);
+    assert.deepEqual(h.reads.filter(read=>read.path.startsWith('/presets/pages/')).map(read=>new URL(read.path,'http://fixture').searchParams.get('project_epoch')),['epoch','project-two','project-three','project-three']);
+  }finally{h.destroy();}
+});
+
+test('project epoch refresh replaces an old pending catalog read and ignores its late acknowledgment',async()=>{
+  let reads=0;const old=deferred(),fresh=deferred(),h=panelHarness(undefined,{pageReader:result=>++reads===2?old.promise:reads===3?fresh.promise:result});try{
+    await h.open();h.button('Refresh presets').click();const oldRequest=h.reads.at(-1);h.context.epoch='new-project';h.panel.invalidate();h.panel.invalidate();assert.equal(reads,3);assert.equal(oldRequest.options.signal.aborted,true);
+    fresh.resolve({page:0,pages:1,total:1,items:[{...structuredClone(h.item()),revision:'fresh-revision'}]});await settle();assert.equal(h.button('Apply preset to selected clips').disabled,false);
+    old.resolve({page:0,pages:1,total:1,items:[{...structuredClone(h.item()),id:'obsolete-preset',revision:'obsolete-revision'}]});await settle();h.panel.invalidate();assert.equal(reads,3);h.activate();await settle();assert.deepEqual(h.writes,[{kind:'apply_saved_preset',clip_ids:['clip'],preset_id:'preset',revision:'fresh-revision'}]);
+  }finally{h.destroy();}
+});

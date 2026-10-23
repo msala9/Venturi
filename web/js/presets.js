@@ -36,7 +36,7 @@ export async function presetMutationResult(mutate,refresh){
   catch(refreshError){return {receipt,refreshError};}
 }
 export function createPresetPanel({root,getContext,canCommit,commit,libraryCommit,notice,shortcuts=null,presetDnd=null,api=(path,body,options)=>request(path,body,(url,init)=>fetch(url,{...init,signal:options?.signal?AbortSignal.any([init.signal,options.signal]):init.signal}))}){
-  let active=false,sequence=0,controller=null,page=0,pages=1,search='',archived=false,busy=false,loading=false,loadedEpoch=null,selected=null,section=null,list=null,status=null,previous=null,next=null,caption=null,apply=null,edit=null,archive=null,download=null,restorePrevious=null,saveSelection=null,importFile=null,dialog=null,bound=null,dialogControls=null,navigation=[],shortcutToggle=null,shortcutStatus=null,settingsSequence=0,shortcutController=null;
+  let active=false,sequence=0,controller=null,page=0,pages=1,search='',archived=false,busy=false,loading=false,loadedEpoch=null,readEpochAttempt=null,selected=null,section=null,list=null,status=null,previous=null,next=null,caption=null,apply=null,edit=null,archive=null,download=null,restorePrevious=null,saveSelection=null,importFile=null,dialog=null,bound=null,dialogControls=null,navigation=[],shortcutToggle=null,shortcutStatus=null,settingsSequence=0,shortcutController=null;
   const button=(text,action)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',action);return node;};
   const message=text=>{if(status?.isConnected)status.textContent=text;};
   let dragButton=null,dragTicket=null;
@@ -99,7 +99,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
   }
   async function reload(wanted=page,preferred=selected?.id,direction=1,afterWrite=false){
     endDrag();if(!active || busy && !afterWrite)return false;const live=getContext();if(!live){message('Connect to a native session to read saved presets');return false;}const context={...live};
-    controller?.abort();controller=new AbortController();const token=++sequence;loading=true;loadedEpoch=null;controls();message('Reading saved presets…');
+    controller?.abort();controller=new AbortController();const token=++sequence;readEpochAttempt=context.epoch;loading=true;loadedEpoch=null;controls();message('Reading saved presets…');
     try{
       let result,scan=wanted;
       while(true){
@@ -112,7 +112,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
       const found=result.items.findIndex(item=>item.id===preferred),keepOutside=selected && found<0 && selected.id===preferred && selected.archived===archived,index=keepOutside?-1:Math.max(0,found);list.value=String(index);if(!keepOutside)selected=result.items[index] || null;
       list.onchange=()=>{endDrag();selected=result.items[Number(list.value)] || null;controls();};
       message(`Page ${page+1} of ${result.pages} · ${result.total} ${archived?'archived':'saved'} presets${search?` · ${result.items.length} matches on this page`:''}`);return true;
-    }catch(error){if(active && token===sequence && error.name!=='AbortError'){if(wanted && error.message.includes('beyond the last page'))return reload(0,preferred,direction,afterWrite);message(error.message);}return false;}
+    }catch(error){if(active && token===sequence && error.name!=='AbortError'){if(wanted && error.message.includes('beyond the last page'))return reload(0,preferred,direction,afterWrite);message(`${error.message} · use Refresh presets to retry`);}return false;}
     finally{if(token===sequence){loading=false;controls();}}
   }
   async function write(operation,project=true){
@@ -199,7 +199,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
       section.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});root.append(section);controls();await reload(page);
     },
     saveSelection(captured){if(!active || busy || !canCommit())return false;openSettings(null,presetCaptureContext(getContext(),captured));return true;},
-    invalidate(){shortcuts?.sync();controls();},
-    hide(){endDrag();active=false;loading=false;loadedEpoch=null;sequence++;controller?.abort();controller=null;settingsSequence++;shortcutController?.abort();shortcutController=null;if(!busy){dialog?.remove();dialog=null;dialogControls=null;bound=null;}},
+    invalidate(){shortcuts?.sync();const epoch=getContext()?.epoch;if(active && section?.isConnected && !busy && typeof epoch==='string' && epoch && epoch!==readEpochAttempt)void reload(page,selected?.id);controls();},
+    hide(){endDrag();active=false;loading=false;loadedEpoch=null;readEpochAttempt=null;sequence++;controller?.abort();controller=null;settingsSequence++;shortcutController?.abort();shortcutController=null;if(!busy){dialog?.remove();dialog=null;dialogControls=null;bound=null;}},
   };
 }

@@ -716,7 +716,10 @@ be current, attached, successfully loaded for this project epoch and writable,
 with a valid nonempty selection. Loading/failed/stale reads, modal dialogs,
 read-only state, IME, repeats and modified keys cannot apply. Native preset
 revision checks, attribute targeting/conversion and one-Undo semantics are
-unchanged. This does not introduce permanent preset removal.
+unchanged. An open palette refreshes its catalog once on each project epoch
+change, preserving the selected preset ID and discarding older read responses.
+A failed read stays disabled until an explicit Refresh; selection updates do not
+retry it. This does not introduce permanent preset removal.
 
 Native pool assets use the original desktop v1 `AssetFile` JSON wrapper and
 `ClipboardPayload` RON text. They are separate from the ds4 media catalog.

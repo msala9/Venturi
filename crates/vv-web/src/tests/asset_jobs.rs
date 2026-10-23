@@ -1,4 +1,241 @@
 use super::*;
+use vv_core::Id;
+
+#[test]
+fn shared_media_roots_capture_clipboard_otio_and_explicit_import_keep_approved_originals() {
+    use std::os::unix::ffi::OsStrExt;
+    let mut fixture = Fixture::new();
+    let shared = fixture.root.join("shared");
+    std::fs::create_dir(&shared).unwrap();
+    let path = shared.join("0123456789abcdef.png");
+    std::fs::copy(&fixture.path, &path).unwrap();
+    let roots = crate::media_roots::MediaRoots::new(
+        &fixture.project,
+        File::open(&fixture.project).unwrap(),
+    )
+    .unwrap()
+    .with_shared(&shared)
+    .unwrap();
+    fixture.jobs = Jobs::new_with_roots(
+        fixture.store.clone(),
+        &fixture.project,
+        File::open(&fixture.project).unwrap(),
+        roots,
+    )
+    .unwrap();
+    let mut payload = asset_payload::decode(&fixture.asset).unwrap();
+    for item in payload.files_mut() {
+        item.path = path.clone();
+        item.content_hash = vv_media::content_fingerprint(&path).unwrap();
+    }
+    let mut asset = fixture.asset.clone();
+    asset.payload = payload.to_text();
+    let file = File::open(&path).unwrap();
+    let queued = fixture
+        .jobs
+        .prepare_capture(
+            "epoch",
+            "7",
+            asset.clone(),
+            vec![PinnedSource {
+                path: path.clone(),
+                identity: crate::source::file_identity(&file).unwrap(),
+                file,
+            }],
+        )
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(id)["state"], "ready");
+    fixture.jobs.status(id, "epoch", true).unwrap();
+
+    let queued = fixture
+        .jobs
+        .prepare_clipboard("epoch", "7", &asset.payload, None, true)
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(id)["state"], "ready");
+    let prepared = fixture.jobs.clipboard_payload(id, "epoch", "7").unwrap();
+    assert_eq!(prepared.to_text(), asset.payload);
+    fixture
+        .jobs
+        .mark_clipboard_applied(id, "epoch", "7")
+        .unwrap();
+
+    write_otio(&fixture, "shared.otio", std::slice::from_ref(&path));
+    let queued = fixture
+        .jobs
+        .prepare_otio("epoch", "7", "shared.otio")
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert_eq!(
+        fixture
+            .jobs
+            .otio_payload(id, "epoch", "7")
+            .unwrap()
+            .project
+            .media_pool
+            .values()
+            .next()
+            .unwrap()
+            .path,
+        path
+    );
+    fixture.jobs.mark_otio_applied(id, "epoch", "7").unwrap();
+
+    let canonical_token = "library://0123456789abcdef.png";
+    let ungranted = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", vec![canonical_token.into()])
+        .unwrap();
+    let ungranted_id = ungranted["id"].as_str().unwrap();
+    let ungranted_ready = fixture.finish(ungranted_id);
+    assert_eq!(ungranted_ready["state"], "ready");
+    assert_eq!(ungranted_ready["result"]["items"], json!([]));
+    assert_eq!(
+        ungranted_ready["result"]["errors"][0]["code"],
+        "SOURCE_CHANGED"
+    );
+    let origin_name = format!(
+        ".venturi-library-ref-{:x}.json",
+        Sha256::digest(path.as_os_str().as_bytes())
+    );
+    let identity = asset_store::stable_identity(&File::open(&path).unwrap()).unwrap();
+    let token = format!(
+        "{canonical_token}?source={:x}",
+        Sha256::digest(identity.as_bytes())
+    );
+    let mut grant = json!({
+        "version":1,"provider":"ds4-appliance","mode":"reference",
+        "service_origin":"http://127.0.0.1:8787/","source_path":path,
+        "source_version":identity,
+        "item":{"id":"0123456789abcdef","kind":"image","mime":"image/png","filename":"0123456789abcdef.png",
+            "model":"Native fixture","tool":"image","bytes":std::fs::metadata(&path).unwrap().len(),
+            "archived":true,"archive_rel":"0123456789abcdef.png"}
+    });
+    std::fs::write(
+        fixture.project.join(&origin_name),
+        serde_json::to_vec(&grant).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        validate_reference_import(
+            &fixture.jobs.0,
+            canonical_token,
+            &path,
+            &File::open(&path).unwrap()
+        )
+        .unwrap_err()
+        .1,
+        "SOURCE_CHANGED"
+    );
+    let queued = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", vec![token.clone()])
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let prepared = fixture.jobs.media_import_payload(id, "epoch", "7").unwrap();
+    assert_eq!(prepared.items[0].path, path);
+    assert_eq!(prepared.items[0].path_token, token);
+    std::fs::copy(&fixture.path, &path).unwrap();
+    assert_eq!(
+        fixture
+            .jobs
+            .media_import_payload(id, "epoch", "7")
+            .err()
+            .unwrap()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    let identity = asset_store::stable_identity(&File::open(&path).unwrap()).unwrap();
+    grant["source_version"] = json!(identity);
+    std::fs::write(
+        fixture.project.join(&origin_name),
+        serde_json::to_vec(&grant).unwrap(),
+    )
+    .unwrap();
+    let stale = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", vec![token])
+        .unwrap();
+    let stale = fixture.finish(stale["id"].as_str().unwrap());
+    assert_eq!(stale["result"]["items"], json!([]));
+    assert_eq!(stale["result"]["errors"][0]["code"], "SOURCE_CHANGED");
+    let current_token = format!(
+        "{canonical_token}?source={:x}",
+        Sha256::digest(identity.as_bytes())
+    );
+    let current = fixture
+        .jobs
+        .prepare_media_import("epoch", "7", vec![current_token.clone()])
+        .unwrap();
+    let current_id = current["id"].as_str().unwrap();
+    assert_eq!(fixture.finish(current_id)["state"], "ready");
+    let current = fixture
+        .jobs
+        .media_import_payload(current_id, "epoch", "7")
+        .unwrap();
+    assert_eq!(current.items[0].path_token, current_token);
+    assert!(!fixture.project.join("0123456789abcdef.png").exists());
+    fixture.close();
+}
+
+#[test]
+fn shared_media_roots_project_by_name_skips_reachable_shared_media_without_scanning() {
+    let mut fixture = Fixture::new();
+    let shared = fixture.root.join("shared");
+    std::fs::create_dir(&shared).unwrap();
+    let path = shared.join("tiny.png");
+    std::fs::copy(&fixture.path, &path).unwrap();
+    let roots = crate::media_roots::MediaRoots::new(
+        &fixture.project,
+        File::open(&fixture.project).unwrap(),
+    )
+    .unwrap()
+    .with_shared(&shared)
+    .unwrap();
+    fixture.jobs = Jobs::new_with_roots(
+        fixture.store.clone(),
+        &fixture.project,
+        File::open(&fixture.project).unwrap(),
+        roots,
+    )
+    .unwrap();
+    let target = crate::project_media::Target {
+        id: vv_core::MediaId::from_raw(9),
+        item: vv_core::MediaItem {
+            path,
+            meta: vv_media::probe_image(&fixture.path).unwrap(),
+            content_hash: 0,
+            compound: None,
+            folder: None,
+        },
+    };
+    let queued = fixture
+        .jobs
+        .prepare_project_media(
+            "epoch",
+            "7",
+            crate::project_media::Work::Relink {
+                targets: vec![target],
+                chosen: None,
+                directory: Some("not-a-listed-folder".into()),
+            },
+        )
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["state"], "ready", "{ready}");
+    assert_eq!(ready["result"]["skipped"], json!(["9"]));
+    fixture
+        .jobs
+        .project_media_payload(id, "epoch", "7", "project_relink")
+        .unwrap();
+    fixture.close();
+}
 
 #[test]
 fn project_media_jobs_share_descriptor_admission_and_release_ready_witnesses_on_cancel() {
@@ -2559,6 +2796,7 @@ fn queue_admission_is_one_running_one_pending_and_records_are_bounded_without_re
         store: fixture.store.clone(),
         root: fixture.project.clone(),
         directory: File::open(&fixture.project).unwrap(),
+        media_roots: fixture.jobs.0.media_roots.clone(),
         jobs: Mutex::new(VecDeque::new()),
         sender,
     }));
@@ -2723,6 +2961,7 @@ fn obsolete_project_cancellation_marks_only_old_queue_and_ready_records_and_pres
         store: fixture.store.clone(),
         root: fixture.project.clone(),
         directory: File::open(&fixture.project).unwrap(),
+        media_roots: fixture.jobs.0.media_roots.clone(),
         jobs: Mutex::new(VecDeque::new()),
         sender,
     }));

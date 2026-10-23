@@ -1,6 +1,6 @@
 use crate::error::{ApiError, Result};
 use reqwest::{Url, blocking::Client, redirect::Policy};
-use rustix::fs::{Mode, OFlags, RenameFlags, openat, renameat_with, unlinkat};
+use rustix::fs::{Mode, OFlags, RenameFlags, openat, renameat, renameat_with, unlinkat};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
@@ -46,6 +46,8 @@ pub struct Item {
     #[serde(default)]
     pub archived: bool,
     #[serde(default)]
+    pub archive_rel: String,
+    #[serde(default)]
     pub keep: bool,
 }
 fn seed<'de, D: serde::Deserializer<'de>>(
@@ -62,6 +64,24 @@ fn seed<'de, D: serde::Deserializer<'de>>(
     Ok((value != 0).then(|| value.to_string()))
 }
 impl Item {
+    fn reference_token(&self) -> Result<String> {
+        if !self.archived || self.archive_rel.is_empty() || self.archive_rel.contains("?source=") {
+            return Err(ApiError::invalid(
+                "This item has no archived shared original",
+            ));
+        }
+        let token = format!("library://{}", self.archive_rel);
+        if std::path::Path::new(&self.archive_rel)
+            .file_name()
+            .and_then(|s| s.to_str())
+            != Some(self.filename.as_str())
+        {
+            return Err(ApiError::invalid(
+                "Shared archive locator does not match the item",
+            ));
+        }
+        Ok(token)
+    }
     fn extension(&self) -> Result<&'static str> {
         match (self.kind.as_str(), self.mime.as_str()) {
             ("image", "image/png") => Ok("png"),
@@ -208,6 +228,7 @@ struct Job {
     id: String,
     epoch: String,
     item: Item,
+    mode: PrepareMode,
     state: &'static str,
     bytes: u64,
     result: Option<Value>,
@@ -222,28 +243,59 @@ impl Job {
 struct State {
     url: Url,
     dir: File,
+    roots: Option<crate::media_roots::MediaRoots>,
     jobs: Mutex<VecDeque<Job>>,
     catalog_slots: Arc<tokio::sync::Semaphore>,
-    send: mpsc::SyncSender<(String, Item)>,
+    send: mpsc::SyncSender<(String, Item, PrepareMode)>,
+}
+#[derive(Clone, Copy, Default, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PrepareMode {
+    #[default]
+    Copy,
+    Reference,
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PrepareRequest {
+    pub project_epoch: String,
+    #[serde(default)]
+    pub mode: PrepareMode,
 }
 #[derive(Clone, Default)]
 pub struct Library(Option<Arc<State>>);
 impl Library {
+    #[cfg(test)]
     pub fn start(url: Option<&str>, dir: File) -> Result<Self> {
+        Self::start_inner(url, dir, None)
+    }
+    pub fn start_with_roots(
+        url: Option<&str>,
+        dir: File,
+        roots: crate::media_roots::MediaRoots,
+    ) -> Result<Self> {
+        Self::start_inner(url, dir, Some(roots))
+    }
+    fn start_inner(
+        url: Option<&str>,
+        dir: File,
+        roots: Option<crate::media_roots::MediaRoots>,
+    ) -> Result<Self> {
         let Some(url) = url else {
             return Ok(Self::default());
         };
-        let (send, receive) = mpsc::sync_channel::<(String, Item)>(1);
+        let (send, receive) = mpsc::sync_channel::<(String, Item, PrepareMode)>(1);
         let state = Arc::new(State {
             url: endpoint(url)?,
             dir,
+            roots,
             jobs: Mutex::new(VecDeque::new()),
             catalog_slots: Arc::new(tokio::sync::Semaphore::new(2)),
             send,
         });
         let worker = Arc::downgrade(&state);
         std::thread::spawn(move || {
-            while let Ok((id, item)) = receive.recv() {
+            while let Ok((id, item, mode)) = receive.recv() {
                 let Some(state) = worker.upgrade() else {
                     break;
                 };
@@ -256,6 +308,9 @@ impl Library {
                     job.cancel.clone()
                 };
                 let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    if mode == PrepareMode::Reference {
+                        return state.reference(&item, &id, &cancel);
+                    }
                     state.download(&item, &id, &cancel, |bytes| {
                         if let Some(job) = state
                             .jobs
@@ -335,9 +390,24 @@ impl Library {
         let mut value = serde_json::to_value(self.index().await?).map_err(|_| ApiError::io())?;
         value["configured"] = json!(true);
         value["max_copy_bytes"] = json!(MAX_ITEM);
+        value["shared_originals"] = json!(
+            self.state()?
+                .roots
+                .as_ref()
+                .is_some_and(|roots| roots.shared_path().is_some())
+        );
         Ok(value)
     }
+    #[cfg(test)]
     pub async fn prepare(&self, id: &str, epoch: &str) -> Result<Value> {
+        self.prepare_with_mode(id, epoch, PrepareMode::Copy).await
+    }
+    pub async fn prepare_with_mode(
+        &self,
+        id: &str,
+        epoch: &str,
+        mode: PrepareMode,
+    ) -> Result<Value> {
         valid_id(id)?;
         let catalog = self.index().await?;
         let item = catalog
@@ -345,13 +415,25 @@ impl Library {
             .into_iter()
             .find(|item| item.id == id)
             .ok_or_else(ApiError::missing)?;
-        item.validate_copy()?;
         let state = self.state()?;
+        match mode {
+            PrepareMode::Copy => item.validate_copy()?,
+            PrepareMode::Reference => {
+                let token = item.reference_token()?;
+                state
+                    .roots
+                    .as_ref()
+                    .ok_or_else(|| ApiError::invalid("Shared originals are not configured"))?
+                    .path(&token)?;
+            }
+        }
         let mut jobs = state.jobs.lock().unwrap();
         if let Some(job) = jobs.iter().find(|job| {
             job.epoch == epoch
+                && job.mode == mode
                 && job.item.id == id
                 && job.item.bytes == item.bytes
+                && (mode == PrepareMode::Copy || job.item.archive_rel == item.archive_rel)
                 && !job.cancel.load(Ordering::Relaxed)
                 && ["queued", "running", "ready"].contains(&job.state)
                 && (job.state != "ready"
@@ -389,13 +471,14 @@ impl Library {
             id: id.clone(),
             epoch: epoch.into(),
             item: item.clone(),
+            mode,
             state: "queued",
             bytes: 0,
             result: None,
             error: None,
             cancel: Arc::new(AtomicBool::new(false)),
         });
-        if state.send.try_send((id.clone(), item)).is_err() {
+        if state.send.try_send((id.clone(), item, mode)).is_err() {
             jobs.retain(|job| job.id != id);
             return Err(ApiError::conflict(
                 "LIBRARY_BUSY",
@@ -430,10 +513,103 @@ impl Library {
     }
 }
 impl State {
+    fn reference(&self, item: &Item, id: &str, cancel: &AtomicBool) -> Result<Value> {
+        let roots = self
+            .roots
+            .as_ref()
+            .ok_or_else(|| ApiError::invalid("Shared originals are not configured"))?;
+        let token = item.reference_token()?;
+        let path = roots.path(&token)?;
+        let file = roots.open(&path)?;
+        let identity = crate::asset_store::stable_identity(&file)?;
+        if file.metadata().map_err(|_| ApiError::io())?.len() != item.bytes {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Shared original size differs from the catalog",
+            ));
+        }
+        if cancel.load(Ordering::Relaxed) {
+            return Err(ApiError::invalid("Shared original preparation canceled"));
+        }
+        validate_header(&file, item)?;
+        let meta = crate::asset_probe::probe_root_media(
+            &file,
+            item.kind == "image",
+            cancel,
+            Duration::from_secs(20),
+        )?;
+        if (item.kind == "audio" && (!meta.has_audio || meta.has_video))
+            || (item.kind == "video" && !meta.has_video)
+            || meta.width > 8192
+            || meta.height > 8192
+            || meta.duration_frames <= 0
+            || meta.duration_frames > 1_000_000_000
+            || meta.fps.num <= 0
+            || meta.fps.den <= 0
+        {
+            return Err(ApiError::invalid(
+                "Shared original has unsupported native streams or timing",
+            ));
+        }
+        let current = self
+            .catalog()?
+            .items
+            .into_iter()
+            .find(|entry| entry.id == item.id)
+            .ok_or_else(ApiError::missing)?;
+        if !current.archived
+            || current.archive_rel != item.archive_rel
+            || current.bytes != item.bytes
+            || current.filename != item.filename
+            || current.mime != item.mime
+            || current.kind != item.kind
+        {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Shared item changed during preparation",
+            ));
+        }
+        roots.validate_file(&path, &file)?;
+        if crate::asset_store::stable_identity(&file)? != identity || cancel.load(Ordering::Relaxed)
+        {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Shared original changed during preparation",
+            ));
+        }
+        let source_path = path
+            .to_str()
+            .ok_or_else(|| ApiError::invalid("Shared original paths must be UTF-8"))?;
+        let origin = json!({"version":1,"provider":"ds4-appliance","mode":"reference","service_origin":self.url.as_str(),"source_path":source_path,"source_version":identity,"item":current});
+        publish_origin(&self.dir, &reference_origin_name(&path), &origin, id)?;
+        self.dir.sync_all().map_err(|_| ApiError::io())?;
+        roots.validate_file(&path, &file)?;
+        if crate::asset_store::stable_identity(&file)? != identity {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Shared original changed before publication",
+            ));
+        }
+        let token = format!("{token}?source={:x}", Sha256::digest(identity.as_bytes()));
+        Ok(json!({"path_token":token,"origin":origin,"source_version":identity}))
+    }
     fn current(&self, result: &Value) -> bool {
         let Some(name) = result["path_token"].as_str() else {
             return false;
         };
+        if name.starts_with("library://") {
+            return self
+                .roots
+                .as_ref()
+                .and_then(|roots| {
+                    roots
+                        .path(name)
+                        .ok()
+                        .and_then(|path| roots.open(&path).ok())
+                })
+                .and_then(|file| crate::asset_store::stable_identity(&file).ok())
+                .is_some_and(|identity| result["source_version"] == identity);
+        }
         if name.contains(['/', '\\']) {
             return false;
         }
@@ -637,6 +813,7 @@ impl State {
     }
 }
 fn publish_origin(dir: &File, name: &str, value: &Value, id: &str) -> Result<()> {
+    let mut replace_reference = false;
     if let Ok(file) = openat(
         dir,
         name,
@@ -659,7 +836,15 @@ fn publish_origin(dir: &File, name: &str, value: &Value, id: &str) -> Result<()>
                 "Existing shared provenance was preserved",
             ));
         }
-        return Ok(());
+        if old["mode"] == "reference"
+            && value["mode"] == "reference"
+            && old["source_path"] == value["source_path"]
+        {
+            replace_reference = old != *value;
+        }
+        if !replace_reference {
+            return Ok(());
+        }
     }
     let temp = format!(".venturi-origin-{id}.tmp");
     let result = (|| {
@@ -674,8 +859,12 @@ fn publish_origin(dir: &File, name: &str, value: &Value, id: &str) -> Result<()>
         file.write_all(&serde_json::to_vec(value).map_err(|_| ApiError::io())?)
             .map_err(|_| ApiError::io())?;
         file.sync_all().map_err(|_| ApiError::io())?;
-        renameat_with(dir, temp.as_str(), dir, name, RenameFlags::NOREPLACE)
-            .map_err(|_| ApiError::io())?;
+        if replace_reference {
+            renameat(dir, temp.as_str(), dir, name).map_err(|_| ApiError::io())?;
+        } else {
+            renameat_with(dir, temp.as_str(), dir, name, RenameFlags::NOREPLACE)
+                .map_err(|_| ApiError::io())?;
+        }
         Ok(())
     })();
     let _ = unlinkat(dir, temp.as_str(), rustix::fs::AtFlags::empty());
@@ -712,6 +901,40 @@ pub fn provenance(dir: &File, name: &str) -> Option<Value> {
                 &digest[..16],
                 item.extension().ok()?
             )
+    {
+        return None;
+    }
+    endpoint(value["service_origin"].as_str()?).ok()?;
+    Some(value)
+}
+fn reference_origin_name(path: &std::path::Path) -> String {
+    use std::os::unix::ffi::OsStrExt;
+    format!(
+        ".venturi-library-ref-{:x}.json",
+        Sha256::digest(path.as_os_str().as_bytes())
+    )
+}
+pub fn reference_provenance(dir: &File, path: &std::path::Path) -> Option<Value> {
+    let file = File::from(
+        openat(
+            dir,
+            reference_origin_name(path).as_str(),
+            OFlags::RDONLY | OFlags::NOFOLLOW | OFlags::NONBLOCK | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .ok()?,
+    );
+    if !file.metadata().ok()?.is_file() || file.metadata().ok()?.len() > 16 * 1024 {
+        return None;
+    }
+    let value: Value = serde_json::from_reader(file.take(16 * 1024 + 1)).ok()?;
+    let item: Item = serde_json::from_value(value["item"].clone()).ok()?;
+    item.validate().ok()?;
+    item.reference_token().ok()?;
+    if value["version"] != 1
+        || value["provider"] != "ds4-appliance"
+        || value["mode"] != "reference"
+        || value["source_path"].as_str().map(std::path::Path::new) != Some(path)
     {
         return None;
     }

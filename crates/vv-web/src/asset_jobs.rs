@@ -277,6 +277,7 @@ struct Inner {
     store: Store,
     root: PathBuf,
     directory: File,
+    media_roots: crate::media_roots::MediaRoots,
     jobs: Mutex<VecDeque<Job>>,
     sender: mpsc::SyncSender<Work>,
 }
@@ -318,7 +319,18 @@ fn binding(epoch: &str, generation: &str) -> Result<()> {
     Ok(())
 }
 impl Jobs {
+    #[cfg(test)]
     pub fn new(store: Store, project_root: &Path, project_dir: File) -> std::io::Result<Self> {
+        let media_roots =
+            crate::media_roots::MediaRoots::new(project_root, project_dir.try_clone()?)?;
+        Self::new_with_roots(store, project_root, project_dir, media_roots)
+    }
+    pub(crate) fn new_with_roots(
+        store: Store,
+        project_root: &Path,
+        project_dir: File,
+        media_roots: crate::media_roots::MediaRoots,
+    ) -> std::io::Result<Self> {
         let root = project_root.canonicalize()?;
         if !project_dir.metadata()?.is_dir() {
             return Err(std::io::Error::other(
@@ -336,6 +348,7 @@ impl Jobs {
             store,
             root,
             directory: project_dir,
+            media_roots,
             jobs: Mutex::new(VecDeque::new()),
             sender,
         });
@@ -452,7 +465,7 @@ impl Jobs {
             ));
         }
         for source in &sources {
-            crate::files::root_media_token(&self.0.root, &source.path)?;
+            self.0.media_roots.token(&source.path)?;
         }
         self.enqueue(epoch, generation, asset, sources, None, Vec::new())
     }
@@ -857,7 +870,34 @@ impl Jobs {
         path_tokens: Vec<String>,
     ) -> Result<Value> {
         binding(epoch, generation)?;
-        let tokens = crate::files::media_import_tokens(&path_tokens)?;
+        let tokens = if path_tokens
+            .iter()
+            .any(|token| token.starts_with("library://"))
+        {
+            if path_tokens.len() > 4096 {
+                return Err(ApiError::invalid("Choose at most 4096 import entries"));
+            }
+            let mut tokens = Vec::new();
+            for token in path_tokens {
+                if token.starts_with("library://") {
+                    let path = self.0.media_roots.path(&token)?;
+                    if !vv_media::is_media_path(&path) {
+                        return Err(ApiError::invalid("Choose approved native media files"));
+                    }
+                } else {
+                    crate::files::media_import_tokens(std::slice::from_ref(&token))?;
+                }
+                if !tokens.contains(&token) {
+                    tokens.push(token);
+                }
+            }
+            if tokens.is_empty() || tokens.len() > 256 {
+                return Err(ApiError::invalid("Choose 1 to 256 unique media files"));
+            }
+            tokens
+        } else {
+            crate::files::media_import_tokens(&path_tokens)?
+        };
         self.enqueue_import(epoch, generation, ImportWork::Legacy(tokens))
     }
     pub(crate) fn prepare_project_media(
@@ -1713,8 +1753,9 @@ fn live_source(inner: &Inner, source: &PinnedSource, import: bool) -> Result<()>
             return Err(source_changed());
         }
     } else {
-        let token = crate::files::root_media_token(&inner.root, &source.path)?;
-        crate::files::validate_approved_file(&inner.root, &inner.directory, &token, &source.file)?;
+        inner
+            .media_roots
+            .validate_file(&source.path, &source.file)?;
     }
     if crate::source::file_identity(&source.file)? != source.identity {
         return Err(source_changed());
@@ -1864,7 +1905,10 @@ fn copy_checked(
     let managed_name;
     let source_name = if work.import.is_none()
         && source_name.starts_with('.')
-        && crate::files::root_media_token(&inner.root, &source.path)?.starts_with("Pasted Images/")
+        && inner
+            .media_roots
+            .token(&source.path)?
+            .starts_with("Pasted Images/")
     {
         managed_name = format!(
             "image.{}",
@@ -2548,12 +2592,35 @@ fn project_root(inner: &Inner) -> Result<()> {
 }
 
 fn validate_import_file(inner: &Inner, item: &ImportFile) -> Result<()> {
-    let live = crate::files::open_root_media(&inner.root, &inner.directory, &item.item.path)
+    let live = inner
+        .media_roots
+        .open(&item.item.path)
         .map_err(|_| source_changed())?;
     if asset_store::stable_identity(&item.file)? != item.identity
         || asset_store::stable_identity(&live)? != item.identity
     {
         return Err(source_changed());
+    }
+    validate_reference_import(inner, &item.item.path_token, &item.item.path, &item.file)?;
+    Ok(())
+}
+fn validate_reference_import(inner: &Inner, token: &str, path: &Path, file: &File) -> Result<()> {
+    if token.starts_with("library://") {
+        let (_, expected) = token.rsplit_once("?source=").ok_or_else(source_changed)?;
+        if expected.len() != 64
+            || !expected
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            return Err(source_changed());
+        }
+        let provenance = crate::library::reference_provenance(&inner.directory, path)
+            .ok_or_else(source_changed)?;
+        let identity = asset_store::stable_identity(file)?;
+        let actual = format!("{:x}", Sha256::digest(identity.as_bytes()));
+        if expected != actual || provenance["source_version"].as_str() != Some(identity.as_str()) {
+            return Err(source_changed());
+        }
     }
     Ok(())
 }
@@ -2567,8 +2634,9 @@ fn prepare_import_file(
     if cancel.load(Ordering::Acquire) {
         return Err(canceled());
     }
-    let file =
-        crate::files::open_root_media(&inner.root, &inner.directory, &inner.root.join(token))?;
+    let path = inner.media_roots.path(token)?;
+    let file = inner.media_roots.open(&path)?;
+    validate_reference_import(inner, token, &path, &file)?;
     if !file.metadata().map_err(|_| ApiError::io())?.is_file() {
         return Err(ApiError::invalid("Media must be a regular file"));
     }
@@ -2590,16 +2658,17 @@ fn probe_import_file(
     cancel: &AtomicBool,
     remaining: Duration,
 ) -> Result<PreparedMedia> {
+    let path = inner.media_roots.path(token)?;
     let meta = crate::asset_probe::probe_root_media(
         file,
-        vv_media::is_image_path(Path::new(token)),
+        vv_media::is_image_path(&path),
         cancel,
         remaining,
     )?;
     let content_hash = fingerprint(file)?;
     Ok(PreparedMedia {
         path_token: token.into(),
-        path: inner.root.join(token),
+        path,
         meta,
         content_hash,
     })
@@ -2619,7 +2688,7 @@ fn entry_identity(meta: &std::fs::Metadata) -> String {
 }
 fn otio_entry(inner: &Inner, token: &str) -> Result<(Option<std::fs::Metadata>, Option<String>)> {
     project_root(inner)?;
-    crate::files::source_entry(&inner.root, &inner.directory, token)
+    inner.media_roots.entry(&inner.media_roots.path(token)?)
 }
 fn otio_witness(inner: &Inner, token: &str) -> Result<OtioWitness> {
     let (metadata, parent) = otio_entry(inner, token)?;
@@ -2631,8 +2700,7 @@ fn otio_witness(inner: &Inner, token: &str) -> Result<OtioWitness> {
             "Media links and special files are refused",
         ));
     }
-    let file =
-        crate::files::open_root_media(&inner.root, &inner.directory, &inner.root.join(token)).ok();
+    let file = inner.media_roots.open(&inner.media_roots.path(token)?).ok();
     let identity = file
         .as_ref()
         .map(asset_store::stable_identity)
@@ -2683,7 +2751,7 @@ fn clipboard_token(inner: &Inner, path: &Path) -> Result<String> {
     } else {
         inner.root.join(path)
     };
-    crate::files::root_media_token(&inner.root, &path)
+    inner.media_roots.token(&path)
 }
 fn clipboard_text(work: &ClipboardWork) -> Result<ClipboardPayload> {
     if work.text.is_empty() {
@@ -2852,7 +2920,7 @@ fn run_clipboard(
             .filter(|item| originals.contains(&item.path))
         {
             item.content_hash = hash;
-            item.path = inner.root.join(&token);
+            item.path = inner.media_roots.path(&token)?;
         }
         witnesses.push(witness);
         if let Ok(mut jobs) = inner.jobs.lock()
@@ -2888,9 +2956,10 @@ fn run_otio(inner: &Inner, work: &Work, token: &str, budget: Duration) -> Result
     let mut witnesses = vec![descriptor];
     let mut cached: HashMap<PathBuf, crate::files::OtioProbeResult> = HashMap::new();
     let mut fatal: Option<ApiError> = None;
-    let result = crate::files::parse_otio(
+    let result = crate::files::parse_otio_with_roots(
         &bytes,
         &inner.root,
+        &inner.media_roots,
         &mut |path| {
             let mut offline = false;
             let attempt = (|| -> Result<(vv_core::MediaMeta, u64)> {
@@ -2899,7 +2968,7 @@ fn run_otio(inner: &Inner, work: &Work, token: &str, budget: Duration) -> Result
                 }
                 let remaining = otio_budget(start, budget, &work.cancel)?;
                 project_root(inner)?;
-                let token = crate::files::root_media_token(&inner.root, path)?;
+                let token = inner.media_roots.token(path)?;
                 if let Some(result) = cached.get(path) {
                     offline = result.is_err();
                     return result

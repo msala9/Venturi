@@ -1,6 +1,138 @@
 use super::*;
 
 #[test]
+fn shared_media_roots_save_reopen_offline_and_keep_project_names_and_picker_private() {
+    let project_root = root();
+    let shared = root();
+    std::fs::create_dir_all(shared.join("2026-10")).unwrap();
+    let source = shared.join("2026-10/item.mp4");
+    std::fs::write(&source, b"referenced original").unwrap();
+    let mut files = Files::new(&project_root).unwrap();
+    assert!(files.media_file(&source).is_err());
+    files.set_shared_root(&shared).unwrap();
+    assert_eq!(
+        files.media_token(&source).unwrap(),
+        "library://2026-10/item.mp4"
+    );
+    assert_eq!(
+        files
+            .media_import_tokens(&[
+                "library://2026-10/item.mp4".into(),
+                "library://2026-10/item.mp4".into()
+            ])
+            .unwrap(),
+        ["library://2026-10/item.mp4"]
+    );
+    assert!(
+        files
+            .media_import_tokens(&["library://../item.mp4".into()])
+            .is_err()
+    );
+    assert!(
+        files
+            .media_import_tokens(&["project/sub.mp4".into()])
+            .is_err(),
+        "Legacy imports stay flat"
+    );
+    let mut project = Project::default();
+    let media = project.media_pool.insert(vv_core::MediaItem {
+        path: source.clone(),
+        meta: vv_core::MediaMeta {
+            duration_frames: 24,
+            fps: vv_core::Rational::new(24, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    });
+    let mut track = vv_core::Track::new(vv_core::TrackKind::Video);
+    track.clips.push(vv_core::Clip::from_source_range(
+        project.alloc_clip_id(),
+        vv_core::ClipSource::Media(media),
+        0,
+        24,
+        0,
+        vv_core::Rational::one(),
+    ));
+    let timeline = project.timelines.insert(vv_core::Timeline {
+        name: "Shared reference".into(),
+        fps: vv_core::Rational::new(24, 1),
+        resolution: (16, 16),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let otio = vv_core::otio::timeline_to_otio(&project, timeline, None);
+    let meta = project.media_pool[media].meta.clone();
+    let (imported, _) = parse_otio_with_roots(
+        &serde_json::to_vec(&otio).unwrap(),
+        &project_root,
+        &files.media_roots(),
+        &mut |path| {
+            assert_eq!(path, source);
+            Ok((meta.clone(), 1))
+        },
+        &mut |_| {},
+    )
+    .unwrap();
+    assert!(imported.media_pool.values().any(|item| item.path == source));
+    assert!(files.set_shared_root(&shared.join("missing-root")).is_err());
+    assert!(
+        files.media_file(&source).is_ok(),
+        "Rejected configuration preserves the prior authority"
+    );
+    files.save(&project, "Reference.vvproj", true).unwrap();
+    let saved = std::fs::read(project_root.join("Reference.vvproj")).unwrap();
+    assert_eq!(
+        json!(files.load("Reference.vvproj").unwrap()),
+        json!(project)
+    );
+    assert!(
+        !files.list().unwrap()["importable_media"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item["path_token"] == "library://2026-10/item.mp4")
+    );
+    assert!(files.path("library://Other.vvproj").is_err());
+    assert!(
+        files
+            .save(&project, "library://Other.vvproj", true)
+            .is_err()
+    );
+    drop(files);
+    let mut reopened = Files::new(&project_root).unwrap();
+    assert!(reopened.load("Reference.vvproj").is_err());
+    reopened.set_shared_root(&shared).unwrap();
+    assert_eq!(
+        json!(reopened.load("Reference.vvproj").unwrap()),
+        json!(project)
+    );
+    std::fs::remove_file(&source).unwrap();
+    assert_eq!(
+        json!(reopened.load("Reference.vvproj").unwrap()),
+        json!(project),
+        "Missing originals remain native offline references"
+    );
+    assert_eq!(
+        std::fs::read(project_root.join("Reference.vvproj")).unwrap(),
+        saved
+    );
+    assert_eq!(std::fs::read_dir(&shared).unwrap().count(), 1);
+    drop(reopened);
+    std::fs::remove_dir_all(project_root).unwrap();
+    std::fs::remove_dir_all(shared).unwrap();
+}
+
+#[test]
 fn approved_nested_sources_open_and_reopen_offline_without_broadening_project_file_names() {
     let root = root();
     let files = Files::new(&root).unwrap();

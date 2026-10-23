@@ -1,6 +1,51 @@
 use super::*;
 
 #[test]
+fn shared_media_roots_source_manager_passes_registry_to_proxy_original_validation() {
+    let base =
+        std::env::temp_dir().join(format!("vv-shared-source-{}", crate::asset_jobs::nonce()));
+    let project = base.join("project");
+    let shared = base.join("shared");
+    std::fs::create_dir_all(&project).unwrap();
+    std::fs::create_dir(&shared).unwrap();
+    let path = shared.join("original.mp4");
+    std::fs::write(&path, b"no decoder is started by original validation").unwrap();
+    let roots = crate::media_roots::MediaRoots::new(&project, File::open(&project).unwrap())
+        .unwrap()
+        .with_shared(&shared)
+        .unwrap();
+    let service =
+        MediaJobs::start_with_exports_and_roots(File::open(&project).unwrap(), roots).unwrap();
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "shared:1".into(),
+        media_id: "1".into(),
+        meta: vv_core::MediaMeta {
+            duration_frames: 12,
+            fps: vv_core::Rational::new(24, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+    };
+    assert!(service.proxies.resolve(&spec, &path).unwrap().is_none());
+    std::fs::rename(&path, shared.join("previous.mp4")).unwrap();
+    std::fs::write(&path, b"changed shared source").unwrap();
+    assert_eq!(
+        service.proxies.resolve(&spec, &path).err().unwrap().1,
+        "SOURCE_CHANGED"
+    );
+    assert!(service.jobs.lock().unwrap().is_empty());
+    drop(service);
+    std::fs::remove_dir_all(base).unwrap();
+}
+
+#[test]
 fn prepared_meter_pages_require_exact_job_origin_ready_state_and_source_witness_without_rendering()
 {
     let jobs = MediaJobs::start().unwrap();

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {libraryDocument,libraryMatches,sharedItemId,missingSharedUses,libraryCopyEligibility,createLibraryPanel} from "../js/library.js";
+import {libraryDocument,libraryMatches,sharedItemId,missingSharedUses,libraryCopyEligibility,libraryReferenceEligibility,createLibraryPanel} from "../js/library.js";
 
 test("shared imports follow the captured document generation and preserve large seed strings",()=>{
   assert.equal(libraryDocument(null),null);
@@ -54,4 +54,40 @@ test('oversize catalog entries remain searchable and disable both copy actions w
     const query=all(root).find(node=>node.type==='search');query.value='coastal';query.dispatchEvent(new Event('input'));assert.equal(cards().length,1);assert.ok(all(cards()[0]).some(node=>String(node.textContent).includes(large.id)));
     query.value='';query.dispatchEvent(new Event('input'));const smallCard=cards().find(node=>all(node).some(child=>String(child.textContent).includes(small.id)));assert.equal(all(smallCard).find(node=>node.tag==='button').disabled,false);
   }finally{await panel?.cancel();globalThis.document=previous.document;globalThis.Option=previous.Option;}
+});
+
+test('shared-original eligibility requires configured archive access and a safe relative locator, independently of copy size',()=>{
+  const catalog={configured:true,shared_originals:true,max_copy_bytes:536870912},item={archived:true,archive_rel:'2026-10/video/clip.mp4',bytes:1073741824};
+  assert.equal(libraryCopyEligibility(item,catalog).allowed,false);assert.equal(libraryReferenceEligibility(item,catalog).allowed,true);
+  for(const archive_rel of ['',undefined,'/absolute.mp4','C:/absolute.mp4','C:relative.mp4','folder\\clip.mp4','../clip.mp4','folder/../clip.mp4','folder/./clip.mp4','folder//clip.mp4','folder/','folder/clip\0.mp4'])assert.equal(libraryReferenceEligibility({...item,archive_rel},catalog).allowed,false,String(archive_rel));
+  for(const bytes of [0,-1,undefined,NaN,Number.MAX_SAFE_INTEGER+1])assert.equal(libraryReferenceEligibility({...item,bytes},catalog).allowed,false);
+  for(const archived of [false,undefined,'true'])assert.equal(libraryReferenceEligibility({...item,archived},catalog).allowed,false);
+  for(const configured of [{configured:true},{configured:true,shared_originals:false},{configured:false,shared_originals:true},null])assert.equal(libraryReferenceEligibility(item,configured).allowed,false);
+});
+
+test('explicit shared-original actions send reference mode and retain the token without fallback on refusal or project changes',async t=>{
+  class Element extends EventTarget{
+    constructor(tag){super();this.tag=tag;this.children=[];this.attributes={};this.isConnected=true;this.value='';this.disabled=false;}
+    append(...nodes){this.children.push(...nodes);}prepend(...nodes){this.children.unshift(...nodes);}replaceChildren(...nodes){this.children=[...nodes];}setAttribute(key,value){this.attributes[key]=value;}
+    querySelectorAll(tag){return all(this).filter(node=>node.tag===tag);}
+  }
+  const all=node=>[node,...node.children.flatMap(all)],previous={document:globalThis.document,Option:globalThis.Option};
+  globalThis.document={createElement:tag=>new Element(tag)};globalThis.Option=class extends Element{constructor(label,value){super('option');this.textContent=label;this.value=value;}};
+  try{for(const action of ['import','relink','failed','wrong-token','changed'])await t.test(action,async()=>{
+    const item={id:'0123456789abcdef',kind:'video',model:'Model',prompt:'Archived clip',bytes:1073741824,archived:true,archive_rel:'2026-10/clip.mp4'},token='library://ds4/2026-10/clip.mp4';
+    const state={project_name:'project.vvproj',project_epoch:'epoch',generation:'1',media:[{id:'7',offline:true,shared_origin:{item:{id:item.id}}}]},calls=[],writes=[],root=new Element('div');let resolve,reject,panel;
+    try{
+      panel=createLibraryPanel({root,getState:()=>state,canCommit:()=>true,commit:async operation=>writes.push(operation),notice(){},api:(path,body)=>{calls.push({path,body});return path==='/library'?Promise.resolve({configured:true,shared_originals:true,max_copy_bytes:536870912,items:[item],archive:{reachable:true,configured:true,retention_days:30}}):new Promise((done,failed)=>{resolve=done;reject=failed;});}});
+      await panel.open();const kind=all(root).find(node=>node.tag==='select');kind.value='all';kind.dispatchEvent(new Event('change'));
+      const nodes=all(root),status=nodes.find(node=>node.attributes.role==='status'),copy=nodes.find(node=>node.textContent==='Import project copy');assert.equal(copy.disabled,true);
+      const reference=nodes.find(node=>node.textContent===(action==='relink'?'Relink 1 missing project uses to shared original':'Reference shared original'));assert.equal(reference.disabled,false);reference.dispatchEvent(new Event('click'));
+      assert.match(status.textContent,/Checking shared original/);assert.deepEqual(calls[1],{path:`/library/items/${item.id}/prepare`,body:{project_epoch:'epoch',mode:'reference'}});
+      if(action==='changed')state.generation='2';
+      if(action==='failed')reject(new Error('SOURCE_CHANGED · shared original changed'));else resolve({id:'reference-job',state:'ready',result:{path_token:action==='wrong-token'?'local-copy.mp4':token}});
+      await new Promise(done=>setImmediate(done));assert.equal(calls.length,2,'Reference checks never fall back to a copy prepare');
+      if(action==='import')assert.deepEqual(writes,[{kind:'import_media',path_token:token}]);
+      else if(action==='relink')assert.deepEqual(writes,[{kind:'edit_catalog',edit:{kind:'relink',items:[{media_id:'7',path_token:token}]}}]);
+      else{assert.deepEqual(writes,[]);assert.doesNotMatch(status.textContent,/prepared project copy|server media picker/);}
+    }finally{await panel?.cancel();}
+  });}finally{globalThis.document=previous.document;globalThis.Option=previous.Option;}
 });

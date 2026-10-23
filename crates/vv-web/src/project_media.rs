@@ -180,11 +180,35 @@ pub(crate) fn import_work(session: &Session, request: &ImportRequest) -> Result<
         parent: raw.clone(),
     })
 }
+#[cfg(test)]
 pub(crate) fn relink_work(session: &Session, action: &RelinkAction) -> Result<Work> {
+    relink_work_inner(session, action, None)
+}
+pub(crate) fn relink_work_with_roots(
+    session: &Session,
+    action: &RelinkAction,
+    roots: &crate::media_roots::MediaRoots,
+) -> Result<Work> {
+    relink_work_inner(session, action, Some(roots))
+}
+fn relink_work_inner(
+    session: &Session,
+    action: &RelinkAction,
+    roots: Option<&crate::media_roots::MediaRoots>,
+) -> Result<Work> {
     let (raw, chosen, directory) = match action {
         RelinkAction::Chosen { items } => {
             for item in items {
-                crate::files::project_media_tokens(std::slice::from_ref(&item.path_token))?;
+                if item.path_token.starts_with("library://") {
+                    let path = roots
+                        .ok_or_else(|| ApiError::invalid("Shared originals are not configured"))?
+                        .path(&item.path_token)?;
+                    if !vv_media::is_media_path(&path) {
+                        return Err(ApiError::invalid("Choose approved native shared media"));
+                    }
+                } else {
+                    crate::files::project_media_tokens(std::slice::from_ref(&item.path_token))?;
+                }
             }
             (
                 items.iter().map(|v| v.media_id.clone()).collect::<Vec<_>>(),

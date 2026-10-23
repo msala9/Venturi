@@ -51,6 +51,54 @@ fn bytes(path: &Path) -> Vec<u8> {
 }
 
 #[test]
+fn shared_media_roots_resolvers_pin_only_requested_video_audio_and_root_bound_manifest() {
+    let mut project = Fixture::new();
+    let shared = Fixture::new();
+    std::fs::create_dir(shared.root.join("2026-10")).unwrap();
+    let video = shared.item("2026-10/item.mp4");
+    let audio = shared.root.join("2026-10/item.wav");
+    std::fs::write(&video.path, b"shared picture").unwrap();
+    std::fs::write(&audio, b"shared audio").unwrap();
+    rustix::fs::mknodat(
+        rustix::fs::CWD,
+        shared.root.join("unused.wav"),
+        rustix::fs::FileType::Fifo,
+        rustix::fs::Mode::RUSR | rustix::fs::Mode::WUSR,
+        0,
+    )
+    .unwrap();
+    project.files.set_shared_root(&shared.root).unwrap();
+    let sources = project.sources();
+    assert_eq!(sources.manifest().unwrap(), Manifest::default());
+    let picture = sources
+        .resolver(&PreviewVideoSources::new())
+        .resolve(MediaId::from_raw(1), &video, &video.path)
+        .unwrap();
+    let sound = sources.audio_resolver().resolve(&audio).unwrap();
+    assert_eq!(bytes(&picture.path), b"shared picture");
+    assert_eq!(bytes(&sound.path), b"shared audio");
+    let manifest = sources.manifest().unwrap();
+    assert_eq!(manifest.sources.len(), 2);
+    assert!(
+        manifest
+            .sources
+            .keys()
+            .all(|key| key.starts_with("library://2026-10/"))
+    );
+    assert!(project.sources().validate_manifest(&manifest).is_ok());
+    assert!(
+        shared.sources().validate_manifest(&manifest).is_err(),
+        "Qualified tokens cannot bind a different authority"
+    );
+    std::fs::rename(&video.path, shared.root.join("old.mp4")).unwrap();
+    std::fs::write(&video.path, b"replacement").unwrap();
+    assert_eq!(bytes(&picture.path), b"shared picture");
+    assert!(sources.validate().is_err());
+    assert!(project.sources().validate_manifest(&manifest).is_err());
+    assert_eq!(bytes(&sound.path), b"shared audio");
+}
+
+#[test]
 fn only_requested_sources_are_opened_and_cache_manifest_reopens_only_touched_files() {
     let f = Fixture::new();
     std::fs::create_dir_all(f.root.join("nested")).unwrap();

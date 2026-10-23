@@ -191,9 +191,7 @@ pub(super) fn run(
                         skipped.push(target.id.raw().to_string());
                         continue;
                     }
-                    let reachable = if let Ok(token) =
-                        crate::files::root_media_token(&inner.root, &target.item.path)
-                    {
+                    let reachable = if let Ok(token) = inner.media_roots.token(&target.item.path) {
                         let witness = otio_witness(inner, &token)?;
                         let reachable = witness.entry.is_some();
                         witnesses.push(witness);

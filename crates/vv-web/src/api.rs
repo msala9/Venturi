@@ -1318,7 +1318,10 @@ async fn library_catalog(State(state): State<AppState>) -> Result<Json<Value>> {
 async fn library_prepare(
     State(state): State<AppState>,
     Path(id): Path<String>,
-    payload: std::result::Result<Json<SourceQuery>, axum::extract::rejection::JsonRejection>,
+    payload: std::result::Result<
+        Json<crate::library::PrepareRequest>,
+        axum::extract::rejection::JsonRejection,
+    >,
 ) -> Result<Json<Value>> {
     let query = payload
         .map_err(|_| ApiError::invalid("Invalid library transfer request"))?
@@ -1332,7 +1335,7 @@ async fn library_prepare(
     }
     state
         .library
-        .prepare(&id, &query.project_epoch)
+        .prepare_with_mode(&id, &query.project_epoch, query.mode)
         .await
         .map(Json)
 }

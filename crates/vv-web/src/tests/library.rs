@@ -266,3 +266,146 @@ async fn truncated_library_transfer_never_publishes_project_media() {
     drop(server);
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[tokio::test]
+async fn shared_original_reference_uses_verified_archive_locator_without_downloading_media() {
+    let root = root();
+    let shared = super::tests::root();
+    std::fs::create_dir(shared.join("2026-10")).unwrap();
+    let path = shared.join("2026-10/0123456789abcdef.wav");
+    vv_media::audio_file::write_audio_file(
+        &path,
+        vv_media::audio_file::AudioFileFormat::Wav,
+        &vec![0.0; 800],
+        8000,
+        1,
+    )
+    .unwrap();
+    let original = std::fs::read(&path).unwrap();
+    let mut archived = item(original.len() as u64);
+    archived["archived"] = json!(true);
+    archived["archive_rel"] = json!("2026-10/0123456789abcdef.wav");
+    let server = Server::start(index(archived), vec![]);
+    let mut files = crate::files::Files::new(&root).unwrap();
+    files.set_shared_root(&shared).unwrap();
+    let library = Library::start_with_roots(
+        Some(&server.url),
+        files.root_file().unwrap(),
+        files.media_roots(),
+    )
+    .unwrap();
+    let job = library
+        .prepare_with_mode("0123456789abcdef", "epoch", PrepareMode::Reference)
+        .await
+        .unwrap();
+    let id = job["id"].as_str().unwrap();
+    let started = Instant::now();
+    let result = loop {
+        let status = library.status(id, "epoch", false).unwrap();
+        if status["state"] == "ready" {
+            break status["result"].clone();
+        }
+        assert!(
+            matches!(status["state"].as_str(), Some("queued" | "running")),
+            "{status}"
+        );
+        assert!(started.elapsed() < Duration::from_secs(10));
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    };
+    assert_eq!(
+        result["path_token"],
+        format!(
+            "library://2026-10/0123456789abcdef.wav?source={:x}",
+            Sha256::digest(result["source_version"].as_str().unwrap().as_bytes())
+        )
+    );
+    assert_eq!(result["origin"]["mode"], "reference");
+    assert!(result["origin"].get("sha256").is_none());
+    assert_eq!(server.requests.load(Ordering::Relaxed), 2);
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    assert!(std::fs::read_dir(&root).unwrap().all(|entry| {
+        !entry
+            .unwrap()
+            .path()
+            .extension()
+            .is_some_and(|ext| ext == "wav")
+    }));
+    assert_eq!(
+        files.shared_origin(&path).unwrap()["item"]["id"],
+        "0123456789abcdef"
+    );
+    assert_eq!(
+        files
+            .media_roots()
+            .path(result["path_token"].as_str().unwrap())
+            .unwrap(),
+        path
+    );
+    drop(library);
+    drop(files);
+    let host =
+        crate::host::Host::start_with_libraries(&root, &root.join(".presets"), &shared).unwrap();
+    for (id, operation) in [
+        (
+            "reference-project",
+            json!({"kind":"new_project","name":"Referenced"}),
+        ),
+        (
+            "reference-import",
+            json!({"kind":"import_media","path_token":result["path_token"]}),
+        ),
+        ("reference-save", json!({"kind":"save"})),
+        (
+            "reference-reopen",
+            json!({"kind":"open_project","path_token":"Referenced.vvproj"}),
+        ),
+    ] {
+        let state = host.call(crate::host::Action::Session).await.unwrap();
+        let mutation = serde_json::from_value(json!({"command_id":id,"client_id":"test-reference","command_epoch":state["command_epoch"],"project_epoch":state["project_epoch"],"if_generation":state["generation"],"operation":operation})).unwrap();
+        host.project_mutation(mutation).await.unwrap();
+    }
+    let state = host.call(crate::host::Action::Session).await.unwrap();
+    let media = state["media"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|m| m["name"] == "0123456789abcdef.wav")
+        .unwrap();
+    assert_eq!(media["offline"], false);
+    assert_eq!(media["shared_origin"]["mode"], "reference");
+    let mutation = serde_json::from_value(json!({"command_id":"reference-relink","client_id":"test-reference","command_epoch":state["command_epoch"],"project_epoch":state["project_epoch"],"if_generation":state["generation"],"operation":{"kind":"edit_catalog","edit":{"kind":"relink","items":[{"media_id":media["id"],"path_token":result["path_token"]}]}}})).unwrap();
+    host.project_mutation(mutation).await.unwrap();
+    let source = host
+        .source_snapshot(
+            media["id"].as_str().unwrap().into(),
+            crate::source::SourceQuery {
+                project_epoch: state["project_epoch"].as_str().unwrap().into(),
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(source.file.metadata().unwrap().len(), original.len() as u64);
+    assert!(
+        std::fs::read_to_string(root.join("Referenced.vvproj"))
+            .unwrap()
+            .contains(path.to_str().unwrap())
+    );
+    let roots = host.media_roots().await.unwrap();
+    assert!(roots.open(&path).is_ok());
+    drop(source);
+    drop(host);
+    std::fs::OpenOptions::new()
+        .append(true)
+        .open(&path)
+        .unwrap()
+        .write_all(&[0])
+        .unwrap();
+    assert_ne!(
+        crate::asset_store::stable_identity(&roots.open(&path).unwrap()).unwrap(),
+        result["source_version"].as_str().unwrap()
+    );
+    drop(roots);
+    drop(server);
+    std::fs::remove_dir_all(root).unwrap();
+    std::fs::remove_dir_all(shared).unwrap();
+}

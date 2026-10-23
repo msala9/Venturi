@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use std::{
     fs::File,
     os::fd::AsRawFd,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::atomic::{AtomicBool, Ordering},
     time::Duration,
 };
@@ -144,6 +144,7 @@ pub struct Task {
     file: File,
     root: File,
     root_path: PathBuf,
+    media_roots: crate::media_roots::MediaRoots,
     path: PathBuf,
     token: String,
     parent: Option<String>,
@@ -180,13 +181,8 @@ impl Task {
             return Err(source_changed());
         }
         let root = files.root_file()?;
-        let root_path = source
-            .path
-            .ancestors()
-            .nth(Path::new(&token).components().count())
-            .ok_or_else(source_changed)?
-            .to_path_buf();
-        let parent = crate::files::source_entry(&root_path, &root, &token)?.1;
+        let media_roots = files.media_roots();
+        let parent = media_roots.entry(&source.path)?.1;
         let task = Self {
             timeline: id,
             replacement: replacement.clone(),
@@ -198,7 +194,8 @@ impl Task {
             identity: crate::asset_store::stable_identity(&file)?,
             file,
             root,
-            root_path,
+            root_path: files.root_path().to_owned(),
+            media_roots,
             path: source.path.clone(),
             token,
             parent,
@@ -210,16 +207,32 @@ impl Task {
         Ok(task)
     }
     fn validate_source(&self) -> Result<()> {
+        let live_root = File::from(
+            rustix::fs::open(
+                &self.root_path,
+                rustix::fs::OFlags::RDONLY
+                    | rustix::fs::OFlags::DIRECTORY
+                    | rustix::fs::OFlags::NOFOLLOW
+                    | rustix::fs::OFlags::NONBLOCK
+                    | rustix::fs::OFlags::CLOEXEC,
+                rustix::fs::Mode::empty(),
+            )
+            .map_err(|_| source_changed())?,
+        );
+        crate::asset_store::same_directory(&self.root, &live_root).map_err(|_| source_changed())?;
         if crate::source::source_version(&self.file)? != self.version
             || crate::asset_store::stable_identity(&self.file)? != self.identity
-            || crate::files::source_entry(&self.root_path, &self.root, &self.token)
+            || self
+                .media_roots
+                .entry(&self.path)
                 .map_err(|_| source_changed())?
                 .1
                 != self.parent
         {
             return Err(source_changed());
         }
-        crate::files::validate_approved_file(&self.root_path, &self.root, &self.token, &self.file)
+        self.media_roots
+            .validate_file(&self.path, &self.file)
             .map_err(|_| source_changed())
     }
     pub fn run(self, cancel: &AtomicBool) -> Result<Verified> {

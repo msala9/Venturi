@@ -87,6 +87,7 @@ struct ProjectVersion {
 pub struct Files {
     root: PathBuf,
     dir: File,
+    media: crate::media_roots::MediaRoots,
     version: RefCell<Option<(String, ProjectVersion)>>,
 }
 
@@ -112,6 +113,13 @@ pub(crate) fn open_root_media(root: &Path, dir: &File, path: &Path) -> Result<Fi
 }
 
 impl Files {
+    pub(crate) fn set_shared_root(&mut self, path: &Path) -> std::io::Result<()> {
+        self.media = self.media.with_shared(path)?;
+        Ok(())
+    }
+    pub(crate) fn media_roots(&self) -> crate::media_roots::MediaRoots {
+        self.media.clone()
+    }
     pub fn source_browser_task(&self, query: SourcesQuery) -> Result<SourceBrowserTask> {
         SourceBrowserTask::new(&self.root, &self.dir, query)
     }
@@ -120,7 +128,40 @@ impl Files {
         self.source_browser_task(query.clone())?.run()
     }
     pub fn media_import_tokens(&self, path_tokens: &[String]) -> Result<Vec<String>> {
-        media_import_tokens(path_tokens)
+        if !path_tokens
+            .iter()
+            .any(|token| token.starts_with("library://"))
+        {
+            return media_import_tokens(path_tokens);
+        }
+        if path_tokens.is_empty() || path_tokens.len() > 4096 {
+            return Err(ApiError::invalid(
+                "Choose 1 to 256 unique approved media files",
+            ));
+        }
+        let mut seen = std::collections::HashSet::new();
+        let mut tokens = Vec::new();
+        for token in path_tokens {
+            if token.starts_with("library://") {
+                let path = self.media.path(token)?;
+                if !vv_media::is_media_path(&path) {
+                    return Err(ApiError::invalid(
+                        "Choose a supported native shared media source",
+                    ));
+                }
+            } else {
+                media_import_tokens(std::slice::from_ref(token))?;
+            }
+            if seen.insert(token.as_str()) {
+                tokens.push(token.clone());
+            }
+            if tokens.len() > MAX_MEDIA_IMPORTS {
+                return Err(ApiError::invalid(
+                    "A media import batch supports at most 256 unique files",
+                ));
+            }
+        }
+        Ok(tokens)
     }
     pub fn root_file(&self) -> Result<File> {
         self.dir.try_clone().map_err(|_| ApiError::io())
@@ -129,16 +170,19 @@ impl Files {
         &self.root
     }
     pub fn shared_origin(&self, path: &Path) -> Option<Value> {
+        if self.media.token(path).ok()?.starts_with("library://") {
+            return crate::library::reference_provenance(&self.dir, path);
+        }
         if path.parent() != Some(self.root.as_path()) {
             return None;
         }
         crate::library::provenance(&self.dir, path.file_name()?.to_str()?)
     }
     pub fn media_file(&self, path: &Path) -> Result<File> {
-        open_root_media(&self.root, &self.dir, path)
+        self.media.open(path)
     }
     pub fn media_token(&self, path: &Path) -> Result<String> {
-        root_media_token(&self.root, path)
+        self.media.token(path)
     }
     #[cfg(test)]
     pub fn probe(&self, name: &str) -> Result<(PathBuf, vv_core::MediaMeta)> {
@@ -182,9 +226,11 @@ impl Files {
         let root = root.canonicalize()?;
         let dir = File::open(&root)?;
         dir.try_lock().map_err(|_| std::io::Error::other("Another Venturi Web process owns this project root, or directory locking is unavailable"))?;
+        let media = crate::media_roots::MediaRoots::new(&root, dir.try_clone()?)?;
         Ok(Self {
             root,
             dir,
+            media,
             version: RefCell::new(None),
         })
     }
@@ -379,7 +425,7 @@ impl Files {
             .map_err(|_| ApiError::io())?,
         );
         crate::asset_store::same_directory(&self.dir, &live)?;
-        validate_root_media_in(project, &self.root, &self.dir)
+        validate_media_in(project, &self.root, &self.media)
     }
     pub fn path(&self, name: &str) -> Result<PathBuf> {
         Self::name(name)?;
@@ -506,9 +552,28 @@ impl Files {
 }
 
 pub(crate) type OtioProbeResult = std::result::Result<(vv_core::MediaMeta, u64), String>;
+#[cfg(test)]
 pub(crate) fn parse_otio(
     bytes: &[u8],
     root: &Path,
+    probe: &mut dyn FnMut(&Path) -> OtioProbeResult,
+    on_total: &mut dyn FnMut(usize),
+) -> Result<(Project, Vec<String>)> {
+    let dir = File::from(
+        rustix::fs::open(
+            root,
+            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+            Mode::empty(),
+        )
+        .map_err(|_| ApiError::io())?,
+    );
+    let roots = crate::media_roots::MediaRoots::new(root, dir).map_err(|_| ApiError::io())?;
+    parse_otio_with_roots(bytes, root, &roots, probe, on_total)
+}
+pub(crate) fn parse_otio_with_roots(
+    bytes: &[u8],
+    root: &Path,
+    roots: &crate::media_roots::MediaRoots,
     probe: &mut dyn FnMut(&Path) -> OtioProbeResult,
     on_total: &mut dyn FnMut(usize),
 ) -> Result<(Project, Vec<String>)> {
@@ -532,7 +597,7 @@ pub(crate) fn parse_otio(
         ApiError::invalid("Native OTIO parsing failed; the current project was preserved")
     })?
     .map_err(|_| ApiError::invalid("The native engine could not import this OTIO timeline"))?;
-    validate_root_media(&mut imported.project, root)?;
+    validate_media_in(&mut imported.project, root, roots)?;
     validate_project(&imported.project)?;
     imported.project.refresh_clip_rates();
     let mut warnings: Vec<_> = imported
@@ -549,18 +614,11 @@ pub(crate) fn parse_otio(
     }
     Ok((imported.project, warnings))
 }
-fn validate_root_media(project: &mut Project, root: &Path) -> Result<()> {
-    let dir = File::from(
-        rustix::fs::open(
-            root,
-            OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
-            Mode::empty(),
-        )
-        .map_err(|_| ApiError::io())?,
-    );
-    validate_root_media_in(project, root, &dir)
-}
-fn validate_root_media_in(project: &mut Project, root: &Path, dir: &File) -> Result<()> {
+fn validate_media_in(
+    project: &mut Project,
+    root: &Path,
+    roots: &crate::media_roots::MediaRoots,
+) -> Result<()> {
     for item in project.media_pool.values_mut() {
         if item.compound.is_some() {
             continue;
@@ -570,9 +628,9 @@ fn validate_root_media_in(project: &mut Project, root: &Path, dir: &File) -> Res
         } else {
             root.join(&item.path)
         };
-        let token = root_media_token(root, &path)?;
-        if source_entry(root, dir, &token)?.0.is_some() {
-            open_root_media(root, dir, &path)?;
+        roots.token(&path)?;
+        if roots.entry(&path)?.0.is_some() {
+            roots.open(&path)?;
         }
         item.path = path;
     }

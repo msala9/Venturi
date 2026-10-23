@@ -1,6 +1,74 @@
 use super::*;
 use sha2::Digest;
 
+#[test]
+fn shared_media_roots_proxy_leases_bind_exact_original_without_requiring_project_copy() {
+    let fixture = Fixture::new();
+    let shared = fixture
+        .root
+        .with_extension(format!("shared-{}", crate::asset_jobs::nonce()));
+    std::fs::create_dir(&shared).unwrap();
+    let path = shared.join("source.mp4");
+    let mut spec = fixture.source();
+    std::fs::copy(fixture.root.join("source.mp4"), &path).unwrap();
+    spec.file = File::open(&path).unwrap();
+    let roots =
+        crate::media_roots::MediaRoots::new(&fixture.root, File::open(&fixture.root).unwrap())
+            .unwrap()
+            .with_shared(&shared)
+            .unwrap();
+    let manager = Manager::start_with_cache_and_roots(
+        &fixture.root,
+        &fixture.root.join("shared-cache"),
+        Some(roots),
+    )
+    .unwrap();
+    assert!(manager.resolve(&spec, &path).unwrap().is_none());
+    assert!(fixture.manager.resolve(&spec, &path).is_err());
+    let version = identity(&spec.file).unwrap();
+    let Acquisition::Write(reservation) = manager.0.cache.acquire("shared-original").unwrap()
+    else {
+        panic!("Expected a new cache reservation");
+    };
+    let output = reservation.output();
+    let temporary = output.with_extension(format!("tmp-{}.mp4", std::process::id()));
+    std::fs::write(&temporary, b"identity-only shared proxy").unwrap();
+    std::fs::rename(&temporary, &output).unwrap();
+    let artifact = Arc::new(Artifact {
+        stored: reservation.publish().unwrap(),
+        original: spec.file.try_clone().unwrap(),
+        original_path: path.clone(),
+        source_version: version,
+    });
+    let lease = Lease {
+        artifact,
+        root: manager.0.root.clone(),
+    };
+    lease.validate().unwrap();
+    assert!(
+        check_original(
+            &manager.0.root,
+            &spec,
+            lease.source_version(),
+            &fixture.root.join("source.mp4")
+        )
+        .is_err()
+    );
+    let previous = std::fs::metadata(&path).unwrap().modified().unwrap();
+    std::fs::write(&path, b"changed shared original").unwrap();
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_times(std::fs::FileTimes::new().set_modified(previous))
+        .unwrap();
+    assert_eq!(lease.validate().unwrap_err().1, "SOURCE_CHANGED");
+    assert!(!fixture.root.join("shared-original.mp4").exists());
+    drop(lease);
+    drop(manager);
+    std::fs::remove_dir_all(shared).unwrap();
+}
+
 struct Fixture {
     root: PathBuf,
     manager: Manager,

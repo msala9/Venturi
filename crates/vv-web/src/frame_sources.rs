@@ -1,12 +1,12 @@
 use crate::{
     error::{ApiError, Result},
-    files::{Files, open_approved_media, root_media_token, source_entry, validate_approved_file},
+    files::Files,
+    media_roots::MediaRoots,
 };
 use std::{
     collections::BTreeMap,
     fs::File,
     os::fd::AsRawFd,
-    os::unix::fs::MetadataExt,
     path::{Path, PathBuf},
     sync::{Arc, Mutex},
 };
@@ -18,7 +18,6 @@ use vv_session::export::{
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct Witness {
-    root: (u64, u64),
     lineage: Option<String>,
     version: String,
 }
@@ -29,8 +28,7 @@ pub struct Manifest {
 }
 
 pub struct FrameSources {
-    root: PathBuf,
-    directory: File,
+    roots: MediaRoots,
     touched: Mutex<Manifest>,
 }
 
@@ -59,8 +57,7 @@ fn native_error(error: ApiError) -> ExportError {
 impl FrameSources {
     pub fn capture(files: &Files) -> Result<Self> {
         Ok(Self {
-            root: files.root_path().to_owned(),
-            directory: files.root_file()?,
+            roots: files.media_roots(),
             touched: Mutex::new(Manifest::default()),
         })
     }
@@ -101,23 +98,19 @@ impl FrameSources {
     }
 
     fn open(&self, token: &str) -> Result<(File, Witness)> {
-        let (_, lineage) = source_entry(&self.root, &self.directory, token)?;
-        let file = open_approved_media(&self.root, &self.directory, token)?;
+        let path = self.roots.path(token)?;
+        if !vv_media::is_media_path(&path) {
+            return Err(ApiError::invalid("Choose a supported native media source"));
+        }
+        let (_, lineage) = self.roots.entry(&path)?;
+        let file = self.roots.open(&path)?;
         let version = crate::asset_store::stable_identity(&file)?;
-        validate_approved_file(&self.root, &self.directory, token, &file)?;
-        let (_, current_lineage) = source_entry(&self.root, &self.directory, token)?;
+        self.roots.validate_file(&path, &file)?;
+        let (_, current_lineage) = self.roots.entry(&path)?;
         if lineage != current_lineage || version != crate::asset_store::stable_identity(&file)? {
             return Err(changed());
         }
-        let root = self.directory.metadata().map_err(|_| ApiError::io())?;
-        Ok((
-            file,
-            Witness {
-                root: (root.dev(), root.ino()),
-                lineage,
-                version,
-            },
-        ))
+        Ok((file, Witness { lineage, version }))
     }
 
     fn original(&self, item: &MediaItem) -> Result<File> {
@@ -125,7 +118,7 @@ impl FrameSources {
     }
 
     fn original_path(&self, path: &Path) -> Result<File> {
-        let token = root_media_token(&self.root, path)?;
+        let token = self.roots.token(path)?;
         let (file, witness) = self.open(&token)?;
         let mut touched = self.touched.lock().map_err(|_| ApiError::io())?;
         match touched.sources.get(&token) {

@@ -250,16 +250,40 @@ impl MediaJobs {
     pub fn start() -> std::io::Result<Self> {
         Self::start_inner(None, false, None)
     }
+    #[cfg(test)]
     pub fn start_with_exports(root: File) -> std::io::Result<Self> {
         match ExportStore::open(&root) {
             Ok(store) => Self::start_inner(Some(Arc::new(store)), false, Some(root)),
             Err(_) => Self::start_inner(None, true, Some(root)),
         }
     }
+    pub(crate) fn start_with_exports_and_roots(
+        root: File,
+        media_roots: crate::media_roots::MediaRoots,
+    ) -> std::io::Result<Self> {
+        match ExportStore::open(&root) {
+            Ok(store) => Self::start_inner_with_roots(
+                Some(Arc::new(store)),
+                false,
+                Some(root),
+                Some(media_roots),
+            ),
+            Err(_) => Self::start_inner_with_roots(None, true, Some(root), Some(media_roots)),
+        }
+    }
+    #[cfg(test)]
     fn start_inner(
+        exports: Option<Arc<ExportStore>>,
+        exports_blocked: bool,
+        proxy_root: Option<File>,
+    ) -> std::io::Result<Self> {
+        Self::start_inner_with_roots(exports, exports_blocked, proxy_root, None)
+    }
+    fn start_inner_with_roots(
         exports: Option<Arc<ExportStore>>,
         mut exports_blocked: bool,
         proxy_root: Option<File>,
+        media_roots: Option<crate::media_roots::MediaRoots>,
     ) -> std::io::Result<Self> {
         let root = std::env::temp_dir().join(format!(
             "venturi-web-media-{}-{}",
@@ -274,8 +298,11 @@ impl MediaJobs {
             .as_ref()
             .map(|file| PathBuf::from(format!("/proc/self/fd/{}", file.as_raw_fd())))
             .unwrap_or_else(|| root.clone());
-        let proxies = crate::proxy::Manager::start(&proxy_path)
-            .map_err(|error| std::io::Error::other(error.2))?;
+        let proxies = match media_roots {
+            Some(roots) => crate::proxy::Manager::start_with_roots(&proxy_path, roots),
+            None => crate::proxy::Manager::start(&proxy_path),
+        }
+        .map_err(|error| std::io::Error::other(error.2))?;
         let worker_proxies = proxies.clone();
         let worker_root = root.clone();
         let mut recovered = VecDeque::<Job>::new();

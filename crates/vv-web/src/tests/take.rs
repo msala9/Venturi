@@ -1,5 +1,58 @@
 use super::*;
 
+#[test]
+fn shared_media_roots_take_preserves_approved_b_path_and_refuses_parent_substitution() {
+    let (mut files, mut session, id, mut replacement, root) = setup();
+    let shared = root.with_extension(format!("shared-{}", crate::asset_jobs::nonce()));
+    std::fs::create_dir(&shared).unwrap();
+    let path = shared.join("new.wav");
+    std::fs::rename(root.join("new.wav"), &path).unwrap();
+    files.set_shared_root(&shared).unwrap();
+    let media = core::MediaId::from_raw(replacement.media_id.parse().unwrap());
+    session.project.media_pool[media].path = path.clone();
+    session.project.media_pool[media].content_hash = vv_media::content_fingerprint(&path).unwrap();
+    replacement.source_version =
+        Some(crate::source::source_version(&files.media_file(&path).unwrap()).unwrap());
+    let before = serde_json::to_value(&session.project.timelines[id]).unwrap();
+    let verified = Task::new(&session, &files, id, &replacement, true)
+        .unwrap()
+        .run(&AtomicBool::new(false))
+        .unwrap();
+    let history = session.history.position();
+    apply_verified(&mut session, &files, id, &replacement, &verified).unwrap();
+    assert_eq!(session.history.position(), history + 1);
+    assert_eq!(session.project.media_pool[media].path, path);
+    crate::commands::history(&mut session, &crate::commands::Operation::Undo).unwrap();
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    files
+        .save(&session.project, "shared-take.vvproj", true)
+        .unwrap();
+    assert_eq!(
+        files.load("shared-take.vvproj").unwrap().media_pool[media].path,
+        path
+    );
+    let task = Task::new(&session, &files, id, &replacement, true).unwrap();
+    let moved = shared.with_extension("moved");
+    std::fs::rename(&shared, &moved).unwrap();
+    std::os::unix::fs::symlink(&moved, &shared).unwrap();
+    assert_eq!(
+        task.run(&AtomicBool::new(false)).err().unwrap().1,
+        "SOURCE_CHANGED"
+    );
+    assert_eq!(
+        serde_json::to_value(&session.project.timelines[id]).unwrap(),
+        before
+    );
+    drop(verified);
+    drop(files);
+    std::fs::remove_file(shared).unwrap();
+    std::fs::remove_dir_all(moved).unwrap();
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn setup() -> (
     Files,
     Session,

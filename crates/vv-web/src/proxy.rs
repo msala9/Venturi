@@ -120,6 +120,7 @@ impl Settings {
 struct Root {
     path: PathBuf,
     directory: File,
+    media_roots: crate::media_roots::MediaRoots,
 }
 impl Root {
     fn check(&self) -> Result<()> {
@@ -265,13 +266,15 @@ struct Artifact {
 }
 impl Artifact {
     fn validate(&self, root: &Root) -> Result<()> {
+        root.check()?;
         self.stored.validate().map_err(|_| changed())?;
         if identity(&self.original)? != self.source_version {
             return Err(changed());
         }
-        let current =
-            crate::files::open_root_media(&root.path, &root.directory, &self.original_path)
-                .map_err(|_| changed())?;
+        let current = root
+            .media_roots
+            .open(&self.original_path)
+            .map_err(|_| changed())?;
         if identity(&current)? != self.source_version {
             return Err(changed());
         }
@@ -357,6 +360,18 @@ impl Drop for Suspension {
 
 impl Manager {
     pub fn start(root: &Path) -> Result<Self> {
+        Self::start_configured(root, None)
+    }
+    pub(crate) fn start_with_roots(
+        root: &Path,
+        media_roots: crate::media_roots::MediaRoots,
+    ) -> Result<Self> {
+        Self::start_configured(root, Some(media_roots))
+    }
+    fn start_configured(
+        root: &Path,
+        media_roots: Option<crate::media_roots::MediaRoots>,
+    ) -> Result<Self> {
         #[cfg(not(test))]
         let cache_path = vv_media::proxy::proxies_dir().join("web-v1");
         #[cfg(test)]
@@ -364,9 +379,17 @@ impl Manager {
             .canonicalize()
             .map_err(|_| ApiError::io())?
             .join(".proxy-test-cache");
-        Self::start_with_cache(root, &cache_path)
+        Self::start_with_cache_and_roots(root, &cache_path, media_roots)
     }
+    #[cfg(test)]
     fn start_with_cache(root: &Path, cache_path: &Path) -> Result<Self> {
+        Self::start_with_cache_and_roots(root, cache_path, None)
+    }
+    fn start_with_cache_and_roots(
+        root: &Path,
+        cache_path: &Path,
+        media_roots: Option<crate::media_roots::MediaRoots>,
+    ) -> Result<Self> {
         let path = root.canonicalize().map_err(|_| ApiError::io())?;
         let directory = File::from(
             rustix::fs::open(
@@ -376,7 +399,19 @@ impl Manager {
             )
             .map_err(|_| ApiError::io())?,
         );
-        let root = Arc::new(Root { path, directory });
+        let media_roots = match media_roots {
+            Some(roots) => roots,
+            None => crate::media_roots::MediaRoots::new(
+                &path,
+                directory.try_clone().map_err(|_| ApiError::io())?,
+            )
+            .map_err(|_| ApiError::io())?,
+        };
+        let root = Arc::new(Root {
+            path,
+            directory,
+            media_roots,
+        });
         let _guard = root.lock(false)?;
         let (settings, settings_identity) = root.read()?;
         let cache = Store::open(cache_path)?;
@@ -679,7 +714,9 @@ fn check_original(
     if identity(&spec.file)? != version {
         return Err(changed());
     }
-    let current = crate::files::open_root_media(&root.path, &root.directory, original_path)
+    let current = root
+        .media_roots
+        .open(original_path)
         .map_err(|_| changed())?;
     if identity(&current)? != version {
         return Err(changed());

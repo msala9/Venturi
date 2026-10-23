@@ -28,6 +28,7 @@ pub struct KeyframeNavigationRequest {
 
 pub enum Action {
     MediaRoot(oneshot::Sender<Result<std::fs::File>>),
+    MediaRoots(oneshot::Sender<Result<crate::media_roots::MediaRoots>>),
     SourceBrowserTask(
         crate::files::SourcesQuery,
         oneshot::Sender<Result<crate::files::SourceBrowserTask>>,
@@ -234,19 +235,31 @@ impl Editor {
         Self::with_presets(root, &root.join(".presets"))
     }
     fn with_presets(root: &Path, preset_root: &Path) -> std::io::Result<Self> {
-        Self::with_libraries(root, preset_root, &root.join(".assets"))
+        Self::with_libraries_config(root, preset_root, &root.join(".assets"), false)
     }
     fn with_libraries(root: &Path, preset_root: &Path, asset_root: &Path) -> std::io::Result<Self> {
-        let files = Files::new(root)?;
+        Self::with_libraries_config(root, preset_root, asset_root, true)
+    }
+    fn with_libraries_config(
+        root: &Path,
+        preset_root: &Path,
+        asset_root: &Path,
+        shared: bool,
+    ) -> std::io::Result<Self> {
+        let mut files = Files::new(root)?;
         let presets = crate::preset_store::Store::new(preset_root)?;
         let audio_presets = crate::audio_presets::Store::new(preset_root)?;
         let assets = crate::asset_store::Store::new(asset_root)?;
-        let asset_jobs = crate::asset_jobs::Jobs::new(
+        if shared {
+            files.set_shared_root(asset_root)?;
+        }
+        let asset_jobs = crate::asset_jobs::Jobs::new_with_roots(
             assets.clone(),
             &root.canonicalize()?,
             files
                 .root_file()
                 .map_err(|error| std::io::Error::other(error.2))?,
+            files.media_roots(),
         )?;
         let asset_binding = crate::asset_journal::project_binding(
             &files
@@ -1288,7 +1301,11 @@ impl Editor {
                 "Create or open a project before relinking media",
             ));
         }
-        let work = crate::project_media::relink_work(&self.session, &request.action)?;
+        let work = crate::project_media::relink_work_with_roots(
+            &self.session,
+            &request.action,
+            &self.files.media_roots(),
+        )?;
         self.asset_jobs
             .prepare_project_media(&request.project_epoch, &request.if_generation, work)
     }
@@ -2846,6 +2863,10 @@ impl Editor {
                 let _ = reply.send(self.files.root_file());
                 Ok(Value::Null)
             }
+            Action::MediaRoots(reply) => {
+                let _ = reply.send(Ok(self.files.media_roots()));
+                Ok(Value::Null)
+            }
             Action::SourceBrowserTask(query, reply) => {
                 let result = self
                     .validate_asset_epoch(&query.project_epoch, None)
@@ -3094,6 +3115,11 @@ impl Host {
     pub async fn media_root(&self) -> Result<std::fs::File> {
         let (tx, rx) = oneshot::channel();
         self.call(Action::MediaRoot(tx)).await?;
+        rx.await.map_err(|_| ApiError::io())?
+    }
+    pub async fn media_roots(&self) -> Result<crate::media_roots::MediaRoots> {
+        let (tx, rx) = oneshot::channel();
+        self.call(Action::MediaRoots(tx)).await?;
         rx.await.map_err(|_| ApiError::io())?
     }
     pub async fn speech_snapshot(

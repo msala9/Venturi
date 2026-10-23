@@ -28,6 +28,7 @@ mod inspector;
 mod keyselection;
 mod library;
 mod masks;
+mod media_roots;
 mod otio;
 mod preset_store;
 mod presets;
@@ -143,13 +144,17 @@ async fn serve() -> Result<(), Box<dyn std::error::Error>> {
             &assets,
         )?,
     };
-    let library = library::Library::start(
+    let media_roots = host.media_roots().await.map_err(|error| error.2)?;
+    let library = library::Library::start_with_roots(
         library_url.as_deref(),
         host.media_root().await.map_err(|error| error.2)?,
+        media_roots.clone(),
     )
     .map_err(|error| error.2)?;
-    let source =
-        source::MediaJobs::start_with_exports(host.media_root().await.map_err(|error| error.2)?)?;
+    let source = source::MediaJobs::start_with_exports_and_roots(
+        host.media_root().await.map_err(|error| error.2)?,
+        media_roots,
+    )?;
     let recordings = recording::Store::new(host.media_root().await.map_err(|error| error.2)?);
     let preview = if software {
         preview::Preview::start_software(&source.software_lock_path())

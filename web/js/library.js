@@ -4,6 +4,13 @@ export function libraryDocument(state) {
   return state?.project_name ? JSON.stringify([state.project_epoch,state.generation]) : null;
 }
 function size(bytes) {return bytes<1024*1024?`${(bytes/1024).toFixed(1)} KiB`:`${(bytes/1024/1024).toFixed(1)} MiB`;}
+export function libraryCopyEligibility(item,catalog) {
+  if(!catalog?.configured)return {allowed:false,reason:'Shared library is not configured on this server'};
+  const limit=catalog.max_copy_bytes===undefined?512*1024*1024:catalog.max_copy_bytes;
+  if(!Number.isSafeInteger(limit) || limit<=0)return {allowed:false,reason:'Project-copy limit unavailable · refresh the shared library'};
+  if(!Number.isSafeInteger(item?.bytes) || item.bytes<=0)return {allowed:false,reason:'Asset size unavailable · project copy and Relink unavailable'};
+  return item.bytes>limit?{allowed:false,reason:`Copy unavailable: asset exceeds the ${size(limit)} project-copy limit`}:{allowed:true,reason:''};
+}
 export function libraryMatches(item,query,kind) {
   const text=[item.id,item.model,item.prompt,item.tool,item.seed || ""].join(" ").toLowerCase();
   return (kind==="all" || item.kind===kind) && text.includes(query.toLowerCase());
@@ -45,16 +52,20 @@ export function createLibraryPanel({root,getState,canCommit,commit,notice,api=re
           shown++;if(shown>100)continue;
           const card=document.createElement("article"),heading=document.createElement("strong"),info=document.createElement("p"),prompt=document.createElement("p");
           heading.textContent=`${item.kind} · ${item.model}`;info.textContent=`${item.id} · ${size(item.bytes)} · ${item.archived?"Archive":"SSD"}${item.keep?" · pinned":""}${item.seed?` · seed ${item.seed}`:""}`;prompt.textContent=item.prompt || "No prompt metadata";
-          const insert=button("Import project copy",()=>transfer(item,insert));insert.disabled=!canCommit() || !libraryDocument(getState());
+          const eligibility=libraryCopyEligibility(item,catalog);
+          const insert=button("Import project copy",()=>transfer(item,insert));insert.disabled=!eligibility.allowed || !canCommit() || !libraryDocument(getState());
           card.append(heading,info,prompt,insert);list.append(card);
+          const describe=control=>{if(!eligibility.allowed){control.title=eligibility.reason;control.setAttribute('aria-describedby',`library-copy-limit-${seq}-${shown}`);}};describe(insert);
+          if(!eligibility.allowed){const reason=document.createElement('p');reason.id=`library-copy-limit-${seq}-${shown}`;reason.className='muted';reason.textContent=eligibility.reason;card.append(reason);}
           const missing=missingSharedUses(getState(),item.id);
-          if(missing.length){const relink=button(`Relink ${missing.length} missing project uses`,()=>transfer(item,relink,missing));relink.disabled=!canCommit() || missing.length>64;card.append(relink);}
+          if(missing.length){const relink=button(`Relink ${missing.length} missing project uses`,()=>transfer(item,relink,missing));relink.disabled=!eligibility.allowed || !canCommit() || !libraryDocument(getState()) || missing.length>64;describe(relink);card.append(relink);}
         }
         const count=document.createElement("p");count.textContent=shown?`${Math.min(shown,100)} of ${shown} matches shown; narrow the search for more`:"No shared assets match this filter";list.prepend(count);
       };
       query.addEventListener("input",render);kind.addEventListener("change",render);render();
       async function transfer(item,insert,relinkIds=null) {
         if(controller || !canCommit())return;
+        const eligibility=libraryCopyEligibility(item,catalog);if(!eligibility.allowed){status.textContent=eligibility.reason;return;}
         const documentKey=libraryDocument(getState()),epoch=getState()?.project_epoch;if(!documentKey)return;
         insert.disabled=true;refresh.disabled=true;stop.disabled=false;query.disabled=true;kind.disabled=true;for(const control of list.querySelectorAll("button"))control.disabled=true;controller=new AbortController();const signal=controller.signal;
         try {

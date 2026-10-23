@@ -79,7 +79,6 @@ impl Item {
         let extension = self.extension()?;
         if self.filename != format!("{}.{}", self.id, extension)
             || self.bytes == 0
-            || self.bytes > MAX_ITEM
             || self.model.is_empty()
             || self.model.len() > 72
             || self.tool.len() > 16
@@ -87,7 +86,17 @@ impl Item {
             || self.created.len() > 24
         {
             return Err(ApiError::invalid(
-                "Shared-library item exceeds the native import limits",
+                "Shared-library item has invalid catalog metadata",
+            ));
+        }
+        Ok(())
+    }
+    fn validate_copy(&self) -> Result<()> {
+        self.validate()?;
+        if self.bytes > MAX_ITEM {
+            return Err(ApiError::conflict(
+                "LIBRARY_COPY_LIMIT",
+                "Project copies support shared assets up to 512 MiB",
             ));
         }
         Ok(())
@@ -325,6 +334,7 @@ impl Library {
         }
         let mut value = serde_json::to_value(self.index().await?).map_err(|_| ApiError::io())?;
         value["configured"] = json!(true);
+        value["max_copy_bytes"] = json!(MAX_ITEM);
         Ok(value)
     }
     pub async fn prepare(&self, id: &str, epoch: &str) -> Result<Value> {
@@ -335,6 +345,7 @@ impl Library {
             .into_iter()
             .find(|item| item.id == id)
             .ok_or_else(ApiError::missing)?;
+        item.validate_copy()?;
         let state = self.state()?;
         let mut jobs = state.jobs.lock().unwrap();
         if let Some(job) = jobs.iter().find(|job| {
@@ -460,7 +471,7 @@ impl State {
         cancel: &AtomicBool,
         mut progress: impl FnMut(u64),
     ) -> Result<Value> {
-        item.validate()?;
+        item.validate_copy()?;
         if cancel.load(Ordering::Relaxed) {
             return Err(ApiError::invalid("Library transfer canceled"));
         }

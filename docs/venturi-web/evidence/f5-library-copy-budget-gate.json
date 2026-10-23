@@ -1,0 +1,29 @@
+{
+  "scope": "Shared ds4 catalog visibility and per-item project-copy budget",
+  "host": "halo1",
+  "source_base": "6c8bf93",
+  "native_cases": 5,
+  "client_cases": 4,
+  "format_check": "passed",
+  "state": {
+    "phase": "passed",
+    "started_unix": 1792745874.6200013,
+    "updated_unix": 1792745932.7745087,
+    "source_hashes": {
+      "crates/vv-web/src/library.rs": "aeed1495815fcfe00e835b76e8ef2cb611de8af235ea3ff758b4b073b8c42c60",
+      "crates/vv-web/src/tests/library.rs": "962869a416dbf2b2a28f9549dc399a3596e106396b7ff1989810884b01b97b9e",
+      "web/js/library.js": "0d1668df31a08af235997dbb1c7c7cb614da63b3d63196573cad5977e1bc8ce8",
+      "web/test/library.test.js": "eda9499c9bac9e009a847a8a9b71b98c79107201c50e74698e499eb5b31faca9"
+    },
+    "memory_peak_bytes": 1930084352
+  },
+  "limits": {
+    "cpu_quota_percent": 800,
+    "memory_max_bytes": 4294967296,
+    "swap_max_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "concurrency": "one nonblocking HALO_BENCHMARK lock"
+  },
+  "qualification": "Synthetic fixtures; no large media, NAS scans, preview replacement or new render. Current runtime remains 8839 at b6becaf. Integrated shared-original references and their deployment remain pending."
+}

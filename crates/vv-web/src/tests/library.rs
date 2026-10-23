@@ -103,7 +103,7 @@ fn catalog_validates_opaque_ids_names_urls_and_keeps_exact_u64_seed_provenance()
     for (field, value) in [
         ("id", json!("../escape")),
         ("filename", json!("../source.wav")),
-        ("bytes", json!(MAX_ITEM + 1)),
+        ("bytes", json!(0)),
         ("mime", json!("text/html")),
     ] {
         let mut invalid = item(100);
@@ -119,6 +119,35 @@ fn catalog_validates_opaque_ids_names_urls_and_keeps_exact_u64_seed_provenance()
         assert!(endpoint(url).is_err());
     }
     assert!(endpoint("http://192.168.1.153:8787").is_ok());
+}
+
+#[tokio::test]
+async fn oversized_catalog_item_stays_visible_but_cannot_queue_or_download_a_project_copy() {
+    let root = root();
+    let mut other = item(100);
+    other["id"] = json!("fedcba9876543210");
+    other["filename"] = json!("fedcba9876543210.wav");
+    let mut catalog: Value = serde_json::from_slice(&index(item(MAX_ITEM + 1))).unwrap();
+    catalog["items"].as_array_mut().unwrap().push(other);
+    let server = Server::start(serde_json::to_vec(&catalog).unwrap(), vec![]);
+    let library = Library::start(Some(&server.url), File::open(&root).unwrap()).unwrap();
+    let result = library.catalog().await.unwrap();
+    assert_eq!(result["max_copy_bytes"], MAX_ITEM);
+    assert_eq!(result["items"].as_array().unwrap().len(), 2);
+    assert_eq!(result["items"][0]["bytes"], MAX_ITEM + 1);
+    let error = library
+        .prepare("0123456789abcdef", "epoch")
+        .await
+        .unwrap_err();
+    assert_eq!(error.1, "LIBRARY_COPY_LIMIT");
+    assert!(library.state().unwrap().jobs.lock().unwrap().is_empty());
+    assert_eq!(server.requests.load(Ordering::Relaxed), 2);
+    assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
+    let boundary: Item = serde_json::from_value(item(MAX_ITEM)).unwrap();
+    assert!(boundary.validate_copy().is_ok());
+    drop(library);
+    drop(server);
+    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[test]

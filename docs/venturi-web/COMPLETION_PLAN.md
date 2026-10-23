@@ -657,6 +657,39 @@ physical/hardware/representative/dense/DPI/M7 requirements.
 
 Capabilities: `shared_library`, `shared_presets`.
 
+Current next block: reference archived ds4 originals from the configured shared
+root without a full project copy. Upstream already publishes authoritative
+`archive_rel` for archived items (`ds4-appliance/src/library/library.c`,
+`library_item_json` / `library_item_path`); do not infer paths from dates, names
+or a remote absolute root. No ds4 API change or new mount is needed.
+
+Separate catalog metadata validation from the 512 MiB HTTP copy budget first:
+one larger indexed item must not hide otherwise usable catalog entries. Keep
+the per-item copy limit explicit in the API/UI and reject it before queueing or
+writing a temporary file. ds4 currently also caps uploads at 512 MiB; this handles
+larger imported/future indexes, not a claim that ordinary current uploads exceed it.
+The catalog/copy-budget correction passes five native and four client cases plus
+formatting on halo1 (1,930,084,352-byte peak). Catalog browsing keeps larger items
+visible and shows their unavailable-copy reason; prepare refuses them before
+queueing or file writes. See `evidence/f5-library-copy-budget-gate.json`.
+This source increment does not replace the current 8839 runtime; include it in
+the connected shared-original integration build and deployment below.
+
+Then offer an explicit shared-original reference for archived items with a
+validated locator, preserving project-copy import for SSD items. Carry the
+approved read-only root through import/relink, Files/Open, Source, original
+video/audio resolvers, proxy checks, save/reopen and export. Verify the selected
+file through directory FDs, native metadata and strong identity; do not scan the
+archive or claim a content digest supplied by ds4. Keep native asset dependency
+copies, which match desktop behavior, distinct from ds4 original references.
+Use one shared approved-source registry rather than relaxing path checks at
+individual endpoints. SourceSpec already holds a pinned FD; project-only proxy
+validation, preparation witnesses and durable export must use the same authority.
+Project writes, scans and replacement pickers remain confined to their current
+project root; the extra archive descriptor grants only original-media reads.
+Use one bounded integration gate after that connected functional change; retain
+the current 8839 editor and all earlier Sessions/Undo/Saved bytes.
+
 Retain the existing ds4-appliance HTTP catalog and actual NAS evidence. Complete
 native preset/compound asset sharing and its deployment/UX qualification with
 the authoritative 14 TB library arrangement. Confirm the applicable service or

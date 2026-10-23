@@ -1,5 +1,37 @@
 # Active completion plan — full Venturi Web scope
 
+## Native AdvancedSpeed local controls — 2026-10-24
+
+Source `0f1e355`, runtime `228bae5e27c1`, owns halo1/8855.
+AdvancedSpeed now reuses numeric scrubbing at1%/pixel, Shift fine and two
+displayed decimals while manipulating; untouched typed precision remains.
+Native50/100/200 presets modify only the local draft, preserving pitch/fit.
+Only Apply sends the existing selected-target command. Inline Cancel restores
+the baseline; context Cancel/Escape retains the existing dialog close behavior.
+All Inspector, legacy and modal owners now cancel/dispose the controller.
+
+Five new regressions and five affected suites pass95 client cases; embedded
+build41.67s, peak1,541,955,584B on halo1. No Rust/retiming/DSP/
+renderer change; prior native processing/export checks are reused. Live served
+Inspector/main hashes match the tested source. Saved/history,39 protected
+Sessions/40 PIDs,11 Saved files,5 local media,4 NAS files and shared proxy remain
+exact. Windows reload reconnects without console warnings/errors at1536x864.
+See `evidence/f1-native-advanced-speed-controls.json`. No new physical gesture,
+screenshot or render/export qualification is claimed.
+
+A focused Solid/H.264-AAC audit finds their ordinary product paths already
+implemented and records substantial existing native/control/Full HD evidence.
+It does not promote those rows: pointer/DPI and real4K/sustained-media scope
+explicitly remain open, alongside full M7. Six-minute64x36 fixtures do not prove
+ordinary-resolution sustained footage. Keep the existing Full HD export proof
+visible rather than reporting the older1280x720 fixture as the latest result.
+
+Next progress representative-media and remaining release acceptance on halo1,
+including actual native-scale/high-resolution output within the resource limits,
+and resolve Windows pointer/screenshot automation before physical UI closure.
+Do not substitute backend-only soak for the required editing/device workflow.
+Ledger remains **61 done /29 partial /2 excluded**; full F1-F7/M7 stays active.
+
 ## Native key editor selection and dense picking — 2026-10-24
 
 Source `fa410ee`, runtime `75f7fa6aa77e`, owns halo1/8855.

@@ -1,0 +1,112 @@
+{
+  "source_commit": "0f1e3559f2fc4bcdd2366745d86d409e22b0a074",
+  "source_hashes": {
+    "web/js/inspector.js": "309dde47c910a2b863fef112b907a0884cfb72bbe3433cd4684f996c9abec412",
+    "web/js/main.js": "d31fa0b9ce218b289703334fd254224312a6145327273e30be65d2a7de831e36",
+    "web/test/retime-inspector.test.js": "1669703f982a1868fdc6eb97922c486f0606919de750d5f0e8c47c9e7484327c"
+  },
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-advanced-speed-controls.service",
+    "pid": "340585",
+    "binary_sha256": "228bae5e27c1baf6c1069ece063e0218ef07960522cd28fb5b59c73ba84115ac",
+    "project": "Venturi_Library_Replacement_V1.vvproj",
+    "project_epoch": "1792799697362926763:1",
+    "saved": true,
+    "empty_undo": true
+  },
+  "implemented": [
+    "Native AdvancedSpeed1% per pixel/Shift fine scrubbing displays at most two decimals while manipulating; untouched typed precision is preserved.",
+    "Local50/100/200 presets preserve pitch and duration-fit draft. Only explicit Apply sends the existing captured selected-target set_speed command; inline Cancel restores the baseline without mutation.",
+    "Context dialog retains its existing outer Cancel/Escape, with no duplicate button. Inspector/legacy/context owners all dispose controllers and listeners, canceling active, stale, hidden, detached or superseded drafts."
+  ],
+  "native_evidence": {
+    "path": "crates/vv-app/src/speed_dialog.rs",
+    "controls": [
+      74,
+      103
+    ],
+    "cancel_apply": [
+      106,
+      131
+    ]
+  },
+  "gate": {
+    "host": "halo1",
+    "client_cases": 95,
+    "new_regressions": [
+      "advanced speed presets change only the local percentage and Apply submits the selected group once",
+      "advanced speed scrubbing uses one percent per pixel, fine Shift and two decimals without committing on release",
+      "Cancel speed changes restores exact initial precision, pitch and Ripple without editing; modal Escape remains owned by its dialog",
+      "advanced speed scrubs cancel on stale owners, collapse, hidden documents and capture loss before any native edit",
+      "advanced speed dispose removes every owned listener and prevents delayed focus or detached submit"
+    ],
+    "build_seconds": 41.67,
+    "memory_peak_bytes": 1541955584,
+    "cpu_limit": 8,
+    "memory_limit_gib": 4,
+    "swap": false,
+    "serial": true,
+    "reused_native_gate": "native-library-thumbnails-r2",
+    "reuse_reason": "No Rust, retiming engine, DSP or renderer change; existing native speed/pitch/linked-edit and export evidence remains applicable."
+  },
+  "live_modules": {
+    "project_epoch": "1792799697362926763:1",
+    "modules": {
+      "js/inspector.js": {
+        "sha256": "309dde47c910a2b863fef112b907a0884cfb72bbe3433cd4684f996c9abec412",
+        "bytes": 71066
+      },
+      "js/main.js": {
+        "sha256": "d31fa0b9ce218b289703334fd254224312a6145327273e30be65d2a7de831e36",
+        "bytes": 198207
+      }
+    },
+    "session_unchanged": true,
+    "saved": true,
+    "empty_undo": true
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 11,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "saved_project_hashes": {
+    "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+    "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+    "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+    "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+    "Venturi_Library_Replacement_V1.vvproj": "1ded5605121a91c26ec5ff404ed0b9d80fa97ee6e368c29ff3626fbfdcd93bea",
+    "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+    "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+    "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+    "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd",
+    "Venturi_Scrub_Relink_V1.vvproj": "2a764b5104c7767f4150c8404d41453c501401c1700e4a6000611ca5d4f110fc",
+    "Venturi_Waveform_V1.vvproj": "06a2901f292e40e65f75d525f7a32daa7b056a4c922fbe23479e0daaa40fbba2"
+  },
+  "browser": {
+    "connected_writer": true,
+    "viewport": [
+      1536,
+      864
+    ],
+    "console_warnings_errors": [],
+    "physical_acceptance": "New controls are deterministically exercised; no new OS-pointer, screenshot or export claim. Optional manual browser response remains pending."
+  },
+  "limits": [
+    "Physical speed-control gestures and broader retime/device/dense/DPI/M7 acceptance remain open.",
+    "Only the frontend local-draft/controller gap is closed; the full90-capability objective is unchanged."
+  ],
+  "ledger": {
+    "done": 61,
+    "partial": 29,
+    "excluded": 2,
+    "full_goal": "active"
+  }
+}

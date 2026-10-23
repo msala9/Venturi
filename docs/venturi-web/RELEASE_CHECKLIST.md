@@ -1,6 +1,6 @@
 # Release checklist
 
-2026-10-24. Current working source `fa410ee`; the full
+2026-10-24. Current working source `0f1e355`; the full
 F1-F7 goal remains active. The owned halo1 editor is available on port8855.
 This is the release audit required by IMPLEMENTATION_PLAN.md, not a release-ready
 declaration. The ledger currently records 61 done, 29 partial and two excluded
@@ -27,7 +27,7 @@ checkpoint.
 | Rust/JavaScript regression gate | Affected gates pass; final gate open | f6-verified-take-gate.json and f5-shared-audio-presets-gate.json. These do not substitute for the final workspace fmt/Clippy/tests and relevant browser checks in TEST_PLAN.md |
 | Native desktop regression | Affected native gate passes; final gate open | F5's 45 native cases cover changed catalog/Mixer/Settings/recovery paths; full final native regression and physical UX remain |
 | Two-hour typical editing soak | Not passed | m7-two-hour-backend-soak.json is interrupted; m7-halo2-backend-soak-oom.json is failed. Neither qualifies browser memory, hardware or the current candidate. Run once after functionality stabilizes, with bounded halo1 resources; do not repeat failed co-residence or Windows heavy workloads |
-| Deployment and rollback | Preserved baseline; final delivery pending | Current owned port8855 targets halo1 sourcefa410ee, runtime75f7fa6aa77e, with Saved project and empty Undo. f1-native-key-editor-picking.json and f5-native-library-thumbnails.json bind tested source, running binary and protection of39 prior Sessions/40 PIDs,11 Saved files and NAS/proxy bytes. Older halo1/halo2 editors remain protected. Final integrated acceptance, final export and reboot/rollback qualification remain open |
+| Deployment and rollback | Preserved baseline; final delivery pending | Current owned port8855 targets halo1 source0f1e355, runtime228bae5e27c1, with Saved project and empty Undo. f1-native-advanced-speed-controls.json and f5-native-library-thumbnails.json bind tested source, running binary and protection of39 prior Sessions/40 PIDs,11 Saved files and NAS/proxy bytes. Older halo1/halo2 editors remain protected. Final integrated acceptance, final export and reboot/rollback qualification remain open |
 
 ## Scoped source review
 

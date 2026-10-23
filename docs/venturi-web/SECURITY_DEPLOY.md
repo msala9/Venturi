@@ -70,10 +70,10 @@ should still be closed while saving the same project from the web.
 The full editing soak and release review remain open. The failed/interrupted
 earlier backend soaks are retained as failure evidence, not release acceptance.
 The owner's current development checkpoint uses the unprivileged, resource-limited
-`venturi-web-halo1-key-editor-picking.service` on halo1, bound to loopback port8855
+`venturi-web-halo1-advanced-speed-controls.service` on halo1, bound to loopback port8855
 and reached through the existing Windows SSH tunnel. It is a transient systemd
-unit running as `halo`, not a newly enabled boot service. Source `fa410ee` and
-runtime `75f7fa6aa77e` are bound in `evidence/f1-native-key-editor-picking.json`.
+unit running as `halo`, not a newly enabled boot service. Source `0f1e355` and
+runtime `228bae5e27c1` are bound in `evidence/f1-native-advanced-speed-controls.json`.
 Earlier protected halo1/halo2 editor services remain live. No public listener
 is enabled. See `RELEASE_CHECKLIST.md`; deployment must preserve dirty sessions,
 client drafts and Undo chains. A saved project alone does not authorize restarting

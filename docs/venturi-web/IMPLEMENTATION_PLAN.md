@@ -36,7 +36,41 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8838/**, source `a2d1358`,
+The current halo1 delivery is **http://127.0.0.1:8839/**, source `b6becaf`,
+binary `9aa00b8af85a`, in `venturi-web-halo1-audio-graphs.service`.
+Native EQ and compressor inserts now have interactive parameter handles over
+SVG curves from revision-bound native response queries. EQ keeps its +/-27 dB
+display, +/-24 dB gain limit, shape-specific gain behavior and rounded Q changes
+at factor 1.15. Compressor crossover handles retain the native 1.2 ratio guard;
+impossible domains are disabled. Its static response is explicitly makeup-only,
+not measured compression activity. Precise per-band fields remain collapsed,
+with presets and numeric Apply preserved. No browser DSP is introduced.
+
+The bounded gate passes **14 native cases** (12 audio-filter matches including
+3 Source-audio cases, one Host and one API) and **58 client cases** (40 prior,
+8 new top-level graph cases and 10 cancellation subcases), plus formatting,
+all-target Clippy and embedded build. Worker peak is 1,947,037,696 bytes.
+Actual Windows checks add EQ then compressor, change band 3 Gain 0 to 0.1 dB and
+Q to 0.81, crossover 200 to 201 Hz and mid-band makeup 0 to 0.1 dB. Six native
+commands preserve chain order; Undo removes only the last makeup edit and Redo
+restores it. Save As/reopen preserves the exact parameters and native PCM hash.
+Final state is Saved in `Venturi_Audio_Graphs_V1.vvproj`, frame 0/empty Undo.
+Native response reads return 128 EQ and 241 compressor points, reject a stale
+generation with 409 REVISION_CONFLICT and leave Session unchanged.
+All 23 prior Sessions, 24 PIDs, 13 Saved files, three originals and the shared proxy
+movie remain unchanged. See `evidence/m5-audio-graphs-workflow.json` and the
+EQ/compressor workspace images.
+
+Actual OS pointer drag/wheel/reset/cancel is not claimed; deterministic graph
+tests cover those gestures, local-only motion, no-op and ownership/error guards.
+A motionless real handle click remains Saved. No new composed movie/export is
+rendered for this parameter UI/read-only response block; native DSP and transport
+are unchanged, so reuse `evidence/m7-audio-source-fd-workflow.json`.
+The owner V1 stopped-audio decision remains. Ledger stays
+**49 done / 41 partial / 2 excluded**; full F4/M7, physical/hardware and
+representative/dense/DPI qualification remain open.
+
+Preserved compact mixer delivery: **http://127.0.0.1:8838/**, source `a2d1358`,
 binary `72e5329138ac`, in `venturi-web-halo1-mixer-controls-r2.service`.
 The Audio workspace now has a compact horizontal console with 84 px strips,
 130 px relative gain faders and pan knobs. Gain uses the native 11-knot f32
@@ -59,8 +93,7 @@ See `evidence/m5-mixer-controls-workflow.json` and its workspace image.
 
 This UI-only block changes no native DSP or Program/export transport; reuse the
 qualified stopped-audio workflow in `evidence/m7-audio-source-fd-workflow.json`.
-Interactive EQ and compressor graphs remain; the existing EQ response canvas
-is read-only and compressor controls are numeric. Physical audio/hardware,
+Interactive EQ/compressor graphs are delivered in b6becaf above. Physical audio/hardware,
 representative/dense/DPI and remaining M7 requirements stay explicit.
 Ledger remains **49 done / 41 partial / 2 excluded**; the mixer row stays partial.
 

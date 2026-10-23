@@ -18,6 +18,25 @@ persistent Viewer controls. Verify one connected stop/edit/play/save/export flow
 Retain any unshipped real-time prototype privately; do not ship unused cursors,
 video lease APIs or a second audio-routing architecture for this deferred detail.
 
+## Interactive native audio graphs — 2026-10-23
+
+`b6becaf` on halo1/8839 adds EQ frequency/gain handles, Q wheel/keyboard,
+enable/reset actions, compressor crossover and band-makeup handles. Native
+revision-bound response points form the committed SVG curve; local parameter
+drafts are identified separately. The compressor curve says makeup-only and
+does not simulate live gain reduction. Native shapeHasGain, +/-27 dB EQ display,
+gain/Q rounding and crossover 1.2 constraints remain authoritative. Impossible
+crossover handle domains are disabled rather than producing invalid settings.
+
+One guarded native edit is sent on release; motion stays local. Known/stale/
+unknown failures never replay, and late response data cannot repaint a replaced
+graph. Precise per-band fields remain collapsible, with preset and numeric
+Apply workflows retained. The compact Mixer and Viewer dimensions remain.
+Actual Windows keyboard edits, native chain/Undo/Redo, Save As/reopen and exact
+PCM are verified. OS pointer drag/wheel/reset/cancel has deterministic coverage,
+not physical acceptance here. The stopped-audio V1 decision remains; see
+`evidence/m5-audio-graphs-workflow.json` and its two workspace images.
+
 ## Compact native mixer controls — 2026-10-23
 
 `a2d1358` on halo1/8838 keeps the Viewer dimensions unchanged and fits Audio
@@ -33,8 +52,7 @@ remain usable; no browser DSP or new persistent Viewer controls are introduced.
 Actual Windows keyboard/reset/Undo/Redo/Save As/reopen and 1280x720 alignment
 are verified. Pointer/Shift/cancellation coverage is deterministic, not an
 actual OS-pointer acceptance claim. The owner-approved stopped-audio workflow
-remains. The EQ response canvas is read-only, compressor controls are numeric,
-and interactive EQ/compressor graphs remain. See
+remains. Interactive EQ/compressor graphs are delivered in b6becaf above. See
 `evidence/m5-mixer-controls-workflow.json` and its workspace image.
 
 ## Requested audio-source confinement — 2026-10-23

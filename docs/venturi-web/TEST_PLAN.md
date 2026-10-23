@@ -22,7 +22,30 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
-M5 compact mixer controls (`a2d1358`, halo1/8838): **40 client cases** pass
+M5 interactive audio graphs (`b6becaf`, halo1/8839): **14 native cases** and
+**58 client cases** pass, plus formatting, all-target Clippy and embedded build.
+Native filters contain 12 audio cases (including 3 Source-audio cases), one
+revision-bound Host query and one API boundary. Client total comprises 40 prior
+cases, 8 new top-level graph cases and 10 cancellation subcases. Coverage includes
+native coordinates/Q/shape/crossover rules, parameter-only mutation, no RPC
+during drag, one release command, no-op/cancel/stale/readonly refusal, native
+response ownership and preserved chain/presets/numeric fields. The bounded
+8 CPU/4 GiB/no-swap worker peaks at 1,947,037,696 bytes.
+
+Actual Windows graph keyboard changes set EQ band 3 Gain 0 to 0.1 dB/Q to 0.81,
+compressor crossover 200 to 201 Hz and mid makeup 0 to 0.1 dB. The six-command
+history preserves EQ-before-compressor; Undo removes only the last makeup
+change and Redo restores it. Save As/reopen retains exact parameters/PCM with
+empty Undo. Native read-only queries yield 128 EQ/241 makeup-only compressor
+points; stale generation receives 409 REVISION_CONFLICT with Session unchanged.
+Motionless actual pointer clicks remain Saved. Actual OS drag/wheel/reset/
+cancel acceptance is not claimed from deterministic tests. No new movie/export
+render: reuse unchanged DSP/transport proof in
+`evidence/m7-audio-source-fd-workflow.json`. All 23 previous Sessions/24 PIDs/
+13 Saved files/three originals/shared proxy movie are preserved. See
+`evidence/m5-audio-graphs-workflow.json` and its two workspace images.
+
+M5 compact mixer controls (`a2d1358`, preserved halo1/8838): **40 client cases** pass
 across mixer-controls, mixer and audio-presets, including six new top-level
 control cases with seven cancellation subcases. The tests cover all 11 native
 f32 gain knots, relative drag travel, normalized pan/Shift scaling, release-only
@@ -82,7 +105,7 @@ changing its still causes SOURCE_CHANGED on status/Range and removes its cache
 hit, even after bytes are restored with a different ctime. The native filter is
 undone, then Saved/reopened; exactly three compound-counter Saved lines advance,
 timeline DTOs/file media/view remain and all20 previous Sessions/21 PIDs/eight
-Saved hashes match. Final candidate is Saved/frame0/empty Undo. Runtime peak
+Saved hashes match. Final candidate is Saved/frame 0/empty Undo. Runtime peak
 296288256 bytes; worker sampled peak1907732480 bytes is not a terminal maximum.
 The4GiB/swap0 limit and successful terminal unit are recorded. No new Windows
 build, browser install, halo2 or NAS operation. See

@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "title": "Interactive native EQ/compressor graphs",
+  "result": "passed_with_explicit_scope",
+  "source_commit": "b6becaf",
+  "delivery": {
+    "url": "http://127.0.0.1:8839/",
+    "host": "halo1",
+    "unit": "venturi-web-halo1-audio-graphs.service",
+    "root": "/home/halo/VenturiWeb-audio-graphs-20261023",
+    "pid": 175489,
+    "binary_sha256": "9aa00b8af85aaf80fe950082075f678ad302e7c7661a63988c6072cdc04878c4",
+    "previous_delivery_preserved": {
+      "port": 8838,
+      "source_commit": "a2d1358"
+    }
+  },
+  "scope": {
+    "delivered": [
+      "Interactive EQ frequency/gain/Q handles and enable/reset controls",
+      "Interactive compressor crossover and band makeup controls",
+      "Revision-bound native response queries displayed as committed SVG curves",
+      "Collapsed per-band precise fields with presets and numeric Apply retained",
+      "Parameter-only native edits; no browser DSP or live compression simulation"
+    ],
+    "rules": {
+      "eq_display_db": [
+        -27,
+        27
+      ],
+      "eq_gain_db": [
+        -24,
+        24
+      ],
+      "eq_gain_by_native_shape_has_gain": true,
+      "q_wheel_factor": 1.15,
+      "q_rounding": "Native bounded f32 values rounded to two decimals.",
+      "compressor_min_crossover_ratio": 1.2,
+      "impossible_crossover_domains": "Handle disabled; no invalid setting.",
+      "compressor_response_kind": "makeup_only",
+      "compressor_activity": null
+    },
+    "gesture_contract": "Local pointer draft; one guarded native edit on release. Motionless/canceled/stale/readonly/invalid gestures do not mutate. Known, stale and uncertain failures do not replay.",
+    "unchanged": [
+      "Native DSP processing",
+      "Main Program/export transport",
+      "Mixer/Viewer dimensions",
+      "Presets, chain order, bypass and numeric parameter workflow"
+    ],
+    "reuse_native_play_save_export": "m7-audio-source-fd-workflow.json",
+    "no_new_movie_or_export_render": true,
+    "remaining": [
+      "Actual OS pointer drag/wheel/reset/cancel acceptance not claimed here",
+      "Physical audio/hardware and representative/dense/DPI qualification",
+      "Full F4/M7 acceptance"
+    ],
+    "owner_decision": "V1 audio/mix/FX edits may stop Program; explicit Play prepares the confirmed native mix. Uninterrupted live DSP remains deferred.",
+    "ledger": {
+      "done": 49,
+      "partial": 41,
+      "excluded": 2,
+      "status_promotion": false,
+      "rows": [
+        "audio_eq_six_band",
+        "audio_compressor_three_band",
+        "audio_effect_chain_order",
+        "audio_mixer_track_master"
+      ]
+    }
+  },
+  "validation": {
+    "phase": "passed",
+    "unit_result": "success",
+    "main_pid_after_gate": 0,
+    "native_cases": {
+      "audio_filter": 12,
+      "included_source_audio_cases": 3,
+      "host": 1,
+      "api": 1,
+      "total": 14
+    },
+    "client_cases": {
+      "prior": 40,
+      "new_top_level_graph": 8,
+      "new_cancellation_subcases": 10,
+      "total": 58
+    },
+    "client_suites": [
+      "test/audio-graphs.test.js",
+      "test/mixer-controls.test.js",
+      "test/mixer.test.js",
+      "test/audio-presets.test.js"
+    ],
+    "formatting": "passed",
+    "all_target_clippy": "passed",
+    "embedded_build": "passed",
+    "memory_peak_bytes": 1947037696,
+    "limits": {
+      "cpu_quota_percent": 800,
+      "memory_max_bytes": 4294967296,
+      "swap_max_bytes": 0,
+      "oom_score_adjust": 1000,
+      "nice": 19,
+      "io_weight": 10,
+      "tasks_max": 128,
+      "runtime_max_seconds": 1500
+    },
+    "deterministic_coverage": [
+      "Native coordinates, shapeHasGain, ties-away rounding and Q scaling",
+      "Compressor crossover ratio and makeup-only parameters",
+      "No request during motion; one release mutation",
+      "Motionless/Escape/pointer cancel/capture loss/stale/readonly/invalid/resize/hidden/numeric-change cancellation",
+      "Keyboard/wheel/toggle/reset and rejected write draft retention",
+      "Late native response cannot repaint replaced context",
+      "Actual insert integration preserves chain, bypass, collapsed precise fields, presets and atomic raw native command"
+    ]
+  },
+  "actual_windows_and_api": {
+    "master_chain": [
+      "Equalizer",
+      "MultibandCompressor"
+    ],
+    "edits": {
+      "eq_band_number": 3,
+      "eq_frequency_hz": 500,
+      "eq_gain_db_before": 0,
+      "eq_gain_db_after": 0.10000000149011612,
+      "eq_q_before": 0.7071067690849304,
+      "eq_q_after": 0.8100000023841858,
+      "compressor_low_crossover_before_hz": 200,
+      "compressor_low_crossover_after_hz": 201,
+      "compressor_high_crossover_hz": 2000,
+      "compressor_mid_makeup_before_db": 0,
+      "compressor_mid_makeup_after_db": 0.10000000149011612
+    },
+    "history": {
+      "label": "EditAudioEffect",
+      "command_count": 6,
+      "changed_position": 6,
+      "undo_position": 5,
+      "undo_changes_only_last_makeup": true,
+      "undo_mid_makeup_db": 0,
+      "redo_restores_last_makeup": true
+    },
+    "native_responses": {
+      "sample_rate": 48000,
+      "eq_points": 128,
+      "compressor_points": 241,
+      "compressor_response_kind": "makeup_only",
+      "compressor_activity": null,
+      "stale_generation_status": 409,
+      "stale_generation_code": "REVISION_CONFLICT",
+      "reads_leave_session_unchanged": true
+    },
+    "pcm": {
+      "frame": 24,
+      "wav_bytes": 15404,
+      "changed_sha256": "ee916faa5ae5a8c2c57ea3516c871e277bfc79e2106db29b8b00ceed43ec2612",
+      "reopened_sha256": "ee916faa5ae5a8c2c57ea3516c871e277bfc79e2106db29b8b00ceed43ec2612",
+      "exact_match": true,
+      "rms_raw": 1261.8011604923304,
+      "peak_raw": 4261
+    },
+    "save_reopen": {
+      "project": "Venturi_Audio_Graphs_V1.vvproj",
+      "saved": true,
+      "unsaved": false,
+      "master_gain_db": 0,
+      "master_pan": 0,
+      "chain_and_parameters_preserved": true,
+      "generation": "0",
+      "revision": "f8b68efbaf9e9b7e",
+      "history_labels": [],
+      "history_position": 0,
+      "active_timeline": "1",
+      "playhead": 0,
+      "project_sha256": "8caf33206abe5f9e86e820c993db41fc319d7661324bb4603336563cd2d1a78a"
+    },
+    "actual_motionless_graph_handle_click": {
+      "purpose": "Screenshot focus",
+      "remained_saved": true
+    },
+    "actual_os_pointer_drag_wheel_reset_cancel_qualified": false,
+    "screenshots": [
+      "m5-audio-graphs-eq-workspace.jpg",
+      "m5-audio-graphs-compressor-workspace.jpg"
+    ]
+  },
+  "preservation": {
+    "prior_sessions": 23,
+    "prior_pids": 24,
+    "saved_files": 13,
+    "originals": 3,
+    "protected_state_unchanged": true,
+    "original_candidate_saved_unchanged": true,
+    "original_candidate_sha256": "c9c31565edfc89a607d1d26aed1bde1327318a20b3cdfca2c1774ea0435336de",
+    "shared_proxy_movie": {
+      "unchanged": true,
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "bytes": 2206043
+    },
+    "runtime_memory_peak_bytes": 219377664
+  },
+  "provenance": {
+    "private_proof_files": [
+      "halo1-audio-graphs-r1-observed.json",
+      "halo1-audio-graphs-r1-start.json",
+      "halo1-audio-graphs-deployed.json",
+      "halo1-audio-graphs-opened.json",
+      "halo1-audio-graphs-eq-gain.json",
+      "halo1-audio-graphs-changed.json",
+      "halo1-audio-graphs-changed-audio.json",
+      "halo1-audio-graphs-native-responses.json",
+      "halo1-audio-graphs-undone.json",
+      "halo1-audio-graphs-reopened-audio.json",
+      "halo1-audio-graphs-final.json",
+      "halo1-audio-graphs-protected.json"
+    ],
+    "publication": "Compact extraction of the completed owner gate and Windows/API workflow; no full Sessions, spectra/response point arrays or credentials.",
+    "source_sha256": {
+      "crates/vv-web/src/api.rs": "f793b71fe3746eebee6f47c5dca2b459c2156f3218781d34160087cecb334958",
+      "crates/vv-web/src/audio.rs": "82e245ab54cee0c1a06b2ea3682a0a99804e9004fdb11d97b7c41423e7d0de25",
+      "crates/vv-web/src/host.rs": "36febcb6c76576b4e8574a534d2e669c44e355c06eebd44f364acb3d24b71590",
+      "crates/vv-web/src/tests/api.rs": "eb8d57f595bd5db6089e121b3212cc691d3425507c8eba040a8b2e1b438901e8",
+      "crates/vv-web/src/tests/audio.rs": "73a00bf86c1882f62ff313549631a6f3d70709489d3b5d81911e4cf14e11d71c",
+      "crates/vv-web/src/tests/host.rs": "43f8acc70fc3627a7a1db23fd7cb83afc6d57c97c96b84c8d9e25d627a94f846",
+      "web/js/mixer.js": "dd53ad74a3ff769262a2f58cf0e7a32761659878d904c82214fbe493578a11f0",
+      "web/js/audio-graphs.js": "5f7d46c3c384a0d241ac5eeccb5854afb31e3c93f4421e9cd0dfd617b6e3337c",
+      "web/style/app.css": "8cd41f5ed58cc22c21dacf647fccfda8faa8ae391e221dd6d008c5b970ba8b7d",
+      "web/test/audio-graphs.test.js": "7975f742e779dadbf0c699f2f14de958053f52e484e35e944fdb58708558fec4"
+    }
+  }
+}

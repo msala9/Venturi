@@ -102,6 +102,10 @@
 .native-asset-panel details[open] { display: grid; gap: 3px; padding-bottom: 4px; }
 .native-asset-panel details > button, .native-asset-panel details > a { justify-self: start; font-size: 10px; }
 .native-asset-relink { display: grid; gap: 3px; padding-top: 3px; border-top: 1px solid var(--border); }
+.native-asset-panel .field.native-asset-replacement-option { display: flex; align-items: center; gap: 5px; }
+.native-asset-panel .native-asset-replacement-option input[type="checkbox"] { flex: 0 0 auto; width: auto; min-height: 0; margin: 0; padding: 0; }
+.native-asset-replacement-review { max-height: min(24rem,45dvh); overflow: auto; overflow-wrap: anywhere; }
+.native-asset-replacement-review h4 { margin: 4px 0; font-size: 11px; }
 .native-asset-source:empty, .native-asset-report:empty { display: none; }
 .native-asset-source { min-width: 0; border-top: 1px solid var(--border); padding-top: 4px; }
 .native-source-heading { font-weight: 500; }

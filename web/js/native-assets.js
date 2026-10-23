@@ -111,6 +111,8 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
 }
 
 export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,projectCommit,timelineCommit,assetDnd,makeLibraryMutation,onImported=()=>{},onPlaced=()=>{},onPreview,onRemoved=()=>{},onRelinked=()=>{},notice=()=>{},api=apiRequest,pause=delay}){
+  const ownerDocument=root.ownerDocument ?? globalThis.document,resumeEpoch=()=>{if(active && epochRefresh)update();};
+  ownerDocument?.addEventListener?.('close',resumeEpoch,true);ownerDocument?.addEventListener?.('visibilitychange',resumeEpoch);
   root.dataset.commandOwner='library';
   root.addEventListener('keydown',event=>{
     if(!['Delete','Backspace'].includes(event.key))return;
@@ -126,6 +128,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   let active=false,sequence=0,panelSession=0,transferSession=0,readController=null,pendingReload=false,transferRefreshFailed=false,page=0,pages=1,search='',archived=false,selected=null,busy=false,batch=false,stopped=false,reading=false,readEpoch=null,rows=[],chosen=[],catalog=null,folder=null,folderLabels=new Map(),controls=[],folderControls=[],list,status,caption,name,capture,stop,importButton,rename,archive,previous,next,restore,download,folderFilter,folderName,folderCreateParent,folderParent,assetDestination,createFolder,renameFolder,moveFolder,removeFolder,moveAssets,relinkMenu,relinkButton,relinkArea,relinkDraft=null,relinkReader=null,relinkReading=false,relinkFiles,relinkApply,relinkCancel;
   let sourcePicker=null,sourceDraft=null,sourceArea,sourceReport,sourceDestination,importTree,relinkFolder;
   let relinkReview=null;
+  let observedEpoch=null,epochRefresh=null,disposed=false;
   let dragRows=null,dragButtons=[],rowAnchor=null,readGeneration=null,placementAttempt=null,previewButton=null,previewSequence=0,deleteButton=null,deletion=null;
   const button=(text,action)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',action);return node;};
   const compact=(node,text)=>{node.setAttribute('aria-label',node.textContent);node.title=node.textContent;node.setAttribute('data-compact-label',text);return node;};
@@ -226,7 +229,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   const sourceCurrent=draft=>active && sourceArea?.isConnected!==false && Boolean(draft) && sourceDraft===draft && draft.identity===sourceIdentity();
   function closeRelinkReview(accepted=false){const before=relinkReview;if(!before)return;relinkReview=null;before.signal.removeEventListener('abort',before.abort);before.element.remove();before.resolve(accepted);}
   function replacementChoice(parent,draft){
-    const label=document.createElement('label'),input=document.createElement('input'),note=document.createElement('p');label.className='field';label.textContent='Use replacement files';input.type='checkbox';input.checked=false;input.setAttribute('aria-label','Use replacement files');label.append(input);note.className='muted';note.textContent='Updates source properties for replaced library media. Review the native file changes before confirming.';parent.append(label,note);draft.replacement=input;
+    const label=document.createElement('label'),input=document.createElement('input'),note=document.createElement('p');label.className='field native-asset-replacement-option';input.type='checkbox';input.checked=false;input.setAttribute('aria-label','Use replacement files');label.append(input,'Use replacement files');note.className='muted';note.textContent='Updates library source properties. Review changes before confirming.';parent.append(label,note);draft.replacement=input;
     input.addEventListener('change',()=>{if(transfer.phase()==='committing'){input.checked=draft.replace_content===true;return;}closeRelinkReview();transfer.invalidate();update();});
   }
   const replacementCurrent=(draft,replacing,area)=>Boolean(draft.replacement?.checked)===replacing && (!replacing || !modal() && root.isConnected!==false && area?.isConnected!==false && (area?.getClientRects?.().length ?? 1)>0);
@@ -235,12 +238,11 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     if(!host || signal.aborted || !isCurrent())return Promise.resolve(false);
     return new Promise(resolve=>{
       const element=document.createElement('section'),heading=document.createElement('h4'),note=document.createElement('p');element.className='native-asset-replacement-review';element.setAttribute('role','group');element.setAttribute('aria-label','Review native replacement files');heading.textContent=report.replaced_files?`Review ${report.replaced_files} replacement files`:'No replacement files matched';note.className='muted';note.textContent='This updates library source properties. Existing project media and timelines stay unchanged. Project Undo cannot restore this library edit.';element.append(heading,note);
-      const properties=value=>{const meta=value.meta;return `hash ${value.content_hash} · ${meta.width}×${meta.height} · ${meta.fps.num}/${meta.fps.den} fps · ${meta.duration_frames} frames · video ${meta.has_video?'yes':'no'} · audio ${meta.has_audio?'yes':'no'} · ${meta.sample_rate} Hz · ${meta.channels} channels · ${meta.audio_streams} audio streams`;};
+      const properties=value=>{const meta=value.meta,fps=meta.fps.num%meta.fps.den===0?meta.fps.num/meta.fps.den:`${meta.fps.num}/${meta.fps.den}`;return `${meta.has_video?`Video ${meta.width}×${meta.height} · ${fps} fps`:'No video'} · ${meta.has_audio?`Audio ${meta.sample_rate} Hz · ${meta.channels} channels`:'No audio'}`;};
       for(const row of report.replacements){
-        const file=document.createElement('details'),title=document.createElement('summary');title.textContent=`${row.file_name} → ${row.source_token} · ${row.media.length} library media`;file.open=true;file.setAttribute('style','overflow-wrap:anywhere');file.append(title);
-        for(const media of row.media){const id=document.createElement('p'),before=document.createElement('p'),after=document.createElement('p');id.textContent=`Library media ${media.media_id}`;before.textContent=`Before: ${properties(media.before)}`;after.textContent=`After: ${properties(row.after)}`;file.append(id,before,after);
-          if(Object.keys(media.before.meta.file || {}).length || Object.keys(row.after.meta.file || {}).length){const details=document.createElement('details'),summary=document.createElement('summary'),extra=document.createElement('pre');summary.textContent='Additional native file properties';extra.setAttribute('style','white-space:pre-wrap;overflow-wrap:anywhere');extra.textContent=JSON.stringify({before:media.before.meta.file || {},after:row.after.meta.file || {}},null,2);details.append(summary,extra);file.append(details);}
-        }
+        const file=document.createElement('details'),title=document.createElement('summary');title.textContent=`${row.file_name} → ${row.source_token} · ${row.media.length} library media`;file.open=report.replacements.length===1;file.append(title);
+        for(const media of row.media){const before=document.createElement('p');before.textContent=`Before: ${properties(media.before)}`;file.append(before);}
+        const after=document.createElement('p');after.textContent=`After: ${properties(row.after)}`;file.append(after);
         element.append(file);
       }
       const confirm=button('Confirm replacement',event=>{if(event.defaultPrevented || event.isComposing || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)return;if(relinkReview?.element!==element)return;closeRelinkReview(relinkReview.current());}),cancel=button('Cancel replacement review',()=>closeRelinkReview());element.append(confirm,cancel);
@@ -264,6 +266,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   function clearSelection(){assetDnd?.end();clearRelink();clearSourceChoice();selected=null;chosen=[];rows=[];rowAnchor=null;list.replaceChildren();dragRows?.replaceChildren();dragButtons=[];name.value='';}
   function settled(){update();if(active && pendingReload && !transferring() && !reading){pendingReload=false;void reload(page);}}
   function update(){
+    if(active){const epoch=nativeAssetIdentity(getContext())?getContext().project_epoch:null;if(epoch!==observedEpoch){observedEpoch=epoch;epochRefresh=epoch;sequence++;previewSequence++;readController?.abort();readController=null;reading=false;placementAttempt=null;}}
     if(relinkReview && !relinkReview.current())closeRelinkReview();
     if(!active)return;if(deletion && !deletionCurrent(deletion))closeDeletion(false);if(relinkDraft && !relinkCurrent(relinkDraft))clearRelink();if(sourceDraft && !sourceCurrent(sourceDraft))clearSourceChoice();transfer.invalidate();const working=transferring() || reading || relinkReading,writable=canCommit() && !working,fresh=readEpoch===getContext()?.project_epoch,valid=fresh && selected && !selected.error && !selected.archived;
     for(const {row,item} of dragButtons){row.disabled=working;row.draggable=Boolean(writable && fresh && draggable([item]));row.setAttribute('aria-pressed',String(chosen.some(value=>value.id===item.id)));}
@@ -290,11 +293,12 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     for(const draft of [relinkDraft,sourceDraft])if(draft?.replacement)draft.replacement.disabled=!writable;
     if(relinkReview)relinkReview.confirm.disabled=!relinkReview.current();
     const context=getContext(),attempt=JSON.stringify([context?.project_epoch,context?.generation]);
+    if(epochRefresh && !working && !modal() && !ownerDocument?.hidden && root.isConnected!==false && !root.hidden && (root.getClientRects?.().length ?? 1)>0){epochRefresh=null;pendingReload=false;void reload(page,selected?.id,false,1,readEpoch!==null);return;}
     if(assetDnd && readEpoch===context?.project_epoch && readGeneration!==null && readGeneration!==context?.generation && placementAttempt!==attempt && !working){placementAttempt=attempt;pendingReload=false;void reload(page,selected?.id,false,1,true);}
   }
   async function reload(wanted=page,preferred=selected?.id,afterWrite=false,direction=1,keepSelection=false){
     if(!active)return false;if(transferring() && !afterWrite){pendingReload=true;return false;}const context={...getContext()};if(!nativeAssetIdentity(context)){message('Create or open a project to use native assets');return false;}
-    closeDeletion(false);
+    epochRefresh=null;closeDeletion(false);
     const selectionIds=keepSelection?chosen.map(item=>item.id):null,oldAnchor=rowAnchor,nameDraft=keepSelection?{id:selected?.id,revision:selected?.revision,value:name.value}:null;
     assetDnd?.end();clearRelink();clearSourceChoice();readController?.abort();readController=new AbortController();const id=++sequence;reading=true;update();message('Reading native assets…');
     try{
@@ -320,7 +324,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     if(action.kind==='delete_assets')await onRemoved([...receipt.deleted_ids],receipt);
     if(['relink','relink_folder'].includes(action.kind) && action.replace_content===true && receipt.replace_content===true)await onRelinked(action.asset_id,receipt);
     if(!active || transferSession!==panelSession)return;
-    if(['relink','relink_folder','import_tree','delete_assets'].includes(action.kind) && receipt.project_epoch!==getContext()?.project_epoch)return;
+    if(receipt.project_epoch!==getContext()?.project_epoch)return;
     const pooling=action.kind==='import_set' && report?.destination==='pool';
     if(action.kind==='import_set' && !pooling){onPlaced(receipt);return;}
     try{
@@ -412,7 +416,8 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   return {
     captureSelection,canDelete,deleteSelection,
     async open(){
-      this.hide();active=true;selected=null;chosen=[];rows=[];catalog=null;readEpoch=null;reading=false;root.className='native-asset-panel';root.replaceChildren();const heading=document.createElement('h3');heading.textContent='Native asset library';const note=document.createElement('p');note.className='muted';note.textContent='Reusable media and compound timelines. Files are copied into the library, then into each importing project. The shared archive remains available in Shared media archive.';
+      if(disposed)return;
+      this.hide();active=true;observedEpoch=nativeAssetIdentity(getContext())?getContext().project_epoch:null;selected=null;chosen=[];rows=[];catalog=null;readEpoch=null;reading=false;root.className='native-asset-panel';root.replaceChildren();const heading=document.createElement('h3');heading.textContent='Native asset library';const note=document.createElement('p');note.className='muted';note.textContent='Reusable media and compound timelines. Files are copied into the library, then into each importing project. The shared archive remains available in Shared media archive.';
       const help=document.createElement('details'),helpHeading=document.createElement('summary');helpHeading.textContent='About native assets';help.append(helpHeading,note);
       const form=document.createElement('form'),query=document.createElement('input');form.className='native-asset-search';query.type='search';query.value=search;query.setAttribute('aria-label','Search native assets');const submit=document.createElement('button');submit.textContent='Search native assets';compact(submit,'Search');form.append(query,submit);form.addEventListener('submit',event=>{event.preventDefault();if(transferring())return;search=query.value;reload(0);});
       const archivedLabel=document.createElement('label'),toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=archived;toggle.setAttribute('aria-label','Show archived native assets');archivedLabel.append(toggle,' Show archived native assets');toggle.addEventListener('change',()=>{if(transferring())return;archived=toggle.checked;reload(0);});
@@ -437,6 +442,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
       controls=[query,submit,toggle,refresh];folderControls=[folderName,folderCreateParent,folderParent,assetDestination];root.append(heading,field('Native asset folder',folderFilter),form,assetList,paging,caption,primary,libraryActions,assetActions,sourceArea,sourceReport,status);folderFields();update();await reload(page);
     },
     invalidate(){update();},
-    hide(){closeDeletion(false);assetDnd?.end();active=false;stopped=true;pendingReload=false;sequence++;previewSequence++;panelSession++;readController?.abort();readController=null;reading=false;clearRelink();clearSourceChoice();transfer.cancel();},
+    hide(){closeDeletion(false);assetDnd?.end();active=false;stopped=true;pendingReload=false;epochRefresh=null;sequence++;previewSequence++;panelSession++;readController?.abort();readController=null;reading=false;clearRelink();clearSourceChoice();transfer.cancel();},
+    dispose(){this.hide();disposed=true;ownerDocument?.removeEventListener?.('close',resumeEpoch,true);ownerDocument?.removeEventListener?.('visibilitychange',resumeEpoch);},
   };
 }

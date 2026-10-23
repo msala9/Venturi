@@ -709,6 +709,15 @@ Library mutations preserve native timeline history and share ordinary lease,
 epoch, generation and durable receipt semantics. A changed response after a
 successful ACK requires a read refresh, not a new save/import command.
 
+The saved-preset list's double-click and unmodified Enter invoke the same guarded
+`apply_saved_preset` path as its Apply button. One pending application owns the
+captured clip IDs; duplicate input cannot issue a second command. The list must
+be current, attached, successfully loaded for this project epoch and writable,
+with a valid nonempty selection. Loading/failed/stale reads, modal dialogs,
+read-only state, IME, repeats and modified keys cannot apply. Native preset
+revision checks, attribute targeting/conversion and one-Undo semantics are
+unchanged. This does not introduce permanent preset removal.
+
 Native pool assets use the original desktop v1 `AssetFile` JSON wrapper and
 `ClipboardPayload` RON text. They are separate from the ds4 media catalog.
 `--assets-root` selects the native library root (default `<projects>/.assets`),
@@ -837,6 +846,33 @@ unique selected root `media_ids`, `changed`, `new_count`, `reused_count` and
 `errors`; counts refer to roots, not private dependencies. Cached closures retain
 edited children. An all-reused set changes no history, Redo, allocator or import
 cache. Existing single-import and timeline `place_native_assets` stay separate.
+
+### Portable native Library project copies
+
+New native single/set imports materialize ordinary dependencies under the approved
+project root at `library/<originalname>`, matching the desktop project-copy
+layout. Only the legacy filename prefix of exactly sixteen ASCII hex digits and
+a dash is removed; 64-digit Web prefixes are not guessed or stripped. Existing
+flat `asset-<sha>-<name>` copies and saved project paths remain valid and are not
+migrated. NAS capture, explicit native relink, ds4 imports, OTIO, clipboard and
+ordinary project imports keep their existing paths and policies.
+
+An identical candidate is reused only after complete SHA verification and stable
+file identity, preserving its bytes and timestamps. Different bytes, including
+same-size files, remain untouched; candidates use native `stem (2).ext`, `(3)`
+suffixes. Lookup is bounded to 4096 candidates and 2 GiB of existing-file hash
+comparisons per source, within the worker deadline. Stored components retain the
+128-byte limit; only a collision suffix can shorten the stem at a UTF-8 boundary
+to retain that bound and its supported extension. The first candidate preserves
+the full original basename.
+
+Project-root staging and atomic no-replace publication stay on the same filesystem.
+The `library` directory is pinned without following links; its live root-relative
+identity and final file identity are rechecked before the prepared import commits.
+Replaced directories, symlinks, cancellation and changed sources are refused.
+Existing byte/file quotas, native metadata validation, cached dependency closure
+and one-Undo pool/timeline import semantics remain authoritative. Saved projects
+and ordinary Source preview already support these confined nested paths.
 
 ### Library Source before project import
 

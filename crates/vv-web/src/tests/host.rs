@@ -3763,7 +3763,7 @@ fn native_asset_import_is_one_undo_and_redo_then_cached_reuse_preserves_an_edite
             .media_pool
             .values()
             .filter(|item| item.compound.is_none())
-            .all(|item| item.path.parent() == Some(target.as_path()))
+            .all(|item| item.path.parent() == Some(target.join("library").as_path()))
     );
     let undo = request(&editor, Operation::Undo, "undo-native-import", None);
     editor.mutation(None, undo).unwrap();

@@ -36,10 +36,23 @@ export async function presetMutationResult(mutate,refresh){
   catch(refreshError){return {receipt,refreshError};}
 }
 export function createPresetPanel({root,getContext,canCommit,commit,libraryCommit,notice,shortcuts=null,presetDnd=null,api=(path,body,options)=>request(path,body,(url,init)=>fetch(url,{...init,signal:options?.signal?AbortSignal.any([init.signal,options.signal]):init.signal}))}){
-  let active=false,sequence=0,controller=null,page=0,pages=1,search='',archived=false,busy=false,selected=null,section=null,list=null,status=null,previous=null,next=null,caption=null,apply=null,edit=null,archive=null,download=null,restorePrevious=null,saveSelection=null,importFile=null,dialog=null,bound=null,dialogControls=null,navigation=[],shortcutToggle=null,shortcutStatus=null,settingsSequence=0,shortcutController=null;
+  let active=false,sequence=0,controller=null,page=0,pages=1,search='',archived=false,busy=false,loading=false,loadedEpoch=null,selected=null,section=null,list=null,status=null,previous=null,next=null,caption=null,apply=null,edit=null,archive=null,download=null,restorePrevious=null,saveSelection=null,importFile=null,dialog=null,bound=null,dialogControls=null,navigation=[],shortcutToggle=null,shortcutStatus=null,settingsSequence=0,shortcutController=null;
   const button=(text,action)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',action);return node;};
   const message=text=>{if(status?.isConnected)status.textContent=text;};
   let dragButton=null,dragTicket=null;
+  function applyAvailable(ownedList=list){
+    const context=getContext();
+    return Boolean(active && section?.isConnected && ownedList===list && ownedList?.isConnected && !busy && !loading && canCommit() && !dialog?.open && !document.querySelector?.('dialog[open]') && selected && !selected.error && !selected.archived && ['id','revision'].every(key=>typeof selected[key]==='string' && selected[key]) && context?.epoch===loadedEpoch && ['epoch','generation','timeline','revision'].every(key=>typeof context?.[key]==='string' && context[key]) && context.timeline!=='fixture' && Array.isArray(context.clip_ids) && context.clip_ids.length>0 && context.clip_ids.length<=4096 && new Set(context.clip_ids).size===context.clip_ids.length && context.clip_ids.every(id=>typeof id==='string' && id));
+  }
+  async function applySelected(ownedList=list){
+    if(!applyAvailable(ownedList))return;
+    const context=getContext(),operation={kind:'apply_saved_preset',clip_ids:[...context.clip_ids],preset_id:selected.id,revision:selected.revision};
+    try{await write(operation,false);}catch{}
+  }
+  function activateList(event,ownedList){
+    if(event.currentTarget!==ownedList || event.target!==ownedList && !Array.from(ownedList.children).includes(event.target) || event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || event.getModifierState?.('AltGraph') || event.type==='keydown' && event.key!=='Enter' || !applyAvailable(ownedList))return;
+    event.preventDefault();event.stopPropagation();void applySelected(ownedList);
+  }
   function endDrag(){if(!dragTicket)return;dragTicket=null;try{presetDnd?.end();}catch{}}
   function dragSource(){
     const context=getContext();
@@ -67,7 +80,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
     for(const control of navigation)control.disabled=busy;
     list.disabled=busy;previous.disabled=busy || page===0;next.disabled=busy || page+1>=pages;
     caption.textContent=selected?`${selected.name}${selected.archived?' · archived':''}`:'No saved preset selected';
-    apply.disabled=!writable || !valid || selected.archived || !context?.clip_ids.length;
+    apply.disabled=!applyAvailable();
     if(dragTicket)dragCurrent(dragTicket);
     dragButton.disabled=!dragSource();dragButton.draggable=!dragButton.disabled;dragButton.textContent=selected?`Drag preset: ${selected.name}`:'Drag selected preset';
     saveSelection.disabled=!writable || !context?.clip_ids.length;importFile.disabled=!writable;
@@ -85,8 +98,8 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
     dialogControls?.();
   }
   async function reload(wanted=page,preferred=selected?.id,direction=1,afterWrite=false){
-    endDrag();if(!active || busy && !afterWrite)return false;const context=getContext();if(!context){message('Connect to a native session to read saved presets');return false;}
-    controller?.abort();controller=new AbortController();const token=++sequence;message('Reading saved presets…');
+    endDrag();if(!active || busy && !afterWrite)return false;const live=getContext();if(!live){message('Connect to a native session to read saved presets');return false;}const context={...live};
+    controller?.abort();controller=new AbortController();const token=++sequence;loading=true;loadedEpoch=null;controls();message('Reading saved presets…');
     try{
       let result,scan=wanted;
       while(true){
@@ -95,14 +108,15 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
         const following=scan+direction;if(!search || result.items.length || following<0 || following>=result.pages)break;
         message(`Searching preset page ${scan+1} of ${result.pages}…`);scan=following;
       }
-      page=result.page;pages=result.pages;list.replaceChildren(...result.items.map((item,index)=>new Option(`${item.name}${item.error?` · ${item.error}`:''}`,String(index))));
+      loadedEpoch=context.epoch;page=result.page;pages=result.pages;list.replaceChildren(...result.items.map((item,index)=>new Option(`${item.name}${item.error?` · ${item.error}`:''}`,String(index))));
       const found=result.items.findIndex(item=>item.id===preferred),keepOutside=selected && found<0 && selected.id===preferred && selected.archived===archived,index=keepOutside?-1:Math.max(0,found);list.value=String(index);if(!keepOutside)selected=result.items[index] || null;
       list.onchange=()=>{endDrag();selected=result.items[Number(list.value)] || null;controls();};
-      message(`Page ${page+1} of ${result.pages} · ${result.total} ${archived?'archived':'saved'} presets${search?` · ${result.items.length} matches on this page`:''}`);controls();return true;
+      message(`Page ${page+1} of ${result.pages} · ${result.total} ${archived?'archived':'saved'} presets${search?` · ${result.items.length} matches on this page`:''}`);return true;
     }catch(error){if(active && token===sequence && error.name!=='AbortError'){if(wanted && error.message.includes('beyond the last page'))return reload(0,preferred,direction,afterWrite);message(error.message);}return false;}
+    finally{if(token===sequence){loading=false;controls();}}
   }
   async function write(operation,project=true){
-    if(busy || !canCommit())return;endDrag();busy=true;sequence++;controller?.abort();controller=null;controls();message('Updating preset library…');
+    if(busy || !canCommit())return;endDrag();busy=true;sequence++;loading=false;controller?.abort();controller=null;controls();message('Updating preset library…');
     try{
       const {receipt,refreshError}=await presetMutationResult(()=>project?libraryCommit(operation):commit(operation),async receipt=>{
         if(operation.kind==='edit_preset_library' && operation.edit.id)shortcuts?.deactivate(operation.edit.id);
@@ -166,10 +180,10 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
       const heading=document.createElement('h3');heading.textContent='Saved attribute presets';const note=document.createElement('p');note.className='muted';note.textContent='This library is shared by projects using the configured preset folder. Import and export use desktop preset JSON.';section.append(heading,note);
       const searchForm=document.createElement('form'),searchLabel=document.createElement('label'),searchInput=document.createElement('input');searchLabel.className='field';searchLabel.textContent='Search saved presets';searchInput.type='search';searchInput.value=search;searchLabel.append(searchInput);const submit=document.createElement('button');submit.textContent='Search presets';searchForm.append(searchLabel,submit);searchForm.addEventListener('submit',event=>{event.preventDefault();if(busy)return;search=searchInput.value;reload(0);});section.append(searchForm);
       const archivedLabel=document.createElement('label'),archivedInput=document.createElement('input');archivedInput.type='checkbox';archivedInput.checked=archived;archivedLabel.append(archivedInput,' Show archived presets');archivedInput.addEventListener('change',()=>{if(busy)return;archived=archivedInput.checked;reload(0);});section.append(archivedLabel);
-      list=document.createElement('select');list.size=7;list.setAttribute('aria-label','Saved presets');section.append(list);status=document.createElement('p');status.className='muted';status.setAttribute('role','status');section.append(status);
+      list=document.createElement('select');list.size=7;list.setAttribute('aria-label','Saved presets');list.title='Double-click or press Enter to apply to the selected clips';const ownedList=list;list.addEventListener('dblclick',event=>activateList(event,ownedList));list.addEventListener('keydown',event=>activateList(event,ownedList));section.append(list);status=document.createElement('p');status.className='muted';status.setAttribute('role','status');section.append(status);
       previous=button('Previous presets',()=>reload(page-1,selected?.id,-1));next=button('Next presets',()=>reload(page+1));const refresh=button('Refresh presets',()=>reload());navigation=[searchInput,submit,archivedInput,refresh];section.append(previous,next,refresh);
       caption=document.createElement('p');caption.className='muted';section.append(caption);
-      apply=button('Apply preset to selected clips',async()=>{if(!selected || !getContext()?.clip_ids.length)return;try{await write({kind:'apply_saved_preset',clip_ids:[...getContext().clip_ids],preset_id:selected.id,revision:selected.revision},false);}catch{}});
+      apply=button('Apply preset to selected clips',()=>void applySelected(ownedList));
       dragButton=button('Drag selected preset',()=>{});dragButton.setAttribute('data-preset-drag','');dragButton.addEventListener('dragstart',startDrag);dragButton.addEventListener('dragend',event=>{if(dragTicket?.button===event.currentTarget)endDrag();});const dragNote=document.createElement('p');dragNote.className='muted';dragNote.textContent='Drop on a selected clip to apply to the selection; otherwise apply to the target clip. Linked clips follow native preset rules. You can also select clips and use Apply.';section.append(dragButton,dragNote);
       edit=button('Edit preset settings',()=>openSettings(selected));archive=button('Archive preset',changeArchive);restorePrevious=button('Restore previous preset settings',async()=>{try{await write({kind:'edit_preset_library',edit:{action:'restore_previous',id:selected.id,revision:selected.revision}});}catch{}});section.append(apply,edit,archive,restorePrevious);
       if(shortcuts){
@@ -186,6 +200,6 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
     },
     saveSelection(captured){if(!active || busy || !canCommit())return false;openSettings(null,presetCaptureContext(getContext(),captured));return true;},
     invalidate(){shortcuts?.sync();controls();},
-    hide(){endDrag();active=false;sequence++;controller?.abort();controller=null;settingsSequence++;shortcutController?.abort();shortcutController=null;if(!busy){dialog?.remove();dialog=null;dialogControls=null;bound=null;}},
+    hide(){endDrag();active=false;loading=false;loadedEpoch=null;sequence++;controller?.abort();controller=null;settingsSequence++;shortcutController?.abort();shortcutController=null;if(!busy){dialog?.remove();dialog=null;dialogControls=null;bound=null;}},
   };
 }

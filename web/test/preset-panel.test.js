@@ -51,14 +51,16 @@ function panelHarness(shortcut='Ctrl+Alt+Shift+B',options={}){
   const body=new Element('body'),root=new Element('root');body.append(root);globalThis.document={body,createElement:tag=>new Element(tag),querySelector:selector=>selector==='dialog[open]'?dialog():null};globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
   const context={epoch:'epoch',generation:'1',timeline:'timeline',revision:'revision',clip_ids:['clip'],roles:{video:true,audio:true},name:'Selected clips'};
   let item={id:'preset',revision:'r1',name:'Saved look',attributes:['zoom'],anchor:'start',append_filters:false,shortcut,video:true,audio:false,archived:false,...options.item};
-  const mutate=async operation=>{writes.push(operation);if(operation.kind==='apply_saved_preset')return {command_id:'applied'};const options=operation.options || operation.edit.options,old=operation.kind==='save_attribute_preset'?null:item.shortcut;item={...item,...options,id:operation.kind==='save_attribute_preset'?'created':item.id,revision:'r2',shortcut:options.shortcut?.action==='set'?options.shortcut.value:options.shortcut?.action==='clear'?null:old};return {command_id:operation.kind==='save_attribute_preset'?'created':'updated'};};
+  const mutate=async operation=>{writes.push(operation);if(operation.kind==='apply_saved_preset')return options.apply?options.apply(operation):{command_id:'applied'};const edits=operation.options || operation.edit.options,old=operation.kind==='save_attribute_preset'?null:item.shortcut;item={...item,...edits,id:operation.kind==='save_attribute_preset'?'created':item.id,revision:'r2',shortcut:edits.shortcut?.action==='set'?edits.shortcut.value:edits.shortcut?.action==='clear'?null:old};return {command_id:operation.kind==='save_attribute_preset'?'created':'updated'};};
   const presetDnd={type:'application/x-venturi-preset',start(snapshot,current){drags.push({snapshot,current});return options.start?options.start(snapshot,current):'opaque-native-drag';},end(){dragEnds++;}};
-  const panel=createPresetPanel({root,getContext:()=>context,canCommit:()=>writable,commit:mutate,libraryCommit:mutate,presetDnd,notice:message=>notices.push(message),shortcuts:{state:()=>({enabled,label:'Ctrl+Alt+Shift+B'}),activate(){activated++;enabled=true;},deactivate(id){deactivated.push(id);enabled=false;},sync(){}},api:async(path,body,options)=>{reads.push({path,body,options});if(path==='/presets/shortcuts'){const pending=deferred();catalogReads.push({...pending,options});return pending.promise;}if(path.startsWith('/presets/pages/'))return {page:0,pages:1,total:1,items:[structuredClone(item)]};if(path.startsWith('/presets/items/'))return structuredClone(item);throw Error(`Unexpected route ${path}`);}});
+  const panel=createPresetPanel({root,getContext:()=>context,canCommit:()=>writable,commit:mutate,libraryCommit:mutate,presetDnd,notice:message=>notices.push(message),shortcuts:{state:()=>({enabled,label:'Ctrl+Alt+Shift+B'}),activate(){activated++;enabled=true;},deactivate(id){deactivated.push(id);enabled=false;},sync(){}},api:async(path,body,requestOptions)=>{reads.push({path,body,options:requestOptions});if(path==='/presets/shortcuts'){const pending=deferred();catalogReads.push({...pending,options:requestOptions});return pending.promise;}if(path.startsWith('/presets/pages/')){const result={page:0,pages:1,total:1,items:[structuredClone(item)]};return options.pageReader?options.pageReader(result):result;}if(path.startsWith('/presets/items/'))return structuredClone(item);throw Error(`Unexpected route ${path}`);}});
   const walk=node=>[node,...(node.children || []).filter(child=>child instanceof Element).flatMap(walk)];
   const dialog=()=>walk(body).find(node=>node.tag==='dialog' && node.open);
   const button=(text,parent=root)=>{const found=walk(parent).find(node=>node.tag==='button' && node.textContent===text);assert(found,`Expected button ${text}`);return found;};
   const field=(attribute,parent=dialog())=>{const found=walk(parent).find(node=>node.attributes?.has(attribute));assert(found,`Expected ${attribute}`);return found;};
   return {panel,root,context,reads,catalogReads,writes,deactivated,notices,drags,dragEnds:()=>dragEnds,setWritable:value=>{writable=value;},item:()=>item,enabled:()=>enabled,activated:()=>activated,button,dialog,field,
+    list:()=>walk(root).find(node=>node.getAttribute('aria-label')==='Saved presets'),
+    activate(type='keydown',patch={},node=walk(root).find(node=>node.getAttribute('aria-label')==='Saved presets')){const event=new Event(type,{cancelable:true});for(const [key,value] of Object.entries({key:'Enter',...patch}))Object.defineProperty(event,key,{value});node.dispatchEvent(event);return event;},
     drag(transfer={effectAllowed:'none',entries:[],setData(type,value){this.entries.push([type,value]);}},node=field('data-preset-drag',root)){const event=new Event('dragstart',{cancelable:true});Object.defineProperty(event,'dataTransfer',{value:transfer});node.dispatchEvent(event);return {event,transfer,node};},
     async open(){root.replaceChildren();await panel.open();},edit(){button('Edit preset settings').click();return dialog();},capture(){button('Save selection as preset').click();return dialog();},
     changeMode(value){const select=field('data-preset-shortcut-mode');select.value=value;select.dispatchEvent(new Event('change'));},
@@ -161,4 +163,36 @@ test('hidden or obsolete preset drag controls cannot take ownership after the pa
 
 test('Apply retains the accessible button workflow and submits exactly one native selection command',async()=>{
   const h=panelHarness();try{await h.open();h.drag();h.button('Apply preset to selected clips').click();await settle();assert.deepEqual(h.writes,[{kind:'apply_saved_preset',clip_ids:['clip'],preset_id:'preset',revision:'r1'}]);assert.equal(h.dragEnds(),1);assert.equal(h.drags.length,1);assert.equal(h.button('Apply preset to selected clips').disabled,false);}finally{h.destroy();}
+});
+
+test('preset double-click and Enter share one guarded Apply command while duplicate events cannot submit twice',async()=>{
+  for(const type of ['dblclick','keydown']){
+    const gate=deferred(),h=panelHarness(undefined,{apply:()=>gate.promise});try{
+      await h.open();const event=h.activate(type);assert.equal(event.defaultPrevented,true);h.activate('dblclick');h.activate('keydown');h.button('Apply preset to selected clips').click();
+      assert.deepEqual(h.writes,[{kind:'apply_saved_preset',clip_ids:['clip'],preset_id:'preset',revision:'r1'}]);assert.equal(h.button('Apply preset to selected clips').disabled,true);
+      h.context.clip_ids.push('later-selection');assert.deepEqual(h.writes[0].clip_ids,['clip']);gate.resolve({command_id:'applied'});await settle();assert.equal(h.writes.length,1);assert.equal(h.button('Apply preset to selected clips').disabled,false);
+    }finally{h.destroy();}
+  }
+});
+
+test('preset activation ignores text targets, modifiers, repeats, IME, modal and invalid or empty selection',async()=>{
+  const h=panelHarness();try{
+    await h.open();
+    for(const patch of [{key:'Space'},{repeat:true},{isComposing:true},{keyCode:229},{ctrlKey:true},{metaKey:true},{altKey:true},{shiftKey:true},{getModifierState:key=>key==='AltGraph'},{target:{tag:'input'}}]){assert.equal(h.activate('keydown',patch).defaultPrevented,false);}
+    for(const patch of [{ctrlKey:true},{altKey:true},{shiftKey:true},{metaKey:true}])h.activate('dblclick',patch);
+    h.setWritable(false);h.activate();h.button('Apply preset to selected clips').click();h.setWritable(true);
+    h.context.clip_ids=[];h.activate();h.context.clip_ids=['clip','clip'];h.activate();h.context.clip_ids=['clip'];
+    h.edit();h.activate();h.button('Apply preset to selected clips').click();assert.equal(h.writes.length,0);h.button('Cancel preset settings',h.dialog()).click();
+    h.context.clip_ids=['new-current-selection'];h.activate();await settle();assert.deepEqual(h.writes[0].clip_ids,['new-current-selection']);
+  }finally{h.destroy();}
+  for(const item of [{archived:true},{error:'Invalid native preset'},{revision:null}]){const invalid=panelHarness(undefined,{item});try{await invalid.open();invalid.activate();invalid.activate('dblclick');assert.equal(invalid.writes.length,0);}finally{invalid.destroy();}}
+});
+
+test('preset activation refuses pending or failed reads, a changed project and obsolete detached list or Apply controls',async()=>{
+  let reads=0;const gate=deferred(),h=panelHarness(undefined,{pageReader:result=>++reads===2?gate.promise:result});try{
+    await h.open();const oldList=h.list(),oldApply=h.button('Apply preset to selected clips');h.button('Refresh presets').click();h.activate();assert.equal(h.button('Apply preset to selected clips').disabled,true);assert.equal(h.writes.length,0);
+    h.context.epoch='other-project';gate.resolve({page:0,pages:1,total:1,items:[structuredClone(h.item())]});await settle();h.activate();assert.equal(h.writes.length,0);
+    await h.open();h.activate('dblclick',{},oldList);oldApply.click();assert.equal(h.writes.length,0);h.panel.hide();h.activate();assert.equal(h.writes.length,0);
+  }finally{h.destroy();}
+  let fail=false;const broken=panelHarness(undefined,{pageReader:result=>{if(fail)throw Error('Preset NAS unavailable');return result;}});try{await broken.open();fail=true;broken.button('Refresh presets').click();await settle();broken.activate();broken.activate('dblclick');broken.button('Apply preset to selected clips').click();assert.equal(broken.writes.length,0);assert.equal(broken.button('Apply preset to selected clips').disabled,true);}finally{broken.destroy();}
 });

@@ -1886,6 +1886,33 @@ fn reopen_written_stage(file: File, directory: &File, name: &str) -> Result<File
 fn copy(inner: &Inner, source: &PinnedSource, work: &Work, budget: &Budget) -> Result<Copied> {
     copy_checked(inner, source, work, budget, None, |_, _, _| Ok(()))
 }
+fn project_copy_name(name: &str, candidate: usize) -> Result<String> {
+    let name = if name.as_bytes().get(16) == Some(&b'-')
+        && name.as_bytes()[..16].iter().all(u8::is_ascii_hexdigit)
+    {
+        &name[17..]
+    } else {
+        name
+    };
+    simple_name(name)?;
+    if candidate == 1 {
+        return Ok(name.into());
+    }
+    let (stem, extension) = match name.rsplit_once('.') {
+        Some((stem, extension)) if !stem.is_empty() => (stem, format!(".{extension}")),
+        _ => (name, String::new()),
+    };
+    let suffix = format!(" ({candidate}){extension}");
+    let mut stem = stem.to_owned();
+    while stem.len() + suffix.len() > 128 {
+        if stem.pop().is_none() {
+            return Err(ApiError::invalid("Project library file name is too long"));
+        }
+    }
+    let name = format!("{stem}{suffix}");
+    simple_name(&name)?;
+    Ok(name)
+}
 fn copy_checked(
     inner: &Inner,
     source: &PinnedSource,
@@ -1992,7 +2019,8 @@ fn copy_checked(
     }
     live_source(inner, source, work.import.is_some())?;
     validate(&meta, source_hash, &hash)?;
-    let (destination, name, path) = if let Some(path) = publish_path {
+    let project_copy = publish_path.is_none() && work.import.is_some();
+    let (destination, mut name, mut path) = if let Some(path) = publish_path {
         inner.store.media_entry(path)?;
         let parent = path
             .parent()
@@ -2009,27 +2037,11 @@ fn copy_checked(
             path.to_owned(),
         )
     } else if work.import.is_some() {
-        let suffix: String = source_name
-            .chars()
-            .map(|c| {
-                if c.is_ascii_alphanumeric() || "._-".contains(c) {
-                    c
-                } else {
-                    '_'
-                }
-            })
-            .rev()
-            .take(45)
-            .collect::<String>()
-            .chars()
-            .rev()
-            .collect();
-        let name = format!("asset-{hash}-{suffix}");
-        simple_name(&name)?;
+        let name = project_copy_name(source_name, 1)?;
         (
-            inner.directory.try_clone().map_err(|_| ApiError::io())?,
+            asset_store::directory(&inner.directory, "library")?,
             name.clone(),
-            inner.root.join(name),
+            inner.root.join("library").join(name),
         )
     } else {
         let directory = asset_store::directory(inner.store.media(), &hash)?;
@@ -2044,29 +2056,77 @@ fn copy_checked(
                 .join(source_name),
         )
     };
-    let expected_identity = match renameat_with(
-        staging,
-        partial.name.as_str(),
-        &destination,
-        name.as_str(),
-        RenameFlags::NOREPLACE,
-    ) {
-        Ok(()) => asset_store::stable_identity(&file)?,
-        Err(rustix::io::Errno::EXIST) => {
-            let existing = asset_store::regular(&destination, &name)?;
-            let identity = asset_store::stable_identity(&existing)?;
-            if digest(&existing, budget, &destination)? != hash
-                || asset_store::stable_identity(&existing)? != identity
-            {
-                return Err(ApiError::conflict(
-                    "FILE_EXISTS",
-                    "Existing asset media was preserved because its bytes differ",
-                ));
-            }
-            identity
+    let mut candidate = 1;
+    let mut compared_bytes = 0u64;
+    let expected_identity = loop {
+        budget.check(&destination)?;
+        if project_copy {
+            project_root(inner)?;
+            let live = File::from(
+                openat(
+                    &inner.directory,
+                    "library",
+                    OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                    Mode::empty(),
+                )
+                .map_err(|_| source_changed())?,
+            );
+            asset_store::same_directory(&live, &destination)?;
         }
-        Err(_) => return Err(ApiError::io()),
+        match renameat_with(
+            staging,
+            partial.name.as_str(),
+            &destination,
+            name.as_str(),
+            RenameFlags::NOREPLACE,
+        ) {
+            Ok(()) => break asset_store::stable_identity(&file)?,
+            Err(rustix::io::Errno::EXIST) => {
+                let existing = asset_store::regular(&destination, &name)?;
+                let identity = asset_store::stable_identity(&existing)?;
+                let existing_size = existing.metadata().map_err(|_| ApiError::io())?.len();
+                let same_bytes = if project_copy && existing_size != size {
+                    false
+                } else {
+                    compared_bytes = compared_bytes.saturating_add(existing_size);
+                    if project_copy && compared_bytes > MAX_ASSET {
+                        return Err(ApiError::invalid(
+                            "Project library collision checks exceed 2 GiB",
+                        ));
+                    }
+                    digest(&existing, budget, &destination)? == hash
+                };
+                if asset_store::stable_identity(&existing)? != identity {
+                    return Err(source_changed());
+                }
+                if same_bytes {
+                    break identity;
+                }
+                if !project_copy {
+                    return Err(ApiError::conflict(
+                        "FILE_EXISTS",
+                        "Existing asset media was preserved because its bytes differ",
+                    ));
+                }
+                candidate += 1;
+                if candidate > 4096 {
+                    return Err(ApiError::conflict(
+                        "FILE_EXISTS",
+                        "Project library file name candidates are exhausted",
+                    ));
+                }
+                name = project_copy_name(source_name, candidate)?;
+                path = inner.root.join("library").join(&name);
+            }
+            Err(_) => return Err(ApiError::io()),
+        }
     };
+    if project_copy {
+        if asset_store::stable_identity(&source.file)? != source_identity {
+            return Err(source_changed());
+        }
+        live_source(inner, source, true)?;
+    }
     destination.sync_all().map_err(|_| ApiError::io())?;
     staging.sync_all().map_err(|_| ApiError::io())?;
     let file = asset_store::regular(&destination, &name)?;
@@ -2083,7 +2143,9 @@ fn copy_checked(
     let witness = Witness {
         directory: destination,
         base: base.try_clone().map_err(|_| ApiError::io())?,
-        parent: if work.import.is_some() {
+        parent: if project_copy {
+            Some("library".into())
+        } else if work.import.is_some() {
             None
         } else {
             Some(

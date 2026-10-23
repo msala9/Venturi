@@ -2447,7 +2447,7 @@ impl Fixture {
 }
 
 #[test]
-fn capture_nested_file_asset_is_ephemeral_until_publish_then_import_owns_independent_flat_project_bytes()
+fn capture_nested_file_asset_is_ephemeral_until_publish_then_import_owns_independent_readable_project_bytes()
  {
     let fixture = Fixture::new();
     let original = fixture.asset.payload.clone();
@@ -2498,16 +2498,7 @@ fn capture_nested_file_asset_is_ephemeral_until_publish_then_import_owns_indepen
         .import_payload(import_id, "capture", revision, "epoch", "8")
         .unwrap();
     let copied = imported_payload.files().next().unwrap();
-    assert_eq!(copied.path.parent(), Some(another.as_path()));
-    assert!(
-        copied
-            .path
-            .file_name()
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .starts_with("asset-")
-    );
+    assert_eq!(copied.path, another.join("library/tiny.png"));
     assert_eq!(
         copied.content_hash,
         vv_media::content_fingerprint(&copied.path).unwrap()
@@ -2521,6 +2512,211 @@ fn capture_nested_file_asset_is_ephemeral_until_publish_then_import_owns_indepen
     assert_eq!(imported_payload.fragment().timelines.len(), 1);
     assert_eq!(imported_payload.media_ids().len(), 1);
     drop(imported);
+    fixture.close();
+}
+
+#[test]
+fn native_project_copy_collisions_compare_full_bytes_reuse_identical_files_and_keep_old_flat_copies()
+ {
+    let fixture = Fixture::new();
+    let ready = fixture.capture();
+    assert_eq!(ready["state"], "ready", "{ready}");
+    fixture
+        .jobs
+        .publish("capture", ready["id"].as_str().unwrap(), "epoch", "7")
+        .unwrap();
+    let revision = fixture.store.item("capture", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let bytes = std::fs::read(&fixture.path).unwrap();
+    let old_flat = fixture
+        .project
+        .join(format!("asset-{:x}-tiny.png", Sha256::digest(&bytes)));
+    std::fs::write(&old_flat, &bytes).unwrap();
+    let library = fixture.project.join("library");
+    std::fs::create_dir(&library).unwrap();
+    let mut foreign = bytes.clone();
+    foreign[0] ^= 1;
+    std::fs::write(library.join("tiny.png"), &foreign).unwrap();
+    let import = || {
+        let queued = fixture
+            .jobs
+            .prepare_import("epoch", "7", "capture", &revision)
+            .unwrap();
+        let id = queued["id"].as_str().unwrap().to_owned();
+        let ready = fixture.finish(&id);
+        assert_eq!(ready["state"], "ready", "{ready}");
+        let payload = fixture
+            .jobs
+            .import_payload(&id, "capture", &revision, "epoch", "7")
+            .unwrap();
+        let path = payload.files().next().unwrap().path.clone();
+        (id, path)
+    };
+    let (first_id, first) = import();
+    assert_eq!(first, library.join("tiny (2).png"));
+    assert_eq!(std::fs::read(&first).unwrap(), bytes);
+    let identity = asset_store::stable_identity(&File::open(&first).unwrap()).unwrap();
+    let (_, second) = import();
+    assert_eq!(second, first);
+    assert_eq!(
+        asset_store::stable_identity(&File::open(&second).unwrap()).unwrap(),
+        identity
+    );
+    std::fs::write(&first, &foreign).unwrap();
+    assert!(
+        fixture
+            .jobs
+            .import_payload(&first_id, "capture", &revision, "epoch", "7")
+            .is_err()
+    );
+    let (_, third) = import();
+    assert_eq!(third, library.join("tiny (3).png"));
+    assert_eq!(std::fs::read(&third).unwrap(), bytes);
+    assert_eq!(std::fs::read(&first).unwrap(), foreign);
+    assert_eq!(std::fs::read(library.join("tiny.png")).unwrap(), foreign);
+    assert_eq!(std::fs::read(old_flat).unwrap(), bytes);
+    fixture.close();
+}
+
+#[test]
+fn native_project_copy_preserves_legacy_names_unicode_bounds_and_rejects_canceled_or_replaced_directories()
+ {
+    use std::os::unix::fs::symlink;
+    assert_eq!(
+        project_copy_name("0123456789AbCdEf-Camera take.mp4", 1).unwrap(),
+        "Camera take.mp4"
+    );
+    assert_eq!(
+        project_copy_name("0123456789abcdef0123456789abcdef-Camera.mp4", 1).unwrap(),
+        "0123456789abcdef0123456789abcdef-Camera.mp4"
+    );
+    let unicode = format!("{}.png", "é".repeat(62));
+    assert_eq!(unicode.len(), 128);
+    assert_eq!(project_copy_name(&unicode, 1).unwrap(), unicode);
+    let collision = project_copy_name(&unicode, 4096).unwrap();
+    assert!(collision.len() <= 128 && collision.ends_with(" (4096).png"));
+    assert!(
+        project_copy_name("ééééééééé.png", 2)
+            .unwrap()
+            .ends_with(" (2).png")
+    );
+    let fixture = Fixture::new();
+    let ready = fixture.capture();
+    assert_eq!(ready["state"], "ready", "{ready}");
+    fixture
+        .jobs
+        .publish("capture", ready["id"].as_str().unwrap(), "epoch", "7")
+        .unwrap();
+    let revision = fixture.store.item("capture", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let asset = fixture.store.load("capture", &revision).unwrap();
+    let payload = asset_payload::decode(&asset).unwrap();
+    let path = payload.files().next().unwrap().path.clone();
+    let canceled_copy = |cancel: Arc<AtomicBool>| {
+        let file = File::open(&path).unwrap();
+        let source = PinnedSource {
+            path: path.clone(),
+            identity: crate::source::file_identity(&file).unwrap(),
+            file,
+        };
+        let work = Work {
+            id: "canceled-copy".into(),
+            asset: None,
+            sources: vec![],
+            cancel: cancel.clone(),
+            import: Some(("capture".into(), revision.clone())),
+            import_set: vec![],
+            edit: None,
+            media_import: None,
+            otio: None,
+            clipboard: None,
+            clipboard_image: None,
+        };
+        copy(
+            &fixture.jobs.0,
+            &source,
+            &work,
+            &Budget {
+                start: Instant::now(),
+                cancel,
+            },
+        )
+    };
+    assert_eq!(
+        canceled_copy(Arc::new(AtomicBool::new(true)))
+            .err()
+            .unwrap()
+            .1,
+        "ASSET_CANCELED"
+    );
+    assert!(!fixture.project.join("library").exists());
+    let legacy_dir = asset_store::directory(fixture.store.media(), "0123456789abcdef").unwrap();
+    let legacy_path = fixture
+        .store
+        .root()
+        .join("media/0123456789abcdef/0123456789ABCDEF-Camera take.png");
+    std::fs::copy(&fixture.path, &legacy_path).unwrap();
+    let mut legacy_asset = asset.clone();
+    let mut legacy_payload = asset_payload::decode(&legacy_asset).unwrap();
+    let legacy_media = legacy_payload.files_mut().next().unwrap();
+    legacy_media.path = legacy_path;
+    legacy_media.content_hash = 0x0123456789abcdef;
+    legacy_asset.payload = legacy_payload.to_text();
+    fixture
+        .store
+        .create("native-prefix", &legacy_asset)
+        .unwrap();
+    let legacy_revision = fixture.store.item("native-prefix", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let queued = fixture
+        .jobs
+        .prepare_import("epoch", "7", "native-prefix", &legacy_revision)
+        .unwrap();
+    let legacy_id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(legacy_id);
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let legacy_import = fixture
+        .jobs
+        .import_payload(legacy_id, "native-prefix", &legacy_revision, "epoch", "7")
+        .unwrap();
+    assert_eq!(
+        legacy_import.files().next().unwrap().path,
+        fixture.project.join("library/Camera take.png")
+    );
+    drop(legacy_dir);
+    let queued = fixture
+        .jobs
+        .prepare_import("epoch", "7", "capture", &revision)
+        .unwrap();
+    let id = queued["id"].as_str().unwrap();
+    let ready = fixture.finish(id);
+    assert_eq!(ready["state"], "ready", "{ready}");
+    let owned = fixture.project.join("library");
+    let moved = fixture.project.join("moved-library");
+    std::fs::rename(&owned, &moved).unwrap();
+    std::fs::create_dir(&owned).unwrap();
+    std::fs::copy(moved.join("tiny.png"), owned.join("tiny.png")).unwrap();
+    assert!(
+        fixture
+            .jobs
+            .import_payload(id, "capture", &revision, "epoch", "7")
+            .is_err()
+    );
+    std::fs::remove_file(owned.join("tiny.png")).unwrap();
+    std::fs::remove_dir(&owned).unwrap();
+    symlink(&moved, &owned).unwrap();
+    assert!(canceled_copy(Arc::new(AtomicBool::new(false))).is_err());
+    assert_eq!(
+        std::fs::read(moved.join("tiny.png")).unwrap(),
+        std::fs::read(&fixture.path).unwrap()
+    );
+    std::fs::remove_file(&owned).unwrap();
     fixture.close();
 }
 
@@ -2903,7 +3099,7 @@ fn original_desktop_fingerprint_directories_import_with_stale_path_fingerprint_b
             .import_payload(ready["id"].as_str().unwrap(), &id, &revision, "epoch", "7")
             .unwrap();
         let copied = payload.files().next().unwrap();
-        assert_eq!(copied.path.parent(), Some(fixture.project.as_path()));
+        assert_eq!(copied.path, fixture.project.join("library/desktop.png"));
         assert_eq!(
             copied.content_hash,
             vv_media::content_fingerprint(&copied.path).unwrap()

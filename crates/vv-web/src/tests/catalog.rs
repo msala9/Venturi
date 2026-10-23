@@ -123,6 +123,14 @@ fn folder_hierarchy_moves_and_deletion_restore_native_membership_in_one_undo() {
     )
     .unwrap();
     let b = s.project.folders.keys().find(|id| *id != a).unwrap();
+    let child = s.project.folders.insert(core::MediaFolder {
+        name: "Nested".into(),
+        parent: Some(b),
+    });
+    let descendant = s.project.folders.insert(core::MediaFolder {
+        name: "Deep".into(),
+        parent: Some(child),
+    });
     let before = serde_json::to_value(&s.project).unwrap();
     let position = s.history.position();
     assert!(
@@ -147,6 +155,8 @@ fn folder_hierarchy_moves_and_deletion_restore_native_membership_in_one_undo() {
         },
     )
     .unwrap();
+    let mut expected = s.project.clone();
+    core::DeleteFolder::new(b).apply(&mut expected);
     edit(
         &mut s,
         &files,
@@ -155,12 +165,219 @@ fn folder_hierarchy_moves_and_deletion_restore_native_membership_in_one_undo() {
         },
     )
     .unwrap();
+    assert_eq!(
+        serde_json::to_value(&s.project).unwrap(),
+        serde_json::to_value(&expected).unwrap()
+    );
     assert_eq!(s.project.media_pool[media].folder, Some(a));
+    assert_eq!(s.project.folders[child].parent, Some(a));
+    assert_eq!(s.project.folders[descendant].parent, Some(child));
     s.history.undo(&mut s.project);
     assert_eq!(s.project.media_pool[media].folder, Some(b));
+    assert_eq!(s.project.folders[child].parent, Some(b));
+    assert_eq!(s.project.folders[descendant].parent, Some(child));
     s.history.redo(&mut s.project);
     assert_eq!(s.project.media_pool[media].folder, Some(a));
     assert_eq!(s.history.labels().last(), Some(CommandLabel::DeleteFolder));
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn catalog_unchanged_rename_and_folder_moves_preserve_generation_and_redo() {
+    let (mut session, files, root, media, _) = fixture();
+    let outer = session.project.folders.insert(core::MediaFolder {
+        name: "Scene".into(),
+        parent: None,
+    });
+    let inner = session.project.folders.insert(core::MediaFolder {
+        name: "Takes".into(),
+        parent: Some(outer),
+    });
+    session.project.media_pool[media].folder = Some(inner);
+    let peer = session
+        .project
+        .media_pool
+        .insert(session.project.media_pool[media].clone());
+    edit(
+        &mut session,
+        &files,
+        &Edit::RenameFolder {
+            folder: inner.raw().to_string(),
+            name: "Renamed".into(),
+        },
+    )
+    .unwrap();
+    let renamed = serde_json::to_value(&session.project).unwrap();
+    session.history.undo(&mut session.project);
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    let position = session.history.position();
+    let labels = session.history.labels().collect::<Vec<_>>();
+    for operation in [
+        Edit::RenameFolder {
+            folder: inner.raw().to_string(),
+            name: "Takes".into(),
+        },
+        Edit::MoveFolder {
+            folder: inner.raw().to_string(),
+            parent: Some(outer.raw().to_string()),
+        },
+        Edit::MoveFolder {
+            folder: outer.raw().to_string(),
+            parent: None,
+        },
+        Edit::MoveMedia {
+            media_ids: vec![media.raw().to_string(), peer.raw().to_string()],
+            folder: Some(inner.raw().to_string()),
+        },
+    ] {
+        edit(&mut session, &files, &operation).unwrap();
+        assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+        assert_eq!(session.history.generation(), generation);
+        assert_eq!(session.history.position(), position);
+        assert_eq!(session.history.labels().collect::<Vec<_>>(), labels);
+    }
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), renamed);
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn catalog_mixed_folder_move_matches_native_changed_subset_and_one_undo() {
+    let (mut session, files, root, first, _) = fixture();
+    let a = session.project.folders.insert(core::MediaFolder {
+        name: "A".into(),
+        parent: None,
+    });
+    let b = session.project.folders.insert(core::MediaFolder {
+        name: "B".into(),
+        parent: None,
+    });
+    session.project.media_pool[first].folder = Some(a);
+    let mut item = session.project.media_pool[first].clone();
+    item.folder = Some(b);
+    let unchanged = session.project.media_pool.insert(item.clone());
+    item.folder = None;
+    let last = session.project.media_pool.insert(item);
+    let before = serde_json::to_value(&session.project).unwrap();
+    let position = session.history.position();
+    let mut expected = session.project.clone();
+    core::SetMediaFolder::new(vec![last, first], Some(b)).apply(&mut expected);
+    edit(
+        &mut session,
+        &files,
+        &Edit::MoveMedia {
+            media_ids: vec![
+                last.raw().to_string(),
+                unchanged.raw().to_string(),
+                first.raw().to_string(),
+            ],
+            folder: Some(b.raw().to_string()),
+        },
+    )
+    .unwrap();
+    let after = serde_json::to_value(&session.project).unwrap();
+    assert_eq!(after, serde_json::to_value(&expected).unwrap());
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(
+        session.history.labels().last(),
+        Some(CommandLabel::MoveToFolder)
+    );
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), after);
+    drop(files);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn catalog_metadata_batches_accept_256_and_refuse_invalid_final_items_atomically() {
+    let (mut session, files, root, first, _) = fixture();
+    let destination = session.project.folders.insert(core::MediaFolder {
+        name: "Destination".into(),
+        parent: None,
+    });
+    let item = session.project.media_pool[first].clone();
+    let mut ids = vec![first];
+    for _ in 1..256 {
+        ids.push(session.project.media_pool.insert(item.clone()));
+    }
+    let extra = session.project.media_pool.insert(item);
+    let values = ids
+        .iter()
+        .map(|id| id.raw().to_string())
+        .collect::<Vec<_>>();
+    let before = serde_json::to_value(&session.project).unwrap();
+    let generation = session.history.generation();
+    let position = session.history.position();
+    let mut oversized = values.clone();
+    oversized.push(extra.raw().to_string());
+    let mut unknown_last = values.clone();
+    *unknown_last.last_mut().unwrap() = u64::MAX.to_string();
+    let mut duplicate_last = values.clone();
+    *duplicate_last.last_mut().unwrap() = values[0].clone();
+    for bad in [oversized, unknown_last, duplicate_last] {
+        for operation in [
+            Edit::MoveMedia {
+                media_ids: bad.clone(),
+                folder: Some(destination.raw().to_string()),
+            },
+            Edit::RemoveMedia {
+                media_ids: bad.clone(),
+            },
+        ] {
+            assert!(edit(&mut session, &files, &operation).is_err());
+            assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+            assert_eq!(session.history.generation(), generation);
+            assert_eq!(session.history.position(), position);
+        }
+    }
+    edit(
+        &mut session,
+        &files,
+        &Edit::MoveMedia {
+            media_ids: values.clone(),
+            folder: Some(destination.raw().to_string()),
+        },
+    )
+    .unwrap();
+    assert!(
+        ids.iter()
+            .all(|id| session.project.media_pool[*id].folder == Some(destination))
+    );
+    assert_eq!(session.project.media_pool[extra].folder, None);
+    assert_eq!(session.history.position(), position + 1);
+    let moved = serde_json::to_value(&session.project).unwrap();
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), before);
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), moved);
+    std::fs::write(root.join("missing.wav"), b"unchanged source bytes").unwrap();
+    let position = session.history.position();
+    edit(
+        &mut session,
+        &files,
+        &Edit::RemoveMedia { media_ids: values },
+    )
+    .unwrap();
+    assert!(
+        ids.iter()
+            .all(|id| !session.project.media_pool.contains_key(*id))
+    );
+    assert!(session.project.media_pool.contains_key(extra));
+    assert_eq!(session.history.position(), position + 1);
+    assert_eq!(
+        std::fs::read(root.join("missing.wav")).unwrap(),
+        b"unchanged source bytes"
+    );
+    let removed = serde_json::to_value(&session.project).unwrap();
+    session.history.undo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), moved);
+    session.history.redo(&mut session.project);
+    assert_eq!(serde_json::to_value(&session.project).unwrap(), removed);
     drop(files);
     std::fs::remove_dir_all(root).unwrap();
 }

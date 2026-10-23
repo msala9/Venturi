@@ -64,6 +64,7 @@ let proxyQueueOwner=null;
 let silencePanel = null;
 let sharedLibrary = null;
 let nativeAssets=null,mediaImport=null,mediaRelink=null,otioImport=null,libraryMode='shared';
+let timelineAction=null,newTimelineOwner=null;
 let nativePlacementIntent=0,nativePlacementCompletion=null;
 let clipboard=null,clipboardImages=null,clipboardFocus='timeline',clipboardFocusSequence=0;
 const clipboardButtons=[];
@@ -78,7 +79,7 @@ function openLibraryPanel(mode=libraryMode){
     const button=document.createElement('button');button.type='button';button.textContent=label;button.setAttribute('aria-pressed',String(value===mode));button.addEventListener('click',()=>openLibraryPanel(value));sources.append(button);
   }
   $('panel-content').replaceChildren(sources,mode==='shared'?sharedLibraryRoot:nativeAssetsRoot);
-  if(mode==='shared')void sharedLibrary?.open();else void nativeAssets?.open();
+  return mode==='shared'?sharedLibrary?.open():nativeAssets?.open();
 }
 let voiceover = null;
 let review = null;
@@ -1125,6 +1126,8 @@ async function refresh({preserveAudioDrafts=false}={}) {
   };
   if(!preserveAudioDrafts)invalidateTimeline();
   const next = await request("/session");
+  if(timelineAction && !timelineAction.committing && !timelineActionCurrent(timelineAction,next))$('timeline-action-error').textContent='The project or target timeline changed. Close this dialog and try again.';
+  if(newTimelineOwner && !newTimelineOwner.committing && !catalogOwnerCurrent(newTimelineOwner,next))$('timeline-error').textContent='The project changed. Close this dialog and try again.';
   const projectChanged=documentState?.project_epoch!==next.project_epoch;
   if(preserveAudioDrafts && writable && !unresolved && canRetainAudioPresetDraft(documentState,next,timeline?.id)) {
     documentState=next;timeline=next.timelines.find(item=>item.id===timeline.id);
@@ -1208,7 +1211,7 @@ async function refresh({preserveAudioDrafts=false}={}) {
   $("demo-button").hidden = true;
   $("media-note").textContent = "Project media · authoritative Rust session";
   catalog?.dispose();
-  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:(operation)=>mutate(operation,true),getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDragStart:startProjectPoolDrag,onDragEnd:()=>canvasTimeline.projectPoolDnd.end(),onRelink:openMediaRelink,proxyStatus:id=>proxySettings?.enabled?proxyControls?.statusFor(id):null,onPresentationChange:({layout})=>{try{localStorage.setItem('venturi-media-pool-layout',layout);}catch{}},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
+  catalog=renderCatalog($("media-list"),next,mediaState,{writable:writable && !busy && !unresolved,assets:mediaAssets,commit:async(operation)=>{const receipt=await mutate(operation,true);if(catalog?.acceptReceipt(receipt))$('search').value=mediaState.query || '';return receipt;},getFiles:async()=> (await request("/projects")).importable_media,onSelection:(id,_ids,{userIntent=false}={})=>{if(userIntent)nativePlacementIntent++;selectedMedia=id;nativeAssets?.invalidate();syncClipboardControls();},onOpen:(id)=>{selectedMedia=id;openSource();},onDragStart:startProjectPoolDrag,onDragEnd:()=>canvasTimeline.projectPoolDnd.end(),onRelink:openMediaRelink,onAction:action=>catalogAction(action,next),proxyStatus:id=>proxySettings?.enabled?proxyControls?.statusFor(id):null,onPresentationChange:({layout})=>{try{localStorage.setItem('venturi-media-pool-layout',layout);}catch{}},onDemand:items=>{if(documentState===next)sourceAssets?.demand('pool',assetDemandItems(items),next.project_epoch);},notice});
   paintProxyBadges();void proxyControls?.refresh();
   nativeAssets?.invalidate();
   sourcePlacement?.refresh();
@@ -1232,7 +1235,7 @@ function commandNotice(receipt) {
       ? "Command applied. Save current edits before restarting the server."
       : "Command applied";
 }
-async function mutate(operation, project = false,route=null,preparedMutation=null) {
+async function mutate(operation, project = false,route=null,preparedMutation=null,targetTimeline=null) {
   const libraryOnly=operation.kind==='edit_audio_preset_library';
   const requestEpoch=documentState?.project_epoch;
   if(!libraryOnly){fastTransport?.stop();audioScrub?.stop();}
@@ -1242,7 +1245,8 @@ async function mutate(operation, project = false,route=null,preparedMutation=nul
   if(['save','save_as','open_project','new_project','recover_backup','recover_autosave','import_otio'].includes(operation.kind))await projectView?.flush({persist:!['save','save_as'].includes(operation.kind)});
   if(!writable || busy || unresolved)throw new Error("Editing is read only or a command is pending");
   if(documentState?.project_epoch!==requestEpoch)throw new Error("The project changed before this command could start");
-  if (!project && (!timeline || timeline.id === "fixture"))
+  if(targetTimeline && (project || !timelineActionCurrent(targetTimeline)))throw new Error('The project or target timeline changed before this command could start');
+  if (!project && !targetTimeline && (!timeline || timeline.id === "fixture"))
     throw new Error("Open a real project before editing");
   if(preparedMutation && (route!=='/native-assets/commands' || !project || operation.kind!=='edit_native_asset_library' || preparedMutation.client_id!==clientId || preparedMutation.command_epoch!==documentState.command_epoch || preparedMutation.project_epoch!==documentState.project_epoch || preparedMutation.if_generation!==documentState.generation || preparedMutation.if_revision!==null || typeof preparedMutation.command_id!=='string' || !preparedMutation.command_id || JSON.stringify(preparedMutation.operation)!==JSON.stringify(operation)))throw new Error('The prepared native library command is stale; refresh before relinking');
   const body = preparedMutation?structuredClone(preparedMutation):{
@@ -1251,7 +1255,7 @@ async function mutate(operation, project = false,route=null,preparedMutation=nul
     command_epoch: documentState.command_epoch,
     project_epoch: documentState.project_epoch,
     if_generation: documentState.generation,
-    if_revision: project ? null : timeline.revision,
+    if_revision: project ? null : targetTimeline?.revision ?? timeline.revision,
     operation,
   };
   busy = true;
@@ -1263,7 +1267,7 @@ async function mutate(operation, project = false,route=null,preparedMutation=nul
     const receipt = await sendMutation(
       route || (project
         ? "/projects/commands"
-        : `/timelines/${encodeURIComponent(timeline.id)}/commands`),
+        : `/timelines/${encodeURIComponent(targetTimeline?.timeline_id ?? timeline.id)}/commands`),
       body,
     );
     notice(commandNotice(receipt));
@@ -1330,30 +1334,99 @@ for (const [label, audio] of [
   $("command-list").append(button);
 }
 const timelineButton=document.createElement("button");timelineButton.textContent="New timeline";
-timelineButton.addEventListener("click",()=>{$("palette").close();$("timeline-error").textContent="";$("new-timeline-dialog").showModal();});$("command-list").append(timelineButton);
-let timelineAction="rename_timeline";
+function catalogOwnerCurrent(owner,state=documentState){return Boolean(owner && state && owner.project_epoch===state.project_epoch && owner.generation===state.generation);}
+function timelineActionCurrent(owner,state=documentState){
+  const target=state?.timelines.find(item=>item.id===owner?.timeline_id);
+  return Boolean(target && catalogOwnerCurrent(owner,state) && target.revision===owner.revision && state.media.some(item=>item.id===owner.media_id && item.compound_timeline_id===target.id));
+}
+function timelineActionOwner(kind,id,state=documentState,mediaId=null){
+  const target=state?.timelines.find(item=>item.id===id),media=state?.media.find(item=>item.compound_timeline_id===id && (mediaId===null || item.id===mediaId));
+  if(!target || !media)throw Error('The selected native timeline is unavailable');
+  return {kind,project_epoch:state.project_epoch,generation:state.generation,timeline_id:id,revision:target.revision,media_id:media.id,media_ids:state.media.map(item=>item.id),name:target.name,committing:false};
+}
+function openNewTimeline(){
+  if(!writable || busy || unresolved || !documentState?.project_name)return notice('Open a project with a connected writer first');
+  newTimelineOwner={project_epoch:documentState.project_epoch,generation:documentState.generation,committing:false};
+  $('palette').close();$('timeline-error').textContent='';$('new-timeline-dialog').showModal();
+}
+function timelineCopyName(owner){
+  const taken=new Set(documentState.media.filter(item=>item.compound_timeline_id).map(item=>item.name));
+  for(let suffix=1;;suffix++){
+    const ending=` copy${suffix===1?'':` ${suffix}`}`,base=Array.from(owner.name);
+    while(new TextEncoder().encode(base.join('')+ending).length>128)base.pop();
+    const candidate=base.join('')+ending;if(!taken.has(candidate))return candidate;
+  }
+}
+function openTimelineAction(owner){
+  if(!writable || busy || unresolved)throw Error('A connected writer is required for timeline actions');
+  if(!timelineActionCurrent(owner))throw Error('The selected timeline changed; refresh before editing');
+  timelineAction=owner;$('palette').close();$('timeline-action-error').textContent='';
+  $('timeline-action-title').textContent=owner.kind==='duplicate_timeline'?'Duplicate timeline':'Rename timeline';
+  $('timeline-action').elements.name.value=(owner.kind==='duplicate_timeline'?timelineCopyName(owner):owner.name).slice(0,128);$('timeline-action-dialog').showModal();
+}
+async function applyTimelineAction(owner,name){
+  if(!timelineActionCurrent(owner))throw Error('The project or selected timeline changed; close and reopen the action');
+  name=name.trim();if(!name)throw Error('Enter a nonempty timeline name');
+  if(owner.kind==='rename_timeline' && name===owner.name)return;
+  owner.committing=true;
+  try{
+    const receipt=await mutate({kind:owner.kind,name},false,null,null,owner);
+    if(owner.kind==='duplicate_timeline' && receipt.project_epoch===documentState?.project_epoch && receipt.generation===documentState?.generation){
+      const created=documentState.media.find(item=>item.compound_timeline_id && !owner.media_ids.includes(item.id));
+      if(created)revealProjectMedia([created.id]);
+    }
+  }finally{owner.committing=false;}
+}
+async function catalogAction(action,state){
+  try{
+    if(!writable || busy || unresolved || !catalogOwnerCurrent(state))throw Error('The project changed or editing is unavailable; refresh the Media panel');
+    if(document.querySelector('dialog[open]'))throw Error('Close the current dialog before using a Media action');
+    if(['rename_timeline','duplicate_timeline'].includes(action.kind)){
+      const owner=timelineActionOwner(action.kind,action.timeline_id,state,action.media_id);
+      if(action.kind==='duplicate_timeline')await applyTimelineAction(owner,timelineCopyName(owner));
+      else if(typeof action.name==='string')await applyTimelineAction(owner,action.name);
+      else openTimelineAction(owner);
+    }else if(action.kind==='new_timeline')openNewTimeline();
+    else if(action.kind==='import_otio'){
+      $('projects').showModal();await projects();
+      if($('projects').open && catalogOwnerCurrent(state))$('otio-current-import').scrollIntoView({block:'nearest'});
+    }else if(action.kind==='add_to_library'){
+      const ids=action.media_ids ?? (action.media_id?[action.media_id]:[]);
+      if(!Array.isArray(ids) || !ids.length || ids.length>64 || new Set(ids).size!==ids.length || ids.some(id=>!state.media.some(item=>item.id===id)))throw Error('Select 1 to 64 current project media for the native library');
+      presetPanel?.hide();for(const button of document.querySelectorAll('[data-panel]'))button.setAttribute('aria-selected',String(button.dataset.panel==='Library'));
+      revealBrowser('Library');$('browser').dataset.browserPanel='Library';$('media-list').hidden=true;$('search').parentElement.hidden=true;$('panel-content').hidden=false;
+      await openLibraryPanel('native');
+      if(!catalogOwnerCurrent(state) || !writable || busy || unresolved || document.querySelector('dialog[open]') || $('browser').dataset.browserPanel!=='Library' || libraryMode!=='native')throw Error('The project or Library panel changed before native asset capture; select the media again');
+      await nativeAssets.captureSelection(ids);
+    }
+  }catch(error){notice(error.message);}
+}
+timelineButton.addEventListener('click',openNewTimeline);$("command-list").append(timelineButton);
 for(const [label,kind] of [["Rename timeline","rename_timeline"],["Duplicate timeline","duplicate_timeline"]]) {
     const button=document.createElement("button");button.textContent=label;button.addEventListener("click",()=>{
       if(!timeline || timeline.id==="fixture")return notice("Open a native timeline first");
-      timelineAction=kind;$("palette").close();$("timeline-action-error").textContent="";$("timeline-action-title").textContent=label;$("timeline-action").elements.name.value=`${timeline.name}${kind==="duplicate_timeline" ? " copy" : ""}`.slice(0,128);$("timeline-action-dialog").showModal();
+      try{openTimelineAction(timelineActionOwner(kind,timeline.id));}catch(error){notice(error.message);}
     });$("command-list").append(button);
 }
 $("timeline-action").addEventListener("submit",async(event)=>{
-    event.preventDefault();const before=new Set(documentState?.timelines.map((t)=>t.id));
+    event.preventDefault();const owner=timelineAction;if(!owner || owner.committing)return;
     try {
-      await mutate({kind:timelineAction,name:event.target.elements.name.value});
-      if(timelineAction==="duplicate_timeline") {const next=documentState.timelines.find((t)=>!before.has(t.id));if(next)openTimelineRoot(next);}
-      $("timeline-action-dialog").close();
-    }catch(error){$("timeline-action-error").textContent=error.message;}
+      await applyTimelineAction(owner,event.target.elements.name.value);
+      if(timelineAction===owner)$("timeline-action-dialog").close();
+    }catch(error){if(timelineAction===owner)$("timeline-action-error").textContent=error.message;}
 });
+$('timeline-action-dialog').addEventListener('close',()=>{timelineAction=null;});
+$('new-timeline-dialog').addEventListener('close',()=>{newTimelineOwner=null;});
 $("new-timeline").addEventListener("submit",async(event)=>{
-  event.preventDefault();const data=new FormData(event.target),before=new Set(documentState?.timelines.map((t)=>t.id));
+  event.preventDefault();const owner=newTimelineOwner;if(!owner || owner.committing)return;const data=new FormData(event.target),before=new Set(documentState?.timelines.map((t)=>t.id));
   try {
-    await mutate({kind:"new_timeline",name:data.get("name"),fps:{num:Number(data.get("fps_num")),den:Number(data.get("fps_den"))},resolution:[Number(data.get("width")),Number(data.get("height"))]},true);
+    if(!catalogOwnerCurrent(owner))throw Error('The project changed; close and reopen New timeline');
+    owner.committing=true;await mutate({kind:"new_timeline",name:data.get("name").trim(),fps:{num:Number(data.get("fps_num")),den:Number(data.get("fps_den"))},resolution:[Number(data.get("width")),Number(data.get("height"))]},true);
     const next=documentState.timelines.find((t)=>!before.has(t.id));
-    if(next)openTimelineRoot(next);
-    $("new-timeline-dialog").close();
-  }catch(error){$("timeline-error").textContent=error.message;}
+    if(documentState.project_epoch===owner.project_epoch && next)openTimelineRoot(next);
+    if(newTimelineOwner===owner)$("new-timeline-dialog").close();
+  }catch(error){if(newTimelineOwner===owner)$("timeline-error").textContent=error.message;}
+  finally{owner.committing=false;}
 });
 const ripple = document.createElement("button");
 ripple.textContent = "Ripple delete selected clips or gap";
@@ -1392,18 +1465,19 @@ async function commitProjectPoolPlacement(operation){
   view.selectionAnchor=firstSelectionAnchor(timeline,view.selection,documentState.project_epoch);view.transitionSelection=null;view.selectedGap=null;
   selected();canvasTimeline.invalidate();return receipt;
 }
-function startProjectPoolDrag(event,media){
+function startProjectPoolDrag(event,media,{catalogFallback=false}={}){
   if(!event.dataTransfer || !writable || busy || unresolved){event.preventDefault();return;}
+  canvasTimeline.projectPoolDnd.end();
   stopProjectPoolPlayback();
   const captured=projectPoolItems(projectPoolContext(),media),signature=JSON.stringify([captured,mediaState]);
-  if(!captured){event.preventDefault();notice('Select up to256 available project media with valid native duration and audio streams');return;}
+  if(!captured){if(!catalogFallback){event.preventDefault();notice('Select up to256 available project media with valid native duration and audio streams');}return;}
   const current=()=>writable && !busy && !unresolved && JSON.stringify([selectedProjectPoolItems(),mediaState])===signature;
   const payload=canvasTimeline.projectPoolDnd.start(captured,current,async(draft,isCurrent)=>{
     if(!isCurrent())throw Error('The project media selection changed before insertion');
     await commitProjectPoolPlacement(projectPoolOperation(captured,draft.start_frame,draft.target,draft.overwrite));
   });
-  if(!payload){event.preventDefault();return;}
-  event.dataTransfer.setData(PROJECT_POOL_DRAG_TYPE,payload);event.dataTransfer.effectAllowed='copy';
+  if(!payload){if(!catalogFallback)event.preventDefault();return;}
+  event.dataTransfer.setData(PROJECT_POOL_DRAG_TYPE,payload);event.dataTransfer.effectAllowed=catalogFallback?'copyMove':'copy';
 }
 $("insert-media").addEventListener("click",()=>{
   if(!writable || busy || unresolved || !canvasTimeline.navigationIdle())return;

@@ -56,8 +56,8 @@ fn parent(session: &Session, raw: &Option<String>) -> Result<Option<FolderId>> {
     raw.as_deref().map(|id| folder(session, id)).transpose()
 }
 fn media(session: &Session, values: &[String]) -> Result<Vec<MediaId>> {
-    if values.is_empty() || values.len() > 64 {
-        return Err(ApiError::invalid("Choose between 1 and 64 media items"));
+    if values.is_empty() || values.len() > 256 {
+        return Err(ApiError::invalid("Choose between 1 and 256 media items"));
     }
     let mut ids = HashSet::new();
     values
@@ -126,10 +126,11 @@ pub fn edit(session: &mut Session, _files: &Files, edit: &Edit) -> Result<()> {
             name: value,
         } => {
             name(value)?;
-            Box::new(core::RenameFolder::new(
-                folder(session, raw)?,
-                value.clone(),
-            ))
+            let id = folder(session, raw)?;
+            if session.project.folders[id].name == *value {
+                return Ok(());
+            }
+            Box::new(core::RenameFolder::new(id, value.clone()))
         }
         Edit::MoveFolder {
             folder: raw,
@@ -142,6 +143,9 @@ pub fn edit(session: &mut Session, _files: &Files, edit: &Edit) -> Result<()> {
                     "A folder cannot contain itself or an ancestor",
                 ));
             }
+            if session.project.folders[id].parent == parent {
+                return Ok(());
+            }
             Box::new(core::MoveFolder::new(id, parent))
         }
         Edit::DeleteFolder { folder: raw } => {
@@ -150,10 +154,15 @@ pub fn edit(session: &mut Session, _files: &Files, edit: &Edit) -> Result<()> {
         Edit::MoveMedia {
             media_ids,
             folder: raw,
-        } => Box::new(core::SetMediaFolder::new(
-            media(session, media_ids)?,
-            parent(session, raw)?,
-        )),
+        } => {
+            let mut ids = media(session, media_ids)?;
+            let parent = parent(session, raw)?;
+            ids.retain(|id| session.project.media_pool[*id].folder != parent);
+            if ids.is_empty() {
+                return Ok(());
+            }
+            Box::new(core::SetMediaFolder::new(ids, parent))
+        }
         Edit::RemoveMedia { media_ids } => {
             let ids = media(session, media_ids)?;
             unlocked(session, &ids)?;
@@ -202,6 +211,9 @@ pub(crate) fn prepared_relink(
     }
     if replacements.is_empty() {
         return Ok(None);
+    }
+    if replacements.len() > 64 {
+        return Err(ApiError::invalid("Relink between 1 and 64 media items"));
     }
     let ids = media(
         session,

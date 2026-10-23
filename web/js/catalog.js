@@ -1,4 +1,6 @@
 import {mediaThumbnail} from './source-assets.js';
+import {CATALOG_DRAG_TYPE,makeCatalogDrag,createCatalogInteractions} from './catalog-interactions.js';
+import {createCatalogMenu} from './catalog-menu.js';
 function compareText(a,b){
   const left=a[Symbol.iterator](),right=b[Symbol.iterator]();
   while(true){const x=left.next(),y=right.next();if(x.done || y.done)return x.done===y.done?0:x.done?-1:1;const difference=x.value.codePointAt(0)-y.value.codePointAt(0);if(difference)return Math.sign(difference);}
@@ -67,7 +69,7 @@ export function renderMediaProxyStatus(card,job){
   const badge=document.createElement('span');badge.className='catalog-proxy-status';badge.textContent=job.state==='ready'?'P':job.state==='failed'?'!':job.label.startsWith('Paused')?'II':'...';badge.title=`Proxy ${job.label}`;badge.setAttribute('aria-label',badge.title);card.title+=` · ${badge.title}`;card.querySelectorAll('.catalog-thumbnail')[0]?.append(badge);
 }
 
-export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice,onDemand=()=>{},onDragStart=()=>{},onDragEnd=()=>{},onRelink,onPresentationChange=()=>{},proxyStatus=()=>null,intersectionObserver=globalThis.IntersectionObserver}) {
+export function renderCatalog(root, documentState, state, {writable, assets, commit, getFiles, onSelection, onOpen, notice,onDemand=()=>{},onDragStart=()=>{},onDragEnd=()=>{},onRelink,onAction=()=>{},onPresentationChange=()=>{},proxyStatus=()=>null,intersectionObserver=globalThis.IntersectionObserver}) {
   root.replaceChildren();
   state.selected = (state.selected || []).filter((id) => documentState.media.some((item) => item.id === id));
   const folders = folderPaths(documentState.folders || []);
@@ -92,7 +94,27 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   }
   const breadcrumbs=document.createElement('nav');breadcrumbs.className='catalog-breadcrumbs';breadcrumbs.setAttribute('aria-label','Project media folder breadcrumbs');root.append(breadcrumbs);
   const list = document.createElement("div"); list.className="catalog-rows";list.setAttribute("role", "group"); list.setAttribute("aria-label", "Project media"); list.tabIndex=0;list.dataset.clipboardOwner='pool';root.append(list);
-  let visible = [],disposed=false,relinkSequence=0,dragging=null;
+  let visible = [],disposed=false,relinkSequence=0,dragging=null,dragWitness=null,renameTimer=null,interactions=null,contextMenu=null;
+  const cancelRename=()=>{if(renameTimer!==null)clearTimeout(renameTimer);renameTimer=null;};
+  const backgroundFolder=()=>state.layout==='grid' && filter.value==='*' && !(state.query || '').trim()?state.gridFolder:null;
+  const presentationKey=()=>JSON.stringify([state.layout,state.expanded,state.gridFolder,filter.value,kind.value,state.query,state.sort]);
+  const context=()=>({project_epoch:documentState.project_epoch,generation:documentState.generation,snapshot:documentState,selected:[...state.selected],anchor:state.anchor,selectedFolder:state.selectedFolder,writable,presentation:presentationKey(),backgroundFolder:backgroundFolder(),rows:[...list.children].map(element=>({kind:element.dataset.mediaId!==undefined?'media':'folder',id:element.dataset.mediaId ?? element.dataset.folderId,element}))});
+  const dragKey=()=>JSON.stringify([documentState.project_epoch,documentState.generation,state.selected,state.anchor,state.selectedFolder,presentationKey()]);
+  function beginDrag(event,node,dragKind,targets){
+    cancelRename();contextMenu?.close();
+    const payload=makeCatalogDrag(dragKind,targets,context());
+    if(payload && event.dataTransfer){event.dataTransfer.setData(CATALOG_DRAG_TYPE,payload);dragWitness={payload,key:dragKey()};}
+    dragging=node;
+    if(dragKind==='media' && onDragStart(event,selectedItems(),{catalogFallback:Boolean(payload)})===false){dragging=null;dragWitness=null;event.preventDefault();return;}
+    if(event.dataTransfer && payload)event.dataTransfer.effectAllowed=dragKind==='media'?'copyMove':'move';
+  }
+  function endDrag(event,node){
+    if(dragging!==node)return;
+    const witness=dragWitness;dragging=null;
+    // Drop dispatch can precede dragend in the same browser task.
+    queueMicrotask(()=>{if(dragWitness===witness)dragWitness=null;});
+    onDragEnd(event);
+  }
   state.sort={key:state.sort?.key==='duration'?'duration':'name',ascending:state.sort?.ascending!==false};
   const sortHeader=document.createElement('div');sortHeader.className='catalog-sort-header';sortHeader.setAttribute('role','group');sortHeader.setAttribute('aria-label','Sort project media');
   const sortButtons=new Map();
@@ -132,7 +154,64 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   folders.forEach((f) => destination.append(new Option(f.path, f.id))); operations.append(destination);
   const ids = () => selectedItems().map(item=>item.id);
   const currentFolder=()=>state.selectedFolder || (!['','*'].includes(filter.value)?filter.value:filter.value==='*' && state.layout==='grid' && !(state.query || '').trim()?state.gridFolder:null);
-  const run = async (edit) => { if(disposed || !writable || root.isConnected===false || edit.media_ids?.length===0 || edit.items?.length===0)return;try { await commit({kind: "edit_catalog", edit}); } catch (error) { notice(error.message); } };
+  const run = async (edit) => { if(disposed || !writable || root.isConnected===false || edit.media_ids?.length===0 || edit.items?.length===0)return false;try { await commit({kind: "edit_catalog", edit});return true; } catch (error) { notice(error.message);return false; } };
+  async function presentEdit(edit,view){
+    const pending={...view,project_epoch:documentState.project_epoch,generation:documentState.generation};state.pendingCatalog=pending;
+    try{return await run(edit);}finally{if(state.pendingCatalog===pending)delete state.pendingCatalog;}
+  }
+  function expandDestination(id){
+    const expanded=new Set(state.expanded),seen=new Set();let folder=folders.find(folder=>folder.id===id);
+    while(folder && !seen.has(folder.id)){seen.add(folder.id);expanded.add(folder.id);folder=folders.find(value=>value.id===folder.parent);}
+    state.expanded=[...expanded];
+  }
+  function renameEntry(targetKind,id){
+    cancelRename();
+    const item=targetKind==='folder'?folders.find(folder=>folder.id===id):documentState.media.find(item=>item.id===id && item.compound_timeline_id);
+    const row=[...list.children].find(row=>targetKind==='folder'?row.dataset.folderId===id:row.dataset.mediaId===id);
+    if(!writable || !item || !row)return;
+    const element=row.querySelectorAll(targetKind==='folder'?'.catalog-folder-name':'.catalog-filename')[0];
+    contextMenu.rename({kind:targetKind,id,element,name:item.name});
+  }
+  async function contextAction(action){
+    if(disposed || !writable || root.isConnected===false)return;
+    if(action.kind==='begin_rename'){renameEntry(action.target_kind,action.id);return;}
+    if(action.kind==='rename'){
+      if(action.target_kind==='folder')return run({kind:'rename_folder',folder:action.id,name:action.name});
+      const item=documentState.media.find(item=>item.id===action.id && item.compound_timeline_id);if(!item)return;
+      return onAction({kind:'rename_timeline',media_id:item.id,timeline_id:item.compound_timeline_id,name:action.name});
+    }
+    if(action.kind==='new_folder'){
+      const parent=action.parent ?? null;let name='New folder',suffix=2;
+      while(folders.some(folder=>folder.name===name))name=`New folder ${suffix++}`;
+      expandDestination(parent);
+      return presentEdit({kind:'new_folder',name,parent},{kind:'new_folder',name,parent,before:folders.map(folder=>folder.id)});
+    }
+    if(action.kind==='delete_folder')return run({kind:'delete_folder',folder:action.id});
+    if(action.kind==='relink_folder')return onRelink?.({kind:'folder',folder_id:action.id});
+    if(action.kind==='relink')return onRelink?onRelink({kind:'selected',media_ids:action.media_ids}):relink.click?.();
+    if(action.kind==='duplicate_timeline'){
+      const item=documentState.media.find(item=>item.id===action.id && item.compound_timeline_id);if(!item)return;
+      return onAction({kind:action.kind,media_id:item.id,timeline_id:item.compound_timeline_id});
+    }
+    return onAction(action);
+  }
+  async function catalogDrop({payload,target,isCurrent}){
+    if(!dragWitness || dragWitness.payload!==JSON.stringify(payload) || dragWitness.key!==dragKey() || !isCurrent())return;
+    dragWitness=null;cancelRename();contextMenu.close();
+    const destination=target.folder_id ?? null;
+    if(payload.kind==='media'){
+      const changed=payload.media_ids.filter(id=>(documentState.media.find(item=>item.id===id).folder ?? null)!==destination);
+      if(!changed.length)return;
+      expandDestination(destination);
+      await presentEdit({kind:'move_media',media_ids:changed,folder:destination},{kind:'move_media',media_ids:payload.media_ids,folder:destination});
+    }else{
+      const folder=folders.find(folder=>folder.id===payload.folder_id);if(!folder || (folder.parent ?? null)===destination)return;
+      const seen=new Set();let ancestor=destination;
+      while(ancestor!==null && !seen.has(ancestor)){if(ancestor===folder.id)return;seen.add(ancestor);ancestor=folders.find(folder=>folder.id===ancestor)?.parent ?? null;}
+      if(ancestor!==null)return;
+      expandDestination(destination);await run({kind:'move_folder',folder:folder.id,parent:destination});
+    }
+  }
   const move = button("Move selected media", operations, () => run({kind: "move_media", media_ids: ids(), folder: destination.value || null}));
   const remove = button("Remove selected from project", operations, () => run({kind: "remove_media", media_ids: ids()}));
   const relink = button("Relink selected media", operations, async () => {
@@ -175,6 +254,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   }
   function render(userIntent=false,notify=true) {
     if(disposed)return;
+    cancelRename();contextMenu?.close();interactions?.cancel();dragWitness=null;
     observer?.disconnect();intersecting.clear();onDemand([]);
     state.folder = filter.value; state.kind = kind.value; list.replaceChildren();breadcrumbs.replaceChildren();
     root.dataset.layout=list.dataset.layout=state.layout;
@@ -192,10 +272,10 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     const navigateGrid=id=>{state.gridFolder=id;state.selectedFolder=null;clearRelink();render(true);};
     breadcrumbs.hidden=state.layout!=='grid' || Boolean(query) || filter.value!=='*' || !state.gridFolder;
     if(!breadcrumbs.hidden){
-      button('Project media root',breadcrumbs,()=>navigateGrid(null),false);
+      button('Project media root',breadcrumbs,()=>navigateGrid(null),false).dataset.catalogDropFolder='';
       const chain=[],seen=new Set();let folder=folders.find(value=>value.id===state.gridFolder);
       while(folder && !seen.has(folder.id)){seen.add(folder.id);chain.unshift(folder);folder=folders.find(value=>value.id===folder.parent);}
-      for(const folder of chain)button(folder.name,breadcrumbs,()=>navigateGrid(folder.id),false);
+      for(const folder of chain)button(folder.name,breadcrumbs,()=>navigateGrid(folder.id),false).dataset.catalogDropFolder=folder.id;
     }
     for(const [key,node] of sortButtons){const active=state.sort.key===key;node.textContent=`${key==='name'?'Name':'Duration'}${active?state.sort.ascending?' ▴':' ▾':''}`;node.setAttribute('aria-pressed',String(active));node.dataset.sortDirection=active?(state.sort.ascending?'ascending':'descending'):'none';node.title=active?`${state.sort.ascending?'Ascending':'Descending'} · click to reverse`:'Click to sort ascending';}
     for (const row of rows) {
@@ -206,6 +286,9 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
           const arrow=button(row.expanded?'▾':'▸',entry,()=>{if(!current())return;toggle();render(false,false);focusFolder(folder.id,'catalog-folder-toggle');changedPresentation();},false);arrow.className='catalog-folder-toggle';arrow.setAttribute('aria-label',`${row.expanded?'Collapse':'Expand'} folder ${folder.name}`);arrow.setAttribute('aria-expanded',String(row.expanded));
         }
         const label=button(folder.name,entry,()=>{if(!current())return;clearRelink();state.selected=[];state.anchor=null;state.selectedFolder=folder.id;if(state.layout!=='grid'){toggle();render(true);focusFolder(folder.id,'catalog-folder-name');changedPresentation();}else update(true);},false);label.className='catalog-folder-name';label.setAttribute('aria-label',`Select project folder ${folder.name}`);label.setAttribute('aria-pressed',String(state.selectedFolder===folder.id));label.title=folder.path;
+        entry.draggable=Boolean(writable);
+        entry.addEventListener('dragstart',event=>{if(!writable || !current()){event.preventDefault();return;}try{beginDrag(event,entry,'folder',folder.id);}catch(error){dragging=null;dragWitness=null;event.preventDefault();notice(error.message);}});
+        entry.addEventListener('dragend',event=>endDrag(event,entry));
         if(state.layout==='grid'){label.addEventListener('dblclick',()=>{if(current())navigateGrid(folder.id);});label.addEventListener('keydown',event=>{if(event.key==='Enter' && !event.defaultPrevented && !event.isComposing && event.keyCode!==229 && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey){event.preventDefault();event.stopPropagation();if(current())navigateGrid(folder.id);}});}
         list.append(entry);continue;
       }
@@ -218,16 +301,22 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
       duration.className="catalog-duration";duration.textContent=info.duration;card.title=`${item.name} · ${info.metadata} · ${info.duration}`;card.append(thumbnailSlot,copy,duration);
       metadata.hidden=state.layout!=='details';duration.hidden=state.layout==='grid';
       const current=()=>!disposed && root.isConnected!==false && card.parentElement===list;
-      card.addEventListener("click", (event) => { if(!current())return;const selection = mediaSelection(visible, state.selected, state.anchor, item.id, {toggle: event.ctrlKey || event.metaKey, extend: event.shiftKey});if(JSON.stringify(selection.selected)!==JSON.stringify(state.selected))clearRelink();state.selectedFolder=null; Object.assign(state, selection); update(true); });
-      card.addEventListener("dblclick", () => {if(current())onOpen(item.id);});
+      card.addEventListener("click", (event) => {
+        if(!current())return;cancelRename();contextMenu?.close();
+        const slowRename=item.compound_timeline_id && state.selected.length===1 && state.selected[0]===item.id && event.target===filename && event.detail===1 && !event.ctrlKey && !event.metaKey && !event.shiftKey;
+        const selection=mediaSelection(visible,state.selected,state.anchor,item.id,{toggle:event.ctrlKey || event.metaKey,extend:event.shiftKey});
+        if(JSON.stringify(selection.selected)!==JSON.stringify(state.selected))clearRelink();state.selectedFolder=null;Object.assign(state,selection);update(true);
+        if(slowRename)renameTimer=setTimeout(()=>{renameTimer=null;if(current() && state.selected.length===1 && state.selected[0]===item.id)renameEntry('media',item.id);},500);
+      });
+      card.addEventListener("dblclick", () => {cancelRename();if(current())onOpen(item.id);});
       card.draggable=Boolean(writable);
       card.addEventListener('dragstart',event=>{
         if(!writable || !current()){event.preventDefault();return;}
         if(!state.selected.includes(item.id)){clearRelink();Object.assign(state,{selected:[item.id],anchor:item.id,selectedFolder:null});update(true);}
         if(!current()){event.preventDefault();return;}
-        dragging=card;try{if(onDragStart(event,selectedItems())===false){dragging=null;event.preventDefault();}}catch(error){dragging=null;event.preventDefault();notice(error.message);}
+        try{beginDrag(event,card,'media',selectedItems().map(item=>item.id));}catch(error){dragging=null;dragWitness=null;event.preventDefault();notice(error.message);}
       });
-      card.addEventListener('dragend',event=>{if(dragging===card){dragging=null;onDragEnd(event);}});
+      card.addEventListener('dragend',event=>endDrag(event,card));
       const thumbnail=state.layout==='list'?null:mediaThumbnail(assets,item.id);if(thumbnail?.thumbnailURL){const image = document.createElement("img"); image.alt = ""; image.src = thumbnail.thumbnailURL;thumbnailSlot.replaceChildren(image);}
       renderMediaProxyStatus(card,proxyStatus(item.id));
       list.append(card);
@@ -237,6 +326,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
   }
   list.addEventListener("keydown", (event) => {
     if(disposed || event.defaultPrevented || event.isComposing || event.keyCode===229 || event.altKey || event.getModifierState?.('AltGraph'))return;
+    if(event.key==='F2' && !event.repeat && !event.ctrlKey && !event.metaKey && !event.shiftKey){event.preventDefault();event.stopPropagation();if(state.selectedFolder)renameEntry('folder',state.selectedFolder);else if(state.selected.length===1)renameEntry('media',state.selected[0]);return;}
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "a") { event.preventDefault(); event.stopPropagation(); clearRelink();state.selectedFolder=null;state.selected = visible.map((m) => m.id); update(true); return; }
     if(event.key==='Enter' && !event.repeat && !event.ctrlKey && !event.metaKey && event.target.parentElement===list && visible.some(item=>item.id===event.target.dataset.mediaId)){event.preventDefault();event.stopPropagation();onOpen(event.target.dataset.mediaId);return;}
     if(event.target.parentElement!==list && event.target!==list)return;
@@ -248,8 +338,29 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     list.querySelectorAll(".media-item")[next]?.focus(); update(true);
   });
   list.addEventListener('click',event=>{if(disposed || event.target!==list || root.isConnected===false)return;clearRelink();state.selected=[];state.anchor=null;state.selectedFolder=null;update(true);});
+  contextMenu=createCatalogMenu({root,getContext:context,onAction:contextAction,notice});
+  interactions=createCatalogInteractions({root,list,getContext:context,canWrite:()=>writable && !disposed,onDrop:catalogDrop,notice,
+    onMarquee:({media_ids})=>{cancelRename();contextMenu.close();clearRelink();state.selected=[...media_ids];state.anchor=media_ids[0] ?? null;state.selectedFolder=null;update(true);},
+    onContextMenu:hit=>{cancelRename();if(hit.kind==='media' && !state.selected.includes(hit.id)){clearRelink();state.selected=[hit.id];state.anchor=hit.id;state.selectedFolder=null;update(true);}contextMenu.open(hit);}
+  });
   const filterChanged=()=>{state.selectedFolder=null;clearRelink();render(true);};filter.addEventListener("change", filterChanged); kind.addEventListener("change", filterChanged); render();
-  return {selectedItems,search(query) {if(disposed)return;const changed=query!==(state.query || '');if(changed)clearRelink();state.query = query; render(changed);},reveal(ids){
+  function acceptReceipt(receipt){
+    const pending=state.pendingCatalog;
+    if(disposed || !pending || !receipt || receipt.project_epoch!==documentState.project_epoch || receipt.generation!==documentState.generation || pending.project_epoch!==documentState.project_epoch || pending.generation===documentState.generation)return false;
+    delete state.pendingCatalog;
+    if(pending.kind==='move_media' && pending.media_ids.every(id=>documentState.media.some(item=>item.id===id && (item.folder ?? null)===pending.folder))){
+      state.selected=[...pending.media_ids];state.anchor=pending.media_ids[0];state.selectedFolder=null;state.query='';state.gridFolder=pending.folder;filter.value='*';kind.value='all';
+      render(true);changedPresentation();[...list.querySelectorAll('.media-item')].find(row=>row.dataset.mediaId===pending.media_ids[0])?.scrollIntoView?.({block:'center'});return true;
+    }
+    if(pending.kind==='new_folder'){
+      const added=folders.filter(folder=>!pending.before.includes(folder.id) && folder.name===pending.name && (folder.parent ?? null)===pending.parent);
+      if(added.length!==1)return false;
+      state.selected=[];state.anchor=null;state.selectedFolder=added[0].id;state.query='';state.gridFolder=pending.parent;filter.value='*';kind.value='all';
+      render(true);changedPresentation();renameEntry('folder',added[0].id);return true;
+    }
+    return false;
+  }
+  return {acceptReceipt,selectedItems,search(query) {if(disposed)return;const changed=query!==(state.query || '');if(changed)clearRelink();state.query = query; render(changed);},reveal(ids){
     if(disposed || root.isConnected===false || !Array.isArray(ids))return;
     const wanted=[...new Set(ids)].filter(id=>documentState.media.some(item=>item.id===id));if(!wanted.length)return;
     const targets=wanted.map(id=>documentState.media.find(item=>item.id===id)),open=new Set(state.expanded),map=new Map(folders.map(folder=>[folder.id,folder]));
@@ -257,5 +368,5 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
     state.expanded=[...open];state.gridFolder=map.has(targets.at(-1).folder)?targets.at(-1).folder:null;state.selectedFolder=null;state.selected=wanted;state.anchor=state.layout==='grid'?wanted.at(-1):wanted[0];filter.value='*';kind.value='all';
     if(targets.some(item=>!item.name.toLowerCase().includes((state.query || '').trim().toLowerCase())))state.query='';
     clearRelink();render();changedPresentation();[...list.querySelectorAll('.media-item')].find(row=>row.dataset.mediaId===wanted.at(-1))?.scrollIntoView?.({block:'center'});
-  },dispose(){finishColumn(false);disposed=true;relinkSequence++;relinkForm.onsubmit=null;observer?.disconnect();intersecting.clear();globalThis.removeEventListener?.('blur',abortColumn);onDemand([]);}};
+  },dispose(){finishColumn(false);cancelRename();contextMenu.dispose();interactions.dispose();dragWitness=null;disposed=true;relinkSequence++;relinkForm.onsubmit=null;observer?.disconnect();intersecting.clear();globalThis.removeEventListener?.('blur',abortColumn);onDemand([]);}};
 }

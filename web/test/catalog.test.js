@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {folderPaths, mediaSelection,visibleMediaDemand,mediaRowInfo,renderCatalog,compareMediaNames,sortMediaItems,catalogRows} from "../js/catalog.js";
+import {CATALOG_DRAG_TYPE,makeCatalogDrag} from '../js/catalog-interactions.js';
 
 test('native catalog sort uses lowercase lexical names with exact-case ties and duration ties by name, reversing the complete comparison',()=>{
   const items=[['10','clip2',48,24],['2','clip10',96,48],['3','Clip2',24,24],['4','clip2',30,30]].map(([id,name,duration_frames,num])=>({id,name,duration_frames,fps:{num,den:1}}));
@@ -45,22 +46,29 @@ test("compact media rows describe native duration and type without inventing mis
 });
 
 class Element {
-    constructor(tag){this.tag=tag;this.children=[];this.dataset={};this.attrs={};this.listeners={};this.className="";this.textContent="";this.isConnected=true;
-      this.classList={toggle:(name,on)=>{const classes=new Set(this.className.split(" ").filter(Boolean));if(on)classes.add(name);else classes.delete(name);this.className=[...classes].join(" ");}};}
-    append(...nodes){for(const node of nodes){node.parentElement=this;this.children.push(node);}}
-    replaceChildren(...nodes){for(const child of this.children)child.parentElement=null;this.children=[];this.append(...nodes);}
-    insertBefore(node,before){node.parentElement=this;this.children.splice(this.children.indexOf(before),0,node);}
+    constructor(tag){this.tag=tag;this.tagName=tag.toUpperCase();this.children=[];this.dataset={};this.attrs={};this.listeners={};this.className="";this.textContent="";this.connected=true;this.ownerDocument=globalThis.document;this.captured=new Set();this.bounds={left:10,top:20,right:330,bottom:240,width:320,height:220};
+      this.style={setProperty(key,value){this[key]=value;},removeProperty(key){delete this[key];}};this.classList={toggle:(name,on)=>{const classes=new Set(this.className.split(" ").filter(Boolean));if(on)classes.add(name);else classes.delete(name);this.className=[...classes].join(" ");}};}
+    append(...nodes){for(const node of nodes){node.parentElement=this;node.connected=true;this.children.push(node);}}
+    replaceChildren(...nodes){for(const child of this.children){child.parentElement=null;child.connected=false;}this.children=[];this.append(...nodes);}
+    insertBefore(node,before){node.parentElement=this;node.connected=true;this.children.splice(this.children.indexOf(before),0,node);}
+    remove(){if(this.parentElement)this.parentElement.children=this.parentElement.children.filter(node=>node!==this);this.parentElement=null;this.connected=false;}
     setAttribute(key,value){this.attrs[key]=String(value);}
-    addEventListener(type,callback){(this.listeners[type]??=[]).push(callback);}
-    fire(type,values={}){const event={target:this,preventDefault(){this.defaultPrevented=true;},stopPropagation(){this.stopped=true;},...values};for(const callback of this.listeners[type]||[])callback(event);return event;}
+    getAttribute(key){return this.attrs[key];}get isConnected(){return this.connected && (!this.parentElement || this.parentElement.isConnected);}
+    addEventListener(type,callback,capture=false){(this.listeners[type]??=[]).push({callback,capture:typeof capture==='boolean'?capture:Boolean(capture.capture)});}
+    removeEventListener(type,callback){this.listeners[type]=(this.listeners[type] || []).filter(row=>row.callback!==callback);}
+    fire(type,values={}){const event={type,target:this,button:0,pointerId:1,clientX:15,clientY:25,detail:1,preventDefault(){this.defaultPrevented=true;},stopPropagation(){this.stopped=true;},stopImmediatePropagation(){this.immediate=true;this.stopped=true;},...values};for(const {callback} of [...(this.listeners[type] || [])].sort((a,b)=>Number(b.capture)-Number(a.capture))){callback(event);if(event.immediate)break;}return event;}
     get options(){return this.children;}
+    getBoundingClientRect(){return {...this.bounds};}contains(node){while(node){if(node===this)return true;node=node.parentElement;}return false;}
+    setPointerCapture(pointer){this.captured.add(pointer);}hasPointerCapture(pointer){return this.captured.has(pointer);}releasePointerCapture(pointer){this.captured.delete(pointer);this.fire('lostpointercapture',{pointerId:pointer});}
     focus(){globalThis.document.activeElement=this;}
-    reportValidity(){return true;}
-    querySelectorAll(selector){return this.children.flatMap(child=>{const matches=selector.startsWith(".")?child.className.split(" ").includes(selector.slice(1)):child.tag===selector;return [...(matches?[child]:[]),...child.querySelectorAll(selector)];});}
+    select(){this.textSelected=true;}click(){if(!this.disabled)this.fire('click');}reportValidity(){return true;}
+    matches(selector){return selector.split(',').some(part=>{part=part.trim();return part.startsWith('.')?this.className.split(' ').includes(part.slice(1)):part==='dialog[open]'?this.tag==='dialog' && this.open:part.startsWith('[')?Object.hasOwn(this.attrs,part.slice(1,-1)) || part==='[tabindex]' && Number.isFinite(this.tabIndex):this.tag===part;});}
+    closest(selector){let node=this;while(node){if(node.matches(selector))return node;node=node.parentElement;}return null;}
+    querySelectorAll(selector){return this.children.flatMap(child=>[...(child.matches(selector)?[child]:[]),...child.querySelectorAll(selector)]);}querySelector(selector){return this.querySelectorAll(selector)[0] || null;}
 }
 async function withCatalogDom(run){
   const previous={document:globalThis.document,Option:globalThis.Option};
-  globalThis.document={createElement:tag=>new Element(tag)};
+  const doc=new Element('document'),window=new Element('window');window.innerWidth=1280;window.innerHeight=720;doc.defaultView=window;doc.hidden=false;doc.createElement=tag=>{const node=new Element(tag);node.ownerDocument=doc;return node;};globalThis.document=doc;doc.body=doc.createElement('body');doc.append(doc.body);doc.activeElement=doc.body;
   globalThis.Option=class extends Element{constructor(label,value){super("option");this.textContent=label;this.value=value;}};
   try{return await run();}finally{globalThis.document=previous.document;globalThis.Option=previous.Option;}
 }
@@ -88,10 +96,16 @@ test("compact rows retain pool keyboard focus, Source opening, catalog actions a
 
 function catalogHarness(options={},initial={}){
   const media=initial.media || [{id:'a',name:'Zulu.wav',has_audio:true,duration_frames:100,fps:{num:10,den:1},folder:'f'},{id:'b',name:'Alpha.mp4',has_video:true,duration_frames:50,fps:{num:10,den:1},folder:null},{id:'c',name:'Beta.mp4',has_video:true,duration_frames:200,fps:{num:20,den:1},folder:'f'}];
-  const root=new Element('div'),state={selected:[],folder:'*',expanded:['f'],...initial.state},commits=[],selection=[],opened=[],drags=[],ends=[];
-  const panel=renderCatalog(root,{project_epoch:'epoch',media,folders:initial.folders || [{id:'f',name:'Folder',parent:null}]},state,{writable:true,assets:new Map(),commit:async operation=>commits.push(operation),getFiles:async()=>[],notice:assert.fail,onSelection:(id,ids,intent)=>selection.push({id,ids,...intent}),onOpen:id=>opened.push(id),onDragStart:(event,items)=>drags.push({event,items}),onDragEnd:event=>ends.push(event),intersectionObserver:null,...options});
-  return {media,root,state,commits,selection,opened,drags,ends,panel,rows:()=>root.querySelectorAll('.media-item'),row:id=>root.querySelectorAll('.media-item').find(row=>row.dataset.mediaId===id),button:label=>root.querySelectorAll('button').find(node=>node.textContent===label || node.attrs['aria-label']===label),field:label=>root.querySelectorAll('select').find(node=>node.attrs['aria-label']===label)};
+  const root=new Element('div'),state={selected:[],folder:'*',expanded:['f'],...initial.state},commits=[],selection=[],opened=[],drags=[],ends=[],actions=[];document.body.append(root);
+  let documentState={project_epoch:'epoch',generation:'0',media,folders:initial.folders || [{id:'f',name:'Folder',parent:null}]},panel;
+  const configuration={writable:true,assets:new Map(),getFiles:async()=>[],notice:assert.fail,onSelection:(id,ids,intent)=>selection.push({id,ids,...intent}),onOpen:id=>opened.push(id),onDragStart:(event,items)=>drags.push({event,items}),onDragEnd:event=>ends.push(event),intersectionObserver:null,...options,commit:async operation=>{commits.push(operation);return options.commit?.(operation);},onAction:action=>{actions.push(action);return options.onAction?.(action);}};
+  const render=()=>panel=renderCatalog(root,documentState,state,configuration);render();
+  return {media,root,state,commits,selection,opened,drags,ends,actions,get panel(){return panel;},get documentState(){return documentState;},rerender(next){panel.dispose();documentState=next;return render();},rows:()=>root.querySelectorAll('.media-item'),row:id=>root.querySelectorAll('.media-item').find(row=>row.dataset.mediaId===id),folder:id=>root.querySelectorAll('.catalog-folder-row').find(row=>row.dataset.folderId===id),button:label=>root.querySelectorAll('button').find(node=>node.textContent===label || node.attrs['aria-label']===label),field:label=>root.querySelectorAll('select').find(node=>node.attrs['aria-label']===label)};
 }
+
+function catalogTransfer(initial=[]){const data=new Map(initial.map(type=>[type,'protected']));return {get types(){return [...data.keys()];},setData(type,value){data.set(type,value);},getData:type=>data.get(type) || ''};}
+const settleCatalog=async()=>{for(let index=0;index<20;index++)await Promise.resolve();};
+const menuButton=label=>{const menu=document.body.querySelectorAll('.catalog-context-menu')[0];assert.ok(menu,'context menu');const node=menu.querySelectorAll('button').find(node=>node.textContent===label);assert.ok(node,label);return node;};
 
 test('sortable headers preserve selection and Source intent while Shift keyboard ranges and batch order follow the newly drawn rows',async()=>withCatalogDom(async()=>{
   const h=catalogHarness();try{
@@ -118,7 +132,7 @@ test('search and folder/type filters prune invisible action targets and invalida
 test('native pool drags use the full chosen set in panel order and an unselected row replaces selection before callback',async()=>withCatalogDom(async()=>{
   const h=catalogHarness();try{
     h.row('a').fire('click');h.row('b').fire('click',{ctrlKey:true});assert.deepEqual(h.state.selected,['a','b']);const events=h.selection.length;
-    const transfer={types:['protected']},start=h.row('a').fire('dragstart',{dataTransfer:transfer});assert.equal(h.drags.length,1);assert.equal(h.drags[0].event,start);assert.equal(h.drags[0].event.dataTransfer,transfer);assert.deepEqual(h.drags[0].items,[h.media[0],h.media[1]]);assert.equal(h.selection.length,events);assert.equal(start.defaultPrevented,undefined);
+    const transfer=catalogTransfer(['protected']),start=h.row('a').fire('dragstart',{dataTransfer:transfer});assert.equal(h.drags.length,1);assert.equal(h.drags[0].event,start);assert.equal(h.drags[0].event.dataTransfer,transfer);assert.deepEqual(h.drags[0].items,[h.media[0],h.media[1]]);assert.equal(h.selection.length,events);assert.equal(start.defaultPrevented,undefined);
     h.row('a').fire('dragend');assert.equal(h.ends.length,1);
     h.row('c').fire('dragstart');assert.deepEqual(h.state.selected,['c']);assert.equal(h.state.anchor,'c');assert.deepEqual(h.drags[1].items,[h.media[2]]);assert.equal(h.selection.at(-1).userIntent,true);assert.deepEqual(h.commits,[]);assert.deepEqual(h.opened,[]);
     const old=h.row('c');h.panel.search('Alpha');old.fire('dragstart');assert.equal(h.drags.length,2,'detached row callbacks cannot publish stale media');
@@ -191,5 +205,66 @@ test('native name column separator has bounded local pointer/keyboard sizing, ca
     divider.fire('pointerdown',{button:0,pointerId:1,clientX:241});divider.fire('pointermove',{pointerId:1,clientX:10000});assert.equal(h.state.nameWidth,250);divider.fire('keydown',{key:'Escape'});assert.equal(h.state.nameWidth,241);divider.fire('pointerup',{pointerId:1,clientX:80});assert.equal(h.state.nameWidth,241,'canceled release cannot replay the draft');
     divider.fire('pointerdown',{button:0,pointerId:2,clientX:241});divider.fire('pointermove',{pointerId:2,clientX:150});divider.fire('pointerup',{pointerId:2,clientX:120});assert.equal(h.state.nameWidth,120,'release samples final pointer coordinates');divider.fire('dblclick');assert.equal(h.state.nameWidth,null);divider.fire('keydown',{key:'ArrowLeft'});divider.fire('keydown',{key:'Home'});assert.equal(h.state.nameWidth,null);
     divider.fire('pointerdown',{button:0,pointerId:3,clientX:250});divider.fire('pointermove',{pointerId:3,clientX:180});header.getBoundingClientRect=()=>({width:210});divider.fire('pointermove',{pointerId:3,clientX:170});assert.equal(h.state.nameWidth,null,'viewport change restores automatic sizing');assert.deepEqual(h.state.selected,['b']);assert.equal(h.selection.length,events);assert.deepEqual(h.commits,[]);assert.deepEqual(h.opened,[]);
+  }finally{h.panel.dispose();}
+}));
+
+test('native context menus select an outside media row, preserve an existing group and target an unselected folder without changing selection',async()=>withCatalogDom(async()=>{
+  const scopes=[],h=catalogHarness({onRelink:scope=>scopes.push(scope)});try{
+    h.row('c').fire('click');h.row('a').fire('click',{ctrlKey:true});const events=h.selection.length;
+    h.root.fire('contextmenu',{target:h.row('c')});assert.deepEqual(h.state.selected,['c','a']);assert.equal(h.selection.length,events);menuButton('Relink 2 selected media').click();await settleCatalog();assert.deepEqual(scopes[0],{kind:'selected',media_ids:['c','a']});
+    h.root.fire('contextmenu',{target:h.row('b')});assert.deepEqual(h.state.selected,['b']);assert.equal(h.state.anchor,'b');menuButton('Relink media').click();await settleCatalog();assert.deepEqual(scopes[1],{kind:'selected',media_ids:['b']});
+    h.root.fire('contextmenu',{target:h.folder('f')});assert.deepEqual(h.state.selected,['b']);assert.equal(h.state.selectedFolder,null);menuButton('Relink folder').click();await settleCatalog();assert.deepEqual(scopes[2],{kind:'folder',folder_id:'f'});assert.deepEqual(h.commits,[]);
+  }finally{h.panel.dispose();}
+}));
+
+test('folder drag preserves media selection while media drag publishes both trusted catalog and existing timeline payloads in panel order',async()=>withCatalogDom(async()=>{
+  const timelineType='application/x-venturi-project-media',hook=[],h=catalogHarness({onDragStart:(event,items,options)=>{hook.push({items,options});event.dataTransfer.setData(timelineType,'trusted-timeline-token');}});try{
+    h.row('b').fire('click');const events=h.selection.length,folderTransfer=catalogTransfer();h.folder('f').fire('dragstart',{dataTransfer:folderTransfer});assert.deepEqual(h.state.selected,['b']);assert.equal(h.state.selectedFolder,null);assert.equal(h.selection.length,events);assert.deepEqual(JSON.parse(folderTransfer.getData(CATALOG_DRAG_TYPE)),{version:1,kind:'folder',project_epoch:'epoch',generation:'0',folder_id:'f',source_parent:null});assert.equal(hook.length,0);h.folder('f').fire('dragend');
+    h.row('a').fire('click',{ctrlKey:true});const mediaTransfer=catalogTransfer();h.row('a').fire('dragstart',{dataTransfer:mediaTransfer});assert.deepEqual(hook[0].items.map(item=>item.id),['a','b']);assert.deepEqual(hook[0].options,{catalogFallback:true});assert.deepEqual(JSON.parse(mediaTransfer.getData(CATALOG_DRAG_TYPE)).media_ids,['a','b']);assert.equal(mediaTransfer.getData(timelineType),'trusted-timeline-token');assert.equal(mediaTransfer.effectAllowed,'copyMove');assert.deepEqual(h.commits,[]);
+  }finally{h.panel.dispose();}
+}));
+
+test('native catalog drops move once and reconcile the first dragged anchor through generation refresh, while same-folder drops remain real no-ops',async()=>withCatalogDom(async()=>{
+  let h;h=catalogHarness({commit:operation=>{
+    assert.equal(operation.edit.kind,'move_media');const next={...h.documentState,generation:String(BigInt(h.documentState.generation)+1n),media:h.documentState.media.map(item=>operation.edit.media_ids.includes(item.id)?{...item,folder:operation.edit.folder}:item)};h.rerender(next);const receipt={project_epoch:next.project_epoch,generation:next.generation};assert.equal(h.panel.acceptReceipt(receipt),true);return receipt;
+  }},{folders:[{id:'f',name:'Folder',parent:null},{id:'g',name:'Target',parent:'f'}],state:{expanded:['f','g']}});
+  const move=async target=>{const transfer=catalogTransfer(),source=h.row('c');source.fire('dragstart',{dataTransfer:transfer});h.root.fire('drop',{target:target(),dataTransfer:transfer});source.fire('dragend',{dataTransfer:transfer});await settleCatalog();};
+  try{
+    h.row('c').fire('click');h.row('a').fire('click',{ctrlKey:true});await move(()=>h.folder('g'));assert.deepEqual(h.commits[0],{kind:'edit_catalog',edit:{kind:'move_media',media_ids:['c','a'],folder:'g'}});assert.deepEqual(h.state.selected,['c','a']);assert.equal(h.state.anchor,'c');assert.equal(h.documentState.generation,'1');assert.equal(h.state.pendingCatalog,undefined);assert.deepEqual(h.panel.selectedItems().map(item=>item.id),['c','a']);
+    await move(()=>h.row('a'));assert.equal(h.commits.length,1,'the raw media row resolves its containing folder, so this is a no-op');assert.equal(h.state.anchor,'c');
+    await move(()=>h.row('b'));assert.equal(h.commits.length,2);assert.equal(h.commits[1].edit.folder,null);assert.equal(h.state.anchor,'c');
+    await move(()=>h.folder('f'));assert.equal(h.commits.length,3);assert.equal(h.commits[2].edit.folder,'f');await move(()=>h.root.querySelectorAll('.catalog-rows')[0]);assert.equal(h.commits.length,4);assert.equal(h.commits[3].edit.folder,null);assert.deepEqual(h.state.selected,['c','a']);assert.equal(h.state.anchor,'c');await move(()=>h.root.querySelectorAll('.catalog-rows')[0]);assert.equal(h.commits.length,4);assert.deepEqual(h.opened,[]);
+  }finally{h.panel.dispose();}
+}));
+
+test('an external generation and matching new folder cannot open rename or steal selection without the successful command receipt',async()=>withCatalogDom(async()=>{
+  const h=catalogHarness();try{
+    h.row('b').fire('click');h.state.pendingCatalog={kind:'new_folder',name:'New folder',parent:null,before:['f'],project_epoch:'epoch',generation:'0'};
+    h.rerender({...h.documentState,generation:'1',folders:[...h.documentState.folders,{id:'external',name:'New folder',parent:null}]});assert.deepEqual(h.state.selected,['b']);assert.equal(h.state.anchor,'b');assert.equal(h.state.selectedFolder,null);assert.equal(document.body.querySelectorAll('.catalog-rename-input').length,0);assert.equal(h.panel.acceptReceipt({project_epoch:'foreign',generation:'1'}),false);assert.equal(document.body.querySelectorAll('.catalog-rename-input').length,0);
+    assert.equal(h.panel.acceptReceipt({project_epoch:'epoch',generation:'1'}),true);assert.deepEqual(h.state.selected,[]);assert.equal(h.state.selectedFolder,'external');const input=document.body.querySelectorAll('.catalog-rename-input')[0];assert.ok(input);assert.equal(input.value,'New folder');input.fire('keydown',{key:'Escape'});assert.deepEqual(h.commits,[]);
+  }finally{h.panel.dispose();}
+}));
+
+test('catalog drop refuses matching JSON without its live drag witness and rejects stale or foreign project payloads',async()=>withCatalogDom(async()=>{
+  const notices=[],h=catalogHarness({notice:text=>notices.push(text)});try{
+    const owner={project_epoch:'epoch',generation:'0',snapshot:h.documentState},foreign=catalogTransfer();foreign.setData(CATALOG_DRAG_TYPE,makeCatalogDrag('media',['b'],owner));h.root.fire('drop',{target:h.folder('f'),dataTransfer:foreign});await settleCatalog();assert.deepEqual(h.commits,[],'valid-looking JSON alone is not native drag ownership');
+    const stale=catalogTransfer();h.row('b').fire('dragstart',{dataTransfer:stale});h.panel.search('Alpha');h.root.fire('drop',{target:h.root.querySelectorAll('.catalog-rows')[0],dataTransfer:stale});await settleCatalog();assert.deepEqual(h.commits,[],'presentation changes retire the root-owned source witness');
+    h.panel.search('');const transfer=catalogTransfer();h.row('b').fire('dragstart',{dataTransfer:transfer});const payload=JSON.parse(transfer.getData(CATALOG_DRAG_TYPE));payload.project_epoch='foreign';transfer.setData(CATALOG_DRAG_TYPE,JSON.stringify(payload));h.root.fire('drop',{target:h.folder('f'),dataTransfer:transfer});await settleCatalog();assert.deepEqual(h.commits,[]);assert.match(notices.at(-1),/changed/);
+  }finally{h.panel.dispose();}
+}));
+
+test('F2 preserves immutable file names but opens guarded folder/compound rename editors and dispatches each accepted native action once',async()=>withCatalogDom(async()=>{
+  const h=catalogHarness({},{media:[{id:'file',name:'Original.mp4',has_video:true,duration_frames:24,fps:{num:24,den:1}},{id:'compound',name:'Sequence',compound_timeline_id:'timeline',has_video:true,duration_frames:24,fps:{num:24,den:1}}]});try{
+    const list=h.root.querySelectorAll('.catalog-rows')[0];h.row('file').fire('click');list.fire('keydown',{target:h.row('file'),key:'F2'});assert.equal(document.body.querySelectorAll('.catalog-rename-input').length,0);assert.equal(h.media[0].name,'Original.mp4');
+    h.row('compound').fire('click');list.fire('keydown',{target:h.row('compound'),key:'F2'});const input=document.body.querySelectorAll('.catalog-rename-input')[0];assert.ok(input);assert.equal(input.attrs['aria-label'],'Rename timeline');input.value='Renamed sequence';input.fire('keydown',{key:'Enter'});input.fire('blur');await settleCatalog();assert.deepEqual(h.actions,[{kind:'rename_timeline',media_id:'compound',timeline_id:'timeline',name:'Renamed sequence'}]);assert.deepEqual(h.commits,[]);
+    h.button('Select project folder Folder').fire('click');list.fire('keydown',{target:list,key:'F2'});const folderInput=document.body.querySelectorAll('.catalog-rename-input')[0];assert.equal(folderInput.attrs['aria-label'],'Rename folder');folderInput.value='Folder renamed';folderInput.fire('keydown',{key:'Enter'});folderInput.fire('blur');await settleCatalog();assert.deepEqual(h.commits,[{kind:'edit_catalog',edit:{kind:'rename_folder',folder:'f',name:'Folder renamed'}}]);assert.equal(h.media[0].name,'Original.mp4');
+  }finally{h.panel.dispose();}
+}));
+
+test('catalog-integrated marquee replaces the selected set at release, anchors its first visible hit and suppresses the trailing blank click',async()=>withCatalogDom(async()=>{
+  const h=catalogHarness({writable:false});try{
+    const list=h.root.querySelectorAll('.catalog-rows')[0];list.bounds={left:10,top:20,right:330,bottom:240,width:320,height:220};h.row('c').bounds={left:30,top:40,right:90,bottom:60,width:60,height:20};h.row('a').bounds={left:110,top:70,right:180,bottom:90,width:70,height:20};h.row('b').bounds={left:200,top:140,right:270,bottom:160,width:70,height:20};h.row('b').fire('click');const events=h.selection.length;
+    list.fire('pointerdown',{ctrlKey:true,shiftKey:true});document.fire('pointermove',{target:list,clientX:115,clientY:75});assert.deepEqual(h.state.selected,['b']);assert.equal(h.selection.length,events);document.fire('pointerup',{target:list,clientX:115,clientY:75});assert.deepEqual(h.state.selected,['c','a']);assert.equal(h.state.anchor,'c');assert.equal(h.selection.length,events+1);list.fire('click');assert.deepEqual(h.state.selected,['c','a']);assert.deepEqual(h.commits,[]);
+    list.fire('pointerdown');document.fire('pointermove',{target:list,clientX:220,clientY:150});document.fire('keydown',{target:list,key:'Escape'});document.fire('pointerup',{target:list,clientX:220,clientY:150});assert.deepEqual(h.state.selected,['c','a']);assert.equal(h.state.anchor,'c');assert.equal(h.selection.length,events+1);
   }finally{h.panel.dispose();}
 }));

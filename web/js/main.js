@@ -637,8 +637,8 @@ let visualControls=[];
 function selectedKeyController(){return visualControls.find(control=>control.hasSelectedKeys?.());}
 function currentDeleteOwner(target=document.activeElement){const owner=commandOwnership.owner(target);return owner==='keys' && !selectedKeyController()?'timeline':owner;}
 function deleteOwnedSelection(owner=currentDeleteOwner()){
-  if(owner==='library'){notice('Use this browser panel’s item actions; timeline clips were not changed');return;}
   if(!writable || busy || unresolved || document.querySelector('dialog[open]'))return;
+  if(owner==='library'){if(libraryMode==='native')nativeAssets?.deleteSelection();else notice('Use this browser panel’s item actions; timeline clips were not changed');return;}
   if(owner==='media'){void catalog?.removeSelected().catch(error=>notice(error.message));return;}
   if(owner==='keys'){void selectedKeyController()?.removeSelected();return;}
   if(!timeline || timeline.id==='fixture' || !canvasTimeline.navigationIdle())return;
@@ -653,8 +653,8 @@ function syncSelectionActions(){
   const target=selectedTransition(timeline,view.transitionSelection),disabled=!writable || busy || Boolean(unresolved) || !timeline || timeline.id==='fixture';
   $("split").disabled=disabled || Boolean(target) || !view.selection.length;
   const owner=currentDeleteOwner(),baseDisabled=!writable || busy || Boolean(unresolved) || !documentState;
-  $('delete').textContent=owner==='media'?'Remove selected media':owner==='keys'?'Delete selected keys':'Delete';
-  $('delete').disabled=owner==='library' || baseDisabled || (owner==='media'?!mediaState.selected.length:owner==='keys'?!selectedKeyController():disabled || (target?target.locked:!view.selection.length));
+  $('delete').textContent=owner==='media'?'Remove selected media':owner==='keys'?'Delete selected keys':owner==='library' && libraryMode==='native'?'Delete selected Library assets':'Delete';
+  $('delete').disabled=baseDisabled || (owner==='library'?libraryMode!=='native' || !nativeAssets?.canDelete():owner==='media'?!mediaState.selected.length:owner==='keys'?!selectedKeyController():disabled || (target?target.locked:!view.selection.length));
   $("close-gap").disabled=disabled || !canvasTimeline.canCloseGap();
   const selected=timeline?.tracks.flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id)).map(clip=>({track,clip}))) || [],linked=new Set(timeline?linkedSelection(timeline,view.selection):[]),locked=timeline?.tracks.some(track=>track.locked && track.clips.some(clip=>linked.has(clip.id)));
   for(const button of document.querySelectorAll('[data-selection-command]')){
@@ -2183,6 +2183,14 @@ nativeAssets=createNativeAssetPanel({
     nativePlacementCompletion=null;const pending=commit(operation),owner={intent:nativePlacementIntent,navigation:timelineOpenSequence,frame:view.playhead};
     return pending.then(receipt=>{nativePlacementCompletion={owner,command:receipt.command_id};return receipt;});
   },onImported:nativeImportedMedia,onPreview:previewNativeAsset,
+  onRemoved:(ids,receipt)=>{
+    if(receipt.project_epoch!==documentState?.project_epoch)return;
+    if(ids.includes(sourcePreviewAttempt?.id))cancelSourcePreview();
+    if(!ids.includes(sourceLibraryItem?.item.native_asset?.id))return;
+    sourcePlayer?.reset();sourceAssets?.cancelSource();sourceSeek?.reset();
+    sourceOpenId=null;clearLibrarySource();sourceWaveformBinding=null;
+    if(viewerMode==='source')viewerModeSet('program');
+  },
   onPlaced:receipt=>{
     const completed=nativePlacementCompletion;nativePlacementCompletion=null;
     if(!completed || completed.command!==receipt.command_id || completed.owner.intent!==nativePlacementIntent || completed.owner.navigation!==timelineOpenSequence || completed.owner.frame!==view.playhead || receipt.project_epoch!==documentState?.project_epoch || receipt.generation!==documentState?.generation || receipt.timeline_id!==timeline?.id || !Array.isArray(receipt.media_ids) || !Array.isArray(receipt.clip_ids))return;

@@ -2,6 +2,98 @@ use super::*;
 use serde_json::json;
 
 #[test]
+fn journal_delete_rolls_forward_only_authorized_absence_and_preserves_foreign_replacements() {
+    let (path, root, assets) = fixture();
+    for name in ["first.json", "second.json", "keep.json.bak"] {
+        std::fs::write(path.join("assets").join(name), name.as_bytes()).unwrap();
+    }
+    let mut prepared =
+        PreparedEdit::new(&root, completion("delete-recovery", &root), json!({})).unwrap();
+    prepared.roster(active_roster(&assets).unwrap());
+    prepared
+        .remove("first.json".into(), before(&assets, "first.json"))
+        .unwrap();
+    prepared
+        .remove("second.json".into(), before(&assets, "second.json"))
+        .unwrap();
+    assert_eq!(prepared.manifest.version, 2);
+    validate_manifest(&prepared.manifest).unwrap();
+    prepared.manifest.version = 1;
+    assert!(validate_manifest(&prepared.manifest).is_err());
+    prepared.manifest.version = 2;
+    intent(&mut prepared, &root);
+    unlinkat(&assets, "first.json", AtFlags::empty()).unwrap();
+    assets.sync_all().unwrap();
+    std::fs::write(path.join("assets/first.json"), b"foreign replacement").unwrap();
+    let journal = std::fs::read(path.join(PENDING)).unwrap();
+    assert_eq!(
+        recover(&root, &assets).unwrap_err().1,
+        "ASSET_JOURNAL_CONFLICT"
+    );
+    assert_eq!(
+        std::fs::read(path.join("assets/first.json")).unwrap(),
+        b"foreign replacement"
+    );
+    assert!(path.join("assets/second.json").exists());
+    assert_eq!(std::fs::read(path.join(PENDING)).unwrap(), journal);
+    std::fs::remove_file(path.join("assets/first.json")).unwrap();
+    recover(&root, &assets).unwrap();
+    assert!(!path.join("assets/first.json").exists());
+    assert!(!path.join("assets/second.json").exists());
+    assert_eq!(
+        std::fs::read(path.join("assets/keep.json.bak")).unwrap(),
+        b"keep.json.bak"
+    );
+    assert!(!pending(&root).unwrap());
+    recover(&root, &assets).unwrap();
+    drop(prepared);
+    drop(assets);
+    drop(root);
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
+fn journal_delete_preflight_cancel_and_archived_names_never_remove_unvalidated_metadata() {
+    let (path, root, assets) = fixture();
+    std::fs::write(path.join("assets/active.json"), b"active").unwrap();
+    std::fs::write(path.join("assets/archive.json.deleted"), b"archive").unwrap();
+    let mut prepared =
+        PreparedEdit::new(&root, completion("delete-cancel", &root), json!({})).unwrap();
+    prepared
+        .remove("active.json".into(), before(&assets, "active.json"))
+        .unwrap();
+    prepared
+        .remove(
+            "archive.json.deleted".into(),
+            before(&assets, "archive.json.deleted"),
+        )
+        .unwrap();
+    assert_eq!(
+        prepared
+            .commit(&root, &assets, &AtomicBool::new(true))
+            .unwrap_err()
+            .1,
+        "ASSET_CANCELED"
+    );
+    assert!(!pending(&root).unwrap());
+    assert!(path.join("assets/active.json").exists());
+    std::fs::write(path.join("assets/archive.json.deleted"), b"changed archive").unwrap();
+    assert_eq!(
+        prepared
+            .commit(&root, &assets, &AtomicBool::new(false))
+            .unwrap_err()
+            .1,
+        "ASSET_JOURNAL_CONFLICT"
+    );
+    assert!(path.join("assets/active.json").exists());
+    assert!(!pending(&root).unwrap());
+    drop(prepared);
+    drop(assets);
+    drop(root);
+    std::fs::remove_dir_all(path).unwrap();
+}
+
+#[test]
 fn journal_stage_reopens_readonly_and_checks_full_bytes_and_inode_before_pinning() {
     let (path, root, assets) = fixture();
     let write = |name: &str| {
@@ -95,6 +187,8 @@ fn tree_import_recovery_accepts_only_its_new_roster_entries_after_partial_public
     prepared
         .add(false, "folders.json".into(), None, b"folders")
         .unwrap();
+    assert_eq!(prepared.manifest.version, 1);
+    validate_manifest(&prepared.manifest).unwrap();
     intent(&mut prepared, &root);
     renameat(&prepared.stage, "after-0.json", &assets, "first.json").unwrap();
     assets.sync_all().unwrap();

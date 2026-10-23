@@ -15,12 +15,15 @@ export function checkedNativeTreeReport(value,ready=false){
   if(ready && (!Array.isArray(value.errors) || value.errors.length!==value.error_count || value.errors.length>64 || value.errors.some(error=>typeof error?.path_token!=='string' || !error.path_token || new TextEncoder().encode(error.path_token).length>1024 || typeof error.code!=='string' || !error.code || error.code.length>128 || typeof error.message!=='string' || !error.message || error.message.length>4096)))throw Error('The native folder import errors changed or are invalid');
   return value;
 }
+function checkedDeletion(value,items){
+  if(value?.deleted_assets!==items.length || !Array.isArray(value.deleted_ids) || value.deleted_ids.length!==items.length || value.deleted_ids.some((id,index)=>id!==items[index].id))throw Error('The native asset deletion receipt does not match the confirmed selection');
+}
 
 export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,timelineCommit,makeLibraryMutation,api=apiRequest,pause=delay,onStatus=()=>{},onApplied=()=>{}}){
   let owner=null;
   const report=text=>onStatus(text);
-  const checkedLibraryReceipt=(receipt,ticket,tree)=>{if(receipt?.command_id!==ticket.mutation.command_id || receipt.project_epoch!==ticket.epoch)throw Error('The recovered native library receipt does not match this command');if(tree)checkedNativeTreeReport(receipt);else if(![receipt.missing_count,receipt.relinked_files].every(value=>Number.isSafeInteger(value) && value>=0 && value<=64))throw Error('The recovered native relink receipt does not match this command');};
-  const appliedMessage=(receipt,tree)=>tree?`Native folder imported · ${receipt.imported_assets} assets · ${receipt.skipped_files} skipped · ${receipt.error_count} errors · timeline unchanged`:`Native asset relinked · ${receipt.relinked_files} files restored · ${receipt.missing_count} still missing · timeline unchanged`;
+  const checkedLibraryReceipt=(receipt,ticket,tree)=>{if(receipt?.command_id!==ticket.mutation.command_id || receipt.project_epoch!==ticket.epoch)throw Error('The recovered native library receipt does not match this command');if(ticket.mutation.operation.edit.action==='delete_assets')checkedDeletion(receipt,ticket.mutation.operation.edit.items);else if(tree)checkedNativeTreeReport(receipt);else if(![receipt.missing_count,receipt.relinked_files].every(value=>Number.isSafeInteger(value) && value>=0 && value<=64))throw Error('The recovered native relink receipt does not match this command');};
+  const appliedMessage=(receipt,tree)=>receipt.deleted_ids?`${receipt.deleted_assets} native asset${receipt.deleted_assets===1?'':'s'} permanently deleted · project and timeline unchanged · no project Undo`:tree?`Native folder imported · ${receipt.imported_assets} assets · ${receipt.skipped_files} skipped · ${receipt.error_count} errors · timeline unchanged`:`Native asset relinked · ${receipt.relinked_files} files restored · ${receipt.missing_count} still missing · timeline unchanged`;
   const jobPath=ticket=>`/native-assets/jobs/${encodeURIComponent(ticket.job)}?${new URLSearchParams({project_epoch:ticket.epoch})}`;
   async function cancelJob(ticket){if(!ticket.job || ticket.cancelSent)return;ticket.cancelSent=true;try{await api(jobPath(ticket),undefined,{method:'DELETE',signal:AbortSignal.timeout(5000)});}catch{report('Cancellation requested; refresh the library before starting another preparation');}}
   function cancel(){if(!owner || owner.canceled || owner.phase==='committing')return false;owner.canceled=true;if(owner.job){owner.controller.abort();void cancelJob(owner);}report('Canceling native asset preparation…');return true;}
@@ -31,18 +34,20 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
     if(set && (!Array.isArray(action.assets) || !action.assets.length || action.assets.length>32 || new Set(action.assets.map(item=>item?.asset_id)).size!==action.assets.length || action.assets.some(item=>!token(item?.asset_id) || typeof item?.revision!=='string' || !item.revision)))return null;
     if(placing && (typeof timelineCommit!=='function' || !Number.isSafeInteger(placement.start_frame) || placement.start_frame<0 || placement.start_frame>1_000_000_000 || !['track','new_video_track','new_audio_track'].includes(placement.target?.kind) || placement.target.kind==='track' && typeof placement.target.track_id!=='string'))return null;
     if(pooling && typeof projectCommit!=='function')return null;
-    const tree=action.kind==='import_tree',relinking=['relink','relink_folder'].includes(action.kind),prepared=tree || relinking;
+    const deleting=action.kind==='delete_assets';
+    if(deleting && (!Array.isArray(action.items) || !action.items.length || action.items.length>32 || new Set(action.items.map(item=>item?.id)).size!==action.items.length || action.items.some(item=>!token(item?.id) || typeof item?.revision!=='string' || !item.revision) || typeof action.archived!=='boolean'))return null;
+    const tree=action.kind==='import_tree',relinking=['relink','relink_folder'].includes(action.kind),prepared=tree || relinking || deleting;
     if(owner || prepared && typeof makeLibraryMutation!=='function' || !canCommit() || !nativeAssetIdentity(getContext()) || !sourceCurrent())return null;
     const context=getContext(),ticket={identity:nativeAssetIdentity(context),epoch:context.project_epoch,generation:context.generation,controller:new AbortController(),phase:'preparing',sourceCurrent,canceled:false,job:null,cancelSent:false};owner=ticket;
     let receipt=null;
     try{
-      if(prepared){const edit=tree?{action:'import_tree',directory_token:action.directory_token,parent:action.parent,folders_revision:action.folders_revision}:action.kind==='relink_folder'?{action:'relink_folder',id:action.asset_id,revision:action.revision,directory_token:action.directory_token}:{action:'relink',id:action.asset_id,revision:action.revision,path_tokens:[...action.path_tokens]};ticket.mutation=makeLibraryMutation({kind:'edit_native_asset_library',edit});}
-      report(tree?'Preparing native source folder import…':relinking?'Preparing native asset relink…':'Preparing native asset files…');
+      if(prepared){const edit=deleting?{action:'delete_assets',items:action.items,archived:action.archived}:tree?{action:'import_tree',directory_token:action.directory_token,parent:action.parent,folders_revision:action.folders_revision}:action.kind==='relink_folder'?{action:'relink_folder',id:action.asset_id,revision:action.revision,directory_token:action.directory_token}:{action:'relink',id:action.asset_id,revision:action.revision,path_tokens:[...action.path_tokens]};ticket.mutation=makeLibraryMutation({kind:'edit_native_asset_library',edit});}
+      report(deleting?'Preparing confirmed native asset deletion…':tree?'Preparing native source folder import…':relinking?'Preparing native asset relink…':'Preparing native asset files…');
       let job=await api(prepared?'/native-assets/commands/prepare':'/native-assets/prepare',prepared?ticket.mutation:{project_epoch:ticket.epoch,if_generation:ticket.generation,action});
       if(prepared && job?.state==='applied'){
         ticket.phase='committing';receipt=job.receipt;
         checkedLibraryReceipt(receipt,ticket,tree);
-        if(current(ticket)){try{await onApplied(receipt,action,null);report(appliedMessage(receipt,tree));}catch(error){report(`Command applied · refresh failed: ${error.message}. Refresh the library; do not repeat the command.`);}}return receipt;
+        if(deleting || current(ticket)){try{await onApplied(receipt,action,null);report(appliedMessage(receipt,tree));}catch(error){report(`Command applied · refresh failed: ${error.message}. Refresh the library; do not repeat the command.`);}}return receipt;
       }
       if(!token(job?.id))throw Error('The native asset preparation returned an invalid job ID');ticket.job=job.id;
       const validateJob=()=>{if(job.id!==ticket.job || job.project_epoch!==ticket.epoch || job.generation!==ticket.generation || job.kind!==(prepared?'library_edit':action.kind))throw Error('The native asset job no longer matches this preparation');};validateJob();
@@ -57,8 +62,9 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
       if(set && (!Array.isArray(job.result?.assets) || job.result.assets.length!==action.assets.length || job.result.assets.some((item,index)=>item.asset_id!==action.assets[index].asset_id || item.revision!==action.assets[index].revision)))throw Error('The prepared asset set or order changed');
       if(relinking && (job.result?.asset_id!==action.asset_id || job.result.revision!==action.revision || ![job.result.missing_count,job.result.relinked_files].every(value=>Number.isSafeInteger(value) && value>=0 && value<=64)))throw Error('The prepared native relink revision or report changed');
       if(tree)checkedNativeTreeReport(job.result,true);
+      if(deleting)checkedDeletion(job.result,action.items);
       if(!current(ticket))throw new DOMException('Project or selection changed before applying the asset','AbortError');
-      ticket.phase='committing';report(tree?'Importing native source folder…':relinking?'Applying native asset relink…':action.kind==='capture'?'Publishing native asset…':'Importing native asset with one Undo…');
+      ticket.phase='committing';report(deleting?'Permanently deleting confirmed native assets…':tree?'Importing native source folder…':relinking?'Applying native asset relink…':action.kind==='capture'?'Publishing native asset…':'Importing native asset with one Undo…');
       receipt=await (placing?timelineCommit({kind:'place_native_assets',job_id:ticket.job,assets:action.assets,start_frame:placement.start_frame,target:placement.target,overwrite:Boolean(placement.overwrite)}):pooling?projectCommit({kind:'import_native_asset_set',job_id:ticket.job,assets:action.assets}):prepared?libraryCommit(ticket.mutation.operation,ticket.mutation):action.kind==='capture'?libraryCommit({kind:'publish_native_asset',job_id:ticket.job}):projectCommit({kind:'import_native_asset',job_id:ticket.job,asset_id:action.asset_id,revision:action.revision}));
       if(prepared)checkedLibraryReceipt(receipt,ticket,tree);
       if(pooling && (receipt?.project_epoch!==ticket.epoch || typeof receipt.changed!=='boolean' || !Array.isArray(receipt.media_ids) || !receipt.media_ids.length || receipt.media_ids.length>32 || receipt.media_ids.some(id=>typeof id!=='string' || !id) || new Set(receipt.media_ids).size!==receipt.media_ids.length || ![receipt.new_count,receipt.reused_count].every(count=>Number.isSafeInteger(count) && count>=0 && count<=32) || receipt.new_count+receipt.reused_count!==receipt.media_ids.length || !Array.isArray(receipt.errors) || receipt.errors.length))throw Error('The native asset set import receipt changed or is invalid');
@@ -74,7 +80,7 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
   return {run,cancel,busy:()=>Boolean(owner),phase:()=>owner?.phase || 'idle',invalidate(){if(owner && owner.phase!=='committing' && !current(owner))cancel();}};
 }
 
-export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,projectCommit,timelineCommit,assetDnd,makeLibraryMutation,onImported=()=>{},onPlaced=()=>{},onPreview,notice=()=>{},api=apiRequest,pause=delay}){
+export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,projectCommit,timelineCommit,assetDnd,makeLibraryMutation,onImported=()=>{},onPlaced=()=>{},onPreview,onRemoved=()=>{},notice=()=>{},api=apiRequest,pause=delay}){
   root.dataset.commandOwner='library';
   root.addEventListener('keydown',event=>{
     if(!['Delete','Backspace'].includes(event.key))return;
@@ -82,14 +88,14 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     if(event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229
       || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey
       || event.getModifierState?.('AltGraph') || event.target?.isContentEditable
-      || event.target?.closest?.('input,textarea,select,[contenteditable],dialog')
-      || root.ownerDocument?.querySelector?.('dialog[open]'))return;
+      || event.target!==list && event.target?.closest?.('input,textarea,select,[contenteditable],dialog')
+      || modal())return;
     event.preventDefault();
-    if(active)notice('Library Delete is unavailable here. Use Asset actions to archive an asset; timeline clips are unchanged.');
+    deleteSelection();
   });
   let active=false,sequence=0,panelSession=0,transferSession=0,readController=null,pendingReload=false,transferRefreshFailed=false,page=0,pages=1,search='',archived=false,selected=null,busy=false,batch=false,stopped=false,reading=false,readEpoch=null,rows=[],chosen=[],catalog=null,folder=null,folderLabels=new Map(),controls=[],folderControls=[],list,status,caption,name,capture,stop,importButton,rename,archive,previous,next,restore,download,folderFilter,folderName,folderCreateParent,folderParent,assetDestination,createFolder,renameFolder,moveFolder,removeFolder,moveAssets,relinkMenu,relinkButton,relinkArea,relinkDraft=null,relinkReader=null,relinkReading=false,relinkFiles,relinkApply,relinkCancel;
   let sourcePicker=null,sourceDraft=null,sourceArea,sourceReport,sourceDestination,importTree,relinkFolder;
-  let dragRows=null,dragButtons=[],rowAnchor=null,readGeneration=null,placementAttempt=null,previewButton=null,previewSequence=0;
+  let dragRows=null,dragButtons=[],rowAnchor=null,readGeneration=null,placementAttempt=null,previewButton=null,previewSequence=0,deleteButton=null,deletion=null;
   const button=(text,action)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',action);return node;};
   const compact=(node,text)=>{node.setAttribute('aria-label',node.textContent);node.title=node.textContent;node.setAttribute('data-compact-label',text);return node;};
   const message=text=>{if(active && status?.isConnected)status.textContent=text;};
@@ -99,7 +105,36 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   const poolSelection=()=>chosen.length===1 && selected?.id===chosen[0].id && !rows.some(item=>item.id===selected.id)?[selected]:rows.filter(item=>chosen.some(chosen=>chosen.id===item.id));
   const importable=items=>Boolean(items.length && items.length<=32 && items.every(item=>token(item.id) && typeof item.revision==='string' && item.revision && !item.archived && !item.error));
   const poolIdentity=()=>JSON.stringify([panelSession,nativeAssetIdentity(getContext()),getContext()?.command_epoch,poolSelection().map(item=>[item.id,item.revision,Boolean(item.archived),Boolean(item.error)])]);
-  const modal=()=>Boolean((root.ownerDocument ?? globalThis.document)?.querySelector?.('dialog[open]'));
+  const modalNode=()=>(root.ownerDocument ?? globalThis.document)?.querySelector?.('dialog[open]');
+  const modal=()=>Boolean(modalNode());
+  const deletable=items=>Boolean(items.length && items.length<=32 && new Set(items.map(item=>item.id)).size===items.length && items.every(item=>token(item.id) && typeof item.revision==='string' && item.revision && !item.error && Boolean(item.archived)===archived));
+  const deletionCurrent=(draft,idle=true)=>Boolean(active && root.isConnected!==false && nativeAssetIdentity(getContext()) && (!idle || !transferring()) && !reading && !relinkReading && (!modal() || deletion===draft && modalNode()===draft.dialog) && canCommit() && typeof makeLibraryMutation==='function' && readEpoch===getContext()?.project_epoch && readGeneration===getContext()?.generation && draft.identity===poolIdentity() && draft.archived===archived && deletable(poolSelection()));
+  function canDelete(){return Boolean(!modal() && deletionCurrent({identity:poolIdentity(),archived}));}
+  function closeDeletion(restore=true){
+    const draft=deletion;if(!draft)return;deletion=null;
+    draft.dialog.close?.();draft.dialog.remove?.();if(draft.dialog.parentNode)draft.dialog.parentNode.removeChild(draft.dialog);
+    if(restore && active && draft.identity===poolIdentity() && draft.focus?.isConnected!==false)draft.focus?.focus?.();
+  }
+  function deleteSelection(){
+    if(!canDelete())return false;
+    assetDnd?.end();previewSequence++;
+    const doc=root.ownerDocument ?? document,dialog=doc.createElement('dialog'),heading=doc.createElement('h3'),explanation=doc.createElement('p'),names=doc.createElement('ul'),form=doc.createElement('form'),items=poolSelection().map(item=>({id:item.id,revision:item.revision}));
+    const draft={dialog,identity:poolIdentity(),archived,items,focus:doc.activeElement};deletion=draft;
+    heading.id=`native-delete-${panelSession}-${previewSequence}`;heading.textContent=`Permanently delete ${items.length} native asset${items.length===1?'':'s'}?`;
+    dialog.setAttribute('aria-labelledby',heading.id);dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-label','Confirm permanent native asset deletion');dialog.setAttribute('style','max-width:min(32rem,calc(100vw - 32px));max-height:calc(100vh - 32px);overflow:auto');
+    explanation.textContent='This permanently removes the selected library entries. Project imports and timelines are unchanged. Project Undo cannot restore this deletion. Use Archive to keep an entry recoverable.';
+    for(const item of poolSelection()){const row=doc.createElement('li');row.textContent=item.name;names.append(row);}
+    const cancel=button('Cancel permanent deletion',()=>closeDeletion()),confirm=doc.createElement('button');confirm.type='submit';confirm.textContent='Permanently delete native assets';cancel.autofocus=true;form.append(cancel,confirm);
+    form.addEventListener('submit',event=>{event.preventDefault();if(deletion!==draft)return;if(!deletionCurrent(draft)){closeDeletion(false);message('Native asset selection changed; reopen Delete to confirm the current selection');return;}closeDeletion(false);void confirmDeletion(draft);});
+    dialog.addEventListener('cancel',event=>{event.preventDefault();closeDeletion();});dialog.addEventListener('close',()=>{if(deletion===draft)closeDeletion(false);});
+    dialog.addEventListener('keydown',event=>event.stopPropagation());dialog.append(heading,explanation,names,form);root.append(dialog);
+    if(typeof dialog.showModal!=='function'){closeDeletion(false);notice('Permanent deletion requires a browser with accessible modal dialog support');return false;}
+    try{dialog.showModal();cancel.focus?.();}catch(error){closeDeletion(false);notice(error.message);return false;}return true;
+  }
+  async function confirmDeletion(draft){
+    if(!deletionCurrent(draft))return;transferSession=panelSession;transferRefreshFailed=false;
+    try{await transfer.run({kind:'delete_assets',items:draft.items,archived:draft.archived},()=>deletionCurrent(draft,false));}catch(error){if(active)notice(error.message);}finally{settled();}
+  }
   const dragIdentity=()=>JSON.stringify([panelSession,nativeAssetIdentity(getContext()),getContext()?.command_epoch,folder,search,archived,dragSelection()]);
   const draggable=items=>Boolean(assetDnd && typeof timelineCommit==='function' && items.length && items.length<=32 && items.every(item=>!item.archived && !item.error && item.placement?.error==null && item.placement?.project_epoch===getContext()?.project_epoch && item.placement?.generation===getContext()?.generation && item.placement?.items?.length===1));
   function chooseRow(item,event={}){
@@ -171,7 +206,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   function clearSelection(){assetDnd?.end();clearRelink();clearSourceChoice();selected=null;chosen=[];rows=[];rowAnchor=null;list.replaceChildren();dragRows?.replaceChildren();dragButtons=[];name.value='';}
   function settled(){update();if(active && pendingReload && !transferring() && !reading){pendingReload=false;void reload(page);}}
   function update(){
-    if(!active)return;if(relinkDraft && !relinkCurrent(relinkDraft))clearRelink();if(sourceDraft && !sourceCurrent(sourceDraft))clearSourceChoice();transfer.invalidate();const working=transferring() || reading || relinkReading,writable=canCommit() && !working,fresh=readEpoch===getContext()?.project_epoch,valid=fresh && selected && !selected.error && !selected.archived;
+    if(!active)return;if(deletion && !deletionCurrent(deletion))closeDeletion(false);if(relinkDraft && !relinkCurrent(relinkDraft))clearRelink();if(sourceDraft && !sourceCurrent(sourceDraft))clearSourceChoice();transfer.invalidate();const working=transferring() || reading || relinkReading,writable=canCommit() && !working,fresh=readEpoch===getContext()?.project_epoch,valid=fresh && selected && !selected.error && !selected.archived;
     for(const {row,item} of dragButtons){row.disabled=working;row.draggable=Boolean(writable && fresh && draggable([item]));row.setAttribute('aria-pressed',String(chosen.some(value=>value.id===item.id)));}
     for(const control of controls)control.disabled=working;list.disabled=working;previous.disabled=working || page===0;next.disabled=working || page+1>=pages;
     stop.disabled=!transfer.busy() || transfer.phase()==='committing';stop.hidden=!transfer.busy();
@@ -181,6 +216,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     if(imports.length>32)caption.textContent+=' · import up to 32 assets at once';
     download.hidden=!valid;if(valid)download.href=`/api/v1/native-assets/items/${encodeURIComponent(selected.id)}/download?${new URLSearchParams({project_epoch:getContext().project_epoch})}`;
     name.disabled=!writable || !valid;
+    if(deleteButton)deleteButton.disabled=!canDelete();
     const foldersReady=writable && currentCatalog(),current=foldersReady && catalog.folders.some(item=>item.id===folder);
     for(const control of folderControls)control.disabled=!foldersReady;
     folderFilter.disabled=working || !currentCatalog();createFolder.disabled=!foldersReady;renameFolder.disabled=!current;moveFolder.disabled=!current;removeFolder.disabled=!current;
@@ -197,6 +233,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   }
   async function reload(wanted=page,preferred=selected?.id,afterWrite=false,direction=1,keepSelection=false){
     if(!active)return false;if(transferring() && !afterWrite){pendingReload=true;return false;}const context={...getContext()};if(!nativeAssetIdentity(context)){message('Create or open a project to use native assets');return false;}
+    closeDeletion(false);
     const selectionIds=keepSelection?chosen.map(item=>item.id):null,oldAnchor=rowAnchor,nameDraft=keepSelection?{id:selected?.id,revision:selected?.revision,value:name.value}:null;
     assetDnd?.end();clearRelink();clearSourceChoice();readController?.abort();readController=new AbortController();const id=++sequence;reading=true;update();message('Reading native assets…');
     try{
@@ -219,11 +256,13 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     finally{if(id===sequence){reading=false;update();}}
   }
   const transfer=createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,timelineCommit,makeLibraryMutation,api,pause,onStatus:text=>{if(transferSession===panelSession)message(text);update();},onApplied:async(receipt,action,report)=>{
+    if(action.kind==='delete_assets')await onRemoved([...receipt.deleted_ids],receipt);
     if(!active || transferSession!==panelSession)return;
-    if(['relink','relink_folder','import_tree'].includes(action.kind) && receipt.project_epoch!==getContext()?.project_epoch)return;
+    if(['relink','relink_folder','import_tree','delete_assets'].includes(action.kind) && receipt.project_epoch!==getContext()?.project_epoch)return;
     const pooling=action.kind==='import_set' && report?.destination==='pool';
     if(action.kind==='import_set' && !pooling){onPlaced(receipt);return;}
     try{
+      if(action.kind==='delete_assets')clearSelection();
       if((action.kind==='import' || pooling) && receipt.project_epoch===getContext()?.project_epoch)await onImported(receipt.media_ids || []);
       if(action.kind==='capture'){
         const session=panelSession,epoch=getContext()?.project_epoch;
@@ -305,7 +344,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     finally{batch=false;settled();}
   }
   return {
-    captureSelection,
+    captureSelection,canDelete,deleteSelection,
     async open(){
       this.hide();active=true;selected=null;chosen=[];rows=[];catalog=null;readEpoch=null;reading=false;root.className='native-asset-panel';root.replaceChildren();const heading=document.createElement('h3');heading.textContent='Native asset library';const note=document.createElement('p');note.className='muted';note.textContent='Reusable media and compound timelines. Files are copied into the library, then into each importing project. The shared archive remains available in Shared media archive.';
       const help=document.createElement('details'),helpHeading=document.createElement('summary');helpHeading.textContent='About native assets';help.append(helpHeading,note);
@@ -325,13 +364,13 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
       createFolder=button('Create native folder',()=>editFolders('create_folder'));renameFolder=button('Rename native folder',()=>editFolders('rename_folder'));moveFolder=button('Move native folder',()=>editFolders('move_folder'));removeFolder=button('Remove folder and move contents up',()=>editFolders('remove_folder'));moveAssets=button('Move native assets to folder',()=>editFolders('move_assets'));
       folders.append(summary,explanation,field('Native folder name',folderName),field('New native folder parent',folderCreateParent),createFolder,renameFolder,field('Native folder parent',folderParent),moveFolder,removeFolder,field('Move native assets to',assetDestination),moveAssets);
       libraryActions.append(capture,folders,archivedLabel,help);
-      const assetActions=document.createElement('details'),assetSummary=document.createElement('summary');assetActions.className='native-asset-actions';assetSummary.textContent='Asset actions';previewButton=button('Preview native asset',()=>void previewAsset(selected));assetActions.append(assetSummary,previewButton,nameLabel,rename,archive,restore,download,relinkMenu);
+      const assetActions=document.createElement('details'),assetSummary=document.createElement('summary');assetActions.className='native-asset-actions';assetSummary.textContent='Asset actions';previewButton=button('Preview native asset',()=>void previewAsset(selected));deleteButton=button('Permanently delete selected native assets…',deleteSelection);assetActions.append(assetSummary,previewButton,nameLabel,rename,archive,restore,download,relinkMenu,deleteButton);
       const paging=document.createElement('div'),primary=document.createElement('div');paging.className='native-asset-paging';paging.append(previous,next,refresh);primary.className='native-asset-primary';primary.append(importButton,stop);
       let assetList=list;
       if(assetDnd){const selectionMenu=document.createElement('details'),selectionSummary=document.createElement('summary'),listGroup=document.createElement('div');selectionSummary.textContent='Multiple selection';selectionMenu.append(selectionSummary,list);listGroup.append(dragRows,selectionMenu);assetList=listGroup;}
       controls=[query,submit,toggle,refresh];folderControls=[folderName,folderCreateParent,folderParent,assetDestination];root.append(heading,field('Native asset folder',folderFilter),form,assetList,paging,caption,primary,libraryActions,assetActions,sourceArea,sourceReport,status);folderFields();update();await reload(page);
     },
     invalidate(){update();},
-    hide(){assetDnd?.end();active=false;stopped=true;pendingReload=false;sequence++;previewSequence++;panelSession++;readController?.abort();readController=null;reading=false;clearRelink();clearSourceChoice();transfer.cancel();},
+    hide(){closeDeletion(false);assetDnd?.end();active=false;stopped=true;pendingReload=false;sequence++;previewSequence++;panelSession++;readController?.abort();readController=null;reading=false;clearRelink();clearSourceChoice();transfer.cancel();},
   };
 }

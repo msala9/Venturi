@@ -11,7 +11,7 @@ use sha2::{Digest, Sha256};
 use std::{
     fs::File,
     io::{Read, Write},
-    os::fd::AsRawFd,
+    os::{fd::AsRawFd, unix::fs::MetadataExt},
     path::{Path, PathBuf},
     sync::{
         Arc,
@@ -93,6 +93,11 @@ pub enum Edit {
         id: String,
         revision: String,
     },
+    DeleteAssets {
+        items: Vec<AssetRef>,
+        #[serde(default)]
+        archived: bool,
+    },
     CreateFolder {
         folders_revision: String,
         name: String,
@@ -130,6 +135,7 @@ impl Edit {
                 | Self::MoveFolder { .. }
                 | Self::RemoveFolder { .. }
                 | Self::MoveAssets { .. }
+                | Self::DeleteAssets { .. }
         )
     }
 }
@@ -817,6 +823,9 @@ impl Store {
         cancel: &AtomicBool,
     ) -> Result<PreparedEdit> {
         let _global = self.lock()?;
+        if let Edit::DeleteAssets { items, archived } = edit {
+            return self.prepare_delete(items, *archived, completion, cancel);
+        }
         if !edit.requires_preparation()
             || matches!(
                 edit,
@@ -1002,7 +1011,9 @@ impl Store {
         let _global = self.lock()?;
         let _catalog = self.catalog_lock(true)?;
         self.validate_root()?;
-        prepared.commit(&self.0.directory, &self.0.assets, cancel)
+        prepared.commit(&self.0.directory, &self.0.assets, cancel)?;
+        self.cleanup_deleted_media(prepared.cleanup(), cancel);
+        Ok(())
     }
     pub(crate) fn commit_edit_checked(
         &self,
@@ -1014,7 +1025,198 @@ impl Store {
         let _catalog = self.catalog_lock(true)?;
         self.validate_root()?;
         check()?;
-        prepared.commit(&self.0.directory, &self.0.assets, cancel)
+        prepared.commit(&self.0.directory, &self.0.assets, cancel)?;
+        self.cleanup_deleted_media(prepared.cleanup(), cancel);
+        Ok(())
+    }
+    fn prepare_delete(
+        &self,
+        items: &[AssetRef],
+        archived: bool,
+        mut completion: Completion,
+        cancel: &AtomicBool,
+    ) -> Result<PreparedEdit> {
+        if items.is_empty()
+            || items.len() > 32
+            || items
+                .iter()
+                .map(|item| &item.id)
+                .collect::<std::collections::HashSet<_>>()
+                .len()
+                != items.len()
+        {
+            return Err(ApiError::invalid(
+                "Choose 1 to 32 unique native assets to delete",
+            ));
+        }
+        let mut removals = Vec::new();
+        let mut paths = std::collections::BTreeSet::new();
+        let mut bytes = 0u64;
+        for item in items {
+            if cancel.load(Ordering::Acquire) {
+                return Err(ApiError::conflict(
+                    "ASSET_CANCELED",
+                    "Asset preparation was canceled",
+                ));
+            }
+            let filename = name(&item.id, archived)?;
+            let raw = self
+                .raw_limit(
+                    &filename,
+                    MAX_JSON.min(asset_journal::MAX_METADATA.saturating_sub(bytes)),
+                )?
+                .ok_or_else(ApiError::missing)?;
+            bytes = bytes.saturating_add(raw.bytes.len() as u64);
+            if bytes > asset_journal::MAX_METADATA || raw.revision != item.revision {
+                return Err(changed());
+            }
+            let asset = asset_payload::parse(&raw.bytes)?;
+            paths.extend(
+                asset_payload::decode(&asset)?
+                    .files()
+                    .map(|file| file.path.clone()),
+            );
+            removals.push((
+                filename,
+                Before {
+                    identity: raw.identity,
+                    sha256: raw.revision,
+                },
+            ));
+        }
+        let ids = items.iter().map(|item| item.id.clone()).collect::<Vec<_>>();
+        completion.receipt["deleted_assets"] = json!(ids.len());
+        completion.receipt["deleted_ids"] = json!(ids);
+        let mut prepared = PreparedEdit::new(
+            &self.0.directory,
+            completion,
+            json!({"deleted_assets":ids.len(),"deleted_ids":ids}),
+        )?;
+        for (name, before) in removals {
+            prepared.remove(name, before)?;
+        }
+        if paths.len() <= 64 {
+            let cleanup = paths
+                .into_iter()
+                .map(|path| {
+                    let identity = self
+                        .media_entry(&path)?
+                        .map(|file| stable_identity(&file))
+                        .transpose()?;
+                    Ok(identity.map(|identity| (path, identity)))
+                })
+                .collect::<Result<Vec<_>>>();
+            if let Ok(cleanup) = cleanup {
+                prepared.set_cleanup(cleanup.into_iter().flatten().collect());
+            }
+        }
+        Ok(prepared)
+    }
+    fn cleanup_deleted_media(&self, candidates: &[(PathBuf, String)], cancel: &AtomicBool) {
+        if candidates.is_empty() {
+            return;
+        }
+        let retained = (|| -> Result<std::collections::HashSet<PathBuf>> {
+            let mut retained = std::collections::HashSet::new();
+            let mut bytes = 0u64;
+            for (index, entry) in
+                std::fs::read_dir(format!("/proc/self/fd/{}", self.0.assets.as_raw_fd()))
+                    .map_err(|_| ApiError::io())?
+                    .enumerate()
+            {
+                if index >= 10000 || cancel.load(Ordering::Acquire) {
+                    return Err(changed());
+                }
+                let name = entry
+                    .map_err(|_| ApiError::io())?
+                    .file_name()
+                    .into_string()
+                    .map_err(|_| changed())?;
+                if !name.ends_with(".json")
+                    && !name.ends_with(".json.deleted")
+                    && !name.ends_with(".json.bak")
+                    && !name.ends_with(".json.deleted.bak")
+                {
+                    continue;
+                }
+                let raw = self
+                    .raw_limit(
+                        &name,
+                        MAX_JSON.min(asset_journal::MAX_METADATA.saturating_sub(bytes)),
+                    )?
+                    .ok_or_else(changed)?;
+                bytes = bytes.saturating_add(raw.bytes.len() as u64);
+                if bytes > asset_journal::MAX_METADATA {
+                    return Err(changed());
+                }
+                let asset = asset_payload::parse(&raw.bytes)?;
+                for file in asset_payload::decode(&asset)?.files() {
+                    if retained.contains(&file.path) {
+                        continue;
+                    }
+                    if retained.len() >= 4096 {
+                        return Err(changed());
+                    }
+                    self.media_entry(&file.path)?;
+                    retained.insert(file.path.clone());
+                }
+            }
+            Ok(retained)
+        })();
+        let Ok(retained) = retained else {
+            return;
+        };
+        for (path, identity) in candidates {
+            if cancel.load(Ordering::Acquire) {
+                return;
+            }
+            if retained.contains(path) {
+                continue;
+            }
+            let _ = (|| -> Result<()> {
+                self.validate_root()?;
+                let file = self.media_entry(path)?.ok_or_else(changed)?;
+                if stable_identity(&file)? != *identity {
+                    return Err(changed());
+                }
+                let parent = path
+                    .parent()
+                    .and_then(Path::file_name)
+                    .and_then(|name| name.to_str())
+                    .ok_or_else(changed)?;
+                let name = path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .ok_or_else(changed)?;
+                let directory = File::from(
+                    openat(
+                        &self.0.media,
+                        parent,
+                        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                        Mode::empty(),
+                    )
+                    .map_err(|_| changed())?,
+                );
+                let pinned = directory.metadata().map_err(|_| ApiError::io())?;
+                let live = File::from(
+                    openat(
+                        &self.0.media,
+                        parent,
+                        OFlags::RDONLY | OFlags::DIRECTORY | OFlags::NOFOLLOW | OFlags::CLOEXEC,
+                        Mode::empty(),
+                    )
+                    .map_err(|_| changed())?,
+                );
+                let current = live.metadata().map_err(|_| ApiError::io())?;
+                if (pinned.dev(), pinned.ino()) != (current.dev(), current.ino())
+                    || stable_identity(&regular(&directory, name)?)? != *identity
+                {
+                    return Err(changed());
+                }
+                unlinkat(&directory, name, AtFlags::empty()).map_err(|_| ApiError::io())?;
+                directory.sync_all().map_err(|_| ApiError::io())
+            })();
+        }
     }
     pub(crate) fn prepare_relink(
         &self,

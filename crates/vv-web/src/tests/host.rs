@@ -3304,6 +3304,106 @@ fn native_pool_set_fixture(
 }
 
 #[test]
+fn native_library_delete_receipt_preserves_saved_project_copies_and_history_on_retry_restart() {
+    let (root, source, mut editor, references) = native_pool_set_fixture("delete-receipt");
+    let job = native_prepare(
+        &mut editor,
+        NativeAssetAction::ImportSet {
+            assets: references.clone(),
+        },
+    );
+    native_wait(&mut editor, &job);
+    let import = request(
+        &editor,
+        Operation::ImportNativeAssetSet {
+            job_id: job["id"].as_str().unwrap().into(),
+            assets: references.clone(),
+        },
+        "delete-pool-import",
+        None,
+    );
+    editor.mutation(None, import).unwrap();
+    let save = request(&editor, Operation::Save, "delete-project-save", None);
+    editor.mutation(None, save).unwrap();
+    let saved_path = editor.session.path().unwrap().to_path_buf();
+    let saved = std::fs::read(&saved_path).unwrap();
+    let project = ron::to_string(&editor.session.project).unwrap();
+    let generation = editor.session.history.generation();
+    let position = editor.session.history.position();
+    let labels: Vec<_> = editor.session.history.labels().collect();
+    let copies: Vec<_> = editor
+        .session
+        .project
+        .media_pool
+        .iter()
+        .filter(|(_, item)| item.compound.is_none())
+        .map(|(_, item)| (item.path.clone(), std::fs::read(&item.path).unwrap()))
+        .collect();
+    assert!(!copies.is_empty());
+    let ids: Vec<_> = references
+        .iter()
+        .map(|item| item.asset_id.clone())
+        .collect();
+    let command = request(
+        &editor,
+        Operation::EditNativeAssetLibrary {
+            edit: crate::asset_store::Edit::DeleteAssets {
+                items: references
+                    .iter()
+                    .map(|item| crate::asset_store::AssetRef {
+                        id: item.asset_id.clone(),
+                        revision: item.revision.clone(),
+                    })
+                    .collect(),
+                archived: false,
+            },
+        },
+        "delete-library-set",
+        None,
+    );
+    let mut guard = folder_prepare(&mut editor, command.clone());
+    let receipt = editor.mutation(None, command.clone()).unwrap();
+    guard.armed = false;
+    assert_eq!(receipt["deleted_assets"], 2);
+    assert_eq!(receipt["deleted_ids"], json!(ids));
+    assert_eq!(receipt["library_durable"], true);
+    assert_eq!(receipt["receipt_persisted"], true);
+    assert_eq!(editor.mutation(None, command.clone()).unwrap(), receipt);
+    assert_eq!(editor.lookup("delete-library-set").unwrap(), receipt);
+    for item in &references {
+        assert!(editor.assets.export(&item.asset_id).is_err());
+    }
+    assert_eq!(ron::to_string(&editor.session.project).unwrap(), project);
+    assert_eq!(editor.session.history.generation(), generation);
+    assert_eq!(editor.session.history.position(), position);
+    assert_eq!(editor.session.history.labels().collect::<Vec<_>>(), labels);
+    assert!(!editor.session.has_unsaved_changes());
+    assert_eq!(std::fs::read(&saved_path).unwrap(), saved);
+    for (path, bytes) in &copies {
+        assert_eq!(&std::fs::read(path).unwrap(), bytes);
+    }
+    let target_root = root.join("pool-destination");
+    drop(guard);
+    drop(editor);
+    let mut restarted = Editor::with_libraries(
+        &target_root,
+        &target_root.join(".presets"),
+        &root.join(".assets"),
+    )
+    .unwrap();
+    let mut recovered = receipt;
+    recovered["server_restarted"] = json!(true);
+    assert_eq!(restarted.mutation(None, command).unwrap(), recovered);
+    assert_eq!(std::fs::read(&saved_path).unwrap(), saved);
+    for (path, bytes) in copies {
+        assert_eq!(std::fs::read(path).unwrap(), bytes);
+    }
+    drop(restarted);
+    drop(source);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn native_asset_set_pool_import_matches_native_merge_one_undo_and_cached_edited_child_noop() {
     use vv_core::{Command, CommandLabel, Id, pool::AddEntities};
     let (root, source, mut editor, references) = native_pool_set_fixture("pool-set");

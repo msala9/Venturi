@@ -326,6 +326,39 @@ corresponding `.venturi-native-assets-pending.json` at its root alongside the
 existing web journal protocol. These guards require cooperating versions;
 older desktop binaries do not participate in them.
 
+## Confirmed native Library removal
+
+`edit_native_asset_library` accepts the prepared edit
+`{action:"delete_assets",items:[{id,revision},...],archived:false}`. Choose 1–32
+distinct listed assets in panel order. The optional `archived` flag defaults to
+false and selects the active or archived metadata namespace explicitly. Every
+selected revision and regular-file identity must still match at commit.
+
+Use the existing full-Mutation preparation, job status/cancellation and command
+receipt routes above. Preparation never removes metadata or media. Commit uses
+the existing shared native Library locks and recovery journal for the complete
+metadata set, with durable completion before optional managed-media cleanup.
+Removal journals use version 2 so older Web writers preserve an interrupted
+transaction instead of mistaking it for a completed legacy metadata edit; the
+new reader still recovers ordinary version 1 transactions.
+The ready result and applied receipt include `deleted_assets` and ordered
+`deleted_ids`; identical retries/restart recovery retain that original result.
+Project entities, Saved bytes, dirty state, generation and Undo are unchanged.
+
+Cleanup considers retained active, archived and backup assets. Unknown or
+unreadable references retain candidate files, as do unrecognized managed paths
+and foreign replacements. Project copies are outside this cleanup. Failure or
+interruption of optional cleanup after durable metadata removal cannot turn
+the applied command into a replayable failure; it can leave an orphaned copy.
+
+Delete/Backspace, Edit Delete and the collapsed Asset actions use one accessible
+confirmation bound to the captured selection, revisions and current editor
+context. Opening or canceling writes nothing. A stale confirmation cannot delete
+a newer selection. Confirmed removal stops only a matching Library Source, even
+if the panel has since closed; ordinary project Source is preserved. Archive
+remains a separate operation. An unknown command outcome follows the existing
+read-only reconciliation flow rather than issuing a fresh deletion command.
+
 ## Native selected Inspector edits
 
 The timeline mutation `edit_inspector_selection` accepts

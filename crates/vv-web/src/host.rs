@@ -546,7 +546,7 @@ impl Editor {
             let mut value=json!({"command_id":request.command_id,"status":"applied","project_epoch":format!("{}:{}",self.epoch,self.session.epoch()),"generation":self.session.history.generation().to_string(),"command_epoch":self.command_epoch.to_string()});
             if prepared_edit {value["library_durable"]=json!(true);}
             if let Some(report)=native_asset_receipt {
-                for field in ["missing_count","relinked_files","imported_assets","skipped_files","error_count","root_folder_id","folders_revision","created_folders"] {
+                for field in ["missing_count","relinked_files","imported_assets","skipped_files","error_count","root_folder_id","folders_revision","created_folders","deleted_assets","deleted_ids"] {
                     if let Some(count)=report.get(field) {value[field]=count.clone();}
                 }
             }

@@ -10,6 +10,7 @@ use std::{
     fs::File,
     io::{Read, Write},
     os::{fd::AsRawFd, unix::fs::MetadataExt},
+    path::PathBuf,
     sync::atomic::{AtomicBool, Ordering},
 };
 
@@ -77,6 +78,12 @@ struct ReadGuard {
     name: String,
     before: Option<Before>,
 }
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Removal {
+    name: String,
+    before: Before,
+}
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub(crate) struct RosterEntry {
@@ -90,6 +97,8 @@ struct Manifest {
     directory: String,
     completion: Completion,
     targets: Vec<Target>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    removals: Vec<Removal>,
     guards: Vec<ReadGuard>,
     roster: Option<Vec<RosterEntry>>,
 }
@@ -99,6 +108,7 @@ pub struct PreparedEdit {
     root: File,
     durable: bool,
     summary: Value,
+    cleanup: Vec<(PathBuf, String)>,
 }
 impl PreparedEdit {
     pub(crate) fn new(root: &File, completion: Completion, summary: Value) -> Result<Self> {
@@ -137,6 +147,7 @@ impl PreparedEdit {
                 directory: name,
                 completion,
                 targets: Vec::new(),
+                removals: Vec::new(),
                 guards: Vec::new(),
                 roster: None,
             },
@@ -144,6 +155,7 @@ impl PreparedEdit {
             root: root.try_clone().map_err(|_| ApiError::io())?,
             durable: false,
             summary,
+            cleanup: Vec::new(),
         })
     }
     pub fn summary(&self) -> Value {
@@ -154,6 +166,22 @@ impl PreparedEdit {
     }
     pub(crate) fn roster(&mut self, roster: Vec<RosterEntry>) {
         self.manifest.roster = Some(roster);
+    }
+    pub(crate) fn cleanup(&self) -> &[(PathBuf, String)] {
+        &self.cleanup
+    }
+    pub(crate) fn set_cleanup(&mut self, cleanup: Vec<(PathBuf, String)>) {
+        self.cleanup = cleanup;
+    }
+    pub(crate) fn remove(&mut self, name: String, before: Before) -> Result<()> {
+        if self.manifest.targets.len() + self.manifest.removals.len() >= MAX_AFFECTED {
+            return Err(ApiError::invalid(
+                "Native asset deletion exceeds its transaction budget",
+            ));
+        }
+        self.manifest.removals.push(Removal { name, before });
+        self.manifest.version = 2;
+        validate_manifest(&self.manifest)
     }
     pub(crate) fn guard(&mut self, asset: bool, name: String, before: Option<Before>) {
         self.manifest.guards.push(ReadGuard {
@@ -284,6 +312,14 @@ impl PreparedEdit {
             }
             directory.sync_all().map_err(|_| ApiError::io())?;
         }
+        for removal in &self.manifest.removals {
+            if removal_state(assets, removal)? {
+                return Err(changed());
+            }
+            unlinkat(assets, removal.name.as_str(), AtFlags::empty())
+                .map_err(|_| ApiError::io())?;
+            assets.sync_all().map_err(|_| ApiError::io())?;
+        }
         finish(root, &self.stage, &self.manifest, &identity)
     }
 }
@@ -367,7 +403,8 @@ fn validate_completion(completion: &Completion) -> Result<()> {
 }
 fn validate_manifest(manifest: &Manifest) -> Result<()> {
     validate_completion(&manifest.completion)?;
-    if manifest.version != 1
+    if !((manifest.version == 1 && manifest.removals.is_empty())
+        || (manifest.version == 2 && !manifest.removals.is_empty()))
         || !manifest.directory.starts_with(".venturi-asset-stage-")
         || manifest.directory.len() > 100
         || !manifest
@@ -375,6 +412,8 @@ fn validate_manifest(manifest: &Manifest) -> Result<()> {
             .bytes()
             .all(|c| c.is_ascii_alphanumeric() || b"._-".contains(&c))
         || manifest.targets.len() > MAX_AFFECTED + 1
+        || manifest.removals.len() > 32
+        || manifest.targets.len() + manifest.removals.len() > MAX_AFFECTED + 1
         || manifest.guards.len() > 65
         || manifest
             .targets
@@ -404,6 +443,25 @@ fn validate_manifest(manifest: &Manifest) -> Result<()> {
         }
     }
     let mut guarded = std::collections::HashSet::new();
+    for removal in &manifest.removals {
+        if !names.insert((true, &removal.name))
+            || !removal
+                .name
+                .strip_suffix(".json.deleted")
+                .or_else(|| removal.name.strip_suffix(".json"))
+                .is_some_and(safe_id)
+            || removal.before.identity.is_empty()
+            || removal.before.identity.len() > 256
+            || removal.before.sha256.len() != 64
+            || !removal
+                .before
+                .sha256
+                .bytes()
+                .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+        {
+            return Err(changed());
+        }
+    }
     for guard in &manifest.guards {
         if !guarded.insert((guard.asset, &guard.name))
             || if guard.asset {
@@ -488,6 +546,11 @@ fn preflight(root: &File, assets: &File, manifest: &Manifest, recovery: bool) ->
             .targets
             .iter()
             .any(|target| target.asset == guard.asset && target.name == guard.name)
+            || guard.asset
+                && manifest
+                    .removals
+                    .iter()
+                    .any(|removal| removal.name == guard.name)
         {
             continue;
         }
@@ -541,7 +604,13 @@ fn preflight(root: &File, assets: &File, manifest: &Manifest, recovery: bool) ->
                 return Err(changed());
             }
         }
-        if !expected.is_empty() {
+        if expected.keys().any(|name| {
+            !recovery
+                || !manifest
+                    .removals
+                    .iter()
+                    .any(|removal| removal.name == *name)
+        }) {
             return Err(changed());
         }
     }
@@ -569,7 +638,24 @@ fn preflight(root: &File, assets: &File, manifest: &Manifest, recovery: bool) ->
             state(directory, target)?;
         }
     }
+    for removal in &manifest.removals {
+        if removal_state(assets, removal)? && !recovery {
+            return Err(changed());
+        }
+    }
     Ok(())
+}
+fn removal_state(assets: &File, removal: &Removal) -> Result<bool> {
+    match read(assets, &removal.name, asset_store::MAX_JSON)? {
+        None => Ok(true),
+        Some((file, bytes))
+            if stable_identity(&file)? == removal.before.identity
+                && digest(&bytes) == removal.before.sha256 =>
+        {
+            Ok(false)
+        }
+        _ => Err(changed()),
+    }
 }
 fn state(directory: &File, target: &Target) -> Result<bool> {
     let current = read(directory, &target.name, asset_store::MAX_JSON)?;
@@ -661,6 +747,13 @@ pub(crate) fn recover(root: &File, assets: &File) -> Result<()> {
             .map_err(|_| changed())?;
         }
         directory.sync_all().map_err(|_| ApiError::io())?;
+    }
+    for removal in &manifest.removals {
+        if !removal_state(assets, removal)? {
+            unlinkat(assets, removal.name.as_str(), AtFlags::empty())
+                .map_err(|_| ApiError::io())?;
+            assets.sync_all().map_err(|_| ApiError::io())?;
+        }
     }
     finish(root, &stage, &manifest, &identity)
 }

@@ -3,6 +3,307 @@ use vv_core::{
     Clip, ClipId, ClipSource, Rational, Timeline, Track, TrackKind, clipboard::ClipboardOrigin,
 };
 
+fn delete_file_asset(store: &Store) -> (PathBuf, AssetFile) {
+    let directory = directory(store.media(), "0123456789abcdef").unwrap();
+    drop(directory);
+    let path = store.root().join("media/0123456789abcdef/owned.mp4");
+    std::fs::write(&path, b"owned native media bytes").unwrap();
+    let mut session = vv_session::Session::default();
+    let media = session.add_media(
+        path.clone(),
+        vv_core::MediaMeta {
+            duration_frames: 24,
+            fps: Rational::new(24, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+    );
+    let asset = asset_payload::capture(
+        &session,
+        media,
+        "Native deletion fixture",
+        ClipboardOrigin {
+            instance: 1,
+            epoch: 1,
+        },
+    )
+    .unwrap();
+    (path, asset)
+}
+
+#[test]
+fn delete_assets_uses_current_archive_and_backup_references_and_preserves_project_copies() {
+    let (root, store, _) = fixture();
+    let (media, asset) = delete_file_asset(&store);
+    let copy = root.join("project-copy.mp4");
+    std::fs::copy(&media, &copy).unwrap();
+    store.create("first", &asset).unwrap();
+    store.create("second", &asset).unwrap();
+    store
+        .edit(
+            "archive-second",
+            &Edit::Archive {
+                id: "second".into(),
+                revision: revision(&store, "second", false),
+            },
+        )
+        .unwrap();
+    let first = Edit::DeleteAssets {
+        items: vec![AssetRef {
+            id: "first".into(),
+            revision: revision(&store, "first", false),
+        }],
+        archived: false,
+    };
+    let mut prepared = store
+        .prepare_edit(
+            &first,
+            receipt(&store, "delete-first"),
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    let backup = serde_json::to_vec(&asset).unwrap();
+    std::fs::write(root.join("assets/late.json.bak"), &backup).unwrap();
+    store
+        .commit_edit(&mut prepared, &AtomicBool::new(false))
+        .unwrap();
+    assert!(!root.join("assets/first.json").exists());
+    assert!(media.exists());
+    let archived = Edit::DeleteAssets {
+        items: vec![AssetRef {
+            id: "second".into(),
+            revision: revision(&store, "second", true),
+        }],
+        archived: true,
+    };
+    apply_folder(&store, "delete-archive", &archived);
+    assert!(!root.join("assets/second.json.deleted").exists());
+    assert!(media.exists());
+    assert_eq!(
+        std::fs::read(root.join("assets/late.json.bak")).unwrap(),
+        backup
+    );
+    std::fs::remove_file(root.join("assets/late.json.bak")).unwrap();
+    store.create("third", &asset).unwrap();
+    std::fs::write(
+        root.join("assets/uncertain.json.deleted"),
+        b"unsupported retained metadata",
+    )
+    .unwrap();
+    apply_folder(
+        &store,
+        "delete-uncertain",
+        &Edit::DeleteAssets {
+            items: vec![AssetRef {
+                id: "third".into(),
+                revision: revision(&store, "third", false),
+            }],
+            archived: false,
+        },
+    );
+    assert!(!root.join("assets/third.json").exists());
+    assert!(media.exists());
+    std::fs::remove_file(root.join("assets/uncertain.json.deleted")).unwrap();
+    let mut unmanaged = asset.clone();
+    let mut payload = asset_payload::decode(&unmanaged).unwrap();
+    payload.files_mut().next().unwrap().path = root.join("outside/owned.mp4");
+    unmanaged.payload = payload.to_text();
+    asset_payload::decode(&unmanaged).unwrap();
+    std::fs::write(
+        root.join("assets/unmanaged.json.bak"),
+        serde_json::to_vec(&unmanaged).unwrap(),
+    )
+    .unwrap();
+    store.create("uncertain-path", &asset).unwrap();
+    apply_folder(
+        &store,
+        "delete-unmanaged-reference",
+        &Edit::DeleteAssets {
+            items: vec![AssetRef {
+                id: "uncertain-path".into(),
+                revision: revision(&store, "uncertain-path", false),
+            }],
+            archived: false,
+        },
+    );
+    assert!(!root.join("assets/uncertain-path.json").exists());
+    assert!(media.exists());
+    std::fs::remove_file(root.join("assets/unmanaged.json.bak")).unwrap();
+    store.create("last", &asset).unwrap();
+    apply_folder(
+        &store,
+        "delete-last",
+        &Edit::DeleteAssets {
+            items: vec![AssetRef {
+                id: "last".into(),
+                revision: revision(&store, "last", false),
+            }],
+            archived: false,
+        },
+    );
+    assert!(!media.exists());
+    assert_eq!(std::fs::read(copy).unwrap(), b"owned native media bytes");
+    drop(prepared);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn delete_assets_revision_cancel_malformed_selected_and_foreign_media_are_fail_closed() {
+    let (root, store, solid) = fixture();
+    store.create("first", &solid).unwrap();
+    store.create("second", &solid).unwrap();
+    let first = AssetRef {
+        id: "first".into(),
+        revision: revision(&store, "first", false),
+    };
+    for items in [
+        vec![],
+        vec![first.clone(), first.clone()],
+        vec![
+            first.clone(),
+            AssetRef {
+                id: "second".into(),
+                revision: "0".repeat(64),
+            },
+        ],
+        vec![first.clone(); 33],
+    ] {
+        assert!(
+            store
+                .prepare_edit(
+                    &Edit::DeleteAssets {
+                        items,
+                        archived: false
+                    },
+                    receipt(&store, "invalid-delete"),
+                    &AtomicBool::new(false)
+                )
+                .is_err()
+        );
+        assert!(root.join("assets/first.json").exists());
+        assert!(root.join("assets/second.json").exists());
+    }
+    let mut prepared = store
+        .prepare_edit(
+            &Edit::DeleteAssets {
+                items: vec![first],
+                archived: false,
+            },
+            receipt(&store, "canceled-delete"),
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    assert_eq!(
+        store
+            .commit_edit(&mut prepared, &AtomicBool::new(true))
+            .unwrap_err()
+            .1,
+        "ASSET_CANCELED"
+    );
+    assert!(root.join("assets/first.json").exists());
+    let invalid = b"not an asset";
+    std::fs::write(root.join("assets/invalid.json"), invalid).unwrap();
+    let invalid_revision = format!("{:x}", Sha256::digest(invalid));
+    assert!(
+        store
+            .prepare_edit(
+                &Edit::DeleteAssets {
+                    items: vec![AssetRef {
+                        id: "invalid".into(),
+                        revision: invalid_revision
+                    }],
+                    archived: false
+                },
+                receipt(&store, "malformed-delete"),
+                &AtomicBool::new(false)
+            )
+            .is_err()
+    );
+    std::fs::remove_file(root.join("assets/invalid.json")).unwrap();
+    let (media, asset) = delete_file_asset(&store);
+    store.create("file", &asset).unwrap();
+    let mut file_delete = store
+        .prepare_edit(
+            &Edit::DeleteAssets {
+                items: vec![AssetRef {
+                    id: "file".into(),
+                    revision: revision(&store, "file", false),
+                }],
+                archived: false,
+            },
+            receipt(&store, "foreign-media-delete"),
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    std::fs::write(&media, b"foreign replacement bytes").unwrap();
+    store
+        .commit_edit(&mut file_delete, &AtomicBool::new(false))
+        .unwrap();
+    assert!(!root.join("assets/file.json").exists());
+    assert_eq!(std::fs::read(media).unwrap(), b"foreign replacement bytes");
+    drop(file_delete);
+    drop(prepared);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn delete_assets_maximum_ordered_receipt_survives_reopen_with_native_32_id_budget() {
+    let (root, store, asset) = fixture();
+    let mut items = Vec::new();
+    for index in 0..32 {
+        let id = format!("{}{:03}", "a".repeat(77), index);
+        store.create(&id, &asset).unwrap();
+        items.push(AssetRef {
+            revision: revision(&store, &id, false),
+            id,
+        });
+    }
+    let ids = items.iter().map(|item| item.id.clone()).collect::<Vec<_>>();
+    let command = "d".repeat(80);
+    let mut prepared = store
+        .prepare_edit(
+            &Edit::DeleteAssets {
+                items,
+                archived: false,
+            },
+            receipt(&store, &command),
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    assert_eq!(
+        prepared.summary(),
+        json!({"deleted_assets":32,"deleted_ids":ids})
+    );
+    store
+        .commit_edit(&mut prepared, &AtomicBool::new(false))
+        .unwrap();
+    let binding = asset_journal::project_binding(&store.0.directory).unwrap();
+    let expected = store.completion(&command, &binding).unwrap().unwrap();
+    assert_eq!(expected.1["deleted_ids"], json!(ids));
+    assert_eq!(expected.1["deleted_assets"], 32);
+    assert!(
+        ids.iter()
+            .all(|id| !root.join("assets").join(format!("{id}.json")).exists())
+    );
+    drop(prepared);
+    drop(store);
+    let store = Store::new(&root).unwrap();
+    assert_eq!(
+        store.completion(&command, &binding).unwrap().unwrap(),
+        expected
+    );
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 #[test]
 fn native_asset_placement_metadata_describes_only_the_selected_root_without_native_format_changes()
 {

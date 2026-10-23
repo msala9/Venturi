@@ -8,7 +8,7 @@ const foldersRevision='f'.repeat(64);
 const assetRevision='a'.repeat(64);
 const draggableAsset=(id,name=id)=>({id,name,revision:`revision-${id}`,media_count:1,file_count:1,archived:false,placement:{project_epoch:'epoch',generation:'7',error:null,items:[{source_in:0,source_out:48,fps:{num:24,den:1},has_video:true,has_audio:true,audio_streams:1,is_image:false}]}});
 function dragEvent(){const values=new Map(),event=new Event('dragstart',{cancelable:true});event.dataTransfer={effectAllowed:'none',setData:(type,value)=>values.set(type,value)};return {event,values};}
-function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview}={}){
+function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview,onRemoved}={}){
   const original={document:globalThis.document,Option:globalThis.Option};
   class Element extends EventTarget{
     constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.dataset={};this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
@@ -22,18 +22,22 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
     closest(selector){for(let node=this;node;node=node.parent)if(selector.split(',').some(part=>part.trim()==='[contenteditable]'?node.attributes.has('contenteditable'):node.tag===part.trim()))return node;return null;}
     dispatchEvent(event){const result=super.dispatchEvent(event);this[`on${event.type}`]?.(event);return result;}
     click(){if(!this.disabled)this.dispatchEvent(new Event('click'));}
+    showModal(){this.open=true;}
+    close(){this.open=false;this.dispatchEvent(new Event('close'));}
+    remove(){if(this.parent){this.parent.children=this.parent.children.filter(child=>child!==this);this.parent=null;}}
+    focus(){globalThis.document.activeElement=this;}
   }
   const body=new Element('body'),root=new Element('root');body.append(root);
-  let modal=false;globalThis.document={body,createElement:tag=>new Element(tag),querySelector:()=>modal?{}:null};
+  let modal=false;globalThis.document={body,createElement:tag=>new Element(tag),querySelector:()=>modal?{}:walk(root).find(node=>node.tag==='dialog' && node.open)??null};
   globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
   let context={project_name:'project.vvproj',project_epoch:'epoch',generation:'7',command_epoch:'commands',media:[{id:'media-a',name:'Shot A'},{id:'media-b',name:'Shot B'}],selected_ids:['media-a']},writable=true;
   let items=[{id:'asset-a',revision:'rev-a',name:'Reusable shot',media_count:2,file_count:1,archived:false,can_restore_previous:true}];
   let folders=[{id:'outer',name:'Shots',parent:null},{id:'inner',name:'Day 1',parent:'outer'},{id:'other',name:'Other',parent:null}];
-  const pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],imported=[],placed=[],previews=[],notices=[],deleteGate=deferred();
+  const pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],imported=[],placed=[],previews=[],removed=[],notices=[],deleteGate=deferred();
   let delayDelete=false;
-  const panel=createNativeAssetPanel({root,getContext:()=>context,canCommit:()=>writable,notice:text=>notices.push(text),onImported:ids=>imported.push(ids),assetDnd,onPlaced:receipt=>placed.push(receipt),onPreview:onPreview?(...args)=>{previews.push(args);return onPreview(...args);}:undefined,
+  const panel=createNativeAssetPanel({root,getContext:()=>context,canCommit:()=>writable,notice:text=>notices.push(text),onImported:ids=>imported.push(ids),assetDnd,onPlaced:receipt=>placed.push(receipt),onPreview:onPreview?(...args)=>{previews.push(args);return onPreview(...args);}:undefined,onRemoved:(ids,receipt)=>{removed.push({ids,receipt});return onRemoved?.(ids,receipt);},
     makeLibraryMutation:operation=>nativeAssetMutation(context,'client',operation,'relink-command'),
-    libraryCommit(operation,prepared){libraryWrites.push(structuredClone(operation));if(prepared)preparedWrites.push(structuredClone(prepared));return libraryCommit?libraryCommit(operation,prepared):Promise.resolve({command_id:prepared?.command_id || 'published',project_epoch:context.project_epoch,...(prepared?{missing_count:0,relinked_files:1}:{})});},
+    libraryCommit(operation,prepared){libraryWrites.push(structuredClone(operation));if(prepared)preparedWrites.push(structuredClone(prepared));return libraryCommit?libraryCommit(operation,prepared):Promise.resolve({command_id:prepared?.command_id || 'published',project_epoch:context.project_epoch,...(operation.edit?.action==='delete_assets'?{deleted_assets:operation.edit.items.length,deleted_ids:operation.edit.items.map(item=>item.id)}:prepared?{missing_count:0,relinked_files:1}:{})});},
     projectCommit(operation){projectWrites.push(structuredClone(operation));return projectCommit?projectCommit(operation):Promise.resolve({command_id:'imported',project_epoch:context.project_epoch,media_ids:operation.kind==='import_native_asset_set'?operation.assets.map(item=>`new-${item.asset_id}`):['new-media'],...(operation.kind==='import_native_asset_set'?{changed:true,new_count:operation.assets.length,reused_count:0,errors:[]}: {})});},
     timelineCommit(operation){timelineWrites.push(structuredClone(operation));return timelineCommit?timelineCommit(operation):Promise.resolve({command_id:'placed',project_epoch:context.project_epoch,media_ids:['new-media'],clip_ids:['placed-video','placed-audio']});},
     api(path,body,options={}){
@@ -59,8 +63,9 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
   const button=text=>find(node=>node.tag==='button' && node.textContent===text,`button ${text}`);
   const field=label=>find(node=>node.getAttribute('aria-label')===label,label);
   const status=()=>find(node=>node.getAttribute('role')==='status','panel status').textContent;
-  const job=(index=0,patch={})=>{const {project_epoch,if_generation,action,operation}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:operation?'library_edit':action.kind,bytes:0,total_bytes:32,result:operation?.edit.action==='import_tree'?{imported_assets:1,skipped_files:1,error_count:1,created_folders:1,root_folder_id:'import-root',folders_revision:foldersRevision,errors:[{path_token:'Takes/bad.mov',code:'BAD_MEDIA',message:'Native probe failed'}]}:operation?{asset_id:operation.edit.id,revision:operation.edit.revision,missing_count:0,relinked_files:1}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
-  return {panel,root,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,previews,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),setModal:value=>{modal=value;},
+  const job=(index=0,patch={})=>{const {project_epoch,if_generation,action,operation}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:operation?'library_edit':action.kind,bytes:0,total_bytes:32,result:operation?.edit.action==='delete_assets'?{deleted_assets:operation.edit.items.length,deleted_ids:operation.edit.items.map(item=>item.id)}:operation?.edit.action==='import_tree'?{imported_assets:1,skipped_files:1,error_count:1,created_folders:1,root_folder_id:'import-root',folders_revision:foldersRevision,errors:[{path_token:'Takes/bad.mov',code:'BAD_MEDIA',message:'Native probe failed'}]}:operation?{asset_id:operation.edit.id,revision:operation.edit.revision,missing_count:0,relinked_files:1}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
+  return {panel,root,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,previews,removed,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),setModal:value=>{modal=value;},
+    confirmation:()=>walk(root).find(node=>node.tag==='dialog' && node.open),confirmDelete:()=>button('Permanently delete native assets').parent.dispatchEvent(new Event('submit',{cancelable:true})),
     context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setItems:value=>{items=value;},setFolders:value=>{folders=value;},delayDelete:()=>{delayDelete=true;},
     change(label,value){const node=field(label);node.value=value;node.dispatchEvent(new Event('change'));},
     chooseAssets(indexes){const node=field('Native assets');for(const [index,option] of node.children.entries())option.selected=indexes.includes(index);node.dispatchEvent(new Event('change'));},
@@ -205,13 +210,45 @@ test('Delete and Backspace stay inside the native assets pane without suppressin
     await h.open();for(const key of ['Delete','Backspace']){
       let stopped=0;const event=new Event('keydown',{cancelable:true});Object.defineProperties(event,{key:{value:key},target:{value:h.button('Archive native asset')}});event.stopPropagation=()=>{stopped++;};
       h.root.dispatchEvent(event);assert.equal(stopped,1,key);assert.equal(event.defaultPrevented,true,key);
-      assert.match(h.notices.at(-1),/Library Delete is unavailable.*timeline clips are unchanged/);
+      assert(h.confirmation());assert.equal(h.confirmation().getAttribute('aria-modal'),'true');assert.equal(h.prepares.length,0);h.button('Cancel permanent deletion').click();assert.equal(h.confirmation(),undefined);
       const notices=h.notices.length,text=new Event('keydown',{cancelable:true});Object.defineProperties(text,{key:{value:key},target:{value:h.field('Native asset name')}});text.stopPropagation=()=>{stopped++;};
       h.root.dispatchEvent(text);assert.equal(stopped,2,key);assert.equal(text.defaultPrevented,false,'text editing keeps its native key behavior');assert.equal(h.notices.length,notices);
     }
     let stopped=0;const event=new Event('keydown');Object.defineProperty(event,'key',{value:'ArrowLeft'});event.stopPropagation=()=>{stopped++;};h.root.dispatchEvent(event);assert.equal(stopped,0);
     assert.equal(h.prepares.length+h.libraryWrites.length+h.projectWrites.length,0);
   }finally{h.destroy();}
+});
+
+test('confirmed native Library multi Delete binds exact panel-order revisions and never edits the project',async()=>{
+  const h=harness();try{
+    h.setItems([draggableAsset('asset-b','Second'),draggableAsset('asset-a','First')]);await h.open();h.chooseAssets([0,1]);assert.equal(h.panel.canDelete(),true);
+    h.button('Permanently delete selected native assets…').click();assert(h.confirmation());assert.equal(h.prepares.length,0);assert.equal(h.libraryWrites.length,0);
+    h.confirmDelete();assert.equal(h.confirmation(),undefined);assert.equal(h.prepares.length,1);
+    assert.deepEqual(h.prepares[0].body.operation,{kind:'edit_native_asset_library',edit:{action:'delete_assets',items:[{id:'asset-b',revision:'revision-asset-b'},{id:'asset-a',revision:'revision-asset-a'}],archived:false}});
+    h.setItems([]);h.prepares[0].resolve(h.job());await settle();assert.equal(h.libraryWrites.length,1);assert.deepEqual(h.preparedWrites[0],h.prepares[0].body);assert.deepEqual(h.removed[0].ids,['asset-b','asset-a']);
+    assert.equal(h.field('Native assets').children.length,0);assert.equal(h.panel.canDelete(),false);assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.timelineWrites,[]);assert.match(h.status(),/permanently deleted.*no project Undo/);
+  }finally{h.destroy();}
+});
+
+test('native Library Delete confirmation cancels without writes and refuses stale, readonly, malformed and oversized selections',async()=>{
+  const h=harness();try{
+    await h.open();h.panel.deleteSelection();h.confirmation().dispatchEvent(new Event('cancel',{cancelable:true}));assert.equal(h.confirmation(),undefined);assert.equal(h.prepares.length,0);
+    h.panel.deleteSelection();h.setContext({...h.context(),generation:'8'});h.panel.invalidate();assert.equal(h.confirmation(),undefined);assert.equal(h.panel.canDelete(),false);assert.equal(h.panel.deleteSelection(),false);
+    await h.open();h.setWritable(false);h.panel.invalidate();assert.equal(h.panel.deleteSelection(),false);h.setWritable(true);
+    h.setItems([{...draggableAsset('broken'),error:'Unreadable native asset'}]);await h.open();assert.equal(h.panel.canDelete(),false);
+    h.setItems(Array.from({length:33},(_,index)=>draggableAsset(`asset-${index}`)));await h.open();h.chooseAssets(Array.from({length:33},(_,index)=>index));assert.equal(h.panel.canDelete(),false);
+    assert.equal(h.prepares.length+h.libraryWrites.length+h.projectWrites.length+h.timelineWrites.length,0);
+  }finally{h.destroy();}
+});
+
+test('confirmed archived Delete reports Source removal even when the panel hides during commit; uncertain outcomes never replay',async()=>{
+  const gate=deferred(),h=harness({libraryCommit:()=>gate.promise});try{
+    await h.open();h.setItems([{...draggableAsset('asset-a'),archived:true}]);const toggle=h.field('Show archived native assets');toggle.checked=true;toggle.dispatchEvent(new Event('change'));await settle();h.panel.deleteSelection();h.confirmDelete();assert.equal(h.prepares[0].body.operation.edit.archived,true);
+    h.prepares[0].resolve(h.job());await settle();assert.equal(h.libraryWrites.length,1);h.panel.hide();gate.resolve({command_id:'relink-command',project_epoch:'epoch',deleted_assets:1,deleted_ids:['asset-a']});await settle();assert.deepEqual(h.removed[0].ids,['asset-a']);assert.equal(h.prepares.length,1);assert.equal(h.deletes.length,0);
+  }finally{h.destroy();}
+  const failed=harness({libraryCommit:async()=>{throw Object.assign(Error('Deletion outcome unknown'),{code:'OUTCOME_UNKNOWN'});}});try{
+    await failed.open();failed.panel.deleteSelection();failed.confirmDelete();failed.prepares[0].resolve(failed.job());await settle();assert.equal(failed.libraryWrites.length,1);assert.equal(failed.prepares.length,1);assert.deepEqual(failed.removed,[]);assert.deepEqual(failed.deletes,[]);assert.match(failed.status(),/Check command status before repeating/);
+  }finally{failed.destroy();}
 });
 
 test('archive and restore clear stale off-page selection before reloading the chosen source',async()=>{

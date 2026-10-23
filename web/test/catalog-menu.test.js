@@ -215,6 +215,22 @@ test('rename is a separate input, trims once, suppresses shortcuts and commits o
   h.controller.dispose();
 });
 
+test('long-name input scrolling preserves rename while scrolling its Media viewport cancels it', () => {
+  const h = harness();
+  h.controller.rename({kind: 'media', id: '2', element: h.row, name: 'A long timeline name'});
+  const input = h.input();
+  input.value = 'Revised timeline';
+  h.documentRef.fire('scroll', {target: input});
+  assert.equal(h.input(), input);
+  assert.equal(h.documentRef.activeElement, input);
+  input.fire('keydown', {key: 'Enter'});
+  assert.deepEqual(h.actions, [{kind: 'rename', target_kind: 'media', id: '2', name: 'Revised timeline'}]);
+  h.controller.rename({kind: 'media', id: '2', element: h.row});
+  h.documentRef.fire('scroll', {target: h.root});
+  assert.equal(h.input(), undefined);
+  h.controller.dispose();
+});
+
 test('rename cancel, unchanged/empty/UTF-8-invalid values and stale or detached owners never write', () => {
   for (const value of ['', '   ', 'Folder', 'é'.repeat(65), 'bad\nname']) {
     const h = harness();

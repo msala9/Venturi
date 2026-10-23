@@ -278,7 +278,7 @@ export function createCatalogMenu({root, getContext, onAction, notice = () => {}
     for (const type of ['keyup', 'keypress']) input.addEventListener(type, event => event.stopPropagation());
     input.addEventListener('blur', () => finish(true));
     documentRef.body.append(overlay);
-    input.focus();
+    input.focus({preventScroll: true});
     input.select();
     return true;
   }
@@ -287,7 +287,7 @@ export function createCatalogMenu({root, getContext, onAction, notice = () => {}
     if (menu && !menu.element.contains(event.target)) closeMenu();
   };
   const moved = event => {
-    if (menu?.element.contains(event.target)) return;
+    if (menu?.element.contains(event.target) || editor?.element.contains(event.target)) return;
     close();
   };
   const blurred = () => close();

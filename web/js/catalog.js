@@ -287,6 +287,7 @@ export function renderCatalog(root, documentState, state, {writable, assets, com
         }
         const label=button(folder.name,entry,()=>{if(!current())return;clearRelink();state.selected=[];state.anchor=null;state.selectedFolder=folder.id;if(state.layout!=='grid'){toggle();render(true);focusFolder(folder.id,'catalog-folder-name');changedPresentation();}else update(true);},false);label.className='catalog-folder-name';label.setAttribute('aria-label',`Select project folder ${folder.name}`);label.setAttribute('aria-pressed',String(state.selectedFolder===folder.id));label.title=folder.path;
         entry.draggable=Boolean(writable);
+        label.draggable=Boolean(writable);
         entry.addEventListener('dragstart',event=>{if(!writable || !current()){event.preventDefault();return;}try{beginDrag(event,entry,'folder',folder.id);}catch(error){dragging=null;dragWitness=null;event.preventDefault();notice(error.message);}});
         entry.addEventListener('dragend',event=>endDrag(event,entry));
         if(state.layout==='grid'){label.addEventListener('dblclick',()=>{if(current())navigateGrid(folder.id);});label.addEventListener('keydown',event=>{if(event.key==='Enter' && !event.defaultPrevented && !event.isComposing && event.keyCode!==229 && !event.repeat && !event.ctrlKey && !event.metaKey && !event.altKey){event.preventDefault();event.stopPropagation();if(current())navigateGrid(folder.id);}});}

@@ -44,6 +44,9 @@ import {createProjectPoolDrop} from '../project-pool-placement.js';
 export function isRetimeShortcut(event,{dialogOpen=false}={}){
   return !dialogOpen && !event.defaultPrevented && !event.repeat && !event.isComposing && !event.altKey && !event.shiftKey && Boolean(event.ctrlKey)!==Boolean(event.metaKey) && event.key?.toLowerCase()==='r' && !isTextTarget(event.target);
 }
+export function isTimelineContextShortcut(event){
+  return !event.defaultPrevented && !event.repeat && !event.isComposing && event.keyCode!==229 && !event.getModifierState?.('AltGraph') && !event.ctrlKey && !event.metaKey && !event.altKey && !isTextTarget(event.target) && ((event.key==='F10' && event.shiftKey) || (event.key==='ContextMenu' && !event.shiftKey));
+}
 export const TRANSITION_DRAG_TYPE='application/x-venturi-transition';
 export function isCloseGapShortcut(event,{dialogOpen=false}={}){
   return event.code==='IntlBackslash' && !event.defaultPrevented && !event.repeat && !event.isComposing && !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey && !event.getModifierState?.('AltGraph') && !dialogOpen && !isTextTarget(event.target);
@@ -79,6 +82,7 @@ export function createInput({
   onMarkerEdit = () => {},
   onTransitionSelect = () => {},
   onRetimeMenu = () => {},
+  onContextMenu = null,
   onRetimeVisibilityChange = () => {},
   now = () => performance.now(),
   requestFrame = callback => window.requestAnimationFrame?.(callback),
@@ -236,6 +240,46 @@ export function createInput({
   }
   const canCloseGap=()=>Boolean(checkGapSelection() && !waiting && !gesture && !transitionDrag && !(presetDrop?.active() || assetDrop?.active() || sourceDrop?.active() || projectPoolDrop?.active() || effectDrop?.active()) && !modal() && canEdit());
   const canSelectTimeline=()=>Boolean(getTimeline() && !waiting && !gesture && !transitionDrag && !(presetDrop?.active() || assetDrop?.active() || sourceDrop?.active() || projectPoolDrop?.active() || effectDrop?.active()) && !view.draft && !view.lasso && !modal() && canNavigate());
+  function openContextMenu(target){
+    stopCoast();
+    if(typeof onContextMenu!=='function' || !canSelectTimeline() || documentRef?.hidden)return false;
+    const timeline=getTimeline(),context=gapContext(timeline),intent=selectionIntent();
+    if(!target || !['clip','track','ruler','background','marker'].includes(target.kind))return false;
+    if(target.kind==='clip' && !timeline.tracks.some(track=>track.id===target.track_id && track.clips.some(clip=>clip.id===target.clip_id)))return false;
+    if(target.kind==='track' && !timeline.tracks.some(track=>track.id===target.track_id))return false;
+    if(target.kind==='marker' && !timeline.markers?.some(marker=>marker.id===target.marker_id))return false;
+    onNavigationIntent();
+    if(getTimeline()!==timeline || gapContext(timeline)!==context || selectionIntent()!==intent || !canSelectTimeline())return false;
+    return onContextMenu({...target,returnFocus:target.returnFocus || canvas})!==false;
+  }
+  const contextMenu=event=>{
+    if(event.defaultPrevented || event.isComposing || !canSelectTimeline() || typeof onContextMenu!=='function')return;
+    const timeline=getTimeline(),[x,y]=point(event),width=canvas.clientWidth ?? canvas.getBoundingClientRect().width,hit=hitTest(x,y,timeline,view,width);
+    if(['divider','pane_scrollbar'].includes(hit.kind))return;
+    const frame=xToFrame(x,view,timeline.fps),lane=timeline.tracks[hit.track];
+    const clip=hit.clip || lane?.clips.find(clip=>clip.id===hit.clip_id) || (!['header','header_flag'].includes(hit.kind) && lane?.clips.find(clip=>frame>=clip.start_frame && frame<clip.start_frame+clip.length_frames));
+    const target=hit.marker?{kind:'marker',marker_id:hit.marker.id}:clip?{kind:'clip',clip_id:clip.id,track_id:lane.id}:['header','header_flag'].includes(hit.kind)?{kind:'track',track_id:lane.id}:hit.kind==='scrub'?{kind:'ruler'}:{kind:'background',...(lane?{track_id:lane.id}:{}),pane:syncLayout().paneAtY(y)};
+    event.preventDefault();event.stopPropagation?.();
+    openContextMenu({...target,frame,clientX:event.clientX,clientY:event.clientY});
+  };
+  function keyboardContextMenu(){
+    const timeline=getTimeline();if(!timeline)return false;
+    const rect=canvas.getBoundingClientRect(),width=canvas.clientWidth ?? rect.width,height=canvas.clientHeight ?? rect.height,layout=syncLayout();
+    const chosen=new Set(view.selection),anchor=view.selectionAnchor?.timeline_id===timeline.id && chosen.has(view.selectionAnchor.clip_id)?view.selectionAnchor.clip_id:null;
+    const entry=timeline.tracks.flatMap((track,index)=>track.clips.map(clip=>({track,index,clip}))).find(item=>item.clip.id===anchor) || timeline.tracks.flatMap((track,index)=>track.clips.filter(clip=>chosen.has(clip.id)).map(clip=>({track,index,clip})))[0];
+    let target={kind:'ruler',frame:view.playhead},x=frameToX(view.playhead,view,timeline.fps),y=RULER/2;
+    if(entry){
+      const box=layout.clipRect(entry.index,entry.clip,true),pane=layout.pane(entry.index);
+      target={kind:'clip',track_id:entry.track.id,clip_id:entry.clip.id,frame:Math.max(entry.clip.start_frame,Math.min(entry.clip.start_frame+entry.clip.length_frames-1,view.playhead))};
+      x=(box.left+box.right)/2;y=Math.max(pane.top+4,Math.min(pane.bottom-4,(box.top+box.bottom)/2));
+    }else if(view.markerId && timeline.markers?.some(marker=>marker.id===view.markerId)){
+      target={kind:'marker',marker_id:view.markerId,frame:view.playhead};
+    }else if(view.selectedGap){
+      const gap=checkGapSelection();if(gap)target={kind:'background',track_id:gap.track_id,frame:view.playhead};
+    }
+    x=Math.max(Math.min(HEADER+4,width-4),Math.min(width-4,x));y=Math.max(4,Math.min(height-4,y));
+    return openContextMenu({...target,clientX:rect.left+x*(width?rect.width/width:1),clientY:rect.top+y*(height?rect.height/height:1)});
+  }
   function selectTimelineClips(mode){
     if(!['all','from_playhead'].includes(mode) || !canSelectTimeline() || (mode==='from_playhead' && (!Number.isSafeInteger(view.playhead) || view.playhead<0)))return false;
     const timeline=getTimeline(),context=gapContext(timeline),playhead=view.playhead,ids=timelineClipSelection(timeline,mode==='from_playhead'?playhead:null);
@@ -328,6 +372,7 @@ export function createInput({
   }
   const down = (event) => {
     stopCoast();
+    if(event.button===2)return;
     if (waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active() || sourceDrop?.active() || projectPoolDrop?.active() || effectDrop?.active()) || modal() || event.defaultPrevented || event.isComposing || !canNavigate()) return;
     const timeline = getTimeline();
     if (!timeline) return;
@@ -756,6 +801,9 @@ export function createInput({
     if((presetDrop?.active() || assetDrop?.active() || sourceDrop?.active() || projectPoolDrop?.active() || effectDrop?.active())){if(event.key==='Escape'){event.preventDefault?.();event.stopPropagation?.();cancel();}return;}
     if(handleSelectionKey(event))return;
     if(handleGapKey(event))return;
+    if(typeof onContextMenu==='function' && isTimelineContextShortcut(event)){
+      if(canSelectTimeline()){event.preventDefault?.();event.stopPropagation?.();keyboardContextMenu();}return;
+    }
     if(!event.defaultPrevented && !event.repeat && !event.isComposing && !gesture && !transitionDrag && !waiting && view.retimeVisible?.size && view.tool!=='slip' && canEdit() && !isTextTarget(event.target) && !documentRef?.querySelector?.('dialog[open]') && !event.ctrlKey && !event.metaKey && !event.altKey && ((event.key==='F10' && event.shiftKey) || (event.key==='ContextMenu' && !event.shiftKey))){
       const timeline=getTimeline(),target=timeline?.tracks.flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id) && clip.retime && !track.locked && view.retimeVisible.has(clip.id)).map(clip=>({clip,track})))[0];
       if(target){event.preventDefault?.();event.stopPropagation?.();onRetimeMenu({clip_id:target.clip.id,track_id:target.track.id,returnFocus:canvas});return;}
@@ -837,6 +885,7 @@ export function createInput({
   canvas.addEventListener("wheel", wheel, { passive: false });
   canvas.addEventListener("keydown", key);
   canvas.addEventListener("dblclick", doubleClick);
+  canvas.addEventListener('contextmenu',contextMenu);
   canvas.addEventListener('dragover',dragOver);
   canvas.addEventListener('dragleave',dragLeave);
   canvas.addEventListener('drop',drop);
@@ -863,6 +912,7 @@ export function createInput({
     checkSelectionAnchor,
     canSelectTimeline,
     handleSelectionKey,
+    openContextMenu,
     transitionDnd:{type:TRANSITION_DRAG_TYPE,start:startTransitionDrag,end:endTransitionDrag},
     presetDnd:presetDrop.dnd,
     assetDnd:assetDrop.dnd,
@@ -891,6 +941,7 @@ export function createInput({
         ["wheel", wheel],
         ["keydown", key],
         ["dblclick", doubleClick],
+        ['contextmenu',contextMenu],
         ['dragover',dragOver],
         ['dragleave',dragLeave],
         ['drop',drop],

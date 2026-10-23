@@ -68,6 +68,19 @@ fn native_timeline_gaps_include_leading_and_internal_ranges_only_on_unlocked_lan
     let position = editor.history.position();
     let revision = editor.timeline_revision(id);
     let snapshot = timeline(&editor, id);
+    assert_eq!(
+        snapshot["clip_colors"].as_array().unwrap().len(),
+        vv_core::ClipColor::ALL.len()
+    );
+    for (entry, color) in snapshot["clip_colors"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .zip(vv_core::ClipColor::ALL)
+    {
+        let (r, g, b) = color.rgb();
+        assert_eq!(*entry, json!({"color":color,"rgb":[r,g,b]}));
+    }
     for (index, track) in snapshot["tracks"].as_array().unwrap().iter().enumerate() {
         for clip in track["clips"].as_array().unwrap() {
             assert_eq!(clip["audio_stream_index"], index + 1);

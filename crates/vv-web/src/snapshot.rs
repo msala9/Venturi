@@ -23,6 +23,7 @@ pub fn timeline(session: &Session, id: TimelineId) -> Value {
       "master":tl.master,
       "gaps":tl.tracks.iter().enumerate().flat_map(|(index,_)|vv_core::edit::timeline_gaps(tl,index).into_iter().map(move |(start,len)|json!({"track_id":index.to_string(),"start_frame":start,"length_frames":len}))).collect::<Vec<_>>(),
       "marker_colors":vv_core::ClipColor::ALL,
+      "clip_colors":vv_core::ClipColor::ALL.into_iter().map(|color|{let (r,g,b)=color.rgb();json!({"color":color,"rgb":[r,g,b]})}).collect::<Vec<_>>(),
       "markers":tl.markers.iter().map(|m|{let (r,g,b)=m.color.rgb();json!({"id":m.id.0.to_string(),"start_frame":m.start,"duration_frames":m.duration,"note":m.note,"color":m.color,"rgb":[r,g,b]})}).collect::<Vec<_>>(),
       "tracks":tl.tracks.iter().enumerate().map(|(index,track)|json!({
         "id":index.to_string(),"label":tl.track_label(index),"kind":match track.kind {vv_core::TrackKind::Video=>"video",vv_core::TrackKind::Audio=>"audio"},

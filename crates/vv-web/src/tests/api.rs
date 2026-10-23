@@ -1880,6 +1880,9 @@ async fn health_assets_snapshot_and_host_boundary() {
         ("/js/fonts.js", 200),
         ("/js/color-picker.js", 200),
         ("/style/color-picker.css", 200),
+        ("/style/context-menu.css", 200),
+        ("/js/timeline/context-actions.js", 200),
+        ("/js/timeline/context-menu.js", 200),
         ("/js/curve-viewport.js", 200),
         ("/js/curve-window.js", 200),
         ("/js/source-placement.js", 200),
@@ -2785,6 +2788,7 @@ async fn embedded_editor_module_imports_are_served_with_javascript_mime() {
         "/style/native-browser.css",
         "/style/native-inspector.css",
         "/style/color-picker.css",
+        "/style/context-menu.css",
     ] {
         assert!(
             stylesheets.contains(&expected),

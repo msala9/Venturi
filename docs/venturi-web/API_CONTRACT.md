@@ -568,6 +568,19 @@ does not create history, while a frozen clip at the same speed can still unfreez
 The strip's displayed percentage comes from native `speed_percent`, never the
 ratio of rounded source span and timeline duration. Hide strip is client-only.
 
+`context_speed_preset {clip_id,clip_ids,percent,overwrite?:false}` applies the
+native context-menu 50, 100 or 200 percent choice to the complete selected media
+groups. The clicked `clip_id` must belong to the linked-expanded `clip_ids`;
+its actual native pitch-correction flag supplies every target. Frozen targets
+unfreeze through native `SetClipSpeed` before result/source-bound validation.
+Native Resize preserves starts and leaves gaps when shortening. Safe growth
+refuses overlaps; explicit overwrite makes room across all affected groups in
+one native composite/Undo. Locked linked peers, incomplete foreign linked
+overwrites and unrepresentable results refuse atomically on a cloned project
+before real allocation. Existing crossing records follow native retime behavior.
+A full-state no-op creates no history.
+The existing single-group `retime_preset` contract is unchanged.
+
 `POST /api/v1/timelines/{id}/presets/capture` accepts
 `{query:FrameQuery,clip_ids,options:{name,attributes,anchor,append_filters,shortcut?}}`.
 It validates snapshot identity and returns `{project_epoch,generation,revision,

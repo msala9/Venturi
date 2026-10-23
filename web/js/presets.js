@@ -2,6 +2,10 @@ import {request} from './api.js';
 import {attributeGroups} from './attributes.js';
 
 export function presetSelectionIdentity(context){return context?JSON.stringify([context.epoch,context.generation,context.timeline,context.revision,[...context.clip_ids].sort()]):null;}
+export function presetCaptureContext(current,captured=current){
+  if(!current || !captured || ['epoch','generation','timeline','revision'].some(key=>current[key]!==captured[key]) || !Array.isArray(captured.clip_ids) || !captured.clip_ids.length || captured.clip_ids.length>4096 || new Set(captured.clip_ids).size!==captured.clip_ids.length || captured.clip_ids.some(id=>typeof id!=='string' || !id) || !captured.roles || !['video','audio'].every(role=>typeof captured.roles[role]==='boolean') || !captured.roles.video && !captured.roles.audio)throw Error('The preset source context changed; open Save preset again');
+  return structuredClone(captured);
+}
 export function presetAttributeAllowed(attribute,roles){return attribute==='volume'?roles.audio:['fades','speed'].includes(attribute)?roles.video || roles.audio:roles.video;}
 export function presetOptions(name,attributes,anchor,appendFilters){
   name=name.trim();
@@ -114,10 +118,10 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
     catch(error){message(`${error.message} · refresh the library before retrying`);notice(error.message);throw error;}
     finally{busy=false;controls();}
   }
-  function openSettings(item=null){
-    const context=getContext();if(!context || !canCommit() || busy || !item && !context.clip_ids.length)return;
+  function openSettings(item=null,captured=null){
+    const live=getContext(),context=captured?presetCaptureContext(live,captured):live;if(!context || !canCommit() || busy || !item && !context.clip_ids.length)return;
     endDrag();
-    shortcutController?.abort();const token=++settingsSequence;dialog?.remove();dialog=document.createElement('dialog');dialog.className='preset-settings';const ownedDialog=dialog,boundContext={...context,clip_ids:[...context.clip_ids]},identity=presetSelectionIdentity(context),itemID=item?.id,itemRevision=item?.revision;
+    shortcutController?.abort();const token=++settingsSequence;dialog?.remove();dialog=document.createElement('dialog');dialog.className='preset-settings';const ownedDialog=dialog,boundContext={...context,clip_ids:[...context.clip_ids]},identity=presetSelectionIdentity(live),itemID=item?.id,itemRevision=item?.revision;
     const settingsCurrent=()=>active && dialog===ownedDialog && ownedDialog.open && identity===presetSelectionIdentity(getContext()) && (!item || selected?.id===itemID && selected?.revision===itemRevision && !selected.archived);
     const form=document.createElement('form'),heading=document.createElement('h2');heading.textContent=item?'Edit saved preset':'Save selected clips as preset';form.append(heading);
     const label=document.createElement('label');label.className='field';label.textContent='Preset name';const name=document.createElement('input');name.required=true;name.maxLength=128;name.value=item?.name || context.name || 'Preset';label.append(name);form.append(label);
@@ -180,6 +184,7 @@ export function createPresetPanel({root,getContext,canCommit,commit,libraryCommi
       const importLabel=document.createElement('label'),file=document.createElement('input');importFile=file;importLabel.className='field';importLabel.textContent='Import desktop preset JSON';file.type='file';file.accept='.json,application/json';importLabel.append(file);section.append(importLabel);file.addEventListener('change',async()=>{const chosen=file.files?.[0];if(!chosen)return;try{if(chosen.size>4*1024*1024)throw Error('Choose a native preset within 4 MiB');const text=await chosen.text();if(!active)return;await write(presetImportOperation(text));file.value='';}catch(error){message(error.message);}});
       section.addEventListener('keydown',event=>{if(['Delete','Backspace'].includes(event.key))event.stopPropagation();});root.append(section);controls();await reload(page);
     },
+    saveSelection(captured){if(!active || busy || !canCommit())return false;openSettings(null,presetCaptureContext(getContext(),captured));return true;},
     invalidate(){shortcuts?.sync();controls();},
     hide(){endDrag();active=false;sequence++;controller?.abort();controller=null;settingsSequence++;shortcutController?.abort();shortcutController=null;if(!busy){dialog?.remove();dialog=null;dialogControls=null;bound=null;}},
   };

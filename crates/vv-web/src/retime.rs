@@ -197,6 +197,76 @@ pub fn apply_preset(
     )
 }
 
+pub fn apply_context_preset(
+    session: &mut Session,
+    id: TimelineId,
+    raw: &str,
+    clip_ids: &[String],
+    percent: f64,
+    overwrite: bool,
+) -> Result<bool> {
+    if ![50.0, 100.0, 200.0].contains(&percent) {
+        return Err(ApiError::invalid("Choose a native context speed preset"));
+    }
+    let (primary_track, primary_id, primary) = inspector::find(session, id, raw)?;
+    let timeline = &session.project.timelines[id];
+    let selected = media_refs(timeline, clip_ids)?;
+    if !selected.contains(&(primary_track, primary_id)) {
+        return Err(ApiError::invalid(
+            "The context clip must belong to the speed selection",
+        ));
+    }
+    if timeline.fps.num <= 0 || timeline.fps.den <= 0 {
+        return Err(ApiError::invalid(
+            "The timeline has unsupported speed metadata",
+        ));
+    }
+    for &(track, clip_id) in &selected {
+        let clip = timeline.clip(track, clip_id).unwrap();
+        let core::ClipSource::Media(media_id) = clip.source else {
+            unreachable!();
+        };
+        let media = session
+            .project
+            .media_pool
+            .get(media_id)
+            .ok_or_else(ApiError::missing)?;
+        if !(1..=MAX_FRAME).contains(&media.meta.duration_frames)
+            || media.meta.fps.num <= 0
+            || media.meta.fps.den <= 0
+            || clip.rate().num <= 0
+            || clip.rate().den <= 0
+        {
+            return Err(ApiError::invalid(
+                "A selected clip has unsupported source metadata",
+            ));
+        }
+    }
+    let speed = core::Rational::from_percent(percent);
+    let fit = core::SpeedFit::Resize;
+    let pitch = primary.pitch_correction;
+    let mut speed_trial = session.project.clone();
+    core::SetClipSpeed::new(id, selected.clone(), speed, pitch, fit).apply(&mut speed_trial);
+    let changed = &speed_trial.timelines[id];
+    for &(track, clip_id) in &selected {
+        if metadata(&speed_trial, changed, changed.clip(track, clip_id).unwrap()).is_none() {
+            return Err(ApiError::invalid(
+                "Context speed exceeds a selected clip's representable source bounds",
+            ));
+        }
+    }
+    commit(
+        session,
+        id,
+        &selected,
+        speed,
+        pitch,
+        fit,
+        overwrite,
+        speed_trial,
+    )
+}
+
 #[allow(clippy::too_many_arguments)]
 fn commit(
     session: &mut Session,

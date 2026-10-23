@@ -2299,6 +2299,7 @@ async fn assets(request: Request) -> Response {
         "/style/native-browser.css" => asset!("/web/style/native-browser.css", "text/css"),
         "/style/native-inspector.css" => asset!("/web/style/native-inspector.css", "text/css"),
         "/style/color-picker.css" => asset!("/web/style/color-picker.css", "text/css"),
+        "/style/context-menu.css" => asset!("/web/style/context-menu.css", "text/css"),
 
         "/js/proxies.js" => asset!("/web/js/proxies.js", "text/javascript"),
         "/js/main.js" => asset!("/web/js/main.js", "text/javascript"),
@@ -2387,6 +2388,12 @@ async fn assets(request: Request) -> Response {
         "/js/timeline/input.js" => asset!("/web/js/timeline/input.js", "text/javascript"),
         "/js/timeline/preset-drop.js" => {
             asset!("/web/js/timeline/preset-drop.js", "text/javascript")
+        }
+        "/js/timeline/context-actions.js" => {
+            asset!("/web/js/timeline/context-actions.js", "text/javascript")
+        }
+        "/js/timeline/context-menu.js" => {
+            asset!("/web/js/timeline/context-menu.js", "text/javascript")
         }
         "/js/timeline/asset-drop.js" => {
             asset!("/web/js/timeline/asset-drop.js", "text/javascript")

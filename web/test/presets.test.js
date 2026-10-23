@@ -1,6 +1,12 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {presetSelectionIdentity,presetAttributeAllowed,presetOptions,presetImportOperation,presetShortcutCatalog,presetShortcutEdit} from '../js/presets.js';
+import {presetSelectionIdentity,presetCaptureContext,presetAttributeAllowed,presetOptions,presetImportOperation,presetShortcutCatalog,presetShortcutEdit} from '../js/presets.js';
+
+test('context Save preset binds explicit native targets without replacing the current selection',()=>{
+  const current={epoch:'e',generation:'4',timeline:'1',revision:'r',clip_ids:['old'],roles:{video:true,audio:false}},captured={...current,clip_ids:['clicked'],name:'Clip'};
+  const copy=presetCaptureContext(current,captured);assert.deepEqual(copy,captured);copy.clip_ids.push('other');assert.deepEqual(current.clip_ids,['old']);assert.deepEqual(captured.clip_ids,['clicked']);
+  for(const patch of [{epoch:'other'},{generation:'5'},{timeline:'2'},{revision:'next'},{clip_ids:[]},{clip_ids:['x','x']}])assert.throws(()=>presetCaptureContext(current,{...captured,...patch}));
+});
 
 test('preset capture binding follows native selection and revision while ignoring selection order',()=>{
   const context={epoch:'e',generation:'4',timeline:'1',revision:'r',clip_ids:['2','1']};

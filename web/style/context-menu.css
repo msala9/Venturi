@@ -1,0 +1,16 @@
+.timeline-context-menu-layer { position: fixed; inset: 0; z-index: 100; width: 100vw; height: 100vh; margin: 0; padding: 0; border: 0; background: transparent; color: var(--text); pointer-events: none; overflow: visible; }
+.timeline-context-menu { position: fixed; min-width: 180px; width: max-content; max-width: min(280px, calc(100vw - 16px)); max-height: calc(100vh - 16px); box-sizing: border-box; padding: 4px; overflow: auto; overscroll-behavior: contain; pointer-events: auto; background: var(--raised); border: 1px solid var(--border); border-radius: 5px; box-shadow: 0 7px 24px #0009; }
+.timeline-context-menu-item { display: flex; align-items: center; gap: 5px; width: 100%; min-height: 28px; padding: 3px 6px; border: 0; border-radius: 2px; background: transparent; color: var(--text); text-align: left; font-size: 11px; }
+.timeline-context-menu-item:focus, .timeline-context-menu-item:hover:not(:disabled) { background: var(--surface); outline: 1px solid var(--primary); outline-offset: -1px; }
+.timeline-context-menu-item:disabled { color: var(--muted); opacity: .55; }
+.timeline-context-menu-mark { width: 12px; flex: 0 0 auto; }
+.timeline-context-menu-label { flex: 1; white-space: nowrap; }
+.timeline-context-menu-arrow { margin-left: 12px; }
+.timeline-context-menu-separator { height: 1px; margin: 4px 3px; background: var(--border); }
+.timeline-context-menu-swatches { display: grid; grid-template-columns: repeat(6, 26px); min-width: 0; width: max-content; }
+.timeline-context-menu-swatches > .timeline-context-menu-separator, .timeline-context-menu-swatches > .timeline-context-menu-item:not(.timeline-context-menu-color) { grid-column: 1 / -1; }
+.timeline-context-menu-color { position: relative; justify-content: center; width: 26px; min-height: 26px; height: 26px; padding: 3px; }
+.timeline-context-menu-color-chip { width: 16px; height: 16px; border-radius: 50%; background: var(--swatch); border: 1px solid #ffffff35; }
+.timeline-context-menu-color[aria-checked="true"] { outline: 2px solid var(--primary); outline-offset: -2px; }
+.timeline-context-menu-color .timeline-context-menu-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.timeline-context-menu-color .timeline-context-menu-mark { position: absolute; top: -3px; right: -2px; font-size: 9px; text-shadow: 0 1px #000; }

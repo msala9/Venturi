@@ -1,8 +1,10 @@
 import { isTextTarget, installSplitter, installClipListDismissal } from "./ui.js";
 import { createTimeline, fixtureTimeline } from "./timeline/index.js";
 import { linkedSelection, playheadSelection,selectedTransition,selectedGap,nativeGapAt,clipSelectionAnchor,reconcileSelectionAnchor,firstSelectionAnchor,playheadSelectionAnchor,MIN_TIMELINE_SCALE,MAX_TIMELINE_SCALE,timelineScrollBounds,timelineOriginForFrame } from "./timeline/geometry.js";
-import {isRetimeShortcut,timelineSelectionFocus} from './timeline/input.js';
+import {isRetimeShortcut,isTimelineContextShortcut,timelineSelectionFocus} from './timeline/input.js';
 import {createRetimeMenu} from './retime-menu.js';
+import {createTimelineContextMenu} from './timeline/context-menu.js';
+import {buildTimelineContext,timelineContextItems,timelineContextOperation} from './timeline/context-actions.js';
 import {retimeVisibilityState,toggleRetimeVisibility,retimeProjectVisibility} from './retime-visibility.js';
 import { request, sendMutation, ApiFailure, persistentClientId } from "./api.js";
 import {createProxyControls} from "./proxies.js";
@@ -93,6 +95,7 @@ let audioScrub = null;
 let fastTransport = null;
 let presetPanel=null;
 let retimeMenu=null;
+let timelineContextMenu=null,contextDialog=null,contextSilence=null;
 let compoundNavigation=null;
 let projectView=null;
 let timelineOpenSequence=0;
@@ -110,7 +113,13 @@ function setInspectorTab(tab){
   if(tab==='selection')inspectorSelectionRead?.read();else inspectorSelectionRead?.cancel();
   audioMeters?.sync();
 }
-function globalEditingShortcut(event,{allowRepeat=false}={}){return editingShortcutAllowed(event,{dialogOpen:Boolean(document.querySelector('dialog[open]')),allowRepeat}) && !isTextTarget(event.target);}
+function globalEditingShortcut(event,{allowRepeat=false}={}){return !timelineContextMenu?.active() && editingShortcutAllowed(event,{dialogOpen:Boolean(document.querySelector('dialog[open]')),allowRepeat}) && !isTextTarget(event.target);}
+document.addEventListener('keydown',event=>{
+  if(timelineContextMenu?.active() && !event.target.closest?.('.timeline-context-menu-layer')){
+    if(event.key==='Escape')timelineContextMenu.close();
+    event.preventDefault();event.stopImmediatePropagation();
+  }
+},true);
 function revealBrowser(name){
   clipListDismissal.close();
   const same=($('browser').dataset.browserPanel || 'Media')===name;
@@ -202,7 +211,7 @@ function showWorkspace(name) {
     button.disabled = !((name === "Audio" && ["Track / Master mixer","VU / spectrum","Six-band equalizer","Three-band compressor","Normalization / Mono","Analyze silence · VAD","Voiceover"].includes(label)) || (name === "Color" && ["Shadows / Midtones / Highlights / Offset","Waveform / RGB parade / Vectorscope / Histogram","Auto balance","Curves"].includes(label)) || name === "Review");
     if (!button.disabled) button.addEventListener("click",()=>{
       if(name==="Review"){programPlayer?.stop();sourcePlayer?.pause();const panel=["Shot / Take grouping","Prompt / Seed / Model metadata"].includes(label)?reviewMetadata:review;panel?.open().catch(error=>notice(error.message));return;}
-      if(label === "Analyze silence · VAD"){programPlayer?.stop();silencePanel?.open();return;}
+      if(label === "Analyze silence · VAD"){programPlayer?.stop();openTimelineSilence();return;}
       if(label === "Voiceover"){viewerModeSet("program");voiceover?.open();return;}
       if(label === "VU / spectrum"){audioMeters?.open();return;}
       if(name === "Color") {
@@ -611,6 +620,7 @@ function syncSelectionActions(){
   $("close-gap").disabled=disabled || !canvasTimeline.canCloseGap();
 }
 function selected() {
+  timelineContextMenu?.invalidate();
   inspectorSelectionRead?.cancel();inspectorSelectionRead=null;
   if(view.selection.length || view.transitionSelection)view.selectedGap=null;
   canvasTimeline.checkGapSelection();
@@ -897,7 +907,7 @@ const canvasTimeline = createTimeline({
   canNavigate:()=>!busy && !unresolved,
   onOpenCompound:ids=>compoundNavigation?.enter(ids),
   onNavigationIntent:()=>{nativePlacementIntent++;compoundNavigation?.cancel();},
-  onNavigationStateChange:()=>{compoundNavigation?.invalidate();syncClipboardControls();syncSelectionActions();sourceAssets?.refresh();sourcePlacement?.refresh();queueMicrotask(syncProgramMarks);},
+  onNavigationStateChange:()=>{timelineContextMenu?.invalidate();compoundNavigation?.invalidate();syncClipboardControls();syncSelectionActions();sourceAssets?.refresh();sourcePlacement?.refresh();queueMicrotask(syncProgramMarks);},
   view,
   getAssets: () => mediaAssets,
   onPaint:(_duration,demand)=>{if(documentState && timeline?.id===demand?.timeline_id && timeline?.revision===demand.revision)sourceAssets?.demand('timeline',assetDemandItems(demand.items),documentState.project_epoch);},
@@ -905,6 +915,7 @@ const canvasTimeline = createTimeline({
   onSelect: ()=>{view.transitionSelection=null;selected();},
   onTransitionSelect:selection=>{view.transitionSelection=selection;view.selection=[];view.selectionAnchor=null;view.markerId=null;revealInspector();selected();},
   onRetimeMenu:target=>retimeMenu?.open(target),
+  onContextMenu:target=>openTimelineContextMenu(target),
   onRetimeVisibilityChange:updateRetimeControls,
   onSeek: (final) => {
     audioMeters?.invalidate();
@@ -934,6 +945,73 @@ retimeMenu=createRetimeMenu({getContext:retimeContext,commit:operation=>commit(o
   onHide:target=>{view.retimeVisible.delete(target.clip_id);updateRetimeControls();notice('Speed strip hidden for this clip');},
   onAdvanced:target=>{programPlayer?.stop();fastTransport?.stop();audioScrub?.stop();if(viewerMode!=='program')viewerModeSet('program');view.transitionSelection=null;view.selection=[target.clip_id];view.selectionAnchor=clipSelectionAnchor(timeline,target.clip_id,documentState?.project_epoch ?? null);visualState.set('retime',true);visualState.set('retime-focus',target.clip_id);revealInspector();selected();canvasTimeline.invalidate();notice('Change clip speed · native Ripple is the initial duration policy; linked clips follow');},
 });
+function timelineContext(target){
+  if(!timeline || !documentState)return null;
+  const rect=$('timeline').getBoundingClientRect();
+  return buildTimelineContext({document:documentState,timeline,selection:view.selection,target,playhead:view.playhead,
+    writable:writable && !busy && !unresolved && !view.recording && canvasTimeline.navigationIdle(),
+    viewIdentity:JSON.stringify([viewerMode,view.origin,view.scale,view.scrollY,view.videoScroll,view.audioScroll,view.videoPaneHeight,view.rowHeight,view.tool,view.snap,view.transitionSelection,view.selectedGap,rect.left,rect.top,rect.width,rect.height]),
+    retimeVisible:[...view.retimeVisible].sort(),overwrite:view.retimeOverwrite});
+}
+function openTimelineContextMenu(target){
+  if(document.querySelector('dialog[open]') || view.recording || busy || unresolved || !canvasTimeline.navigationIdle())return false;
+  retimeMenu?.close(false);return timelineContextMenu?.open(target) ?? false;
+}
+function contextOwnerCurrent(owner){
+  return Boolean(owner && documentState && timeline && writable && !busy && !unresolved && !view.recording &&
+    owner.project_epoch===documentState.project_epoch && owner.generation===documentState.generation && owner.timeline_id===timeline.id && owner.revision===timeline.revision &&
+    owner.playhead===view.playhead && JSON.stringify(owner.selection)===JSON.stringify(timeline.tracks.flatMap(track=>track.clips.filter(clip=>view.selection.includes(clip.id)).map(clip=>clip.id))));
+}
+function openTimelineSilence(owner=null){contextSilence=owner;silencePanel?.open();}
+function contextBrowser(name){
+  presetPanel?.hide();nativeAssets?.hide();void sharedLibrary?.cancel();revealBrowser(name);editor.classList.remove('browser-collapsed');if(innerWidth<=760)editor.classList.add('browser-drawer-open');
+  $('browser').dataset.browserPanel=name;for(const button of document.querySelectorAll('[data-panel]'))button.setAttribute('aria-selected',String(button.dataset.panel===name));
+  $('media-list').hidden=name!=='Media';$('search').parentElement.hidden=name!=='Media';$('panel-content').hidden=name==='Media';$('panel-content').replaceChildren();updateBrowserToggle();
+}
+function contextModal(title,owner){
+  contextDialog?.close();const dialog=document.createElement('dialog'),heading=document.createElement('h2'),content=document.createElement('div'),status=document.createElement('p'),cancel=document.createElement('button');
+  heading.textContent=title;status.setAttribute('role','status');cancel.type='button';cancel.textContent='Cancel';dialog.setAttribute('aria-label',title);dialog.append(heading,content,status,cancel);document.body.append(dialog);contextDialog=dialog;
+  cancel.addEventListener('click',()=>dialog.close());dialog.addEventListener('close',()=>{if(contextDialog===dialog)contextDialog=null;dialog.remove();});
+  const current=()=>dialog.isConnected && dialog.open && contextOwnerCurrent(owner);
+  const apply=async operation=>{if(!current())throw Error('The timeline action context changed; reopen its menu');await commit(operation);dialog.close();};
+  dialog.showModal();return {dialog,content,status,current,apply};
+}
+async function timelineContextAction(action,owner){
+  if(timelineContext(owner.target)?.identity!==owner.identity)throw Error('The timeline menu context changed');
+  const operation=timelineContextOperation(action,owner);
+  if(operation)return commit(operation);
+  if(action==='reveal_media'){contextBrowser('Media');revealProjectMedia([owner.clicked.media_id]);return;}
+  if(action==='retime_visibility'){
+    for(const id of owner.media_ids){if(owner.retime_shown)view.retimeVisible.delete(id);else view.retimeVisible.add(id);}updateRetimeControls();return;
+  }
+  if(action==='copy'){clipboardCommand('timeline','copy');return;}
+  if(action==='paste_attributes'){pasteAttributes?.open();return;}
+  if(action==='save_preset'){
+    const source={epoch:owner.project_epoch,generation:owner.generation,timeline:owner.timeline_id,revision:owner.revision,clip_ids:[...owner.save_ids],name:owner.clicked.name,roles:owner.roles};
+    contextBrowser('Presets');
+    await presetPanel.open();if(!contextOwnerCurrent(owner))throw Error('The preset source changed; open Save preset again');presetPanel.saveSelection(source);return;
+  }
+  if(action==='remove_silence'){openTimelineSilence(owner);return;}
+  if(action==='compound'){
+    const ui=contextModal('Make compound clip',owner),form=document.createElement('form'),label=document.createElement('label'),name=document.createElement('input'),note=document.createElement('p'),button=document.createElement('button');
+    label.textContent='Compound name';name.value='Compound';name.required=true;name.maxLength=128;name.setAttribute('aria-label','Compound name');label.append(name);button.textContent='Make native compound';
+    note.textContent=`${owner.compound_ids.length} clips · Native grouping can change routing, normalization and compositing context. Undo restores the original clips.`;form.append(label,note,button);ui.content.append(form);
+    let waiting=false;form.addEventListener('submit',async event=>{event.preventDefault();if(waiting || !form.reportValidity())return;waiting=true;button.disabled=true;try{await ui.apply(compoundSelectionOperation(owner.compound_ids,name.value,'native'));}catch(error){ui.status.textContent=error.message;}finally{waiting=false;button.disabled=!ui.current();}});name.focus();return;
+  }
+  if(action==='edit_marker'){
+    const ui=contextModal('Edit marker',owner),form=document.createElement('form'),label=document.createElement('label'),note=document.createElement('input'),color=document.createElement('select'),button=document.createElement('button');
+    label.textContent='Marker note';note.value=owner.marker.note;note.maxLength=4096;note.setAttribute('aria-label','Marker note');label.append(note);color.setAttribute('aria-label','Marker color');
+    for(const value of owner.colors)color.append(new Option(value,value));color.value=owner.marker.color;button.textContent='Apply marker';form.append(label,color,button);ui.content.append(form);
+    let waiting=false;form.addEventListener('submit',async event=>{event.preventDefault();if(waiting || !ui.current() || !form.reportValidity())return;if(note.value===owner.marker.note && color.value===owner.marker.color){ui.dialog.close();return;}waiting=true;button.disabled=true;try{await ui.apply({kind:'set_marker',marker:{id:owner.marker.id,delete:false,start_frame:owner.marker.start_frame,duration_frames:owner.marker.duration_frames,note:note.value,color:color.value}});}catch(error){ui.status.textContent=error.message;}finally{waiting=false;button.disabled=!ui.current();}});note.focus();return;
+  }
+  if(action==='advanced_speed'){
+    const id=owner.media_ids[0],query=new URLSearchParams({project_epoch:owner.project_epoch,if_generation:owner.generation,timeline_id:owner.timeline_id,revision:owner.revision,frame:owner.playhead}),detail=await request(`/timelines/${encodeURIComponent(owner.timeline_id)}/clips/${encodeURIComponent(id)}/keys/0?${query}`);
+    if(!contextOwnerCurrent(owner) || document.querySelector('dialog[open]'))throw Error('The media speed context changed; reopen its menu');
+    const ui=contextModal('Change clip speed',owner),selection={project_epoch:owner.project_epoch,generation:owner.generation,timeline_id:owner.timeline_id,revision:owner.revision,clip_ids:[...owner.media_ids]};
+    renderRetime(ui.content,detail,false,()=>view.playhead,ui.apply,new Map([['retime',true]]),ui.current,{selection,getSelection:()=>ui.current()?selection:null,frame:owner.playhead,labelControls:false,notice:message=>{ui.status.textContent=message;}});return;
+  }
+}
+timelineContextMenu=createTimelineContextMenu({getContext:target=>document.querySelector('dialog[open]')?null:timelineContext(target),getItems:timelineContextItems,onAction:timelineContextAction,notice});
 function renderTransitionPresets(){
   const root=$("transition-presets");if(!root)return;root.replaceChildren();
   const note=document.createElement('p');note.className='muted';note.textContent='Drag a transition near a video clip edge. A touching neighbour creates a crossing. For keyboard editing, select a clip and open Inspector Transitions.';root.append(note);
@@ -948,6 +1026,7 @@ function renderTransitionPresets(){
 }
 window.addEventListener("blur",()=>{for(const control of visualControls)control.cancel();});
 function updateTime() {
+  timelineContextMenu?.invalidate();
   syncClipboardControls();
   syncProgramMarks();
   trackViewerSelection();
@@ -994,6 +1073,8 @@ function installTimeline(next,{transitionSelection=null}={}) {
       button.addEventListener("click", (event) => {
         if(documentState?.project_epoch===gapEpoch && documentState?.generation===gapGeneration && timeline===next)canvasTimeline.selectClip(clip.id,event);
       });
+      const openMenu=event=>{if(documentState?.project_epoch!==gapEpoch || documentState?.generation!==gapGeneration || timeline!==next)return;event.preventDefault();event.stopPropagation();const rect=button.getBoundingClientRect();canvasTimeline.openContextMenu({kind:'clip',clip_id:clip.id,track_id:track.id,frame:view.playhead,clientX:event.type==='contextmenu' && event.clientX?event.clientX:rect.left,clientY:event.type==='contextmenu' && event.clientY?event.clientY:rect.bottom,returnFocus:button});};
+      button.addEventListener('contextmenu',openMenu);button.addEventListener('keydown',event=>{if(isTimelineContextShortcut(event))openMenu(event);});
       $("clip-list").append(button);
     }
   for(const gap of next.gaps || []){
@@ -1119,6 +1200,7 @@ compoundNavigation=createCompoundNavigation({
 $("open-compound").addEventListener('click',()=>compoundNavigation.enter());
 document.addEventListener('toggle',()=>compoundNavigation.invalidate(),true);
 document.addEventListener('keydown',event=>{
+  if(timelineContextMenu?.active())return;
   if(event.target.closest?.('[data-key-editor-window]'))return;
   const action=compoundNavigationAction(event,{dialogOpen:Boolean(document.querySelector('dialog[open]')),idle:!busy && !unresolved && canvasTimeline.navigationIdle(),hasAncestors:compoundNavigation.state().ancestors.length>0});
   if(!action)return;
@@ -1271,6 +1353,7 @@ async function mutate(operation, project = false,route=null,preparedMutation=nul
     operation,
   };
   busy = true;
+  timelineContextMenu?.invalidate();
   compoundNavigation?.invalidate();
   nativeAssets?.invalidate();
   mediaImport?.invalidate();mediaRelink?.invalidate();otioImport?.invalidate();syncClipboardControls();
@@ -2095,10 +2178,13 @@ voiceover=createVoiceover({root:$("voiceover-dialog"),getClientId:()=>clientId,c
   view.recording=progress;if(progress && timeline){view.recording.length_frames=Math.floor(progress.seconds*timeline.fps.num/timeline.fps.den);if(progress.withoutPlayback){view.playhead=Math.min(1_000_000_000,progress.start_frame+view.recording.length_frames);updateTime();}}canvasTimeline.invalidate();
 },getTarget:()=>documentState?.project_name && timeline && timeline.id!=="fixture"?{project_epoch:documentState.project_epoch,generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,start_frame:view.playhead,tracks:timeline.tracks.filter((track)=>track.kind==="audio" && track.armed && !track.locked).map((track)=>track.id),formats:documentState.recording_formats,canPlayback:!!documentState.capabilities.playback && timeline.tracks.some((track)=>track.clips.length)}:null});
 silencePanel=createSilencePanel({root:$("silence-dialog"),notice,preview:(ranges)=>{view.silencePreview=ranges;canvasTimeline.invalidate();},canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>commit(operation),getTarget:()=>{
-  if(!documentState || !timeline || timeline.id==="fixture" || !view.selection.length)return null;
+  if(contextSilence && !contextOwnerCurrent(contextSilence))return null;
+  const ids=contextSilence?.media_ids ?? view.selection;
+  if(!documentState || !timeline || timeline.id==="fixture" || !ids.length)return null;
   const end=Math.max(1,...timeline.tracks.flatMap((track)=>track.clips.map((item)=>item.start_frame+item.length_frames)));
-  return {query:{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1)},clip_ids:[...view.selection]};
+  return {query:{project_epoch:documentState.project_epoch,if_generation:documentState.generation,timeline_id:timeline.id,revision:timeline.revision,frame:Math.min(view.playhead,end-1)},clip_ids:[...ids]};
 }});
+$('silence-dialog').addEventListener('close',()=>{contextSilence=null;});
 for(const button of document.querySelectorAll('button[data-inspector-tab]'))button.addEventListener('click',()=>setInspectorTab(button.dataset.inspectorTab));
 $('inspector-content').addEventListener('click',event=>{if(event.target.closest('[data-inspector-auto-balance]'))workspaceTool('Color','Auto balance');});
 $('close-browser').addEventListener('click',()=>{editor.classList.remove('browser-drawer-open');updateBrowserToggle();document.querySelector('#workspaces [data-panel="Media"]').focus();});

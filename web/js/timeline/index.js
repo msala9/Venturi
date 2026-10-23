@@ -19,6 +19,7 @@ export function createTimeline(options) {
     checkSelectionAnchor:input.checkSelectionAnchor,
     canSelectTimeline:input.canSelectTimeline,
     handleSelectionKey:input.handleSelectionKey,
+    openContextMenu:input.openContextMenu,
     transitionDnd: input.transitionDnd,
     presetDnd:{...input.presetDnd,start(item,current){options.onNavigationIntent?.();return input.presetDnd.start(item,current);}},
     assetDnd:{...input.assetDnd,start(items,current,onDrop){options.onNavigationIntent?.();return input.assetDnd.start(items,current,onDrop);}},

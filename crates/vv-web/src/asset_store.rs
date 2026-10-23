@@ -18,6 +18,7 @@ use std::{
         atomic::{AtomicBool, Ordering},
     },
 };
+use vv_core::Id;
 
 pub(crate) const MAX_JSON: u64 = 4 * 1024 * 1024;
 #[derive(Clone)]
@@ -70,11 +71,15 @@ pub enum Edit {
         id: String,
         revision: String,
         directory_token: String,
+        #[serde(default, skip_serializing_if = "is_false")]
+        replace_content: bool,
     },
     Relink {
         id: String,
         revision: String,
         path_tokens: Vec<String>,
+        #[serde(default, skip_serializing_if = "is_false")]
+        replace_content: bool,
     },
     Update {
         id: String,
@@ -123,6 +128,9 @@ pub enum Edit {
         folder: Option<String>,
     },
 }
+fn is_false(value: &bool) -> bool {
+    !value
+}
 impl Edit {
     pub fn requires_preparation(&self) -> bool {
         matches!(
@@ -147,6 +155,12 @@ pub(crate) struct TreeImportPlan {
     pub folders: Vec<Option<String>>,
     pub present: std::collections::HashSet<(u64, Option<String>)>,
     pub created_folders: usize,
+}
+pub(crate) struct RelinkedFile {
+    pub path: PathBuf,
+    pub content_hash: u64,
+    pub meta: vv_core::MediaMeta,
+    pub source_token: String,
 }
 fn name(id: &str, archived: bool) -> Result<String> {
     if id.is_empty()
@@ -1221,17 +1235,29 @@ impl Store {
     pub(crate) fn prepare_relink(
         &self,
         edit: &Edit,
-        remap: &std::collections::HashMap<PathBuf, PathBuf>,
+        remap: &std::collections::BTreeMap<PathBuf, RelinkedFile>,
         original_missing: &std::collections::HashSet<PathBuf>,
         mut completion: Completion,
         cancel: &AtomicBool,
     ) -> Result<PreparedEdit> {
-        let (id, revision) = match edit {
-            Edit::Relink { id, revision, .. } | Edit::RelinkFolder { id, revision, .. } => {
-                (id, revision)
+        let (id, revision, replace_content) = match edit {
+            Edit::Relink {
+                id,
+                revision,
+                replace_content,
+                ..
             }
+            | Edit::RelinkFolder {
+                id,
+                revision,
+                replace_content,
+                ..
+            } => (id, revision, *replace_content),
             _ => return Err(ApiError::invalid("Choose a native asset relink")),
         };
+        if remap.len() > 64 {
+            return Err(ApiError::invalid("Replace at most 64 native asset files"));
+        }
         let _global = self.lock()?;
         let filename = name(id, false)?;
         let raw = self.checked(&filename, revision)?;
@@ -1248,15 +1274,53 @@ impl Store {
             return Err(changed());
         }
         let mut payload = asset_payload::decode(&asset)?;
-        for item in payload.files_mut() {
-            if let Some(path) = remap.get(&item.path) {
-                if self.media_entry(path)?.is_none() {
+        let mut rows = Vec::new();
+        let mut replacements = Vec::new();
+        for (old_path, file) in remap {
+            if self.media_entry(&file.path)?.is_none() {
+                return Err(changed());
+            }
+            if replace_content {
+                let mut media = Vec::new();
+                for (media_id, item) in &payload.fragment().media_pool {
+                    if item.compound.is_none() && item.path == *old_path {
+                        if replacements.len() >= 4096 {
+                            return Err(ApiError::invalid(
+                                "Replacement affects more than 4096 native media records",
+                            ));
+                        }
+                        media.push(json!({"media_id":media_id.raw().to_string(),"before":{"content_hash":item.content_hash.to_string(),"meta":item.meta}}));
+                        replacements.push((
+                            media_id,
+                            file.path.clone(),
+                            file.content_hash,
+                            file.meta.clone(),
+                        ));
+                    }
+                }
+                if media.is_empty() {
                     return Err(changed());
                 }
-                item.path = path.clone();
+                let file_name = old_path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .ok_or_else(ApiError::missing)?;
+                rows.push(json!({"file_name":crate::asset_jobs::original_media_name(file_name),"source_token":file.source_token,
+                    "media":media,"after":{"content_hash":file.content_hash.to_string(),"meta":file.meta}}));
+            }
+        }
+        if replace_content && !payload.relink_files(&replacements) {
+            return Err(ApiError::invalid("Native replacement targets changed"));
+        }
+        if !replace_content {
+            for item in payload.files_mut() {
+                if let Some(file) = remap.get(&item.path) {
+                    item.path = file.path.clone();
+                }
             }
         }
         asset.payload = payload.to_text();
+        asset_payload::decode(&asset)?;
         let remaining = self
             .missing_files(&asset)?
             .iter()
@@ -1264,11 +1328,28 @@ impl Store {
             .count();
         completion.receipt["missing_count"] = json!(remaining);
         completion.receipt["relinked_files"] = json!(remap.len());
-        let mut prepared = PreparedEdit::new(
-            &self.0.directory,
-            completion,
-            json!({"asset_id":id,"revision":revision,"missing_count":remaining,"relinked_files":remap.len()}),
-        )?;
+        let mut summary = json!({"asset_id":id,"revision":revision,"missing_count":remaining,"relinked_files":remap.len()});
+        if replace_content {
+            let digest = format!(
+                "{:x}",
+                Sha256::digest(serde_json::to_vec(&rows).map_err(|_| ApiError::io())?)
+            );
+            completion.receipt["replace_content"] = json!(true);
+            completion.receipt["replaced_files"] = json!(remap.len());
+            completion.receipt["replacement_digest"] = json!(digest);
+            summary["replace_content"] = json!(true);
+            summary["replaced_files"] = json!(remap.len());
+            summary["replacement_digest"] = json!(digest);
+            summary["replacements"] = json!(rows);
+        }
+        if serde_json::to_vec(&summary)
+            .map_err(|_| ApiError::io())?
+            .len()
+            > asset_payload::MAX_ASSET_BYTES
+        {
+            return Err(ApiError::invalid("Replacement report exceeds 4 MiB"));
+        }
+        let mut prepared = PreparedEdit::new(&self.0.directory, completion, summary)?;
         let before = Some(Before {
             identity: raw.identity.clone(),
             sha256: raw.revision.clone(),

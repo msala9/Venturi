@@ -3,6 +3,219 @@ use vv_core::{
     Clip, ClipId, ClipSource, Rational, Timeline, Track, TrackKind, clipboard::ClipboardOrigin,
 };
 
+#[test]
+fn deliberate_relink_default_serialization_preserves_legacy_mutation_identity() {
+    for value in [
+        json!({"action":"relink","id":"asset","revision":"revision","path_tokens":["take.mp4"]}),
+        json!({"action":"relink_folder","id":"asset","revision":"revision","directory_token":"Takes"}),
+    ] {
+        let edit: Edit = serde_json::from_value(value.clone()).unwrap();
+        assert_eq!(serde_json::to_value(&edit).unwrap(), value);
+        let mut explicit_false = value.clone();
+        explicit_false["replace_content"] = json!(false);
+        assert_eq!(
+            serde_json::to_value(serde_json::from_value::<Edit>(explicit_false).unwrap()).unwrap(),
+            value
+        );
+        let mut replacement = value;
+        replacement["replace_content"] = json!(true);
+        assert_eq!(
+            serde_json::to_value(serde_json::from_value::<Edit>(replacement.clone()).unwrap())
+                .unwrap(),
+            replacement
+        );
+        replacement["replace_content"] = json!("true");
+        assert!(serde_json::from_value::<Edit>(replacement).is_err());
+    }
+}
+
+#[test]
+fn deliberate_relink_uses_native_fps_crop_adaptation_preserves_ids_and_durable_report() {
+    use vv_core::{Command, Id, Interpolation, MediaItem, MediaMeta, TransformParam};
+    let (root, store, _) = fixture();
+    let old_path = root.join("media/0123456789abcdef/take.mp4");
+    let mut session = vv_session::Session::default();
+    let media = session.project.media_pool.insert(MediaItem {
+        path: old_path.clone(),
+        meta: MediaMeta {
+            duration_frames: 96,
+            fps: Rational::new(48, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: false,
+            sample_rate: 0,
+            channels: 0,
+            audio_streams: 0,
+            file: Default::default(),
+        },
+        content_hash: 0x0123456789abcdef,
+        compound: None,
+        folder: None,
+    });
+    let mut clip = Clip::from_source_range(
+        ClipId(9007199254740993),
+        ClipSource::Media(media),
+        4,
+        28,
+        12,
+        Rational::new(1, 2),
+    );
+    clip.effects
+        .transform
+        .track_mut(TransformParam::CropLeft)
+        .default = 4.0;
+    clip.effects.gain_db.upsert(12, -6.0, Interpolation::Linear);
+    let mut track = Track::new(TrackKind::Video);
+    track.clips.push(clip);
+    let child = session.create_timeline(Timeline {
+        name: "Replacement child".into(),
+        fps: Rational::new(24, 1),
+        resolution: (64, 64),
+        tracks: vec![track],
+        markers: vec![],
+        master: Default::default(),
+    });
+    let compound = session
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound == Some(child))
+        .unwrap()
+        .0;
+    let asset = asset_payload::capture(
+        &session,
+        compound,
+        "Replacement asset",
+        ClipboardOrigin {
+            instance: 1,
+            epoch: 2,
+        },
+    )
+    .unwrap();
+    store.create("replacement", &asset).unwrap();
+    let before = store.export("replacement").unwrap();
+    let old_payload = asset_payload::decode(&asset).unwrap();
+    let old_id = old_payload
+        .fragment()
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound.is_none())
+        .unwrap()
+        .0;
+    let bytes = b"owned replacement fixture bytes";
+    let sha = format!("{:x}", Sha256::digest(bytes));
+    let directory = directory(store.media(), &sha).unwrap();
+    drop(directory);
+    let new_path = root.join("media").join(&sha).join("take.mp4");
+    std::fs::write(&new_path, bytes).unwrap();
+    let new_meta = MediaMeta {
+        duration_frames: 120,
+        fps: Rational::new(30, 1),
+        width: 32,
+        height: 48,
+        has_video: true,
+        has_audio: false,
+        sample_rate: 0,
+        channels: 0,
+        audio_streams: 0,
+        file: Default::default(),
+    };
+    let mut expected = old_payload.fragment().clone();
+    vv_core::SetMediaPath::new(old_id, new_path.clone(), 77, Some(new_meta.clone()))
+        .apply(&mut expected);
+    let edit = Edit::Relink {
+        id: "replacement".into(),
+        revision: revision(&store, "replacement", false),
+        path_tokens: vec!["take.mp4".into()],
+        replace_content: true,
+    };
+    let replacements = std::collections::BTreeMap::from([(
+        old_path.clone(),
+        RelinkedFile {
+            path: new_path.clone(),
+            content_hash: 77,
+            meta: new_meta.clone(),
+            source_token: "take.mp4".into(),
+        },
+    )]);
+    let mut prepared = store
+        .prepare_relink(
+            &edit,
+            &replacements,
+            &std::collections::HashSet::from([old_path.clone()]),
+            receipt(&store, "native-replacement"),
+            &AtomicBool::new(false),
+        )
+        .unwrap();
+    let report = prepared.summary();
+    assert_eq!(report["replace_content"], true);
+    assert_eq!(report["replaced_files"], 1);
+    assert_eq!(
+        report["replacement_digest"],
+        format!(
+            "{:x}",
+            Sha256::digest(serde_json::to_vec(&report["replacements"]).unwrap())
+        )
+    );
+    assert_eq!(
+        report["replacements"][0]["media"][0]["media_id"],
+        old_id.raw().to_string()
+    );
+    assert_eq!(report["replacements"][0]["after"]["meta"], json!(new_meta));
+    assert_eq!(store.export("replacement").unwrap(), before);
+    store
+        .commit_edit(&mut prepared, &AtomicBool::new(false))
+        .unwrap();
+    let after = asset_payload::parse(&store.export("replacement").unwrap()).unwrap();
+    let actual = asset_payload::decode(&after).unwrap();
+    assert_eq!(json!(actual.origin), json!(old_payload.origin));
+    assert_eq!(actual.media_ids(), old_payload.media_ids());
+    assert_eq!(
+        actual.fragment().media_pool.keys().collect::<Vec<_>>(),
+        old_payload.fragment().media_pool.keys().collect::<Vec<_>>()
+    );
+    assert_eq!(
+        json!(actual.fragment().timelines),
+        json!(expected.timelines),
+        "native SetMediaPath owns key/FPS/crop adaptation"
+    );
+    assert_eq!(
+        json!(actual.fragment().media_pool[old_id]),
+        json!(expected.media_pool[old_id])
+    );
+    for (_, item) in &actual.fragment().media_pool {
+        if let Some(timeline) = item.compound {
+            assert_eq!(
+                json!(item.meta),
+                json!(actual.fragment().timelines[timeline].compound_meta())
+            );
+        }
+    }
+    let binding = asset_journal::project_binding(&store.0.directory).unwrap();
+    drop(prepared);
+    drop(store);
+    let reopened = Store::new(&root).unwrap();
+    let completion = reopened
+        .completion("native-replacement", &binding)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        completion.1["replacement_digest"],
+        report["replacement_digest"]
+    );
+    assert_eq!(completion.1["replaced_files"], 1);
+    assert!(completion.1.get("replacements").is_none());
+    assert_eq!(
+        std::fs::read(root.join("assets/replacement.json.bak")).unwrap(),
+        before
+    );
+    assert!(!old_path.exists());
+    assert_eq!(std::fs::read(&new_path).unwrap(), bytes);
+    drop(reopened);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
 fn delete_file_asset(store: &Store) -> (PathBuf, AssetFile) {
     let directory = directory(store.media(), "0123456789abcdef").unwrap();
     drop(directory);

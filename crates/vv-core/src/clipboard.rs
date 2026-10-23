@@ -3,13 +3,14 @@
 //! nested timelines they need, under its own ids.
 
 use std::collections::{HashMap, HashSet};
+use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
 use crate::pool::{AddEntities, absorb};
 use crate::{
-    Clip, ClipSource, FrameIdx, MediaId, MediaItem, Project, Rational, Timeline, TimelineId,
-    TrackKind,
+    Clip, ClipSource, Command, FrameIdx, MediaId, MediaItem, MediaMeta, Project, Rational,
+    Timeline, TimelineId, TrackKind,
 };
 
 const HEADER: &str = "venturi-clipboard/";
@@ -137,6 +138,62 @@ impl ClipboardPayload {
             .media_pool
             .values_mut()
             .filter(|item| item.compound.is_none())
+    }
+
+    /// Relinks a Library payload without copied clip entries. Invalid IDs or
+    /// exhausted compound generations leave it unchanged; `true` means success.
+    pub fn relink_files(&mut self, replacements: &[(MediaId, PathBuf, u64, MediaMeta)]) -> bool {
+        if self.has_clips() {
+            return false;
+        }
+        let mut changed = HashSet::new();
+        for (id, _, _, _) in replacements {
+            if !changed.insert(*id)
+                || self
+                    .project
+                    .media_pool
+                    .get(*id)
+                    .is_none_or(|item| item.compound.is_some())
+            {
+                return false;
+            }
+        }
+        let mut compounds = Vec::new();
+        loop {
+            let affected: Vec<_> = self
+                .project
+                .media_pool
+                .iter()
+                .filter(|(id, _)| !changed.contains(id))
+                .filter_map(|(id, item)| {
+                    let timeline = self.project.timelines.get(item.compound?)?;
+                    timeline
+                        .tracks
+                        .iter()
+                        .flat_map(|track| &track.clips)
+                        .any(|clip| matches!(clip.source, ClipSource::Media(id) if changed.contains(&id)))
+                        .then_some(id)
+                })
+                .collect();
+            if affected.is_empty() {
+                break;
+            }
+            for id in affected {
+                changed.insert(id);
+                compounds.push(id);
+            }
+        }
+        if !self.project.reserve_compound_generations(compounds.len()) {
+            return false;
+        }
+        for (id, path, hash, meta) in replacements {
+            crate::command::SetMediaPath::new(*id, path.clone(), *hash, Some(meta.clone()))
+                .apply(&mut self.project);
+        }
+        for id in compounds {
+            self.project.sync_compound_meta(id);
+        }
+        true
     }
 
     pub fn to_text(&self) -> String {

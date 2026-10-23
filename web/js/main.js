@@ -2247,6 +2247,14 @@ slipView=createSlipView({root:$("slip-view"),notice,commit:(operation)=>commit(o
 }});
 sharedLibrary=createLibraryPanel({root:sharedLibraryRoot,getState:()=>documentState,canCommit:()=>writable && !busy && !unresolved,commit:(operation)=>mutate(operation,true),notice});
 function nativeImportedMedia(ids){revealProjectMedia(ids);}
+function retireNativeAssetPreview(ids,receipt){
+  if(receipt.project_epoch!==documentState?.project_epoch)return;
+  if(ids.includes(sourcePreviewAttempt?.id))cancelSourcePreview();
+  if(!ids.includes(sourceLibraryItem?.item.native_asset?.id))return;
+  sourcePlayer?.reset();sourceAssets?.cancelSource();sourceSeek?.reset();
+  sourceOpenId=null;clearLibrarySource();sourceWaveformBinding=null;
+  if(viewerMode==='source')viewerModeSet('program');
+}
 nativeAssets=createNativeAssetPanel({
   root:nativeAssetsRoot,getContext:()=>documentState?{...documentState,selected_ids:[...mediaState.selected]}:null,
   canCommit:()=>writable && !busy && !unresolved,
@@ -2256,14 +2264,8 @@ nativeAssets=createNativeAssetPanel({
     nativePlacementCompletion=null;const pending=commit(operation),owner={intent:nativePlacementIntent,navigation:timelineOpenSequence,frame:view.playhead};
     return pending.then(receipt=>{nativePlacementCompletion={owner,command:receipt.command_id};return receipt;});
   },onImported:nativeImportedMedia,onPreview:previewNativeAsset,
-  onRemoved:(ids,receipt)=>{
-    if(receipt.project_epoch!==documentState?.project_epoch)return;
-    if(ids.includes(sourcePreviewAttempt?.id))cancelSourcePreview();
-    if(!ids.includes(sourceLibraryItem?.item.native_asset?.id))return;
-    sourcePlayer?.reset();sourceAssets?.cancelSource();sourceSeek?.reset();
-    sourceOpenId=null;clearLibrarySource();sourceWaveformBinding=null;
-    if(viewerMode==='source')viewerModeSet('program');
-  },
+  onRemoved:retireNativeAssetPreview,
+  onRelinked:(id,receipt)=>retireNativeAssetPreview([id],receipt),
   onPlaced:receipt=>{
     const completed=nativePlacementCompletion;nativePlacementCompletion=null;
     if(!completed || completed.command!==receipt.command_id || completed.owner.intent!==nativePlacementIntent || completed.owner.navigation!==timelineOpenSequence || completed.owner.frame!==view.playhead || receipt.project_epoch!==documentState?.project_epoch || receipt.generation!==documentState?.generation || receipt.timeline_id!==timeline?.id || !Array.isArray(receipt.media_ids) || !Array.isArray(receipt.clip_ids))return;

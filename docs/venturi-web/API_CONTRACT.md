@@ -328,6 +328,16 @@ does not mutate timeline history or publish catalog metadata. A canceled job
 cannot subsequently commit. Verified media copies may remain reusable, as for
 other native-asset preparation jobs; cancellation never deletes shared files.
 
+Consumed Capture, Import and ImportSet jobs become `applied` and release their
+prepared file witnesses. Publication retains its asset ID/revision and accepts
+an identical same-command/context retry without reopening its original sources.
+Pool import and timeline placement accept under the jobs mutex after native
+trial/preflight and a final cancellation/revision/copied-file check, immediately
+before native apply. An unchanged cached import also consumes its preparation.
+Completed mutations replay through the ordinary command receipt; consumed jobs
+cannot authorize a fresh mutation. Subsequent folder preparation can reserve
+its full256-witness budget without manually canceling successful operations.
+
 The browser retains the prepared mutation and validates its current writer,
 command epoch, project epoch, generation and operation before entering the
 ordinary mutation owner. An uncertain final application follows the existing
@@ -347,8 +357,33 @@ depends on path, size and mtime; it is not a byte checksum. Imports retain the
 existing SHA-content verification and legacy-directory rules after relinking.
 `{action:"relink_folder",id,revision,directory_token}` searches the chosen
 approved folder recursively through the same preparation boundary and identity
-rules. Substitutions with incompatible metadata remain unavailable;
-SHA-managed dependencies require their original content.
+rules. Without an explicit replacement option, substitutions with incompatible
+metadata remain unavailable and SHA-managed dependencies require their original
+content.
+
+Both edits accept optional `replace_content:true`. Omitted or false retains the
+original repair contract and legacy serialized mutation identity. Explicit
+replacement copies each selected missing dependency to its new SHA256-managed
+path and updates native metadata/fingerprint through `ClipboardPayload::relink_files`
+and native `SetMediaPath`. Native FPS conform, animation/crop adjustment and
+affected compound invalidation apply; media IDs and clipboard references remain
+stable. Readable dependencies and previously imported project copies are unchanged.
+The old missing location must remain missing through final publication, except
+when identical bytes publish the verified copy into that same SHA path. That
+exception binds the exact copied-file identity; subsequent replacement is refused.
+
+Replacement-ready results additionally contain `replace_content:true`,
+`replaced_files`, `replacement_digest` and `replacements`. The digest is SHA256
+of the serialized replacement rows. Each row contains `file_name`, approved
+`source_token`, `media:[{media_id,before:{content_hash,meta}}]` and
+`after:{content_hash,meta}`. IDs/fingerprints are decimal strings; metadata uses
+the native `MediaMeta` fields. Reports admit at most64 files,4096 media entries
+and4MiB. Distinct dependencies may share a basename; media IDs must be disjoint.
+The browser reviews the prepared source properties and explicitly confirms the
+same mutation before dispatch. Cancel/context/selection/writer changes invalidate
+the review. Final and durable replay receipts retain the replacement flag,
+count and digest, without the full rows. The matching acknowledged replacement
+retires its active Library Source preview before a refreshed source is opened.
 
 Ready job `result` includes `{asset_id,revision,missing_count,relinked_files}`.
 The final command receipt and journal completion retain both counts. Native
@@ -2502,4 +2537,5 @@ basename after removing the native historical16hex-prefix, with exact stored
 basename fallback. Prefix matching accepts uppercase hex as native does. This
 changes only candidate lookup: approval, metadata/content matching, source FD,
 final CAS, publication and payload identity remain unchanged. Repairing an exact
-original does not yet authorize a different re-encoded replacement file.
+original uses the default repair contract; different replacement bytes require
+the explicit reviewed `replace_content:true` flow above.

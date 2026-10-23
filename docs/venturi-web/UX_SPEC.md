@@ -259,6 +259,16 @@ keeps Open. The batch shows destination/new-track/safe-overlap feedback and make
 one Undo. Filters remove hidden mutation targets and invalidate stale Relink
 drafts. Cosmetic sorting preserves selection/anchor and does not reopen Source.
 
+Native Library missing-file recovery keeps exact-original repair as its default.
+The contextual selected-file/folder controls offer `Use replacement files` for
+an intentional different version. After preparation, an inline review shows
+the source and native properties before/after; `Confirm replacement` applies
+that prepared change once. Cancel or Escape leaves the asset metadata unchanged.
+Changing project, selection, writer or replacement option cancels the review.
+Successful replacement retires the matching active Library Source preview;
+opening it again uses the new revision. Existing project copies retain their
+original content. These controls remain inside the contextual Library actions.
+
 ## 4. Source and Program Viewer
 
 Viewer control strip: switch Source/Program; Play/Pause; frame stepping; In/Out, current timecode with tabular numbers; Fit/100%; optional safe guides and overlay handles. Source I/O is a selection of a source media, not a timeline edit; Program I/O is the export range and not necessarily saved in `.vvproj` (match upstream). Fullscreen viewer via keyboard.

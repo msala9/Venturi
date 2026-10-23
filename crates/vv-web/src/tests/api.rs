@@ -3194,7 +3194,7 @@ async fn native_asset_http_library_readers_import_routes_security_and_download_c
     assert_eq!(response.status(), StatusCode::OK);
     let canceled: Value =
         serde_json::from_slice(&to_bytes(response.into_body(), 16384).await.unwrap()).unwrap();
-    assert_eq!(canceled["state"], "canceled");
+    assert_eq!(canceled["state"], "applied");
     assert_eq!(canceled["project_epoch"], epoch);
     assert!(canceled["result"].is_null());
     let after_cancel = host.call(Action::Session).await.unwrap();

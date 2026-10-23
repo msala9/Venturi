@@ -675,6 +675,466 @@ fn native_tree_import_prunes_empty_sources_without_creating_an_invented_folder()
 }
 
 #[test]
+fn deliberate_relink_replacement_publishes_new_content_and_import_never_reuses_old_media() {
+    use vv_core::Command;
+    for recursive in [false, true] {
+        let fixture = Fixture::new();
+        let captured = fixture.capture();
+        fixture
+            .jobs
+            .publish("replace", captured["id"].as_str().unwrap(), "epoch", "7")
+            .unwrap();
+        assert_eq!(
+            fixture
+                .jobs
+                .status(captured["id"].as_str().unwrap(), "epoch", false)
+                .unwrap()["state"],
+            "applied"
+        );
+        let revision = fixture.store.item("replace", false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let old_asset = fixture.store.load("replace", &revision).unwrap();
+        fixture.store.create("unselected-peer", &old_asset).unwrap();
+        let peer = fixture.store.export("unselected-peer").unwrap();
+        let before = fixture.store.export("replace").unwrap();
+        let old_payload = asset_payload::decode(&old_asset).unwrap();
+        let old_path = old_payload.files().next().unwrap().path.clone();
+        let import = fixture
+            .jobs
+            .prepare_import("epoch", "7", "replace", &revision)
+            .unwrap();
+        assert_eq!(
+            fixture.finish(import["id"].as_str().unwrap())["state"],
+            "ready"
+        );
+        let imported = fixture
+            .jobs
+            .import_payload(
+                import["id"].as_str().unwrap(),
+                "replace",
+                &revision,
+                "epoch",
+                "7",
+            )
+            .unwrap();
+        let old_copy = imported.files().next().unwrap().path.clone();
+        let old_bytes = std::fs::read(&old_copy).unwrap();
+        let mut project = vv_core::Project::default();
+        let mut add = vv_core::AddEntities::new(vv_core::CommandLabel::ImportMedia);
+        imported.merge_into(&mut project, &mut add);
+        add.apply(&mut project);
+        fixture
+            .jobs
+            .accept_import(
+                import["id"].as_str().unwrap(),
+                "replace",
+                &revision,
+                "epoch",
+                "7",
+            )
+            .unwrap();
+        assert_eq!(
+            fixture
+                .jobs
+                .status(import["id"].as_str().unwrap(), "epoch", false)
+                .unwrap()["state"],
+            "applied"
+        );
+        reserve_witnesses(
+            &fixture.jobs.0.jobs.lock().unwrap(),
+            crate::files::MAX_MEDIA_IMPORTS,
+        )
+        .unwrap();
+        let old_ids = project.media_pool.keys().collect::<HashSet<_>>();
+        std::fs::remove_file(&old_path).unwrap();
+        let directory = fixture.project.join("Replacement/deep");
+        std::fs::create_dir_all(&directory).unwrap();
+        let source = directory.join("tiny.png");
+        let mut encoder = png::Encoder::new(File::create(&source).unwrap(), 32, 24);
+        encoder.set_color(png::ColorType::Rgb);
+        encoder.set_depth(png::BitDepth::Eight);
+        encoder
+            .write_header()
+            .unwrap()
+            .write_image_data(&[231; 32 * 24 * 3])
+            .unwrap();
+        let edit = if recursive {
+            asset_store::Edit::RelinkFolder {
+                id: "replace".into(),
+                revision: revision.clone(),
+                directory_token: "Replacement".into(),
+                replace_content: true,
+            }
+        } else {
+            asset_store::Edit::Relink {
+                id: "replace".into(),
+                revision: revision.clone(),
+                path_tokens: vec!["Replacement/deep/tiny.png".into()],
+                replace_content: true,
+            }
+        };
+        let ready = prepare_relink(&fixture, "replace-content", edit.clone());
+        assert_eq!(ready["state"], "ready", "{ready}");
+        let report = &ready["result"];
+        assert_eq!(report["replace_content"], true);
+        assert_eq!(report["replaced_files"], 1);
+        assert_eq!(
+            report["replacement_digest"],
+            format!(
+                "{:x}",
+                Sha256::digest(serde_json::to_vec(&report["replacements"]).unwrap())
+            )
+        );
+        assert_eq!(report["replacements"][0]["file_name"], "tiny.png");
+        assert_eq!(
+            report["replacements"][0]["source_token"],
+            "Replacement/deep/tiny.png"
+        );
+        assert_eq!(report["replacements"][0]["after"]["meta"]["width"], 32);
+        assert_eq!(fixture.store.export("replace").unwrap(), before);
+        let receipt = fixture
+            .jobs
+            .commit_edit("replace-content", [7; 32], "epoch", "7", &edit)
+            .unwrap();
+        assert_eq!(receipt, ready["result"]);
+        let current = fixture.store.item("replace", false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        assert_ne!(current, revision);
+        let changed = fixture.store.load("replace", &current).unwrap();
+        let actual = asset_payload::decode(&changed).unwrap();
+        let file = actual.files().next().unwrap();
+        assert_ne!(file.path, old_path);
+        assert_eq!(file.meta.width, 32);
+        assert_eq!(file.meta.height, 24);
+        assert_eq!(
+            json!(file.content_hash.to_string()),
+            report["replacements"][0]["after"]["content_hash"]
+        );
+        assert_eq!(
+            file.path
+                .parent()
+                .unwrap()
+                .file_name()
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            format!("{:x}", Sha256::digest(std::fs::read(&source).unwrap()))
+        );
+        assert_eq!(
+            std::fs::read(&file.path).unwrap(),
+            std::fs::read(&source).unwrap()
+        );
+        assert_eq!(
+            actual.fragment().media_pool.keys().collect::<Vec<_>>(),
+            old_payload.fragment().media_pool.keys().collect::<Vec<_>>()
+        );
+        assert_eq!(std::fs::read(&old_copy).unwrap(), old_bytes);
+        assert_eq!(fixture.store.export("unselected-peer").unwrap(), peer);
+        assert!(
+            fixture
+                .jobs
+                .prepare_import("epoch", "7", "replace", &revision)
+                .is_err()
+        );
+        let queued = fixture
+            .jobs
+            .prepare_import("epoch", "7", "replace", &current)
+            .unwrap();
+        assert_eq!(
+            fixture.finish(queued["id"].as_str().unwrap())["state"],
+            "ready"
+        );
+        let incoming = fixture
+            .jobs
+            .import_payload(
+                queued["id"].as_str().unwrap(),
+                "replace",
+                &current,
+                "epoch",
+                "7",
+            )
+            .unwrap();
+        let mut add = vv_core::AddEntities::new(vv_core::CommandLabel::ImportMedia);
+        let pasted = incoming.merge_into(&mut project, &mut add);
+        add.apply(&mut project);
+        assert!(
+            pasted.media.iter().all(|id| !old_ids.contains(id)),
+            "new bytes must not reuse an old root"
+        );
+        let copies = project
+            .media_pool
+            .iter()
+            .filter(|(_, item)| item.compound.is_none())
+            .collect::<Vec<_>>();
+        assert_eq!(copies.len(), 2);
+        assert_ne!(copies[0].1.path, copies[1].1.path);
+        assert_ne!(copies[0].1.content_hash, copies[1].1.content_hash);
+        let reopened = Store::new(fixture.store.root()).unwrap();
+        let binding =
+            crate::asset_journal::project_binding(&File::open(&fixture.project).unwrap()).unwrap();
+        let completion = reopened
+            .completion("replace-content", &binding)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            completion.1["replacement_digest"],
+            report["replacement_digest"]
+        );
+        assert_eq!(completion.1["replaced_files"], 1);
+        assert!(completion.1.get("replacements").is_none());
+        assert_eq!(reopened.item("replace", false).unwrap()["missing_count"], 0);
+        drop(reopened);
+        fixture.close();
+    }
+}
+
+#[test]
+fn deliberate_relink_replacement_source_destination_cancel_and_catalog_changes_refuse_commit() {
+    for change in [
+        "source",
+        "destination",
+        "restored_original",
+        "cancel",
+        "revision",
+    ] {
+        let fixture = Fixture::new();
+        let mut edit = offline_relink(&fixture, "offline");
+        let asset_store::Edit::Relink {
+            replace_content, ..
+        } = &mut edit
+        else {
+            unreachable!()
+        };
+        *replace_content = true;
+        let before = fixture.store.export("offline").unwrap();
+        let ready = prepare_relink(&fixture, "replace-guard", edit.clone());
+        assert_eq!(ready["state"], "ready", "{ready}");
+        let mut expected = before.clone();
+        if change == "cancel" {
+            fixture
+                .jobs
+                .status(ready["id"].as_str().unwrap(), "epoch", true)
+                .unwrap();
+        } else if change == "revision" {
+            let asset_store::Edit::Relink { revision, .. } = &edit else {
+                unreachable!()
+            };
+            fixture
+                .store
+                .edit(
+                    "rename",
+                    &asset_store::Edit::Update {
+                        id: "offline".into(),
+                        revision: revision.clone(),
+                        name: "New name".into(),
+                    },
+                )
+                .unwrap();
+            expected = fixture.store.export("offline").unwrap();
+        } else if change == "restored_original" {
+            let asset = asset_payload::parse(&before).unwrap();
+            let payload = asset_payload::decode(&asset).unwrap();
+            let path = &payload.files().next().unwrap().path;
+            std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+            std::fs::copy(&fixture.path, path).unwrap();
+        } else {
+            let path = if change == "source" {
+                fixture.path.clone()
+            } else {
+                let jobs = fixture.jobs.0.jobs.lock().unwrap();
+                let prepared = jobs
+                    .iter()
+                    .find(|job| job.id == ready["id"].as_str().unwrap())
+                    .unwrap()
+                    .edit_result
+                    .as_ref()
+                    .unwrap();
+                fixture
+                    .store
+                    .root()
+                    .join("media")
+                    .join(prepared.files[0].parent.as_ref().unwrap())
+                    .join(&prepared.files[0].name)
+            };
+            let bytes = std::fs::read(&path).unwrap();
+            let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
+            std::fs::write(&path, bytes).unwrap();
+            File::options()
+                .write(true)
+                .open(&path)
+                .unwrap()
+                .set_times(std::fs::FileTimes::new().set_modified(modified))
+                .unwrap();
+        }
+        assert!(
+            fixture
+                .jobs
+                .commit_edit("replace-guard", [7; 32], "epoch", "7", &edit)
+                .is_err(),
+            "{change}"
+        );
+        assert_eq!(fixture.store.export("offline").unwrap(), expected);
+        fixture.close();
+    }
+}
+
+#[test]
+fn deliberate_relink_import_acceptance_rechecks_cancel_revision_and_copied_bytes_before_release() {
+    for change in ["cancel", "revision", "bytes"] {
+        let fixture = Fixture::new();
+        let captured = fixture.capture();
+        let capture_id = captured["id"].as_str().unwrap();
+        fixture
+            .jobs
+            .publish("accept-source", capture_id, "epoch", "7")
+            .unwrap();
+        fixture
+            .jobs
+            .publish("accept-source", capture_id, "epoch", "7")
+            .unwrap();
+        assert_eq!(
+            fixture
+                .jobs
+                .publish("other-command", capture_id, "epoch", "7")
+                .unwrap_err()
+                .1,
+            "ASSET_PUBLISHED"
+        );
+        let revision = fixture.store.item("accept-source", false).unwrap()["revision"]
+            .as_str()
+            .unwrap()
+            .to_owned();
+        let queued = fixture
+            .jobs
+            .prepare_import("epoch", "7", "accept-source", &revision)
+            .unwrap();
+        let id = queued["id"].as_str().unwrap();
+        assert_eq!(fixture.finish(id)["state"], "ready");
+        let payload = fixture
+            .jobs
+            .import_payload(id, "accept-source", &revision, "epoch", "7")
+            .unwrap();
+        match change {
+            "cancel" => {
+                fixture.jobs.status(id, "epoch", true).unwrap();
+            }
+            "revision" => {
+                fixture
+                    .store
+                    .edit(
+                        "rename-before-accept",
+                        &asset_store::Edit::Update {
+                            id: "accept-source".into(),
+                            revision: revision.clone(),
+                            name: "Changed before acceptance".into(),
+                        },
+                    )
+                    .unwrap();
+            }
+            _ => {
+                std::fs::write(
+                    &payload.files().next().unwrap().path,
+                    b"foreign copied bytes",
+                )
+                .unwrap();
+            }
+        }
+        assert!(
+            fixture
+                .jobs
+                .accept_import(id, "accept-source", &revision, "epoch", "7")
+                .is_err(),
+            "{change}"
+        );
+        assert_ne!(
+            fixture.jobs.status(id, "epoch", false).unwrap()["state"],
+            "applied"
+        );
+        fixture.close();
+    }
+}
+
+#[test]
+fn deliberate_relink_identical_sha_replacement_accepts_only_its_own_verified_restored_original() {
+    for changed in [false, true] {
+        let fixture = Fixture::new();
+        let bytes = std::fs::read(&fixture.path).unwrap();
+        let sha = format!("{:x}", Sha256::digest(&bytes));
+        let path = fixture
+            .store
+            .root()
+            .join("media")
+            .join(sha)
+            .join("tiny.png");
+        let mut asset = fixture.asset.clone();
+        let mut payload = asset_payload::decode(&asset).unwrap();
+        for item in payload.files_mut() {
+            item.path = path.clone();
+        }
+        asset.payload = payload.to_text();
+        fixture
+            .store
+            .create("same-sha-replacement", &asset)
+            .unwrap();
+        let before = fixture.store.export("same-sha-replacement").unwrap();
+        let edit = asset_store::Edit::Relink {
+            id: "same-sha-replacement".into(),
+            revision: fixture.store.item("same-sha-replacement", false).unwrap()["revision"]
+                .as_str()
+                .unwrap()
+                .into(),
+            path_tokens: vec!["tiny.png".into()],
+            replace_content: true,
+        };
+        let ready = prepare_relink(&fixture, "same-sha-replacement-command", edit.clone());
+        assert_eq!(ready["state"], "ready", "{ready}");
+        assert_eq!(ready["result"]["replaced_files"], 1);
+        assert_eq!(std::fs::read(&path).unwrap(), bytes);
+        assert_eq!(
+            fixture.store.export("same-sha-replacement").unwrap(),
+            before
+        );
+        if changed {
+            let modified = std::fs::metadata(&path).unwrap().modified().unwrap();
+            std::fs::write(&path, &bytes).unwrap();
+            File::options()
+                .write(true)
+                .open(&path)
+                .unwrap()
+                .set_times(std::fs::FileTimes::new().set_modified(modified))
+                .unwrap();
+        }
+        let result =
+            fixture
+                .jobs
+                .commit_edit("same-sha-replacement-command", [7; 32], "epoch", "7", &edit);
+        if changed {
+            assert_eq!(result.unwrap_err().1, "SOURCE_CHANGED");
+            assert_eq!(
+                fixture.store.export("same-sha-replacement").unwrap(),
+                before
+            );
+        } else {
+            assert_eq!(result.unwrap()["missing_count"], 0);
+            let actual =
+                asset_payload::parse(&fixture.store.export("same-sha-replacement").unwrap())
+                    .unwrap();
+            let actual = asset_payload::decode(&actual).unwrap();
+            assert_eq!(actual.files().next().unwrap().path, path);
+            assert_eq!(
+                actual.fragment().media_pool.keys().collect::<Vec<_>>(),
+                payload.fragment().media_pool.keys().collect::<Vec<_>>()
+            );
+        }
+        fixture.close();
+    }
+}
+
+#[test]
 fn native_asset_relink_normalizes_legacy_uppercase_hash_names_for_selected_and_recursive_sources() {
     for (recursive, literal) in [(false, false), (true, false), (false, true)] {
         let fixture = Fixture::new();
@@ -715,12 +1175,14 @@ fn native_asset_relink_normalizes_legacy_uppercase_hash_names_for_selected_and_r
                 id: "legacy-offline".into(),
                 revision,
                 directory_token: "Replacements".into(),
+                replace_content: false,
             }
         } else {
             asset_store::Edit::Relink {
                 id: "legacy-offline".into(),
                 revision,
                 path_tokens: vec![replacement_name.into()],
+                replace_content: false,
             }
         };
         let before = fixture.store.export("legacy-offline").unwrap();
@@ -776,6 +1238,7 @@ fn native_recursive_relink_uses_approved_nested_files_preserves_payload_and_guar
             id,
             revision,
             directory_token: "Replacements".into(),
+            replace_content: false,
         };
         let original = fixture.store.export("offline").unwrap();
         let ready = prepare_relink(&fixture, "tree-relink", edit.clone());
@@ -840,6 +1303,7 @@ fn offline_relink(fixture: &Fixture, id: &str) -> asset_store::Edit {
             .unwrap()
             .into(),
         path_tokens: vec!["tiny.png".into()],
+        replace_content: false,
     }
 }
 fn prepare_relink(fixture: &Fixture, id: &str, edit: asset_store::Edit) -> Value {
@@ -1059,6 +1523,7 @@ fn native_asset_relink_repairs_original_sha_path_without_treating_its_own_verifi
             .unwrap()
             .into(),
         path_tokens: vec!["tiny.png".into()],
+        replace_content: false,
     };
     let ready = prepare_relink(&fixture, "same-path-repair", edit.clone());
     assert_eq!(ready["state"], "ready", "{ready}");
@@ -1113,6 +1578,7 @@ fn native_asset_relink_mismatched_replacement_is_refused_before_publishing_any_m
             .unwrap()
             .into(),
         path_tokens: vec!["tiny.png".into()],
+        replace_content: false,
     };
     let before = fixture.store.export("offline").unwrap();
     let mut encoder = png::Encoder::new(File::create(&fixture.path).unwrap(), 16, 16);

@@ -262,3 +262,311 @@ fn the_files_of_a_payload_include_those_inside_compound_clips() {
         .collect();
     assert_eq!(paths, vec![std::path::PathBuf::from("/library/inner.mp4")]);
 }
+
+fn replacement_meta() -> MediaMeta {
+    MediaMeta {
+        duration_frames: 220,
+        fps: Rational::new(60_000, 1001),
+        width: 128,
+        height: 144,
+        has_video: true,
+        has_audio: true,
+        sample_rate: 44_100,
+        channels: 1,
+        audio_streams: 3,
+        file: crate::MediaFileInfo {
+            size_bytes: Some(123_456),
+            video_codec: Some("prores".into()),
+            audio_codec: Some("pcm_s24le".into()),
+            title: Some("Replacement".into()),
+            artist: Some("Native relink".into()),
+        },
+    }
+}
+
+#[test]
+fn relink_files_replaces_complete_native_metadata_and_preserves_payload_ids_and_serialization() {
+    let mut source = Project::default();
+    let a = source.media_pool.insert(file("/original/a.mov", 11));
+    let b = source.media_pool.insert(file("/original/b.wav", 22));
+    let mut payload = ClipboardPayload::new(ORIGIN, &source, &[b, a], &[]);
+    let ids = payload.media_ids().to_vec();
+    let replacements: Vec<(MediaId, PathBuf, u64, MediaMeta)> = vec![
+        (ids[0], "/found/b.wav".into(), 33, replacement_meta()),
+        (ids[1], "/found/a.mov".into(), 44, replacement_meta()),
+    ];
+    let mut expected = payload.project.clone();
+    for (id, path, hash, meta) in &replacements {
+        crate::SetMediaPath::new(*id, path.clone(), *hash, Some(meta.clone())).apply(&mut expected);
+    }
+    assert!(payload.relink_files(&replacements));
+    assert_eq!(
+        ron::to_string(payload.fragment()).unwrap(),
+        ron::to_string(&expected).unwrap()
+    );
+    assert_eq!(payload.origin, ORIGIN);
+    assert_eq!(payload.media_ids(), ids.as_slice());
+    assert!(!payload.has_clips());
+    assert_eq!(
+        payload.fragment().media_pool[ids[0]].meta.file,
+        replacement_meta().file
+    );
+    assert_eq!(
+        payload.fragment().media_pool[ids[0]]
+            .meta
+            .audio_stream_count(),
+        3
+    );
+    let text = payload.to_text();
+    let decoded = ClipboardPayload::from_text(&text).unwrap().unwrap();
+    assert_eq!(decoded.to_text(), text);
+    assert_eq!(decoded.media_ids(), ids.as_slice());
+}
+
+#[test]
+fn relink_files_uses_native_fractional_conform_keyframes_and_crop_and_invalidates_only_compound_ancestors()
+ {
+    use crate::{ClipFilter, FilterKind, Interpolation, LinkGroupId, TransformParam};
+
+    let mut source = Project::default();
+    let media = source.media_pool.insert(file("/original/a.mov", 11));
+    source.media_pool.get_mut(media).unwrap().meta.fps = Rational::new(30_000, 1001);
+    let other = source.media_pool.insert(file("/original/other.mov", 22));
+    let inner = compound(&mut source, "Inner", media);
+    let inner_timeline = source.media_pool[inner].compound.unwrap();
+    let fps = Rational::new(24_000, 1001);
+    let mut clip = Clip::from_source_range(
+        source.alloc_clip_id(),
+        ClipSource::Media(media),
+        3,
+        93,
+        11,
+        Rational::conform_rate(fps, source.media_pool[media].meta.fps),
+    );
+    clip.linked_group = Some(LinkGroupId(44));
+    clip.fade_in = 3;
+    clip.audio_stream_index = 0;
+    clip.effects.gain_db.upsert(11, -6.0, Interpolation::Linear);
+    clip.effects
+        .transform
+        .track_mut(TransformParam::CropLeft)
+        .default = 3.0;
+    clip.effects
+        .transform
+        .track_mut(TransformParam::CropTop)
+        .upsert(13, 2.0, Interpolation::EaseIn);
+    clip.effects
+        .transform
+        .track_mut(TransformParam::Opacity)
+        .default = 42.0;
+    let mut exposure = ClipFilter::new(FilterKind::Exposure);
+    exposure.enabled = false;
+    exposure.amount.upsert(9, 0.75, Interpolation::Hold);
+    clip.effects.filters.push(exposure);
+    source.timelines[inner_timeline].fps = fps;
+    source.timelines[inner_timeline].tracks[0].clips = vec![clip];
+    source.sync_compound_meta(inner);
+    let untouched = compound(&mut source, "Unchanged", other);
+    let outer = compound(&mut source, "Outer", inner);
+    let outer_timeline = source.media_pool[outer].compound.unwrap();
+    let sibling = media_clip(&mut source, untouched, 30);
+    source.timelines[outer_timeline].tracks[0]
+        .clips
+        .push(sibling);
+    source.sync_compound_meta(outer);
+    let mut payload = ClipboardPayload::new(ORIGIN, &source, &[outer], &[]);
+    let find = |path: &str| {
+        payload
+            .project
+            .media_pool
+            .iter()
+            .find(|(_, item)| item.path == std::path::Path::new(path))
+            .unwrap()
+            .0
+    };
+    let (media, inner, outer, untouched) = (
+        find("/original/a.mov"),
+        find("Inner"),
+        find("Outer"),
+        find("Unchanged"),
+    );
+    let before = payload.project.clone();
+    let root_ids = payload.media_ids().to_vec();
+    let mut expected = before.clone();
+    assert!(expected.reserve_compound_generations(2));
+    let new_meta = replacement_meta();
+    crate::SetMediaPath::new(media, "/found/a.mov".into(), 99, Some(new_meta.clone()))
+        .apply(&mut expected);
+    expected.sync_compound_meta(inner);
+    expected.sync_compound_meta(outer);
+
+    assert!(payload.relink_files(&[(media, "/found/a.mov".into(), 99, new_meta.clone())]));
+    assert_eq!(
+        ron::to_string(payload.fragment()).unwrap(),
+        ron::to_string(&expected).unwrap()
+    );
+    assert_eq!(payload.media_ids(), root_ids.as_slice());
+    assert_eq!(payload.origin, ORIGIN);
+    assert_eq!(
+        ron::to_string(&payload.project.media_pool[untouched]).unwrap(),
+        ron::to_string(&before.media_pool[untouched]).unwrap()
+    );
+    for id in [inner, outer] {
+        assert_ne!(
+            payload.project.media_pool[id].content_hash,
+            before.media_pool[id].content_hash
+        );
+        let timeline = payload.project.media_pool[id].compound.unwrap();
+        assert_eq!(
+            ron::to_string(&payload.project.media_pool[id].meta).unwrap(),
+            ron::to_string(&payload.project.timelines[timeline].compound_meta()).unwrap()
+        );
+    }
+    let timeline = payload.project.media_pool[inner].compound.unwrap();
+    let clip = &payload.project.timelines[timeline].tracks[0].clips[0];
+    let old_clip = &before.timelines[timeline].tracks[0].clips[0];
+    assert_eq!(clip.id, old_clip.id);
+    assert!(matches!(clip.source, ClipSource::Media(id) if id == media));
+    assert_eq!(clip.linked_group, old_clip.linked_group);
+    assert_eq!(clip.timeline_len, old_clip.timeline_len);
+    assert_eq!(clip.rate(), Rational::conform_rate(fps, new_meta.fps));
+    assert_eq!(clip.effects.gain_db.keyframes()[0].0, 22);
+    assert_eq!(
+        clip.effects
+            .transform
+            .track(TransformParam::CropLeft)
+            .default,
+        6.0
+    );
+    assert_eq!(
+        clip.effects
+            .transform
+            .track(TransformParam::CropTop)
+            .keyframes()[0],
+        (26, 6.0, Interpolation::EaseIn)
+    );
+    assert_eq!(
+        clip.effects
+            .transform
+            .track(TransformParam::Opacity)
+            .default,
+        42.0
+    );
+    assert!(!clip.effects.filters[0].enabled);
+    assert_eq!(
+        clip.effects.filters[0].amount.keyframes()[0],
+        (18, 0.75, Interpolation::Hold)
+    );
+    let decoded = ClipboardPayload::from_text(&payload.to_text())
+        .unwrap()
+        .unwrap();
+    assert_eq!(decoded.to_text(), payload.to_text());
+}
+
+#[test]
+fn relink_files_invalid_requests_and_copied_clip_entries_are_atomic() {
+    let mut source = Project::default();
+    let media = source.media_pool.insert(file("/original/a.mov", 11));
+    let root = compound(&mut source, "Root", media);
+    let payload = ClipboardPayload::new(ORIGIN, &source, &[root], &[]);
+    let file_id = payload
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound.is_none())
+        .unwrap()
+        .0;
+    let root_id = payload.media_ids()[0];
+    let mut allocation = payload.project.media_pool.clone();
+    let missing = allocation.alloc();
+    for ids in [
+        vec![file_id, missing],
+        vec![file_id, file_id],
+        vec![file_id, root_id],
+    ] {
+        let mut candidate = payload.clone();
+        let before = candidate.to_text();
+        let replacements: Vec<_> = ids
+            .into_iter()
+            .map(|id| (id, "/found/a.mov".into(), 99, replacement_meta()))
+            .collect();
+        assert!(!candidate.relink_files(&replacements));
+        assert_eq!(candidate.to_text(), before);
+    }
+    let mut empty = payload.clone();
+    assert!(empty.relink_files(&[]));
+    assert_eq!(empty.to_text(), payload.to_text());
+    let copied = media_clip(&mut source, media, 0);
+    let mut with_clips = ClipboardPayload::new(ORIGIN, &source, &[], &[entry(copied)]);
+    let id = source_of(&with_clips.clip_entries()[0]);
+    let before = with_clips.to_text();
+    assert!(!with_clips.relink_files(&[(id, "/found/a.mov".into(), 99, replacement_meta())]));
+    assert_eq!(with_clips.to_text(), before);
+}
+
+#[test]
+fn relink_files_rebases_copied_compound_generations_and_ignores_real_file_hashes() {
+    let mut source = Project::default();
+    let media = source.media_pool.insert(file("/original/a.mov", u64::MAX));
+    let mut track = Track::new(TrackKind::Video);
+    track.clips.push(media_clip(&mut source, media, 0));
+    let timeline = source.timelines.insert(Timeline {
+        name: "Root".into(),
+        fps: Rational::new(30, 1),
+        resolution: (64, 48),
+        tracks: vec![track],
+        markers: Vec::new(),
+        master: Default::default(),
+    });
+    let root = source.insert_timeline_item(timeline, None);
+    assert_eq!(source.media_pool[root].content_hash, 1);
+    let mut payload = ClipboardPayload::new(ORIGIN, &source, &[root], &[]);
+    let root = payload.media_ids()[0];
+    let file = payload
+        .project
+        .media_pool
+        .iter()
+        .find(|(_, item)| item.compound.is_none())
+        .unwrap()
+        .0;
+    assert!(payload.relink_files(&[(file, "/found/a.mov".into(), 99, replacement_meta())]));
+    assert_eq!(payload.project.media_pool[root].content_hash, 2);
+    assert_eq!(payload.project.media_pool[file].content_hash, 99);
+    assert!(payload.relink_files(&[(file, "/found/again.mov".into(), 100, replacement_meta())]));
+    assert_eq!(payload.project.media_pool[root].content_hash, 3);
+    let decoded = ClipboardPayload::from_text(&payload.to_text())
+        .unwrap()
+        .unwrap();
+    assert_eq!(decoded.to_text(), payload.to_text());
+}
+
+#[test]
+fn relink_files_preflights_the_full_compound_generation_reservation_before_mutation() {
+    let mut source = Project::default();
+    let file = source.media_pool.insert(file("/original/a.mov", 11));
+    let inner = compound(&mut source, "Inner", file);
+    let outer = compound(&mut source, "Outer", inner);
+    let payload = ClipboardPayload::new(ORIGIN, &source, &[outer], &[]);
+    for maximum in [u64::MAX - 1, u64::MAX] {
+        let mut candidate = payload.clone();
+        let outer = candidate.media_ids()[0];
+        candidate
+            .project
+            .media_pool
+            .get_mut(outer)
+            .unwrap()
+            .content_hash = maximum;
+        let file = candidate
+            .project
+            .media_pool
+            .iter()
+            .find(|(_, item)| item.compound.is_none())
+            .unwrap()
+            .0;
+        let before = candidate.to_text();
+        assert!(!candidate.relink_files(&[(file, "/found/a.mov".into(), 99, replacement_meta())]));
+        assert_eq!(candidate.to_text(), before);
+        assert!(candidate.relink_files(&[]));
+        assert_eq!(candidate.to_text(), before);
+    }
+}

@@ -1,6 +1,102 @@
 use super::*;
 
 #[test]
+fn deliberate_relink_prepared_host_ack_replays_after_source_removal_and_restart() {
+    let (root, mut editor, media) = native_asset_fixture("deliberate-relink");
+    let original = std::fs::read(root.join("capture.wav")).unwrap();
+    let hash = format!("{:x}", Sha256::digest(&original));
+    let mut asset = crate::asset_payload::capture(
+        &editor.session,
+        media,
+        "Owned replacement",
+        editor.clipboard_origin(),
+    )
+    .unwrap();
+    let mut payload = crate::asset_payload::decode(&asset).unwrap();
+    for item in payload.files_mut() {
+        item.path = root.join(".assets/media").join(&hash).join("capture.wav");
+    }
+    asset.payload = payload.to_text();
+    editor.assets.create("replace-file", &asset).unwrap();
+    let revision = editor.assets.item("replace-file", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let directory = root.join("Replacement");
+    std::fs::create_dir(&directory).unwrap();
+    let source = directory.join("capture.wav");
+    let mut replacement = original.clone();
+    replacement[44..].fill(0x21);
+    std::fs::write(&source, &replacement).unwrap();
+    let command = request(
+        &editor,
+        Operation::EditNativeAssetLibrary {
+            edit: crate::asset_store::Edit::Relink {
+                id: "replace-file".into(),
+                revision,
+                path_tokens: vec!["Replacement/capture.wav".into()],
+                replace_content: true,
+            },
+        },
+        "deliberate-replace",
+        None,
+    );
+    let project = json!(editor.session.project);
+    let history = editor.snapshot()["history"].clone();
+    let saved = std::fs::read(editor.session.path().unwrap()).unwrap();
+    let mut guard = folder_prepare(&mut editor, command.clone());
+    let ready = guard.jobs.status(&guard.job, &guard.epoch, false).unwrap();
+    let ack = editor.mutation(None, command.clone()).unwrap();
+    guard.armed = false;
+    assert_eq!(ack["replace_content"], true);
+    assert_eq!(ack["replaced_files"], 1);
+    assert_eq!(ack["relinked_files"], 1);
+    assert_eq!(
+        ack["replacement_digest"],
+        ready["result"]["replacement_digest"]
+    );
+    assert!(ack.get("replacements").is_none());
+    assert_eq!(ack["receipt_persisted"], true);
+    assert_eq!(ack["library_durable"], true);
+    assert_eq!(json!(editor.session.project), project);
+    assert_eq!(editor.snapshot()["history"], history);
+    assert_eq!(
+        std::fs::read(editor.session.path().unwrap()).unwrap(),
+        saved
+    );
+    assert_eq!(std::fs::read(root.join("capture.wav")).unwrap(), original);
+    let revision = editor.assets.item("replace-file", false).unwrap()["revision"]
+        .as_str()
+        .unwrap()
+        .to_owned();
+    let changed = editor.assets.load("replace-file", &revision).unwrap();
+    let decoded = crate::asset_payload::decode(&changed).unwrap();
+    assert_eq!(
+        std::fs::read(&decoded.files().next().unwrap().path).unwrap(),
+        replacement
+    );
+    std::fs::remove_file(&source).unwrap();
+    assert_eq!(editor.mutation(None, command.clone()).unwrap(), ack);
+    drop(guard);
+    drop(editor);
+    let mut reopened = Editor::new(&root).unwrap();
+    let mut restarted_ack = ack.clone();
+    restarted_ack["server_restarted"] = json!(true);
+    assert_eq!(
+        reopened.lookup("deliberate-replace").unwrap(),
+        restarted_ack
+    );
+    assert_eq!(reopened.mutation(None, command).unwrap(), restarted_ack);
+    assert_eq!(
+        reopened.assets.item("replace-file", false).unwrap()["revision"],
+        revision
+    );
+    assert_eq!(std::fs::read(root.join("capture.wav")).unwrap(), original);
+    drop(reopened);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn timeline_waveform_reader_is_lease_free_exact_context_and_never_changes_history() {
     use vv_core::{Clip, ClipId, ClipSource, Id, MediaItem, MediaMeta};
     let root =
@@ -3402,6 +3498,7 @@ fn native_publish(editor: &mut Editor, media: vv_core::MediaId, id: &str) -> Str
         None,
     );
     editor.mutation(None, publish).unwrap();
+    assert_native_asset_job_released(editor, &job);
     editor.assets.item(id, false).unwrap()["revision"]
         .as_str()
         .unwrap()
@@ -3426,7 +3523,101 @@ fn native_import(editor: &mut Editor, id: &str, revision: &str, command: &str) -
         command,
         None,
     );
-    editor.mutation(None, import).unwrap()
+    let receipt = editor.mutation(None, import.clone()).unwrap();
+    assert_native_asset_job_released(editor, &job);
+    assert_eq!(editor.mutation(None, import).unwrap(), receipt);
+    receipt
+}
+
+fn assert_native_asset_job_released(editor: &Editor, job: &Value) {
+    let status = editor
+        .asset_jobs
+        .status(
+            job["id"].as_str().unwrap(),
+            job["project_epoch"].as_str().unwrap(),
+            false,
+        )
+        .unwrap();
+    assert_eq!(status["state"], "applied");
+    assert!(
+        status["result"].is_null(),
+        "consumed native assets must release their copied-file witnesses"
+    );
+}
+
+#[test]
+fn deliberate_relink_consumed_publication_import_batch_and_placement_allow_recursive_preparation() {
+    use vv_core::Id;
+    let (root, mut editor, media) = native_asset_fixture("consumed-native-jobs");
+    let revision = native_publish(&mut editor, media, "consumed-source");
+    native_import(&mut editor, "consumed-source", &revision, "consumed-single");
+    let references = vec![crate::asset_store::ImportRef {
+        asset_id: "consumed-source".into(),
+        revision: revision.clone(),
+    }];
+    for placement in [false, true] {
+        let job = native_prepare(
+            &mut editor,
+            NativeAssetAction::ImportSet {
+                assets: references.clone(),
+            },
+        );
+        native_wait(&mut editor, &job);
+        let timeline = editor.session.project.timelines.keys().next().unwrap();
+        let operation = if placement {
+            Operation::PlaceNativeAssets {
+                job_id: job["id"].as_str().unwrap().into(),
+                assets: references.clone(),
+                start_frame: 10,
+                target: commands::AssetDropTarget::NewAudioTrack {},
+                overwrite: false,
+            }
+        } else {
+            Operation::ImportNativeAssetSet {
+                job_id: job["id"].as_str().unwrap().into(),
+                assets: references.clone(),
+            }
+        };
+        let command = request(
+            &editor,
+            operation,
+            if placement {
+                "consumed-placement"
+            } else {
+                "consumed-batch"
+            },
+            placement.then_some(timeline),
+        );
+        let target = placement.then(|| timeline.raw().to_string());
+        let receipt = editor.mutation(target.clone(), command.clone()).unwrap();
+        assert_native_asset_job_released(&editor, &job);
+        assert_eq!(editor.mutation(target, command).unwrap(), receipt);
+    }
+    let history = editor.snapshot()["history"].clone();
+    let command = request(
+        &editor,
+        Operation::EditNativeAssetLibrary {
+            edit: crate::asset_store::Edit::RelinkFolder {
+                id: "consumed-source".into(),
+                revision,
+                directory_token: "library".into(),
+                replace_content: false,
+            },
+        },
+        "consumed-recursive",
+        None,
+    );
+    // This reserves the full native folder scan budget; consumed jobs must not
+    // require a browser DELETE or prevent an otherwise ordinary next operation.
+    let guard = folder_prepare(&mut editor, command);
+    assert_eq!(
+        guard.jobs.status(&guard.job, &guard.epoch, false).unwrap()["state"],
+        "ready"
+    );
+    assert_eq!(editor.snapshot()["history"], history);
+    drop(guard);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[test]

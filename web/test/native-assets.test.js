@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createNativeAssetTransfer,nativeAssetIdentity,nativeAssetMutation,checkedNativeTreeReport} from '../js/native-assets.js';
+import {createNativeAssetTransfer,nativeAssetIdentity,nativeAssetMutation,checkedNativeTreeReport,checkedNativeReplacement} from '../js/native-assets.js';
 
 function deferred(){let resolve,reject;const promise=new Promise((yes,no)=>{resolve=yes;reject=no;});return {promise,resolve,reject};}
 async function flush(){for(let index=0;index<12;index++)await Promise.resolve();}
@@ -14,13 +14,16 @@ const relinkFolder={kind:'relink_folder',asset_id:'asset-a',revision:'native-rev
 const deletion={kind:'delete_assets',items:[{id:'asset-b',revision:'revision-b'},{id:'asset-a',revision:'revision-a'}],archived:false};
 const treeSummary=()=>({imported_assets:1,skipped_files:2,error_count:1,created_folders:2,root_folder_id:'import-root',folders_revision:'f'.repeat(64)});
 const treeErrors=()=>[{path_token:'Takes/bad.mov',code:'INVALID_MEDIA',message:'The native engine could not read this media'}];
-function harness(action=capture,{onApplied,onStatus,libraryCommit,projectCommit,timelineCommit,placement,pauseGuard}={}){
+const replacementReport=()=>({asset_id:'asset-a',revision:'native-revision',missing_count:0,relinked_files:1,replace_content:true,replaced_files:1,replacement_digest:'c'.repeat(64),replacements:[{file_name:'Shot.mov',source_token:'Takes/Shot.mov',media:[{media_id:'9007199254740993',before:{content_hash:'18446744073709551615',meta:{duration_frames:48,fps:{num:24,den:1},width:1280,height:720,has_video:true,has_audio:true,sample_rate:48000,channels:2,audio_streams:1,file:{video_codec:'h264'}}}}],after:{content_hash:'2',meta:{duration_frames:96000,fps:{num:48000,den:1},width:0,height:0,has_video:false,has_audio:true,sample_rate:48000,channels:1,audio_streams:0,file:{audio_codec:'pcm_s16le'}}}}]});
+const replacementReceipt=()=>({command_id:'command-once',project_epoch:'epoch',missing_count:0,relinked_files:1,replace_content:true,replaced_files:1,replacement_digest:'c'.repeat(64)});
+function harness(action=capture,{onApplied,onStatus,libraryCommit,projectCommit,timelineCommit,placement,pauseGuard,confirmRelink}={}){
   let context={project_name:'saved.vvproj',project_epoch:'epoch',generation:'7',command_epoch:'commands'},writable=true,sourceValid=true;
   const prepare=deferred(),calls=[],polls=[],pauses=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],statuses=[],applied=[];
   const prepared=['relink','relink_folder','import_tree','delete_assets'].includes(action.kind),relink=['relink','relink_folder'].includes(action.kind),deleted=action.kind==='delete_assets'?{deleted_assets:action.items?.length,deleted_ids:action.items?.map(item=>item?.id)}:{};
   const job=(state='ready',patch={})=>({id:'job-1',state,project_epoch:'epoch',generation:'7',kind:prepared?'library_edit':action.kind,bytes:0,total_bytes:64,result:action.kind==='delete_assets'?deleted:action.kind==='import_tree'?{...treeSummary(),errors:treeErrors()}:relink?{asset_id:action.asset_id,revision:action.revision,missing_count:1,relinked_files:2}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch});
   const receipt={command_id:'command-once',project_epoch:'epoch',...deleted,...(action.kind==='import_tree'?treeSummary():{media_ids:['9007199254740995']}),...(action.kind==='import_set' && !placement?{changed:true,new_count:1,reused_count:0,errors:[]}:{}),...(relink?{missing_count:1,relinked_files:2}:{})};
   const transfer=createNativeAssetTransfer({
+    confirmRelink,
     getContext:()=>context,canCommit:()=>writable,onStatus:value=>{statuses.push(value);onStatus?.(value,transfer);},
     api(path,body,options={}){
       calls.push({path,body,options});
@@ -43,6 +46,44 @@ function harness(action=capture,{onApplied,onStatus,libraryCommit,projectCommit,
   return {transfer,prepare,calls,polls,pauses,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,statuses,applied,job,receipt,
     run:()=>transfer.run(action,()=>sourceValid,placement),context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setSourceValid:value=>{sourceValid=value;}};
 }
+
+test('replacement native properties preserve large IDs and allow different supported source properties without an is_image field',()=>{
+  const report=replacementReport();assert.equal(checkedNativeReplacement(report,true),report);assert.equal(report.replacements[0].media[0].media_id,'9007199254740993');assert.equal(report.replacements[0].after.meta.has_video,false);
+  const unmatched={...report,replaced_files:0,relinked_files:0,replacements:[]};assert.equal(checkedNativeReplacement(unmatched,true),unmatched);
+  const sameName=structuredClone(report);sameName.replaced_files=2;sameName.relinked_files=2;sameName.replacements.push(structuredClone(sameName.replacements[0]));sameName.replacements[1].media[0].media_id='9007199254740994';assert.equal(checkedNativeReplacement(sameName,true),sameName,'distinct old managed files may share a basename and chosen replacement');sameName.replacements[1].media[0].media_id='9007199254740993';assert.throws(()=>checkedNativeReplacement(sameName,true),/native replacement media/);
+  for(const invalidate of [value=>value.replaced_files=2,value=>value.replacement_digest='wrong',value=>value.replacements[0].source_token='../Shot.mov',value=>value.replacements[0].media.push(structuredClone(value.replacements[0].media[0])),value=>value.replacements[0].after.meta.channels=-1,value=>value.replacements[0].after.meta.duration_frames=-1,value=>value.replacements[0].media[0].before.meta.duration_frames=1_000_000_001,value=>value.replacements[0].after.meta.fps.num=0,value=>value.replacements[0].media[0].before.meta.fps.den=-1]){const invalid=structuredClone(report);invalidate(invalid);assert.throws(()=>checkedNativeReplacement(invalid,true),/native replacement/);}
+});
+
+test('replacement Relink waits for explicit native review and commits the identical true-mode mutation only once',async()=>{
+  const review=deferred(),seen=[],receipt=replacementReceipt(),action={...relinking,replace_content:true},h=harness(action,{confirmRelink:(report,owner)=>{seen.push({report,owner});return review.promise;},libraryCommit:async()=>receipt}),pending=h.run();
+  assert.deepEqual(h.calls[0].body.operation.edit,{action:'relink',id:'asset-a',revision:'native-revision',path_tokens:['Shot.mov'],replace_content:true});
+  h.prepare.resolve(h.job('ready',{result:replacementReport()}));await flush();assert.equal(h.transfer.phase(),'reviewing');assert.equal(h.libraryWrites.length,0);assert.equal(seen.length,1);assert.equal(seen[0].owner.isCurrent(),true);assert.equal(await h.run(),null);
+  review.resolve(true);assert.equal(await pending,receipt);assert.equal(h.libraryWrites.length,1);assert.deepEqual(h.preparedWrites,[h.calls[0].body]);assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.timelineWrites,[]);assert.deepEqual(h.deletes,[]);assert.equal(h.applied[0].action.replace_content,true);assert.match(h.statuses.at(-1),/1 files replaced.*existing project media and timelines unchanged/);
+});
+
+test('replacement review cancellation or changed writer/source cannot dispatch even after a late confirmation',async()=>{
+  for(const change of ['cancel','writer','source','epoch']){
+    const review=deferred(),h=harness({...relinkFolder,replace_content:true},{confirmRelink:()=>review.promise}),pending=h.run();h.prepare.resolve(h.job('ready',{result:replacementReport()}));await flush();assert.equal(h.transfer.phase(),'reviewing');
+    if(change==='cancel')h.transfer.cancel();else if(change==='writer')h.setWritable(false);else if(change==='source')h.setSourceValid(false);else h.setContext({...h.context(),project_epoch:'next'});h.transfer.invalidate();review.resolve(true);
+    assert.equal(await pending,null,change);assert.equal(h.deletes.length,1,change);assert.deepEqual(h.libraryWrites,[],change);assert.deepEqual(h.applied,[],change);
+  }
+});
+
+test('replacement validates ready intent before review and ACK digest after dispatch without replaying uncertain commands',async()=>{
+  const plain=harness(relinking),old=plain.run();plain.prepare.resolve(plain.job('ready',{result:replacementReport()}));await assert.rejects(old,/unexpectedly replaces/);assert.equal(plain.deletes.length,1);assert.deepEqual(plain.libraryWrites,[]);
+  const invalid=harness({...relinking,replace_content:true},{confirmRelink:()=>{assert.fail('Invalid report must not be reviewed');}}),preparing=invalid.run(),report=replacementReport();report.replaced_files=2;invalid.prepare.resolve(invalid.job('ready',{result:report}));await assert.rejects(preparing,/replacement intent/);assert.equal(invalid.deletes.length,1);assert.deepEqual(invalid.libraryWrites,[]);
+  const h=harness({...relinking,replace_content:true},{confirmRelink:async()=>true,libraryCommit:async()=>({...replacementReceipt(),replacement_digest:'d'.repeat(64)})}),pending=h.run();h.prepare.resolve(h.job('ready',{result:replacementReport()}));await assert.rejects(pending,/differs from the confirmed/);assert.equal(h.libraryWrites.length,1);assert.deepEqual(h.applied,[]);assert.deepEqual(h.deletes,[]);assert.equal(h.calls.filter(call=>call.path==='/native-assets/commands/prepare').length,1);assert.match(h.statuses.at(-1),/Check command status/);
+});
+
+test('already-applied replacement validates intent but does not reconfirm or rewrite after panel ownership changes',async()=>{
+  const receipt=replacementReceipt(),h=harness({...relinking,replace_content:true},{confirmRelink:()=>assert.fail('An applied command must not ask to commit again')}),pending=h.run();h.setSourceValid(false);h.prepare.resolve({state:'applied',receipt});assert.equal(await pending,receipt);assert.equal(h.applied.length,1);assert.deepEqual(h.libraryWrites,[]);assert.deepEqual(h.deletes,[]);
+  const wrong=harness({...relinking,replace_content:true}),recovery=wrong.run();wrong.prepare.resolve({state:'applied',receipt:{...receipt,replace_content:false}});await assert.rejects(recovery,/replacement intent/);assert.deepEqual(wrong.applied,[]);assert.deepEqual(wrong.deletes,[]);
+});
+
+test('replacement ACK remains acknowledged when list refresh fails and unknown writes are neither canceled nor replayed',async()=>{
+  const receipt=replacementReceipt(),h=harness({...relinking,replace_content:true},{confirmRelink:async()=>true,libraryCommit:async()=>receipt,onApplied:async()=>{throw Error('List unavailable');}}),pending=h.run();h.prepare.resolve(h.job('ready',{result:replacementReport()}));assert.equal(await pending,receipt);assert.equal(h.libraryWrites.length,1);assert.match(h.statuses.at(-1),/Command applied.*refresh failed.*do not repeat/);assert.deepEqual(h.deletes,[]);
+  const gate=deferred(),unknown=harness({...relinking,replace_content:true},{confirmRelink:async()=>true,libraryCommit:()=>gate.promise}),write=unknown.run();unknown.prepare.resolve(unknown.job('ready',{result:replacementReport()}));await flush();unknown.setSourceValid(false);unknown.transfer.invalidate();assert.equal(unknown.transfer.cancel(),false);assert.equal(await unknown.run(),null);gate.reject(Object.assign(Error('Replacement outcome unknown'),{code:'OUTCOME_UNKNOWN'}));await assert.rejects(write,/outcome unknown/);assert.equal(unknown.libraryWrites.length,1);assert.deepEqual(unknown.deletes,[]);assert.deepEqual(unknown.applied,[]);
+});
 
 test('native asset transfer requires an opened project and an available writer before preparing',async()=>{
   assert.equal(nativeAssetIdentity(null),null);

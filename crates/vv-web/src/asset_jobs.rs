@@ -515,6 +515,7 @@ impl Jobs {
             id,
             revision,
             path_tokens,
+            ..
         } = &edit
         {
             if path_tokens.is_empty()
@@ -1462,6 +1463,22 @@ impl Jobs {
             .iter_mut()
             .find(|j| j.id == id)
             .ok_or_else(ApiError::missing)?;
+        if job.kind == "capture" && job.state == "applied" {
+            if job.epoch != epoch || job.generation != generation {
+                return Err(ApiError::conflict(
+                    "ASSET_CONTEXT_CHANGED",
+                    "Project changed; prepare the native asset again",
+                ));
+            }
+            return if job.asset_id.as_deref() == Some(command_id) {
+                Ok(())
+            } else {
+                Err(ApiError::conflict(
+                    "ASSET_PUBLISHED",
+                    "Prepared asset was already published by another command",
+                ))
+            };
+        }
         ready(job, epoch, generation, "capture")?;
         if job
             .asset_id
@@ -1482,6 +1499,8 @@ impl Jobs {
         job.revision = self.0.store.item(command_id, false)?["revision"]
             .as_str()
             .map(str::to_owned);
+        job.state = "applied";
+        job.result = None;
         Ok(())
     }
     pub fn import_payload(
@@ -1492,10 +1511,31 @@ impl Jobs {
         epoch: &str,
         generation: &str,
     ) -> Result<ClipboardPayload> {
+        self.checked_import_payload(id, asset_id, revision, epoch, generation, false)
+    }
+    pub fn accept_import(
+        &self,
+        id: &str,
+        asset_id: &str,
+        revision: &str,
+        epoch: &str,
+        generation: &str,
+    ) -> Result<ClipboardPayload> {
+        self.checked_import_payload(id, asset_id, revision, epoch, generation, true)
+    }
+    fn checked_import_payload(
+        &self,
+        id: &str,
+        asset_id: &str,
+        revision: &str,
+        epoch: &str,
+        generation: &str,
+        consume: bool,
+    ) -> Result<ClipboardPayload> {
         roots(&self.0)?;
-        let jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
         let job = jobs
-            .iter()
+            .iter_mut()
             .find(|j| j.id == id)
             .ok_or_else(ApiError::missing)?;
         ready(job, epoch, generation, "import")?;
@@ -1507,7 +1547,12 @@ impl Jobs {
         for file in &prepared.files {
             file.validate()?;
         }
-        asset_payload::decode(&prepared.asset)
+        let payload = asset_payload::decode(&prepared.asset)?;
+        if consume {
+            job.state = "applied";
+            job.result = None;
+        }
+        Ok(payload)
     }
     pub fn import_set_payloads(
         &self,
@@ -1516,10 +1561,29 @@ impl Jobs {
         epoch: &str,
         generation: &str,
     ) -> Result<Vec<ClipboardPayload>> {
+        self.checked_import_set_payloads(id, references, epoch, generation, false)
+    }
+    pub fn accept_import_set(
+        &self,
+        id: &str,
+        references: &[asset_store::ImportRef],
+        epoch: &str,
+        generation: &str,
+    ) -> Result<Vec<ClipboardPayload>> {
+        self.checked_import_set_payloads(id, references, epoch, generation, true)
+    }
+    fn checked_import_set_payloads(
+        &self,
+        id: &str,
+        references: &[asset_store::ImportRef],
+        epoch: &str,
+        generation: &str,
+        consume: bool,
+    ) -> Result<Vec<ClipboardPayload>> {
         roots(&self.0)?;
-        let jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
+        let mut jobs = self.0.jobs.lock().map_err(|_| ApiError::io())?;
         let job = jobs
-            .iter()
+            .iter_mut()
             .find(|job| job.id == id)
             .ok_or_else(ApiError::missing)?;
         ready(job, epoch, generation, "import_set")?;
@@ -1555,11 +1619,16 @@ impl Jobs {
         for file in &prepared.files {
             file.validate()?;
         }
-        prepared
+        let payloads = prepared
             .import_set
             .iter()
             .map(|(_, asset)| asset_payload::decode(asset))
-            .collect()
+            .collect::<Result<Vec<_>>>()?;
+        if consume {
+            job.state = "applied";
+            job.result = None;
+        }
+        Ok(payloads)
     }
 }
 fn applied_image(
@@ -1886,7 +1955,7 @@ fn reopen_written_stage(file: File, directory: &File, name: &str) -> Result<File
 fn copy(inner: &Inner, source: &PinnedSource, work: &Work, budget: &Budget) -> Result<Copied> {
     copy_checked(inner, source, work, budget, None, |_, _, _| Ok(()))
 }
-fn original_media_name(name: &str) -> &str {
+pub(crate) fn original_media_name(name: &str) -> &str {
     if name.as_bytes().get(16) == Some(&b'-')
         && name.as_bytes()[..16].iter().all(u8::is_ascii_hexdigit)
     {
@@ -2320,13 +2389,19 @@ fn run_relink(
         None
     };
     let scanned_tokens;
-    let (id, revision, path_tokens) = match edit {
+    let (id, revision, path_tokens, replace_content) = match edit {
         asset_store::Edit::Relink {
             id,
             revision,
             path_tokens,
-        } => (id, revision, path_tokens),
-        asset_store::Edit::RelinkFolder { id, revision, .. } => {
+            replace_content,
+        } => (id, revision, path_tokens, *replace_content),
+        asset_store::Edit::RelinkFolder {
+            id,
+            revision,
+            replace_content,
+            ..
+        } => {
             scanned_tokens = scan
                 .as_ref()
                 .ok_or_else(ApiError::missing)?
@@ -2335,7 +2410,7 @@ fn run_relink(
                 .iter()
                 .map(|(path, _)| crate::files::root_media_token(&inner.root, path))
                 .collect::<Result<Vec<_>>>()?;
-            (id, revision, &scanned_tokens)
+            (id, revision, &scanned_tokens, *replace_content)
         }
         _ => return Err(ApiError::invalid("Choose a native asset relink")),
     };
@@ -2368,7 +2443,8 @@ fn run_relink(
         .filter(|(_, missing)| *missing)
         .map(|(path, _)| path.clone())
         .collect();
-    let mut remap = HashMap::new();
+    let mut remap = std::collections::BTreeMap::new();
+    let mut copied_originals = HashMap::new();
     let mut sources = Vec::new();
     let mut files = Vec::new();
     let mut total = 0_u64;
@@ -2415,8 +2491,14 @@ fn run_relink(
             &source,
             work,
             &budget,
-            Some(&path),
-            |meta, _, sha| validate_relink_match(&payload, &path, meta, sha),
+            if replace_content { None } else { Some(&path) },
+            |meta, _, sha| {
+                if replace_content {
+                    Ok(())
+                } else {
+                    validate_relink_match(&payload, &path, meta, sha)
+                }
+            },
         )?;
         let witness = OtioWitness {
             token: (*token).clone(),
@@ -2427,7 +2509,18 @@ fn run_relink(
         };
         witness.validate(inner)?;
         copied.witness.validate()?;
-        remap.insert(path, copied.path);
+        if replace_content && copied.path == path {
+            copied_originals.insert(path.clone(), copied.witness.identity.clone());
+        }
+        remap.insert(
+            path,
+            asset_store::RelinkedFile {
+                path: copied.path,
+                content_hash: copied.hash,
+                meta: copied.meta,
+                source_token: (*token).clone(),
+            },
+        );
         sources.push(witness);
         files.push(copied.witness);
     }
@@ -2447,6 +2540,16 @@ fn run_relink(
                 .media_entry(&path)?
                 .map(|file| asset_store::stable_identity(&file))
                 .transpose()?;
+            // A deliberate replacement was reviewed only for missing originals.
+            // Only our own verified same-SHA publication may restore that slot.
+            // A concurrent restore elsewhere is not part of this replacement.
+            if replace_content
+                && remap.contains_key(&path)
+                && identity.is_some()
+                && copied_originals.get(&path) != identity.as_ref()
+            {
+                return Err(source_changed());
+            }
             Ok((path, identity))
         })
         .collect::<Result<Vec<_>>>()?;

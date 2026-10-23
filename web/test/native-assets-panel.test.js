@@ -8,7 +8,7 @@ const foldersRevision='f'.repeat(64);
 const assetRevision='a'.repeat(64);
 const draggableAsset=(id,name=id)=>({id,name,revision:`revision-${id}`,media_count:1,file_count:1,archived:false,placement:{project_epoch:'epoch',generation:'7',error:null,items:[{source_in:0,source_out:48,fps:{num:24,den:1},has_video:true,has_audio:true,audio_streams:1,is_image:false}]}});
 function dragEvent(){const values=new Map(),event=new Event('dragstart',{cancelable:true});event.dataTransfer={effectAllowed:'none',setData:(type,value)=>values.set(type,value)};return {event,values};}
-function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview,onRemoved}={}){
+function harness({pageReader,folderReader,projectReader,sourceReader,libraryCommit,projectCommit,timelineCommit,assetDnd,onPreview,onRemoved,onRelinked}={}){
   const original={document:globalThis.document,Option:globalThis.Option};
   class Element extends EventTarget{
     constructor(tag){super();this.tag=tag;this.children=[];this.attributes=new Map();this.dataset={};this.textContent='';this.value='';this.checked=false;this.disabled=false;this.hidden=false;this.parent=null;}
@@ -33,9 +33,10 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
   let context={project_name:'project.vvproj',project_epoch:'epoch',generation:'7',command_epoch:'commands',media:[{id:'media-a',name:'Shot A'},{id:'media-b',name:'Shot B'}],selected_ids:['media-a']},writable=true;
   let items=[{id:'asset-a',revision:'rev-a',name:'Reusable shot',media_count:2,file_count:1,archived:false,can_restore_previous:true}];
   let folders=[{id:'outer',name:'Shots',parent:null},{id:'inner',name:'Day 1',parent:'outer'},{id:'other',name:'Other',parent:null}];
-  const pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],imported=[],placed=[],previews=[],removed=[],notices=[],deleteGate=deferred();
+  const pages=[],folderReads=[],projectReads=[],sourceReads=[],prepares=[],deletes=[],libraryWrites=[],preparedWrites=[],projectWrites=[],timelineWrites=[],imported=[],placed=[],previews=[],removed=[],relinked=[],notices=[],deleteGate=deferred();
   let delayDelete=false;
   const panel=createNativeAssetPanel({root,getContext:()=>context,canCommit:()=>writable,notice:text=>notices.push(text),onImported:ids=>imported.push(ids),assetDnd,onPlaced:receipt=>placed.push(receipt),onPreview:onPreview?(...args)=>{previews.push(args);return onPreview(...args);}:undefined,onRemoved:(ids,receipt)=>{removed.push({ids,receipt});return onRemoved?.(ids,receipt);},
+    onRelinked:(id,receipt)=>{relinked.push({id,receipt});return onRelinked?.(id,receipt);},
     makeLibraryMutation:operation=>nativeAssetMutation(context,'client',operation,'relink-command'),
     libraryCommit(operation,prepared){libraryWrites.push(structuredClone(operation));if(prepared)preparedWrites.push(structuredClone(prepared));return libraryCommit?libraryCommit(operation,prepared):Promise.resolve({command_id:prepared?.command_id || 'published',project_epoch:context.project_epoch,...(operation.edit?.action==='delete_assets'?{deleted_assets:operation.edit.items.length,deleted_ids:operation.edit.items.map(item=>item.id)}:prepared?{missing_count:0,relinked_files:1}:{})});},
     projectCommit(operation){projectWrites.push(structuredClone(operation));return projectCommit?projectCommit(operation):Promise.resolve({command_id:'imported',project_epoch:context.project_epoch,media_ids:operation.kind==='import_native_asset_set'?operation.assets.map(item=>`new-${item.asset_id}`):['new-media'],...(operation.kind==='import_native_asset_set'?{changed:true,new_count:operation.assets.length,reused_count:0,errors:[]}: {})});},
@@ -64,7 +65,7 @@ function harness({pageReader,folderReader,projectReader,sourceReader,libraryComm
   const field=label=>find(node=>node.getAttribute('aria-label')===label,label);
   const status=()=>find(node=>node.getAttribute('role')==='status','panel status').textContent;
   const job=(index=0,patch={})=>{const {project_epoch,if_generation,action,operation}=prepares[index].body;return {id:`job-${index+1}`,state:'ready',project_epoch,generation:if_generation,kind:operation?'library_edit':action.kind,bytes:0,total_bytes:32,result:operation?.edit.action==='delete_assets'?{deleted_assets:operation.edit.items.length,deleted_ids:operation.edit.items.map(item=>item.id)}:operation?.edit.action==='import_tree'?{imported_assets:1,skipped_files:1,error_count:1,created_folders:1,root_folder_id:'import-root',folders_revision:foldersRevision,errors:[{path_token:'Takes/bad.mov',code:'BAD_MEDIA',message:'Native probe failed'}]}:operation?{asset_id:operation.edit.id,revision:operation.edit.revision,missing_count:0,relinked_files:1}:action.kind==='import'?{asset_id:action.asset_id,revision:action.revision}:null,...patch};};
-  return {panel,root,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,previews,removed,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),setModal:value=>{modal=value;},
+  return {panel,root,pages,folderReads,projectReads,sourceReads,prepares,deletes,libraryWrites,preparedWrites,projectWrites,timelineWrites,imported,placed,previews,removed,relinked,notices,button,field,status,job,deleteGate,texts:()=>walk(root).map(node=>node.textContent),setModal:value=>{modal=value;},
     confirmation:()=>walk(root).find(node=>node.tag==='dialog' && node.open),confirmDelete:()=>button('Permanently delete native assets').parent.dispatchEvent(new Event('submit',{cancelable:true})),
     context:()=>context,setContext:value=>{context=value;},setWritable:value=>{writable=value;},setItems:value=>{items=value;},setFolders:value=>{folders=value;},delayDelete:()=>{delayDelete=true;},
     change(label,value){const node=field(label);node.value=value;node.dispatchEvent(new Event('change'));},
@@ -426,6 +427,49 @@ test('a stale filtered asset page cannot replace rows or folder controls after r
 });
 
 const offlineAsset=()=>({id:'asset-a',revision:assetRevision,name:'Offline native shot',media_count:2,file_count:2,missing_count:1,offline_files:[{name:'Shot.mov',missing:true},{name:'Sound.wav',missing:false}],archived:false,can_restore_previous:true});
+const replacementReport=()=>({asset_id:'asset-a',revision:assetRevision,missing_count:0,relinked_files:1,replace_content:true,replaced_files:1,replacement_digest:'c'.repeat(64),replacements:[{file_name:'Shot.mov',source_token:'Takes/Shot.mov',media:[{media_id:'9007199254740993',before:{content_hash:'1',meta:{duration_frames:48,fps:{num:24,den:1},width:1280,height:720,has_video:true,has_audio:true,sample_rate:48000,channels:2,audio_streams:1,file:{video_codec:'h264'}}}}],after:{content_hash:'2',meta:{duration_frames:96000,fps:{num:48000,den:1},width:0,height:0,has_video:false,has_audio:true,sample_rate:48000,channels:1,audio_streams:0,file:{audio_codec:'pcm_s16le'}}}}]});
+const replacementReceipt=()=>({command_id:'relink-command',project_epoch:'epoch',missing_count:0,relinked_files:1,replace_content:true,replaced_files:1,replacement_digest:'c'.repeat(64)});
+async function prepareReplacement(h,folder=false){
+  h.setItems([offlineAsset()]);await h.open();h.button(folder?'Search folder for missing files':'Relink missing native asset files').click();await settle();
+  const option=h.field('Use replacement files');assert.equal(option.checked,false);option.checked=true;option.dispatchEvent(new Event('change'));
+  if(folder){h.button('Open folder Takes').click();await settle();h.button('Choose this source folder').click();await settle();}else{h.chooseFiles(['Shot.mov']);h.button('Relink selected source files').click();}
+  h.prepares[0].resolve(h.job(0,{result:replacementReport()}));await settle();return option;
+}
+
+test('replacement file Relink explicitly reviews native before/after properties and commits once without modifying project media',async()=>{
+  const receipt=replacementReceipt(),h=harness({libraryCommit:async()=>receipt});try{
+    await prepareReplacement(h);assert.deepEqual(h.prepares[0].body.operation.edit,{action:'relink',id:'asset-a',revision:assetRevision,path_tokens:['Shot.mov'],replace_content:true});assert.equal(h.libraryWrites.length,0);assert.equal(h.button('Confirm replacement').disabled,false);
+    assert.ok(h.texts().some(text=>text==='Library media 9007199254740993'));assert.ok(h.texts().some(text=>/Before: hash 1.*1280×720.*24\/1 fps/.test(text)));assert.ok(h.texts().some(text=>/After: hash 2.*video no.*1 channels/.test(text)));assert.ok(h.texts().includes('Shot.mov → Takes/Shot.mov · 1 library media'));
+    const confirm=h.button('Confirm replacement');confirm.click();confirm.click();await settle();assert.equal(h.libraryWrites.length,1);assert.deepEqual(h.preparedWrites,[h.prepares[0].body]);assert.deepEqual(h.relinked,[{id:'asset-a',receipt}]);assert.deepEqual(h.projectWrites,[]);assert.deepEqual(h.timelineWrites,[]);assert.deepEqual(h.deletes,[]);assert.match(h.status(),/1 files replaced/);
+  }finally{h.destroy();}
+});
+
+test('replacement review Cancel, Escape and changed option discard the owned preparation without any write',async()=>{
+  for(const cancel of ['button','escape','option']){
+    const h=harness();try{
+      const option=await prepareReplacement(h),confirm=h.button('Confirm replacement');
+      if(cancel==='button')h.button('Cancel replacement review').click();else if(cancel==='option'){option.checked=false;option.dispatchEvent(new Event('change'));}else{const event=new Event('keydown',{cancelable:true});Object.defineProperty(event,'key',{value:'Escape'});h.field('Review native replacement files').dispatchEvent(event);assert.equal(event.defaultPrevented,true);}
+      confirm.click();await settle();assert.equal(h.deletes.length,1,cancel);assert.deepEqual(h.libraryWrites,[],cancel);assert.deepEqual(h.relinked,[],cancel);assert.equal(h.prepares.length,1,cancel);assert.throws(()=>h.button('Confirm replacement'),/Expected/);
+    }finally{h.destroy();}
+  }
+});
+
+test('recursive replacement uses the same review gate and refuses stale writer, project or reopened panel',async()=>{
+  for(const invalidate of ['writer','epoch','reopen']){
+    const h=harness();try{
+      await prepareReplacement(h,true);assert.deepEqual(h.prepares[0].body.operation.edit,{action:'relink_folder',id:'asset-a',revision:assetRevision,directory_token:'Takes',replace_content:true});const confirm=h.button('Confirm replacement');
+      if(invalidate==='writer'){h.setWritable(false);h.panel.invalidate();}else if(invalidate==='epoch'){h.setContext({...h.context(),project_epoch:'new'});h.panel.invalidate();}else await h.open();
+      confirm.click();await settle();assert.deepEqual(h.libraryWrites,[],invalidate);assert.deepEqual(h.relinked,[],invalidate);assert.equal(h.deletes.length,1,invalidate);
+    }finally{h.destroy();}
+  }
+});
+
+test('acknowledged replacement retires its captured Source even after panel hide; mismatched digest never reports success',async()=>{
+  const gate=deferred(),receipt=replacementReceipt(),h=harness({libraryCommit:()=>gate.promise});try{
+    await prepareReplacement(h);h.button('Confirm replacement').click();await settle();assert.equal(h.libraryWrites.length,1);h.panel.hide();h.setContext({...h.context(),project_epoch:'new'});gate.resolve(receipt);await settle();assert.deepEqual(h.relinked,[{id:'asset-a',receipt}]);assert.deepEqual(h.deletes,[]);assert.equal(h.libraryWrites.length,1);
+  }finally{h.destroy();}
+  const wrong=harness({libraryCommit:async()=>({...replacementReceipt(),replacement_digest:'d'.repeat(64)})});try{await prepareReplacement(wrong);wrong.button('Confirm replacement').click();await settle();assert.equal(wrong.libraryWrites.length,1);assert.deepEqual(wrong.relinked,[]);assert.deepEqual(wrong.deletes,[]);assert.ok(wrong.notices.some(text=>/differs from the confirmed/.test(text)));assert.match(wrong.status(),/Check command status/);}finally{wrong.destroy();}
+});
 
 test('offline asset Relink uses approved selected files and refreshes native missing counts after one library command',async()=>{
   const h=harness({libraryCommit:(_operation,body)=>{h.setItems([{...offlineAsset(),revision:'b'.repeat(64),missing_count:0}]);return Promise.resolve({command_id:body.command_id,project_epoch:'epoch',missing_count:0,relinked_files:1});}});try{

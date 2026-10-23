@@ -590,7 +590,7 @@ impl Editor {
                 value["deleted_preset"] = json!({"id":id,"revision":revision,"archived":archived});
             }
             if let Some(report)=native_asset_receipt {
-                for field in ["missing_count","relinked_files","imported_assets","skipped_files","error_count","root_folder_id","folders_revision","created_folders","deleted_assets","deleted_ids"] {
+                for field in ["missing_count","relinked_files","replace_content","replaced_files","replacement_digest","imported_assets","skipped_files","error_count","root_folder_id","folders_revision","created_folders","deleted_assets","deleted_ids"] {
                     if let Some(count)=report.get(field) {value[field]=count.clone();}
                 }
             }
@@ -2204,7 +2204,7 @@ impl Editor {
         let placement =
             commands::prepare_native_asset_placement(&trial, timeline, &roots, &request.operation)?;
         // Recheck cancellation, every named revision and every copied-file witness before allocation.
-        self.asset_jobs.import_set_payloads(
+        self.asset_jobs.accept_import_set(
             job_id,
             assets,
             &request.project_epoch,
@@ -2302,7 +2302,7 @@ impl Editor {
             .count();
         // This is the final cancel/revision/source witness check before native allocation and apply.
         self.asset_jobs
-            .import_set_payloads(job, references, epoch, generation)?;
+            .accept_import_set(job, references, epoch, generation)?;
         let before = self.session.history.generation();
         let mark = self.session.history.begin_group();
         let mut actual = Vec::new();
@@ -2375,6 +2375,8 @@ impl Editor {
                     .iter()
                     .all(|id| self.session.project.timelines.contains_key(*id))
         }) {
+            self.asset_jobs
+                .accept_import(job, id, revision, epoch, generation)?;
             return Ok(());
         }
         let mut trial = self.session.project.clone();
@@ -2382,6 +2384,8 @@ impl Editor {
         payload.clone().merge_into(&mut trial, &mut additions);
         additions.apply(&mut trial);
         crate::files::validate_project(&trial)?;
+        self.asset_jobs
+            .accept_import(job, id, revision, epoch, generation)?;
         let mut additions = AddEntities::new(CommandLabel::ImportMedia);
         let selected = payload
             .merge_into(&mut self.session.project, &mut additions)

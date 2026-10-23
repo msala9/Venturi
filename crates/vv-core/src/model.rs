@@ -3097,6 +3097,29 @@ impl Project {
         self.next_compound_generation
     }
 
+    /// Makes room for native invalidations after copying a fragment's hashes.
+    pub(crate) fn reserve_compound_generations(&mut self, count: usize) -> bool {
+        if count == 0 {
+            return true;
+        }
+        let maximum = self
+            .media_pool
+            .values()
+            .filter(|item| item.compound.is_some())
+            .map(|item| item.content_hash)
+            .max()
+            .unwrap_or(0)
+            .max(self.next_compound_generation);
+        let Ok(count) = u64::try_from(count) else {
+            return false;
+        };
+        if maximum.checked_add(count).is_none() {
+            return false;
+        }
+        self.next_compound_generation = maximum;
+        true
+    }
+
     /// Recomputes `meta`/`content_hash` of a compound clip from its
     /// current nested timeline. To be called after every command touching
     /// that timeline, not only on creation: `meta.duration_frames`

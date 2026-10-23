@@ -1,6 +1,6 @@
 import {request} from './api.js';
 import {nativeFolderCatalog,nativeFolderChoices,nativeFolderFilter,nativeFolderOperation} from './native-asset-folders.js';
-import {createSourcePicker} from './source-picker.js';
+import {createSourcePicker,approvedSourceToken} from './source-picker.js';
 
 const apiRequest=(path,body,{signal,method}={})=>request(path,body,(url,init)=>fetch(url,{...init,method:method || init.method,signal:signal?AbortSignal.any([init.signal,signal]):init.signal}));
 export const nativeAssetIdentity=context=>context?.project_name?JSON.stringify([context.project_epoch,context.generation]):null;
@@ -18,12 +18,34 @@ export function checkedNativeTreeReport(value,ready=false){
 function checkedDeletion(value,items){
   if(value?.deleted_assets!==items.length || !Array.isArray(value.deleted_ids) || value.deleted_ids.length!==items.length || value.deleted_ids.some((id,index)=>id!==items[index].id))throw Error('The native asset deletion receipt does not match the confirmed selection');
 }
+export function checkedNativeReplacement(value,ready=false){
+  if(value?.replace_content!==true || !Number.isSafeInteger(value.replaced_files) || value.replaced_files<0 || value.replaced_files>64 || value.replaced_files!==value.relinked_files || typeof value.replacement_digest!=='string' || !/^[a-f0-9]{64}$/.test(value.replacement_digest))throw Error('The native replacement intent or report changed');
+  if(!ready)return value;
+  const text=value=>typeof value==='string' && value.length>0 && new TextEncoder().encode(value).length<=1024 && !/[\u0000-\u001f]/.test(value);
+  const nativeId=value=>typeof value==='string' && /^(0|[1-9]\d{0,19})$/.test(value) && BigInt(value)<=18_446_744_073_709_551_615n;
+  const scalar=(value,min,max)=>Number.isSafeInteger(value) && value>=min && value<=max;
+  const properties=value=>{
+    const meta=value?.meta;
+    return nativeId(value?.content_hash) && meta && scalar(meta.duration_frames,0,1_000_000_000) && meta.fps && scalar(meta.fps.num,1,2_147_483_647) && scalar(meta.fps.den,1,2_147_483_647) && ['width','height','sample_rate'].every(key=>scalar(meta[key],0,4_294_967_295)) && ['channels','audio_streams'].every(key=>scalar(meta[key],0,65535)) && typeof meta.has_video==='boolean' && typeof meta.has_audio==='boolean' && (meta.file===undefined || meta.file && typeof meta.file==='object' && !Array.isArray(meta.file));
+  };
+  if(!Array.isArray(value.replacements) || value.replacements.length!==value.replaced_files || new TextEncoder().encode(JSON.stringify(value)).length>4*1024*1024)throw Error('The native replacement review exceeds its file or size limit');
+  const media=new Set();let count=0;
+  for(const row of value.replacements){
+    if(!text(row?.file_name) || /[\\/]/.test(row.file_name) || !approvedSourceToken(row.source_token) || !properties(row.after) || !Array.isArray(row.media) || !row.media.length || (count+=row.media.length)>4096)throw Error('The native replacement file review changed or is invalid');
+    for(const entry of row.media){if(!nativeId(entry?.media_id) || media.has(entry.media_id) || !properties(entry.before))throw Error('The native replacement media review changed or is invalid');media.add(entry.media_id);}
+  }
+  return value;
+}
 
-export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,timelineCommit,makeLibraryMutation,api=apiRequest,pause=delay,onStatus=()=>{},onApplied=()=>{}}){
+export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,timelineCommit,makeLibraryMutation,confirmRelink,api=apiRequest,pause=delay,onStatus=()=>{},onApplied=()=>{}}){
   let owner=null;
   const report=text=>onStatus(text);
-  const checkedLibraryReceipt=(receipt,ticket,tree)=>{if(receipt?.command_id!==ticket.mutation.command_id || receipt.project_epoch!==ticket.epoch)throw Error('The recovered native library receipt does not match this command');if(ticket.mutation.operation.edit.action==='delete_assets')checkedDeletion(receipt,ticket.mutation.operation.edit.items);else if(tree)checkedNativeTreeReport(receipt);else if(![receipt.missing_count,receipt.relinked_files].every(value=>Number.isSafeInteger(value) && value>=0 && value<=64))throw Error('The recovered native relink receipt does not match this command');};
-  const appliedMessage=(receipt,tree)=>receipt.deleted_ids?`${receipt.deleted_assets} native asset${receipt.deleted_assets===1?'':'s'} permanently deleted · project and timeline unchanged · no project Undo`:tree?`Native folder imported · ${receipt.imported_assets} assets · ${receipt.skipped_files} skipped · ${receipt.error_count} errors · timeline unchanged`:`Native asset relinked · ${receipt.relinked_files} files restored · ${receipt.missing_count} still missing · timeline unchanged`;
+  const checkedLibraryReceipt=(receipt,ticket,tree)=>{if(receipt?.command_id!==ticket.mutation.command_id || receipt.project_epoch!==ticket.epoch)throw Error('The recovered native library receipt does not match this command');if(ticket.mutation.operation.edit.action==='delete_assets')checkedDeletion(receipt,ticket.mutation.operation.edit.items);else if(tree)checkedNativeTreeReport(receipt);else{
+    if(![receipt.missing_count,receipt.relinked_files].every(value=>Number.isSafeInteger(value) && value>=0 && value<=64))throw Error('The recovered native relink receipt does not match this command');
+    if(ticket.mutation.operation.edit.replace_content===true){checkedNativeReplacement(receipt);if(ticket.replacement && (receipt.replacement_digest!==ticket.replacement.digest || receipt.replaced_files!==ticket.replacement.count))throw Error('The replacement receipt differs from the confirmed native review');}
+    else if(receipt.replace_content===true)throw Error('The native relink receipt unexpectedly replaced content');
+  }};
+  const appliedMessage=(receipt,tree)=>receipt.deleted_ids?`${receipt.deleted_assets} native asset${receipt.deleted_assets===1?'':'s'} permanently deleted · project and timeline unchanged · no project Undo`:tree?`Native folder imported · ${receipt.imported_assets} assets · ${receipt.skipped_files} skipped · ${receipt.error_count} errors · timeline unchanged`:receipt.replace_content===true?`Native asset replacement applied · ${receipt.replaced_files} files replaced · ${receipt.missing_count} still missing · existing project media and timelines unchanged`:`Native asset relinked · ${receipt.relinked_files} files restored · ${receipt.missing_count} still missing · timeline unchanged`;
   const jobPath=ticket=>`/native-assets/jobs/${encodeURIComponent(ticket.job)}?${new URLSearchParams({project_epoch:ticket.epoch})}`;
   async function cancelJob(ticket){if(!ticket.job || ticket.cancelSent)return;ticket.cancelSent=true;try{await api(jobPath(ticket),undefined,{method:'DELETE',signal:AbortSignal.timeout(5000)});}catch{report('Cancellation requested; refresh the library before starting another preparation');}}
   function cancel(){if(!owner || owner.canceled || owner.phase==='committing')return false;owner.canceled=true;if(owner.job){owner.controller.abort();void cancelJob(owner);}report('Canceling native asset preparation…');return true;}
@@ -36,18 +58,19 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
     if(pooling && typeof projectCommit!=='function')return null;
     const deleting=action.kind==='delete_assets';
     if(deleting && (!Array.isArray(action.items) || !action.items.length || action.items.length>32 || new Set(action.items.map(item=>item?.id)).size!==action.items.length || action.items.some(item=>!token(item?.id) || typeof item?.revision!=='string' || !item.revision) || typeof action.archived!=='boolean'))return null;
-    const tree=action.kind==='import_tree',relinking=['relink','relink_folder'].includes(action.kind),prepared=tree || relinking || deleting;
+    const tree=action.kind==='import_tree',relinking=['relink','relink_folder'].includes(action.kind),replacing=relinking && action.replace_content===true,prepared=tree || relinking || deleting;
+    if(relinking && action.replace_content!==undefined && typeof action.replace_content!=='boolean')return null;
     if(owner || prepared && typeof makeLibraryMutation!=='function' || !canCommit() || !nativeAssetIdentity(getContext()) || !sourceCurrent())return null;
     const context=getContext(),ticket={identity:nativeAssetIdentity(context),epoch:context.project_epoch,generation:context.generation,controller:new AbortController(),phase:'preparing',sourceCurrent,canceled:false,job:null,cancelSent:false};owner=ticket;
     let receipt=null;
     try{
-      if(prepared){const edit=deleting?{action:'delete_assets',items:action.items,archived:action.archived}:tree?{action:'import_tree',directory_token:action.directory_token,parent:action.parent,folders_revision:action.folders_revision}:action.kind==='relink_folder'?{action:'relink_folder',id:action.asset_id,revision:action.revision,directory_token:action.directory_token}:{action:'relink',id:action.asset_id,revision:action.revision,path_tokens:[...action.path_tokens]};ticket.mutation=makeLibraryMutation({kind:'edit_native_asset_library',edit});}
-      report(deleting?'Preparing confirmed native asset deletion…':tree?'Preparing native source folder import…':relinking?'Preparing native asset relink…':'Preparing native asset files…');
+      if(prepared){const edit=deleting?{action:'delete_assets',items:action.items,archived:action.archived}:tree?{action:'import_tree',directory_token:action.directory_token,parent:action.parent,folders_revision:action.folders_revision}:action.kind==='relink_folder'?{action:'relink_folder',id:action.asset_id,revision:action.revision,directory_token:action.directory_token}:{action:'relink',id:action.asset_id,revision:action.revision,path_tokens:[...action.path_tokens]};if(replacing)edit.replace_content=true;ticket.mutation=makeLibraryMutation({kind:'edit_native_asset_library',edit});}
+      report(deleting?'Preparing confirmed native asset deletion…':tree?'Preparing native source folder import…':replacing?'Preparing replacement files for review…':relinking?'Preparing native asset relink…':'Preparing native asset files…');
       let job=await api(prepared?'/native-assets/commands/prepare':'/native-assets/prepare',prepared?ticket.mutation:{project_epoch:ticket.epoch,if_generation:ticket.generation,action});
       if(prepared && job?.state==='applied'){
         ticket.phase='committing';receipt=job.receipt;
         checkedLibraryReceipt(receipt,ticket,tree);
-        if(deleting || current(ticket)){try{await onApplied(receipt,action,null);report(appliedMessage(receipt,tree));}catch(error){report(`Command applied · refresh failed: ${error.message}. Refresh the library; do not repeat the command.`);}}return receipt;
+        if(deleting || replacing || current(ticket)){try{await onApplied(receipt,action,null);report(appliedMessage(receipt,tree));}catch(error){report(`Command applied · refresh failed: ${error.message}. Refresh the library; do not repeat the command.`);}}return receipt;
       }
       if(!token(job?.id))throw Error('The native asset preparation returned an invalid job ID');ticket.job=job.id;
       const validateJob=()=>{if(job.id!==ticket.job || job.project_epoch!==ticket.epoch || job.generation!==ticket.generation || job.kind!==(prepared?'library_edit':action.kind))throw Error('The native asset job no longer matches this preparation');};validateJob();
@@ -61,10 +84,17 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
       if(action.kind==='import' && (job.result?.asset_id!==action.asset_id || job.result.revision!==action.revision))throw Error('The prepared asset revision changed');
       if(set && (!Array.isArray(job.result?.assets) || job.result.assets.length!==action.assets.length || job.result.assets.some((item,index)=>item.asset_id!==action.assets[index].asset_id || item.revision!==action.assets[index].revision)))throw Error('The prepared asset set or order changed');
       if(relinking && (job.result?.asset_id!==action.asset_id || job.result.revision!==action.revision || ![job.result.missing_count,job.result.relinked_files].every(value=>Number.isSafeInteger(value) && value>=0 && value<=64)))throw Error('The prepared native relink revision or report changed');
+      if(relinking && !replacing && job.result?.replace_content===true)throw Error('The prepared relink unexpectedly replaces native content');
+      if(replacing){
+        const review=structuredClone(checkedNativeReplacement(job.result,true));ticket.replacement={digest:review.replacement_digest,count:review.replaced_files};
+        if(typeof confirmRelink!=='function')throw Error('Review and confirm replacement files before applying native content');
+        ticket.phase='reviewing';report('Review replacement source properties before confirming');
+        if(!current(ticket) || !await confirmRelink(review,{isCurrent:()=>current(ticket),signal:ticket.controller.signal}) || !current(ticket))throw new DOMException('Native asset replacement review canceled or changed','AbortError');
+      }
       if(tree)checkedNativeTreeReport(job.result,true);
       if(deleting)checkedDeletion(job.result,action.items);
       if(!current(ticket))throw new DOMException('Project or selection changed before applying the asset','AbortError');
-      ticket.phase='committing';report(deleting?'Permanently deleting confirmed native assets…':tree?'Importing native source folder…':relinking?'Applying native asset relink…':action.kind==='capture'?'Publishing native asset…':'Importing native asset with one Undo…');
+      ticket.phase='committing';report(deleting?'Permanently deleting confirmed native assets…':tree?'Importing native source folder…':replacing?'Replacing confirmed native asset content…':relinking?'Applying native asset relink…':action.kind==='capture'?'Publishing native asset…':'Importing native asset with one Undo…');
       receipt=await (placing?timelineCommit({kind:'place_native_assets',job_id:ticket.job,assets:action.assets,start_frame:placement.start_frame,target:placement.target,overwrite:Boolean(placement.overwrite)}):pooling?projectCommit({kind:'import_native_asset_set',job_id:ticket.job,assets:action.assets}):prepared?libraryCommit(ticket.mutation.operation,ticket.mutation):action.kind==='capture'?libraryCommit({kind:'publish_native_asset',job_id:ticket.job}):projectCommit({kind:'import_native_asset',job_id:ticket.job,asset_id:action.asset_id,revision:action.revision}));
       if(prepared)checkedLibraryReceipt(receipt,ticket,tree);
       if(pooling && (receipt?.project_epoch!==ticket.epoch || typeof receipt.changed!=='boolean' || !Array.isArray(receipt.media_ids) || !receipt.media_ids.length || receipt.media_ids.length>32 || receipt.media_ids.some(id=>typeof id!=='string' || !id) || new Set(receipt.media_ids).size!==receipt.media_ids.length || ![receipt.new_count,receipt.reused_count].every(count=>Number.isSafeInteger(count) && count>=0 && count<=32) || receipt.new_count+receipt.reused_count!==receipt.media_ids.length || !Array.isArray(receipt.errors) || receipt.errors.length))throw Error('The native asset set import receipt changed or is invalid');
@@ -80,7 +110,7 @@ export function createNativeAssetTransfer({getContext,canCommit,libraryCommit,pr
   return {run,cancel,busy:()=>Boolean(owner),phase:()=>owner?.phase || 'idle',invalidate(){if(owner && owner.phase!=='committing' && !current(owner))cancel();}};
 }
 
-export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,projectCommit,timelineCommit,assetDnd,makeLibraryMutation,onImported=()=>{},onPlaced=()=>{},onPreview,onRemoved=()=>{},notice=()=>{},api=apiRequest,pause=delay}){
+export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,projectCommit,timelineCommit,assetDnd,makeLibraryMutation,onImported=()=>{},onPlaced=()=>{},onPreview,onRemoved=()=>{},onRelinked=()=>{},notice=()=>{},api=apiRequest,pause=delay}){
   root.dataset.commandOwner='library';
   root.addEventListener('keydown',event=>{
     if(!['Delete','Backspace'].includes(event.key))return;
@@ -95,6 +125,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   });
   let active=false,sequence=0,panelSession=0,transferSession=0,readController=null,pendingReload=false,transferRefreshFailed=false,page=0,pages=1,search='',archived=false,selected=null,busy=false,batch=false,stopped=false,reading=false,readEpoch=null,rows=[],chosen=[],catalog=null,folder=null,folderLabels=new Map(),controls=[],folderControls=[],list,status,caption,name,capture,stop,importButton,rename,archive,previous,next,restore,download,folderFilter,folderName,folderCreateParent,folderParent,assetDestination,createFolder,renameFolder,moveFolder,removeFolder,moveAssets,relinkMenu,relinkButton,relinkArea,relinkDraft=null,relinkReader=null,relinkReading=false,relinkFiles,relinkApply,relinkCancel;
   let sourcePicker=null,sourceDraft=null,sourceArea,sourceReport,sourceDestination,importTree,relinkFolder;
+  let relinkReview=null;
   let dragRows=null,dragButtons=[],rowAnchor=null,readGeneration=null,placementAttempt=null,previewButton=null,previewSequence=0,deleteButton=null,deletion=null;
   const button=(text,action)=>{const node=document.createElement('button');node.type='button';node.textContent=text;node.addEventListener('click',action);return node;};
   const compact=(node,text)=>{node.setAttribute('aria-label',node.textContent);node.title=node.textContent;node.setAttribute('data-compact-label',text);return node;};
@@ -193,8 +224,35 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   const relinkCurrent=draft=>active && Boolean(draft) && relinkDraft===draft && draft.identity===relinkIdentity() && !selected?.archived && !selected?.error;
   const sourceIdentity=()=>JSON.stringify([relinkIdentity(),catalog?.folders_revision,folder]);
   const sourceCurrent=draft=>active && sourceArea?.isConnected!==false && Boolean(draft) && sourceDraft===draft && draft.identity===sourceIdentity();
-  function clearSourceChoice(){sourcePicker?.dispose();sourcePicker=null;sourceDraft=null;sourceDestination=null;sourceArea?.replaceChildren();}
-  function clearRelink(){relinkReader?.abort();relinkReader=null;relinkDraft=null;relinkReading=false;relinkArea?.replaceChildren();relinkFiles=null;relinkApply=null;relinkCancel=null;}
+  function closeRelinkReview(accepted=false){const before=relinkReview;if(!before)return;relinkReview=null;before.signal.removeEventListener('abort',before.abort);before.element.remove();before.resolve(accepted);}
+  function replacementChoice(parent,draft){
+    const label=document.createElement('label'),input=document.createElement('input'),note=document.createElement('p');label.className='field';label.textContent='Use replacement files';input.type='checkbox';input.checked=false;input.setAttribute('aria-label','Use replacement files');label.append(input);note.className='muted';note.textContent='Updates source properties for replaced library media. Review the native file changes before confirming.';parent.append(label,note);draft.replacement=input;
+    input.addEventListener('change',()=>{if(transfer.phase()==='committing'){input.checked=draft.replace_content===true;return;}closeRelinkReview();transfer.invalidate();update();});
+  }
+  const replacementCurrent=(draft,replacing,area)=>Boolean(draft.replacement?.checked)===replacing && (!replacing || !modal() && root.isConnected!==false && area?.isConnected!==false && (area?.getClientRects?.().length ?? 1)>0);
+  function reviewRelink(report,{isCurrent,signal}){
+    closeRelinkReview();const host=relinkDraft?relinkArea:sourceDraft?.kind==='relink_folder'?sourceArea:null;
+    if(!host || signal.aborted || !isCurrent())return Promise.resolve(false);
+    return new Promise(resolve=>{
+      const element=document.createElement('section'),heading=document.createElement('h4'),note=document.createElement('p');element.className='native-asset-replacement-review';element.setAttribute('role','group');element.setAttribute('aria-label','Review native replacement files');heading.textContent=report.replaced_files?`Review ${report.replaced_files} replacement files`:'No replacement files matched';note.className='muted';note.textContent='This updates library source properties. Existing project media and timelines stay unchanged. Project Undo cannot restore this library edit.';element.append(heading,note);
+      const properties=value=>{const meta=value.meta;return `hash ${value.content_hash} · ${meta.width}×${meta.height} · ${meta.fps.num}/${meta.fps.den} fps · ${meta.duration_frames} frames · video ${meta.has_video?'yes':'no'} · audio ${meta.has_audio?'yes':'no'} · ${meta.sample_rate} Hz · ${meta.channels} channels · ${meta.audio_streams} audio streams`;};
+      for(const row of report.replacements){
+        const file=document.createElement('details'),title=document.createElement('summary');title.textContent=`${row.file_name} → ${row.source_token} · ${row.media.length} library media`;file.open=true;file.setAttribute('style','overflow-wrap:anywhere');file.append(title);
+        for(const media of row.media){const id=document.createElement('p'),before=document.createElement('p'),after=document.createElement('p');id.textContent=`Library media ${media.media_id}`;before.textContent=`Before: ${properties(media.before)}`;after.textContent=`After: ${properties(row.after)}`;file.append(id,before,after);
+          if(Object.keys(media.before.meta.file || {}).length || Object.keys(row.after.meta.file || {}).length){const details=document.createElement('details'),summary=document.createElement('summary'),extra=document.createElement('pre');summary.textContent='Additional native file properties';extra.setAttribute('style','white-space:pre-wrap;overflow-wrap:anywhere');extra.textContent=JSON.stringify({before:media.before.meta.file || {},after:row.after.meta.file || {}},null,2);details.append(summary,extra);file.append(details);}
+        }
+        element.append(file);
+      }
+      const confirm=button('Confirm replacement',event=>{if(event.defaultPrevented || event.isComposing || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)return;if(relinkReview?.element!==element)return;closeRelinkReview(relinkReview.current());}),cancel=button('Cancel replacement review',()=>closeRelinkReview());element.append(confirm,cancel);
+      const current=()=>active && root.isConnected!==false && host.isConnected!==false && (host.getClientRects?.().length ?? 1)>0 && !reading && !modal() && canCommit() && isCurrent();
+      const abort=()=>closeRelinkReview();relinkReview={element,confirm,resolve,signal,abort,current};signal.addEventListener('abort',abort,{once:true});
+      element.addEventListener('keydown',event=>{event.stopPropagation();if(event.key==='Escape'){event.preventDefault();closeRelinkReview();}else if(event.isComposing || event.repeat || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey){if([' ','Enter'].includes(event.key))event.preventDefault();}});
+      host.append(element);confirm.disabled=!current();cancel.focus?.();
+      if(signal.aborted || !current())closeRelinkReview();
+    });
+  }
+  function clearSourceChoice(){closeRelinkReview();sourcePicker?.dispose();sourcePicker=null;sourceDraft=null;sourceDestination=null;sourceArea?.replaceChildren();}
+  function clearRelink(){closeRelinkReview();relinkReader?.abort();relinkReader=null;relinkDraft=null;relinkReading=false;relinkArea?.replaceChildren();relinkFiles=null;relinkApply=null;relinkCancel=null;}
   function options(node,choices,value){node.replaceChildren(...choices.map(item=>new Option(item.label,item.value)));node.value=choices.some(item=>item.value===value)?value:choices[0]?.value || '';}
   function folderFields(){
     const valid=currentCatalog(),current=valid && catalog.folders.find(item=>item.id===folder),choices=valid?nativeFolderChoices(catalog):[{value:'',label:'Library root'}];
@@ -206,6 +264,7 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
   function clearSelection(){assetDnd?.end();clearRelink();clearSourceChoice();selected=null;chosen=[];rows=[];rowAnchor=null;list.replaceChildren();dragRows?.replaceChildren();dragButtons=[];name.value='';}
   function settled(){update();if(active && pendingReload && !transferring() && !reading){pendingReload=false;void reload(page);}}
   function update(){
+    if(relinkReview && !relinkReview.current())closeRelinkReview();
     if(!active)return;if(deletion && !deletionCurrent(deletion))closeDeletion(false);if(relinkDraft && !relinkCurrent(relinkDraft))clearRelink();if(sourceDraft && !sourceCurrent(sourceDraft))clearSourceChoice();transfer.invalidate();const working=transferring() || reading || relinkReading,writable=canCommit() && !working,fresh=readEpoch===getContext()?.project_epoch,valid=fresh && selected && !selected.error && !selected.archived;
     for(const {row,item} of dragButtons){row.disabled=working;row.draggable=Boolean(writable && fresh && draggable([item]));row.setAttribute('aria-pressed',String(chosen.some(value=>value.id===item.id)));}
     for(const control of controls)control.disabled=working;list.disabled=working;previous.disabled=working || page===0;next.disabled=working || page+1>=pages;
@@ -228,6 +287,8 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     if(relinkFiles){relinkFiles.disabled=!writable;const count=relinkFiles.selectedOptions.length;relinkApply.disabled=!writable || !relinkCurrent(relinkDraft) || count<1 || count>64;}
     if(relinkCancel)relinkCancel.disabled=transfer.phase()==='committing';
     if(sourceDestination)sourceDestination.disabled=!writable;sourcePicker?.refresh();
+    for(const draft of [relinkDraft,sourceDraft])if(draft?.replacement)draft.replacement.disabled=!writable;
+    if(relinkReview)relinkReview.confirm.disabled=!relinkReview.current();
     const context=getContext(),attempt=JSON.stringify([context?.project_epoch,context?.generation]);
     if(assetDnd && readEpoch===context?.project_epoch && readGeneration!==null && readGeneration!==context?.generation && placementAttempt!==attempt && !working){placementAttempt=attempt;pendingReload=false;void reload(page,selected?.id,false,1,true);}
   }
@@ -255,8 +316,9 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     }catch(error){if(active && id===sequence && error.name!=='AbortError'){if(wanted>0 && /last page|out of range/i.test(error.message))return reload(0,preferred,afterWrite,direction);clearSelection();readEpoch=null;catalog=null;message(error.message);}return false;}
     finally{if(id===sequence){reading=false;update();}}
   }
-  const transfer=createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,timelineCommit,makeLibraryMutation,api,pause,onStatus:text=>{if(transferSession===panelSession)message(text);update();},onApplied:async(receipt,action,report)=>{
+  const transfer=createNativeAssetTransfer({getContext,canCommit,libraryCommit,projectCommit,timelineCommit,makeLibraryMutation,confirmRelink:reviewRelink,api,pause,onStatus:text=>{if(transferSession===panelSession)message(text);update();},onApplied:async(receipt,action,report)=>{
     if(action.kind==='delete_assets')await onRemoved([...receipt.deleted_ids],receipt);
+    if(['relink','relink_folder'].includes(action.kind) && action.replace_content===true && receipt.replace_content===true)await onRelinked(action.asset_id,receipt);
     if(!active || transferSession!==panelSession)return;
     if(['relink','relink_folder','import_tree','delete_assets'].includes(action.kind) && receipt.project_epoch!==getContext()?.project_epoch)return;
     const pooling=action.kind==='import_set' && report?.destination==='pool';
@@ -289,15 +351,16 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
       if(!Array.isArray(files) || files.length>4096 || files.some(item=>typeof item?.name!=='string' || !item.name || typeof item.path_token!=='string' || !item.path_token || item.path_token.length>128 || /[\\/\u0000-\u001f]/.test(item.path_token)) || new Set(files.map(item=>item.path_token)).size!==files.length)throw Error('The approved source file list is invalid; refresh before relinking');
       draft.paths=files.map(item=>item.path_token);const note=document.createElement('p');note.className='muted';note.textContent='Choose existing files from the approved project root. Native Relink matches missing filenames, preserves readable files and reports files still missing. No recursive folder search.';
       const label=document.createElement('label');label.className='field';label.textContent='Approved source files';relinkFiles=document.createElement('select');relinkFiles.multiple=true;relinkFiles.size=6;relinkFiles.setAttribute('aria-label','Approved source files');relinkFiles.append(...files.map(item=>new Option(item.name,item.path_token)));relinkFiles.addEventListener('change',update);label.append(relinkFiles);
-      relinkApply=button('Relink selected source files',()=>void applyRelink(draft));relinkArea.replaceChildren(note,label,relinkApply,relinkCancel);message(`${draft.item.missing_count} missing native asset files · select up to 64 approved source files`);
+      relinkApply=button('Relink selected source files',()=>void applyRelink(draft));relinkArea.replaceChildren(note,label);replacementChoice(relinkArea,draft);relinkArea.append(relinkApply,relinkCancel);message(`${draft.item.missing_count} missing native asset files · select up to 64 approved source files`);
     }catch(error){if(relinkCurrent(draft) && error.name!=='AbortError'){clearRelink();update();message(error.message);}}
     finally{if(relinkDraft===draft){relinkReading=false;relinkReader=null;update();}}
   }
   async function applyRelink(draft){
     if(!relinkCurrent(draft) || transferring() || reading || relinkReading || !canCommit() || !relinkFiles)return;
     const paths=Array.from(relinkFiles.selectedOptions,option=>option.value);if(!paths.length || paths.length>64 || new Set(paths).size!==paths.length || paths.some(path=>!draft.paths.includes(path)))return;
+    const replacing=Boolean(draft.replacement?.checked);draft.replace_content=replacing;
     const session=panelSession;transferSession=session;transferRefreshFailed=false;
-    try{await transfer.run({kind:'relink',asset_id:draft.item.id,revision:draft.item.revision,path_tokens:paths},()=>relinkCurrent(draft) && JSON.stringify(Array.from(relinkFiles?.selectedOptions || [],option=>option.value))===JSON.stringify(paths));}
+    try{await transfer.run({kind:'relink',asset_id:draft.item.id,revision:draft.item.revision,path_tokens:paths,...(replacing?{replace_content:true}:{})},()=>relinkCurrent(draft) && replacementCurrent(draft,replacing,relinkArea) && JSON.stringify(Array.from(relinkFiles?.selectedOptions || [],option=>option.value))===JSON.stringify(paths));}
     catch(error){if(active && session===panelSession)notice(error.message);}
     finally{if(active && session===panelSession)clearRelink();settled();}
   }
@@ -305,12 +368,13 @@ export function createNativeAssetPanel({root,getContext,canCommit,libraryCommit,
     if(transferring() || reading || relinkReading || !canCommit() || !currentCatalog() || typeof makeLibraryMutation!=='function' || kind==='relink_folder' && (relinkMenu.hidden || !selected?.revision))return;
     clearRelink();clearSourceChoice();sourceReport.replaceChildren();const draft={kind,identity:sourceIdentity(),item:selected?{...selected}:null,folders_revision:catalog.folders_revision};sourceDraft=draft;
     const note=document.createElement('p');note.className='muted';note.textContent=kind==='import_tree'?'Import the selected folder and its subfolders into the native library. Native matching merges folders, skips duplicates and reports per-file errors. The project timeline stays unchanged.':'Search the selected folder and its subfolders for missing native asset filenames. Readable library files stay unchanged.';sourceArea.append(note);
+    if(kind==='relink_folder')replacementChoice(sourceArea,draft);
     if(kind==='import_tree'){const label=document.createElement('label');label.className='field';label.textContent='Import into native library folder';sourceDestination=document.createElement('select');sourceDestination.setAttribute('aria-label','Import into native library folder');options(sourceDestination,nativeFolderChoices(catalog),folder || '');label.append(sourceDestination);sourceArea.append(label);}
     const chooser=document.createElement('div');sourceArea.append(chooser);
     sourcePicker=createSourcePicker({root:chooser,getContext,isCurrent:()=>sourceCurrent(draft),canChoose:()=>canCommit() && !transferring() && !reading && sourceCurrent(draft),canCancel:()=>transfer.phase()!=='committing',api,onCancel:()=>{const canceling=transfer.busy();transfer.cancel();clearSourceChoice();message(canceling?'Cancellation requested · waiting for native asset status':'Source folder choice canceled · library unchanged');update();},onChoose:async directory=>{
       if(!sourceCurrent(draft) || !canCommit() || transferring())return;
-      const parent=sourceDestination?.value || null,action=kind==='import_tree'?{kind,directory_token:directory,parent,folders_revision:draft.folders_revision}:{kind,asset_id:draft.item.id,revision:draft.item.revision,directory_token:directory},session=panelSession;transferSession=session;transferRefreshFailed=false;
-      try{await transfer.run(action,()=>sourceCurrent(draft) && (kind!=='import_tree' || (sourceDestination?.value || null)===parent));}catch(error){if(active && session===panelSession)notice(error.message);}finally{if(active && session===panelSession)clearSourceChoice();settled();}
+      const parent=sourceDestination?.value || null,replacing=kind==='relink_folder' && Boolean(draft.replacement?.checked),action=kind==='import_tree'?{kind,directory_token:directory,parent,folders_revision:draft.folders_revision}:{kind,asset_id:draft.item.id,revision:draft.item.revision,directory_token:directory,...(replacing?{replace_content:true}:{})},session=panelSession;draft.replace_content=replacing;transferSession=session;transferRefreshFailed=false;
+      try{await transfer.run(action,()=>sourceCurrent(draft) && (kind==='import_tree'?(sourceDestination?.value || null)===parent:replacementCurrent(draft,replacing,sourceArea)));}catch(error){if(active && session===panelSession)notice(error.message);}finally{if(active && session===panelSession)clearSourceChoice();settled();}
     }});update();void sourcePicker.open();
   }
   async function edit(action){

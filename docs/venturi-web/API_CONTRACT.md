@@ -1447,6 +1447,15 @@ Private authenticated/tunneled access only; `Cache-Control: no-store` for projec
   Unavailable or older jobs do not fall back to an independent render. Legacy
   durable exports keep their existing key; observed ephemeral previews use a
   telemetry version suffix. Static `/preview/audio/meters` remains separate.
+  Compressor bins also return `insert.response`: the captured native parameters,
+  `sample_rate:48000`, `response_kind:"native_activity"`, and 241 triples of
+  `[frequency_hz,makeup_db,active_db]`. Native `CrossoverResponse` combines the
+  immutable render parameters with that bin's gain reduction; no browser DSP or
+  additional decode is involved. Such pages contain at most 16 bins and retain
+  ordinary `next_bin` pagination. Inactive bins use zero reduction. Older sidecars
+  lacking captured parameters return `response:null` and `response_error` while
+  retaining their valid spectra. New ephemeral prepares use `telemetry:v2`;
+  existing files and durable export keys are preserved.
 - At natural EOF, the browser requests the next window from the prepared movie's
   actual exclusive end, keeping the same document identity. It prepares one
   foreground window at a time and displays the preparation pause. End of the

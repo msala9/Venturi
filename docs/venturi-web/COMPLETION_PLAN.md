@@ -26,7 +26,7 @@ and DELIVERY_HANDOVER.md remain the accepted baseline, not the scope limit.
 
 ## Color-wheel capability acceptance — 2026-10-23
 
-The current ledger is **53 done /37 partial /2 excluded**. `color_wheels` is
+At Color-wheel acceptance the ledger was **53 done /37 partial /2 excluded**. `color_wheels` is
 accepted from the combined native and connected evidence, without closing Color
 scopes/Auto Balance, full F4 or the global physical/DPI/dense/soak/M7 criteria.
 
@@ -54,7 +54,35 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-Current Title/filter/Source controls: **http://127.0.0.1:8855/**,
+Current compressor activity delivery: **http://127.0.0.1:8855/**,
+source `641599d`, binary `771fa50f72e0`, service
+`venturi-web-halo1-compressor-activity.service`, PID264167.
+The compressor now shows native band input/GR, an active response distinct from
+makeup, and native pre/post spectra. It uses the existing prepared telemetry,
+one250ms producer and at most four deduplicated insert readers. No browser DSP,
+additional decoder or persistent Viewer row is introduced.
+
+The15-case native gate and103 client cases pass; formatting, Clippy8.42s and
+build40.95s pass on halo1, peak2,093,780,992 bytes. Actual Windows verifies a
+single Mid threshold change-24to-60, one Undo/Redo, nonzero native Mid GR
+21.6583843dB at sample8192,241 native response points and128 pre/post points.
+The curve and all three threshold/GR strips fit the upper Inspector row.
+Explicit Program Pause releases the movie and clears activity correctly;
+same-clock frozen-reader behavior has deterministic coverage only.
+
+Save/reopen retains exact models and Saved bytes with empty Undo. Other bands,
+crossovers, Mono bypass, clips/effects and other timelines are unchanged.
+Prior Color/Mask/Title Saved files,39 Sessions/40 PIDs and fixed NAS/proxy state
+are retained. See `evidence/f4-compressor-activity-workflow.json` and its screenshot.
+
+Combined with the prior native parameter/preset/chain/reset/output evidence,
+`audio_compressor_three_band` advances to done: **54 done /36 partial /2 excluded**.
+Global physical-device/DPI/dense/soak/M7 and the full F1-F7 goal remain open.
+Next close the concrete Color observations: actually applied Auto Balance with
+Undo/Redo/persistence and scope images advancing with Program frames. Native
+production behavior is already present; reuse existing renderer/export proofs.
+
+Previous Title/filter/Source qualification (runtime upgraded): **http://127.0.0.1:8855/**,
 source `b85e333`, binary `aefe8ae43d4c`, service
 `venturi-web-halo1-native-scalars-source-r2.service`, PID261197. Compact native Title/background
 scalars and non-Color filters now have native-speed scrubs and inline sliders.

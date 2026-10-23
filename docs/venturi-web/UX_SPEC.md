@@ -47,6 +47,17 @@ This changes neither native asset dependency-copy semantics nor the owner V1
 stopped-audio decision. See `evidence/f5-shared-originals-workflow.json` and its
 workspace/export images. Full F1–F7/M7 work remains active.
 
+## Prepared native compressor activity — 2026-10-23
+
+The visible compressor shares the existing Program meter producer. Three compact
+threshold strips show native input levels and gain reduction; the graph shows
+the native active response and pre/post spectra from the same prepared bin.
+Parameter/slot/document changes or hidden panels clear obsolete activity. An
+explicit Program Pause releases its movie and clears the sample. A reader that
+still owns the same paused clock labels its retained sample as frozen and makes
+no new read. V1 edits remain stopped followed by explicit Play. See
+`evidence/f4-compressor-activity-workflow.json` for the actual nonzero-GR workflow.
+
 ## Interactive native audio graphs — 2026-10-23
 
 `b6becaf` on halo1/8839 adds EQ frequency/gain handles, Q wheel/keyboard,

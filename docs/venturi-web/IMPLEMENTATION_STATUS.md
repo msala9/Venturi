@@ -22,7 +22,35 @@ video lease APIs or a second audio-routing architecture for this deferred detail
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8837/**, source `fc2c041`,
+The current halo1 delivery is **http://127.0.0.1:8838/**, source `a2d1358`,
+binary `72e5329138ac`, in `venturi-web-halo1-mixer-controls-r2.service`.
+The Audio workspace now has a compact horizontal console with 84 px strips,
+130 px relative gain faders and pan knobs. Gain uses the native 11-knot f32
+mapping; pan uses normalized (dx-dy)/200 motion, with Shift at 0.1 sensitivity.
+A gesture submits only its changed axis on release. Numeric Apply remains
+available. No-op, canceled, stale, disabled and detached gestures do not write.
+
+The bounded gate passes **40 client cases**, including six new top-level control
+cases and seven cancellation subcases, formatting, all-target Clippy and embedded
+build. The final CSS-only correction fixes Inspector specificity and aligns the
+Master strip; its passing build reuses those unchanged 40 cases.
+Actual Windows verification at 1280x720 confirms aligned native-sized controls,
+keyboard master Gain 0 to -0.2 dB and Pan 0 to 0.01, double-click resets,
+Undo/Redo and Save As/reopen. Final state is Saved in
+`Venturi_Mixer_V1.vvproj`, master Gain/Pan 0, timeline1/frame0 and empty Undo.
+OS pointer drags/Shift/cancellation were not physically qualified here; their
+behavior is covered by deterministic client cases. All 22 prior Sessions,
+23 PIDs, 11 Saved files, three originals and the shared proxy movie are unchanged.
+See `evidence/m5-mixer-controls-workflow.json` and its workspace image.
+
+This UI-only block changes no native DSP or Program/export transport; reuse the
+qualified stopped-audio workflow in `evidence/m7-audio-source-fd-workflow.json`.
+Interactive EQ and compressor graphs remain; the existing EQ response canvas
+is read-only and compressor controls are numeric. Physical audio/hardware,
+representative/dense/DPI and remaining M7 requirements stay explicit.
+Ledger remains **49 done / 41 partial / 2 excluded**; the mixer row stays partial.
+
+Preserved requested audio-source delivery: **http://127.0.0.1:8837/**, source `fc2c041`,
 binary `4a2b7b7cd0bf`, in `venturi-web-halo1-audio-source-fd.service`.
 An optional native audio resolver now confines the existing Program audition,
 scrub, fast-audio-window and meter paths to requested approved-root sources.
@@ -52,7 +80,7 @@ V1 stopped-audio edit/play/save/export workflow, not full F4 or M7. Uninterrupte
 live DSP is deferred by the owner decision above; representative/dense/DPI,
 physical-device and other functional/release requirements remain explicit.
 No live cursor/video-lease infrastructure is included in this delivery.
-Mixer-fader work remains separate.
+Compact mixer faders and pan controls are delivered in a2d1358 above.
 
 Preserved requested original video/still delivery: **http://127.0.0.1:8836/**, source `83ccf82`,
 binary `05a3c90beea0`, in `venturi-web-halo1-frame-sources.service`.

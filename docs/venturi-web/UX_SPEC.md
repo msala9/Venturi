@@ -18,6 +18,25 @@ persistent Viewer controls. Verify one connected stop/edit/play/save/export flow
 Retain any unshipped real-time prototype privately; do not ship unused cursors,
 video lease APIs or a second audio-routing architecture for this deferred detail.
 
+## Compact native mixer controls — 2026-10-23
+
+`a2d1358` on halo1/8838 keeps the Viewer dimensions unchanged and fits Audio
+track/Master controls in a horizontal 84 px console. Each strip has a pan knob,
+a 130 px relative gain fader, native peaks and the existing numeric Apply.
+Master alignment reserves the same flag area as tracks. The native 11-knot
+gain curve and f32 arithmetic are retained; pointer motion remains local until
+one axis-only command on release. Shift reduces drag sensitivity to one tenth.
+Keyboard changes and double-click reset use the same guarded native command.
+No-op/cancel/stale/disabled gestures do not mutate. Unrelated numeric drafts
+remain usable; no browser DSP or new persistent Viewer controls are introduced.
+
+Actual Windows keyboard/reset/Undo/Redo/Save As/reopen and 1280x720 alignment
+are verified. Pointer/Shift/cancellation coverage is deterministic, not an
+actual OS-pointer acceptance claim. The owner-approved stopped-audio workflow
+remains. The EQ response canvas is read-only, compressor controls are numeric,
+and interactive EQ/compressor graphs remain. See
+`evidence/m5-mixer-controls-workflow.json` and its workspace image.
+
 ## Requested audio-source confinement — 2026-10-23
 
 `fc2c041` on halo1/8837 changes no client controls. Existing Program audition,

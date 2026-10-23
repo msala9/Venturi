@@ -22,7 +22,29 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
-M7 requested audio sources (`fc2c041`, halo1/8837): **14 cases** pass: 3 audition,
+M5 compact mixer controls (`a2d1358`, halo1/8838): **40 client cases** pass
+across mixer-controls, mixer and audio-presets, including six new top-level
+control cases with seven cancellation subcases. The tests cover all 11 native
+f32 gain knots, relative drag travel, normalized pan/Shift scaling, release-only
+axis writes, keyboard/reset, pending/rejected writes, context/disabled/capture/
+resize/hidden cancellation and retention of unrelated numeric drafts.
+Formatting, all-target Clippy and embedded build pass. A final CSS-only
+Inspector-specificity/Master-alignment correction passes the embedded build;
+the unchanged 40 client cases are reused. Worker peak is 1,570,299,904 bytes
+within the 8 CPU/4 GiB/no-swap bound.
+
+Actual Windows verification at 1280x720 confirms 84 px aligned strips and
+130 px faders, keyboard Master Gain 0 to -0.2 dB and Pan 0 to 0.01, double-click
+resets, Undo/Redo and Save As/reopen. Final state is Saved/frame0 with empty Undo
+in `Venturi_Mixer_V1.vvproj`; all 22 previous Sessions/23 PIDs/11 Saved files/
+three originals/shared proxy movie are preserved. Actual OS pointer drag,
+Shift and cancellation qualification is not claimed from deterministic tests.
+No new Program/export render is needed for this UI-only block: reuse the
+unchanged native DSP/transport verification in
+`evidence/m7-audio-source-fd-workflow.json`. See
+`evidence/m5-mixer-controls-workflow.json` and its workspace image.
+
+M7 requested audio sources (`fc2c041`, preserved halo1/8837): **14 cases** pass: 3 audition,
 7 frame-source adapter and 4 native audio. Formatting, all-target Clippy and
 embedded build pass; no client changes require a new JavaScript gate. The first
 test-only file-handle type mismatch was corrected before the terminal pass.

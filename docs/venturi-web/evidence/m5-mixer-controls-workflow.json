@@ -1,0 +1,268 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-23",
+  "title": "Compact native mixer controls",
+  "result": "passed_with_explicit_scope",
+  "source_commit": "a2d1358",
+  "delivery": {
+    "url": "http://127.0.0.1:8838/",
+    "host": "halo1",
+    "unit": "venturi-web-halo1-mixer-controls-r2.service",
+    "root": "/home/halo/VenturiWeb-mixer-controls-20261023",
+    "binary_sha256": "72e5329138ac9213e26b47bf7c35ff423547cef06fd6e6b4e872c82f2046b8b3",
+    "previous_delivery_preserved": {
+      "port": 8837,
+      "source_commit": "fc2c041"
+    }
+  },
+  "scope": {
+    "delivered": [
+      "Compact horizontal native-style track/Master console",
+      "Native 11-knot f32 gain mapping with relative fader travel",
+      "Normalized pan motion and Shift fine sensitivity",
+      "One axis-only set_mixer on gesture release; existing numeric Apply retained",
+      "Guarded keyboard changes and double-click zero resets"
+    ],
+    "unchanged": [
+      "Native DSP",
+      "Program/export transport",
+      "Viewer/main dimensions",
+      "Existing owner-approved V1 stopped-audio workflow"
+    ],
+    "remaining": [
+      "Interactive EQ and compressor graphs remain; the existing EQ response canvas is read-only and compressor controls are numeric.",
+      "Actual OS pointer drag/Shift/cancellation qualification not claimed here",
+      "Physical audio/hardware, representative/dense/DPI and other M7 acceptance"
+    ],
+    "owner_decision": "Audio/mix/FX changes may stop Program in V1; explicit Play prepares the confirmed native mix. Uninterrupted live DSP is deferred.",
+    "ledger": {
+      "capability": "audio_mixer_track_master",
+      "status": "partial",
+      "done": 49,
+      "partial": 41,
+      "excluded": 2,
+      "status_and_counts_changed": false
+    }
+  },
+  "controls": {
+    "gain_curve_db_to_position": [
+      [
+        -100,
+        0
+      ],
+      [
+        -60,
+        0.07
+      ],
+      [
+        -40,
+        0.16
+      ],
+      [
+        -30,
+        0.24
+      ],
+      [
+        -20,
+        0.34
+      ],
+      [
+        -12,
+        0.46
+      ],
+      [
+        -6,
+        0.58
+      ],
+      [
+        0,
+        0.7
+      ],
+      [
+        6,
+        0.8
+      ],
+      [
+        12,
+        0.88
+      ],
+      [
+        30,
+        1
+      ]
+    ],
+    "arithmetic": "native-style f32",
+    "gain_drag": "Relative normalized displacement -dy/(actual control height-18), interpolated through native gain knots.",
+    "pan_drag": "Normalized position (pan+1)/2 plus (dx-dy)/200, clamped to0..1, converted back to-1..1.",
+    "shift_multiplier": 0.1,
+    "release": "One changed-axis native command; no command during pointer motion.",
+    "guards": [
+      "No motion/no-op",
+      "Escape",
+      "Capture loss",
+      "Stale context",
+      "Readonly/disabled",
+      "Resize/hidden/detached state",
+      "Pending/rejected writes do not replay"
+    ],
+    "numeric_apply_retained": true
+  },
+  "validation": {
+    "first_gate": {
+      "phase": "passed",
+      "client_cases": 40,
+      "new_control_top_level_cases": 6,
+      "cancellation_subcases": 7,
+      "suites": [
+        "test/mixer-controls.test.js",
+        "test/mixer.test.js",
+        "test/audio-presets.test.js"
+      ],
+      "formatting": "passed",
+      "all_target_clippy": "passed",
+      "embedded_build": "passed",
+      "memory_peak_bytes": 1440514048
+    },
+    "final_gate": {
+      "phase": "passed",
+      "unit_result": "success",
+      "main_pid_after_gate": 0,
+      "correction": "CSS-only Inspector specificity and Master flags alignment.",
+      "client_cases": "Same unchanged passing40 cases reused.",
+      "embedded_build": "passed",
+      "memory_peak_bytes": 1570299904
+    },
+    "limits": {
+      "cpu_quota_percent": 800,
+      "memory_max_bytes": 4294967296,
+      "swap_max_bytes": 0,
+      "oom_score_adjust": 1000,
+      "nice": 19,
+      "io_weight": 10,
+      "tasks_max": 128,
+      "runtime_max_seconds": 1500
+    },
+    "deterministic_coverage": [
+      "All native gain knots round-trip",
+      "Relative pointer release endpoint and one-command ownership",
+      "Pan and Shift fine scaling",
+      "Keyboard/reset and pending/error behavior",
+      "Seven explicit no-write cancellation subcases",
+      "Axis-only writes preserve unrelated numeric drafts",
+      "Mixer, numeric draft and audio preset compatibility"
+    ],
+    "no_new_native_render": true,
+    "reused_native_workflow": "m7-audio-source-fd-workflow.json",
+    "reuse_reason": "UI-only controls do not alter native DSP or Program/export transport."
+  },
+  "actual_windows": {
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "layout": {
+      "strips": [
+        "A1",
+        "A2",
+        "Master"
+      ],
+      "strip_width_px": 84,
+      "fader_height_px": 130,
+      "pan_top_px": 258,
+      "fader_top_px": 308,
+      "all_aligned": true,
+      "viewer_main_dimensions_unchanged": true
+    },
+    "keyboard": {
+      "before": {
+        "master_gain_db": 0,
+        "master_pan": 0,
+        "history_position": 0
+      },
+      "after": {
+        "master_gain_db": -0.20000000298023224,
+        "master_pan": 0.009999999776482582,
+        "generation": "2",
+        "history_labels": [
+          "MixerGain",
+          "MixerGain"
+        ],
+        "history_position": 2
+      }
+    },
+    "double_click": {
+      "gain_reset_db": 0,
+      "gain_reset_preserves_pan": 0.009999999776482582,
+      "pan_reset": 0
+    },
+    "undo": {
+      "master_gain_db": 0,
+      "master_pan": 0.009999999776482582,
+      "history_position": 3,
+      "history_label_count": 4
+    },
+    "redo_save_reopen": {
+      "project": "Venturi_Mixer_V1.vvproj",
+      "unsaved": false,
+      "master_gain_db": 0,
+      "master_pan": 0,
+      "generation": "0",
+      "history_labels": [],
+      "history_position": 0,
+      "active_timeline": "1",
+      "playhead": 0,
+      "sha256": "591965305bed9b9719c2273c638eaf3ca49079599973d0e64103002e23346df7"
+    },
+    "new_export_jobs": 0,
+    "os_pointer_drag_shift_cancel_qualified": false,
+    "screenshot": "m5-mixer-controls-workspace.jpg"
+  },
+  "deployment_safety": {
+    "replaced_only_owned_fresh_unpublished_candidate": true,
+    "before_restart_guard": {
+      "saved": true,
+      "empty_undo": true,
+      "export_jobs": 0
+    },
+    "bind_retry": "Initial bind was blocked by TIME_WAIT. The owner verified no listener and safely reused SO_REUSEADDR; no protected editor was stopped.",
+    "protected": {
+      "sessions": 22,
+      "pids": 23,
+      "saved_files": 11,
+      "originals": 3,
+      "unchanged": true
+    },
+    "original_candidate_saved_unchanged": true,
+    "original_candidate_sha256": "5e16a3e353649b065e284065ecb03f69b2a87c366a735f9cde5ff174bf6f86a4",
+    "shared_proxy_movie": {
+      "unchanged": true,
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "bytes": 2206043
+    },
+    "runtime_memory_peak_bytes": 215109632
+  },
+  "provenance": {
+    "private_proof_files": [
+      "halo1-mixer-controls-r1-observed.json",
+      "halo1-mixer-controls-r1-start.json",
+      "halo1-mixer-controls-r2-start.json",
+      "halo1-mixer-controls-r2-observed.json",
+      "halo1-mixer-controls-r2-deployed.json",
+      "halo1-mixer-controls-deployed.json",
+      "halo1-mixer-controls-before-open.json",
+      "halo1-mixer-controls-changed.json",
+      "halo1-mixer-controls-undone.json",
+      "halo1-mixer-controls-final.json",
+      "halo1-mixer-controls-browser-layout.json",
+      "halo1-mixer-controls-protected.json"
+    ],
+    "publication": "Compact extraction of completed owner gate/Windows observations; no full Sessions, private paths beyond the qualification root, spectra or user secrets.",
+    "source_sha256": {
+      "crates/vv-web/src/api.rs": "40f53c74f8b69aafdda5a574a715d750251d2126a3e98778d7407ef7f5453bca",
+      "web/js/mixer.js": "95dee50d63c363172d088f5a245d7214df5af535747c8cbf753761b6247c3ee2",
+      "web/js/mixer-controls.js": "6de3adbc637b2613e2954cb79dfd3ceaddb5e21364c4e7766e67dcb9e8a79e21",
+      "web/style/app.css": "bc923313def9420bc33298f8f255388c1c83b7da5015b5a57e2c97f1dfc69dd1",
+      "web/test/mixer-controls.test.js": "9f16101163c34ad15719dddeeb2d7c1654032b64f4018382e75c17a984e7c9d3"
+    }
+  }
+}

@@ -1,0 +1,272 @@
+{
+  "source_commit": "9a946dd",
+  "url": "http://127.0.0.1:8851/",
+  "binary_sha256": "da479e56f98cc27bd530d1ad1d731cd165cc7c7c30b95911a5296cfbebbf46e1",
+  "oracle_sha256": "60b43bdab04ce84a5ae5654b7c1f2c3dd14c578d05b40d47ff2c07d78e4aa97f",
+  "project": "Venturi_Effects_Montage_V1.vvproj",
+  "project_sha256": "33540edbeafacf947bbf60f2c16ff83a2778766dc9ea777717da07346ac36d87",
+  "implementation": [
+    "Native selected-title commands on an owned frame snapshot; live project/history/lease unchanged.",
+    "Bounded read-only PNG route with strict DTO, origin/composition/source checks, shared GPU lock, separate draft cache and Program priority.",
+    "Compact family/style combobox with stable keyboard/pointer-enter preview, one confirmed edit, cancel/restore and closed-wheel burst ownership."
+  ],
+  "gate": {
+    "native_cases": 54,
+    "client_cases": 82,
+    "first_pass_native_cases_reused": 50,
+    "first_pass_failure": "New HTTP expectations used400; changed to the established422 INVALID_OPERATION status. Production behavior unchanged.",
+    "formatting": true,
+    "clippy_all_targets": true,
+    "build_seconds": 40.36,
+    "clippy_seconds": 8.14,
+    "oracle_build_seconds": 0.98,
+    "memory_peak_bytes": 2037960704,
+    "resources": "halo1 only, one heavy workload, <=8CPU,4GiB,noSwap,Nice19,IOWeight10,OOMScore1000"
+  },
+  "browser": {
+    "viewport": {
+      "devicePixelRatio": 1.25,
+      "height": 964,
+      "width": 962
+    },
+    "font_draft_changed_image_url": true,
+    "outside_click_restored_exact_base_url": true,
+    "escape_and_confirm_undo_redo_model": {
+      "font_preview_read_only": true,
+      "font_confirm_single_undo_redo": true,
+      "stack_order": [
+        "Exposure",
+        "DropShadow",
+        "GaussianBlur"
+      ],
+      "bypass_undo_restores_model": true,
+      "exposure_keys": [
+        [
+          0,
+          0.75,
+          "Linear"
+        ],
+        [
+          144,
+          -0.25,
+          "Linear"
+        ]
+      ],
+      "audio_fade_frames": [
+        24,
+        24
+      ],
+      "save_reopen_models_and_bytes_exact": true,
+      "project_sha256": "33540edbeafacf947bbf60f2c16ff83a2778766dc9ea777717da07346ac36d87"
+    },
+    "font_style_keyboard": true,
+    "family_keyboard": true,
+    "physical_hover_or_wheel_claimed": false
+  },
+  "montage": {
+    "title": "DejaVu Serif Regular72; background78%, outline5; title and BW Adjustment cover frames0\u2013119.",
+    "moving_filters": "River video1, ZoomXY0.88; Exposure keys0=0.75/144=-0.25; Exposure/DropShadow(offsetX35)/GaussianBlur(radius3).",
+    "audio": "Linked audio0: actual Windows fade handles24in/24out; corresponding video fades remain0.",
+    "coverage": {
+      "title_background_outline": true,
+      "moving_filter_stack": true,
+      "adjustment_inside": true,
+      "adjustment_outside": true,
+      "audio_fade_window": true
+    }
+  },
+  "frames": [
+    {
+      "frame": 48,
+      "width": 320,
+      "sha256": "0b7c4c336cd09d8046c25bf813b5ebf93b9cf17b3438a612699f916a299e61a3",
+      "byte_exact_native_api": true
+    },
+    {
+      "frame": 119,
+      "width": 320,
+      "sha256": "1974522c2b631651d4c4c258c4069b01c893c93c5cd2b5d5483fdc7834bcffbb",
+      "byte_exact_native_api": true
+    },
+    {
+      "frame": 120,
+      "width": 320,
+      "sha256": "43b55c089482ca38aa7d939ad31e687bf62ce140ef8bd090e06cf3c51e5c8730",
+      "byte_exact_native_api": true
+    },
+    {
+      "frame": 192,
+      "width": 320,
+      "sha256": "6f77f852d070d718abceaf639531c5424c1abecf4b2b603c640169f3546be7a1",
+      "byte_exact_native_api": true
+    },
+    {
+      "frame": 48,
+      "width": 1280,
+      "sha256": "2a0dae704b64914f684ebee09f25f5b60b2d07421ad3bb7d617ffa5f5cff5d1e",
+      "byte_exact_native_api": true
+    }
+  ],
+  "audio_windows": [
+    {
+      "frame": 0,
+      "start_sample": 0,
+      "count": 3840,
+      "native_f32_sha256": "8ca1a2e0ec36279c0b07b270539a7d5e4b80742db6e90c81d11a0ae627f31c1d",
+      "pcm16_sha256": "7ca09d90c49c0730c35b15cc709406e54e63f10f7c619e56a42fc2044b4cb62a",
+      "byte_exact_after_native_pcm16_quantization": true,
+      "measurement": {
+        "peak": 0.007358958479017019,
+        "rms": 0.0014953135997035252
+      }
+    },
+    {
+      "frame": 12,
+      "start_sample": 24000,
+      "count": 3840,
+      "native_f32_sha256": "15d8313855f1eb41c84d1a5727ebb16383419794d267255d8df9723ed56825c2",
+      "pcm16_sha256": "c16b70b04e549140c1e9e155622d90e306ec711641c84788ed2073645370052f",
+      "byte_exact_after_native_pcm16_quantization": true,
+      "measurement": {
+        "peak": 0.08407226204872131,
+        "rms": 0.020961659540351108
+      }
+    },
+    {
+      "frame": 132,
+      "start_sample": 264000,
+      "count": 3840,
+      "native_f32_sha256": "4c7eea521d2218c5965fd3666c694a967a939e29a6928d528b6ed1101176b8ac",
+      "pcm16_sha256": "0299f757a85a1aad6cbe1ad2b0eda925d8df667cd04e646af8917f65cbf24537",
+      "byte_exact_after_native_pcm16_quantization": true,
+      "measurement": {
+        "peak": 0.0,
+        "rms": 0.0
+      }
+    },
+    {
+      "frame": 252,
+      "start_sample": 504000,
+      "count": 3840,
+      "native_f32_sha256": "eb1f780e4fafaccb20ef0911b2d8f92eedd5bd16bfa5b2f615224e2809a539ae",
+      "pcm16_sha256": "ef967a98c9a0b4cf8c2b293f414b1478ec6548b056f1987f62de5cc275957d38",
+      "byte_exact_after_native_pcm16_quantization": true,
+      "measurement": {
+        "peak": 0.037981219589710236,
+        "rms": 0.00930928189366064
+      }
+    }
+  ],
+  "export": {
+    "status": "passed",
+    "job": "1792767150513614515",
+    "file_sha256": "68e6e0e279edf595d0140d3d074f6ef1b00e24baa9687b6de9b4ab4f5bf54056",
+    "bytes": 4837209,
+    "frames": 701,
+    "fps": "24/1",
+    "width": 1920,
+    "height": 1080,
+    "video_codec": "h264",
+    "audio_codec": "aac",
+    "video_duration": 29.208333,
+    "audio_duration": 29.226,
+    "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+    "elapsed_ms": 3316.939883,
+    "audio_windows": [
+      {
+        "frame": 0,
+        "reference_rms": 0.0014953135997035222,
+        "decoded_rms": 0.0014549889963117574,
+        "correlation": 0.9681265787089558,
+        "relative_rms_error": 0.25050947568339116,
+        "lossy_measurement_only": true
+      },
+      {
+        "frame": 12,
+        "reference_rms": 0.02096165954035102,
+        "decoded_rms": 0.021085922978123228,
+        "correlation": 0.9520441223736552,
+        "relative_rms_error": 0.31066939872789745,
+        "lossy_measurement_only": true
+      },
+      {
+        "frame": 132,
+        "reference_rms": 0.0,
+        "decoded_rms": 0.0,
+        "lossy_measurement_only": true
+      },
+      {
+        "frame": 252,
+        "reference_rms": 0.009309281893660587,
+        "decoded_rms": 0.009853384413687017,
+        "correlation": 0.9782723427146127,
+        "relative_rms_error": 0.22228641314098863,
+        "lossy_measurement_only": true
+      }
+    ],
+    "memory_peak_bytes": 390369280,
+    "scope": "Full decoded AAC stream byte-exact to a fresh native R9700 export using the same settings. Four lossy-versus-PCM window measurements are informational; the original strict first-window threshold failure is retained.",
+    "native_export_sha256": "68e6e0e279edf595d0140d3d074f6ef1b00e24baa9687b6de9b4ab4f5bf54056",
+    "decoded_aac_sha256": "2301e392ec70cdaf4f044e38741764b58565a5551249b145ff764c159243dce9",
+    "decoded_aac_bytes": 11223040,
+    "decoded_aac_exact_native_web": true,
+    "native_export_stdout": "{\"compose_fps\":435.75880951051295,\"compositor\":\"AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)\",\"decode_fps\":1623.9830258050808,\"elapsed_seconds\":3.038487906,\"encode_fps\":247.40134969118117,\"encoder\":\"Some(X264)\",\"frames\":701}\n"
+  },
+  "download_sha256_verified": true,
+  "browser_export_playback": {
+    "start": {
+      "currentTime": 0,
+      "duration": 29.226,
+      "ended": false,
+      "paused": false,
+      "readyState": 4,
+      "videoHeight": 1080,
+      "videoWidth": 1920
+    },
+    "end": {
+      "currentTime": 29.226,
+      "duration": 29.226,
+      "ended": true,
+      "error": null,
+      "paused": true,
+      "readyState": 4,
+      "videoHeight": 1080,
+      "videoWidth": 1920
+    }
+  },
+  "original_aac_pcm_probe": {
+    "status": "failed_threshold",
+    "frame": 0,
+    "correlation": 0.9681265787089558,
+    "relative_rms_error": 0.25050947568339116,
+    "explanation": "AAC is lossy. Failure retained; no PCM tolerance was relaxed. A fresh native export with identical settings produces the entire same MP4 and decoded AAC bytes."
+  },
+  "preservation": {
+    "prior_sessions": 35,
+    "prior_pids": 36,
+    "candidate_saved_files": 2,
+    "candidate_local_files": 5,
+    "candidate_session_unchanged": true,
+    "prior_saved_files": 37,
+    "prior_local_files": 39,
+    "native_nas_files": 4,
+    "shared_proxy_unchanged": true,
+    "prior_proof_sha256": "33ffb2b1ea32b359bf152a26480448cc9a5dc9d42af4ce89efe609c853733f1d"
+  },
+  "accepted_rows": [
+    "adjustment_clips",
+    "filters_exposure_blur_shadow"
+  ],
+  "remaining_rows": {
+    "title_font_style_bg": "Actual hover/cancel and closed-wheel interaction plus popup/focus at required scaling remain; keyboard/output are qualified.",
+    "clip_fades": "Rendered video/audio/persistence are qualified, including actual125% browser pointer audio handles; remaining100%/150% handle mapping acceptance is explicit."
+  },
+  "remaining_scope": [
+    "All other partial rows and the full F1\u2013F7/M7 goal remain active.",
+    "No physical microphone/speaker, dense500-clip, moving optical-flow or two-hour release-soak acceptance is inferred."
+  ],
+  "images": [
+    "f3-font-draft-workspace.png",
+    "f3-effects-montage-workspace.png"
+  ]
+}

@@ -22,7 +22,17 @@ video lease APIs or a second audio-routing architecture for this deferred detail
 
 ## Active completion objective
 
-Current saved-preset permanent Delete delivery: **http://127.0.0.1:8850/**,
+Current native font/effects delivery: **http://127.0.0.1:8851/**, source `9a946dd`,
+binary `da479e56f98c`. Snapshot-only font preview/Cancel/one-confirm Undo/Redo,
+connected animated moving filters, Adjustment interval and audio-fade output are
+qualified. The complete701-frame FullHD Web/native export has identical bytes;
+Windows download and natural29.226s EOF pass. See
+`evidence/f3-effects-montage-workflow.json` and COMPLETION_PLAN.md for scope and
+preservation. Adjustment and Exposure/Blur/Shadow advance to done:
+**51 done / 39 partial / 2 excluded**. Font hover/wheel/scaling and fade-handle
+100%/150% mapping remain explicit; the full F1–F7/M7 goal remains active.
+
+Preserved saved-preset permanent Delete delivery: **http://127.0.0.1:8850/**,
 source `ebbafda`, binary `78c6f86a346b`, service
 `venturi-web-halo1-preset-delete.service`, PID 211545.
 Confirmed active/archived removal binds the captured revision, shared lock and

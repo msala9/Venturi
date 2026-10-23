@@ -32,7 +32,40 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-Current saved-preset permanent Delete delivery: **http://127.0.0.1:8850/**,
+Current native font/effects montage delivery: **http://127.0.0.1:8851/**,
+source `9a946dd`, binary `da479e56f98c`, service
+`venturi-web-halo1-effects-montage.service`, PID 214422.
+The compact font family/style chooser now previews native snapshot-only changes;
+keyboard/Escape/outside cancellation restores the exact confirmed image without
+an edit, while confirmation has one Undo/Redo. Focused 54 native/82 client cases,
+formatting, all-target Clippy and build pass on bounded halo1, peak 2,037,960,704
+bytes. The first new HTTP test expectation is corrected to the existing422
+contract; unchanged passing cases are reused.
+
+One saved/reopened montage combines DejaVu Serif Regular72/background78%/outline5,
+moving Exposure keys0/144, ordered DropShadow/GaussianBlur, BW Adjustment0–119 and
+actual125% Windows audio fade handles24/24. Five native/API frames match exactly,
+including1280x720 title layout and the Adjustment interval boundary; four80ms
+audio windows match native PCM16 quantization. The complete701-frame FullHD
+H264/AAC Web export is byte-exact to a fresh native R9700 export, downloaded and
+played to natural29.226s EOF. The first strict lossyAAC-versus-PCM threshold
+failure is retained; equal native/Web MP4 and decodedAAC settle that question.
+Saved `Venturi_Effects_Montage_V1.vvproj` SHA
+`33540edbeafacf947bbf60f2c16ff83a2778766dc9ea777717da07346ac36d87`
+is unchanged; all35 prior Sessions/36 PIDs/37 Saved files/39 local files, four
+fixed NAS files and the proxy remain unchanged. See
+`evidence/f3-effects-montage-workflow.json` and its two workspace images.
+
+`adjustment_clips` and `filters_exposure_blur_shadow` advance to done:
+**51 done / 39 partial / 2 excluded**. Font hover/wheel and required popup/focus
+scaling remain explicit; fade output is closed but100%/150% handle mapping still
+needs acceptance. Neither generic M7 nor unrelated gesture requirements hold
+these two completed rows open. Next finish remaining retime/transition
+interactions as a connected editing block, preserving accepted compound behavior
+and reusing this montage and valid proofs.
+The full F1–F7/M7 goal remains active.
+
+Preserved saved-preset permanent Delete delivery: **http://127.0.0.1:8850/**,
 source `ebbafda`, binary `78c6f86a346b`, service
 `venturi-web-halo1-preset-delete.service`, PID 211545.
 Confirmed active/archived removal binds the captured revision, shared lock and
@@ -51,9 +84,8 @@ bytes. See `evidence/f5-preset-delete-workflow.json` and
 `f5-preset-delete-confirm.png` / `f5-preset-delete-workspace.png`.
 No new export or full M7 acceptance is claimed. Both F5 rows remain partial;
 the ledger stays **49 done / 41 partial / 2 excluded** and the full goal is active.
-Next complete connected effects/font/background, moving Exposure/Blur/Shadow,
-Adjustment interval and audio-fade output behavior, including native font preview;
-reuse already-qualified default-font and three-transform-frame proof.
+The subsequent connected font/effects/output block is delivered above, reusing
+the already-qualified default-font and three-transform-frame proof.
 
 Preserved portable Library copies and preset activation delivery:
 **http://127.0.0.1:8849/**, source `efd5f59` (feature `5a856e4`), binary

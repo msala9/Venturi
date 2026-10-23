@@ -18,6 +18,18 @@ persistent Viewer controls. Verify one connected stop/edit/play/save/export flow
 Retain any unshipped real-time prototype privately; do not ship unused cursors,
 video lease APIs or a second audio-routing architecture for this deferred detail.
 
+## Native title-font draft — 2026-10-23
+
+`9a946dd` on halo1/8851 replaces the change-only family/style selects with compact
+comboboxes using the server's native font catalog. Stable keyboard/pointer-enter
+choices preview a native frame snapshot; they do not edit the project. Click or
+Enter confirms one native command. Escape, Tab, outside click, panel/context or
+playback changes cancel and restore only the still-current confirmed image.
+Closed-wheel bursts confirm once. No pointer-move requests or browser font
+downloads are used. Actual keyboard/output/Save/export evidence is in
+`evidence/f3-effects-montage-workflow.json`; physical hover/wheel and required
+popup/focus scaling acceptance remain explicit.
+
 ## Shared original references — 2026-10-23
 
 `dc42d2a` on halo1/8840 offers an explicit Reference option for archived ds4

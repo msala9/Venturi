@@ -22,6 +22,20 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F3 native font/effects montage (`9a946dd`, halo1/8851): see
+`evidence/f3-effects-montage-workflow.json`. Focused54 native/82 client cases,
+formatting, all-target Clippy and embedded build pass, peak2,037,960,704 bytes.
+One new HTTP test expectation is corrected400→existing422; unchanged passing
+cases are reused. Actual Windows font keyboard preview/cancel/confirm/UndoRedo,
+moving animated filter order/bypass,125% audio fade handles, Saved reopen and
+five native/API exact frames pass. Four80ms native-quantized PCM16 windows match;
+one is deliberately silent. Full701-frame1920x1080 H264/AAC Web/native MP4 hashes
+are identical, as are the entire decodedAAC bytes; actual download and natural
+29.226s EOF pass. The initial strict AAC/PCM threshold failure is retained,
+not reclassified as lossless PCM agreement. TS-017 accepts Adjustment and
+Exposure/Blur/Shadow. Font hover/wheel/popup scaling, fade100%/150% mapping,
+physical devices and other global M7 requirements remain explicit.
+
 F5 saved-preset permanent Delete (`ebbafda`, halo1/8850): see
 `evidence/f5-preset-delete-workflow.json` and confirmation/workspace images.
 41 native cases (14 store, 17 presets, five receipts and five Host/API cases)

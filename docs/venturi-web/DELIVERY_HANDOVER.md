@@ -1,8 +1,23 @@
 # Usable editing workflow — handover
 
-## Current halo1 saved-preset Delete delivery — 2026-10-23
+## Current halo1 native font/effects delivery — 2026-10-23
 
-Current saved-preset permanent Delete delivery: **http://127.0.0.1:8850/**,
+Open **http://127.0.0.1:8851/**, source `9a946dd`, binary `da479e56f98c`, service
+`venturi-web-halo1-effects-montage.service` (PID214422). The Saved project is
+`Venturi_Effects_Montage_V1.vvproj`; the current Windows tab shows frame48/title
+properties. Font choices preview without a project edit; Escape/outside cancels,
+click/Enter confirms once. Prior editors and their histories remain alive.
+
+Export1792767150513614515 is durable:701frames,1920x1080 H264/AAC,29.226s browser
+duration. Web/native MP4 SHA is
+`68e6e0e279edf595d0140d3d074f6ef1b00e24baa9687b6de9b4ab4f5bf54056`.
+Windows download and natural EOF pass. Evidence and remaining scope are in
+`evidence/f3-effects-montage-workflow.json` / COMPLETION_PLAN.md.
+The ledger is **51 done /39 partial /2 excluded**, not full-plan completion.
+
+## Preserved halo1 saved-preset Delete delivery — 2026-10-23
+
+Preserved saved-preset permanent Delete delivery: **http://127.0.0.1:8850/**,
 source `ebbafda`, binary `78c6f86a346b`, service
 `venturi-web-halo1-preset-delete.service`, PID 211545.
 Confirmed active/archived removal binds the captured revision, shared lock and

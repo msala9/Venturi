@@ -1,0 +1,673 @@
+{
+  "date": "2026-10-23",
+  "source_commit": "83ccf8247fe32a2b08237ce59086399c3803c20f",
+  "binary": {
+    "phase": "passed",
+    "started_unix": 1792738165.7745898,
+    "updated_unix": 1792738280.0986204,
+    "javascript": [],
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-05a3c90beea0",
+    "sha256": "05a3c90beea086f0e1bc48df1a00f4e893febe12bd6cbcfb6043590fdbcfb794",
+    "bytes": 78604128
+  },
+  "delivery": {
+    "host": "halo1",
+    "url": "http://127.0.0.1:8836/",
+    "unit": "venturi-web-halo1-frame-sources.service",
+    "root": "/home/halo/VenturiWeb-frame-sources-20261023",
+    "saved_sha256": "7f9c5480a484acc76e999dcf39e94cb4b0c52aa08397e3d36edfe1927d623b11",
+    "unit_observation": "ActiveState=active\nMainPID=166685\nResult=success\nMemoryCurrent=251928576\nMemoryPeak=296288256\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n",
+    "gpu": {
+      "active_programs": 0,
+      "available": true,
+      "backend": "Vulkan",
+      "device_id": "0x7551",
+      "driver": "radv",
+      "driver_info": "Mesa 26.0.8-1ubuntu0.3",
+      "exact_context_resident": false,
+      "frame_rendered": true,
+      "name": "AMD Radeon AI PRO R9700 (RADV GFX1201)",
+      "resident": false,
+      "software": false,
+      "vendor_id": "0x1002"
+    },
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 0
+      }
+    },
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "unsaved": false,
+    "proxy_catalog": {
+      "cache": {
+        "available": true,
+        "error": null
+      },
+      "capacity": {
+        "charged_bytes": 2206594,
+        "max_bytes": 2147483648,
+        "max_job_bytes": 536870912,
+        "max_jobs": 32,
+        "used_entries": 1,
+        "used_jobs": 0
+      },
+      "jobs": [],
+      "project_epoch": "1792738298803880652:2",
+      "settings": {
+        "enabled": false,
+        "paused": false,
+        "quality": "medium"
+      },
+      "suspended": false
+    }
+  },
+  "checks": {
+    "native_cases": {
+      "execution_count": 98,
+      "unique_count": 96,
+      "repeated": {
+        "frame_sources::tests::proxy_allowlist_pins_decode_fd_and_still_requires_the_original_witness": 2,
+        "source::tests::selected_source_worker_refuses_changed_stream_metadata_before_creating_a_proxy": 2
+      },
+      "cases": [
+        "api::tests::native_proxy_settings_http_are_epoch_writer_bound_and_never_edit_project",
+        "export::tests::preview_video_sources_override_only_regular_moving_video",
+        "export::tests::preview_video_sources_preserve_original_audio_paths_metadata_and_native_clocks",
+        "export::tests::video_source_resolver_opens_only_requested_decoders_keeps_leases_and_releases_them_on_sweep",
+        "export::tests::video_source_resolver_preview_invalid_origin_is_rejected_without_opening_any_media",
+        "export::tests::video_source_resolver_refusal_prevents_native_open_and_compound_entries_do_not_resolve",
+        "frame_sources::tests::decoder_lease_pins_original_but_replacement_cannot_publish_or_reopen",
+        "frame_sources::tests::links_special_files_and_unapproved_paths_fail_without_blocking",
+        "frame_sources::tests::only_requested_sources_are_opened_and_cache_manifest_reopens_only_touched_files",
+        "frame_sources::tests::parent_lineage_and_in_place_restored_mtime_are_part_of_the_first_witness",
+        "frame_sources::tests::proxy_allowlist_pins_decode_fd_and_still_requires_the_original_witness",
+        "preview::tests::a_disabled_renderer_reports_actual_capability",
+        "preview::tests::balance_reads_bypassed_native_grade_at_its_source_clock_without_mutation",
+        "preview::tests::cache_eviction_and_telemetry_follow_inputs_composition_and_frame_mode",
+        "preview::tests::frame_resolution_has_a_fixed_pixel_budget",
+        "preview::tests::guarded_frame_cache_reopens_touched_sources_and_rejects_legacy_or_changed_lineage",
+        "preview::tests::newest_pending_seek_replaces_the_old_one",
+        "preview::tests::occupied_laboratory_lock_refuses_immediately_and_is_never_removed",
+        "preview::tests::program_stage_descriptors_keep_the_same_global_reservation_until_all_are_dropped",
+        "preview::tests::resident_context_yields_before_immediate_probe_and_cannot_reenter_during_handover",
+        "preview::tests::software_jobs_use_private_cache_locks_instead_of_the_hardware_reservation",
+        "preview::tests::software_preview_refuses_ambiguous_drivers_privileges_and_unbounded_threads",
+        "preview::tests::yielding_own_context_never_retries_a_foreign_gpu_reservation",
+        "program::tests::audio_settings_forward_native_codec_bitrate_coder_and_track_presence_without_fallback",
+        "program::tests::cgroup_admission_counts_only_clean_unmapped_inactive_file_cache_as_reclaimable",
+        "program::tests::cgroup_root_without_controller_files_preserves_leaf_limits_but_missing_intermediate_is_refused",
+        "program::tests::composition_memory_accounts_for_native_whole_clip_pitch_correction_results",
+        "program::tests::composition_memory_counts_native_sources_crossings_nested_layers_and_existing_reserves",
+        "program::tests::composition_memory_prunes_outside_video_but_counts_crossing_neighbours_and_active_compounds",
+        "program::tests::decoder_progress_reports_actual_paths_and_cpu_fallback_independently_of_compositor",
+        "program::tests::explicit_audio_and_scale_dtos_are_strict_and_invalid_native_choices_are_refused",
+        "program::tests::explicit_scale_memory_admission_reserves_host_and_process_headroom_without_resolution_clamp",
+        "program::tests::export_accepts_full_long_timelines_while_preview_keeps_its_duration_budget",
+        "program::tests::export_settings_are_native_bounded_and_part_of_the_immutable_job_identity",
+        "program::tests::generated_preview_identity_detects_source_replacement_without_timeline_edits",
+        "program::tests::initial_cpu_frame_contention_retries_but_shared_gpu_busy_and_cancel_do_not",
+        "program::tests::legacy_export_settings_keep_canonical_bytes_and_selected_codecs_change_identity",
+        "program::tests::native_export_scale_metadata_and_settings_use_original_size_and_native_rounding",
+        "program::tests::omitted_export_fields_preserve_legacy_canonical_bytes_output_and_cache_identity",
+        "program::tests::program_audio_origin_is_explicit_in_native_settings_and_covering_cache_identity",
+        "program::tests::program_bounds_and_cache_identity_include_native_revision_and_output_range",
+        "program::tests::program_source_witness_detects_restored_mtime_and_legacy_cache_witnesses_miss",
+        "program::tests::requested_original_preview_inputs_keep_native_audible_audio_dependencies_and_legacy_exports",
+        "proxy::tests::native_proxy_cache_contention_yields_to_foreground_then_recovers_without_a_failed_job",
+        "proxy::tests::native_proxy_callback_really_parks_and_foreground_guards_preserve_the_user_pause",
+        "proxy::tests::native_proxy_degraded_cache_does_not_relax_settings_or_cache_root_open_validation",
+        "proxy::tests::native_proxy_degraded_catalog_retains_persistable_settings_and_masks_only_latest_ready_jobs",
+        "proxy::tests::native_proxy_full_range_cpu_output_is_leaseable_reusable_and_separate_from_original_bytes",
+        "proxy::tests::native_proxy_leases_bind_original_and_artifact_ctime_and_keep_durable_usage_charged",
+        "proxy::tests::native_proxy_malformed_cache_falls_back_only_for_verified_originals_and_captured_leases_still_fail",
+        "proxy::tests::native_proxy_queue_is_bounded_deduplicated_and_quality_changes_cancel_without_losing_user_pause",
+        "proxy::tests::native_proxy_refuses_images_audio_links_replaced_originals_and_invalid_metadata_before_queueing",
+        "proxy::tests::native_proxy_reopen_recovers_without_encoding_and_binds_the_current_original",
+        "proxy::tests::native_proxy_settings_are_strict_persisted_cas_guarded_and_retain_the_pinned_root",
+        "proxy::tests::shared_proxy_cache_reuses_hardlinked_media_but_approves_each_current_project_path",
+        "proxy_cache::tests::proxy_cache_cross_open_locks_distinguish_busy_catalog_from_missing_and_hold_reader_leases",
+        "proxy_cache::tests::proxy_cache_global_count_and_byte_admission_evict_only_idle_owned_entries",
+        "proxy_cache::tests::proxy_cache_interrupted_reservations_recover_only_on_explicit_acquire",
+        "proxy_cache::tests::proxy_cache_persists_owned_ready_records_and_exact_hashed_keys_across_managers",
+        "proxy_cache::tests::proxy_cache_preserves_foreign_or_malformed_entries_and_rejects_path_replacement",
+        "proxy_cache::tests::proxy_cache_ready_leases_detect_same_size_rewrites_and_replaced_manifests",
+        "proxy_video::tests::proxy_lookup_is_nonblocking_ready_only_and_keeps_missing_future_media_for_native_rendering",
+        "source::tests::a_full_pending_queue_refuses_exports_before_creating_durable_history",
+        "source::tests::accepted_foreground_source_preempts_only_running_assets_after_validation_and_queue_admission",
+        "source::tests::accepted_legacy_source_and_program_work_preempt_assets_without_canceling_foreign_work",
+        "source::tests::an_active_cache_response_body_locks_every_file_against_reclamation_until_download_ends",
+        "source::tests::bmp_and_tiff_still_sources_get_full_native_png_representations_with_alpha",
+        "source::tests::byte_delivery_returns_exact_range_416_and_honors_if_range",
+        "source::tests::cache_admission_reserves_each_active_job_and_obeys_exact_cache_and_free_space_boundaries",
+        "source::tests::cache_assets_are_scoped_to_epoch_media_and_source_file_identity",
+        "source::tests::cached_window_of_a_long_source_reuses_only_its_exact_version_and_keeps_program_descriptor_empty",
+        "source::tests::completed_exports_keep_their_snapshot_when_sources_or_current_revision_change",
+        "source::tests::corrupt_export_history_blocks_exports_without_preventing_media_service_startup",
+        "source::tests::durable_export_history_restores_old_epoch_downloads_without_restarting_jobs_or_cache_eviction",
+        "source::tests::failed_cache_cleanup_keeps_the_job_and_actual_remaining_bytes_and_unknown_sizes_fail_closed",
+        "source::tests::fresh_ready_cache_is_pinned_until_the_shared_ttl_expires_then_reclaims_before_admission",
+        "source::tests::native_audio_only_assets_accept_legacy_descriptive_metadata_and_publish_only_full_source_waveform",
+        "source::tests::native_full_source_assets_publish_only_thumbnail_and_streamed_waveform_and_reuse_scoped_jobs",
+        "source::tests::native_source_job_deduplicates_and_publishes_video_audio_thumbnail_and_waveform",
+        "source::tests::prepared_meter_pages_require_exact_job_origin_ready_state_and_source_witness_without_rendering",
+        "source::tests::ranges_cover_prefix_suffix_open_end_and_reject_overflow_or_multiple_ranges",
+        "source::tests::ready_source_status_cache_hits_and_assets_refresh_ttl_but_cancel_does_not_unpin_another_viewer",
+        "source::tests::requested_original_movie_manifest_guards_ready_hits_assets_and_telemetry_without_rendering",
+        "source::tests::saved_export_discard_checks_old_epoch_state_revision_and_download_lifetime_then_reclaims_history",
+        "source::tests::selected_source_audio_validates_before_admission_and_cache_keys_separate_only_the_native_stream",
+        "source::tests::selected_source_worker_refuses_changed_stream_metadata_before_creating_a_proxy",
+        "source::tests::source_all_memory_counts_actual_pcm_without_an_unused_selected_buffer_and_keeps_caps",
+        "source::tests::source_assets_admit_long_metadata_and_separate_full_source_identity_without_movie_quality",
+        "source::tests::source_memory_bounds_original_decode_dimensions_and_selected_audio_without_duration_growth",
+        "source::tests::source_placement_requires_the_ready_viewer_job_and_rechecks_pinned_and_live_file_identity",
+        "source::tests::source_window_dto_and_rational_validation_admit_short_windows_of_long_sources_only",
+        "source::tests::source_window_keys_preserve_legacy_v1_and_separate_range_quality_epoch_and_full_file_identity",
+        "source::tests::still_source_assets_use_isolated_opaque_thumbnails_without_reencoding_the_original",
+        "source::tests::still_source_preserves_original_png_bytes_and_alpha_without_creating_a_video",
+        "source::tests::twelve_frame_source_window_job_publishes_only_its_ranged_movie_and_reuses_the_ready_job",
+        "source::tests::webp_shared_images_keep_original_bytes_and_use_the_native_thumbnail_path"
+      ]
+    },
+    "formatting": "passed",
+    "all_target_clippy_deny_warnings": "passed for vv-web and vv-session",
+    "embedded_build": "passed",
+    "javascript": "unchanged; reuse prior qualified client evidence",
+    "normalized_source_sha256": {
+      "crates/vv-session/src/export.rs": "4baaa825bc1be394b6e9ad88210a66138192c6df23ee6926592b52e0afefb13e",
+      "crates/vv-session/src/tests/export.rs": "eef89f19f37eb5e7b943476f2ce5f77331b750012b5d998fee2749b72497bb0d",
+      "crates/vv-web/src/api.rs": "9b094a239a018210117584240213d7ba17cc1817aafde8a440ae6fcd10b6691b",
+      "crates/vv-web/src/audition.rs": "ae17810fdce2c606b5f444b10be2f25891289cb2de401392f4979e458e9cfeef",
+      "crates/vv-web/src/files.rs": "96232198a59f791b37281bad3970946be2794dbe311bbdf13739e7929175a42d",
+      "crates/vv-web/src/host.rs": "266ef048df9a6a0f5768eea207d83353189a47b6f51c4094a1d836a107ab7ae4",
+      "crates/vv-web/src/main.rs": "2f2e60f929e96521b5e1bf01ca629c9b4cf6bb1c31b97b9456e83f9771fd8d08",
+      "crates/vv-web/src/preview.rs": "72eda50adfd8ddec42f5bbf371d88df02efc8f7f7b7e6e64411cb9b00b3c9ce7",
+      "crates/vv-web/src/program.rs": "364b616f6c59eff094d6a2a4306403c6071b1c03e8ec35ac7c633bfbcc6d36d9",
+      "crates/vv-web/src/source.rs": "1aec1f38e01743112515371cfbcdfcaf9ba9f84dd89033b99feaf366619224aa",
+      "crates/vv-web/src/tests/audition.rs": "494a88bf39f8048a5f280b2d4d8fda96bb7a3ac71548625990ed374144fb2d62",
+      "crates/vv-web/src/tests/preview.rs": "7baadb4e117d4bada0eba106f30f98987dc0c6511f65902cc2e7c0ec9aa4e5e0",
+      "crates/vv-web/src/tests/program.rs": "ce7cea3124d9052629dc99fb7a70cd8d8c347052ac026045b513f3867d64a566",
+      "crates/vv-web/src/tests/proxy_video.rs": "50bd0c456a3eb6575f6a18bf65ef4faf3323522b7b34eba38101f5eefedc1ef2",
+      "crates/vv-web/src/tests/source.rs": "28ba494175de6e35e375480078321fcec1dd47d2ef936fa80fd2c8cf3acbe1e2",
+      "crates/vv-web/src/frame_sources.rs": "796e256c4c39678e061a472f12b1ade2242f116ee23fb313ab8f67f5e7989ae2",
+      "crates/vv-web/src/tests/frame_sources.rs": "364005fe8cb992ddbc06c9c3d39f49a9a6357f5f8cdecd1df4fc41aa8590f606"
+    },
+    "resource_properties": [
+      "User=halo",
+      "Group=halo",
+      "CPUQuota=800%",
+      "MemoryMax=4G",
+      "MemorySwapMax=0",
+      "OOMScoreAdjust=1000",
+      "Nice=19",
+      "IOWeight=10",
+      "TasksMax=128",
+      "RuntimeMaxSec=1500",
+      "TimeoutStopSec=20",
+      "KillMode=control-group",
+      "Restart=no",
+      "NoNewPrivileges=yes",
+      "StandardOutput=append:/home/halo/.cache/venturi-build/frame-sources-r2.log",
+      "StandardError=append:/home/halo/.cache/venturi-build/frame-sources-r2.log"
+    ],
+    "sampled_worker_memory_peak_bytes": 1907732480,
+    "worker_peak_note": "Observed while the bounded unit was live; terminal transient service no longer exposes a final peak. MemoryMax4GiB and swap0 were enforced; unit finished success.",
+    "first_compile": "An unqualified Arc name in API integration was corrected before the passing r2 gate; no earlier binary was deployed."
+  },
+  "qualification": {
+    "program_scopes_cache": {
+      "rows": [
+        {
+          "frame": 0,
+          "clip": "1",
+          "relative": "Repair/River_AV_11s.mp4",
+          "original_program": {
+            "sha256": "185ea7292b3a68154252fcd7ea57370a5e5e7a0fbc18970538e851a9f7803675",
+            "bytes": 763583,
+            "size": [
+              960,
+              540
+            ],
+            "proxy_count": "0"
+          },
+          "original_scopes": {
+            "sha256": "869474696ed176fa1df4d0b8d371d5e7e28ac53cf6cf6420f9ee198c6b33d316",
+            "bytes": 123694,
+            "size": [
+              1024,
+              256
+            ],
+            "proxy_count": null
+          },
+          "cached_before": {
+            "frames": [
+              0
+            ],
+            "programs": []
+          },
+          "changed_program": {
+            "status": 422,
+            "error": {
+              "error": {
+                "code": "FRAME_FAILED",
+                "details": {},
+                "message": "Native frame rendering failed; check offline media",
+                "recoverable": true
+              }
+            }
+          },
+          "changed_scopes": {
+            "status": 422,
+            "error": {
+              "error": {
+                "code": "INVALID_OPERATION",
+                "details": {},
+                "message": "Native isolated scope rendering failed; check offline media",
+                "recoverable": true
+              }
+            }
+          },
+          "cached_during_change": {
+            "frames": [],
+            "programs": []
+          },
+          "restored_program": {
+            "sha256": "185ea7292b3a68154252fcd7ea57370a5e5e7a0fbc18970538e851a9f7803675",
+            "bytes": 763583,
+            "size": [
+              960,
+              540
+            ],
+            "proxy_count": "0"
+          },
+          "restored_scopes": {
+            "sha256": "869474696ed176fa1df4d0b8d371d5e7e28ac53cf6cf6420f9ee198c6b33d316",
+            "bytes": 123694,
+            "size": [
+              1024,
+              256
+            ],
+            "proxy_count": null
+          },
+          "owned_fixture_only_removed": true,
+          "original_inode_mtime_bytes_restored": true
+        },
+        {
+          "frame": 264,
+          "clip": "2",
+          "relative": "Repair/Renamed_Still.png",
+          "original_program": {
+            "sha256": "892c63864e2186500d306997d0d8ef9814215cd571bb2ee97e6c6a5780565c33",
+            "bytes": 769720,
+            "size": [
+              960,
+              540
+            ],
+            "proxy_count": "0"
+          },
+          "original_scopes": {
+            "sha256": "ef6cbaccf1e3cb181f46197850b0bf0bd94f3e88137e33d93f053a6dc565de9b",
+            "bytes": 120885,
+            "size": [
+              1024,
+              256
+            ],
+            "proxy_count": null
+          },
+          "cached_before": {
+            "frames": [
+              0,
+              264
+            ],
+            "programs": []
+          },
+          "changed_program": {
+            "status": 422,
+            "error": {
+              "error": {
+                "code": "FRAME_FAILED",
+                "details": {},
+                "message": "Native frame rendering failed; check offline media",
+                "recoverable": true
+              }
+            }
+          },
+          "changed_scopes": {
+            "status": 422,
+            "error": {
+              "error": {
+                "code": "INVALID_OPERATION",
+                "details": {},
+                "message": "Native isolated scope rendering failed; check offline media",
+                "recoverable": true
+              }
+            }
+          },
+          "cached_during_change": {
+            "frames": [
+              0
+            ],
+            "programs": []
+          },
+          "restored_program": {
+            "sha256": "892c63864e2186500d306997d0d8ef9814215cd571bb2ee97e6c6a5780565c33",
+            "bytes": 769720,
+            "size": [
+              960,
+              540
+            ],
+            "proxy_count": "0"
+          },
+          "restored_scopes": {
+            "sha256": "ef6cbaccf1e3cb181f46197850b0bf0bd94f3e88137e33d93f053a6dc565de9b",
+            "bytes": 120885,
+            "size": [
+              1024,
+              256
+            ],
+            "proxy_count": null
+          },
+          "owned_fixture_only_removed": true,
+          "original_inode_mtime_bytes_restored": true
+        }
+      ],
+      "native_session_unchanged": true,
+      "saved_sha256": "afd8cc656deb8bac91b1421bc24aa76e54c8a6a5257700d294681e31ef695637",
+      "view": {
+        "active_timeline": "1",
+        "playheads": {
+          "1": 0
+        }
+      },
+      "history": {
+        "labels": [],
+        "position": 0
+      }
+    },
+    "movie_cache": {
+      "before": {
+        "cancel_requested": false,
+        "durability_error": false,
+        "durable": false,
+        "error": null,
+        "export_revision": null,
+        "frames": 0,
+        "id": "1792738444101723986",
+        "previous_state": null,
+        "program": {
+          "audio_origin_frame": 0,
+          "audio_present": true,
+          "end_frame": 457,
+          "export_settings": null,
+          "fps": {
+            "den": 1,
+            "num": 24
+          },
+          "generation": "0",
+          "height": 540,
+          "project_epoch": "1792738298803880652:1",
+          "revision": "123c4babc02ef8b8",
+          "start_frame": 0,
+          "video_sources": {
+            "mode": "originals",
+            "proxy_count": 0,
+            "version": "originals"
+          },
+          "width": 960
+        },
+        "progress": {
+          "compose_fps": 445.2598100978602,
+          "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+          "current_frame": 457,
+          "decode_fps": 427.23650840183825,
+          "decoder_fallback": false,
+          "decoders": [
+            {
+              "id": "software",
+              "label": "Software (CPU)"
+            }
+          ],
+          "elapsed_ms": 1175.732801,
+          "encode_fps": 777.5640769670492,
+          "encoder": "X264",
+          "fps": 388.69375729868744,
+          "startup_ms": 105.922692,
+          "total_frames": 457
+        },
+        "project_epoch": null,
+        "source_asset": null,
+        "source_assets": null,
+        "source_version": null,
+        "source_window": null,
+        "state": "ready"
+      },
+      "query": {
+        "timeline_id": "1",
+        "project_epoch": "1792738298803880652:1",
+        "if_generation": "0",
+        "revision": "123c4babc02ef8b8",
+        "width": 960,
+        "start_frame": 0,
+        "end_frame": 457,
+        "audio_origin_frame": 0
+      },
+      "initial_cache": {
+        "frames": [
+          0,
+          264,
+          456
+        ],
+        "programs": [
+          {
+            "end_frame": 457,
+            "id": "1792738444101723986",
+            "start_frame": 0
+          }
+        ]
+      },
+      "movie_range_status": 206,
+      "movie_range_header": "bytes 0-31/1175467",
+      "movie_prefix_sha256": "b1c35f1e6d75af66f96c70ff2572346caa6812dee411ad1134cffb50e33fba5c",
+      "changed_still": {
+        "status": {
+          "status": 409,
+          "error": {
+            "error": {
+              "code": "SOURCE_CHANGED",
+              "details": {},
+              "message": "Frame source changed; prepare the render again",
+              "recoverable": true
+            }
+          }
+        },
+        "asset": {
+          "status": 409,
+          "error": {
+            "error": {
+              "code": "SOURCE_CHANGED",
+              "details": {},
+              "message": "Frame source changed; prepare the render again",
+              "recoverable": true
+            }
+          }
+        }
+      },
+      "cache_after_restore": {
+        "frames": [
+          0,
+          456
+        ],
+        "programs": []
+      },
+      "original_still_inode_mtime_bytes_restored": true,
+      "native_session_unchanged": true,
+      "note": "Still has no audio dependency: refusal exercises the finalized requested-video manifest. Restored ctime differs, so this old prepared movie remains invalid and is not silently revived."
+    },
+    "auto_balance_cache": {
+      "before": {
+        "clip": "1",
+        "operation": {
+          "clip_id": "1",
+          "frame": 0,
+          "kind": "apply_grade_at_frame",
+          "values": [
+            {
+              "param": "ShadowsX",
+              "value": 0.2928156554698944
+            },
+            {
+              "param": "ShadowsY",
+              "value": -0.0727953165769577
+            },
+            {
+              "param": "MidtonesX",
+              "value": -0.4424506723880768
+            },
+            {
+              "param": "MidtonesY",
+              "value": 0.13398268818855286
+            },
+            {
+              "param": "HighlightsX",
+              "value": -0.5273699164390564
+            },
+            {
+              "param": "HighlightsY",
+              "value": 0.2588818073272705
+            }
+          ]
+        },
+        "query": {
+          "frame": 0,
+          "if_generation": "1",
+          "project_epoch": "1792738298803880652:1",
+          "revision": "602a63c92833f25b",
+          "timeline_id": "1",
+          "width": 960
+        }
+      },
+      "changed_source": {
+        "status": 422,
+        "error": {
+          "error": {
+            "code": "INVALID_OPERATION",
+            "details": {},
+            "message": "Native isolated balance rendering failed; check offline media",
+            "recoverable": true
+          }
+        }
+      },
+      "restored_identical_operation": true,
+      "original_inode_mtime_bytes_restored": true,
+      "native_session_unchanged_during_probe": true,
+      "note": "The actual browser added a temporary ColorCorrection filter to this isolated candidate; the returned balance operation was read only and never applied. Undo and Saved reopen follow separately."
+    },
+    "browser_eof": {
+      "position": "456",
+      "status": "End of timeline"
+    },
+    "candidate_native_save": {
+      "backup_sha256": "afd8cc656deb8bac91b1421bc24aa76e54c8a6a5257700d294681e31ef695637",
+      "diff": [
+        "--- \n",
+        "+++ \n",
+        "@@ -21,3 +21,3 @@\n",
+        "                 ),",
+        "-                content_hash: 13,",
+        "+                content_hash: 16,",
+        "                 compound: Some(1),",
+        "@@ -114,3 +114,3 @@\n",
+        "                 ),",
+        "-                content_hash: 14,",
+        "+                content_hash: 17,",
+        "                 compound: Some(2),",
+        "@@ -1210,3 +1210,3 @@\n",
+        "     next_compound_id: 0,",
+        "-    next_compound_generation: 14,",
+        "+    next_compound_generation: 17,",
+        "     precision: High,"
+      ]
+    },
+    "notes": [
+      "Actual Windows browser started the composed457-frame video/still/two-stream-audio montage; native preparation reached457 and the browser naturally reached frame456.",
+      "Corruption probes touched only exact copied files in the new candidate, preserving/restoring original bytes, inode and mtime; no source on the NAS or previous editor was changed.",
+      "Restored ctime is intentionally not forged: previously prepared movies fail their old witness and disappear from cache discovery.",
+      "Auto Balance used a temporary ColorCorrection filter added in the real browser; the calculated operation was never applied. The filter was undone, then the native project was Saved and reopened.",
+      "The candidate native compound invalidation counters advanced during the temporary edit/Undo; the exact three Saved-line changes and original Saved backup are recorded."
+    ]
+  },
+  "preservation": {
+    "sessions": 20,
+    "pids": 21,
+    "saved_projects": 8,
+    "originals": 3,
+    "shared_proxy_movie": {
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "inode": 4211051,
+      "mtime_ns": 1792732445778166236,
+      "ctime_ns": 1792732445778166236,
+      "bytes": 2206043
+    },
+    "final_saved_sha256": "7f9c5480a484acc76e999dcf39e94cb4b0c52aa08397e3d36edfe1927d623b11",
+    "timeline_dtos_unchanged": true,
+    "file_media_metadata_unchanged": true,
+    "final_saved_empty_undo": true,
+    "candidate_compound_generation_note": "The real temporary ColorCorrection/Undo advanced native compound content_hash13/14 to16/17 and next_compound_generation14 to17. The native Save/reopen retained precisely those three monotonic counter changes; all timeline DTOs, file media and folder/view metadata are unchanged. Previous Saved projects are byte-identical."
+  },
+  "original_copies": [
+    {
+      "name": "River_AV_11s.mp4",
+      "bytes": 2854042,
+      "sha256": "d00e254580a313111b499983e30746f0eccc464650617b51b250bcde730b363e",
+      "relocated_fingerprint": "4757803978419831023"
+    },
+    {
+      "name": "Renamed_Still.png",
+      "bytes": 1548680,
+      "sha256": "7d924f630cdb1b821fbbeb5a34f33f387a768394194c85272de9dedd9d76fbc7",
+      "relocated_fingerprint": "6885711617153784031"
+    },
+    {
+      "name": "River_Two_Streams_3s.mkv",
+      "bytes": 98711,
+      "sha256": "7921a5a86d483bc3c11d5c369ec2397f79b419792f31e13848fb9f2efe5b8b76",
+      "relocated_fingerprint": "7958332520805503699"
+    }
+  ],
+  "screenshots": [
+    "m7-original-frame-sources-workspace.jpg"
+  ],
+  "scope": {
+    "ledger": {
+      "done": 49,
+      "partial": 41,
+      "excluded": 2
+    },
+    "goal": "active",
+    "implemented": [
+      "Requested original moving video and still FD confinement through native decode, scopes, balance and composed preview",
+      "Touched-source parent/version witnesses before static/movie cache reuse and publication",
+      "Removed the broad original-file census from static-frame cache lookup; existing ready-proxy selection remains a separate pass.",
+      "Additive native resolver API; existing default desktop and durable export paths unchanged"
+    ],
+    "remaining": [
+      "Native requested audio decode confinement; preview audio dependencies remain conservative over the audible closure for pitch/Normalize/DSP prefix behavior",
+      "Representative/dense/DPI/physical acceptance and remaining F1-F7/M7 release criteria"
+    ],
+    "limits": [
+      "Nested/crossing propagation uses the existing native provider; this block did not run a new broad transition/compound GPU matrix.",
+      "This is not full arbitrary-file-mutation or crash recovery for all audio/export paths.",
+      "Previous Full HD exported-file EOF evidence is reused because durable export settings/pipeline are unchanged.",
+      "The existing ready-only proxy selection pass may inspect future referenced originals when proxies are enabled; the new native resolver itself opens only actual decoder requests."
+    ],
+    "unaffected": [
+      "halo2/H3/inference",
+      "AMD/kernel/ROCm",
+      "mounts/NAS content",
+      "Windows build/test workloads"
+    ]
+  }
+}

@@ -10,6 +10,31 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+M7 requested original video/still sources (`83ccf82`, halo1/8836):96 distinct
+native cases pass (98 executions,two overlapping cases); formatting, all-target
+Clippy for vv-web/vv-session and embedded build pass. Five adapter cases exercise
+touched-only opens, root/parent/strong-ctime identity, decoder leases, proxy
+allowlists and nonblocking unsafe-source refusal. Native resolver cases decode
+tiny real moving/still fixtures, retain/release leases, refuse unsafe opens and
+preserve existing metadata/audio/clock APIs. Static/movie cache regressions cover
+legacy witness absence, approved-root rebinding, native audible closure, covering
+dedup and status/asset/telemetry invalidation. Unchanged JavaScript gates are reused.
+
+Actual Windows/API qualification replaces only named copied candidate originals:
+cached Program+scopes refuse changed video and stills; restored files return the
+same PNGs. A read-only Auto Balance operation does the same after a temporary
+native filter edit. A real prepared457-frame movie reaches Ready/browser EOF456;
+changing its still causes SOURCE_CHANGED on status/Range and removes its cache
+hit, even after bytes are restored with a different ctime. The native filter is
+undone, then Saved/reopened; exactly three compound-counter Saved lines advance,
+timeline DTOs/file media/view remain and all20 previous Sessions/21 PIDs/eight
+Saved hashes match. Final candidate is Saved/frame0/empty Undo. Runtime peak
+296288256 bytes; worker sampled peak1907732480 bytes is not a terminal maximum.
+The4GiB/swap0 limit and successful terminal unit are recorded. No new Windows
+build, browser install, halo2 or NAS operation. See
+`evidence/m7-original-frame-sources-workflow.json`. Native requested audio
+confinement and broader representative/dense/DPI/physical/M7 gates remain open.
+
 M7 degraded proxy cache (`b588603`, halo1/8835): 14 affected client cases and
 21 native proxy cases pass, plus formatting/all-target Clippy/embedded build.
 The native HTTP regression covers readable degraded settings, writer/epoch

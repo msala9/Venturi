@@ -4,7 +4,36 @@
 
 ## Active completion objective
 
-The current halo1 delivery is **http://127.0.0.1:8835/**, source `b588603`,
+The current halo1 delivery is **http://127.0.0.1:8836/**, source `83ccf82`,
+binary `05a3c90beea0`, in `venturi-web-halo1-frame-sources.service`.
+Native preview decoders now open only requested original video/still sources
+through the approved root, retain their FDs through decode and record parent/
+strong-ctime witnesses. Program, scopes and Auto Balance share this additive
+native seam. Cached static frames and prepared movies validate their actual
+touched originals before reuse/publication. Missing legacy witnesses are misses.
+Desktop defaults, durable exports, original metadata and native audio remain.
+
+The bounded halo1 gate passes **96 distinct native cases** (98 executions with
+two overlaps), formatting, all-target Clippy and embedded build. Client code is
+unchanged. Actual Windows/API qualification covers video/still Program+scopes,
+Auto Balance and cache refusal during controlled replacement of owned private
+copies. Restoring originals returns identical PNGs/balance values. A prepared
+movie's status/asset return SOURCE_CHANGED after its still changes; restoring
+bytes does not forge its old ctime witness. The real457-frame montage reaches
+native Ready and browser EOF456. The temporary filter is undone, then Saved and
+reopened at timeline1/frame0 with empty Undo. Timeline DTOs/file media/folders/view
+are unchanged; native compound invalidation counters advance normally during
+edit/Undo. The candidate's three Saved counter-line changes are recorded.
+All20 earlier Sessions,21 PIDs,eight Saved hashes and the shared proxy movie are
+preserved. See `evidence/m7-original-frame-sources-workflow.json` and workspace image.
+
+Ledger remains **49 done / 41 partial / 2 excluded**; full F1-F7/M7 stays active.
+Original audio decode confinement remains separate: preview audio preflight
+conservatively retains the native audible closure, including out-of-window
+pitch/Normalize/DSP dependencies. Continue representative/dense/DPI/physical
+acceptance and remaining functional/release blocks; do not claim all M7 complete.
+
+Preserved degraded proxy-cache delivery: **http://127.0.0.1:8835/**, source `b588603`,
 binary `3619229952f1`, in `venturi-web-halo1-proxy-recovery.service`.
 An unavailable proxy cache now reports its error separately from confirmed
 preferences. Use proxies, quality and pause remain writable; disabling receives
@@ -26,8 +55,8 @@ The five-clip timeline DTO/revision is unchanged, Saved at timeline 1/frame 0 wi
 empty Undo. Reuse existing playback/export evidence. See
 `evidence/m7-proxy-cache-recovery-workflow.json` and the degraded/workspace images.
 Ledger remains **49 done / 41 partial / 2 excluded**; full F1-F7/M7 remains active.
-Next implement requested original-source FD pinning and cache-hit validation,
-then representative/dense/DPI/physical and remaining release qualification.
+Requested video/still FD pinning and cache-hit validation are delivered in
+83ccf82 above. Audio confinement and broader release qualification remain.
 
 Preserved native Media interaction delivery: **http://127.0.0.1:8833/**, source `9e00d2c`,
 binary `899e9aacc94f`, in `venturi-web-halo1-media-interactions-r2.service`.
@@ -65,8 +94,8 @@ Halo2, AMD drivers, mounts and NAS content are untouched. Contextual Library
 publication uses the qualified pipeline but was not exercised against the NAS.
 The ledger remains **49 done / 41 partial / 2 excluded**: this completes the pool
 interaction follow-up, not a new coarse capability. Full F1-F7/M7 remains active.
-The degraded-cache follow-up is delivered in b588603 above. Requested original
-frame-source FD pinning and broader release qualification remain active.
+The degraded-cache follow-up is delivered in b588603 and requested video/still
+FD pinning in83ccf82 above. Audio confinement and broader release work remain.
 
 Preserved durable proxy-cache delivery: **http://127.0.0.1:8831/**, source `6764b2d`,
 binary `4a11e6f7c63e`, in `venturi-web-halo1-proxy-durable.service`.
@@ -95,8 +124,8 @@ Full F1-F7/M7 remains active. Malformed/foreign cache files and pre-intent crash
 leftovers are preserved/refused; arbitrary-power-loss automatic recovery is not
 claimed. Source browser/audio conversion and its broader acceptance remain in
 Source capabilities. The pool interaction follow-up is delivered above. Keep
-original frame-source FD pinning,
-representative/dense/DPI/physical acceptance and other F1-F7/M7 work explicit.
+requested audio source confinement, representative/dense/DPI/physical acceptance
+and other F1-F7/M7 work explicit.
 
 Preserved initial proxy workflow: halo1/8830, source `a95b4a6`, binary `f8fe8912da80`.
 Enable/quality, real generation Pause/Resume, compact menu/Media badges, original

@@ -1,5 +1,35 @@
 # Proposed HTTP API contract v1 (NOT upstream endpoints)
 
+## Requested original preview source binding
+
+The Web actor captures the approved projects-root descriptor without scanning
+media. Native optional VideoSourceResolver APIs invoke the adapter only when an
+actual moving/still decoder opens, including native compound/crossing requests.
+Originals are opened through approved root-relative tokens with NONBLOCK,
+NOFOLLOW and regular-file checks. Parent lineage and seven-field source identity
+(including ctime) bind the first actual read; reopened decoders must match it.
+Active decoder leases retain the original FD and an explicitly allowed proxy FD,
+while idle frame/movie cache provenance retains metadata rather than original FDs.
+
+Program PNGs, scopes and read-only Auto Balance validate touched originals after
+render and before cached reuse. Captured proxy leases are validated before cached
+frame return as well. A stale static witness is a cache miss; failed fresh decode
+returns its ordinary422 error. Program preview jobs finalize witnesses before
+Ready and validate them on covering reuse, cache discovery, status, Range assets
+and telemetry. Changed originals yield409 SOURCE_CHANGED for prepared movies.
+Missing old witnesses cannot represent a verified empty source set. Restore of
+bytes/mtime does not counterfeit the old ctime witness.
+
+Static-cache lookup no longer requires all referenced originals to be online.
+The existing ready-proxy selection pass remains separate. Composed preview audio
+retains conservative native audible-source inputs (pitch correction,
+Normalize and DSP prefix replay can read beyond the video window). Native requested
+audio FD confinement remains separate. Existing default desktop APIs and durable
+export inputs/download behavior are unchanged; source metadata/audio paths are
+never rewritten by this video adapter. See
+`evidence/m7-original-frame-sources-workflow.json` for actual cache replacement,
+native decoder/lease cases, prepared movie refusal and restored Save/reopen.
+
 ## Native proxy preferences and generation
 
 `GET /api/v1/media/proxies?project_epoch=E` validates the open project and returns
@@ -73,8 +103,8 @@ real errors. Current approved originals are rebound on every project lookup.
 Malformed/unavailable uncaptured cache lookup also falls back only after the
 current approved original path and strong version are revalidated. Acquired
 artifact/original leases retain hard validation failures. This lookup behavior
-does not close the separately tracked original requested-decoder FD gap or the
-frame-cache-hit validation gap. Foreign/malformed entries remain untouched.
+is separate from the requested video/still decoder and cache-hit binding above;
+native requested audio confinement remains open. Foreign/malformed entries remain untouched.
 See `evidence/m7-proxy-cache-recovery-workflow.json` for the degraded census,
 acknowledged disable, original preview and exact sentinel-preservation workflow.
 See `evidence/f2-native-proxies-durable-workflow.json` for real process restart,

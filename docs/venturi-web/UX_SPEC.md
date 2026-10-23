@@ -1,5 +1,15 @@
 # UX/UI specification — professional NLE with AI review
 
+## Original-source preview recovery — 2026-10-23
+
+`83ccf82` on halo1/8836 retains the compact workspace. Program, scopes and Auto
+Balance do not return an obsolete cached result after a used original changes.
+Static cache discovery drops the old result and fresh native rendering validates
+the current approved source. Prepared movies report SOURCE_CHANGED and require
+fresh preparation. Unknown files are not deleted or silently accepted. Video,
+still, original audio metadata and the selected native clocks keep their roles.
+See `evidence/m7-original-frame-sources-workflow.json` and its workspace image.
+
 ## Unavailable proxy cache — 2026-10-23
 
 `b588603` on halo1/8835 keeps the cache warning inside Playback > Proxies while

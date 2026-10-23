@@ -1,5 +1,44 @@
 # Active completion plan — full Venturi Web scope
 
+## Native Library reviewed content replacement — 2026-10-24
+
+Source `719e8ee`, runtime `b4a885f44be3`, owns halo1/port8855. Selected-file
+and recursive-folder Relink now offer intentional different-content replacement
+with a bounded inline before/after review and explicit confirmation. Default
+repair and legacy mutation identity retain their original exact-content rules.
+The native SetMediaPath adapter updates complete metadata, FPS/crop/animation
+and affected compound hashes, preserving payload IDs. New SHA paths and native
+fingerprints prevent imports from reusing the old project media. Matching
+acknowledged Library Source ownership is retired before reopening the new source.
+
+Successful Capture/Import/ImportSet/placement now release consumed witnesses
+after final native acceptance; the ordinary publish/import/folder sequence no
+longer fails ASSET_BUSY from its own completed jobs. Same-command receipts and
+publication retries remain valid. Identical-content replacement binds only its
+own verified same-SHA copied identity; restored/tampered originals are refused.
+
+Actual Windows publishes32x18, imports its independent project copy, reviews
+64x36 without a prior metadata/history change, confirms one replacement/missing0,
+and opens the new64x36 Source. A later import creates media17/path(2) instead
+of reusing media15/16. One Undo removes only that new import, Redo restores it;
+Saved reopen retains exact models/bytes and empty Undo. Prior timeline models,
+ten Saved projects and both original/new bytes remain intact. See
+`evidence/f5-library-replacement-workflow.json` and four screenshots.
+
+The bounded halo1 gate passes247 affected client cases and14 core cases
+(source-bound reuse), plus43 unique Web cases. Final R5 passes8 new
+replacement and7 legacy Relink cases, Clippy8.47s/build41.06s, peak2,067,038,208B.
+Earlier max peak2,336,600,064B remains within4GiB. No new render/export matrix,
+local build or browser install. All39 prior Sessions/40 PIDs,11 candidate Saved
+files,5 local protected media,4 fixed NAS files and shared proxy remain exact.
+
+Ledger remains **60 done /30 partial /2 excluded**; full F1-F7/M7 stays active.
+Next complete the connected shared Library UI lifecycle: automatic catalog
+refresh after project reopen (manual Refresh currently required), actual
+Project-to-Library pointer capture, and compact native contextual controls.
+Keep broader shared preset/offline/large-media and physical/dense/DPI/integrated
+release acceptance open; do not repeat unchanged renderer/DSP/export checks.
+
 ## Native scrub motion and legacy Library Relink — 2026-10-23
 
 Source `886e4db`, runtime `d4b95aaa73ce`, owns halo1/port8855. The shared

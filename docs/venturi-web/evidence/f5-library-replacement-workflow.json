@@ -1,0 +1,272 @@
+{
+  "source_commit": "719e8ee3ab44593fd6df85599803a98037cd4f95",
+  "source_hashes": {
+    "crates/vv-core/src/clipboard.rs": "ec443dd23fe1afced2b8e3ea4d8f2cc9654133d983b5b5d9b8c3336f073fffeb",
+    "crates/vv-core/src/model.rs": "b16b3be947ad1f5db0dfa6ae1d4b1e0f423a9b59d9a6a763f065b89f428f6433",
+    "crates/vv-core/src/tests/clipboard.rs": "e6b613e803d166b14bb72558812d79fdab6e7278d605c940962adfeda3d1bd6a",
+    "crates/vv-web/src/asset_jobs.rs": "575b215bce7df88849ccd9e1f0e1028a38c469275ba4c65309db22a27c0a2138",
+    "crates/vv-web/src/asset_store.rs": "ed48a5151ad9c6d29aea445a228264af0a408f65edaeb2dd7fe3c662aea6e2dd",
+    "crates/vv-web/src/host.rs": "157e1fe6bdeb58da7eca5ea9499af7605d704f7b69261e21fc1db0bdd75b9b66",
+    "crates/vv-web/src/tests/api.rs": "28e943c1352d131dca040a3a0d35aaac81d15874830b486f99f5825eb8be6d8d",
+    "crates/vv-web/src/tests/asset_jobs.rs": "7bc4a474dc5e7b11b76bdbdaa12430cc40a7e3fbc2025ce1ae8dc62a35d91c9f",
+    "crates/vv-web/src/tests/asset_store.rs": "a01b8455c0544a435da48e25f1334abb98a26036bedf3ec0d355000e123b7899",
+    "crates/vv-web/src/tests/host.rs": "4a49c7ef02337d333fc6f9c68521e0efe9030a4a2c548df411e3ba5a28afa876",
+    "web/js/main.js": "479554edb9af8b5069b4ce87dd839e34efe73b5afd69fb5fb8e3d1cba5ae2753",
+    "web/js/native-assets.js": "d17c7e261a28c940f20084d761f1f7d2d498999c2130d7ae128f53aa57a04cd2",
+    "web/test/native-assets-panel.test.js": "a0b088cd4d305c30cc62f4a4d31372b0105a559f66c5dc6c037469b183be05ca",
+    "web/test/native-assets.test.js": "4ec9e742ade809baf5d37865d44e0cc2d610932c47c409c395880dbb4f51dade"
+  },
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-library-replacement.service",
+    "pid": 314271,
+    "binary_sha256": "b4a885f44be3c0585ce2846ad853733f74512e1ce6fb253713e5d76f72a8609d",
+    "project": "Venturi_Library_Replacement_V1.vvproj",
+    "saved": true,
+    "reopened_empty_undo": true
+  },
+  "implemented": [
+    "Chosen-file and recursive-folder native Library Relink offer explicit reviewed different-content replacement; omitted/false keeps exact-original repair and legacy command identity.",
+    "Native SetMediaPath applies complete new metadata, FPS/crop/key adaptation and affected compound invalidation while preserving payload IDs; no browser edit engine.",
+    "New SHA-managed source paths/fingerprints prevent an existing imported copy from being reused for changed bytes.",
+    "Bounded prepared review, explicit Confirm/Cancel/Escape, stale context/selection/writer checks and exact count/digest ACK reconciliation.",
+    "Acknowledged replacement retires the matching Library Source preview; newly opened preview reads the new asset revision.",
+    "Capture/Import/ImportSet/placement consume their prepared witnesses after final acceptance, allowing subsequent full-budget folder jobs without manual DELETE.",
+    "Identical-SHA replacement accepts only its exact verified copied-original identity; concurrent restored/replaced files remain refused."
+  ],
+  "gate": {
+    "host": "halo1",
+    "client_cases": 247,
+    "client_source_bound_reuse": "R1 passes247; unchanged JavaScript hashes checked through R5",
+    "core_clipboard_cases": 14,
+    "core_source_bound_reuse": "R2 passes14; unchanged formatted core hashes bound through R5",
+    "web_unique_passed_cases": 43,
+    "web_passed_names": [
+      "api::tests::native_asset_folder_edits_reuse_library_operation_and_require_strict_folder_and_asset_revisions",
+      "api::tests::native_asset_http_library_readers_import_routes_security_and_download_contract",
+      "api::tests::native_asset_requests_and_mutations_are_strict_and_keep_legacy_mutation_bytes",
+      "api::tests::native_asset_source_browser_http_is_lease_free_epoch_bound_strict_and_embeds_picker",
+      "asset_folders::tests::removing_a_folder_reparents_only_direct_children_and_returns_the_native_asset_destination",
+      "asset_jobs::tests::capture_nested_file_asset_is_ephemeral_until_publish_then_import_owns_independent_readable_project_bytes",
+      "asset_jobs::tests::deliberate_relink_identical_sha_replacement_accepts_only_its_own_verified_restored_original",
+      "asset_jobs::tests::deliberate_relink_import_acceptance_rechecks_cancel_revision_and_copied_bytes_before_release",
+      "asset_jobs::tests::deliberate_relink_replacement_publishes_new_content_and_import_never_reuses_old_media",
+      "asset_jobs::tests::deliberate_relink_replacement_source_destination_cancel_and_catalog_changes_refuse_commit",
+      "asset_jobs::tests::native_asset_import_set_shares_file_work_and_binds_order_revisions_cancel_and_budget",
+      "asset_jobs::tests::native_asset_relink_cancel_stale_revision_and_unsafe_tokens_never_commit_metadata",
+      "asset_jobs::tests::native_asset_relink_last_cas_rejects_restored_mtime_source_and_destination_replacement",
+      "asset_jobs::tests::native_asset_relink_mismatched_replacement_is_refused_before_publishing_any_media_cache_file",
+      "asset_jobs::tests::native_asset_relink_normalizes_legacy_uppercase_hash_names_for_selected_and_recursive_sources",
+      "asset_jobs::tests::native_asset_relink_preserves_compound_ids_metadata_hashes_and_durable_counts_across_reopen",
+      "asset_jobs::tests::native_asset_relink_repairs_original_sha_path_without_treating_its_own_verified_copy_as_stale",
+      "asset_jobs::tests::native_asset_relink_unmatched_selection_reports_remaining_missing_without_rewriting_asset",
+      "asset_jobs::tests::native_recursive_relink_uses_approved_nested_files_preserves_payload_and_guards_tree_changes",
+      "asset_jobs::tests::strict_ready_kind_epoch_generation_revision_and_target_identity_guards_refuse_stale_commits",
+      "asset_payload::tests::native_asset_json_is_strict_bounded_and_retains_supported_opaque_folder_ids",
+      "asset_store::tests::deliberate_relink_default_serialization_preserves_legacy_mutation_identity",
+      "asset_store::tests::deliberate_relink_uses_native_fps_crop_adaptation_preserves_ids_and_durable_report",
+      "asset_store::tests::native_asset_placement_metadata_describes_only_the_selected_root_without_native_format_changes",
+      "commands::tests::native_asset_drop_dto_is_strict_and_omitted_overwrite_keeps_legacy_serialization",
+      "commands::tests::native_asset_placement_keeps_audio_default_and_rejects_locked_overlap_and_cycles_atomically",
+      "commands::tests::native_asset_placement_matches_native_multistream_order_tracks_and_one_undo",
+      "host::tests::deliberate_relink_consumed_publication_import_batch_and_placement_allow_recursive_preparation",
+      "host::tests::deliberate_relink_prepared_host_ack_replays_after_source_removal_and_restart",
+      "host::tests::native_asset_cache_invalidates_after_undo_removes_imported_ids",
+      "host::tests::native_asset_capture_counts_all_dependencies_before_opening_any_source_file",
+      "host::tests::native_asset_capture_publish_is_lease_free_until_durable_library_write_and_has_no_history_step",
+      "host::tests::native_asset_folder_readers_are_lease_free_cas_bound_and_preserve_unknown_native_membership",
+      "host::tests::native_asset_import_is_one_undo_and_redo_then_cached_reuse_preserves_an_edited_child",
+      "host::tests::native_asset_invalid_payload_and_destination_limits_preserve_project_history_and_allocators",
+      "host::tests::native_asset_preparation_and_import_refuse_stale_context_forged_jobs_and_wrong_routes",
+      "host::tests::native_asset_project_switch_cancels_obsolete_jobs_and_accepts_exact_old_cancel_without_history",
+      "host::tests::native_asset_set_placement_imports_once_with_one_undo_and_reuses_edited_compounds",
+      "host::tests::native_asset_set_pool_import_matches_native_merge_one_undo_and_cached_edited_child_noop",
+      "host::tests::native_asset_set_pool_import_refuses_wrong_route_order_revision_canceled_and_changed_files_atomically",
+      "source::tests::native_asset_source_cache_authority_cannot_be_reused_as_project_media_or_after_library_path_swap",
+      "source::tests::native_asset_source_refuses_compound_composition_and_unmanaged_raw_paths",
+      "source::tests::native_asset_source_snapshot_is_raw_read_only_and_bound_to_catalog_and_current_file"
+    ],
+    "final_targeted_web_cases": 15,
+    "clippy": "vv-core/vv-web all targets, -D warnings: passed; R5 8.47s",
+    "build": "embedded vv-web: passed; R5 41.06s",
+    "final_peak_bytes": 2067038208,
+    "earlier_max_peak_bytes": 2336600064,
+    "limits": "one heavy unit at a time;8 CPU/4GiB RAM/no swap/Nice19/IOWeight10/OOM1000/Tasks128/finite1500s;nonblocking shared lock;8GiB host/16GiB disk admission",
+    "unchanged_native_audio_source_hashes": {
+      "crates/vv-audio/src/loudness.rs": "62ad4d4dacd6b511430c37e3bf1b4be58d9e8b901d5593aa00c8a46f4836cf8c",
+      "crates/vv-audio/src/mixer.rs": "3f4b214e42fbb73bfb287cffe74fa6d6dd4ba2df345d3fc994ef34d7911334a0",
+      "crates/vv-audio/src/tests/loudness.rs": "e639da23898c4c29b7ecadd542e7dc6e689f1f1b85acb02f4d0e80d774275804",
+      "crates/vv-audio/src/tests/mixer.rs": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce"
+    },
+    "historical_terminal_runs": [
+      "R1: client247 pass; Rust fixture type-inference compile error corrected",
+      "R2: native core14 pass; backend reservation/restart assertions exposed; actual consumed-job lifecycle corrected",
+      "R3: replacement7 and31 native-asset cases pass; old HTTP canceled-state expectation corrected",
+      "R4: remaining HTTP/recursive/capture/strict cases, Clippy/build pass",
+      "R5: same-SHA correction passes8 replacement+7 legacy Relink; Clippy/build pass"
+    ]
+  },
+  "connected": {
+    "timelines_unchanged": true,
+    "prior_media_unchanged": true,
+    "preconfirmation_asset_unchanged": true,
+    "library_replacement_has_no_project_history_entry": true,
+    "new_import_one_undo_redo": true,
+    "saved_reopen_exact": true,
+    "reopened_empty_undo": true,
+    "prior_saved_projects_unchanged": 10,
+    "asset_id": "b8246f41-75f9-4373-8b14-3fcfbe044952",
+    "old_revision": "ab5c817d6eb3032e104fd3580eb185ce6b5a36ef06e995c8fcc62f38e4695be9",
+    "new_revision": "dfc1833f1d7e2e0146cec5a76b7ab70c558e4192a7cf832d8cb4f77b91467801",
+    "new_media": [
+      {
+        "audio_stream_count": 0,
+        "channels": 0,
+        "compound_timeline_id": null,
+        "content_hash": "1143996233524084083",
+        "duration_frames": 1000000000,
+        "folder": null,
+        "fps": {
+          "den": 1,
+          "num": 25
+        },
+        "has_audio": false,
+        "has_video": true,
+        "height": 18,
+        "id": "15",
+        "is_image": true,
+        "name": "Venturi_Relink_Demo_20261023.png",
+        "offline": false,
+        "sample_rate": 0,
+        "width": 32
+      },
+      {
+        "audio_stream_count": 0,
+        "channels": 0,
+        "compound_timeline_id": null,
+        "content_hash": "3579676486016840169",
+        "duration_frames": 1000000000,
+        "folder": null,
+        "fps": {
+          "den": 1,
+          "num": 25
+        },
+        "has_audio": false,
+        "has_video": true,
+        "height": 18,
+        "id": "16",
+        "is_image": true,
+        "name": "Venturi_Relink_Demo_20261023.png",
+        "offline": false,
+        "sample_rate": 0,
+        "width": 32
+      },
+      {
+        "audio_stream_count": 0,
+        "channels": 0,
+        "compound_timeline_id": null,
+        "content_hash": "10216796592838846639",
+        "duration_frames": 1000000000,
+        "folder": null,
+        "fps": {
+          "den": 1,
+          "num": 25
+        },
+        "has_audio": false,
+        "has_video": true,
+        "height": 36,
+        "id": "17",
+        "is_image": true,
+        "name": "Venturi_Relink_Demo_20261023 (2).png",
+        "offline": false,
+        "sample_rate": 0,
+        "width": 64
+      }
+    ],
+    "files": {
+      "/home/halo/VenturiWeb-color-audio-controls-20261023/Venturi_Relink_Demo_20261023.png": {
+        "bytes": 88,
+        "sha256": "539d983fd7a6c30ac488e8a7e9b78eba98b7cd5a75e90643e5783ed7911fb1f7"
+      },
+      "/home/halo/VenturiWeb-color-audio-controls-20261023/Venturi_Relink_Replacements_20261023/Venturi_Relink_Demo_20261023.png": {
+        "bytes": 140,
+        "sha256": "80d5737064ee83101ed04b8be3996e35b79b4e128efd39ad825c617ad7e11014"
+      },
+      "/mnt/madrock-share/madrock-library/media/539d983fd7a6c30ac488e8a7e9b78eba98b7cd5a75e90643e5783ed7911fb1f7/Venturi_Relink_Demo_20261023.png": {
+        "bytes": 88,
+        "sha256": "539d983fd7a6c30ac488e8a7e9b78eba98b7cd5a75e90643e5783ed7911fb1f7"
+      },
+      "/mnt/madrock-share/madrock-library/media/80d5737064ee83101ed04b8be3996e35b79b4e128efd39ad825c617ad7e11014/Venturi_Relink_Demo_20261023.png": {
+        "bytes": 140,
+        "sha256": "80d5737064ee83101ed04b8be3996e35b79b4e128efd39ad825c617ad7e11014"
+      },
+      "/home/halo/VenturiWeb-color-audio-controls-20261023/library/Venturi_Relink_Demo_20261023.png": {
+        "bytes": 88,
+        "sha256": "539d983fd7a6c30ac488e8a7e9b78eba98b7cd5a75e90643e5783ed7911fb1f7"
+      },
+      "/home/halo/VenturiWeb-color-audio-controls-20261023/library/Venturi_Relink_Demo_20261023 (2).png": {
+        "bytes": 140,
+        "sha256": "80d5737064ee83101ed04b8be3996e35b79b4e128efd39ad825c617ad7e11014"
+      }
+    },
+    "receipt": {
+      "command_epoch": "0",
+      "command_id": "ac3a51fd-81ff-4d31-bbd8-4964b75da1c4",
+      "durability": {
+        "recovery_revision": null,
+        "state": "volatile"
+      },
+      "generation": "2",
+      "library_durable": true,
+      "missing_count": 0,
+      "project_epoch": "1792792484025290468:1",
+      "receipt_persisted": true,
+      "relinked_files": 1,
+      "replace_content": true,
+      "replaced_files": 1,
+      "replacement_digest": "2e579591061f7a5299553054b7d47d6b01f9e52cee3c72750245d72c2b3a5c94",
+      "status": "applied"
+    },
+    "original_image_pixels": [
+      32,
+      18
+    ],
+    "replacement_image_pixels": [
+      64,
+      36
+    ],
+    "before_confirm": "asset JSON/revision, all project media/timelines and project history unchanged",
+    "confirmation": "one replaced file,zero missing; matching Source retired to Program",
+    "original_restored": {
+      "original": "/mnt/madrock-share/madrock-library/media/539d983fd7a6c30ac488e8a7e9b78eba98b7cd5a75e90643e5783ed7911fb1f7/Venturi_Relink_Demo_20261023.png",
+      "sha256": "539d983fd7a6c30ac488e8a7e9b78eba98b7cd5a75e90643e5783ed7911fb1f7",
+      "bytes": 88,
+      "restored": true
+    },
+    "reopened_library": "Explicit Refresh was required after project reopen; refreshed asset previews64x36",
+    "screenshots": [
+      "f5-library-replacement-original.png",
+      "f5-library-replacement-review.png",
+      "f5-library-replacement-updated.png",
+      "f5-library-replacement-final.png"
+    ]
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 11,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "remaining": [
+    "Project-to-Library pointer capture is still unverified; explicit AddToLibrary works",
+    "Native Library requires manual Refresh after project reopen; complete automatic catalog lifecycle with compact review/panel UX",
+    "Broader shared preset/offline/large-media and native GUI lifecycle acceptance",
+    "Physical/dense/DPI/representative-media and integrated M7 release criteria"
+  ],
+  "status": "shared_library remains partial; ledger60 done/30 partial/2 excluded; full F1-F7/M7 objective remains active"
+}

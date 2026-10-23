@@ -1,0 +1,152 @@
+{
+  "date": "2026-10-23",
+  "status": "partial_full_plan_functional_block",
+  "source_commit": "89a7552",
+  "url": "http://127.0.0.1:8846/",
+  "unit": "venturi-web-halo1-command-ownership.service",
+  "binary_sha256": "6958f227e03994e4b50328a9be471db94a4b6cd3dd8d4298824bf126e64cfd1e",
+  "project": "Venturi_Focus_V1.vvproj",
+  "project_sha256": "cbea343959b6e89eb2c1aeeb6fcd0fb160587b2ff0966161640b8108f9843851",
+  "implemented": [
+    "Delete/Backspace dispatch by actual Media/Library/timeline/key-editor ownership; File/Edit menus retain the last panel. Native project Media removal preserves source files and offline timeline clips. Empty/read-only/blocked owners never fall through into timeline removal.",
+    "Selection Inspector retains its six-column native summary; metadata, trim and selection actions are collapsed. Repeated controls for every track, including video Solo, are removed; native header/context actions remain accessible.",
+    "Existing Link/Unlink/Enable/Disable/properties, ripple, select-all/from-playhead and Slip/Compound are reachable in compact Edit/Timeline menus. Precision entries open their actual details after render and focus the requested field.",
+    "Key-only delete reuses existing guarded native selection editing. Selected key ownership stays detectable after blur cancellation until Inspector replacement, preventing accidental clip fallback. Library Delete reports its unavailable action without inventing shared-file deletion."
+  ],
+  "gate": {
+    "native_cases": 3,
+    "native_checks": [
+      "Native media removal keeps offline clips/source files and rejects symlink relink",
+      "HTTP asset/host boundary",
+      "Embedded recursive module imports and JavaScript MIME"
+    ],
+    "client_cases": 158,
+    "formatting": true,
+    "clippy_all_targets_deny_warnings": true,
+    "embedded_build": true,
+    "passed_gate_peak_bytes": 1572311040,
+    "initial_fixture_correction": "Initial 3 native cases and 128 client cases passed; 30 Library-panel cases encountered a fake Element without dataset. Test DOM was updated to reflect data attributes and text ancestors, and Library Delete/Backspace checks strengthened. Production remained unchanged. Final158client cases pass;3native cases reused."
+  },
+  "actual_windows": [
+    "One existing work tab; no local build/render/test fleet. River linked pair remains selected while a different NAS Media row receives Delete. Native RemoveMedia removes only pool media10; all10timeline clip identities, starts, lengths and source offsets remain. Undo restores the media.",
+    "Edit menu retains Media ownership and exposes Remove selected media. A second native removal follows the same pool-only policy and is undone.",
+    "Timeline Title selection followed by Delete produces exactly one DeleteClips entry, removes only Title12 and leaves pool media unchanged. Undo restores both timelines exactly.",
+    "Selection shows two linked media rows and initially closed metadata/trim/actions/slip/compound details. No all-track button wall remains. Actual Slip and Compound menu actions open the correct details and focus their fields without a project command.",
+    "Save As and actual reopen of Venturi_Focus_V1 leave Saved/frame0/empty Undo. All10timeline clips, both timeline tracks/markers and four physical media descriptors remain exact. Native compound content_hash values are cache revisions and are not asserted equal after edit/Undo/reopen.",
+    "Desktop layout checked at1280x720 with collapsed Selection groups; ordinary viewport726x964 restored. Screenshots show the compact Inspector and video workspace."
+  ],
+  "native_data": {
+    "all_timeline_clips_restored": 10,
+    "original_media_clips_restored": 7,
+    "physical_pool_media_restored": 4,
+    "removed_pool_media_id": "10",
+    "removed_timeline_title_id": "12",
+    "final_history": {
+      "labels": [],
+      "position": 0
+    },
+    "final_frame": 0
+  },
+  "menu_focus": {
+    "slip": {
+      "actionsOpen": true,
+      "activeLabel": "Slip delta frames",
+      "slipOpen": true,
+      "tab": "selection"
+    },
+    "compound": {
+      "actionsOpen": true,
+      "activeLabel": "Compound name",
+      "compoundOpen": true,
+      "tab": "selection"
+    }
+  },
+  "desktop": {
+    "collapsedGroups": [
+      {
+        "open": false,
+        "path": "selection-metadata"
+      },
+      {
+        "open": false,
+        "path": "selection-trim"
+      },
+      {
+        "open": false,
+        "path": "selection-actions"
+      },
+      {
+        "open": false,
+        "path": "selection-slip"
+      },
+      {
+        "open": false,
+        "path": "selection-compound"
+      }
+    ],
+    "inspectorTab": "selection",
+    "selectionRows": 2,
+    "videoPreviewRect": {
+      "height": 285.20001220703125,
+      "width": 507.0125122070313,
+      "x": 224.4875030517578,
+      "y": 76.80000305175781
+    },
+    "viewport": [
+      1280,
+      720
+    ]
+  },
+  "runtime_peak_bytes": 214544384,
+  "protection": {
+    "prior_sessions": 30,
+    "prior_pids": 31,
+    "prior_saved_files": 27,
+    "candidate_saved_files": 2,
+    "local_original_files_unchanged": 21,
+    "nas_original_identity_and_bytes_unchanged": true,
+    "shared_proxy_movie": {
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "inode": 4211051,
+      "mtime_ns": 1792732445778166236,
+      "ctime_ns": 1792732445778166236,
+      "bytes": 2206043
+    },
+    "final_candidate_saved_empty_history": true,
+    "candidate_session_unchanged": true,
+    "prior_color_editor_saved_eight_undo_entries_preserved": true,
+    "prior_effects_editor_saved_seven_undo_entries_preserved": true,
+    "nas_scope": "Only the fixed existing source identity/bytes and existing proxy are immutable; an explicitly authorized new native preset is outside this immutability assertion.",
+    "prior_context_editor_unchanged": true
+  },
+  "resources": {
+    "heavy_host": "halo1",
+    "cpu_limit": 8,
+    "memory_max_bytes": 4294967296,
+    "swap_max_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "one_workload_at_a_time": true,
+    "windows": "Existing one-tab browser; small edits/Git/short SSH only."
+  },
+  "reused_evidence": [
+    "f1-context-workflow.json: native context actions, presets, playback pause",
+    "f3-palette-fonts-workflow.json: unchanged renderer/export pipeline; prior701-frameFullHD and browserEOF29.226s"
+  ],
+  "not_claimed": [
+    "Fresh export or renderer changes",
+    "Actual key-editor menu deletion after blur or a physical pointer/DPI campaign",
+    "Native Library shared-file removal, batch pool import or pre-import Source preview",
+    "Dense/representative/release M7 and full F1-F7 closure"
+  ],
+  "ledger": {
+    "done": 49,
+    "partial": 41,
+    "excluded": 2
+  },
+  "images": [
+    "f1-selection-inspector.png",
+    "f1-selection-workspace.png"
+  ]
+}

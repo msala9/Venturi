@@ -22,6 +22,15 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F1 command ownership/Selection (`89a7552`, halo1/8846): see
+`evidence/f1-command-ownership-workflow.json`. Three native checks /158client
+cases, formatting, all-target Clippy and embedded build pass. The initial test-only
+Library DOM dataset omission is corrected; passing native cases are reused.
+Actual Windows pool Delete/Edit ownership, timeline-only Delete, native Undo,
+closed Slip/Compound menu focus and exact Saved reopen pass. Desktop1280x720 and
+ordinary viewport are checked. Prior editors/history/originals/proxy remain
+unchanged. No fresh export or full physical/release acceptance is inferred.
+
 F1 context actions (`b23e87d`, halo1/8845): see
 `evidence/f1-context-workflow.json`. 29 native / 115 client cases, formatting,
 all-target Clippy and embedded build pass. JS-only pause/list-popup fixes reuse

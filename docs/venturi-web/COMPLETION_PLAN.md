@@ -32,7 +32,31 @@ CIFS root is `/mnt/madrock-share/madrock-library`, presets use `presets/`, and
 archive media uses the existing ds4 API on8787. No new NAS mount or Linux browser
 is required. Preserve all earlier halo1 and halo2 editors and their Undo chains.
 
-Current context-menu delivery: **http://127.0.0.1:8845/**, source `b23e87d`
+Current compact-Selection delivery: **http://127.0.0.1:8846/**, source `89a7552`,
+binary `6958f227e039`, service `venturi-web-halo1-command-ownership.service`.
+Delete/Backspace now follows Media, Library, timeline or key-editor ownership;
+File/Edit retain the last panel. Project-media removal preserves source files and
+offline timeline clips. Selection keeps its native summary, with metadata, trim,
+Slip and Compound details collapsed. Repeated all-track controls and video Solo
+leave Inspector; header/context actions and concise Edit/Timeline routes remain.
+
+Three native checks and **158 client cases**, formatting, all-target Clippy and
+embedded build pass. The initial Library test DOM lacked dataset; its simulation
+was corrected without changing production, and the passing native results reused.
+Actual Windows verifies pool Delete and Edit-menu removal with an unrelated clip
+selection, timeline-only Delete, native Undo, opening closed Slip/Compound details
+and exact Saved reopen of `Venturi_Focus_V1.vvproj` (frame 0, empty Undo).
+Both timelines, all ten clips and four physical media descriptors are restored;
+compound content hashes are native cache revisions, not immutable source hashes.
+The 1280x720 desktop check is complete and the ordinary viewport is restored.
+All 30 prior Sessions, 31 PIDs, 27 prior Saved files, 21 fixed local originals,
+the NAS original and shared proxy remain unchanged. Runtime peak is 214,544,384
+bytes. See `evidence/f1-command-ownership-workflow.json` and Selection images.
+No new export/physical DPI/full release qualification is claimed. Library native
+shared-file removal, batch pool import and pre-import Source preview stay open.
+Ledger remains **49 done / 41 partial / 2 excluded**.
+
+Preserved context-menu delivery: **http://127.0.0.1:8845/**, source `b23e87d`
 (main feature `f3d1371`), binary `3f4e66ec5ba1`, service
 `venturi-web-halo1-context-menu-r3.service`. Clip, background, ruler, marker and
 track menus reuse native actions and dialogs with each action's captured selection
@@ -583,27 +607,21 @@ uses its own project root and the existing tunnel on 8812. The full ledger
 was 45 done / 45 partial at that delivery; this interface acceptance does not close unrelated
 functional or release criteria.
 
-## Next implementation block — command ownership and compact Inspector
+## Next implementation block — native Library pool import and Source preview
 
-Timeline context actions are delivered above. Fix the concrete native command
-ownership gap first: Delete on a focused Media row must remove the selected pool
-items through native `remove_media`, never delete unrelated selected timeline
-clips. Preserve text/modal/IME/read-only guards and native Undo/offline behavior.
-Route menu commands through the focused panel's owner; blocked Library commands
-must not fall through into the timeline.
+Command ownership and compact Selection Inspector are delivered above. Complete
+native Library browse/select/import for multiple assets into the project pool in
+one native Undo, without adding timeline placement. Reuse the existing prepared
+batch and strong source confinement, with explicit stale/cancel/unknown guards.
+Add Source preview for ordinary asset files before import through the existing
+confined Source path. Native asset preview reads its first ordinary media payload;
+it does not compose compound timelines. Do not add a new render engine here.
 
-Keep Selection Inspector focused on its native selection summary. Track flags
-and removal already live in timeline headers/context menus; remove the repeated
-all-track button wall, including invalid video Solo controls. Keep accessible
-selection actions in concise menus/collapsed details. Reuse existing Edit/Timeline
-commands, then verify one connected focused-pool/timeline edit and save/reopen.
-
-Next, complete native Library browse/select/import for multiple assets into the
-project pool in one native Undo, without inventing timeline placement. Add Source
-preview for ordinary asset files before import using the existing confined Source
-path. The native asset preview does not compose compound timelines; do not add a
-new render engine for that case. Continue the remaining full-plan criteria after
-these concrete production gaps, reusing unchanged renderer/audio evidence.
+Keep Library shared-file Delete separate from project-media removal: the native
+confirmation/removal lifecycle is still missing, and the current Library owner
+truthfully consumes Delete without falling through into timeline edits. Continue
+remaining full-plan production/release criteria after these concrete gaps, reusing
+unchanged renderer/audio evidence and preserving all delivered editors/history.
 
 ## Delivery blocks
 

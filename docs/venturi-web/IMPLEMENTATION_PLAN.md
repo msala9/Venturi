@@ -4,7 +4,7 @@
 
 The owner accepted the usable workflow and resumed the full plan. Follow
 [COMPLETION_PLAN.md](COMPLETION_PLAN.md) for the active F1–F7 delivery blocks:
-complete the 42 remaining partial capabilities, preserve the 48 already accepted and finish
+complete the 41 remaining partial capabilities, preserve the 49 already accepted and finish
 M7 release qualification. The two explicitly NOT-PLANNED rows remain excluded.
 [DELIVERY_PLAN.md](DELIVERY_PLAN.md) is the completed regression baseline.
 Preserve the protected editor and any new work in the delivered candidate.
@@ -18,33 +18,41 @@ one workload at a time, at most eight CPUs/4 GiB with no swap and low CPU/I/O
 priority. Use the existing Windows browser. Preserve all earlier halo2 and
 halo1 editors, their projects and Undo chains.
 
-The current halo1 delivery is **http://127.0.0.1:8830/**, source `a95b4a6`,
-binary `f8fe8912da80`, in `venturi-web-halo1-proxy-workflow.service`.
-Playback > Proxies now provides persisted enable/quality settings, real native
-queue progress and Pause/Resume. Source uses the same quality and original
-resolution when disabled. Program frames and composed previews select ready
-video proxies, keep native geometry and audio, and fall back to original media.
-Exports, scopes and auto-balance retain originals. The compact menu and Media
-badges add no Viewer toolbar row. Generation is serial and yields to foreground
-work; cache admission counts retained leases and explicit resource limits.
+The current halo1 delivery is **http://127.0.0.1:8831/**, source `6764b2d`,
+binary `4a11e6f7c63e`, in `venturi-web-halo1-proxy-durable.service`.
+Native proxy preferences and ready cache now survive server restart. A private,
+versioned cache under the native user cache shares ready video across projects
+and processes, with short catalog locks, per-entry generation/read leases,
+explicit interrupted-work recovery and bounded count/bytes. Idle jobs retain
+no artifact lease; active decoders prevent eviction. Current approved original
+paths and strong versions remain mandatory. Contention yields to foreground
+work instead of failing newly queued generation.
 
-The90 affected native cases,7 new client cases and final23 affected client
-cases pass;1296 prior aggregate client cases are reused. Formatting, all-target
-Clippy and the exact embedded build pass. Windows verifies a real pause at
-1/264 frames, resume to264/264, original1920x1080 and medium960x540 Source,
-Program proxy selection and EOF456, proxy disable/enable, and client reload.
-The457-frame1920x1080 H.264/AAC export reaches file EOF and is byte-identical
-to the earlier original-media export. Saved bytes, full native Session/history
-and final Program frame0 are unchanged. See `evidence/f2-native-proxies-workflow.json`
-and its Paused/Ready screenshots. Fifteen earlier Sessions/live histories and
-ds4 remain intact; halo2 and NAS are untouched.
+The 50 distinct affected native cases, formatting, all-target Clippy and embedded
+build pass; unchanged browser/native pipeline checks are reused. Actual Windows
+verification restarts only the isolated candidate while Saved with empty Undo.
+The Medium proxy returns Ready while generation remains paused, with identical
+inode, timestamps and SHA256: no recoding. Program uses the recovered proxy and
+reaches EOF456. The 457-frame Full HD H.264/AAC export is byte-identical to prior
+original-media exports and plays to file EOF. Native model, metadata, Saved bytes,
+history and final frame0 are unchanged. See
+`evidence/f2-native-proxies-durable-workflow.json` and recovered/workspace screenshots.
+All 16 earlier Sessions/live Undo, 17 service PIDs including ds4 and four earlier
+Saved projects are preserved. Halo2 and NAS are untouched.
 
-Ledger48done/42partial/2excluded and full F1-F7/M7 remain active. Native proxy
-preferences persist, but the cache is currently ephemeral per process. Next
-complete durable, versioned, bounded cache recovery/native cross-process
-semantics before accepting `proxy_quality_settings`. Also retain the original
-frame-source FD pinning gap in M7, pool marquee/context-menu/folder drag, and
-physical/representative acceptance as explicit work.
+`proxy_quality_settings` is accepted: ledger **49 done / 41 partial / 2 excluded**.
+Full F1-F7/M7 remains active. Malformed/foreign cache files and pre-intent crash
+leftovers are preserved/refused; arbitrary-power-loss automatic recovery is not
+claimed. Source browser/audio conversion and its broader acceptance remain in
+Source capabilities. Next implement pool marquee, contextual actions and folder
+drag as one native interaction block. Keep original frame-source FD pinning,
+representative/dense/DPI/physical acceptance and other F1-F7/M7 work explicit.
+
+Preserved initial proxy workflow: halo1/8830, source `a95b4a6`, binary `f8fe8912da80`.
+Enable/quality, real generation Pause/Resume, compact menu/Media badges, original
+Source dimensions when disabled and ready-only Program proxy selection are
+verified in `evidence/f2-native-proxies-workflow.json`. That earlier server uses
+its private ephemeral cache; its Saved project, export and live state remain.
 
 Preserved Media presentation delivery: halo1/8829, source `e204001`, binary
 `c8a3bc799e10`. Native Details/List/Grid, folder navigation/search, real metadata,

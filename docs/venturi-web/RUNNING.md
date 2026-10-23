@@ -2,31 +2,45 @@
 
 ## Current halo1 working instance
 
-Use **http://127.0.0.1:8830/** in the existing Windows browser. Source `a95b4a6`,
-binary `vv-web-f8fe8912da80`, runs as unprivileged `halo` in
-`venturi-web-halo1-proxy-workflow.service`, projects in
-`/home/halo/VenturiWeb-proxy-workflow-20261023`. Saved `Venturi_Project_Media.vvproj`
-contains the457-frame1920x1080/24fps video/still/two-stream-audio montage on
-V1/A1/A2 at Program frame0 with empty history. Earlier editors retain their own
-live Undo. Export1792730540149100678 is the verified Full HD H.264/AAC result,
-3018680 bytes, SHA256 `f2c54c544df7df29387b07ce6b06b1d3176763e219b75d2679967f0e60ce6543`.
+Use **http://127.0.0.1:8831/** in the existing Windows browser. Source `6764b2d`,
+binary `vv-web-4a11e6f7c63e`, runs as unprivileged `halo` in
+`venturi-web-halo1-proxy-durable.service`, root
+`/home/halo/VenturiWeb-proxy-durable-20261023`. Saved `Venturi_Project_Media.vvproj`
+retains the 457-frame1920x1080/24fps video/still/two-stream-audio montage at
+Program frame0 with empty history. Export1792732607978395570 is the verified
+Full HD H.264/AAC output,3018680 bytes, SHA256
+`f2c54c544df7df29387b07ce6b06b1d3176763e219b75d2679967f0e60ce6543`.
 
-Playback > Proxies offers Use proxies, Low/Medium/High, Pause/Resume and Generate
-missing proxies. Current preferences are enabled/medium/unpaused; media6 has a
-ready264-frame proxy. Badges and folded jobs report native status. Source and
-Program share quality; export retains original media/audio. Disabling uses
-original Source dimensions. Preferences persist in the private project root;
-ready variants are reused within the live server. **The native proxy cache does
-not yet survive server restart.** Do not restart this or earlier editors to
-verify cache persistence. See `evidence/f2-native-proxies-workflow.json`.
+Playback > Proxies controls enable, Low/Medium/High and real Pause/Resume.
+Current preferences are enabled/medium/unpaused, with a ready264-frame proxy.
+Settings and valid ready proxies survive server restart; only this isolated
+candidate was restarted for qualification, after verifying Saved/empty history.
+The same proxy inode, timestamps and bytes were recovered while generation
+remained paused. Native project metadata/audio and original export are unchanged.
+See `evidence/f2-native-proxies-durable-workflow.json` and Paused/Ready proofs
+from `evidence/f2-native-proxies-workflow.json`.
 
-Native Details/List/Grid and folder controls from8829 are retained. The hidden
-same-port tunnel forwards8830 to halo1. NAS roots remain
-`/mnt/madrock-share/madrock-library` and `presets/`; ds4 stays on8787.
-Eight-CPU/4-GiB/no-swap/low-priority limits and the nonblocking GPU lock remain.
-No automatic restart/boot enablement/deadline applies. Fifteen prior Sessions,
-their Saved files/live Undo and ds4 are preserved. Halo2 is untouched. Full
-F1-F7/M7 remains active: ledger48done/42partial/2excluded.
+The private global web cache is `/home/halo/.cache/venturi/proxies/web-v1`.
+It is schema-versioned, bounded to32 entries/2 GiB, reserves512 MiB plus8 KiB
+metadata per generation and retains active read leases. Explicit prepare can
+recover a valid interrupted intent. Foreign/malformed data or a crash before
+intent publication are preserved/refused; do not delete unknown files or claim
+arbitrary-power-loss recovery. Existing desktop flat cache files are untouched.
+Source still creates browser-compatible audio/window conversions. General Source,
+original-frame confinement and M7 acceptance remain separate open work.
+
+The hidden same-port tunnel forwards8831 to halo1. NAS/ds4 roots and8787 remain
+unchanged. Eight-CPU/4-GiB/no-swap/low-priority limits and the nonblocking GPU lock
+remain; no automatic restart/boot enablement/deadline applies. All16 earlier
+Sessions/live Undo and ds4 are preserved, including8830's original proxy workflow.
+Halo2 remains untouched. Ledger49done/41partial/2excluded; full F1-F7/M7 is active.
+
+## Preserved initial proxy instance
+
+The8830 instance remains at `venturi-web-halo1-proxy-workflow.service`, root
+`/home/halo/VenturiWeb-proxy-workflow-20261023`, source `a95b4a6`, binary
+`vv-web-f8fe8912da80`. It retains its original per-process cache and verified
+Full HD export1792730540149100678; no restart or project/history change occurred.
 
 ## Preserved Media presentation instance
 

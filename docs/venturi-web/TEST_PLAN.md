@@ -31,11 +31,29 @@ The final native Session, project Saved bytes and empty Undo equal the baseline;
 15 old Sessions/PIDs and ds4 remain unchanged. See
 `evidence/f2-native-proxies-workflow.json` and Paused/Ready screenshots.
 
-Do not accept durable proxy cache recovery from these checks: artifacts are
-currently per-process temporary files. Implement versioned, bounded recovery
-and native cross-process semantics before its focused recovery qualification.
-Track approved on-demand original-media frame FD pinning separately in M7;
-nonblocking ready-proxy lookup does not close that existing decoder gap.
+The initial a95b4a6 block above used an ephemeral cache. Its persistence gap is
+closed for normal server restart and valid interrupted intents in6764b2d/8831:
+50 distinct affected native cases pass (18 proxy-related and33 Source executions,
+with one overlapping case). Six new store regressions use tiny injected caps,
+covering durable records, hashed quality/source keys, cross-open locks/leases,
+valid-intent recovery, count/byte eviction, unknown-file preservation and replaced
+artifact/manifest identities. Manager tests cover paused cache reuse with new
+project epoch/media ID, current path approval across nested roots/hardlinks and
+foreground-aware contention retry. Formatting/all-target Clippy/build pass.
+Frontend and unchanged native pipeline checks are reused.
+
+Windows verifies a real isolated-service PID change with Saved/empty Undo,
+Medium Ready recovery while generation remains paused, identical proxy inode/
+timestamps/SHA256, original model/metadata/view/Saved bytes and Program EOF456.
+The457-frame Full HD/AAC export matches earlier original exports byte for byte
+and plays to19.05-second file EOF. Final preferences enabled/medium/unpaused,
+frame0 and empty history remain. All16 earlier Sessions and17 PIDs including ds4
+are equal; four earlier Saved project hashes are unchanged. See
+`evidence/f2-native-proxies-durable-workflow.json`. This accepts
+`proxy_quality_settings`/TS-018; broader Source/physical/dense/long4K/M7 work stays
+open. Malformed/foreign files or a pre-intent crash require explicit intervention;
+arbitrary-power-loss automatic recovery is not claimed. Original frame-source
+FD pinning remains a separate M7 production task.
 
 F2 media presentation (`e204001`, halo1/8829):1296 serial client cases and9
 native cases pass (snapshot5, project placement1, prepared project media HTTP1,

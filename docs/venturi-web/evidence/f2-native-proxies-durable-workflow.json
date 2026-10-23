@@ -1,0 +1,402 @@
+{
+  "date": "2026-10-23",
+  "scope": "Accept proxy_quality_settings: native enable/quality/pause, persisted preferences and bounded shared durable cache. Full F1-F7/M7 remains active.",
+  "source_commit": "6764b2d",
+  "url": "http://127.0.0.1:8831/",
+  "deployment": {
+    "binary": "/home/halo/.local/share/venturi-web/.runtime/vv-web-4a11e6f7c63e",
+    "sha256": "4a11e6f7c63e0921b13ffa4f9126f85e3947f4d19d8b3919655792d63ea5301f",
+    "root": "/home/halo/VenturiWeb-proxy-durable-20261023",
+    "unit": "venturi-web-halo1-proxy-durable.service",
+    "project_sha256": "58bb26acf51c11a0e325c9129568f4718bfbf4c6e355b17fd1a7730f6fca27be"
+  },
+  "source_files_sha256": {
+    "crates/vv-web/src/main.rs": "01989001b255719e858a1b40d892331ba1306e36164e4f549dd8410907edf67d",
+    "crates/vv-web/src/proxy.rs": "307620d7aa96756cec4064d8d420068a565b9e558edc2ee2943a0be97af1dd4b",
+    "crates/vv-web/src/tests/proxy.rs": "b74ae73133fc3fa1c33363940bff3900eea39734bb27e3c7789f9d04e1cf3176",
+    "crates/vv-web/src/proxy_cache.rs": "ecd1cd7968a231e83cb6fe53475e6031b6d76d37cb6f97e149ae548ac5a34dcd",
+    "crates/vv-web/src/tests/proxy_cache.rs": "194a8458ee5975e748d69f324126461f6f8ae861f0ac313812857683db6cc997"
+  },
+  "native_source": [
+    "crates/vv-media/src/proxy.rs",
+    "crates/vv-app/src/app_menu.rs",
+    "crates/vv-app/src/proxy_worker.rs"
+  ],
+  "implementation": [
+    "crates/vv-web/src/proxy.rs",
+    "crates/vv-web/src/proxy_cache.rs",
+    "crates/vv-web/src/proxy_video.rs",
+    "web/js/proxies.js"
+  ],
+  "qualification": {
+    "native_distinct_cases": 50,
+    "native_results": [
+      "test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 558 filtered out; finished in 0.13s",
+      "test result: ok. 33 passed; 0 failed; 0 ignored; 0 measured; 543 filtered out; finished in 0.69s"
+    ],
+    "prior_native_proxy_source_program_cases": "Reuse the90 affected native cases in f2-native-proxies-workflow.json for unchanged pipeline behavior.",
+    "javascript": "Unchanged: reuse prior1296 aggregate,7 new and23 final affected client cases; no additional frontend execution.",
+    "format": "pass",
+    "all_target_clippy": "pass",
+    "embedded_build": "pass",
+    "qualified_manifest_matches_local": true,
+    "peak_disposable_bytes": 1920315392,
+    "corrections": [
+      "Initial native gate exposed catalog-read versus acquire contention; fixed with cancellation/foreground-aware background backoff and a short bounded status-read retry. Deterministic contention regression passes.",
+      "Final changes after passing native gate only flatten an immediately invoked final closure for Clippy; behavior results are reused."
+    ]
+  },
+  "cache_protocol": {
+    "root": "/home/halo/.cache/venturi/proxies/web-v1",
+    "version": 1,
+    "max_entries": 32,
+    "max_bytes": 2147483648,
+    "max_movie_bytes": 536870912,
+    "reservation_bytes": 536879104,
+    "global_catalog_lock": "Nonblocking; held only for metadata/admission/eviction.",
+    "entry_lock": "Exclusive for generation/recovery/eviction; shared for active Stored/Viewer lease. Idle jobs retain no file or lease.",
+    "commit": "Precreated native temp/record inodes witnessed by immutable intent; fsynced ready record published last.",
+    "recovery": "Explicit acquire recovers only named owned interrupted inodes. No automatic generation on Store open; ready files survive manager/process exit.",
+    "eviction": "Only idle, valid owned entries; count/bytes remain bounded across managers/processes.",
+    "keys": "SHA256 of strong original version, native quality and metadata; independent of project epoch/media ID. Current project path approval remains mandatory."
+  },
+  "restart": {
+    "old_pid": "154780",
+    "new_pid": "155232",
+    "saved_sha256": "58bb26acf51c11a0e325c9129568f4718bfbf4c6e355b17fd1a7730f6fca27be",
+    "cache_root": "/home/halo/.cache/venturi/proxies/web-v1",
+    "movies_before_restart": {
+      "5c4f5e976da54deb6a240cb448a4743f17910ab8fc81aea468b2242d5cebc007/proxy.mp4": {
+        "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+        "bytes": 2206043,
+        "inode": 4211051,
+        "mtime_ns": 1792732445778166236,
+        "ctime_ns": 1792732445778166236
+      }
+    },
+    "settings": {
+      "version": 1,
+      "enabled": true,
+      "quality": "medium",
+      "paused": true
+    },
+    "protected_pids_equal": true
+  },
+  "recovery_verified": {
+    "movies_after_restart": {
+      "5c4f5e976da54deb6a240cb448a4743f17910ab8fc81aea468b2242d5cebc007/proxy.mp4": {
+        "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+        "bytes": 2206043,
+        "inode": 4211051,
+        "mtime_ns": 1792732445778166236,
+        "ctime_ns": 1792732445778166236
+      }
+    },
+    "same_movie_inode_version_and_bytes": true,
+    "program_frame": {
+      "proxy_count": "1",
+      "bytes": 696311,
+      "sha256": "cf71977ff82eae55f219ac617a7591d3208dbd292640c38188d86827ffdff136"
+    },
+    "preserved_sessions_equal": 16
+  },
+  "before_restart_catalog": {
+    "capacity": {
+      "charged_bytes": 2206594,
+      "max_bytes": 2147483648,
+      "max_job_bytes": 536870912,
+      "max_jobs": 32,
+      "used_entries": 1,
+      "used_jobs": 1
+    },
+    "jobs": [
+      {
+        "error": null,
+        "id": "proxy-1792732444405912516-1",
+        "media_id": "6",
+        "progress": 264,
+        "quality": "medium",
+        "source_version": "64512:4211029:2854042:1792732412:480735485:1792732412:480735485",
+        "state": "ready",
+        "total": 264
+      }
+    ],
+    "project_epoch": "1792732413243350102:1",
+    "settings": {
+      "enabled": true,
+      "paused": true,
+      "quality": "medium"
+    },
+    "suspended": false
+  },
+  "recovered_catalog": {
+    "capacity": {
+      "charged_bytes": 2206594,
+      "max_bytes": 2147483648,
+      "max_job_bytes": 536870912,
+      "max_jobs": 32,
+      "used_entries": 1,
+      "used_jobs": 2
+    },
+    "jobs": [
+      {
+        "error": null,
+        "id": "proxy-1792732492298510888-1",
+        "media_id": "6",
+        "progress": 264,
+        "quality": "medium",
+        "source_version": "64512:4211029:2854042:1792732412:480735485:1792732412:480735485",
+        "state": "ready",
+        "total": 264
+      }
+    ],
+    "project_epoch": "1792732478406712575:2",
+    "settings": {
+      "enabled": true,
+      "paused": true,
+      "quality": "medium"
+    },
+    "suspended": false
+  },
+  "program_after_restart": {
+    "cancel_requested": false,
+    "durability_error": false,
+    "durable": false,
+    "error": null,
+    "export_revision": null,
+    "frames": 0,
+    "id": "1792732556431600284",
+    "previous_state": null,
+    "program": {
+      "audio_origin_frame": 0,
+      "audio_present": true,
+      "end_frame": 457,
+      "fps": {
+        "den": 1,
+        "num": 24
+      },
+      "generation": "0",
+      "height": 540,
+      "project_epoch": "1792732478406712575:2",
+      "revision": "123c4babc02ef8b8",
+      "start_frame": 0,
+      "video_sources": {
+        "mode": "proxy",
+        "proxy_count": 1,
+        "version": "proxy:5a16aa56e1349ca1c5358b362cf936f7a828556ea8ef60b6f45f7630e54ffcc6"
+      },
+      "width": 960
+    },
+    "progress": {
+      "compose_fps": 973.7123593137184,
+      "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+      "current_frame": 457,
+      "decode_fps": 899.6567526008363,
+      "decoder_fallback": false,
+      "decoders": [
+        {
+          "id": "software",
+          "label": "Software (CPU)"
+        }
+      ],
+      "elapsed_ms": 1036.366577,
+      "encode_fps": 530.8993339108101,
+      "encoder": "X264",
+      "fps": 440.96366106565404,
+      "startup_ms": 90.38062400000001,
+      "total_frames": 457
+    },
+    "project_epoch": null,
+    "source_asset": null,
+    "source_assets": null,
+    "source_version": null,
+    "source_window": null,
+    "state": "ready"
+  },
+  "browser": {
+    "program_running": {
+      "error": null,
+      "height": 540,
+      "position": "398",
+      "status": "COMPOSED PREVIEW \u00b7 960\u00d7540 \u00b7 revision 123c4bab",
+      "time": 16.625005,
+      "url": "/api/v1/preview/program/1792732556431600284/program.mp4?project_epoch=1792732478406712575%3A2&if_generation=0&timeline_id=1&revision=123c4babc02ef8b8&start_frame=0&end_frame=457&width=960&audio_origin_frame=0",
+      "width": 960
+    },
+    "program_eof": {
+      "error": null,
+      "position": "456",
+      "status": "End of timeline"
+    },
+    "export_eof": {
+      "duration": 19.05,
+      "ended": true,
+      "error": null,
+      "height": 1080,
+      "time": 19.05,
+      "url": "/api/v1/exports/1792732607978395570/export.mp4?project_epoch=1792732478406712575%3A2",
+      "width": 1920
+    }
+  },
+  "export": {
+    "job": "1792732607978395570",
+    "bytes": 3018680,
+    "sha256": "f2c54c544df7df29387b07ce6b06b1d3176763e219b75d2679967f0e60ce6543",
+    "descriptor": {
+      "cancel_requested": false,
+      "durability_error": false,
+      "durable": true,
+      "error": null,
+      "export_revision": "6c7fe0dfe607b0942a9a4c928e13b38316d6fc9b5e817755ba4b559aa3ca6dbc",
+      "frames": 0,
+      "id": "1792732607978395570",
+      "previous_state": null,
+      "program": {
+        "audio_present": true,
+        "end_frame": 457,
+        "export_settings": {
+          "audio": true,
+          "audio_bitrate_kbps": 128,
+          "audio_codec": "aac",
+          "audio_fast_coder": false,
+          "preset": "veryfast",
+          "quality": 18,
+          "scale_percent": 100
+        },
+        "fps": {
+          "den": 1,
+          "num": 24
+        },
+        "generation": "0",
+        "height": 1080,
+        "project_epoch": "1792732478406712575:2",
+        "revision": "123c4babc02ef8b8",
+        "start_frame": 0,
+        "width": 1920
+      },
+      "progress": {
+        "compose_fps": 432.7861215601154,
+        "compositor": "AMD Radeon AI PRO R9700 (RADV GFX1201) (Vulkan)",
+        "current_frame": 457,
+        "decode_fps": 392.3593991147161,
+        "decoder_fallback": false,
+        "decoders": [
+          {
+            "id": "software",
+            "label": "Software (CPU)"
+          }
+        ],
+        "elapsed_ms": 2065.455419,
+        "encode_fps": 246.4359118619319,
+        "encoder": "X264",
+        "fps": 221.25870923965945,
+        "startup_ms": 103.85305699999999,
+        "total_frames": 457
+      },
+      "project_epoch": "1792732478406712575:2",
+      "source_asset": null,
+      "source_assets": null,
+      "source_version": null,
+      "source_window": null,
+      "state": "ready"
+    },
+    "matches_previous_original_exports": true
+  },
+  "final": {
+    "catalog": {
+      "capacity": {
+        "charged_bytes": 2206594,
+        "max_bytes": 2147483648,
+        "max_job_bytes": 536870912,
+        "max_jobs": 32,
+        "used_entries": 1,
+        "used_jobs": 2
+      },
+      "jobs": [
+        {
+          "error": null,
+          "id": "proxy-1792732492298510888-1",
+          "media_id": "6",
+          "progress": 264,
+          "quality": "medium",
+          "source_version": "64512:4211029:2854042:1792732412:480735485:1792732412:480735485",
+          "state": "ready",
+          "total": 264
+        }
+      ],
+      "project_epoch": "1792732478406712575:2",
+      "settings": {
+        "enabled": true,
+        "paused": false,
+        "quality": "medium"
+      },
+      "suspended": false
+    },
+    "native_model_metadata_history_and_view_equal_across_restart": true,
+    "saved_bytes_equal_across_restart": true,
+    "project_hashes": {
+      "Venturi_Project_Media.vvproj": "58bb26acf51c11a0e325c9129568f4718bfbf4c6e355b17fd1a7730f6fca27be"
+    },
+    "history": {
+      "labels": [],
+      "position": 0
+    },
+    "view": {
+      "active_timeline": "1",
+      "playheads": {
+        "1": 0
+      }
+    },
+    "unit": "ActiveState=active\nMainPID=155232\nResult=success\nMemoryCurrent=146391040\nMemoryPeak=443994112\nCPUQuotaPerSecUSec=8s\nMemoryMax=4294967296\nMemorySwapMax=0\nOOMScoreAdjust=1000\n"
+  },
+  "preservation": {
+    "sessions_equal": 16,
+    "pids_equal": {
+      "venturi-web-halo1-nas.service": "84786",
+      "venturi-web-halo1-color-audio-r2.service": "99965",
+      "venturi-web-halo1-library-edit-r2.service": "105609",
+      "venturi-web-halo1-native-curves.service": "109843",
+      "venturi-web-halo1-curve-window-r2.service": "114229",
+      "venturi-web-halo1-program-lookahead.service": "116676",
+      "venturi-web-halo1-source-placement.service": "121987",
+      "venturi-web-halo1-source-placement-r5.service": "123540",
+      "venturi-web-halo1-source-waveform-r2.service": "126135",
+      "venturi-web-halo1-source-waveform-r4.service": "127416",
+      "venturi-web-halo1-source-lookahead.service": "129350",
+      "venturi-web-halo1-project-pool.service": "131552",
+      "venturi-web-halo1-project-media.service": "136307",
+      "venturi-web-halo1-project-media-r2.service": "139773",
+      "venturi-web-halo1-media-presentation.service": "141959",
+      "venturi-web-halo1-proxy-workflow.service": "150790",
+      "ds4-console.service": "58396"
+    },
+    "saved_sha256_equal": {
+      "project-media": "9a34f342757381b9f962f222f81afbcc9a6bbd491114fa2dfcecc996ba68ecda",
+      "project-media-r2": "fc4754ffd4a3b70f47d941d07f864ad3eaf13c66c3a7c77113b4c52c55703549",
+      "media-presentation": "e516cf9959de69f991a4f15861676500b77caec5b22db9b33401092a0a7cdc06",
+      "proxy-workflow": "d0c244d49553feb8de919d3c2911f019142ab97e113a928473f0c8050f265521"
+    }
+  },
+  "limits": {
+    "cpu": 8,
+    "memory_bytes": 4294967296,
+    "swap_bytes": 0,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "gpu_lock": "/tmp/HALO_BENCHMARK.lock",
+    "windows": "Existing single browser work tab only; no local build/render/test fleet",
+    "halo2": "Untouched; H3 work preserved"
+  },
+  "screenshots": [
+    "f2-native-proxies-recovered-halo1.png",
+    "f2-native-proxies-durable-workspace-halo1.png"
+  ],
+  "boundaries": [
+    "Malformed/foreign files or a crash before durable intent publication are preserved and refused; this does not claim arbitrary-power-loss automatic recovery or complete M7 recoverability.",
+    "The schema-versioned web cache shares native proxy semantics across web projects/processes; existing desktop flat proxy files are not scanned/imported.",
+    "Source still produces the browser-compatible audio/window conversion at the selected quality; native global video proxies accelerate Program. Source window/physical/long-media qualification remains in its own capabilities.",
+    "Original frame-source FD pinning, pool marquee/context menus/folder drag, dense/DPI, representative long4K, physical audio and remaining F1-F7/M7 work stay open.",
+    "M7 degraded-cache UX remains: failed census of malformed/pre-intent data currently blocks preference controls, requiring operator intervention. Separate readable preferences, an acknowledged switch to originals and uncaptured cache fallback before release, retaining captured-lease/source approval errors and unknown files."
+  ]
+}

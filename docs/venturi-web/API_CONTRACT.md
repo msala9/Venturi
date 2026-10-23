@@ -38,11 +38,26 @@ Exports, scopes and auto-balance use originals. Source conversion also accepts
 `quality=original` for bounded original dimensions (maximum8192 width); this is
 not a proxy-preferences quality. Existing native Low/Medium/High APIs are unchanged.
 
-Settings persist across manager reopen. The current proxy artifacts live in a
-private per-process temporary cache: durable/versioned cache recovery and native
-cross-process cache semantics remain open. Live client reload and quality reuse
-must not be described as server-restart cache persistence. See
-`evidence/f2-native-proxies-workflow.json`.
+Settings and valid ready artifacts persist across manager/process reopen.
+The schema-versioned `web-v1` namespace below the native user proxy cache is
+shared across projects/processes; existing desktop flat files are untouched.
+`capacity.used_entries` counts global stored entries separately from local
+`used_jobs`; `charged_bytes` includes ready movie/manifest bytes and512 MiB+8 KiB
+for each active/interrupted reservation, within32 entries/2 GiB. This can admit
+three simultaneous maximum reservations, conservatively fewer than four.
+
+A short nonblocking catalog lock guards admission/eviction, while per-entry
+exclusive generation and shared decoder leases protect actual files. Idle jobs
+retain no lease. The immutable intent witnesses precreated native temp and ready
+record inodes. The fsynced strict ready record is published last. Explicit prepare
+can recover valid interrupted intents; opening the cache never restarts encoding.
+Malformed/foreign data and pre-intent crash leftovers are preserved/refused.
+Background acquisition backs off with cancellation/foreground parking; status
+has a100ms read-retry budget for transient catalog contention. Rendering may use
+originals while an uncaptured proxy lookup is busy; captured-lease changes remain
+real errors. Current approved originals are rebound on every project lookup.
+See `evidence/f2-native-proxies-durable-workflow.json` for real process restart,
+unchanged proxy inode/version/bytes and original-media export preservation.
 
 ## Project media presentation metadata
 

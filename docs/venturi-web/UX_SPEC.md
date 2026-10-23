@@ -17,9 +17,15 @@ polling is bounded and status-only changes do not reopen the Source.
 The actual Windows workflow parks generation at1/264 frames, resumes the same
 job to Ready, uses that proxy in Program and reaches EOF456. The Full HD export
 is identical to the earlier original-media export and plays to file EOF.
-Settings persist and a client reload retains the live ready variant. The current
-cache is ephemeral per server process; persistence/recovery remains production
-work. See `evidence/f2-native-proxies-workflow.json` and Paused/Ready screenshots.
+Settings and valid ready cache persist across server restart in6764b2d/halo1/8831.
+Actual restart while Saved/empty history returns the same Medium proxy Ready
+with generation paused; no recoding occurs. Program and export playback reach
+EOF. The current controls remain compact and unchanged;16 previous editors are
+preserved. Idle status records do not pin disk files, actual decoder leases do.
+Malformed/foreign and pre-intent crash leftovers are preserved/refused, rather
+than inferred Ready. See `evidence/f2-native-proxies-durable-workflow.json` and
+its recovered/workspace screenshots. Source browser conversions and full M7
+acceptance remain separately tracked.
 
 ## Owner reference update — 2026-10-22
 

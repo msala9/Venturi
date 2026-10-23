@@ -38,6 +38,7 @@ pub enum Action {
     Recovery,
     Lease(String),
     Mutation(Option<String>, Mutation),
+    SourcePlacementMutation(String, Mutation, crate::source::MediaJobs),
     Lookup(String),
     FrameSnapshot(FrameQuery, oneshot::Sender<Result<FrameSnapshot>>),
     AudioSnapshot(FrameQuery, oneshot::Sender<Result<crate::audition::Task>>),
@@ -386,13 +387,14 @@ impl Editor {
         Ok(json!({"writable":true,"ttl_seconds":90}))
     }
     pub fn mutation(&mut self, timeline: Option<String>, request: Mutation) -> Result<Value> {
-        self.mutation_with_take(timeline, request, None)
+        self.mutation_prepared(timeline, request, None, None)
     }
-    fn mutation_with_take(
+    fn mutation_prepared(
         &mut self,
         timeline: Option<String>,
         request: Mutation,
         verified: Option<&crate::take::Verified>,
+        sources: Option<&crate::source::MediaJobs>,
     ) -> Result<Value> {
         if !valid_key(&request.command_id) {
             return Err(ApiError::invalid("Invalid command ID"));
@@ -459,7 +461,7 @@ impl Editor {
         self.otio_import_receipt = None;
         self.clipboard_receipt = None;
         self.timeline_edit_selection = None;
-        let outcome = self.perform(timeline, &request, verified);
+        let outcome = self.perform(timeline.clone(), &request, verified, sources);
         if self.session.epoch() != previous_epoch
             || outcome.is_ok()
                 && matches!(
@@ -533,6 +535,7 @@ impl Editor {
                 for field in ["media_ids","clip_ids","changed"] {value[field]=report[field].clone();}
             }
             if let Some(ids)=timeline_edit_selection {value["clip_ids"]=json!(ids);}
+            if matches!(request.operation,Operation::PlaceSource{..}) {value["timeline_id"]=json!(timeline);}
             if matches!(request.operation,Operation::CopyClips{..}|Operation::CopyMedia{..}|Operation::CutClips{..}) {
                 value["clipboard_revision"]=json!(self.clipboard.as_ref().and_then(|clipboard|clipboard.revision(&self.session)));
             }
@@ -612,6 +615,7 @@ impl Editor {
         timeline: Option<String>,
         request: &Mutation,
         verified: Option<&crate::take::Verified>,
+        sources: Option<&crate::source::MediaJobs>,
     ) -> Result<()> {
         if request.project_epoch != format!("{}:{}", self.epoch, self.session.epoch())
             || request.if_generation != self.session.history.generation().to_string()
@@ -630,6 +634,58 @@ impl Editor {
                 ));
             }
             return match &request.operation {
+                Operation::PlaceSource {
+                    media_id,
+                    job_id,
+                    source_version,
+                    ..
+                } => {
+                    use vv_core::Id;
+                    let sources = sources.ok_or_else(|| {
+                        ApiError::conflict(
+                            "SOURCE_PREPARATION_REQUIRED",
+                            "Verify the current Source job before placing it",
+                        )
+                    })?;
+                    let media = vv_core::MediaId::from_raw(
+                        media_id.parse().map_err(|_| ApiError::missing())?,
+                    );
+                    let item = self
+                        .session
+                        .project
+                        .media_pool
+                        .get(media)
+                        .ok_or_else(ApiError::missing)?;
+                    if item.compound.is_some() {
+                        return Err(ApiError::invalid("Compound sources use the Program viewer"));
+                    }
+                    let path = item.path.clone();
+                    let verified = sources.verify_placement(
+                        job_id,
+                        source_version,
+                        SourceSpec {
+                            file: self.files.media_file(&path)?,
+                            epoch: request.project_epoch.clone(),
+                            media_id: media_id.clone(),
+                            meta: item.meta.clone(),
+                        },
+                    )?;
+                    let plan = commands::prepare_source_placement(
+                        &self.session.project,
+                        id,
+                        &request.operation,
+                    )?;
+                    verified.check(
+                        &self.files.media_file(&path)?,
+                        &request.project_epoch,
+                        media_id,
+                    )?;
+                    let clips = plan.apply(&mut self.session);
+                    self.session.sync_timeline_media(id);
+                    self.timeline_edit_selection =
+                        Some(clips.into_iter().map(|clip| clip.0.to_string()).collect());
+                    Ok(())
+                }
                 Operation::ApplySavedAudioPreset {
                     channel,
                     index,
@@ -2313,7 +2369,7 @@ impl Editor {
                 Ok(Value::Null)
             }
             Action::TakeMutation(timeline, request, verified) => {
-                self.mutation_with_take(Some(timeline), request, Some(&verified))
+                self.mutation_prepared(Some(timeline), request, Some(&verified), None)
             }
             Action::Review(query) => {
                 if query.project_epoch != format!("{}:{}", self.epoch, self.session.epoch()) {
@@ -2616,6 +2672,12 @@ impl Editor {
             Action::Recovery => Ok(self.autosave.info()),
             Action::Lease(client) => self.lease(&client),
             Action::Mutation(timeline, request) => self.mutation(timeline, request),
+            Action::SourcePlacementMutation(timeline, request, sources) => {
+                if !matches!(request.operation, Operation::PlaceSource { .. }) {
+                    return Err(ApiError::invalid("Choose a Source placement command"));
+                }
+                self.mutation_prepared(Some(timeline), request, None, Some(&sources))
+            }
             Action::Lookup(id) => self.lookup(&id),
         }
     }

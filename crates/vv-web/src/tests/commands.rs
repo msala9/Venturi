@@ -1,6 +1,282 @@
 use super::*;
 use serde_json::json;
 
+fn source_drop_operation(
+    media: core::MediaId,
+    streams: SourceStreams,
+    target: AssetDropTarget,
+) -> Operation {
+    Operation::PlaceSource {
+        media_id: media.raw().to_string(),
+        job_id: "source-ready".into(),
+        source_version: "pinned-version".into(),
+        source_in: 2,
+        source_out: 4,
+        start_frame: 96,
+        target,
+        streams,
+        overwrite: false,
+    }
+}
+fn source_drop_media(session: &mut Session) -> core::MediaId {
+    session.project.media_pool.insert(core::MediaItem {
+        path: "source.mp4".into(),
+        meta: core::MediaMeta {
+            duration_frames: 30,
+            fps: core::Rational::new(30, 1),
+            width: 16,
+            height: 16,
+            has_video: true,
+            has_audio: true,
+            sample_rate: 48000,
+            channels: 2,
+            audio_streams: 2,
+            file: Default::default(),
+        },
+        content_hash: 1,
+        compound: None,
+        folder: None,
+    })
+}
+
+#[test]
+fn marked_source_placement_matches_native_stream_targets_rational_endpoints_and_one_undo() {
+    for streams in [
+        SourceStreams::All,
+        SourceStreams::VideoOnly,
+        SourceStreams::AudioOnly,
+    ] {
+        let (mut session, id, _) = fixture();
+        let media = source_drop_media(&mut session);
+        let before = session.project.clone();
+        let target = match streams {
+            SourceStreams::All => AssetDropTarget::NewAudioTrack {},
+            SourceStreams::VideoOnly => AssetDropTarget::NewVideoTrack {},
+            SourceStreams::AudioOnly => AssetDropTarget::Track {
+                track_id: "1".into(),
+            },
+        };
+        let operation = source_drop_operation(media, streams, target);
+        let out = 4;
+        let plan = prepare_source_placement(&session.project, id, &operation).unwrap();
+        let mut oracle = Session::default();
+        oracle.project = before.clone();
+        let mark = oracle.history.begin_group();
+        let video = if matches!(streams, SourceStreams::VideoOnly) {
+            Some(edit::add_track(
+                &mut oracle.project,
+                &mut oracle.history,
+                id,
+                TrackKind::Video,
+            ))
+        } else if matches!(streams, SourceStreams::All) {
+            Some(0)
+        } else {
+            None
+        };
+        let extra_audio = matches!(streams, SourceStreams::All).then(|| {
+            edit::add_track(
+                &mut oracle.project,
+                &mut oracle.history,
+                id,
+                TrackKind::Audio,
+            )
+        });
+        let native = edit::insert_media(
+            &mut oracle.project,
+            &mut oracle.history,
+            id,
+            edit::MediaInsert {
+                media_id: media,
+                source_in: 2,
+                source_out: out,
+                video: !matches!(streams, SourceStreams::AudioOnly),
+                audio: !matches!(streams, SourceStreams::VideoOnly),
+            },
+            96,
+            edit::TargetTracks { video, extra_audio },
+        )
+        .unwrap();
+        oracle.history.end_group_as(mark, CommandLabel::InsertClips);
+        let position = session.history.position();
+        let inserted = plan.apply(&mut session);
+        assert_eq!(
+            inserted,
+            native.iter().map(|(_, clip)| *clip).collect::<Vec<_>>()
+        );
+        assert_eq!(
+            ron::to_string(&session.project).unwrap(),
+            ron::to_string(&oracle.project).unwrap()
+        );
+        assert_eq!(session.history.position(), position + 1);
+        assert_eq!(
+            inserted.len(),
+            match streams {
+                SourceStreams::All => 3,
+                SourceStreams::VideoOnly => 1,
+                SourceStreams::AudioOnly => 2,
+            }
+        );
+        let rate = core::Rational::new(4, 5);
+        assert_eq!(rate.scale_round(out) - rate.scale_round(2), 1);
+        for (lane, clip) in &native {
+            let clip = session.project.timelines[id].clip(*lane, *clip).unwrap();
+            assert_eq!(
+                (clip.timeline_start, clip.timeline_len, clip.source_offset),
+                (96, 1, 2)
+            );
+        }
+        let after = ron::to_string(&session.project).unwrap();
+        session.history.undo(&mut session.project);
+        oracle.history.undo(&mut oracle.project);
+        assert_eq!(
+            ron::to_string(&session.project).unwrap(),
+            ron::to_string(&oracle.project).unwrap()
+        );
+        assert_eq!(
+            json!(session.project.timelines[id]),
+            json!(before.timelines[id])
+        );
+        session.history.redo(&mut session.project);
+        assert_eq!(ron::to_string(&session.project).unwrap(), after);
+    }
+}
+
+#[test]
+fn marked_source_placement_refuses_unverified_locked_overlap_invalid_ranges_and_track_overflow_atomically()
+ {
+    let (mut session, id, _) = fixture();
+    let media = source_drop_media(&mut session);
+    let operation = source_drop_operation(
+        media,
+        SourceStreams::All,
+        AssetDropTarget::Track {
+            track_id: "0".into(),
+        },
+    );
+    let before = json!(session.project);
+    let position = session.history.position();
+    assert_eq!(
+        apply(&mut session, id, &operation).unwrap_err().1,
+        "SOURCE_PREPARATION_REQUIRED"
+    );
+    let mut collapsed = source_drop_operation(
+        media,
+        SourceStreams::VideoOnly,
+        AssetDropTarget::Track {
+            track_id: "0".into(),
+        },
+    );
+    if let Operation::PlaceSource { source_out, .. } = &mut collapsed {
+        *source_out = 3;
+    }
+    let mut native = session.project.clone();
+    let refs = edit::insert_media(
+        &mut native,
+        &mut core::History::default(),
+        id,
+        edit::MediaInsert {
+            media_id: media,
+            source_in: 2,
+            source_out: 3,
+            video: true,
+            audio: false,
+        },
+        96,
+        edit::TargetTracks {
+            video: Some(0),
+            extra_audio: None,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        native.timelines[id]
+            .clip(refs[0].0, refs[0].1)
+            .unwrap()
+            .timeline_len,
+        0
+    );
+    assert!(crate::files::validate_project(&native).is_err());
+    assert_eq!(
+        prepare_source_placement(&session.project, id, &collapsed)
+            .err()
+            .unwrap()
+            .2,
+        "The marked source range must span at least one timeline frame"
+    );
+    let value = json!(operation);
+    for (field, value) in [
+        ("source_in", json!(-1)),
+        ("source_out", json!(31)),
+        ("source_out", json!(2)),
+        ("start_frame", json!(-1)),
+        ("start_frame", json!(MAX_FRAME)),
+    ] {
+        let mut bad = json!(operation);
+        bad[field] = value;
+        let bad: Operation = serde_json::from_value(bad).unwrap();
+        assert!(prepare_source_placement(&session.project, id, &bad).is_err());
+    }
+    let mut overlap = value.clone();
+    overlap["start_frame"] = json!(0);
+    let overlap: Operation = serde_json::from_value(overlap).unwrap();
+    assert_eq!(
+        prepare_source_placement(&session.project, id, &overlap)
+            .err()
+            .unwrap()
+            .1,
+        "OVERLAP"
+    );
+    session.project.timelines[id].tracks[1].locked = true;
+    let locked = source_drop_operation(
+        media,
+        SourceStreams::All,
+        AssetDropTarget::Track {
+            track_id: "1".into(),
+        },
+    );
+    assert_eq!(
+        prepare_source_placement(&session.project, id, &locked)
+            .err()
+            .unwrap()
+            .1,
+        "TRACK_LOCKED"
+    );
+    session.project.timelines[id].tracks[1].locked = false;
+    assert_eq!(json!(session.project), before);
+    assert_eq!(session.history.position(), position);
+    while session.project.timelines[id].tracks.len() < 128 {
+        session.project.timelines[id]
+            .tracks
+            .push(core::Track::new(TrackKind::Video));
+    }
+    let capped = json!(session.project);
+    let overflow =
+        source_drop_operation(media, SourceStreams::All, AssetDropTarget::NewVideoTrack {});
+    assert!(prepare_source_placement(&session.project, id, &overflow).is_err());
+    assert_eq!(json!(session.project), capped);
+    assert_eq!(session.history.position(), position);
+    assert!(value.get("overwrite").is_none());
+    assert_eq!(
+        json!(Operation::InsertMedia {
+            media_id: "1".into(),
+            start_frame: 0,
+            source_in: None,
+            source_out: None
+        }),
+        json!({"kind":"insert_media","media_id":"1","start_frame":0,"source_in":null,"source_out":null})
+    );
+    for field in ["streams", "target", "extra"] {
+        let mut bad = value.clone();
+        match field {
+            "streams" => bad[field] = json!("stream_1"),
+            "target" => bad[field]["extra"] = json!(true),
+            _ => bad[field] = json!(true),
+        }
+        assert!(serde_json::from_value::<Operation>(bad).is_err());
+    }
+}
+
 fn asset_drop_operation(target: AssetDropTarget, overwrite: bool) -> Operation {
     Operation::PlaceNativeAssets {
         job_id: "ready".into(),

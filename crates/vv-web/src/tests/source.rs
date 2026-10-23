@@ -141,6 +141,117 @@ fn cloned_source(spec: &SourceSpec) -> SourceSpec {
 }
 
 #[test]
+fn source_placement_requires_the_ready_viewer_job_and_rechecks_pinned_and_live_file_identity() {
+    let jobs = MediaJobs::start().unwrap();
+    let path = jobs.root.join("placement-source");
+    std::fs::write(&path, b"original").unwrap();
+    let spec = SourceSpec {
+        file: File::open(&path).unwrap(),
+        epoch: "place:1".into(),
+        media_id: "9007199254740993".into(),
+        meta: window_fixture_meta(),
+    };
+    let version = spec.identity().unwrap();
+    let directory = jobs.root.join("placement-ready");
+    std::fs::create_dir(&directory).unwrap();
+    let mut job = cache_fixture_job(directory, "ready", 0);
+    job.key = source_key(
+        &spec,
+        ProxyQuality::Low,
+        Some(SourceWindow {
+            start_frame: 1000,
+            end_frame: 1012,
+        }),
+        &version,
+        0,
+    );
+    job.source_version = Some(version.clone());
+    jobs.jobs.lock().unwrap().push_back(job);
+    let verified = jobs
+        .verify_placement("cache-fixture", &version, cloned_source(&spec))
+        .unwrap();
+    verified
+        .check(&File::open(&path).unwrap(), &spec.epoch, &spec.media_id)
+        .unwrap();
+    for state in ["queued", "running", "failed", "canceled"] {
+        jobs.jobs.lock().unwrap()[0].state = state;
+        assert_eq!(
+            jobs.verify_placement("cache-fixture", &version, cloned_source(&spec))
+                .err()
+                .unwrap()
+                .1,
+            "SOURCE_NOT_READY"
+        );
+    }
+    jobs.jobs.lock().unwrap()[0].state = "ready";
+    jobs.jobs.lock().unwrap()[0].source_assets = Some(json!({"source_version":version}));
+    assert!(
+        jobs.verify_placement("cache-fixture", &version, cloned_source(&spec))
+            .is_err()
+    );
+    jobs.jobs.lock().unwrap()[0].source_assets = None;
+    jobs.jobs.lock().unwrap()[0]
+        .cancel
+        .store(true, Ordering::Relaxed);
+    assert!(
+        jobs.verify_placement("cache-fixture", &version, cloned_source(&spec))
+            .is_err()
+    );
+    jobs.jobs.lock().unwrap()[0]
+        .cancel
+        .store(false, Ordering::Relaxed);
+    let mut other = cloned_source(&spec);
+    other.epoch.push('x');
+    assert!(
+        jobs.verify_placement("cache-fixture", &version, other)
+            .is_err()
+    );
+    assert!(
+        jobs.verify_placement("forged-job", &version, cloned_source(&spec))
+            .is_err()
+    );
+    assert!(
+        jobs.verify_placement("cache-fixture", "forged-version", cloned_source(&spec))
+            .is_err()
+    );
+    let before = spec.file.metadata().unwrap();
+    std::fs::write(&path, b"modified").unwrap();
+    std::fs::OpenOptions::new()
+        .write(true)
+        .open(&path)
+        .unwrap()
+        .set_times(std::fs::FileTimes::new().set_modified(before.modified().unwrap()))
+        .unwrap();
+    assert_eq!(spec.file.metadata().unwrap().len(), before.len());
+    assert_eq!(
+        verified
+            .check(&File::open(&path).unwrap(), &spec.epoch, &spec.media_id)
+            .unwrap_err()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    assert!(
+        jobs.verify_placement("cache-fixture", &version, cloned_source(&spec))
+            .is_err()
+    );
+    let new_version = spec.identity().unwrap();
+    jobs.jobs.lock().unwrap()[0].key = source_key(&spec, ProxyQuality::Low, None, &new_version, 0);
+    jobs.jobs.lock().unwrap()[0].source_version = Some(new_version.clone());
+    let verified = jobs
+        .verify_placement("cache-fixture", &new_version, cloned_source(&spec))
+        .unwrap();
+    std::fs::rename(&path, jobs.root.join("old-placement-source")).unwrap();
+    std::fs::write(&path, b"modified").unwrap();
+    assert_eq!(
+        verified
+            .check(&File::open(&path).unwrap(), &spec.epoch, &spec.media_id)
+            .unwrap_err()
+            .1,
+        "SOURCE_CHANGED"
+    );
+}
+
+#[test]
 fn source_window_dto_and_rational_validation_admit_short_windows_of_long_sources_only() {
     let window: SourceWindow =
         serde_json::from_value(json!({"start_frame":25,"end_frame":37})).unwrap();

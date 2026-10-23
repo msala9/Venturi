@@ -235,6 +235,10 @@
           <div id="source-view" hidden>
             <video id="source-video" playsinline preload="metadata" aria-label="Source media playback"></video>
             <img id="source-image" hidden alt="Source still image">
+            <div class="source-stream-handles" aria-label="Source stream placement">
+              <button id="source-video-drag" type="button" aria-label="Drag Source video only" title="Drag marked video only to the timeline; click for insertion options" hidden>▣</button>
+              <button id="source-audio-drag" type="button" aria-label="Drag Source audio only" title="Drag all marked audio streams to the timeline; click for insertion options" hidden>♫</button>
+            </div>
             <details class="source-options"><summary>Source options</summary><div class="source-toolbar">
               <span id="source-status" role="status">Select media and open Source</span>
               <label>Proxy quality <select id="source-quality" aria-label="Source proxy quality"><option value="low">Low · 640</option><option value="medium" selected>Medium · 960</option><option value="high">High · 1920</option></select></label>
@@ -249,6 +253,12 @@
               <label>Source out frame (exclusive) <input id="source-out" type="number" min="1" step="1" value="1"></label>
               <button id="source-mark-in" title="I · current source frame">Set In</button>
               <button id="source-mark-out" title="O · after current source frame">Set Out</button>
+              <details id="source-placement"><summary>Insert marked range</summary>
+                <label>Streams to insert <select data-source-streams><option value="all">All available streams</option><option value="video_only">Video only</option><option value="audio_only">Audio only</option></select></label>
+                <label>Source destination <select data-source-target></select></label>
+                <button type="button" data-source-insert>Insert at playhead</button>
+                <output data-source-placement-status role="status"></output>
+              </details>
             </div></details>
           </div>
         </div>

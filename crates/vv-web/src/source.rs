@@ -81,6 +81,25 @@ impl SourceSpec {
         source_version(&self.file)
     }
 }
+pub(crate) struct PlacementVerification {
+    spec: SourceSpec,
+    version: String,
+}
+impl PlacementVerification {
+    pub(crate) fn check(&self, file: &File, epoch: &str, media: &str) -> Result<()> {
+        if self.spec.epoch != epoch
+            || self.spec.media_id != media
+            || self.spec.identity()? != self.version
+            || source_version(file)? != self.version
+        {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Source changed after it was loaded in the viewer",
+            ));
+        }
+        Ok(())
+    }
+}
 pub(crate) fn file_identity(file: &File) -> Result<String> {
     let m = file.metadata().map_err(|_| ApiError::io())?;
     Ok(format!(
@@ -971,6 +990,39 @@ impl MediaJobs {
             job.touch();
         }
         Ok(job.value())
+    }
+    pub(crate) fn verify_placement(
+        &self,
+        id: &str,
+        version: &str,
+        spec: SourceSpec,
+    ) -> Result<PlacementVerification> {
+        if spec.identity()? != version {
+            return Err(ApiError::conflict(
+                "SOURCE_CHANGED",
+                "Source changed after it was loaded in the viewer",
+            ));
+        }
+        let mut jobs = self.jobs.lock().unwrap();
+        let job = Self::authorized(&mut jobs, id, &spec)?;
+        if job.state != "ready"
+            || job.source_asset.is_none()
+            || job.source_assets.is_some()
+            || job.program_query.is_some()
+            || job.source_version.as_deref() != Some(version)
+            || job.explicit_cancel
+            || job.cancel.load(Ordering::Relaxed)
+        {
+            return Err(ApiError::conflict(
+                "SOURCE_NOT_READY",
+                "Place only the currently loaded ready Source job",
+            ));
+        }
+        job.touch();
+        Ok(PlacementVerification {
+            spec,
+            version: version.into(),
+        })
     }
     pub fn asset(&self, id: &str, spec: &SourceSpec, name: &str) -> Result<File> {
         if ![

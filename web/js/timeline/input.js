@@ -37,6 +37,7 @@ import {
 import {isTextTarget} from '../ui.js';
 import {createPresetDrop} from './preset-drop.js';
 import {createAssetDrop} from './asset-drop.js';
+import {createSourceDrop} from '../source-placement.js';
 
 export function isRetimeShortcut(event,{dialogOpen=false}={}){
   return !dialogOpen && !event.defaultPrevented && !event.repeat && !event.isComposing && !event.altKey && !event.shiftKey && Boolean(event.ctrlKey)!==Boolean(event.metaKey) && event.key?.toLowerCase()==='r' && !isTextTarget(event.target);
@@ -86,6 +87,7 @@ export function createInput({
     transitionDrag = null,
     presetDrop = null,
     assetDrop = null,
+    sourceDrop = null,
     coast = null;
   const syncLayout=()=>{
     const rect=canvas.getBoundingClientRect(),height=canvas.clientHeight ?? rect.height;
@@ -119,7 +121,7 @@ export function createInput({
   function coastFrame(owner){
     let id;id=requestFrame(timestamp=>{
       if(coast!==owner || owner.frame!==id)return;owner.frame=null;
-      if(gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active()) || waiting || !panCurrent(owner)){stopCoast();return;}
+      if(gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) || waiting || !panCurrent(owner)){stopCoast();return;}
       const bounds=owner.bounds,layout=syncLayout(),dt=(timestamp-owner.at)/1000;owner.at=timestamp;
       const horizontal=kineticScrollStep(view.origin*bounds.pixelsPerFrame,owner.vx,bounds.maxOffset,dt);
       const vertical=kineticScrollStep(owner.pane==='video'?view.videoScroll:view.audioScroll,owner.vy,owner.pane==='video'?layout.videoMaxScroll:owner.pane==='audio'?layout.audioMaxScroll:0,dt);
@@ -171,6 +173,7 @@ export function createInput({
     transitionDrag = null;
     presetDrop?.dnd.end();
     assetDrop?.cancel();
+    sourceDrop?.cancel();
     view.draft = null;
     view.lasso = null;
     let restored=false;
@@ -199,7 +202,7 @@ export function createInput({
   }
   async function closeGap(){
     const gap=checkGapSelection();
-    if(!gap || waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active()) || modal() || !canEdit())return false;
+    if(!gap || waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) || modal() || !canEdit())return false;
     const operation={kind:'close_gap',track:gap.track_id,frame:gap.frame};
     const owner=rippleOwner();
     onNavigationIntent();
@@ -213,7 +216,7 @@ export function createInput({
   }
   async function rippleDelete(){
     if(checkGapSelection())return closeGap();
-    if(waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active()) || modal() || !canEdit() || view.transitionSelection)return false;
+    if(waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) || modal() || !canEdit() || view.transitionSelection)return false;
     const timeline=getTimeline(),ids=[...view.selection];
     if(!timeline || !ids.length || ids.length>4096 || new Set(ids).size!==ids.length || ids.some(id=>!timeline.tracks.some(track=>track.clips.some(clip=>clip.id===id))))return false;
     const affected=linkedSelection(timeline,ids);
@@ -225,8 +228,8 @@ export function createInput({
     try{const receipt=await onCommand({kind:'delete',clip_ids:ids,ripple:true});followRipple(Math.min(...starts),owner,receipt,affected);return true;}catch(error){onNotice(error.message);return false;}
     finally{waiting=false;if(getTimeline()?.id===owner.timelineId && getGapContext()?.project_epoch===owner.epoch && selectionIntent()===intent){view.selection=[];view.selectionAnchor=null;}view.selectedGap=null;onSelect();invalidate();}
   }
-  const canCloseGap=()=>Boolean(checkGapSelection() && !waiting && !gesture && !transitionDrag && !(presetDrop?.active() || assetDrop?.active()) && !modal() && canEdit());
-  const canSelectTimeline=()=>Boolean(getTimeline() && !waiting && !gesture && !transitionDrag && !(presetDrop?.active() || assetDrop?.active()) && !view.draft && !view.lasso && !modal() && canNavigate());
+  const canCloseGap=()=>Boolean(checkGapSelection() && !waiting && !gesture && !transitionDrag && !(presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) && !modal() && canEdit());
+  const canSelectTimeline=()=>Boolean(getTimeline() && !waiting && !gesture && !transitionDrag && !(presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) && !view.draft && !view.lasso && !modal() && canNavigate());
   function selectTimelineClips(mode){
     if(!['all','from_playhead'].includes(mode) || !canSelectTimeline() || (mode==='from_playhead' && (!Number.isSafeInteger(view.playhead) || view.playhead<0)))return false;
     const timeline=getTimeline(),context=gapContext(timeline),playhead=view.playhead,ids=timelineClipSelection(timeline,mode==='from_playhead'?playhead:null);
@@ -250,7 +253,7 @@ export function createInput({
     event.preventDefault?.();event.stopPropagation?.();return selectTimelineClips(action);
   }
   function selectGap(trackId,frame){
-    if(waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active()) || modal() || !canNavigate())return false;
+    if(waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) || modal() || !canNavigate())return false;
     const timeline=getTimeline(),gap=nativeGapAt(timeline,trackId,frame);if(!gap)return false;
     const context=gapContext(timeline);
     onNavigationIntent();
@@ -319,7 +322,7 @@ export function createInput({
   }
   const down = (event) => {
     stopCoast();
-    if (waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active()) || modal() || event.defaultPrevented || event.isComposing || !canNavigate()) return;
+    if (waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) || modal() || event.defaultPrevented || event.isComposing || !canNavigate()) return;
     const timeline = getTimeline();
     if (!timeline) return;
     onNavigationIntent();
@@ -372,7 +375,7 @@ export function createInput({
   };
   const move = (event,allowRelease=false) => {
     stopCoast();
-    if((presetDrop?.active() || assetDrop?.active()))return;
+    if((presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()))return;
     if (!gesture) {
       const timeline = getTimeline(); if (!timeline) return;
       const [x,y] = point(event), hit = hitTest(x,y,timeline,view,canvas.clientWidth ?? canvas.getBoundingClientRect().width);
@@ -717,7 +720,7 @@ export function createInput({
     stopCoast();
     if(event.defaultPrevented || event.metaKey || event.isComposing || event.getModifierState?.('AltGraph') || waiting || modal() || !canNavigate())return;
     onNavigationIntent();
-    if((presetDrop?.active() || assetDrop?.active()) || transitionDrag || gesture)cancel();
+    if((presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) || transitionDrag || gesture)cancel();
     const timeline = getTimeline();
     if (!timeline) return;
     event.preventDefault();
@@ -744,7 +747,7 @@ export function createInput({
   };
   const key = (event) => {
     stopCoast();
-    if((presetDrop?.active() || assetDrop?.active())){if(event.key==='Escape'){event.preventDefault?.();event.stopPropagation?.();cancel();}return;}
+    if((presetDrop?.active() || assetDrop?.active() || sourceDrop?.active())){if(event.key==='Escape'){event.preventDefault?.();event.stopPropagation?.();cancel();}return;}
     if(handleSelectionKey(event))return;
     if(handleGapKey(event))return;
     if(!event.defaultPrevented && !event.repeat && !event.isComposing && !gesture && !transitionDrag && !waiting && view.retimeVisible?.size && view.tool!=='slip' && canEdit() && !isTextTarget(event.target) && !documentRef?.querySelector?.('dialog[open]') && !event.ctrlKey && !event.metaKey && !event.altKey && ((event.key==='F10' && event.shiftKey) || (event.key==='ContextMenu' && !event.shiftKey))){
@@ -764,7 +767,7 @@ export function createInput({
     // Inspector rebuilds can scroll a separate pane without changing Canvas coordinates.
     if(event?.type==='scroll' && mapping===viewportMapping && !modal() && !documentRef?.hidden)return;
     stopCoast();
-    if((presetDrop?.active() || assetDrop?.active()) || transitionDrag || gesture)cancel();
+    if((presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) || transitionDrag || gesture)cancel();
     viewportMapping=mapping;syncLayout();invalidate();
   };
   const documentRef=canvas.ownerDocument ?? window.document;
@@ -785,13 +788,15 @@ export function createInput({
   }
   function dragOver(event){
     stopCoast();
+    if(sourceDrop?.over(event))return;
     if(assetDrop?.over(event))return;
     if(presetDrop?.over(event))return;
     if(!transitionPayload(event) || !currentTransitionDrag())return;
     event.preventDefault();view.draft=placementAt(transitionDrag,...point(event));event.dataTransfer.dropEffect=view.draft.error?'none':'copy';invalidate();
   }
-  const dragLeave=event=>{assetDrop?.leave(event);presetDrop?.leave(event);if(transitionDrag && event.relatedTarget!==canvas && view.draft?.kind==='transition_placement'){view.draft=null;invalidate();}};
+  const dragLeave=event=>{sourceDrop?.leave(event);assetDrop?.leave(event);presetDrop?.leave(event);if(transitionDrag && event.relatedTarget!==canvas && view.draft?.kind==='transition_placement'){view.draft=null;invalidate();}};
   async function drop(event){
+    if(sourceDrop?.hasType(event))return sourceDrop.drop(event);
     if(assetDrop?.hasType(event))return assetDrop.drop(event);
     if(presetDrop?.hasType(event))return presetDrop.drop(event);
     if(!transitionPayload(event) || !currentTransitionDrag())return;
@@ -802,15 +807,16 @@ export function createInput({
     await applyPlacement(draft);view.draft=null;invalidate();
   }
   const doubleClick = event => {
-    const timeline = getTimeline(); if (!timeline || waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active()) || modal() || event.defaultPrevented || event.button!==0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+    const timeline = getTimeline(); if (!timeline || waiting || gesture || transitionDrag || (presetDrop?.active() || assetDrop?.active() || sourceDrop?.active()) || modal() || event.defaultPrevented || event.button!==0 || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
     const hit = hitTest(...point(event),timeline,view,canvas.getBoundingClientRect().width);
     if(hit.marker){onMarkerEdit(hit.marker.id);return;}
     if(hit.clip && canNavigate()){event.preventDefault();onOpenCompound([hit.clip.id]);}
   };
   presetDrop=createPresetDrop({canvas,getTimeline,getPresetContext,view,invalidate,onCommand,onNotice,canEdit,getBusy:()=>waiting,setBusy:value=>waiting=value,cancelGesture:cancel});
   assetDrop=createAssetDrop({canvas,getTimeline,getAssetContext,view,invalidate,onNotice,canEdit,getBusy:()=>waiting,setBusy:value=>waiting=value,cancelGesture:cancel});
-  const endDrag=()=>{endTransitionDrag();presetDrop.dnd.end();assetDrop.dnd.end();};
-  const assetKey=event=>{if(assetDrop.active() && event.key==='Escape'){event.preventDefault?.();event.stopPropagation?.();cancel();}};
+  sourceDrop=createSourceDrop({canvas,getTimeline,getAssetContext,view,invalidate,onNotice,canEdit,getBusy:()=>waiting,setBusy:value=>waiting=value,cancelGesture:cancel});
+  const endDrag=()=>{endTransitionDrag();presetDrop.dnd.end();assetDrop.dnd.end();sourceDrop.dnd.end();};
+  const assetKey=event=>{if((assetDrop.active() || sourceDrop.active()) && event.key==='Escape'){event.preventDefault?.();event.stopPropagation?.();cancel();}};
   canvas.addEventListener("pointerdown", down);
   canvas.addEventListener("pointermove", move);
   canvas.addEventListener("pointerup", up);
@@ -848,13 +854,16 @@ export function createInput({
     transitionDnd:{type:TRANSITION_DRAG_TYPE,start:startTransitionDrag,end:endTransitionDrag},
     presetDnd:presetDrop.dnd,
     assetDnd:assetDrop.dnd,
-    navigationIdle:()=>!gesture && !coast && !waiting && !transitionDrag && !presetDrop.active() && !assetDrop.active() && !view.draft && !view.lasso,
+    sourceDnd:sourceDrop.dnd,
+    navigationIdle:()=>!gesture && !coast && !waiting && !transitionDrag && !presetDrop.active() && !assetDrop.active() && !sourceDrop.active() && !view.draft && !view.lasso,
     checkPresetDrop:()=>presetDrop.current(),
     checkAssetDrop:()=>assetDrop.current(),
+    checkSourceDrop:()=>sourceDrop.current(),
     destroy() {
       cancel();
       presetDrop.destroy();
       assetDrop.destroy();
+      sourceDrop.destroy();
       for (const [event, fn] of [
         ["pointerdown", down],
         ["pointermove", move],

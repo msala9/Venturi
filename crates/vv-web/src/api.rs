@@ -1946,16 +1946,24 @@ async fn timeline_command(
     Path(id): Path<String>,
     payload: std::result::Result<Json<Mutation>, axum::extract::rejection::JsonRejection>,
 ) -> Result<Json<Value>> {
-    state
-        .host
-        .timeline_mutation(
-            id,
-            payload
-                .map_err(|_| ApiError::invalid("Invalid command JSON"))?
-                .0,
-        )
-        .await
-        .map(Json)
+    let request = payload
+        .map_err(|_| ApiError::invalid("Invalid command JSON"))?
+        .0;
+    if matches!(
+        request.operation,
+        crate::commands::Operation::PlaceSource { .. }
+    ) {
+        return state
+            .host
+            .call(Action::SourcePlacementMutation(
+                id,
+                request,
+                state.source.clone(),
+            ))
+            .await
+            .map(Json);
+    }
+    state.host.timeline_mutation(id, request).await.map(Json)
 }
 async fn lookup(State(state): State<AppState>, Path(id): Path<String>) -> Result<Response> {
     let value = state.host.call(Action::Lookup(id)).await?;
@@ -2058,6 +2066,7 @@ async fn assets(request: Request) -> Response {
         "/js/curves.js" => asset!("/web/js/curves.js", "text/javascript"),
         "/js/curve-viewport.js" => asset!("/web/js/curve-viewport.js", "text/javascript"),
         "/js/curve-window.js" => asset!("/web/js/curve-window.js", "text/javascript"),
+        "/js/source-placement.js" => asset!("/web/js/source-placement.js", "text/javascript"),
         "/js/eventkeys.js" => asset!("/web/js/eventkeys.js", "text/javascript"),
         "/js/keyselection.js" => asset!("/web/js/keyselection.js", "text/javascript"),
         "/js/keyframe-lanes.js" => asset!("/web/js/keyframe-lanes.js", "text/javascript"),

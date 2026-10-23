@@ -342,7 +342,17 @@ export function createSourcePlayer({ video, image, status, cancel, onReady, onSt
     dispose(){if(disposed)return;disposed=true;reset();cancel.removeEventListener?.('click',cancelPreparation);video.removeEventListener?.('error',videoError);image?.removeEventListener?.('error',imageError);for(const [name,callback] of [['play',played],['pause',paused],['seeking',seeking],['seeked',seeked],['ended',ended]])video.removeEventListener?.(name,callback);},
     async toggle() {
       if(windowed && preparing){pause();return;}
-      if(windowed && binding?.window && playable()){if(video.paused){playbackIntent=true;await play(binding);}else pause();return;}
+      if(windowed && binding?.window && playable()){
+        if(video.paused){
+          const position=currentWindow();
+          if(position?.frame===binding.window.total_frames-1){
+            const pending=seekFrame(0),owner=sequence;await pending;
+            if(disposed || owner!==sequence || !playable() || currentWindow()?.frame!==0)return;
+          }
+          playbackIntent=true;await play(binding);
+        }else pause();
+        return;
+      }
       if(windowed && windowContext && !preparing){const c=windowContext;return prepareWindow(c.item,c.epoch,c.quality,c.startFrame,{autoplay:true,version:c.version,audioSelection:c.audioSelection});}
       if(playable()){if(video.paused){try{await video.play();}catch(error){if(error.name!=="AbortError")throw error;}}else video.pause();}
     },

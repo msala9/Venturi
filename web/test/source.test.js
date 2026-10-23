@@ -258,6 +258,23 @@ test('Source EOF continues three bounded foreground windows with a final short t
   }finally{h.player.dispose();}
 });
 
+test('Play at full Source EOF rewinds to absolute frame zero instead of replaying the last local window',async()=>{
+  const h=windowHarness({fps:{num:24,den:1},total:1450});try{
+    await h.open(1440);await h.player.toggle();h.finish();await settle();assert.equal(h.player.current().frame,1449);assert.match(h.status.textContent,/End of Source/);
+    await h.player.toggle();assert.equal(h.player.current().frame,0);assert.equal(h.player.current().start_frame,0);assert.equal(h.requests.at(-1).window.start_frame,0);assert.equal(h.player.current().source_version,h.version);assert.equal(h.video.plays,2);assert.equal(h.video.paused,false);
+  }finally{h.player.dispose();}
+});
+
+test('a canceled or superseded full-Source rewind cannot autoplay a late first-window acknowledgment',async()=>{
+  for(const action of ['pause','reset','replace']){
+    const ack=deferred();let count=0;const h=windowHarness({fps:{num:24,den:1},total:1450,api:(body,ready)=>++count===2?ack.promise:ready(body)});try{
+      await h.open(1449);const replay=h.player.toggle();await settle();assert.equal(h.requests[1].window.start_frame,0);
+      if(action==='pause')h.player.pause();else if(action==='reset')h.player.reset();else await h.open(100);
+      ack.resolve(h.ready(h.requests[1],'late-rewind'));await replay;assert.equal(h.video.plays,0);assert.equal(h.video.paused,true);assert.ok(!h.video.src.includes('late-rewind'));
+    }finally{h.player.dispose();}
+  }
+});
+
 test('Source keeps the old absolute clock through fast-tail drain then waits for metadata and verified seek',async()=>{
   const tail=deferred(),h=windowHarness({beforeWindowChange:()=>tail.promise});try{
     await h.open(137);await h.player.toggle();const url=h.video.src,old=h.player.current();h.video.waitMetadata=true;h.video.waitSeek=true;h.finish();await settle();

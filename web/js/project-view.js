@@ -1,6 +1,6 @@
 import {request} from './api.js';
 
-const MAX_FRAME=1_000_000_000,MAX_TIMELINES=64;
+const MAX_FRAME=1_000_000_000,MAX_TIMELINES=64,MAX_OWN_REVISIONS=128;
 const id=value=>typeof value==='string' && /^(0|[1-9]\d{0,19})$/.test(value) && BigInt(value)<=18_446_744_073_709_551_615n;
 const frame=value=>Number.isSafeInteger(value) && value>=0 && value<=MAX_FRAME;
 const revision=value=>typeof value==='string' && /^[0-9a-f]{64}$/.test(value);
@@ -23,8 +23,12 @@ export function nativeProjectView(value,document){
 export function createProjectView({getState,onView=()=>{},notice=()=>{},api=defaultApi}){
   let epoch=null,documentRef=null,observedRevision=null,viewRevision=null,active=null,serverRoot=null,sequence=0,running=false,disposed=false,blocked=false,inflight=null;
   const memory=new Map(),latest=new Map(),acknowledged=new Map(),queue=new Map();
+  // Session snapshots can finish after a successful view write. Their known
+  // predecessor tokens must not rewind our CAS; the server still guards every
+  // write, and a conflict requires a fresh snapshot before another user intent.
+  const ownPredecessors=new Set();
   function cancelQueued(){for(const ticket of queue.values())ticket.resolve(false);queue.clear();if(inflight){inflight.canceled=true;inflight.controller?.abort();inflight.resolve(false);}}
-  function reset(){cancelQueued();epoch=null;documentRef=null;observedRevision=viewRevision=null;active=serverRoot=null;sequence=0;memory.clear();latest.clear();acknowledged.clear();blocked=false;}
+  function reset(){cancelQueued();epoch=null;documentRef=null;observedRevision=viewRevision=null;active=serverRoot=null;sequence=0;memory.clear();latest.clear();acknowledged.clear();ownPredecessors.clear();blocked=false;}
   function refresh(){
     if(disposed)return false;
     const state=getState(),document=state?.document;if(!document)return false;
@@ -34,7 +38,11 @@ export function createProjectView({getState,onView=()=>{},notice=()=>{},api=defa
       active=serverRoot=view.active_timeline;for(const [key,value] of Object.entries(view.playheads))memory.set(key,value);
       viewRevision=document.view_revision;observedRevision=document.view_revision;
     }else if(document!==documentRef){
-      if(document.view_revision!==observedRevision){if(document.view_revision!==viewRevision){acknowledged.clear();serverRoot=nativeProjectView(document.view,document).active_timeline;}viewRevision=document.view_revision;observedRevision=document.view_revision;}
+      if(blocked || document.view_revision!==observedRevision && !ownPredecessors.has(document.view_revision)){
+        if(document.view_revision!==viewRevision){acknowledged.clear();serverRoot=nativeProjectView(document.view,document).active_timeline;ownPredecessors.clear();}
+        viewRevision=document.view_revision;
+      }
+      observedRevision=document.view_revision;
       blocked=false;
     }
     documentRef=document;
@@ -56,7 +64,7 @@ export function createProjectView({getState,onView=()=>{},notice=()=>{},api=defa
     if(writable && (typeof state.client_id!=='string' || !/^[A-Za-z0-9_-]{1,80}$/.test(state.client_id)))return null;
     const query={project_epoch:document.project_epoch,if_generation:document.generation,timeline_id:timeline.id,revision:timeline.revision,frame:state.frame,width:16};
     const signature=JSON.stringify([query,parents,writable,Boolean(document.unsaved),document.project_name]);
-    const ticket={root,query,ancestors:parents,writable,client_id:state.client_id,persist:Boolean(persist),signature,sequence:++sequence,canceled:false};
+    const ticket={root,query,ancestors:parents,writable,client_id:state.client_id,persist:Boolean(persist),signature,sequence:++sequence,canceled:false,document:{timelines:document.timelines},displayDocument:document};
     latest.set(root,ticket.sequence);active=root;if(!parents.length)memory.set(root,clamp(timeline,state.frame));
     return ticket;
   }
@@ -76,10 +84,17 @@ export function createProjectView({getState,onView=()=>{},notice=()=>{},api=defa
         if(ticket.writable){
           ticket.baseRevision=viewRevision;
           const value=await api('/projects/view',{client_id:ticket.client_id,query:ticket.query,if_view_revision:viewRevision,ancestors:ticket.ancestors,persist:ticket.persist},{signal:ticket.controller.signal});
-          if(!current(ticket)){ticket.resolve(false);continue;}
-          const view=nativeProjectView(value?.view,getState().document);
-          if(value.project_epoch!==ticket.query.project_epoch || value.generation!==ticket.query.if_generation || !revision(value.view_revision) || view.active_timeline!==ticket.root || !Object.hasOwn(view.playheads,ticket.root) || !['changed','persisted','saved'].every(key=>typeof value[key]==='boolean') || value.saved && !ticket.persist || viewRevision!==ticket.baseRevision && viewRevision!==value.view_revision)throw Error('The remembered project view response no longer matches this request');
+          if(disposed || ticket.canceled || epoch!==ticket.query.project_epoch || getState()?.document?.project_epoch!==ticket.query.project_epoch){ticket.resolve(false);continue;}
+          const view=nativeProjectView(value?.view,ticket.document);
+          if(value.project_epoch!==ticket.query.project_epoch || value.generation!==ticket.query.if_generation || !revision(value.view_revision) || view.active_timeline!==ticket.root || !Object.hasOwn(view.playheads,ticket.root) || !['changed','persisted','saved'].every(key=>typeof value[key]==='boolean') || value.saved && !ticket.persist)throw Error('The remembered project view response no longer matches this request');
+          refresh();
+          if(viewRevision!==ticket.baseRevision && viewRevision!==value.view_revision){ticket.resolve(false);continue;}
+          if(viewRevision!==value.view_revision){ownPredecessors.add(viewRevision);if(ownPredecessors.size>MAX_OWN_REVISIONS)ownPredecessors.delete(ownPredecessors.values().next().value);}
           viewRevision=value.view_revision;serverRoot=view.active_timeline;position=view.playheads[ticket.root];persisted=value.persisted;
+          // Playback or a project edit may supersede the visible position while
+          // the native write succeeds. Retain its CAS, but never publish its old
+          // view/generation into the current display or acknowledge that intent.
+          if(!current(ticket) || getState().document!==ticket.displayDocument){ticket.resolve(false);continue;}
           try{onView(value);}catch{notice('The project view was remembered, but its display could not refresh');}
           if(value.persistence_notice)notice(value.persistence_notice);
         }else if(ticket.ancestors.length){

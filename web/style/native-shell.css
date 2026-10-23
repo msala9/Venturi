@@ -72,6 +72,12 @@ button[aria-selected="true"],button[aria-pressed="true"] { background: #673a21; 
 .source-options { position: absolute; right: 5px; bottom: 4px; z-index: 12; }
 .source-options > summary { list-style: none; padding: 3px 6px; background: #222d; cursor: pointer; font-size: 10px; }
 .source-options > .source-toolbar { position: absolute; right: 0; bottom: 100%; width: min(440px,80vw); max-height: 50vh; overflow: auto; padding: 8px; background: #252525; border: 1px solid var(--border); }
+.source-stream-handles { position: absolute; left: 8px; bottom: 6px; display: flex; gap: 4px; z-index: 11; opacity: 0; }
+#source-view:hover .source-stream-handles, .source-stream-handles:focus-within { opacity: 1; }
+.source-stream-handles button { min-width: 25px; padding: 2px 5px; cursor: grab; background: #222d; }
+#source-placement { width: 100%; }
+#source-placement[open] { display: grid; gap: 5px; }
+#source-placement label { justify-content: space-between; }
 #workspace-tools { display: none; }
 #scopes { position: absolute; bottom: 0; left: 0; right: 0; z-index: 13; max-height: 46%; overflow: auto; padding: 4px; box-shadow: 0 -4px 16px #0008; }
 #viewer { position: relative; }

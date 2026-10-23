@@ -27,6 +27,13 @@ pub enum AssetDropTarget {
     NewVideoTrack {},
     NewAudioTrack {},
 }
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceStreams {
+    All,
+    VideoOnly,
+    AudioOnly,
+}
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Operation {
@@ -147,6 +154,18 @@ pub enum Operation {
         start_frame: FrameIdx,
         source_in: Option<FrameIdx>,
         source_out: Option<FrameIdx>,
+    },
+    PlaceSource {
+        media_id: String,
+        job_id: String,
+        source_version: String,
+        source_in: FrameIdx,
+        source_out: FrameIdx,
+        start_frame: FrameIdx,
+        target: AssetDropTarget,
+        streams: SourceStreams,
+        #[serde(default, skip_serializing_if = "is_false")]
+        overwrite: bool,
     },
     SafeMove {
         moves: Vec<Move>,
@@ -574,6 +593,12 @@ pub fn apply(session: &mut Session, id: TimelineId, operation: &Operation) -> Re
     }
     let tl = &session.project.timelines[id];
     match operation {
+        Operation::PlaceSource { .. } => {
+            return Err(ApiError::conflict(
+                "SOURCE_PREPARATION_REQUIRED",
+                "Place only the currently verified Source viewer media",
+            ));
+        }
         Operation::PublishNativeAsset { .. } | Operation::EditNativeAssetLibrary { .. } => {
             return Err(ApiError::invalid(
                 "Native asset library writes require the native asset command endpoint",
@@ -1826,6 +1851,82 @@ pub(crate) fn prepare_native_asset_placement(
         target: target.clone(),
         start: *start_frame,
     };
+    validate_native_placement(project, &plan, *overwrite)?;
+    Ok(plan)
+}
+pub(crate) fn prepare_source_placement(
+    project: &core::Project,
+    id: TimelineId,
+    operation: &Operation,
+) -> Result<NativeAssetPlacement> {
+    let Operation::PlaceSource {
+        media_id,
+        source_in,
+        source_out,
+        start_frame,
+        target,
+        streams,
+        overwrite,
+        ..
+    } = operation
+    else {
+        return Err(ApiError::invalid("Choose a Source placement"));
+    };
+    let timeline = project.timelines.get(id).ok_or_else(ApiError::missing)?;
+    if let AssetDropTarget::Track { track_id } = target {
+        track_index(timeline, track_id)?;
+    }
+    let media = core::MediaId::from_raw(media_id.parse().map_err(|_| ApiError::missing())?);
+    let item = project
+        .media_pool
+        .get(media)
+        .ok_or_else(ApiError::missing)?;
+    if item.compound.is_some() || project.would_create_a_cycle(media, id) {
+        return Err(ApiError::invalid("Source placement requires regular media"));
+    }
+    let out = whole_media_out(&item.meta)?;
+    if *source_in < 0 || source_out <= source_in || *source_out > out {
+        return Err(ApiError::invalid(
+            "Choose a nonempty marked range inside Source",
+        ));
+    }
+    let video = item.meta.has_video && !matches!(streams, SourceStreams::AudioOnly);
+    let audio = item.meta.has_audio && !matches!(streams, SourceStreams::VideoOnly);
+    if !video && !audio {
+        return Err(ApiError::invalid(
+            "The source lacks the requested video or audio stream",
+        ));
+    }
+    let rate = core::Rational::conform_rate(timeline.fps, item.meta.fps);
+    let len = rate.scale_round(*source_out) - rate.scale_round(*source_in);
+    if len < 1 {
+        return Err(ApiError::invalid(
+            "The marked source range must span at least one timeline frame",
+        ));
+    }
+    range(*start_frame, len)?;
+    let plan = NativeAssetPlacement {
+        timeline: id,
+        inserts: vec![edit::MediaInsert {
+            media_id: media,
+            source_in: *source_in,
+            source_out: *source_out,
+            video,
+            audio,
+        }],
+        target: target.clone(),
+        start: *start_frame,
+    };
+    validate_native_placement(project, &plan, *overwrite)?;
+    Ok(plan)
+}
+fn validate_native_placement(
+    project: &core::Project,
+    plan: &NativeAssetPlacement,
+    overwrite: bool,
+) -> Result<()> {
+    let id = plan.timeline;
+    let timeline = &project.timelines[id];
     let mut trial = project.clone();
     let fresh = plan.insert(&mut trial, &mut core::History::default());
     let ranges = trial.timelines[id]
@@ -1840,7 +1941,7 @@ pub(crate) fn prepare_native_asset_placement(
                 .map(move |clip| (index, clip.timeline_start, clip.timeline_end()))
         })
         .collect::<Vec<_>>();
-    if *overwrite {
+    if overwrite {
         overwrite_targets(timeline, &ranges, &HashSet::new())?;
     } else {
         for (index, lane) in timeline.tracks.iter().enumerate() {
@@ -1860,7 +1961,7 @@ pub(crate) fn prepare_native_asset_placement(
         }
     }
     validate_edge_trial(project, &trial, id, &HashSet::new())?;
-    Ok(plan)
+    Ok(())
 }
 fn overwrite_targets(
     timeline: &Timeline,

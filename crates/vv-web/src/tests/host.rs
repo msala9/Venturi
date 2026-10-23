@@ -1,6 +1,126 @@
 use super::*;
 
 #[test]
+fn marked_source_placement_uses_a_ready_file_bound_job_and_replays_receipts_before_revalidation() {
+    use vv_core::Id;
+    let (root, mut editor, media) = native_asset_fixture("source-placement");
+    let timeline = editor.session.project.timelines.iter().next().unwrap().0;
+    let path = editor.session.project.media_pool[media].path.clone();
+    let sources = crate::source::MediaJobs::start().unwrap();
+    let spec = || SourceSpec {
+        file: std::fs::File::open(&path).unwrap(),
+        epoch: format!("{}:{}", editor.epoch, editor.session.epoch()),
+        media_id: media.raw().to_string(),
+        meta: editor.session.project.media_pool[media].meta.clone(),
+    };
+    let job = sources
+        .prepare_audio(spec(), "low", None, crate::source_audio::AudioMode::All, 0)
+        .unwrap();
+    let job_id = job["id"].as_str().unwrap().to_owned();
+    let version = job["source_version"].as_str().unwrap().to_owned();
+    let deadline = Instant::now() + Duration::from_secs(20);
+    loop {
+        let state = sources.status(&job_id, &spec(), false).unwrap();
+        if state["state"] == "ready" {
+            break;
+        }
+        assert!(
+            !matches!(state["state"].as_str(), Some("failed" | "canceled")),
+            "{state}"
+        );
+        assert!(
+            Instant::now() < deadline,
+            "Tiny Source preparation timed out: {state}"
+        );
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    let operation = Operation::PlaceSource {
+        media_id: media.raw().to_string(),
+        job_id: job_id.clone(),
+        source_version: version,
+        source_in: 0,
+        source_out: 1,
+        start_frame: 96,
+        target: commands::AssetDropTarget::NewAudioTrack {},
+        streams: commands::SourceStreams::All,
+        overwrite: false,
+    };
+    let before = json!(editor.session.project.timelines[timeline]);
+    let position = editor.session.history.position();
+    let mutation = request(&editor, operation.clone(), "source-place", Some(timeline));
+    let ack = editor
+        .handle(Action::SourcePlacementMutation(
+            timeline.raw().to_string(),
+            mutation.clone(),
+            sources.clone(),
+        ))
+        .unwrap();
+    assert_eq!(ack["timeline_id"], timeline.raw().to_string());
+    assert_eq!(ack["clip_ids"].as_array().unwrap().len(), 1);
+    assert_eq!(editor.session.history.position(), position + 1);
+    let mut expected_redone = editor.session.project.clone();
+    let undo = request(&editor, Operation::Undo, "source-undo", Some(timeline));
+    editor
+        .mutation(Some(timeline.raw().to_string()), undo)
+        .unwrap();
+    assert_eq!(json!(editor.session.project.timelines[timeline]), before);
+    let redo = request(&editor, Operation::Redo, "source-redo", Some(timeline));
+    editor
+        .mutation(Some(timeline.raw().to_string()), redo)
+        .unwrap();
+    // Native history refreshes compound cache generations on both Undo and Redo.
+    for _ in 0..2 {
+        let compounds: Vec<_> = expected_redone
+            .media_pool
+            .iter()
+            .filter_map(|(id, item)| item.compound.map(|_| id))
+            .collect();
+        for media in compounds {
+            expected_redone.sync_compound_meta(media);
+        }
+    }
+    assert_eq!(json!(editor.session.project), json!(expected_redone));
+    let after = json!(editor.session.project);
+    std::fs::write(&path, b"source changed after successful placement").unwrap();
+    assert_eq!(
+        editor
+            .handle(Action::SourcePlacementMutation(
+                timeline.raw().to_string(),
+                mutation,
+                sources.clone()
+            ))
+            .unwrap(),
+        ack
+    );
+    assert_eq!(json!(editor.session.project), after);
+    let current = request(&editor, operation.clone(), "source-changed", Some(timeline));
+    assert_eq!(
+        editor
+            .handle(Action::SourcePlacementMutation(
+                timeline.raw().to_string(),
+                current,
+                sources.clone()
+            ))
+            .unwrap_err()
+            .1,
+        "SOURCE_CHANGED"
+    );
+    let bypass = request(&editor, operation, "source-bypass", Some(timeline));
+    assert_eq!(
+        editor
+            .mutation(Some(timeline.raw().to_string()), bypass)
+            .unwrap_err()
+            .1,
+        "SOURCE_PREPARATION_REQUIRED"
+    );
+    assert_eq!(json!(editor.session.project), after);
+    assert_eq!(editor.session.history.position(), position + 1);
+    drop(sources);
+    drop(editor);
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
 fn native_asset_set_placement_imports_once_with_one_undo_and_reuses_edited_compounds() {
     use vv_core::{Clip, ClipSource, Id};
     let (root, mut source, media) = native_asset_fixture("drop-set");

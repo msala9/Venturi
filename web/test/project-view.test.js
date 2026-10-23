@@ -69,6 +69,46 @@ test('playback ticks do not write and a generation, writer or project change sup
   }
 });
 
+test('a successful view ACK retains native CAS through playback, Save-generation and snapshot changes without publishing a stale display',async()=>{
+  for(const change of [h=>h.state.stopped=false,h=>h.state.document={...h.state.document,generation:'1'},h=>h.state.document={...h.state.document}]){
+    const replies=[];const h=harness({api:(path,body,options,response)=>{const value=response(body);return new Promise(resolve=>replies.push(()=>resolve(value)));}});
+    try{
+      h.state.frame=20;const beforePlay=h.controller.update();await settle();change(h);h.controller.refresh();replies.shift()();
+      assert.equal(await beforePlay,false);assert.deepEqual(h.changes,[]);assert.equal(h.state.document.view_revision,rev(1));assert.deepEqual(h.notices,[]);
+      h.state.document={...h.state.document};h.state.stopped=true;h.state.frame=99;const eof=h.controller.update();await settle();
+      assert.equal(h.calls.length,2);assert.equal(h.calls[1].body.if_view_revision,rev(2));assert.equal(h.calls[1].body.query.if_generation,h.state.document.generation);assert.equal(h.calls[1].body.query.frame,99);
+      replies.shift()();assert.equal(await eof,true);assert.equal(h.changes.length,1);assert.equal(h.controller.frame('1'),99);assert.deepEqual(h.notices,[]);
+    }finally{h.controller.dispose();}
+  }
+});
+
+test('a delayed session snapshot cannot rewind newer locally acknowledged view revisions',async()=>{
+  const h=harness();try{
+    h.state.frame=20;assert.equal(await h.controller.update(),true);
+    const earlier=structuredClone(h.state.document);h.state.document=structuredClone(earlier);h.controller.refresh();
+    h.state.frame=30;assert.equal(await h.controller.update(),true);assert.equal(h.state.document.view_revision,rev(3));
+    h.state.document=earlier;h.controller.refresh();h.state.frame=40;assert.equal(await h.controller.update(),true);
+    assert.equal(h.calls.length,3);assert.equal(h.calls[2].body.if_view_revision,rev(3));assert.equal(h.calls[2].body.query.frame,40);assert.deepEqual(h.notices,[]);
+  }finally{h.controller.dispose();}
+});
+
+test('an observed external view supersedes a late local ACK, and external restoration of a predecessor still requires a read after conflict',async()=>{
+  let reply;const h=harness({api:(path,body,options,response)=>{const value=response(body);return new Promise(resolve=>reply=()=>resolve(value));}});
+  try{
+    h.state.frame=20;const pending=h.controller.update();await settle();
+    h.state.document={...h.state.document,view_revision:rev(8),view:{active_timeline:'2',playheads:{'1':7,'2':11}}};h.controller.refresh();reply();assert.equal(await pending,false);
+    assert.deepEqual(h.changes,[]);assert.equal(h.state.document.view_revision,rev(8));assert.equal(h.calls.length,1);
+    h.state.frame=30;const next=h.controller.update();await settle();assert.equal(h.calls[1].body.if_view_revision,rev(8));reply();assert.equal(await next,true);
+  }finally{h.controller.dispose();}
+  let restored=false;const conflict=harness({api:(path,body,options,response)=>restored && body.if_view_revision!==rev(1)?Promise.reject(Error('VIEW_REVISION_CONFLICT')):Promise.resolve(response(body))});
+  try{
+    conflict.state.frame=20;assert.equal(await conflict.controller.update(),true);restored=true;
+    conflict.state.document={...conflict.state.document,view_revision:rev(1)};conflict.state.frame=30;assert.equal(await conflict.controller.update(),false);
+    assert.equal(conflict.calls[1].body.if_view_revision,rev(2));assert.equal(conflict.notices.length,1);assert.equal(await conflict.controller.update(),false);assert.equal(conflict.calls.length,2);
+    conflict.state.document={...conflict.state.document};conflict.controller.refresh();assert.equal(await conflict.controller.update(),true);assert.equal(conflict.calls[2].body.if_view_revision,rev(1));
+  }finally{conflict.controller.dispose();}
+});
+
 test('read-only nested memory calls only the existing native inverse-clock mapper and stores the root',async()=>{
   const h=harness({api:(path,body)=>Promise.resolve({project_epoch:body.query.project_epoch,generation:body.query.if_generation,source_timeline_id:'2',source_revision:'child-revision',source_frame:10,timeline_id:'1',revision:'root-revision',frame:38,via_clip_id:null})});
   try{

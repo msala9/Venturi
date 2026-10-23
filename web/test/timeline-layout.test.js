@@ -134,7 +134,11 @@ function harness(){
   let writable=true,navigable=true,modal=false,selectionChanged=()=>{},rectOverrides={},clock=0,frameId=0,currentTimeline=timeline,commit=null;
   const frames=new Map();
   const document={querySelector:()=>modal?{}:null,addEventListener(){},removeEventListener(){}};
-  globalThis.window={document,devicePixelRatio:1,addEventListener:(name,handler)=>windowHandlers.set(name,handler),removeEventListener:name=>windowHandlers.delete(name)};
+  const windowListeners=new Map();
+  globalThis.window={document,devicePixelRatio:1,
+    addEventListener(name,handler){let listeners=windowListeners.get(name);if(!listeners){listeners=new Set();windowListeners.set(name,listeners);}listeners.add(handler);windowHandlers.set(name,event=>{for(const callback of [...listeners])callback(event);});},
+    removeEventListener(name,handler){const listeners=windowListeners.get(name);listeners?.delete(handler);if(!listeners?.size){windowListeners.delete(name);windowHandlers.delete(name);}},
+  };
   const canvas={ownerDocument:document,clientWidth:1200,clientHeight:view.viewportHeight,style:{},getBoundingClientRect:()=>({left:0,top:0,width:1200,height:canvas.clientHeight,...rectOverrides}),addEventListener:(name,handler)=>handlers.set(name,handler),removeEventListener:name=>handlers.delete(name),focus(){},setPointerCapture:id=>captures.add(id),hasPointerCapture:id=>captures.has(id),releasePointerCapture(id){captures.delete(id);handlers.get('lostpointercapture')?.({pointerId:id});}};
   const input=createInput({canvas,getTimeline:()=>currentTimeline,getGapContext:()=>({project_epoch:'epoch',generation:'0'}),view,invalidate(){},onSelect(){selectionChanged();},onSeek(...args){seeks.push(args);},onCommand:async operation=>{commands.push(operation);return commit?.(operation);},onNotice:message=>notices.push(message),canEdit:()=>writable,canNavigate:()=>navigable,now:()=>clock,requestFrame:fn=>{const id=++frameId;frames.set(id,fn);return id;},cancelFrame:id=>frames.delete(id)});
   const send=(type,x,y,extra={})=>handlers.get(type)({clientX:x,clientY:y,pointerId:1,button:0,buttons:1,preventDefault(){},...extra});

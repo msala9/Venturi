@@ -1,0 +1,1390 @@
+{
+  "source_commit": "ccc49a55fa8fd1464580bcd151af4c4ba850053e",
+  "runtime": {
+    "url": "http://127.0.0.1:8855/",
+    "unit": "venturi-web-halo1-native-workflows-r4.service",
+    "pid": "293044",
+    "sha256": "78153fde00f0e3f4c5e5738020b0e842b3e9137dfd462eaac68c2bed6820244c"
+  },
+  "source_hashes": {
+    "crates/vv-web/src/api.rs": "e84c2a3c03810e4c2e0bab531d766bbe9e227136c13e88c4c9af59c78998c1ef",
+    "crates/vv-web/src/tests/api.rs": "e822a43e3a46c3eda9d5d3635d4447055c342a04f2c776a440c89f456ea89a88",
+    "web/index.html": "f0c238c6a0f33add79f06f7b84b68d595547df6428c438fd92958f53a12e885a",
+    "web/js/curves.js": "9cca40dd1cc4d3708a6a3917bfb9db99c47b2d3946eeabea09b97f3ec78e1141",
+    "web/js/keyselection.js": "5f1c162ce0289650d9e8feb37fcace2442847e390b6ddc9c7ac5665c97b9d51c",
+    "web/js/library-capture-drop.js": "0ccabd591b4df84b7a77aecb1121c9b44ee5125df0dee0994d07f62fa41242cf",
+    "web/js/main.js": "b6710dc45036dc069c27126d6953aa9d88a46458c599c94359d6eaad868ece4c",
+    "web/js/mixer-inserts.js": "42c012147291ba45c02b014ce97f76ded7c013312b55d55d2a37fc017af17e6f",
+    "web/js/mixer.js": "3ff0e1f19329d2fb9835a5d250e63cacd19b5de0445386736ff0841ba286e7a0",
+    "web/js/native-assets.js": "3486f7f3165e0e49c77841af34c49b2688dc47d1747cf78725387e61f3115429",
+    "web/style/app.css": "043b3854e6298f47f99e3410e38c36eb745341adb4ebc4e9741cbf20be9424f3",
+    "web/style/native-shell.css": "44d9a0aa6cd907863dc4efb905424b3e8cf31b5f117a37b49d0b9bf8c92d53a7",
+    "web/test/keyselection.test.js": "9a148399a853aac4a4ae6026c8474d12635d63011e28dfe52b987634f615d8aa",
+    "web/test/library-capture-drop.test.js": "726a40456c4975606d7322607e6465f10d30596bfb0ea416cd047e7b42550798",
+    "web/test/mixer-inserts.test.js": "3016781d66aa52349c01e9422036e3c79d6e898c771a26ef35dd5f5fc4789c47",
+    "web/test/mixer.test.js": "339ece603cfd32cd312e8b235b41d4b22b0690f4a26067fc9f2eeac8c282f5fb",
+    "web/test/native-assets-panel.test.js": "6105315ea9e1f5559107f7fc9e8201a278f953e143d6cf3cb929f75916db05cd"
+  },
+  "scope": [
+    "Compact native per-strip insert rows, plus/context menus and same-channel HTML drag",
+    "Exact acknowledged index permutations retain nested editor ownership; unknown/conflicting results fence edits",
+    "Undo/foreign topology changes close obsolete slot editors; same-slot parameter edits stay open",
+    "Native Mono enable/bypass, averaging and persisted chain"
+  ],
+  "browser": {
+    "surface": "existing Windows browser, single tab",
+    "viewport": [
+      775,
+      964
+    ],
+    "device_pixel_ratio": 1.25,
+    "actual_html_drag": {
+      "from": [
+        645,
+        250
+      ],
+      "to": [
+        645,
+        282
+      ],
+      "result": "Equalizer moved below Normalize with one native EditAudioEffect; undo restores every timeline"
+    },
+    "menu_move_final": {
+      "editor_after_move": [
+        {
+          "path": "master:effects",
+          "heading": "Master inserts (4)"
+        },
+        {
+          "path": "master:effects:2",
+          "heading": "3 \u00b7 Equalizer"
+        }
+      ],
+      "editor_after_undo": [
+        {
+          "path": "master:effects",
+          "heading": "Master inserts (4)"
+        }
+      ]
+    },
+    "mono": "Actual Enable, Undo and Redo; only Mono.enabled changes",
+    "playback_observation": {
+      "program_video_paused": false,
+      "program_video_current_time": 5.2778,
+      "ready_state": 4,
+      "subsequent_terminal_view": {
+        "currentTime": 0,
+        "ended": false,
+        "paused": true,
+        "position": "199",
+        "readyState": 0
+      },
+      "limit": "Live native Program playback observed; video ended event and physical speakers not sampled"
+    }
+  },
+  "observations": {
+    "before": {
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "project_epoch": "1792787079318016499:1",
+      "generation": "0",
+      "master": {
+        "effects": [
+          {
+            "enabled": false,
+            "kind": "Mono"
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "MultibandCompressor": {
+                "bands": [
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 4.047847747802734,
+                    "release_ms": 150.0,
+                    "threshold_db": -36.45282745361328
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 3.0,
+                    "release_ms": 150.0,
+                    "threshold_db": -60.0
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.10000000149011612,
+                    "ratio": 3.0,
+                    "release_ms": 152.0,
+                    "threshold_db": -24.0
+                  }
+                ],
+                "crossovers_hz": [
+                  200.0,
+                  2000.0
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Equalizer": {
+                "bands": [
+                  {
+                    "enabled": false,
+                    "freq_hz": 80.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighPass"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 120.0,
+                    "gain_db": 4.899997711181641,
+                    "q": 0.7071067690849304,
+                    "shape": "LowShelf"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 2500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 8000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighShelf"
+                  },
+                  {
+                    "enabled": false,
+                    "freq_hz": 18000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "LowPass"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Normalize": {
+                "mode": "Loudness",
+                "set_level": "Relative",
+                "target_db": -14.0
+              }
+            }
+          }
+        ],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "9cdebf0f085b3241a990076d0b4cc297665c17dd9d6981ee02d314e670d99513",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "453e4d6fac717c12e2b37575dd4728e25826ac5db6ad57d7bdbd01a426a602c0",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "actual_drag": {
+      "history": {
+        "labels": [
+          "EditAudioEffect",
+          "EditAudioEffect"
+        ],
+        "position": 1
+      },
+      "project_epoch": "1792787079318016499:1",
+      "generation": "5",
+      "master": {
+        "effects": [
+          {
+            "enabled": false,
+            "kind": "Mono"
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "MultibandCompressor": {
+                "bands": [
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 4.047847747802734,
+                    "release_ms": 150.0,
+                    "threshold_db": -36.45282745361328
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 3.0,
+                    "release_ms": 150.0,
+                    "threshold_db": -60.0
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.10000000149011612,
+                    "ratio": 3.0,
+                    "release_ms": 152.0,
+                    "threshold_db": -24.0
+                  }
+                ],
+                "crossovers_hz": [
+                  200.0,
+                  2000.0
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Normalize": {
+                "mode": "Loudness",
+                "set_level": "Relative",
+                "target_db": -14.0
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Equalizer": {
+                "bands": [
+                  {
+                    "enabled": false,
+                    "freq_hz": 80.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighPass"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 120.0,
+                    "gain_db": 4.899997711181641,
+                    "q": 0.7071067690849304,
+                    "shape": "LowShelf"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 2500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 8000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighShelf"
+                  },
+                  {
+                    "enabled": false,
+                    "freq_hz": 18000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "LowPass"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "4c9b497eab3ee508fbe6e23343420f37a1d8b1c54d18e60c05d6f64b681c5eec",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "453e4d6fac717c12e2b37575dd4728e25826ac5db6ad57d7bdbd01a426a602c0",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "mono_enabled": {
+      "history": {
+        "labels": [
+          "EditAudioEffect",
+          "EditAudioEffect"
+        ],
+        "position": 2
+      },
+      "project_epoch": "1792787079318016499:1",
+      "generation": "4",
+      "master": {
+        "effects": [
+          {
+            "enabled": true,
+            "kind": "Mono"
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "MultibandCompressor": {
+                "bands": [
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 4.047847747802734,
+                    "release_ms": 150.0,
+                    "threshold_db": -36.45282745361328
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 3.0,
+                    "release_ms": 150.0,
+                    "threshold_db": -60.0
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.10000000149011612,
+                    "ratio": 3.0,
+                    "release_ms": 152.0,
+                    "threshold_db": -24.0
+                  }
+                ],
+                "crossovers_hz": [
+                  200.0,
+                  2000.0
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Normalize": {
+                "mode": "Loudness",
+                "set_level": "Relative",
+                "target_db": -14.0
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Equalizer": {
+                "bands": [
+                  {
+                    "enabled": false,
+                    "freq_hz": 80.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighPass"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 120.0,
+                    "gain_db": 4.899997711181641,
+                    "q": 0.7071067690849304,
+                    "shape": "LowShelf"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 2500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 8000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighShelf"
+                  },
+                  {
+                    "enabled": false,
+                    "freq_hz": 18000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "LowPass"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "de79eb89f15a984a9d2e8f21a6959b95de17b6891b1e8607a60d03b6f14e25e1",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "453e4d6fac717c12e2b37575dd4728e25826ac5db6ad57d7bdbd01a426a602c0",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "drag_undo": {
+      "history": {
+        "labels": [
+          "EditAudioEffect",
+          "EditAudioEffect"
+        ],
+        "position": 0
+      },
+      "project_epoch": "1792787079318016499:1",
+      "generation": "6",
+      "master": {
+        "effects": [
+          {
+            "enabled": false,
+            "kind": "Mono"
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "MultibandCompressor": {
+                "bands": [
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 4.047847747802734,
+                    "release_ms": 150.0,
+                    "threshold_db": -36.45282745361328
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 3.0,
+                    "release_ms": 150.0,
+                    "threshold_db": -60.0
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.10000000149011612,
+                    "ratio": 3.0,
+                    "release_ms": 152.0,
+                    "threshold_db": -24.0
+                  }
+                ],
+                "crossovers_hz": [
+                  200.0,
+                  2000.0
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Equalizer": {
+                "bands": [
+                  {
+                    "enabled": false,
+                    "freq_hz": 80.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighPass"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 120.0,
+                    "gain_db": 4.899997711181641,
+                    "q": 0.7071067690849304,
+                    "shape": "LowShelf"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 2500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 8000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighShelf"
+                  },
+                  {
+                    "enabled": false,
+                    "freq_hz": 18000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "LowPass"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Normalize": {
+                "mode": "Loudness",
+                "set_level": "Relative",
+                "target_db": -14.0
+              }
+            }
+          }
+        ],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "9cdebf0f085b3241a990076d0b4cc297665c17dd9d6981ee02d314e670d99513",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "453e4d6fac717c12e2b37575dd4728e25826ac5db6ad57d7bdbd01a426a602c0",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "final_build_before": {
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "project_epoch": "1792787586992197314:1",
+      "generation": "0",
+      "master": {
+        "effects": [
+          {
+            "enabled": true,
+            "kind": "Mono"
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "MultibandCompressor": {
+                "bands": [
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 4.047847747802734,
+                    "release_ms": 150.0,
+                    "threshold_db": -36.45282745361328
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 3.0,
+                    "release_ms": 150.0,
+                    "threshold_db": -60.0
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.10000000149011612,
+                    "ratio": 3.0,
+                    "release_ms": 152.0,
+                    "threshold_db": -24.0
+                  }
+                ],
+                "crossovers_hz": [
+                  200.0,
+                  2000.0
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Normalize": {
+                "mode": "Loudness",
+                "set_level": "Relative",
+                "target_db": -14.0
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Equalizer": {
+                "bands": [
+                  {
+                    "enabled": false,
+                    "freq_hz": 80.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighPass"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 120.0,
+                    "gain_db": 4.899997711181641,
+                    "q": 0.7071067690849304,
+                    "shape": "LowShelf"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 2500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 8000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighShelf"
+                  },
+                  {
+                    "enabled": false,
+                    "freq_hz": 18000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "LowPass"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "de79eb89f15a984a9d2e8f21a6959b95de17b6891b1e8607a60d03b6f14e25e1",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "3b2413963fa2e8a3d4b0733f0426f30f9a717ef4596569cd7e0ce4efcce5c1d7",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "final_build_menu_move": {
+      "history": {
+        "labels": [
+          "EditAudioEffect"
+        ],
+        "position": 1
+      },
+      "project_epoch": "1792787586992197314:1",
+      "generation": "1",
+      "master": {
+        "effects": [
+          {
+            "enabled": true,
+            "kind": "Mono"
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "MultibandCompressor": {
+                "bands": [
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 4.047847747802734,
+                    "release_ms": 150.0,
+                    "threshold_db": -36.45282745361328
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 3.0,
+                    "release_ms": 150.0,
+                    "threshold_db": -60.0
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.10000000149011612,
+                    "ratio": 3.0,
+                    "release_ms": 152.0,
+                    "threshold_db": -24.0
+                  }
+                ],
+                "crossovers_hz": [
+                  200.0,
+                  2000.0
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Equalizer": {
+                "bands": [
+                  {
+                    "enabled": false,
+                    "freq_hz": 80.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighPass"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 120.0,
+                    "gain_db": 4.899997711181641,
+                    "q": 0.7071067690849304,
+                    "shape": "LowShelf"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 2500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 8000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighShelf"
+                  },
+                  {
+                    "enabled": false,
+                    "freq_hz": 18000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "LowPass"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Normalize": {
+                "mode": "Loudness",
+                "set_level": "Relative",
+                "target_db": -14.0
+              }
+            }
+          }
+        ],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "52d84844bfd934df85983e9a606db775c0d3a98d54ca1ba775f5a9933444ca4e",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "3b2413963fa2e8a3d4b0733f0426f30f9a717ef4596569cd7e0ce4efcce5c1d7",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "final_build_undo": {
+      "history": {
+        "labels": [
+          "EditAudioEffect"
+        ],
+        "position": 0
+      },
+      "project_epoch": "1792787586992197314:1",
+      "generation": "2",
+      "master": {
+        "effects": [
+          {
+            "enabled": true,
+            "kind": "Mono"
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "MultibandCompressor": {
+                "bands": [
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 4.047847747802734,
+                    "release_ms": 150.0,
+                    "threshold_db": -36.45282745361328
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 3.0,
+                    "release_ms": 150.0,
+                    "threshold_db": -60.0
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.10000000149011612,
+                    "ratio": 3.0,
+                    "release_ms": 152.0,
+                    "threshold_db": -24.0
+                  }
+                ],
+                "crossovers_hz": [
+                  200.0,
+                  2000.0
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Normalize": {
+                "mode": "Loudness",
+                "set_level": "Relative",
+                "target_db": -14.0
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Equalizer": {
+                "bands": [
+                  {
+                    "enabled": false,
+                    "freq_hz": 80.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighPass"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 120.0,
+                    "gain_db": 4.899997711181641,
+                    "q": 0.7071067690849304,
+                    "shape": "LowShelf"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 2500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 8000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighShelf"
+                  },
+                  {
+                    "enabled": false,
+                    "freq_hz": 18000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "LowPass"
+                  }
+                ]
+              }
+            }
+          }
+        ],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "de79eb89f15a984a9d2e8f21a6959b95de17b6891b1e8607a60d03b6f14e25e1",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "3b2413963fa2e8a3d4b0733f0426f30f9a717ef4596569cd7e0ce4efcce5c1d7",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "saved": {
+      "history": {
+        "labels": [
+          "EditAudioEffect"
+        ],
+        "position": 1
+      },
+      "project_epoch": "1792787586992197314:1",
+      "generation": "3",
+      "master": {
+        "effects": [
+          {
+            "enabled": true,
+            "kind": "Mono"
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "MultibandCompressor": {
+                "bands": [
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 4.047847747802734,
+                    "release_ms": 150.0,
+                    "threshold_db": -36.45282745361328
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 3.0,
+                    "release_ms": 150.0,
+                    "threshold_db": -60.0
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.10000000149011612,
+                    "ratio": 3.0,
+                    "release_ms": 152.0,
+                    "threshold_db": -24.0
+                  }
+                ],
+                "crossovers_hz": [
+                  200.0,
+                  2000.0
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Equalizer": {
+                "bands": [
+                  {
+                    "enabled": false,
+                    "freq_hz": 80.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighPass"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 120.0,
+                    "gain_db": 4.899997711181641,
+                    "q": 0.7071067690849304,
+                    "shape": "LowShelf"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 2500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 8000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighShelf"
+                  },
+                  {
+                    "enabled": false,
+                    "freq_hz": 18000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "LowPass"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Normalize": {
+                "mode": "Loudness",
+                "set_level": "Relative",
+                "target_db": -14.0
+              }
+            }
+          }
+        ],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "52d84844bfd934df85983e9a606db775c0d3a98d54ca1ba775f5a9933444ca4e",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "reopened": {
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "project_epoch": "1792787586992197314:2",
+      "generation": "0",
+      "master": {
+        "effects": [
+          {
+            "enabled": true,
+            "kind": "Mono"
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "MultibandCompressor": {
+                "bands": [
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 4.047847747802734,
+                    "release_ms": 150.0,
+                    "threshold_db": -36.45282745361328
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.0,
+                    "ratio": 3.0,
+                    "release_ms": 150.0,
+                    "threshold_db": -60.0
+                  },
+                  {
+                    "attack_ms": 10.0,
+                    "makeup_db": 0.10000000149011612,
+                    "ratio": 3.0,
+                    "release_ms": 152.0,
+                    "threshold_db": -24.0
+                  }
+                ],
+                "crossovers_hz": [
+                  200.0,
+                  2000.0
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Equalizer": {
+                "bands": [
+                  {
+                    "enabled": false,
+                    "freq_hz": 80.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighPass"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 120.0,
+                    "gain_db": 4.899997711181641,
+                    "q": 0.7071067690849304,
+                    "shape": "LowShelf"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 2500.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "Peak"
+                  },
+                  {
+                    "enabled": true,
+                    "freq_hz": 8000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "HighShelf"
+                  },
+                  {
+                    "enabled": false,
+                    "freq_hz": 18000.0,
+                    "gain_db": 0.0,
+                    "q": 0.7071067690849304,
+                    "shape": "LowPass"
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "enabled": true,
+            "kind": {
+              "Normalize": {
+                "mode": "Loudness",
+                "set_level": "Relative",
+                "target_db": -14.0
+              }
+            }
+          }
+        ],
+        "gain_db": 0.0,
+        "pan": 0.0
+      },
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "52d84844bfd934df85983e9a606db775c0d3a98d54ca1ba775f5a9933444ca4e",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "77eff86fba220a531836189b4c8527cd370c7b955f4bc7b5f9b66de9ab53f5bd",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    }
+  },
+  "gates": {
+    "r1": {
+      "phase": "passed",
+      "memory_peak_bytes": 1525010432,
+      "terminal_unit": "ActiveState=inactive\nMainPID=0\nResult=success\nMemoryCurrent=[not set]\nMemoryPeak=[not set]\n",
+      "tail": [
+        "\u2139 tests 382",
+        "\u2139 suites 0",
+        "\u2139 pass 382",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 282.77737",
+        "    Checking vv-web v0.8.1 (/home/halo/.cache/venturi-build/source/crates/vv-web)",
+        "    Finished `dev` profile [optimized + debuginfo] target(s) in 8.23s",
+        "   Compiling vv-web v0.8.1 (/home/halo/.cache/venturi-build/source/crates/vv-web)",
+        "    Finished `dev` profile [optimized + debuginfo] target(s) in 40.60s"
+      ]
+    },
+    "r2": {
+      "phase": "passed",
+      "memory_peak_bytes": 1535205376,
+      "terminal_unit": "ActiveState=inactive\nMainPID=0\nResult=success\nMemoryCurrent=[not set]\nMemoryPeak=[not set]\n",
+      "tail": [
+        "\u2714 normalization forms retain drafts through peak-mode changes and show clip-level policy only on tracks without changing master metadata (6.185667ms)",
+        "\u2714 native loudness preset shortcuts preserve mode, bypass, clip policy and chain order without changing peak modes (4.212472ms)",
+        "\u2139 tests 36",
+        "\u2139 suites 0",
+        "\u2139 pass 36",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 49.733814",
+        "   Compiling vv-web v0.8.1 (/home/halo/.cache/venturi-build/source/crates/vv-web)",
+        "    Finished `dev` profile [optimized + debuginfo] target(s) in 40.76s"
+      ]
+    },
+    "r3": {
+      "phase": "passed",
+      "memory_peak_bytes": 1524948992,
+      "terminal_unit": "ActiveState=inactive\nMainPID=0\nResult=success\nMemoryCurrent=[not set]\nMemoryPeak=[not set]\n",
+      "tail": [
+        "\u2714 selection order, native generation, modal, read-only and changed timeline viewport invalidate project media drops (1.939354ms)",
+        "\u2714 accepted project media placement survives dragend but Escape and visibility revoke the pending owner (0.781164ms)",
+        "\u2139 tests 110",
+        "\u2139 suites 0",
+        "\u2139 pass 110",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 141.467317",
+        "   Compiling vv-web v0.8.1 (/home/halo/.cache/venturi-build/source/crates/vv-web)",
+        "    Finished `dev` profile [optimized + debuginfo] target(s) in 41.32s"
+      ]
+    },
+    "r4": {
+      "phase": "passed",
+      "memory_peak_bytes": 1524899840,
+      "terminal_unit": "ActiveState=inactive\nMainPID=0\nResult=success\nMemoryCurrent=[not set]\nMemoryPeak=[not set]\n",
+      "tail": [
+        "\u2714 normalization forms retain drafts through peak-mode changes and show clip-level policy only on tracks without changing master metadata (2.836112ms)",
+        "\u2714 native loudness preset shortcuts preserve mode, bypass, clip policy and chain order without changing peak modes (3.870436ms)",
+        "\u2139 tests 37",
+        "\u2139 suites 0",
+        "\u2139 pass 37",
+        "\u2139 fail 0",
+        "\u2139 cancelled 0",
+        "\u2139 skipped 0",
+        "\u2139 todo 0",
+        "\u2139 duration_ms 60.650172",
+        "   Compiling vv-web v0.8.1 (/home/halo/.cache/venturi-build/source/crates/vv-web)",
+        "    Finished `dev` profile [optimized + debuginfo] target(s) in 40.66s"
+      ]
+    }
+  },
+  "native_mono": {
+    "routes": {
+      "web/js/mixer-inserts.js": {
+        "status": 200,
+        "mime": "text/javascript",
+        "sha256": "42c012147291ba45c02b014ce97f76ded7c013312b55d55d2a37fc017af17e6f",
+        "bytes": 13752
+      },
+      "web/js/library-capture-drop.js": {
+        "status": 200,
+        "mime": "text/javascript",
+        "sha256": "0ccabd591b4df84b7a77aecb1121c9b44ee5125df0dee0994d07f62fa41242cf",
+        "bytes": 6985
+      }
+    },
+    "native_mono_result": [
+      "test mixer::tests::mono_sends_the_average_of_the_channels_to_all_of_them ... ok",
+      "test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 104 filtered out; finished in 0.00s"
+    ],
+    "native_audio_source_hashes": {
+      "crates/vv-audio/src/loudness.rs": "62ad4d4dacd6b511430c37e3bf1b4be58d9e8b901d5593aa00c8a46f4836cf8c",
+      "crates/vv-audio/src/mixer.rs": "3f4b214e42fbb73bfb287cffe74fa6d6dd4ba2df345d3fc994ef34d7911334a0",
+      "crates/vv-audio/src/tests/loudness.rs": "e639da23898c4c29b7ecadd542e7dc6e689f1f1b85acb02f4d0e80d774275804",
+      "crates/vv-audio/src/tests/mixer.rs": "fdc4ba3d42f55beb11dc2fec19a6e7f227d109ab1db95a529fcfffe194105fce"
+    }
+  },
+  "protection": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 8,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "reused": [
+    "m5-native-audio-chain.json",
+    "m5-custom-audio-presets.json",
+    "m5-audio-graphs-workflow.json",
+    "m7-audio-source-fd-workflow.json"
+  ],
+  "screenshot": "f4-native-insert-stack.png",
+  "limitations": [
+    "No physical speaker/device/DPI/dense/M7 acceptance is inferred",
+    "No new export or native DSP changes; prior output/export evidence is reused",
+    "Overlapping client runs are not added as unique tests"
+  ]
+}

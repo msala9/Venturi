@@ -1,0 +1,46 @@
+{
+  "source_commit": "ccc49a55fa8fd1464580bcd151af4c4ba850053e",
+  "source_hashes": {
+    "web/index.html": "f0c238c6a0f33add79f06f7b84b68d595547df6428c438fd92958f53a12e885a",
+    "web/js/library-capture-drop.js": "0ccabd591b4df84b7a77aecb1121c9b44ee5125df0dee0994d07f62fa41242cf",
+    "web/js/main.js": "b6710dc45036dc069c27126d6953aa9d88a46458c599c94359d6eaad868ece4c",
+    "web/js/native-assets.js": "3486f7f3165e0e49c77841af34c49b2688dc47d1747cf78725387e61f3115429",
+    "web/style/native-shell.css": "44d9a0aa6cd907863dc4efb905424b3e8cf31b5f117a37b49d0b9bf8c92d53a7",
+    "web/test/library-capture-drop.test.js": "726a40456c4975606d7322607e6465f10d30596bfb0ea416cd047e7b42550798",
+    "web/test/native-assets-panel.test.js": "6105315ea9e1f5559107f7fc9e8201a278f953e143d6cf3cb929f75916db05cd"
+  },
+  "implemented": [
+    "Persistent compact Project/Library source tabs and local keyboard navigation",
+    "Trusted local ordered IDs with opaque MIME ownership; no hover publication",
+    "Library capture stages independently of zero/hidden timeline geometry or placement metadata admission",
+    "Up to64 IDs, explicit oversized rejection, stale/context/source/writer/modal/visibility/Escape guards",
+    "Post-release source hiding and own-busy publication are tolerated; acknowledged in-flight publication retained on cancellation"
+  ],
+  "tests": [
+    "web/test/library-capture-drop.test.js",
+    "web/test/native-assets-panel.test.js",
+    "web/test/project-pool-placement.test.js"
+  ],
+  "gate": "R3:110 affected client cases pass; final source hashes bind unchanged Library module",
+  "connected": {
+    "explicit_Library_tab": "opens existing ds4 archive:58 shared assets",
+    "explicit_native_assets": "opens existing NAS catalog:2 native assets",
+    "project_to_Library_pointer_capture": "UNVERIFIED: actual attempted drags did not open Library or produce capture; no definite additional production bug isolated"
+  },
+  "protected": {
+    "prior_sessions": 39,
+    "prior_pids": 40,
+    "candidate_saved_files": 8,
+    "candidate_local_files": 5,
+    "fixed_nas_files_unchanged": 4,
+    "prior_library_copy_unchanged": true,
+    "prior_effects_settled_save_and_render_backup_unchanged": true,
+    "shared_proxy_unchanged": true,
+    "candidate_session_unchanged": true
+  },
+  "remaining": [
+    "Actual connected Project\u2192Library pointer routing must be resolved/qualified",
+    "Broader native desktop/offline/large-media/shared preset lifecycle and integrated release remain open"
+  ],
+  "status": "shared_library remains partial"
+}

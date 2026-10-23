@@ -1,5 +1,50 @@
 # Active completion plan — full Venturi Web scope
 
+## Native key presets and insert workflows — 2026-10-23
+
+Source `ccc49a5`, runtime `78153fde00f0`, owns halo1/port8855 only. Compact
+Hold/Linear/EaseInOut/EaseIn/EaseOut buttons act on shared native key picks.
+Actual Windows applies EaseInOut to two ZoomX keys and one text key with the
+advanced panels closed: one SetInterpolation, one Undo/Redo, repeated-preset
+no-op and exact Saved reopen. See `evidence/f1-selected-key-interpolation.json`.
+Broader keyframe modifier/DPI/dense acceptance remains open.
+
+Each mixer strip now has native insert rows, plus/context menus and same-channel
+HTML drag. An exact own ACK remaps editor/nested paths; uncertain completions
+close affected editors. Mount/toggle state, window-only blur and same-strip popup
+dismissal are corrected. Actual insert drag moves EQ below Normalize; one Undo
+restores every timeline. Final-build menu MoveUp retains the EQ editor at its
+new index; Undo closes obsolete slot editors rather than opening Normalize.
+Mono Enable/Undo/Redo changes only its native enabled flag. The source-bound
+native asymmetric stereo averaging test passes; explicit Program Play is live
+at5.2778s. Saved reopen retains exact models/bytes with empty Undo. Prior native
+chain/PCM/export evidence is reused. See `evidence/f4-native-insert-workflow.json`
+and screenshot. Chain ordering and parameterless Mono are accepted; physical
+speaker/device and global release checks remain explicit in F4/F7.
+
+Project/Library source tabs are visible and keyboard accessible. Capture staging
+uses trusted local IDs/opaque tokens and no hover writes; timeline geometry or
+placement metadata no longer blocks Library admission. Deterministic64-item,
+stale/cancel/source/busy and acknowledged-publication cases pass. Explicit tabs
+open the existing58-item ds4 archive and2-item native NAS catalog. Actual
+Project-to-Library pointer attempts did not produce capture: that new gesture
+remains UNVERIFIED, not accepted. Existing AddToLibrary stays available. See
+`evidence/f5-project-library-capture.json`; full F5 remains partial.
+
+Halo1 R1 passes382 client cases, one native Mono test, Clippy8.23s/build40.60s.
+R3 passes110 affected cases/build41.32s; final R4 passes37 overlapping mixer
+cases/build40.66s, peak1,524,899,840B. Unchanged native/Clippy checks are reused;
+overlapping runs are not summed. Both new module HTTP200/MIME/body hashes match
+the gated source. All39 prior Sessions/40 PIDs, eight candidate Saved files,
+five local media files, four fixed NAS files and shared proxy are preserved.
+No local build or new browser installation was used.
+
+Ledger **60 done /30 partial /2 excluded**. Full F1-F7/M7 remains active.
+Next functional block: native Timeline waveform feedback for keyed gain,
+clipping, freeze/retime and trim/Slip/Roll, reusing native clocks/cache rather
+than adding browser key evaluation or DSP. Keep the unverified Library gesture,
+broader shared lifecycle and physical/dense/DPI/integrated release work open.
+
 ## Native EQ and normalization workflow — 2026-10-23
 
 Source17af3de/runtime258b3b4eb7bd on halo1/port8855 completes the compact six-band

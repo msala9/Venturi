@@ -1,0 +1,668 @@
+{
+  "scope": "Native selected-key interpolation toolbar; broader keyframe/DPI/modifier/dense release remains open",
+  "source_paths": [
+    "web/js/keyselection.js",
+    "web/js/curves.js",
+    "web/test/keyselection.test.js"
+  ],
+  "source_hashes": {
+    "web/js/keyselection.js": "5f1c162ce0289650d9e8feb37fcace2442847e390b6ddc9c7ac5665c97b9d51c",
+    "web/js/curves.js": "9cca40dd1cc4d3708a6a3917bfb9db99c47b2d3946eeabea09b97f3ec78e1141",
+    "web/test/keyselection.test.js": "9a148399a853aac4a4ae6026c8474d12635d63011e28dfe52b987634f615d8aa"
+  },
+  "browser": {
+    "surface": "existing Windows in-app browser, one tab",
+    "viewport": [
+      775,
+      964
+    ],
+    "device_pixel_ratio": 1.25,
+    "project": "Venturi_Native_Workflows_V1.vvproj",
+    "timeline": "1",
+    "clip": "12",
+    "advanced_panels_collapsed": true
+  },
+  "actions": [
+    "Create two native ZoomX keys at source0/96 and one Title text key at source0 using existing UI",
+    "Shared selection retains all three keys",
+    "Click compact Ease in/out: one SetInterpolation command applies native EaseInOut to all three keys",
+    "One actual Undo restores every native timeline exactly; one Redo restores eased state",
+    "Click same Ease in/out again: no extra history entry",
+    "Save and explicitly reopen: exact Saved bytes/models and empty Undo"
+  ],
+  "observations": {
+    "before": {
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "SetKeyframe"
+        ],
+        "position": 3
+      },
+      "project_epoch": "1792786384208798877:1",
+      "generation": "3",
+      "timeline_sha256": {
+        "1": "9fc62bb1291a07f02ea140e9ffe0e4c1fde7ff8de51d9022619f24f7d1b5e41e",
+        "2": "9cdebf0f085b3241a990076d0b4cc297665c17dd9d6981ee02d314e670d99513",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "keys": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.3333333432674408,
+                  0.3333333432674408
+                ],
+                [
+                  0.6666666865348816,
+                  0.6666666865348816
+                ]
+              ],
+              "interpolation": "Linear",
+              "next_key": {
+                "controls": [
+                  [
+                    0.3333333432674408,
+                    0.3333333432674408
+                  ],
+                  [
+                    0.6666666865348816,
+                    0.6666666865348816
+                  ]
+                ],
+                "interpolation": "Linear",
+                "source_frame": 96,
+                "value": 1.2000000476837158
+              },
+              "previous_key": null,
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.3333333432674408,
+                  0.3333333432674408
+                ],
+                [
+                  0.6666666865348816,
+                  0.6666666865348816
+                ]
+              ],
+              "interpolation": "Linear",
+              "next_key": null,
+              "previous_key": {
+                "controls": [
+                  [
+                    0.3333333432674408,
+                    0.3333333432674408
+                  ],
+                  [
+                    0.6666666865348816,
+                    0.6666666865348816
+                  ]
+                ],
+                "interpolation": "Linear",
+                "source_frame": 0,
+                "value": 1.0
+              },
+              "source_frame": 96,
+              "timeline_frame": 96,
+              "value": 1.2000000476837158
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.3333333432674408,
+                  0.3333333432674408
+                ],
+                [
+                  0.6666666865348816,
+                  0.6666666865348816
+                ]
+              ],
+              "interpolation": "Linear",
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": "Venturi \u00b7 Native title fonts"
+            }
+          ]
+        }
+      ],
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "ease": {
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "SetKeyframe",
+          "SetInterpolation"
+        ],
+        "position": 4
+      },
+      "project_epoch": "1792786384208798877:1",
+      "generation": "4",
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "9cdebf0f085b3241a990076d0b4cc297665c17dd9d6981ee02d314e670d99513",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "keys": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.5,
+                  1.0
+                ]
+              ],
+              "interpolation": "EaseInOut",
+              "next_key": {
+                "controls": [
+                  [
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "interpolation": "EaseInOut",
+                "source_frame": 96,
+                "value": 1.2000000476837158
+              },
+              "previous_key": null,
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.5,
+                  1.0
+                ]
+              ],
+              "interpolation": "EaseInOut",
+              "next_key": null,
+              "previous_key": {
+                "controls": [
+                  [
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "interpolation": "EaseInOut",
+                "source_frame": 0,
+                "value": 1.0
+              },
+              "source_frame": 96,
+              "timeline_frame": 96,
+              "value": 1.2000000476837158
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.5,
+                  1.0
+                ]
+              ],
+              "interpolation": "EaseInOut",
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": "Venturi \u00b7 Native title fonts"
+            }
+          ]
+        }
+      ],
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "undo": {
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "SetKeyframe",
+          "SetInterpolation"
+        ],
+        "position": 3
+      },
+      "project_epoch": "1792786384208798877:1",
+      "generation": "5",
+      "timeline_sha256": {
+        "1": "9fc62bb1291a07f02ea140e9ffe0e4c1fde7ff8de51d9022619f24f7d1b5e41e",
+        "2": "9cdebf0f085b3241a990076d0b4cc297665c17dd9d6981ee02d314e670d99513",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "keys": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.3333333432674408,
+                  0.3333333432674408
+                ],
+                [
+                  0.6666666865348816,
+                  0.6666666865348816
+                ]
+              ],
+              "interpolation": "Linear",
+              "next_key": {
+                "controls": [
+                  [
+                    0.3333333432674408,
+                    0.3333333432674408
+                  ],
+                  [
+                    0.6666666865348816,
+                    0.6666666865348816
+                  ]
+                ],
+                "interpolation": "Linear",
+                "source_frame": 96,
+                "value": 1.2000000476837158
+              },
+              "previous_key": null,
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.3333333432674408,
+                  0.3333333432674408
+                ],
+                [
+                  0.6666666865348816,
+                  0.6666666865348816
+                ]
+              ],
+              "interpolation": "Linear",
+              "next_key": null,
+              "previous_key": {
+                "controls": [
+                  [
+                    0.3333333432674408,
+                    0.3333333432674408
+                  ],
+                  [
+                    0.6666666865348816,
+                    0.6666666865348816
+                  ]
+                ],
+                "interpolation": "Linear",
+                "source_frame": 0,
+                "value": 1.0
+              },
+              "source_frame": 96,
+              "timeline_frame": 96,
+              "value": 1.2000000476837158
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.3333333432674408,
+                  0.3333333432674408
+                ],
+                [
+                  0.6666666865348816,
+                  0.6666666865348816
+                ]
+              ],
+              "interpolation": "Linear",
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": "Venturi \u00b7 Native title fonts"
+            }
+          ]
+        }
+      ],
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "redo_saved_and_noop": {
+      "history": {
+        "labels": [
+          "SetKeyframe",
+          "SetKeyframe",
+          "SetKeyframe",
+          "SetInterpolation"
+        ],
+        "position": 4
+      },
+      "project_epoch": "1792786384208798877:1",
+      "generation": "6",
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "9cdebf0f085b3241a990076d0b4cc297665c17dd9d6981ee02d314e670d99513",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "keys": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.5,
+                  1.0
+                ]
+              ],
+              "interpolation": "EaseInOut",
+              "next_key": {
+                "controls": [
+                  [
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "interpolation": "EaseInOut",
+                "source_frame": 96,
+                "value": 1.2000000476837158
+              },
+              "previous_key": null,
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.5,
+                  1.0
+                ]
+              ],
+              "interpolation": "EaseInOut",
+              "next_key": null,
+              "previous_key": {
+                "controls": [
+                  [
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "interpolation": "EaseInOut",
+                "source_frame": 0,
+                "value": 1.0
+              },
+              "source_frame": 96,
+              "timeline_frame": 96,
+              "value": 1.2000000476837158
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.5,
+                  1.0
+                ]
+              ],
+              "interpolation": "EaseInOut",
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": "Venturi \u00b7 Native title fonts"
+            }
+          ]
+        }
+      ],
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "3da276b26bc1806eb8d9c89b7f824d48b00d953190f9fdca432647d850c1fa76",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    },
+    "reopened": {
+      "history": {
+        "labels": [],
+        "position": 0
+      },
+      "project_epoch": "1792786384208798877:2",
+      "generation": "0",
+      "timeline_sha256": {
+        "1": "2ede1ec99ae42bccf1a821cf774805a15f41f3fdbb7832345bfb30fe88bffda2",
+        "2": "9cdebf0f085b3241a990076d0b4cc297665c17dd9d6981ee02d314e670d99513",
+        "3": "eee6cdbe0a7295207333e31a1dc27e8a525892f6ba39673121c4e9ec2a044850",
+        "4": "7713d7b5ae0edf9ff4fdc5453496c3fc79d6029f8c1ca14f41fc87898b7c530e"
+      },
+      "keys": [
+        {
+          "target": {
+            "kind": "transform",
+            "param": "ZoomX"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.5,
+                  1.0
+                ]
+              ],
+              "interpolation": "EaseInOut",
+              "next_key": {
+                "controls": [
+                  [
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "interpolation": "EaseInOut",
+                "source_frame": 96,
+                "value": 1.2000000476837158
+              },
+              "previous_key": null,
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": 1.0
+            },
+            {
+              "controls": [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.5,
+                  1.0
+                ]
+              ],
+              "interpolation": "EaseInOut",
+              "next_key": null,
+              "previous_key": {
+                "controls": [
+                  [
+                    0.5,
+                    0.0
+                  ],
+                  [
+                    0.5,
+                    1.0
+                  ]
+                ],
+                "interpolation": "EaseInOut",
+                "source_frame": 0,
+                "value": 1.0
+              },
+              "source_frame": 96,
+              "timeline_frame": 96,
+              "value": 1.2000000476837158
+            }
+          ]
+        },
+        {
+          "target": {
+            "kind": "text"
+          },
+          "keys": [
+            {
+              "controls": [
+                [
+                  0.5,
+                  0.0
+                ],
+                [
+                  0.5,
+                  1.0
+                ]
+              ],
+              "interpolation": "EaseInOut",
+              "source_frame": 0,
+              "timeline_frame": 0,
+              "value": "Venturi \u00b7 Native title fonts"
+            }
+          ]
+        }
+      ],
+      "project_hashes": {
+        "Venturi_Color_Audio_Controls_V1.vvproj": "7b9ccf26c387ad95cbc26584ee34540e4801d9a910bfef8d4f20ea88a4c55641",
+        "Venturi_Color_Native_V1.vvproj": "1b593fcc6196f41f5abd60f728a50c0bfa556cccb82d23873c03333179691363",
+        "Venturi_Compressor_Activity_V1.vvproj": "68d4e69b9d202da7e6e4a169067ebb614fe0bf5d30b9ab5e2c8be524a1271324",
+        "Venturi_EQ_Normalize_V1.vvproj": "5dc0e659df56bdb70fe6bbb42a9165875eda30f5014fd0e7f75be22e5b9bdcda",
+        "Venturi_Masks_Recording_V1.vvproj": "7f457983bde26219c30b7ccf5611da413d4812de8dcab44de57bd14fa156287f",
+        "Venturi_Native_Workflows_V1.vvproj": "3da276b26bc1806eb8d9c89b7f824d48b00d953190f9fdca432647d850c1fa76",
+        "Venturi_Project_Media.vvproj": "9775c55618ee2259eeaa92a592bb3b524bfcf62fad7e19d0d346d12c9cf5dc86",
+        "Venturi_Scalar_Source_V1.vvproj": "35e952f1e3dc0824dc7511c7e4efdda2b1de93920f615566bc0e0a0b3cf69efd"
+      }
+    }
+  },
+  "screenshot": "f1-selected-key-interpolation.png",
+  "reused": [
+    "f1-native-curve-viewport-workflow.json",
+    "f1-floating-curves-workflow.json"
+  ],
+  "limitations": [
+    "No physical modifier-wheel or global DPI/device/dense acceptance is inferred",
+    "Only the selected-key toolbar is newly qualified; prior native Bezier and rendering evidence is reused"
+  ]
+}

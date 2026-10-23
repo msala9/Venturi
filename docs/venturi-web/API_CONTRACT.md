@@ -1815,7 +1815,16 @@ control with text, modal and composition guards.
   track mix include native effect chains. GET
   `/timelines/{id}/audio/{channel}/eq/{index}` uses the exact-frame identity
   query and returns 128 committed native frequency-response points at 48kHz.
+  Additive `bands` contains six entries with `index`, `enabled`, native `shape`,
+  `has_gain` and 128 points on the same frequency grid. Each curve comes from
+  native `EqResponse::band_gain_db`; whole-insert bypass returns flat curves.
+  Pass-filter shapes retain frequency/Q and ignore their stored gain.
   This read does not require a GPU or create an audio output device.
+- The normalization catalog retains native modes, target ranges and defaults.
+  Additive `unit` is `LUFS` for Loudness and `dBFS` for peak modes. Only Loudness
+  supplies delivery `presets`: EBU R128 (-23), ATSC A/85 (-24), Streaming (-14).
+  These shortcuts use the existing guarded `set_audio_effects` command and
+  preserve bypass, insert order and the track clip-level policy.
 - `edit_filter {clip_id,edit}` supports actions add/remove/move/set. Each takes
   a native filter kind; move adds to_index, set adds a typed patch. Patches can
   set enabled/radius/direction/amount/shadow fields and grade entries

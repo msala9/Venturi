@@ -13,6 +13,12 @@
   --amber: #ffad45;
   --danger: #ff6274;
   --success: #7bcd9b;
+  --eq-band-1: rgb(200, 110, 240);
+  --eq-band-2: rgb(90, 160, 255);
+  --eq-band-3: rgb(80, 205, 200);
+  --eq-band-4: rgb(110, 205, 120);
+  --eq-band-5: rgb(235, 190, 70);
+  --eq-band-6: rgb(240, 120, 110);
   --spacing-unit: 4px;
   --radius-sm: 2px;
   --header-height: 24px;

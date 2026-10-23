@@ -630,6 +630,26 @@ label {
 .compressor-knob .compressor-control-mark { position: absolute; inset: 5px; transform: rotate(var(--compressor-angle,0deg)); }
 .compressor-knob .compressor-control-mark::before { content: ''; position: absolute; left: calc(50% - 1px); top: 0; width: 2px; height: 9px; background: var(--primary); }
 .compressor-controls button[aria-busy="true"] { cursor: progress; }
+.eq-controls { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 5px; margin: 8px 0; }
+.eq-band-controls { --eq-band-color: var(--eq-band-1); display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3px; min-width: 0; padding: 4px; border: 1px solid var(--border); border-top: 2px solid var(--eq-band-color); }
+.eq-band-controls[data-eq-band="1"] { --eq-band-color: var(--eq-band-2); }
+.eq-band-controls[data-eq-band="2"] { --eq-band-color: var(--eq-band-3); }
+.eq-band-controls[data-eq-band="3"] { --eq-band-color: var(--eq-band-4); }
+.eq-band-controls[data-eq-band="4"] { --eq-band-color: var(--eq-band-5); }
+.eq-band-controls[data-eq-band="5"] { --eq-band-color: var(--eq-band-6); }
+.eq-band-controls > strong { grid-column: 1; grid-row: 1; align-self: center; color: var(--eq-band-color); font-size: 11px; }
+.eq-band-controls > label { grid-column: 2; grid-row: 1; display: inline-flex; align-items: center; justify-content: center; gap: 2px; margin: 0; font-size: 9px; }
+.eq-band-controls > label input { width: 13px; height: 13px; margin: 0; }
+#inspector .eq-band-controls > .eq-band-reset { grid-column: 3; grid-row: 1; justify-self: end; width: 22px; min-height: 22px; padding: 1px 2px; margin: 0; font-size: 10px; }
+.eq-band-controls > select { grid-column: 1 / -1; min-width: 0; width: 100%; min-height: 22px; padding: 1px 2px; font-size: 10px; }
+.eq-control-cell { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; font-size: 9px; }
+.eq-control-cell output { max-width: 100%; overflow: hidden; font-size: 9px; font-variant-numeric: tabular-nums; white-space: nowrap; text-overflow: ellipsis; }
+#inspector .eq-knob { position: relative; width: min(30px,100%); min-height: 26px; aspect-ratio: 1; margin: 0; padding: 0; border-radius: 50%; touch-action: none; cursor: ew-resize; }
+.eq-knob-mark { position: absolute; inset: 5px; transform: rotate(var(--eq-angle,0deg)); }
+.eq-knob-mark::before { content: ''; position: absolute; left: calc(50% - 1px); top: 0; width: 2px; height: 8px; background: var(--eq-band-color); }
+.normalization-presets { display: flex; flex-wrap: wrap; gap: 3px; margin: 4px 0; }
+.normalization-presets button { min-height: 22px; padding: 2px 4px; font-size: 10px; }
+@media (max-width: 650px) { .eq-controls { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 .audio-graph-parameters input, .audio-graph-parameters select { min-width: 0; width: 100%; min-height: 25px; padding: 2px 4px; }
 .curve-editor fieldset { min-width: 0; margin: 8px 0; padding: 8px; }
 .catalog-toolbar { display: grid; gap: 6px; margin-bottom: 6px; }

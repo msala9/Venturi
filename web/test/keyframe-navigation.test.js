@@ -60,7 +60,7 @@ function harness({renderer=null,read,editable=false,keySelection}={}){
   const ruler=()=>all().find(node=>node.className?.includes('keyframe-ruler'));
   const jump=()=>all().find(node=>node.textContent?.startsWith('Go to selected'));
   return {root,native,seeks,requests,notices,commands,document,window,control,ruler,jump,all,setAllowed:value=>allowed=value,setKey:value=>key=value,
-    restore(){if(renderer)control.cancel();else control.dispose();for(const [key,value] of previous)globalThis[key]=value;}};
+    restore(){control.dispose();for(const [key,value] of previous)globalThis[key]=value;}};
 }
 
 test('ruler drafts locally and sends one native mapping read only at release, including exclusive source out',async()=>{
@@ -130,7 +130,7 @@ test('actual simultaneous lanes activate scalar and typed editors and move their
   const renderer=(root,native,options)=>{
     native.curves.tracks.push({...structuredClone(native.curves.tracks[0]),name:'Position Y',target:{kind:'transform',param:'PositionY'}});
     const scalar=renderCurves(root,native,options),typed=renderEventKeys(root,native,options);
-    return {cancel(){typed.cancel();scalar.cancel();}};
+    return {cancel(){typed.cancel();scalar.cancel();},dispose(){typed.dispose();scalar.dispose();}};
   };
   const h=harness({renderer,editable:true,keySelection:selected});
   try{
@@ -162,7 +162,7 @@ test('actual scalar, value and cross-parameter editors share additive selection 
     canvas.emit('pointerup',{clientX:x+25,clientY:y-20,shiftKey:true});await settle();
     const delta=g.frame(g.x(20)+24)-20;assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0],{kind:'edit_key_selection',clip_id:'3',edit:{picks:before,link_zoom:false,action:{kind:'drag',delta_source_frames:delta,grabbed:{target:scalar,source_frame:20,value:g.value(g.y(0)-20)}}}});
     assert.deepEqual(selected.get(),before.map(pick=>({...pick,source_frame:pick.source_frame+delta})));assert.deepEqual(h.notices,[]);
-  }finally{events?.cancel();list?.cancel();h.restore();}
+  }finally{events?.dispose();list?.dispose();h.restore();}
 });
 
 test('actual scalar drag rejects changed cross-parameter selection and current editing permission before release',async()=>{

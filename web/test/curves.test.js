@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {bindCurveGesture, curveGeometry, curveHandles, curveHandleOperation, renderCurves, curveKeyOperation, curveGroupOperation, curveGroupDraft, curveViewport,createZoomLink,zoomParameters,createKeyEditorGuard,createKeyPickSelection,keyPickIdentity,pointerKeyOperation,pointerCurveDraft} from "../js/curves.js";
+import {renderEventKeys} from '../js/eventkeys.js';
 
 test('native graph selection inserts additive picks, retains peers/pages and shares exact view identities',()=>{
   const state=new Map(),selection=createKeyPickSelection(state,'epoch:tl:clip'),a={target:{kind:'transform',param:'PositionX'},source_frame:10},b={target:{kind:'text'},source_frame:3000};let changes=0;
@@ -163,10 +164,10 @@ test('incoming tangent releases preserve segment identity and current mixed sele
   events.pointerdown(point(16,16));events.pointermove(point(18,20));events.keydown({key:'Escape',preventDefault(){},stopPropagation(){}});events.pointerup(point(19,24));assert.equal(commands.length,1);
 });
 
-function renderedCurveHarness(t,{disabled=false,readCurveViewport,presentation='inline'}={}){
-  const prior={document:globalThis.document,window:globalThis.window,Option:globalThis.Option,ResizeObserver:globalThis.ResizeObserver,getComputedStyle:globalThis.getComputedStyle};
+function renderedCurveHarness(t,{disabled=false,readCurveViewport,presentation='inline',eventEditor=false}={}){
+  const prior={document:globalThis.document,window:globalThis.window,Option:globalThis.Option,ResizeObserver:globalThis.ResizeObserver,getComputedStyle:globalThis.getComputedStyle,devicePixelRatio:globalThis.devicePixelRatio};
   class Node{
-    constructor(tag){this.tagName=tag;this.children=[];this.dataset={};this.style={};this.events=new Map();this.attributes={};this.isConnected=true;this.value='';this.open=false;this.rect={left:0,top:0,width:400,height:190};this.classList={contains:name=>(this.className || '').split(' ').includes(name)};}
+    constructor(tag){this.tagName=tag;this.children=[];this.dataset={};this.style={};this.events=new Map();this.attributes={};this.isConnected=true;this.value='';this.open=false;this.rect={left:0,top:0,width:400,height:190};this.classList={contains:name=>(this.className || '').split(' ').includes(name)};this.captured=new Set();}
     append(...nodes){for(const node of nodes){if(node.parentNode)node.parentNode.children=node.parentNode.children.filter(item=>item!==node);this.children.push(node);node.parentNode=this;node.parentElement=this;}}
     replaceChildren(...nodes){this.children=[];this.append(...nodes);}
     remove(){this.isConnected=false;}
@@ -180,15 +181,15 @@ function renderedCurveHarness(t,{disabled=false,readCurveViewport,presentation='
     getContext(){return this.ctx??=new Proxy({}, {get:(obj,key)=>obj[key]??((...args)=>{(this.calls??=[]).push([key,...args]);})});}
     reportValidity(){return true;}
     focus(){globalThis.document.activeElement=this;}
-    setPointerCapture(){}hasPointerCapture(){return true;}releasePointerCapture(){this.emit('lostpointercapture');}
+    setPointerCapture(id){this.captured.add(id);}hasPointerCapture(id){return this.captured.has(id);}releasePointerCapture(id){this.captured.delete(id);this.emit('lostpointercapture',{pointerId:id});}
   }
   const document=new Node('document'),window=new Node('window');document.createElement=tag=>new Node(tag);document.querySelector=()=>null;document.defaultView=window;document.body=new Node('body');document.activeElement=document.body;window.devicePixelRatio=1;window.ResizeObserver=class{observe(){}disconnect(){}};window.getComputedStyle=()=>({getPropertyValue:()=>''});
-  Object.assign(globalThis,{document,window,ResizeObserver:window.ResizeObserver,getComputedStyle:window.getComputedStyle,Option:class extends Node{constructor(label,value){super('option');this.textContent=label;this.value=value;}}});
-  const root=new Node('root'),selection=createKeyPickSelection(),commands=[],notices=[],state=new Map([['curves',true]]),target={kind:'transform',param:'PositionX'},detail={project_epoch:'epoch',generation:'7',timeline_id:'tl',revision:'rev',clip_id:'clip',source_frame:10,timeline_frame:10,video:false,curves:{source_start:0,source_end:20,tracks:[{name:'Position X',target,key_count:2,min:-100,max:100,default:0,samples:[[0,0],[20,20]],keys:[{source_frame:0,timeline_frame:0,value:0,controls:[[.2,.2],[.8,.8]]},{source_frame:20,timeline_frame:20,value:20}]}]},event_keys:[{name:'Text',target:{kind:'text'},key_count:1,keys:[{source_frame:10,timeline_frame:10}]}]};
-  let available=true;const control=renderCurves(root,detail,{disabled,commit:operation=>commands.push(operation),notice:message=>notices.push(message),openState:state,keySelection:selection,canInteract:()=>available,canNavigate:()=>available,readCurveViewport,presentation});
-  t.after(()=>{control.cancel();Object.assign(globalThis,prior);});
-  const all=node=>[node,...node.children.flatMap(all)],find=label=>all(root).find(node=>node.attributes['aria-label']===label),graph=find('Native keyframe curve. Select keys below for keyboard editing.');
-  return {root,selection,commands,notices,state,control,target,detail,graph,all:()=>all(root),find,setAvailable:value=>available=value};
+  Object.assign(globalThis,{document,window,ResizeObserver:window.ResizeObserver,getComputedStyle:window.getComputedStyle,devicePixelRatio:1,Option:class extends Node{constructor(label,value){super('option');this.textContent=label;this.value=value;}}});
+  const root=new Node('root'),selection=createKeyPickSelection(),commands=[],notices=[],state=new Map([['curves',true],['event-keys',true]]),target={kind:'transform',param:'PositionX'},detail={project_epoch:'epoch',generation:'7',timeline_id:'tl',revision:'rev',clip_id:'clip',source_frame:10,timeline_frame:10,video:false,curves:{source_start:0,source_end:20,tracks:[{name:'Position X',target,key_count:2,min:-100,max:100,default:0,samples:[[0,0],[20,20]],keys:[{source_frame:0,timeline_frame:0,value:0,controls:[[.2,.2],[.8,.8]]},{source_frame:20,timeline_frame:20,value:20}]}]},event_keys:[{name:'Text',target:{kind:'text'},default:'Native text',key_count:1,keys:[{source_frame:10,timeline_frame:10,value:'Native text'}]}]};
+  let available=true;const control=(eventEditor?renderEventKeys:renderCurves)(root,detail,{disabled,commit:operation=>commands.push(operation),notice:message=>notices.push(message),openState:state,keySelection:selection,canInteract:()=>available,canNavigate:()=>available,readCurveViewport,presentation});
+  t.after(()=>{control.dispose();Object.assign(globalThis,prior);});
+  const all=node=>[node,...node.children.flatMap(all)],find=label=>all(root).find(node=>node.attributes['aria-label']===label),graph=find(eventEditor?'Native RGBA text and direction key times':'Native keyframe curve. Select keys below for keyboard editing.');
+  return {root,selection,commands,notices,state,control,target,detail,graph,window,document,all:()=>all(root),find,setAvailable:value=>available=value};
 }
 
 test('typed row activation blanks only scalar controls, keeps mixed deletion and restores manual scalar choice',async t=>{
@@ -253,6 +254,36 @@ test('dedicated key editor permits one exact native request at a time and never 
   const pending=owner.commit(operation);await assert.rejects(owner.commit(operation),/context changed/);assert.deepEqual(commands,[operation]);resolve({command_id:'ack'});assert.deepEqual(await pending,{command_id:'ack'});
   const uncertain=createKeyEditorGuard({root,section,disabled:false,canInteract:()=>current,commit:async request=>{commands.push(request);current=false;throw Error('Command outcome unknown');}});
   await assert.rejects(uncertain.commit(operation),/outcome unknown/);await assert.rejects(uncertain.commit(operation),/context changed/);assert.equal(commands.length,2);
+});
+
+test('key guard reusable cancellation drops only undispatched edits and retains the dispatched unknown-outcome fence',async()=>{
+  const root={isConnected:true},section={isConnected:true},commands=[],operation=curveGroupOperation('clip',{kind:'gain'},[3,12],2,-1);
+  const owner=createKeyEditorGuard({root,section,disabled:false,commit:async value=>commands.push(value)});
+  const canceled=owner.commit(operation);owner.cancel();await assert.rejects(canceled,error=>error.code==='KEY_EDIT_CANCELED');assert.deepEqual(commands,[]);assert.equal(owner.current(),true);
+  await owner.commit(operation);assert.deepEqual(commands,[operation]);owner.dispose();await assert.rejects(owner.commit(operation),/context changed/);
+  let reject;const pending=createKeyEditorGuard({root,section,disabled:false,commit:value=>{commands.push(value);return new Promise((resolve,fail)=>{reject=fail;});}}),flight=pending.commit(operation);
+  await Promise.resolve();pending.cancel();await assert.rejects(pending.commit(operation),/context changed/);assert.equal(commands.length,2);
+  reject(Object.assign(Error('Resolve this exact native command before editing'),{code:'OUTCOME_UNKNOWN'}));await assert.rejects(flight,/exact native command/);pending.cancel();assert.equal(pending.current(),false);await assert.rejects(pending.commit(operation),/context changed/);assert.equal(commands.length,2);pending.dispose();
+});
+
+test('scalar editor blur cancels its draft and queued edit while keeping lanes, mixed selection and a fresh gesture mounted',async t=>{
+  const h=renderedCurveHarness(t,{presentation:'window'}),picks=[{target:h.target,source_frame:0},{target:{kind:'text'},source_frame:10}];h.selection.set(picks);
+  const lanes=h.all().find(node=>node.className==='keyframe-lanes'),g=curveGeometry(h.detail.curves.tracks[0],{source_start:0,source_end:20},400,190,[0],110),point={clientX:g.x(0),clientY:g.y(0)};
+  h.graph.emit('pointerdown',point);h.graph.emit('pointermove',{clientX:point.clientX+15,clientY:point.clientY});h.window.emit('blur');h.graph.emit('pointerup',{clientX:point.clientX+15,clientY:point.clientY});
+  assert.deepEqual(h.commands,[]);assert.deepEqual(h.selection.get(),picks);assert.equal(h.graph.captured.size,0);assert.equal(lanes.isConnected,true);
+  const source=h.all().find(node=>node.tagName==='input' && node.parentElement?.textContent==='Key source frame');source.value=1;const value=h.all().find(node=>node.tagName==='input' && node.parentElement?.textContent==='Key value');value.value=5;source.parentElement.parentElement.emit('submit');h.control.cancel();
+  for(let i=0;i<8;i++)await Promise.resolve();assert.deepEqual(h.commands,[]);assert.deepEqual(h.selection.get(),picks);assert.deepEqual(h.notices,[]);
+  h.document.activeElement=h.document.body;h.graph.emit('pointerdown',point);h.graph.emit('pointerup',{clientX:point.clientX+15,clientY:point.clientY});for(let i=0;i<8;i++)await Promise.resolve();
+  assert.equal(h.commands.length,1);assert.equal(h.commands[0].edit.picks.length,2);assert.equal(h.commands[0].edit.action.delta_source_frames,1);assert.equal(lanes.isConnected,true);
+  h.control.dispose();assert.equal(lanes.isConnected,false);h.graph.emit('pointerdown',point);h.graph.emit('pointerup',{clientX:point.clientX+30,clientY:point.clientY});assert.equal(h.commands.length,1);assert.equal((h.graph.events.get('pointerdown') || []).length,0);
+});
+
+test('typed event editor survives blur and shared selection changes, cancels queued native values and disposes permanently',async t=>{
+  const h=renderedCurveHarness(t,{eventEditor:true}),pick={target:{kind:'text'},source_frame:10};h.selection.set([pick]);
+  h.graph.emit('pointerdown',{clientX:200,clientY:34});h.graph.emit('pointermove',{clientX:218,clientY:34});h.window.emit('blur');h.graph.emit('pointerup',{clientX:218,clientY:34});assert.deepEqual(h.commands,[]);assert.deepEqual(h.selection.get(),[pick]);assert.equal(h.graph.captured.size,0);
+  const source=h.all().find(node=>node.tagName==='input' && node.parentElement?.textContent==='Value key source frame'),text=h.all().find(node=>node.tagName==='textarea');source.value=11;text.value='Unconfirmed text';source.parentElement.parentElement.emit('submit');h.control.cancel();for(let i=0;i<8;i++)await Promise.resolve();assert.deepEqual(h.commands,[]);assert.deepEqual(h.selection.get(),[pick]);assert.deepEqual(h.notices,[]);
+  h.selection.set([]);h.selection.set([pick]);assert.equal(h.find('Value keyframe').value,'10');h.graph.emit('pointerdown',{clientX:200,clientY:34});h.graph.emit('pointerup',{clientX:218,clientY:34});for(let i=0;i<8;i++)await Promise.resolve();assert.equal(h.commands.length,1);assert.deepEqual(h.commands[0].edit.picks,[pick]);assert.equal(h.commands[0].edit.action.delta_source_frames,1);
+  h.control.dispose();h.graph.emit('pointerdown',{clientX:200,clientY:34});h.graph.emit('pointerup',{clientX:230,clientY:34});source.parentElement.parentElement.emit('submit');for(let i=0;i<8;i++)await Promise.resolve();assert.equal(h.commands.length,1);assert.equal((h.graph.events.get('pointerdown') || []).length,0);
 });
 
 test('key pointer begin, drafts and release are scoped to live ownership and release capture on cancellation',()=>{

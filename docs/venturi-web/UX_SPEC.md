@@ -341,6 +341,18 @@ Program Viewer plus keyframeable shadows/midtones/highlights/offset wheels, per-
 
 Timeline with tall waveforms, mixer strips for every audio track and master (gain, pan/balance, mute/solo, level meter). Ordered effect chain (6-band EQ, three-band multiband compressor, normalize, mono, bypass). EQ graph and actual freq/Q/gain + presets, compressor threshold/ratio/attack/release/crossover/return. Clip and track normalization: peak, true peak, loudness (EBU R128) if upstream supports.
 
+Six compact EQ band strips expose On, native shape, Hz/Gain/Q knobs and band
+reset alongside precise fields. Pointer drafts stay local until release;
+Shift provides fine adjustment and Escape cancels. Pass filters disable gain.
+Native committed band curves share the total response grid; prepared audio
+provides pre/post spectra through the existing bounded insert reader.
+Loudness normalization exposes the three native delivery presets; peak modes
+retain their own dBFS targets. V1 audio edits happen stopped, followed by Play.
+
+Key-editor cancellation retains mounted lanes, selections and keyboard
+listeners. Closing/replacing the editor disposes them. A canceled queued edit
+must not dispatch; a dispatched unknown outcome remains fenced until reconciled.
+
 Voiceover: get mic access in Windows browser with user gesture, record/monitor/stop, upload into safe project work dir, align to project time, import as take; test browser permissions, latency correction, disconnect and no duplicate import. Never route Windows microphone to the Linux OS implicitly. Preview synchronizes A/V with a master media clock; don't promise perfect 8x audio until implemented.
 
 ## 10. AI Review workspace

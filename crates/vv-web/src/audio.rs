@@ -48,7 +48,29 @@ pub fn eq_response(timeline: &Timeline, value: &str, index: usize) -> Result<Val
             ]
         })
         .collect();
-    Ok(json!({"sample_rate":rate,"points":points,"enabled":effect.enabled}))
+    let bands: Vec<_> = params
+        .bands
+        .iter()
+        .enumerate()
+        .map(|(index, band)| {
+            let band_points: Vec<_> = points
+                .iter()
+                .map(|[frequency, _]| {
+                    [
+                        *frequency,
+                        if effect.enabled {
+                            response.band_gain_db(index, *frequency)
+                        } else {
+                            0.0
+                        },
+                    ]
+                })
+                .collect();
+            json!({"index":index,"enabled":band.enabled,"shape":band.shape,
+                "has_gain":band.shape.has_gain(),"points":band_points})
+        })
+        .collect();
+    Ok(json!({"sample_rate":rate,"points":points,"enabled":effect.enabled,"bands":bands}))
 }
 pub fn compressor_response(timeline: &Timeline, value: &str, index: usize) -> Result<Value> {
     let strip = match locate(timeline, value)? {
@@ -230,7 +252,23 @@ pub fn catalog() -> Value {
         };
         defaults.insert(key.into(), json!(core::AudioEffect::new(kind)));
     }
-    json!({"presets":{"Equalizer":core::presets::equalizer_presets().map(|(key,_)|key),"MultibandCompressor":core::presets::compressor_presets().map(|(key,_)|key)},"defaults":defaults,"eq":{"freq_hz":core::EqBand::FREQ_RANGE_HZ,"gain_db":core::EqBand::GAIN_RANGE_DB,"q":core::EqBand::Q_RANGE,"shapes":core::EqShape::ALL,"graph":{"frequency_hz":[20,20000],"gain_db":core::EqBand::GAIN_RANGE_DB,"display_db":[-27,27],"q_wheel_factor":1.15,"shape_has_gain":shape_has_gain}},"compressor":{"crossovers_hz":core::MultibandCompressor::CROSSOVER_RANGE_HZ,"threshold_db":core::CompressorBand::THRESHOLD_RANGE_DB,"ratio":core::CompressorBand::RATIO_RANGE,"attack_ms":core::CompressorBand::ATTACK_RANGE_MS,"release_ms":core::CompressorBand::RELEASE_RANGE_MS,"makeup_db":core::CompressorBand::MAKEUP_RANGE_DB,"graph":{"frequency_hz":[20,20000],"display_db":[-30,24],"min_crossover_ratio":1.2,"response_kind":"makeup_only"}},"normalization":core::NormalizeMode::ALL.map(|mode|{let range=mode.target_range();json!({"mode":mode,"range":[range.start(),range.end()],"default":mode.default_target()})})})
+    let normalization = core::NormalizeMode::ALL.map(|mode| {
+        let range = mode.target_range();
+        let presets: Vec<_> = if mode.is_loudness() {
+            [
+                (-23.0_f32, "EBU R128"),
+                (-24.0, "ATSC A/85"),
+                (-14.0, "Streaming"),
+            ]
+            .map(|(target, name)| json!({"name":name,"target":target}))
+            .into()
+        } else {
+            Vec::new()
+        };
+        json!({"mode":mode,"range":[range.start(),range.end()],"default":mode.default_target(),
+            "unit":if mode.is_loudness(){"LUFS"}else{"dBFS"},"presets":presets})
+    });
+    json!({"presets":{"Equalizer":core::presets::equalizer_presets().map(|(key,_)|key),"MultibandCompressor":core::presets::compressor_presets().map(|(key,_)|key)},"defaults":defaults,"eq":{"freq_hz":core::EqBand::FREQ_RANGE_HZ,"gain_db":core::EqBand::GAIN_RANGE_DB,"q":core::EqBand::Q_RANGE,"shapes":core::EqShape::ALL,"graph":{"frequency_hz":[20,20000],"gain_db":core::EqBand::GAIN_RANGE_DB,"display_db":[-27,27],"q_wheel_factor":1.15,"shape_has_gain":shape_has_gain}},"compressor":{"crossovers_hz":core::MultibandCompressor::CROSSOVER_RANGE_HZ,"threshold_db":core::CompressorBand::THRESHOLD_RANGE_DB,"ratio":core::CompressorBand::RATIO_RANGE,"attack_ms":core::CompressorBand::ATTACK_RANGE_MS,"release_ms":core::CompressorBand::RELEASE_RANGE_MS,"makeup_db":core::CompressorBand::MAKEUP_RANGE_DB,"graph":{"frequency_hz":[20,20000],"display_db":[-30,24],"min_crossover_ratio":1.2,"response_kind":"makeup_only"}},"normalization":normalization})
 }
 
 pub fn apply_saved_kind(

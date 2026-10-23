@@ -1,8 +1,9 @@
 import { request } from "./api.js";
 import {renderAudioPresets} from './audio-presets.js';
 import {bindMixerControl,mixerGainPosition} from './mixer-controls.js';
-import {createAudioGraph,compressorActivitySample} from './audio-graphs.js';
+import {createAudioGraph,compressorActivitySample,equalizerActivitySample} from './audio-graphs.js';
 import {createCompressorControls} from './compressor-controls.js';
+import {createEqControls} from './eq-controls.js';
 
 export function mixerDraftContext(query) {
   const params=new URLSearchParams(query),keys=['project_epoch','if_generation','timeline_id','revision'];
@@ -134,18 +135,27 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
           graph=createAudioGraph({root:form,kind,label:`${track.label} insert ${index+1}`,getParameters:()=>data,getEnabled:()=>draft.enabled,defaults:catalog.defaults[kind].kind[kind],catalog:kind==='Equalizer'?catalog.eq:catalog.compressor,canInteract,isCurrent:current,isValid:()=>form.reportValidity(),getContext:context,notice,
             onCommit:applyParameters,onDraft:()=>clearActivity(),
             readResponse:()=>request(`/timelines/${encodeURIComponent(timeline)}/audio/${encodeURIComponent(track.channel)}/${kind==='Equalizer'?'eq':'compressor'}/${index}?${query}`)});
-          if(kind==='MultibandCompressor'){
+          if(kind==='Equalizer'){
+            let previousInputs=[];
+            dynamics=createEqControls({root:form,label:`${track.label} insert ${index+1}`,getParameters:()=>data,defaults:catalog.defaults[kind].kind[kind],catalog:catalog.eq,canInteract,isCurrent:current,isValid:()=>form.reportValidity(),getContext:context,notice,
+              onStart:()=>{clearActivity();graph.cancel();previousInputs=bindings.filter(binding=>data.bands.includes(binding.object)).map(({input})=>[input,input.value,input.checked]);},
+              onDraft:parameters=>{graph.setDraft?.(parameters);for(const {input,object,key,type} of bindings){const band=data.bands.indexOf(object);if(band>=0){if(type==='check')input.checked=parameters.bands[band][key];else input.value=parameters.bands[band][key];}}},
+              onCancel:()=>{for(const [input,value,checked] of previousInputs){input.value=value;input.checked=checked;}graph.sync();},onCommit:applyParameters});
+            graphs.push(dynamics);
+          }else{
             let previousInputs=[];
             dynamics=createCompressorControls({root:form,label:`${track.label} insert ${index+1}`,getParameters:()=>data,defaults:catalog.defaults[kind].kind[kind],catalog:catalog.compressor,canInteract,isCurrent:current,isValid:()=>form.reportValidity(),getContext:context,notice,
               onStart:()=>{clearActivity();graph.cancel();previousInputs=bindings.filter(binding=>binding.type==='number').map(({input})=>[input,input.value]);},
               onDraft:parameters=>{for(const {input,object,key,type} of bindings){const band=data.bands.indexOf(object);if(type==='number' && band>=0)input.value=parameters.bands[band][key];}},
               onCancel:()=>{for(const [input,value] of previousInputs)input.value=value;},onCommit:applyParameters});
             graphs.push(dynamics);
-            clearActivity=(message='')=>{graph?.setActivity(null,message);dynamics?.setActivity(null);};
+          }
+          {
+            clearActivity=(message='')=>{graph?.setActivity(null,message);if(kind==='MultibandCompressor')dynamics?.setActivity(null);};
             const nativeParameters=JSON.stringify(data),sampleCurrent=()=>current() && !document.hidden && (card.getClientRects?.().length ?? 1)>0 && (meters?.visible?.() ?? false) && JSON.stringify(data)===nativeParameters && draft.enabled===effect.enabled;
             const unsubscribe=meters?.subscribe({query:Object.fromEntries(new URLSearchParams(query)),insert:{channel:track.channel,index},visible:sampleCurrent,isCurrent:()=>!disposed && card.isConnected!==false && context()===expected,onClear:clearActivity,onStatus:message=>{if(!message.startsWith('Native prepared'))clearActivity(message);},onRead:result=>{
               if(!sampleCurrent()){clearActivity();return;}
-              const sample=compressorActivitySample(result,{channel:track.channel,index,parameters:data});if(!sample){clearActivity(result.inserts_error || 'No matching native compressor sample');return;}graph.setActivity(sample);dynamics.setActivity(sample);
+              const sample=(kind==='Equalizer'?equalizerActivitySample:compressorActivitySample)(result,{channel:track.channel,index,parameters:data});if(!sample){clearActivity(result.inserts_error || 'No matching native insert sample');return;}graph.setActivity(sample);if(kind==='MultibandCompressor')dynamics.setActivity(sample);
             }});
             if(unsubscribe)cleanups.push(unsubscribe);
           }
@@ -176,7 +186,23 @@ function renderEffects(root,track,catalog,disabled,commit,notice,openPaths,timel
           const range=()=>catalog.normalization.find((value)=>value.mode===data.mode);
           const target=number(`${track.label} normalization target`,data,"target_db",range().range);
           if(track.channel!=="master")select(`${track.label} clip level policy`,data,"set_level",["Independent","Relative"]);
-          mode.addEventListener("change",()=>{const value=range();data.target_db=normalizationModeTarget(previousMode,data.mode,data.target_db,catalog.normalization);previousMode=data.mode;target.min=value.range[0];target.max=value.range[1];target.value=data.target_db;});
+          const presets=document.createElement('div');presets.className='normalization-presets';form.append(presets);const buttons=[];let waiting=false,unknown=false;
+          const expected=JSON.stringify(audioPresets?.getContext?.() ?? query),available=()=>!disposed && !disabled && !waiting && !unknown && card.isConnected!==false && card.open && section.open && root.open && !document.hidden && !document.querySelector?.('dialog[open]') && JSON.stringify(audioPresets?.getContext?.() ?? query)===expected && (audioPresets?.canCommit?.() ?? true);
+          const syncPresets=()=>{presets.hidden=data.mode!=='Loudness' || range().unit!=='LUFS';for(const {button,value} of buttons){button.disabled=!available() || presets.hidden;button.setAttribute('aria-pressed',String(data.target_db===value));}};
+          const loudness=catalog.normalization.find(value=>value.mode==='Loudness');
+          for(const preset of Array.isArray(loudness?.presets)?loudness.presets:[]){
+            if(typeof preset?.name!=='string' || !preset.name || !Number.isFinite(preset.target) || preset.target<loudness.range[0] || preset.target>loudness.range[1])continue;
+            const button=document.createElement('button');button.type='button';button.textContent=`${preset.name} (${preset.target} LUFS)`;buttons.push({button,value:preset.target});presets.append(button);
+            button.addEventListener('click',async()=>{
+              if(!available() || button.disabled || button.isConnected===false || presets.hidden || !form.reportValidity() || data.target_db===preset.target)return;
+              const next=structuredClone(draft);next.kind.Normalize.target_db=preset.target;waiting=true;syncPresets();
+              try{await commit(chainOperation(track.channel,track.effects.map((entry,own)=>own===index?next:entry)));if(!disposed){data.target_db=preset.target;target.value=data.target_db;}}
+              catch(error){if(error.code==='OUTCOME_UNKNOWN')unknown=true;notice(error.message);}finally{waiting=false;if(!disposed)syncPresets();}
+            });
+          }
+          target.addEventListener('input',syncPresets);
+          for(const details of [card,section,root]){details.addEventListener('toggle',syncPresets);cleanups.push(()=>details.removeEventListener?.('toggle',syncPresets));}
+          mode.addEventListener("change",()=>{const value=range();data.target_db=normalizationModeTarget(previousMode,data.mode,data.target_db,catalog.normalization);previousMode=data.mode;target.min=value.range[0];target.max=value.range[1];target.value=data.target_db;syncPresets();});syncPresets();
         }
         const apply=document.createElement("button");apply.textContent=`Apply ${track.label} insert ${index+1}`;apply.disabled=disabled;form.append(apply);
         form.addEventListener("submit",(event)=>{event.preventDefault();graph?.cancel();dynamics?.cancel();if(!disposed && !disabled && form.reportValidity())report(track.effects.map((entry,i)=>i===index ? draft : entry));});

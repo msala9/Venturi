@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {nativeRound,audioFrequencyPosition,audioFrequencyAt,audioGraphHandles,audioGraphDraft,audioGraphWheel,createAudioGraph,compressorActivitySample} from '../js/audio-graphs.js';
+import {nativeRound,audioFrequencyPosition,audioFrequencyAt,audioGraphHandles,audioGraphDraft,audioGraphWheel,createAudioGraph,compressorActivitySample,equalizerActivitySample} from '../js/audio-graphs.js';
 import {renderMixer} from '../js/mixer.js';
 
 const eqMeta={frequency_hz:[20,20000],display_db:[-27,27],gain_db:[-24,24],q_wheel_factor:Math.fround(1.15),shape_has_gain:{HighPass:false,LowShelf:true,Peak:true,HighShelf:true,LowPass:false}};
@@ -125,5 +125,44 @@ test('actual insert integration retains collapsed precise fields, full chain ord
     const nodes=all(root),groups=nodes.filter(node=>node.className==='audio-graph-parameters');assert.equal(groups.length,6);assert.ok(groups.every(node=>!node.open));
     const handle=nodes.find(node=>node.dataset.audioGraphHandle==='eq' && node.textContent==='2');send(handle,'keydown',{key:'ArrowUp'});await settle();
     assert.equal(writes.length,1);assert.equal(writes[0].kind,'set_audio_effects');assert.equal(writes[0].effects[0].enabled,false);assert.deepEqual(writes[0].effects[1],mono);assert.ok(Math.abs(writes[0].effects[0].kind.Equalizer.bands[1].gain_db-.1)<1e-6);assert.equal(eq.kind.Equalizer.bands[1].gain_db,0);assert.ok(reads.every(url=>url.includes('/eq/0?')));
+  }finally{section?.disposeMeters();globalThis.document=previous.document;globalThis.Option=previous.Option;globalThis.fetch=previous.fetch;}
+});
+
+const eqResponse=()=>{const points=Array.from({length:128},(_,index)=>[20*Math.pow(1000,index/127),index/127]);return {sample_rate:48000,enabled:true,points,bands:equalizer().bands.map((band,index)=>({index,enabled:index!==2,shape:band.shape,has_gain:eqMeta.shape_has_gain[band.shape],points:points.map(([hz])=>[hz,index])}))};};
+const eqReading=()=>({telemetry:true,sample_rate:48000,end_sample:12288,frozen:true,spectrum_hz:Array.from({length:128},(_,i)=>20*Math.pow(1000,i/127)),insert:{channel:'master',index:0,kind:'Equalizer',inactive:false,before_db:Array(128).fill(-30),after_db:Array(128).fill(-33)}});
+
+test('EQ native band responses and pre/post spectra share the graph without extra requests or fabricated activity curves',async()=>{
+  const item=fixture('Equalizer',{readResponse:()=>Promise.resolve(eqResponse())});try{
+    await settle();const lines=all(item.root).filter(node=>node.attributes.class==='audio-graph-band'),pre=all(item.root).find(node=>node.attributes.class==='audio-graph-pre'),post=all(item.root).find(node=>node.attributes.class==='audio-graph-post');
+    assert.equal(lines.length,6);assert.equal(lines[0].attributes.points.split(' ').length,128);assert.equal(lines[2].attributes.points,'');assert.equal(lines[5].attributes.stroke,'var(--eq-band-6)');
+    const sample=equalizerActivitySample(eqReading(),{channel:'master',index:0,parameters:item.parameters()}),reads=item.reads();assert.ok(sample);item.control.setActivity(sample);
+    assert.equal(pre.attributes.points.split(' ').length,128);assert.equal(post.attributes.points.split(' ').length,128);assert.match(item.status.textContent,/Frozen prepared sample 12288.*native pre\/post spectra/);assert.equal(all(item.root).some(node=>node.attributes.class==='audio-graph-active'),false);assert.equal(item.reads(),reads);assert.deepEqual(item.writes,[]);
+    const draft=structuredClone(item.parameters());draft.bands[1].gain_db=3;item.control.setDraft(draft);assert.equal(pre.attributes.points,'');assert.match(item.status.textContent,/Local parameter draft/);assert.equal(lines[1].attributes.points.split(' ').length,128,'A local knob draft retains the committed native band curve');assert.equal(item.reads(),reads);
+    item.control.sync();item.control.setActivity(sample);assert.notEqual(pre.attributes.points,'');item.setContext('next');item.control.sync();assert.equal(post.attributes.points,'');item.control.dispose();item.control.setActivity(sample);assert.equal(pre.attributes.points,'');
+    assert.equal(equalizerActivitySample({...eqReading(),insert:{...eqReading().insert,index:1}},{channel:'master',index:0,parameters:item.parameters()}),null);
+    assert.equal(equalizerActivitySample({...eqReading(),insert:{...eqReading().insert,before_db:[NaN]}},{channel:'master',index:0,parameters:item.parameters()}),null);
+  }finally{item.control.dispose();}
+});
+
+test('malformed native EQ band curves are refused rather than mixed with an unrelated response grid',async()=>{
+  const response=eqResponse();response.bands[5].points[127][0]=19999;
+  const item=fixture('Equalizer',{readResponse:()=>Promise.resolve(response)});try{
+    await settle();assert.match(item.status.textContent,/Invalid native EQ band response/);assert.ok(all(item.root).filter(node=>node.attributes.class==='audio-graph-band').every(node=>node.attributes.points===''));assert.deepEqual(item.writes,[]);
+  }finally{item.control.dispose();}
+});
+
+test('mixer EQ strips share native insert telemetry and precise fields while preserving bypass, peers and chain order',async()=>{
+  const previous={document:globalThis.document,Option:globalThis.Option,fetch:globalThis.fetch};globalThis.document={createElement:tag=>new Element(tag)};globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
+  let reads=0,unsubscribed=0;globalThis.fetch=async()=>{reads++;return Response.json(eqResponse());};const consumers=[],writes=[],eq={enabled:false,kind:{Equalizer:equalizer()}},mono={enabled:true,kind:'Mono'},timeline={id:'1',tracks:[],master:{gain_db:0,pan:0,effects:[eq,mono]}};let section;
+  try{
+    section=renderMixer(new Element('div'),timeline,{writable:true,open:true,catalog:{defaults:{Equalizer:eq},eq:eqCatalog},query:new URLSearchParams({project_epoch:'e',if_generation:'2',timeline_id:'1',revision:'r'}),commit:async operation=>{writes.push(operation);},notice(){},meters:{visible:()=>true,sync(){},subscribe:consumer=>{consumers.push(consumer);return ()=>{unsubscribed++;consumer.onClear();};}}});
+    const effects=all(section).find(node=>node.dataset.mixerPath==='master:effects');effects.open=true;send(effects,'toggle');const card=all(section).find(node=>node.dataset.mixerPath==='master:effects:0');card.open=true;send(card,'toggle');await settle();
+    const consumer=consumers.find(value=>value.insert);assert.deepEqual(consumer.insert,{channel:'master',index:0});assert.equal(consumers.length,2);assert.equal(consumer.visible(),true);
+    const pre=all(card).find(node=>node.attributes.class==='audio-graph-pre');consumer.onRead(eqReading());assert.notEqual(pre.attributes.points,'');const initialReads=reads;
+    const knob=all(card).find(node=>node.dataset.eqBand==='1' && node.dataset.eqParam==='gain_db'),exact=all(card).find(node=>node.tag==='label' && node.textContent==='Master EQ band 2 gain dB').children[0];
+    send(knob,'pointerdown');send(knob,'pointermove',{clientX:120,clientY:80});assert.notEqual(Number(exact.value),0);assert.equal(reads,initialReads);assert.deepEqual(writes,[]);assert.equal(pre.attributes.points,'');
+    send(knob,'keydown',{key:'Escape'});assert.equal(Number(exact.value),0);send(knob,'keydown',{key:'ArrowUp'});await settle();assert.equal(writes.length,1);assert.equal(writes[0].kind,'set_audio_effects');assert.equal(writes[0].channel,'master');assert.equal(writes[0].effects[0].enabled,false);assert.deepEqual(writes[0].effects[1],mono);assert.equal(writes[0].effects[0].kind.Equalizer.bands[1].gain_db,Math.fround(.1));assert.equal(Number(exact.value),Math.fround(.1));assert.equal(eq.kind.Equalizer.bands[1].gain_db,0);
+    send(knob,'pointerdown');send(knob,'pointermove',{clientX:120});exact.value='-2.25';send(exact,'input');send(knob,'pointerup',{clientX:120});assert.equal(exact.value,'-2.25');assert.equal(writes.length,1);
+    card.open=false;consumer.onRead(eqReading());assert.equal(pre.attributes.points,'');section.disposeMeters();send(knob,'keydown',{key:'ArrowUp'});consumer.onRead(eqReading());assert.equal(writes.length,1);assert.equal(unsubscribed,2);
   }finally{section?.disposeMeters();globalThis.document=previous.document;globalThis.Option=previous.Option;globalThis.fetch=previous.fetch;}
 });

@@ -10,7 +10,7 @@ test('nonmodal key editor owns one mixed-key Delete without deleting timeline cl
   const event=press();assert.equal(event.defaultPrevented,true);assert.equal(event.stopped,true);assert.equal(removed,1);
   for(const patch of [{defaultPrevented:true},{repeat:true},{isComposing:true},{ctrlKey:true},{altKey:true},{target:{closest:()=>({})}},{key:'s',ctrlKey:true}]){press(patch);assert.equal(removed,1);}
   modal=true;assert.equal(press().defaultPrevented,undefined);modal=false;allowed=false;assert.equal(press().defaultPrevented,true);assert.equal(removed,1);
-  allowed=true;selected=[];assert.equal(press().defaultPrevented,undefined);owner.cancel();press();assert.equal(removed,1);assert.equal(events.size,0);
+  allowed=true;selected=[];assert.equal(press().defaultPrevented,undefined);owner.cancel();selected=[{target:{kind:'gain'},source_frame:3}];press();assert.equal(removed,2);assert.equal(events.size,1);owner.dispose();press();assert.equal(removed,2);assert.equal(events.size,0);
 });
 
 test('global editing shortcuts leave modal, text, media, composing and repeated keys to their current owner',()=>{

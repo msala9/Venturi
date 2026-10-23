@@ -318,13 +318,14 @@ export function keyPageIndex(value,total) {
   return page-1;
 }
 export function bindKeyEditorDelete(root,{selection,remove,canInteract,documentRef=globalThis.document}){
+  let disposed=false;
   const keydown=event=>{
-    if(event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229 || event.ctrlKey || event.metaKey || event.altKey || event.getModifierState?.('AltGraph') || !['Delete','Backspace'].includes(event.key) || event.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])') || documentRef.querySelector?.('dialog[open]') || !selection.get().length)return;
+    if(disposed || event.defaultPrevented || event.repeat || event.isComposing || event.keyCode===229 || event.ctrlKey || event.metaKey || event.altKey || event.getModifierState?.('AltGraph') || !['Delete','Backspace'].includes(event.key) || event.target?.closest?.('input,textarea,select,[contenteditable]:not([contenteditable="false"])') || documentRef.querySelector?.('dialog[open]') || !selection.get().length)return;
     event.preventDefault();event.stopPropagation();
     if(canInteract())remove();
   };
   root.addEventListener('keydown',keydown);
-  return {cancel:()=>root.removeEventListener('keydown',keydown)};
+  return {cancel(){},dispose(){disposed=true;root.removeEventListener('keydown',keydown);}};
 }
 export function renderProperties(root, detail, { writable, getFrame, commit, reload, notice, visualState, scope,setKeyPage,seek,canInteract=()=>true,canNavigate=canInteract,navigateSource,readCurveViewport,keyEditorRoot=root,transitionDefaults,compositing=true,transformControls=true,gainControls=true,titleControls=true,colorControls=true,filterControls=true,retimeControls=true,zoomLink:sharedZoomLink,drawMaskPath,maskCommit }) {
   const disabled = !writable || detail.locked;

@@ -88,7 +88,7 @@ button[aria-selected="true"],button[aria-pressed="true"] { background: #673a21; 
 #source-placement[open] { display: grid; gap: 5px; }
 #source-placement label { justify-content: space-between; }
 #workspace-tools { display: none; }
-#scopes { position: absolute; bottom: 0; left: 0; right: 0; z-index: 13; max-height: 46%; overflow: auto; padding: 4px; box-shadow: 0 -4px 16px #0008; }
+#scopes { flex: 0 1 auto; min-height: 0; max-height: 46%; overflow: auto; padding: 4px; }
 #viewer { position: relative; }
 #scopes .scope-controls { flex-wrap: nowrap; gap: 3px; }
 #scopes .scope-controls label,#scopes output,#scopes [data-scope-context],#scopes p { font-size: 9px; margin: 2px; }

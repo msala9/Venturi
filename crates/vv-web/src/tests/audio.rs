@@ -138,6 +138,36 @@ fn compressor_graph_reads_locked_channels_and_refuses_wrong_insert_or_invalid_pa
 }
 
 #[test]
+fn normalization_catalog_keeps_native_ranges_defaults_and_only_loudness_delivery_presets() {
+    let metadata = catalog();
+    let modes = metadata["normalization"].as_array().unwrap();
+    assert_eq!(modes.len(), core::NormalizeMode::ALL.len());
+    for (row, mode) in modes.iter().zip(core::NormalizeMode::ALL) {
+        let range = mode.target_range();
+        assert_eq!(row["mode"], json!(mode));
+        assert_eq!(row["range"], json!([range.start(), range.end()]));
+        assert_eq!(row["default"], json!(mode.default_target()));
+        if mode.is_loudness() {
+            assert_eq!(row["unit"], "LUFS");
+            assert_eq!(
+                row["presets"],
+                json!([
+                    {"name":"EBU R128","target":-23.0},
+                    {"name":"ATSC A/85","target":-24.0},
+                    {"name":"Streaming","target":-14.0},
+                ])
+            );
+            for preset in row["presets"].as_array().unwrap() {
+                assert!(range.contains(&(preset["target"].as_f64().unwrap() as f32)));
+            }
+        } else {
+            assert_eq!(row["unit"], "dBFS");
+            assert_eq!(row["presets"], json!([]));
+        }
+    }
+}
+
+#[test]
 fn audio_graph_catalog_exposes_native_coordinate_and_shape_rules_without_changing_ranges() {
     let value = catalog();
     assert_eq!(value["eq"]["graph"]["frequency_hz"], json!([20, 20000]));
@@ -548,6 +578,123 @@ fn whole_audio_chain_replacement_is_atomic_ordered_and_reversible() {
     );
     set_effects(&mut s, id, "master", &next).unwrap();
     assert_eq!(s.project.timelines[id].master.effects, next);
+}
+
+#[test]
+fn eq_band_curves_match_native_filters_on_the_unchanged_total_grid_without_editing() {
+    let (mut session, id) = saved_preset_session();
+    let mut params = core::Equalizer::DEFAULT;
+    for (index, shape) in [
+        core::EqShape::HighPass,
+        core::EqShape::LowShelf,
+        core::EqShape::Peak,
+        core::EqShape::HighShelf,
+        core::EqShape::LowPass,
+        core::EqShape::Peak,
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        params.bands[index].shape = shape;
+        params.bands[index].enabled = index != 5;
+        params.bands[index].gain_db = [-12.0, 4.0, -8.0, 10.0, 18.0, 24.0][index];
+        params.bands[index].q = 0.5 + index as f32 * 0.25;
+    }
+    session.project.timelines[id].master.effects[1].kind =
+        core::AudioEffectKind::Equalizer(params.clone());
+    session.project.timelines[id].tracks[0].mix.effects[1].kind =
+        core::AudioEffectKind::Equalizer(params.clone());
+    session.project.timelines[id].tracks[0].locked = true;
+    let before = json!(session.project);
+    let history = session.history.position();
+    let generation = session.history.generation();
+    let revision = session.timeline_revision(id);
+    let native = vv_audio::eq::EqResponse::new(&params, 48_000);
+    for channel in ["master", "0"] {
+        let actual = eq_response(&session.project.timelines[id], channel, 1).unwrap();
+        assert_eq!(actual["sample_rate"], 48_000);
+        assert_eq!(actual["enabled"], true);
+        let total = actual["points"].as_array().unwrap();
+        assert_eq!(total.len(), 128);
+        assert_eq!(actual["bands"].as_array().unwrap().len(), 6);
+        for (index, point) in total.iter().enumerate() {
+            let hz = 20.0_f32 * 1000.0_f32.powf(index as f32 / 127.0);
+            assert_eq!(*point, json!([hz, native.gain_db(hz)]));
+        }
+        for (index, band) in params.bands.iter().enumerate() {
+            let row = &actual["bands"][index];
+            assert_eq!(row["index"], index);
+            assert_eq!(row["enabled"], band.enabled);
+            assert_eq!(row["shape"], json!(band.shape));
+            assert_eq!(row["has_gain"], band.shape.has_gain());
+            let points = row["points"].as_array().unwrap();
+            assert_eq!(points.len(), 128);
+            for (point_index, point) in points.iter().enumerate() {
+                let hz = 20.0_f32 * 1000.0_f32.powf(point_index as f32 / 127.0);
+                assert_eq!(*point, json!([hz, native.band_gain_db(index, hz)]));
+            }
+        }
+        assert!(
+            actual["bands"][5]["points"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|point| point[1] == 0.0)
+        );
+    }
+    assert_eq!(json!(session.project), before);
+    assert_eq!(session.history.position(), history);
+    assert_eq!(session.history.generation(), generation);
+    assert_eq!(session.timeline_revision(id), revision);
+}
+
+#[test]
+fn eq_pass_band_curves_ignore_inert_gain_retain_frequency_and_q_and_flatten_on_insert_bypass() {
+    let (mut session, id) = saved_preset_session();
+    let mut params = core::Equalizer::DEFAULT;
+    params.bands[0].enabled = true;
+    params.bands[5].enabled = true;
+    session.project.timelines[id].master.effects[1].kind =
+        core::AudioEffectKind::Equalizer(params.clone());
+    let initial = eq_response(&session.project.timelines[id], "master", 1).unwrap();
+    params.bands[0].gain_db = 24.0;
+    params.bands[5].gain_db = -24.0;
+    session.project.timelines[id].master.effects[1].kind =
+        core::AudioEffectKind::Equalizer(params.clone());
+    assert_eq!(
+        eq_response(&session.project.timelines[id], "master", 1).unwrap(),
+        initial
+    );
+    params.bands[0].freq_hz = 160.0;
+    params.bands[5].q = 1.25;
+    session.project.timelines[id].master.effects[1].kind = core::AudioEffectKind::Equalizer(params);
+    let changed = eq_response(&session.project.timelines[id], "master", 1).unwrap();
+    for index in [0, 5] {
+        assert_eq!(changed["bands"][index]["has_gain"], false);
+        assert_ne!(
+            changed["bands"][index]["points"],
+            initial["bands"][index]["points"]
+        );
+    }
+    session.project.timelines[id].master.effects[1].enabled = false;
+    let bypassed = eq_response(&session.project.timelines[id], "master", 1).unwrap();
+    assert_eq!(bypassed["enabled"], false);
+    assert!(
+        bypassed["points"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|point| point[1] == 0.0)
+    );
+    for row in bypassed["bands"].as_array().unwrap() {
+        assert!(
+            row["points"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|point| point[1] == 0.0)
+        );
+    }
 }
 
 #[test]

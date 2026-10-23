@@ -121,3 +121,30 @@ test('normalization forms retain drafts through peak-mode changes and show clip-
     assert.deepEqual(timeline,snapshot,'Editing the controls must leave the committed timeline snapshot unchanged');
   } finally {globalThis.document=original.document;globalThis.Option=original.Option;}
 });
+
+test('native loudness preset shortcuts preserve mode, bypass, clip policy and chain order without changing peak modes',async()=>{
+  const previous={document:globalThis.document,Option:globalThis.Option};
+  class Element extends EventTarget{
+    constructor(tag){super();this.tag=tag;this.children=[];this.attributes={};this.dataset={};this.value='';this.isConnected=true;this.open=false;this.disabled=false;}
+    append(...nodes){this.children.push(...nodes);}setAttribute(key,value){this.attributes[key]=value;}reportValidity(){return true;}
+  }
+  globalThis.document={createElement:tag=>new Element(tag)};globalThis.Option=class extends Element{constructor(text,value){super('option');this.textContent=text;this.value=value;}};
+  const all=node=>[node,...node.children.flatMap(all)],event=(node,type)=>node.dispatchEvent(new Event(type,{cancelable:true})),settle=()=>new Promise(resolve=>setImmediate(resolve));
+  const modes=normalization.map(value=>({...value,unit:value.mode==='Loudness'?'LUFS':'dBFS',presets:value.mode==='Loudness'?[{name:'EBU R128',target:-23},{name:'ATSC A/85',target:-24},{name:'Streaming',target:-14}]:[]}));
+  const mono={enabled:true,kind:'Mono'},effect=(mode,set_level)=>({enabled:false,kind:{Normalize:{mode,target_db:mode==='Loudness'?-18.5:-3.25,set_level}}});
+  const timeline={id:'1',tracks:[{id:'2',kind:'audio',label:'A1',locked:false,mix:{gain_db:0,pan:0,effects:[mono,effect('Loudness','Relative')]}}],master:{gain_db:0,pan:0,effects:[effect('SamplePeak','Independent')]}},snapshot=structuredClone(timeline),writes=[];let section,context={epoch:'e'},allowed=true,reject=null;
+  try{
+    section=renderMixer(new Element('div'),timeline,{writable:true,open:true,catalog:{normalization:modes,defaults:{Normalize:effect('Loudness','Relative')}},commit:async operation=>{writes.push(structuredClone(operation));if(reject)throw reject;},notice(){},audioPresets:{getContext:()=>context,canCommit:()=>allowed}});
+    for(const details of all(section).filter(node=>node.dataset.mixerPath?.endsWith(':effects'))){details.open=true;event(details,'toggle');}
+    for(const details of all(section).filter(node=>['2:effects:1','master:effects:0'].includes(node.dataset.mixerPath))){details.open=true;event(details,'toggle');}
+    const track=all(section).find(node=>node.dataset.mixerPath==='2:effects:1'),master=all(section).find(node=>node.dataset.mixerPath==='master:effects:0'),buttons=node=>all(node).filter(node=>node.tag==='button' && node.textContent?.includes('LUFS)')),input=(node,label)=>all(node).find(node=>node.tag==='label' && node.textContent===label)?.children[0];
+    assert.equal(buttons(track).length,3);assert.equal(all(track).find(node=>node.className==='normalization-presets').hidden,false);assert.equal(all(master).find(node=>node.className==='normalization-presets').hidden,true);
+    event(buttons(master)[2],'click');assert.equal(writes.length,0,'Loudness buttons never switch a peak insert to LUFS');
+    event(buttons(track)[2],'click');event(buttons(track)[1],'click');await settle();assert.equal(writes.length,1);assert.deepEqual(writes[0],{kind:'set_audio_effects',channel:'2',effects:[mono,{enabled:false,kind:{Normalize:{mode:'Loudness',target_db:-14,set_level:'Relative'}}}]});assert.equal(Number(input(track,'A1 normalization target').value),-14);assert.equal(buttons(track)[2].attributes['aria-pressed'],'true');
+    event(buttons(track)[2],'click');await settle();assert.equal(writes.length,1,'A preset already applied is a no-op');
+    const mode=input(master,'Master normalization mode');mode.value='Loudness';event(mode,'change');assert.equal(all(master).find(node=>node.className==='normalization-presets').hidden,false);event(buttons(master)[1],'click');await settle();assert.equal(writes[1].channel,'master');assert.deepEqual(writes[1].effects,[{enabled:false,kind:{Normalize:{mode:'Loudness',target_db:-24,set_level:'Independent'}}}]);assert.equal(input(master,'Master clip level policy'),undefined);
+    allowed=false;event(buttons(track)[0],'click');allowed=true;context={epoch:'new'};event(buttons(track)[0],'click');assert.equal(writes.length,2);context={epoch:'e'};
+    reject=Object.assign(Error('Unknown outcome'),{code:'OUTCOME_UNKNOWN'});event(buttons(track)[0],'click');await settle();const count=writes.length;reject=null;event(buttons(track)[1],'click');assert.equal(writes.length,count);assert.equal(Number(input(track,'A1 normalization target').value),-14);
+    section.disposeMeters();event(buttons(master)[0],'click');assert.equal(writes.length,count);assert.deepEqual(timeline,snapshot);
+  }finally{section?.disposeMeters();globalThis.document=previous.document;globalThis.Option=previous.Option;}
+});

@@ -22,6 +22,16 @@ run required regression/build checks once per coherent code block and one
 integrated browser scenario. Repeat checks only after relevant changes/failures.
 Do not build or test documentation-only planning changes.
 
+F1 context actions (`b23e87d`, halo1/8845): see
+`evidence/f1-context-workflow.json`. 29 native / 115 client cases, formatting,
+all-target Clippy and embedded build pass. JS-only pause/list-popup fixes reuse
+unchanged checks and pass syntax/build. Actual Windows targeted color/native
+Undo/Redo, grouped speed/native Undo/Redo, marker add/edit, preset capture with
+unrelated selection, shared NAS write and read from two Saved projects, stable
+playback pause, viewport swatches and Saved reopen pass. Prior Sessions/PIDs/Saved
+files and originals/proxy are preserved. Physical Canvas pointer/DPI, actual
+crossproject preset Apply, fresh montage export and full F1-F7/M7 remain open.
+
 F3 visual color (`8594968`, halo1/8844): see
 `evidence/f3-color-picker-workflow.json`. Two native asset/import cases, 83 client
 cases, formatting, all-target Clippy and embedded build pass. The actual internal

@@ -1,0 +1,172 @@
+{
+  "date": "2026-10-23",
+  "status": "partial_full_plan_functional_block",
+  "source_commit": "b23e87d",
+  "main_feature_commit": "f3d1371",
+  "url": "http://127.0.0.1:8845/",
+  "unit": "venturi-web-halo1-context-menu-r3.service",
+  "binary_sha256": "3f4e66ec5ba1e2b9d85a9cf2f3adddfe8fa54e99a72a6df96f6f72c8beb558e1",
+  "project": "Venturi_Context_V1.vvproj",
+  "project_sha256": "4b0e25187ce41b0c5e175244a8809b32392332c5e728bcc6d9046f7671937837",
+  "implemented": [
+    "Native clip/background/ruler/track/marker context actions with per-action captured selection policy. Opening does not select or seek. Pointer and guarded keyboard entry reuse existing commands and dialogs.",
+    "Twelve native ClipColor swatches in a compact accessible six-column grid. Captured ownership, outside/blur/context dismissal and keyboard navigation prevent stale dispatch.",
+    "Grouped 50/100/200 speed uses native pitch policy and one composite Undo with atomic room-making, linked/locked/overlap validation; freeze, advanced speed, silence, attributes, presets, reveal, compound and track actions reuse existing paths.",
+    "Program pauses locally at its current frame before menu ownership capture. Clip-list popup closes before deferred opening, with captured identity recheck, so queued scroll cannot close the new menu."
+  ],
+  "gate": {
+    "native_cases": 29,
+    "client_cases": 115,
+    "formatting": true,
+    "clippy_all_targets_deny_warnings": true,
+    "embedded_build": true,
+    "peak_bytes": 1972154368,
+    "followup": "JS-only pause and actual clip-list close/scroll corrections pass syntax and embedded rebuild; unchanged 29 native/115 client and native Clippy results reused.",
+    "followup_peak_bytes": [
+      1463889920,
+      1460760576
+    ]
+  },
+  "actual_windows": [
+    "Keep River linked pair selected, right-click unrelated Title12, choose Blue: only Title changes and exactly one ClipDisplayColor Undo; native Undo and Redo verified.",
+    "ShiftF10 on River opens the menu. 200% changes both linked media IDs1/0 from264 to132 frames in one ClipSpeed Undo; acknowledged Redo matches exactly and final Undo restores all seven media clips.",
+    "With unrelated River selection retained, Title Save as preset captures Title alone. Audio Volume is disabled; filters-only native DropShadow preset is saved to the shared NAS without timeline Undo.",
+    "Accessible gap selection and ShiftF10 add a Yellow marker at current playhead0, not pointed gap384. Marker menu edits note/color to Cyan while preserving start/duration. Saved history is exactly ClipDisplayColor/AddMarker/EditMarker.",
+    "Actual Program playback followed by Title right-click pauses at frame545/time22.714213. A subsequent read stays at the same frame/time with menu open. Escape and Home restore frame0.",
+    "Save As and actual reopen retain native values and marker, Saved/frame0/empty Undo. Seven original media clips, second timeline tracks and title/solid/filter parameters remain exact.",
+    "At1280x720 the twelve-swatch grid is inside viewport; keyboard Red+ArrowDown focuses Indigo without changing checked Blue. Default viewport is restored; responsive Inspector is collapsed."
+  ],
+  "browser_pause": {
+    "duration": 29.226,
+    "frame": "545",
+    "menuCount": 1,
+    "paused": true,
+    "playButton": "\u25b6 Play",
+    "time": 22.714213
+  },
+  "browser_color_grid": {
+    "active": "Indigo",
+    "cellCount": 12,
+    "columns": "26px 26px 26px 26px 26px 26px",
+    "height": 98.5999984741211,
+    "viewport": [
+      1280,
+      720
+    ],
+    "width": 165.60000610351562,
+    "x": 905.2000122070312,
+    "y": 613.4000244140625
+  },
+  "native_data": {
+    "title_display_color": "Blue",
+    "restored_media_clip_count": 7,
+    "speed_media_ids": [
+      "1",
+      "0"
+    ],
+    "speed_percent": 200,
+    "speed_length_frames": 132,
+    "marker": {
+      "color": "Cyan",
+      "duration_frames": 0,
+      "id": "0",
+      "note": "Native context workflow",
+      "rgb": [
+        43,
+        179,
+        185
+      ],
+      "start_frame": 0
+    },
+    "saved_history": {
+      "labels": [
+        "ClipDisplayColor",
+        "AddMarker",
+        "EditMarker"
+      ],
+      "position": 3
+    },
+    "final_history": {
+      "labels": [],
+      "position": 0
+    },
+    "final_frame": 0
+  },
+  "shared_preset": {
+    "id": "ab83b9ee-0ac8-4198-b801-fe7279369130",
+    "name": "Venturi Context Shadow 20261023",
+    "path": "/mnt/madrock-share/madrock-library/presets/ab83b9ee-0ac8-4198-b801-fe7279369130.json",
+    "bytes": 6273,
+    "sha256": "5b782edb99f584ebbee43e8f1b9b98964ec2a46a6380f7f14290d3fb4dd56da4",
+    "download_equals_native_disk_payload": true
+  },
+  "shared_preset_capture": {
+    "attributes": [
+      "filters"
+    ],
+    "video_clip_id": 12,
+    "audio": null,
+    "filter_kind": "DropShadow",
+    "timeline_history_unchanged": true
+  },
+  "crossproject_preset_read": {
+    "projects": {
+      "8844": "Venturi_Colors_V1.vvproj",
+      "8845": "Venturi_Context_V1.vvproj"
+    },
+    "id": "ab83b9ee-0ac8-4198-b801-fe7279369130",
+    "native_payload_equal": true,
+    "both_sessions_unchanged": true
+  },
+  "runtime_peak_bytes": 275623936,
+  "protection": {
+    "prior_sessions": 29,
+    "prior_pids": 30,
+    "prior_saved_files": 25,
+    "candidate_saved_files": 2,
+    "local_original_files_unchanged": 18,
+    "nas_original_identity_and_bytes_unchanged": true,
+    "shared_proxy_movie": {
+      "sha256": "e323bbf492af00bedf0bd0e2868ef04cf8d6d79a8a7be60383046d8c99d9d19e",
+      "inode": 4211051,
+      "mtime_ns": 1792732445778166236,
+      "ctime_ns": 1792732445778166236,
+      "bytes": 2206043
+    },
+    "final_candidate_saved_empty_history": true,
+    "candidate_session_unchanged": true,
+    "prior_color_editor_saved_eight_undo_entries_preserved": true,
+    "prior_effects_editor_saved_seven_undo_entries_preserved": true,
+    "nas_scope": "Only the fixed existing source identity/bytes and existing proxy are immutable; an explicitly authorized new native preset is outside this immutability assertion."
+  },
+  "resources": {
+    "heavy_host": "halo1",
+    "cpu_limit": 8,
+    "memory_max_bytes": 4294967296,
+    "swap_max_bytes": 0,
+    "one_workload_at_a_time": true,
+    "nice": 19,
+    "io_weight": 10,
+    "oom_score_adjust": 1000,
+    "windows": "Existing one-tab browser and small edits/Git/short SSH only; no local build/render/test fleet or browser installation."
+  },
+  "reused_evidence": [
+    "f3-palette-fonts-workflow.json: unchanged native renderer/export pipeline; prior701-frame FullHD H264/AAC and browser EOF29.226s",
+    "m4-r9700-visual-parity.json: unchanged renderer matrix"
+  ],
+  "not_claimed": [
+    "Fresh export of this context-edited montage",
+    "Physical Canvas pointer/hardware DPI",
+    "Physical shared-preset drag or actual crossproject Apply",
+    "Two-hour soak, dense representative projects, new hardware M7 or full F1-F7 closure"
+  ],
+  "ledger": {
+    "done": 49,
+    "partial": 41,
+    "excluded": 2
+  },
+  "images": [
+    "f1-context-palette.jpg",
+    "f1-context-workspace.jpg"
+  ]
+}

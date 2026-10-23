@@ -462,6 +462,10 @@ the lanes and moves the clips. Undo restores both tracks and clips together.
 Safe overlap and lock checks remain in force; this operation does not silently
 overwrite existing material.
 
+Timeline snapshots additionally expose `clip_colors:[{color,rgb}]` in native
+`ClipColor::ALL` order, with byte RGB from native `ClipColor::rgb()`. Consumers
+use this metadata for context swatches; reading it does not mutate history.
+
 Timeline snapshots include native `gaps:[{track_id,start_frame,length_frames}]`
 for leading/internal empty intervals on unlocked lanes. Empty lanes and trailing
 space are omitted. The shared core helper sorts/scans each lane once; this

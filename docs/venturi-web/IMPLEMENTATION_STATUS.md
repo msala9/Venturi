@@ -22,7 +22,36 @@ video lease APIs or a second audio-routing architecture for this deferred detail
 
 ## Active completion objective
 
-Current visual-color delivery: **http://127.0.0.1:8844/**, source `8594968`
+Current context-menu delivery: **http://127.0.0.1:8845/**, source `b23e87d`
+(main feature `f3d1371`), binary `3f4e66ec5ba1`, service
+`venturi-web-halo1-context-menu-r3.service`. Clip, background, ruler, marker and
+track menus reuse native actions and dialogs with each action's captured selection
+policy. Opening does not select or seek. Twelve native color swatches use a compact
+six-column grid; linked speed presets are atomic and one Undo. Program pauses at
+its current frame before menu ownership capture; keyboard access remains guarded.
+
+The bounded gate passes **29 native / 115 client cases**, formatting, all-target
+Clippy and embedded build (peak 1,972,154,368 bytes). JS-only pause and actual
+clip-list close/scroll fixes pass syntax/rebuild, reusing unchanged checks.
+Actual Windows checks Title-only Blue with unrelated media selection, color
+Undo/Redo, linked 200%/Undo/Redo, marker add/edit, stable playback pause and
+Save As/reopen. `Venturi_Context_V1.vvproj` is Saved/frame 0/empty Undo; seven
+original media clips, second timeline tracks and title/solid/filter values remain
+exact. Runtime peak is 275,623,936 bytes. The default viewport is restored after
+the actual 1280x720 accessible swatch check.
+
+Title-only filters preset `Venturi Context Shadow 20261023` is saved to native
+`madrock-library/presets/` (6,273 bytes). Both this project and preserved Colors V1
+read the identical native payload without changing Sessions. All 29 prior
+Sessions, 30 PIDs, 25 Saved files, 18 fixed local originals, the NAS original and
+shared proxy remain unchanged. Only the clean owned, not-yet-delivered context
+candidate was replaced under exact Saved/history/PID guards during its UI fix.
+See `evidence/f1-context-workflow.json` and context workspace/palette images.
+Reuse the unchanged renderer/export evidence; no fresh export, physical Canvas
+pointer/DPI, shared-preset drag/crossproject Apply or full F1-F7/M7 closure is
+claimed. Ledger remains **49 done / 41 partial / 2 excluded**.
+
+Preserved visual-color delivery: **http://127.0.0.1:8844/**, source `8594968`
 (main feature `ac4d974`), binary `6fb00d49a181`, service
 `venturi-web-halo1-color-picker-r2.service`. Selected Title, background, outline,
 Solid and DropShadow colors now use compact swatches and a visual popup with
